@@ -1290,17 +1290,34 @@ BackgroundNormal=49,54,59
         frame_contrast: None,
     };
 
-    /// The eight colour leaves the reader derives from the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 8] {
+    /// The fifteen colour leaves the reader derives from the colour scheme.
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 15] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
+        let sw = &mode.switch;
         [
             ("button.hover_background", mode.button.hover_background),
+            ("button.hover_text_color", mode.button.hover_text_color),
             ("slider.thumb_color", mode.slider.thumb_color),
+            ("switch.unchecked_background", sw.unchecked_background),
+            ("switch.checked_background", sw.checked_background),
             (
-                "switch.unchecked_background",
-                mode.switch.unchecked_background,
+                "switch.hover_unchecked_background",
+                sw.hover_unchecked_background,
             ),
-            ("switch.checked_background", mode.switch.checked_background),
+            (
+                "switch.hover_checked_background",
+                sw.hover_checked_background,
+            ),
+            ("switch.thumb_background", sw.thumb_background),
+            (
+                "switch.unchecked_track_border_color",
+                sw.unchecked_track_border_color,
+            ),
+            (
+                "switch.checked_track_border_color",
+                sw.checked_track_border_color,
+            ),
+            ("switch.thumb_border_color", sw.thumb_border_color),
             ("toolbar.background_color", mode.toolbar.background_color),
             ("toolbar.border.color", border(&mode.toolbar.border)),
             ("popover.border.color", border(&mode.popover.border)),
@@ -1309,19 +1326,45 @@ BackgroundNormal=49,54,59
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Rgba); 8] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 15] {
+        let sw = &theme.switch;
         [
-            ("button.hover_background", theme.button.hover_background),
-            ("slider.thumb_color", theme.slider.thumb_color),
             (
-                "switch.unchecked_background",
-                theme.switch.unchecked_background,
+                "button.hover_background",
+                Some(theme.button.hover_background),
             ),
-            ("switch.checked_background", theme.switch.checked_background),
-            ("toolbar.background_color", theme.toolbar.background_color),
-            ("toolbar.border.color", theme.toolbar.border.color),
-            ("popover.border.color", theme.popover.border.color),
-            ("card.border.color", theme.card.border.color),
+            (
+                "button.hover_text_color",
+                Some(theme.button.hover_text_color),
+            ),
+            ("slider.thumb_color", Some(theme.slider.thumb_color)),
+            ("switch.unchecked_background", Some(sw.unchecked_background)),
+            ("switch.checked_background", Some(sw.checked_background)),
+            (
+                "switch.hover_unchecked_background",
+                sw.hover_unchecked_background,
+            ),
+            (
+                "switch.hover_checked_background",
+                sw.hover_checked_background,
+            ),
+            ("switch.thumb_background", Some(sw.thumb_background)),
+            (
+                "switch.unchecked_track_border_color",
+                sw.unchecked_track_border_color,
+            ),
+            (
+                "switch.checked_track_border_color",
+                sw.checked_track_border_color,
+            ),
+            ("switch.thumb_border_color", sw.thumb_border_color),
+            (
+                "toolbar.background_color",
+                Some(theme.toolbar.background_color),
+            ),
+            ("toolbar.border.color", Some(theme.toolbar.border.color)),
+            ("popover.border.color", Some(theme.popover.border.color)),
+            ("card.border.color", Some(theme.card.border.color)),
         ]
     }
 
@@ -1367,15 +1410,22 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
-    /// Another accent moves only the switch's on track; the checkbox and the
-    /// progress bar follow it as before.
+    /// Another accent moves only the switch's on track, hovered or not, and
+    /// its outline; the checkbox and the progress bar follow it as before.
     #[test]
-    fn an_accent_moves_only_the_switch_on_track() -> crate::Result<()> {
+    fn an_accent_moves_only_the_switch_on_track_and_its_outline() -> crate::Result<()> {
         let scheme = Scheme {
             selection: "233,84,32",
             ..BREEZE_LIGHT_SCHEME
         };
-        assert_eq!(moved_leaves(&scheme)?, ["switch.checked_background"]);
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            [
+                "switch.checked_background",
+                "switch.hover_checked_background",
+                "switch.checked_track_border_color",
+            ]
+        );
         Ok(())
     }
 
@@ -1389,9 +1439,15 @@ BackgroundNormal=49,54,59
             moved_leaves(&scheme)?,
             [
                 "button.hover_background",
+                "button.hover_text_color",
                 "slider.thumb_color",
                 "switch.unchecked_background",
                 "switch.checked_background",
+                "switch.hover_unchecked_background",
+                "switch.hover_checked_background",
+                "switch.thumb_background",
+                "switch.unchecked_track_border_color",
+                "switch.thumb_border_color",
             ]
         );
         Ok(())
@@ -1447,7 +1503,7 @@ BackgroundNormal=49,54,59
     }
 
     #[test]
-    fn the_frame_contrast_moves_the_three_edges() -> crate::Result<()> {
+    fn the_frame_contrast_moves_the_edges() -> crate::Result<()> {
         let scheme = Scheme {
             frame_contrast: Some("0.5"),
             ..BREEZE_LIGHT_SCHEME
@@ -1455,6 +1511,8 @@ BackgroundNormal=49,54,59
         assert_eq!(
             moved_leaves(&scheme)?,
             [
+                "switch.unchecked_track_border_color",
+                "switch.thumb_border_color",
                 "toolbar.border.color",
                 "popover.border.color",
                 "card.border.color",

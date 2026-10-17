@@ -430,10 +430,10 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// Some colours Plasma computes from the scheme, and the reader computes
 /// them as Breeze, Kirigami and qqc2-desktop-style do, in Qt's arithmetic:
 /// the checked button, the checkbox and progress-bar blends, the switch
-/// tracks, the toolbar's fill and edge, and the popover's and the card's
-/// edges. The blends on the accent (the checked checkbox, the progress fill,
-/// the switch's on track) come from kdeglobals' `[Colors:Selection]
-/// BackgroundNormal`, so an application's `with_overlay` accent or the
+/// tracks and outlines, the toolbar's fill and edge, and the popover's and the
+/// card's edges. The blends on the accent (the checked checkbox, the progress
+/// fill, the switch's on track and its outline) come from kdeglobals'
+/// `[Colors:Selection] BackgroundNormal`, so an application's `with_overlay` accent or the
 /// portal's (`gnome::apply_accent`, applied by `GnomePortalKdeReader`) does
 /// not move them.
 ///
@@ -491,10 +491,12 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         .zip(button_fg)
         .map(|(button, text)| mix(button, text, CHECKED_BUTTON_MIX));
     variant.button.checked_text_color = button_fg;
-    // A hovered button keeps its fill: Breeze's hover changes only the pen
-    // (breezehelper.cpp:693-707, :710-712 at breeze f0b1d75;
-    // docs/platform-facts.md §2.3).
+    // A hovered button keeps its fill and its text: Breeze's hover changes
+    // only the pen (breezehelper.cpp:693-707, :710-712 at breeze f0b1d75), and
+    // a non-flat button is lettered in `QPalette::ButtonText` in every state
+    // (breezestyle.cpp:5350-5362; docs/platform-facts.md §2.3).
     variant.button.hover_background = variant.button.background_color;
+    variant.button.hover_text_color = button_fg;
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
@@ -543,7 +545,11 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 
     // Switch (docs/platform-facts.md §2.21): qqc2-desktop-style's tracks, the
     // off one the Button set's text tinted by its background, the on one the
-    // highlight at half alpha over it.
+    // highlight at half alpha over it; hover changes no fill (SwitchIndicator.qml
+    // :49, :62, :77 at v6.31.0). The handle is the Button set's background
+    // (:29). The off track and the handle are outlined in the Button set's
+    // background moved towards its text by the frame contrast, the on track
+    // in the highlight (:27, :30, :50, :78).
     let switch_off = button_bg
         .zip(button_fg)
         .map(|(background, text)| switch_off_track(background, text));
@@ -551,6 +557,15 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.switch.checked_background = switch_off
         .zip(selection_bg)
         .map(|(off, highlight)| switch_on_track(off, highlight));
+    variant.switch.hover_unchecked_background = variant.switch.unchecked_background;
+    variant.switch.hover_checked_background = variant.switch.checked_background;
+    variant.switch.thumb_background = button_bg;
+    let switch_edge = button_bg
+        .zip(button_fg)
+        .map(|(bg, fg)| linear_interpolation(bg, fg, frame_contrast(ini)));
+    variant.switch.unchecked_track_border_color = switch_edge;
+    variant.switch.thumb_border_color = switch_edge;
+    variant.switch.checked_track_border_color = selection_bg;
 
     // Tab (docs/platform-facts.md §2.11): Breeze marks the selected tab with a
     // strip of `QPalette::Highlight`, the selection background.
