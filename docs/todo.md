@@ -14,7 +14,11 @@ close, under the headings they had, each with the commit that closed it. Cite an
 its file, its `###` heading and its opening words, quoted, as many as make it unique
 under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux readers'"): a
 `docs/todo.md:N` citation is valid at the commit that wrote it
-(`git show <commit>:docs/todo.md`), since entries move as they close.
+(`git show <commit>:docs/todo.md`), since entries move as they close. A preset
+value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
+`[light.button] active_background`), and a preset line only with the commit it
+holds at (`kde-breeze.toml:8` at 2ca74471), as `scripts/check_todo_citations.py`
+checks.
 
 ---
 
@@ -55,7 +59,7 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       of platform-facts has no hover row at all, so none of those 32 values
       is sourced there, and
       only `windows-11` says what its value is: "Fluent checkbox hover fill"
-      (`native-theme/src/presets/windows-11.toml:207-208`), without saying for
+      (`native-theme/src/presets/windows-11.toml` `[light.checkbox] hover_background`), without saying for
       which box state. Native toolkits do style the checked box under the
       pointer as a state of its own: WinUI3
       gives `CheckBoxCheckBackgroundFillCheckedPointerOver` =
@@ -296,8 +300,11 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       (`docs/platform-facts.md:901-906`), and a padding is what lies inside the
       border. So each of those cells includes the border's width on its side:
       `macos-monterey` states the button's `padding_top_px = 1.0` and
-      `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml:116-117`,
-      `:569-570`) with a `line_width_px = 0.5` border (`:74`, `:527`). Research first, from
+      `padding_bottom_px = 3.0` (`native-theme/src/presets/macos-monterey.toml`
+      `[light.button.border] padding_top_px, padding_bottom_px`,
+      `[dark.button.border] padding_top_px, padding_bottom_px`) with a
+      `line_width_px = 0.5` border
+      (`[light.defaults.border] line_width_px`, `[dark.defaults.border] line_width_px`). Research first, from
       source or measurement with citations, what the 22 and 16 measure — the
       outer box with its border, and the text's line box or its glyph height —
       then correct platform-facts' derivation of each cell and, from it, the
@@ -323,9 +330,10 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       states **(none)** for the other three (`docs/platform-facts.md:1601`),
       yet `macos-monterey`, `kde-breeze` and `adwaita` each state
       `stroke_width_px = 2.0` in both variants
-      (`native-theme/src/presets/macos-monterey.toml:376`, `:833`;
-      `native-theme/src/presets/kde-breeze.toml:371`, `:773`;
-      `native-theme/src/presets/adwaita.toml:351`, `:729`). Run the
+      (`native-theme/src/presets/macos-monterey.toml`,
+      `native-theme/src/presets/kde-breeze.toml` and
+      `native-theme/src/presets/adwaita.toml`, each `[light.spinner] stroke_width_px`
+      and `[dark.spinner] stroke_width_px`). Run the
       `preset-validator` agent over the three presets against §2.23. The
       field is required in `ResolvedSpinnerTheme` — every preset must resolve
       it — so removing the value needs a decision in the model first: make
@@ -351,8 +359,9 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       `windows-11` states it: their scrollbar sections state
       `thumb_hover_color` and `thumb_active_color` (and macOS the overlay
       `track_color`) but not it
-      (`native-theme/src/presets/macos-monterey.toml:187-201`, `:640-654`;
-      `native-theme/src/presets/windows-11.toml:237-250`, `:797-810`). No
+      (`native-theme/src/presets/macos-monterey.toml` and
+      `native-theme/src/presets/windows-11.toml`, `[light.scrollbar]` and
+      `[dark.scrollbar]`). No
       bundled preset states it, and for KDE and GNOME §2.8 names a source,
       "(Breeze src)" and "(Adwaita CSS)", but no value. The field then
       resolves to `defaults.muted_color` (`docs/inheritance-rules.toml:205`),
@@ -363,14 +372,16 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §5.9). The measurement is one
       value per platform, while the presets' hover colours differ by variant
       on macOS (`#60606080` light, `#a0a0a080` dark,
-      `native-theme/src/presets/macos-monterey.toml:199`, `:652`) and not on
-      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml:250`,
-      `:810`): state the measured value in the two light variants, find a
+      `native-theme/src/presets/macos-monterey.toml` `[light.scrollbar] thumb_hover_color`,
+      `[dark.scrollbar] thumb_hover_color`) and not on
+      Windows (`#a0a0a0`, `native-theme/src/presets/windows-11.toml`
+      `[light.scrollbar] thumb_hover_color`, `[dark.scrollbar] thumb_hover_color`):
+      state the measured value in the two light variants, find a
       source for each dark one before stating it, and run the
       `preset-validator` agent over both presets against §2.8.
       *M4 T35 (2026-10-13):* windows-11 light states the measured `#c2c2c2`
-      (`native-theme/src/presets/windows-11.toml:247`); dark still has no
-      source (`:806`). WinUI 3 has one: `ScrollBarThumbFill` and
+      (`native-theme/src/presets/windows-11.toml` `[light.scrollbar] thumb_color`);
+      dark still has no source (`[dark.scrollbar]` states none). WinUI 3 has one: `ScrollBarThumbFill` and
       `ScrollBarThumbFillPointerOver` are both `ControlStrongFillColorDefault`,
       `#72000000` / `#8BFFFFFF` (ScrollBar_themeresources.xaml:138-139, :26-27;
       Common_themeresources_any.xaml:226, :22, microsoft-ui-xaml 8463f45; now
@@ -382,13 +393,15 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       pressed, both modes) or the measured set, then state the dark thumb.
       *M4 T24's scroll bar validator (2026-10-13):* `macos-tahoe` states no
       light `thumb_color` and no `thumb_hover_color` in either mode
-      (`native-theme/src/presets/macos-tahoe.toml:188-200`; dark states
-      `thumb_color` only, `:576`), so they fall to the safety net here too;
+      (`native-theme/src/presets/macos-tahoe.toml` `[light.scrollbar]`; the dark
+      `thumb_color` this line cited, `macos-tahoe.toml:576` at 2ca74471, is
+      `[dark.slider] thumb_color`, and `[dark.scrollbar]` states neither), so they fall to the safety net here too;
       `macos-monterey`'s `thumb_active_color` (`#50505090` / `#b0b0b090`,
-      `native-theme/src/presets/macos-monterey.toml:201`, `:655`) is a soft
-      option with no source. Two citations are one line off: the dark scroll
-      bar this entry cites as `macos-monterey.toml:640-654` is `:641-655`, and
-      the egui entry's dark `track_color` (`:646`) is `:647`. The validator also
+      `native-theme/src/presets/macos-monterey.toml` `[light.scrollbar] thumb_active_color`,
+      `[dark.scrollbar] thumb_active_color`) is a soft
+      option with no source. Two citations were one line off: the dark scroll
+      bar this entry cited as `macos-monterey.toml:640-654` was `:641-655` at 2ca74471, and
+      the egui entry's dark `track_color` (`:646`) was `:647`. The validator also
       named `docs/platform-facts.md:1307` and `:181` as "citing probe 15" (its
       words; `:1307` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
@@ -596,8 +609,10 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       Settle each from its source, then state 1.0 or drop the disabled
       colours.
       M8 T21 (2026-10-17): macos-monterey states `disabled_opacity = 1.0`
-      since be69481a (M2a; `macos-monterey.toml:63`, `:528`), so of the
-      presets above only ios-13 (0.3, `ios-13.toml:68`, `:414`) and the ten
+      since be69481a (M2a; `macos-monterey.toml` `[light.defaults] disabled_opacity`,
+      `[dark.defaults] disabled_opacity`), so of the
+      presets above only ios-13 (0.3, `ios-13.toml` `[light.defaults] disabled_opacity`,
+      `[dark.defaults] disabled_opacity`) and the ten
       community presets (0.5) still state both.
 
 ### KDE: the live reader's disabled text colour
@@ -782,7 +797,9 @@ model, the platform presets and the three connectors
       `CheckBoxCheckBackgroundFillUncheckedPointerOver`, laid over the
       window: light 228.0 against 228.7 (`#0F000000` over
       `#f3f3f3`), dark 42.2 against 41.6 (`#0BFFFFFF` over `#202020`); the
-      brush's values as `windows-11.toml:437` and `:1000` cite them
+      brush's values as `windows-11.toml`'s comments above
+      `[light.switch] hover_unchecked_background` and
+      `[dark.switch] hover_unchecked_background` cite them
       (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45).
       The gpui connector also exports the composite, `layer_over`.
       M8 T3 (2026-10-16): both f32 composites are native-theme's `color::composite_over`, and the iced connector exports it too, as `styles::composite_over`.
@@ -830,7 +847,7 @@ model, the platform presets and the three connectors
       `:768`); the review reads these colours as not following dark mode,
       which no dark-mode probe has checked yet. Since M2b the dark preset's
       `button.hover_background` is WinUI's opaque, flattened `#323232`
-      (`windows-11.toml:687`), where it was a near-invisible translucent
+      (`windows-11.toml` `[dark.button] hover_background`), where it was a near-invisible translucent
       layer, so hovering such a light button turns it dark grey. The code
       predates M2; M4 decides with the rest of this entry whether the reader
       writes Win32 colours into the dark variant at all.
@@ -856,7 +873,8 @@ model, the platform presets and the three connectors
       `#4cc2ff` (9284f52b); its `primary_background` stays on the accent until
       M5 (ee75ad7e; the entry *For M5: iced's primary hover from
       `primary_background`*, now in `docs/archive/todo_closed.md`). Still open: `tab.active_background`, `#f3f3f3` /
-      `#202020` (`native-theme/src/presets/windows-11.toml:287`, `:847`).
+      `#202020` (`native-theme/src/presets/windows-11.toml` `[light.tab] active_background`,
+      `[dark.tab] active_background`).
       M5 T9: the preset's `primary_background` is `AccentFillColorDefault`
       since cc9e933e.
 
@@ -865,9 +883,11 @@ model, the platform presets and the three connectors
 - [ ] [v0.7.0] M4 T35 (2026-10-13) gave windows-11 WinUI 3's brushes where a
       value derives from the accent and no inheritance carries it: the text
       box's focused bottom line `SystemAccentColorDark1` / `Light2` (`#0067c0`
-      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml:173`, `:733`) and
+      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml`
+      `[light.input] focus_border_color`, `[dark.input] focus_border_color`) and
       the on switch's hover `AccentFillColorSecondary`, those shades at 0.9,
-      flattened (`#1875c5` / `#48b2e9`, `:434`, `:993`), each the UISettings
+      flattened (`#1875c5` / `#48b2e9`, `[light.switch] hover_checked_background`,
+      `[dark.switch] hover_checked_background`), each the UISettings
       shade of the default accent `#0078d4` on the OS probe. On a live system
       with another accent they stay the default accent's: the reader writes
       the shades only into the accent and checked buttons' fills
@@ -1003,7 +1023,7 @@ model, the platform presets and the three connectors
       M8 T21 fix round 1 (2026-10-17): the slider half is closed: §2.9's GNOME
       cell gives `$slider_color` since cbab21c4 (M8 T15), and adwaita states
       it since 859bf526 (M8 T16), `#ffffff` / `#d2d2d2`
-      (`adwaita.toml:221-222`, `:645-646`); *Presets: values the M8 T15
+      (`adwaita.toml` `[light.slider] thumb_color`, `[dark.slider] thumb_color`); *Presets: values the M8 T15
       platform-facts rows disagree with* records it among the values T16
       stated. The list-header half stays.
 
@@ -1263,7 +1283,7 @@ model, the platform presets and the three connectors
 ### kde-breeze: the header's "Verified on" date
 
 - [ ] [v0.7.x] From the kde-breeze validator after M4 T36 (2026-10-13):
-      `native-theme/src/presets/kde-breeze.toml:8` says the cited values were
+      `native-theme/src/presets/kde-breeze.toml:8` at 2ca74471 says the cited values were
       verified on 2026-10-11 (M2e), but T34 and T36 changed and cited values on
       2026-10-13 (fd4abc64, a7da50c7, 74fc414d). Note the 2026-10-13 values in
       the header.
@@ -1297,12 +1317,16 @@ model, the platform presets and the three connectors
 
 - [ ] [1.0] From M6 T16b (2026-10-16): `docs/platform-facts.md` §2.27 has no
       `hover_background` row, and these presets state `expander.hover_background`
-      in both modes with no citation: adwaita (`adwaita.toml:399`, `:784`),
-      macos-monterey (`:440`, `:898`, "disclosure hover -- subtle highlight"),
-      ios-13 (`:364`, `:708`), material-3 (`:509`, `:1014`; M3 has no expander,
+      in both modes with no citation: adwaita, macos-monterey ("disclosure
+      hover -- subtle highlight"), ios-13, material-3 (M3 has no expander,
       §2.27), and the community presets catppuccin-latte, -frappe, -macchiato,
       -mocha, dracula, gruvbox, nord, one-dark, solarized and tokyo-night
-      (`:243`/`:486` or `:241`/`:484`). kde-breeze's was unset in M6 T16b: the
+      (`adwaita.toml`, `macos-monterey.toml`, `ios-13.toml`, `material-3.toml`,
+      `catppuccin-latte.toml`, `catppuccin-frappe.toml`, `catppuccin-macchiato.toml`,
+      `catppuccin-mocha.toml`, `dracula.toml`, `gruvbox.toml`, `nord.toml`,
+      `one-dark.toml`, `solarized.toml` and `tokyo-night.toml`, each
+      `[light.expander] hover_background` and `[dark.expander] hover_background`).
+      kde-breeze's was unset in M6 T16b: the
       §2.27 `frame_enabled` row (`docs/platform-facts.md:1686`) says
       `KCollapsibleGroupBox::paintEvent` paints the arrow and the title and
       nothing else. Find each platform's source for a hovered expander header
@@ -1325,57 +1349,93 @@ model, the platform presets and the three connectors
       Each item names the preset value, then the row (section, field) that
       gives another; no value was changed (M8-76 ruling: D3, M2's domain).
       - adwaita: `button.active_background` `#c8c8c8` / `#2e2e32`
-        (`adwaita.toml:122`, `:504`; §2.3: `currentColor` at 30 %, a
+        (`adwaita.toml` `[light.button] active_background`,
+        `[dark.button] active_background`; §2.3: `currentColor` at 30 %, a
         translucent replacement); `input.hover_border_color` and
-        `input.focus_border_color` `#3584e4` (`:143-144`, `:525-526`; §2.4:
-        no border line, and focus is the ring, the accent at 50 %);
-        `checkbox.hover_background` `#d5d5d5` / `#464649` (`:168`, `:550`;
+        `input.focus_border_color` `#3584e4`
+        (`[light.input] focus_border_color`, `[dark.input] focus_border_color`;
+        `hover_border_color` is stated in neither since cff0bc68, M8 T16 fix
+        round 1; §2.4: no border line, and focus is the ring, the accent at
+        50 %); `checkbox.hover_background` `#d5d5d5` / `#464649`
+        (`[light.checkbox] hover_background`, `[dark.checkbox] hover_background`;
         §2.5: no unchecked fill, a 10 % `currentColor` layer when checked),
-        `checkbox.unchecked_background` `#ffffff` / `#303034` (`:170`, `:552`;
-        §2.5: transparent), `checkbox.unchecked_border_color` (`:171`, `:553`;
-        §2.5: `currentColor` at 15 %); `scrollbar.thumb_active_color`
-        `#4e4e4e` / `#c0c0c0` (`:200`, `:582`; §2.8: `currentColor` at 60 %);
-        `slider.thumb_hover_color` `#ebebeb` / `#3a3a3e` (`:206`, `:588`;
-        §2.9: white in both modes); `tab.hover_background` (`:224`, `:606`;
-        §2.11: `currentColor` at 7 %); `splitter.hover_color` (`:307`,
-        `:689`; §2.17: no hover state, ← `divider_color`);
-        `switch.hover_checked_background` `#2e78cc` (`:316`, `:700`; §2.21:
-        a 10 % accent-foreground layer over the accent),
-        `switch.hover_unchecked_background` (`:317`, `:701`; §2.21:
-        `currentColor` at 20 %); `combo_box.hover_background` (`:364`,
-        `:748`; §2.24: `currentColor` at 15 %);
-        `segmented_control.hover_background` (`:377`, `:761`; §2.25:
-        `currentColor` at 7 % over the group's fill);
-        `expander.hover_background` (`:399`, `:784`; §2.27: `currentColor` at
-        3 %, a layer), `expander.arrow_color` `#2e3436` / `#ffffff` (`:400`,
-        `:785`; §2.27: `currentColor` at 55 %); `link.hover_text_color` and
-        `link.disabled_text_color`, both the rest colour (`:349`, `:352`,
-        `:733`, `:736`; §2.28: the accent 10 % more saturated and lighter, and
-        the link colour at 50 %). Unstated where the rows give a value: the
+        `checkbox.unchecked_background` `#ffffff` / `#303034`
+        (`[light.checkbox] unchecked_background`,
+        `[dark.checkbox] unchecked_background`; §2.5: transparent),
+        `checkbox.unchecked_border_color`
+        (`[light.checkbox] unchecked_border_color`,
+        `[dark.checkbox] unchecked_border_color`; §2.5: `currentColor` at
+        15 %); `scrollbar.thumb_active_color` `#4e4e4e` / `#c0c0c0`
+        (`[light.scrollbar] thumb_active_color`,
+        `[dark.scrollbar] thumb_active_color`; §2.8: `currentColor` at 60 %);
+        `slider.thumb_hover_color` `#ebebeb` / `#3a3a3e`
+        (`[light.slider] thumb_hover_color`, `[dark.slider] thumb_hover_color`;
+        §2.9: white in both modes); `tab.hover_background`
+        (`[light.tab] hover_background`, `[dark.tab] hover_background`; §2.11:
+        `currentColor` at 7 %); `splitter.hover_color`
+        (`[light.splitter] hover_color`, `[dark.splitter] hover_color`; §2.17:
+        no hover state, ← `divider_color`); `switch.hover_checked_background`
+        `#2e78cc` (`[light.switch] hover_checked_background`,
+        `[dark.switch] hover_checked_background`; §2.21: a 10 %
+        accent-foreground layer over the accent),
+        `switch.hover_unchecked_background`
+        (`[light.switch] hover_unchecked_background`,
+        `[dark.switch] hover_unchecked_background`; §2.21: `currentColor` at
+        20 %); `combo_box.hover_background`
+        (`[light.combo_box] hover_background`,
+        `[dark.combo_box] hover_background`; §2.24: `currentColor` at 15 %);
+        `segmented_control.hover_background`
+        (`[light.segmented_control] hover_background`,
+        `[dark.segmented_control] hover_background`; §2.25: `currentColor` at
+        7 % over the group's fill); `expander.hover_background`
+        (`[light.expander] hover_background`,
+        `[dark.expander] hover_background`; §2.27: `currentColor` at 3 %, a
+        layer), `expander.arrow_color` `#2e3436` / `#ffffff`
+        (`[light.expander] arrow_color`, `[dark.expander] arrow_color`; §2.27:
+        `currentColor` at 55 %); `link.hover_text_color` and
+        `link.disabled_text_color`, both the rest colour
+        (`[light.link] hover_text_color, disabled_text_color`,
+        `[dark.link] hover_text_color, disabled_text_color`; §2.28: the
+        accent 10 % more saturated and lighter, and the link colour at 50 %). Unstated where the rows give a value: the
         toolbar's border (§2.13: none), the list's (§2.15: none for a plain
         list), the progress bar's padding (§2.10: 0) and the sidebar's
         (§2.12: 6, 6 top / 4 bottom).
-      - kde-breeze: `button.active_background` `#3daee9` (`kde-breeze.toml:131`,
-        `:593`; §2.3: `mix(Button, Highlight, 0.3)`, #c3e5f6 / #2f5368),
-        `button.active_text_color` `#ffffff` light (`:133`; §2.3:
-        `ButtonText`, #232629); `checkbox.hover_background` `#93cee9`
-        (`:190`, `:652`; §2.5: no hover fill, a `DecorationFocus` ring);
-        `scrollbar.thumb_active_color` `#3daee9` (`:226`, `:689`; §2.8:
-        ← `thumb_hover_color`, which the preset states `#93cee9`);
-        `slider.thumb_hover_color` `#93cee9` (`:232`, `:695`; §2.9: the
-        `Button` fill, #fcfcfc / #292c30, hover being an outline),
-        `slider.disabled_fill_color`, `disabled_track_color` and
-        `disabled_thumb_color` (`:233-235`, `:696-698`; §2.9: no fill, the
-        groove #d9dcdd / #2a2b2e, the handle #f0f0f0 / #272a2e);
-        `splitter.hover_color` (`:364`, `:828`; §2.17: ← `divider_color`);
-        the switch's hover and disabled tracks (`:374-377`, `:838-841`;
-        §2.21: hover changes borders only; disabled #e6e7e8 / #26292c checked,
-        #e9e9e9 / #2e3135 unchecked); `combo_box.hover_background` `#93cee9`
-        (`:427`, `:891`; §2.24: no hover fill); `segmented_control.hover_background`
-        (`:449`, `:913`; §2.25: the tab bar's proxy, #3daee933);
-        `expander.arrow_color` `#232629` / `#fcfcfc` (`:469`, `:933`; §2.27:
+      - kde-breeze: `button.active_background` `#3daee9`
+        (`kde-breeze.toml` `[light.button] active_background`,
+        `[dark.button] active_background`; §2.3: `mix(Button, Highlight,
+        0.3)`, #c3e5f6 / #2f5368), `button.active_text_color` `#ffffff` light
+        (`[light.button] active_text_color`; §2.3: `ButtonText`, #232629);
+        `checkbox.hover_background` `#93cee9`
+        (`[light.checkbox] hover_background`, `[dark.checkbox] hover_background`;
+        §2.5: no hover fill, a `DecorationFocus` ring);
+        `scrollbar.thumb_active_color` `#3daee9`
+        (`[light.scrollbar] thumb_active_color`,
+        `[dark.scrollbar] thumb_active_color`; §2.8: ← `thumb_hover_color`,
+        which the preset states `#93cee9`); `slider.thumb_hover_color`
+        `#93cee9` (`[light.slider] thumb_hover_color`,
+        `[dark.slider] thumb_hover_color`; §2.9: the `Button` fill, #fcfcfc /
+        #292c30, hover being an outline), `slider.disabled_fill_color`,
+        `disabled_track_color` and `disabled_thumb_color`
+        (`[light.slider] disabled_fill_color, disabled_track_color, disabled_thumb_color`,
+        `[dark.slider] disabled_fill_color, disabled_track_color, disabled_thumb_color`;
+        §2.9: no fill, the groove #d9dcdd / #2a2b2e, the handle #f0f0f0 /
+        #272a2e); `splitter.hover_color`
+        (`[light.splitter] hover_color`, `[dark.splitter] hover_color`; §2.17:
+        ← `divider_color`); the switch's hover and disabled tracks
+        (`[light.switch] hover_checked_background, hover_unchecked_background, disabled_checked_background, disabled_unchecked_background`
+        and the same four in `[dark.switch]`; §2.21: hover changes borders
+        only; disabled #e6e7e8 / #26292c checked, #e9e9e9 / #2e3135
+        unchecked); `combo_box.hover_background` `#93cee9`
+        (`[light.combo_box] hover_background`,
+        `[dark.combo_box] hover_background`; §2.24: no hover fill);
+        `segmented_control.hover_background`
+        (`[light.segmented_control] hover_background`,
+        `[dark.segmented_control] hover_background`; §2.25: the tab bar's
+        proxy, #3daee933); `expander.arrow_color` `#232629` / `#fcfcfc`
+        (`[light.expander] arrow_color`, `[dark.expander] arrow_color`; §2.27:
         #424447 / #dbdbdc); `link.disabled_text_color` `#a3cae2` / `#164160`
-        (`:412`, `:876`; §2.28: Kirigami's `LinkButton` draws the Disabled
+        (`[light.link] disabled_text_color`, `[dark.link] disabled_text_color`;
+        §2.28: Kirigami's `LinkButton` draws the Disabled
         text colour, #a0a1a3 / #686a6c). Inherited where the rows give
         another: the list's border (`defaults.border`, #bcc0bf / #4d545b,
         radius 5, a shadow; §2.15: #c6c8c9 / #4c4e51, radius 4.5, no shadow)
@@ -1384,30 +1444,47 @@ model, the platform presets and the three connectors
         (§2.10: 0).
       - windows-11: `button.disabled_background`, `input.disabled_background`
         and `combo_box.disabled_background` `#f9f9f900` / `#33333300`
-        (`windows-11.toml:138`, `:177`, `:504`; `:702`, `:741`, `:1067`;
-        §2.3, §2.4, §2.24: `ControlFillColorDisabled`, #4DF9F9F9 /
+        (`windows-11.toml` `[light.button] disabled_background`,
+        `[light.input] disabled_background`,
+        `[light.combo_box] disabled_background`;
+        `[dark.button] disabled_background`,
+        `[dark.input] disabled_background`,
+        `[dark.combo_box] disabled_background`; §2.3, §2.4, §2.24: `ControlFillColorDisabled`, #4DF9F9F9 /
         #0BFFFFFF; `docs/todo.md`, *native-theme-gpui connector*, *Research*,
         "windows-11 light gives `button.disabled_background`"); dark
-        `input.hover_border_color` `#00000019` (`:733`; §2.4:
+        `input.hover_border_color` `#00000019`
+        (`[dark.input] hover_border_color`; §2.4:
         the rest gradient, `ControlStrokeColorDefault` #12FFFFFF above the
         bottom edge); `checkbox.hover_background` `#0000000a` / `#ffffff0f`
-        (`:208`, `:772`; §2.5: `ControlAltFillColorTertiary`, #0F000000 /
+        (`[light.checkbox] hover_background`, `[dark.checkbox] hover_background`;
+        §2.5: `ControlAltFillColorTertiary`, #0F000000 /
         #0BFFFFFF, the entry in *M6 close* below); `list.disabled_text_color`
-        (`:357`, `:921`; §2.15: the rest colour, the row faded to 0.3);
-        `segmented_control.hover_background` (`:525`, `:1088`; §2.25: no
+        (`[light.list] disabled_text_color`, `[dark.list] disabled_text_color`;
+        §2.15: the rest colour, the row faded to 0.3);
+        `segmented_control.hover_background`
+        (`[light.segmented_control] hover_background`,
+        `[dark.segmented_control] hover_background`; §2.25: no
         mapped control, `SelectorBar` stays transparent). Inherited where the
         rows give another: the toolbar's border (§2.13: none at rest), the
         list's (§2.15: none), the dark popover edge (`defaults.border.color`
         `#00000019`; §2.16: `SurfaceStrokeColorFlyout` #33000000), and the
         progress bar's and the sidebar's padding (§2.10: 0; §2.12: 3 across).
-      - material-3: `scrollbar.thumb_active_color` (`material-3.toml:230`,
-        `:735`; §2.8: M3 has no scrollbar); `list.disabled_text_color`
-        `#1d1b2061` / `#e6e0e961` (`:320`, `:825`; §2.15: on-surface at 0.3,
-        #1d1b204d / #e6e0e94d); `splitter.hover_color` `#6750a4` / `#d0bcff`
-        (`:380`, `:885`; §2.17: none in v0_192, the latest drag handle's state
-        layer); `expander.hover_background` and `expander.arrow_color`
-        (`:509-510`, `:1014-1015`; §2.27: no expander); the link's hover,
-        active and disabled text (`:443-445`, `:948-950`; §2.28: no link).
+      - material-3: `scrollbar.thumb_active_color`
+        (`material-3.toml` `[light.scrollbar] thumb_active_color`,
+        `[dark.scrollbar] thumb_active_color`; §2.8: M3 has no scrollbar);
+        `list.disabled_text_color` `#1d1b2061` / `#e6e0e961`
+        (`[light.list] disabled_text_color`, `[dark.list] disabled_text_color`;
+        §2.15: on-surface at 0.3, #1d1b204d / #e6e0e94d);
+        `splitter.hover_color` `#6750a4` / `#d0bcff`
+        (`[light.splitter] hover_color`, `[dark.splitter] hover_color`; §2.17:
+        none in v0_192, the latest drag handle's state layer);
+        `expander.hover_background` and `expander.arrow_color`
+        (`[light.expander] hover_background, arrow_color`,
+        `[dark.expander] hover_background, arrow_color`; §2.27: no expander);
+        the link's hover, active and disabled text
+        (`[light.link] hover_text_color, active_text_color, disabled_text_color`,
+        `[dark.link] hover_text_color, active_text_color, disabled_text_color`;
+        §2.28: no link).
         Inherited where the rows give another: the list's border
         (`defaults.border`, outline, radius 12; §2.15: none, 0) and the
         progress bar's and the sidebar's padding (§2.10: 0; §2.12: 12 across).
@@ -1440,16 +1517,18 @@ model, the platform presets and the three connectors
       padding is 0, and on macOS 26 the unchecked box is `#00000019` /
       `#ffffff19` with no outline (§2.5, §2.10).
       M8 T15 fix round 2 (2026-10-17): two more for T16. kde-breeze
-      `button.hover_background` `#93cee9` (`kde-breeze.toml:129`, `:591`;
+      `button.hover_background` `#93cee9` (`kde-breeze.toml`
+      `[light.button] hover_background`, `[dark.button] hover_background`;
       §2.3: no hover fill, ← `background_color`, #fcfcfc / #292c30, hover
       being the `Highlight` outline). adwaita `expander.border`
-      (`adwaita.toml:404`, `:789`, `corner_radius_px = 6.0`, GtkExpander's
+      (`adwaita.toml` `[light.expander.border] corner_radius_px`,
+      `[dark.expander.border] corner_radius_px`, `corner_radius_px = 6.0`, GtkExpander's
       title; §2.27, AdwExpanderRow in a boxed list: 12 at the list's outer
       corners and 0 elsewhere, a 1px `RGB(0 0 6 / 3%)` card outline the
       preset inherits instead, and the card's shadow).
       M8 T15 fix round 3 (2026-10-17): kde-breeze `toolbar.background_color`
-      is unstated (`[light.toolbar]` `kde-breeze.toml:325`, `[dark.toolbar]`
-      `:789`), so it inherits the window's #eff0f1 / #202326; §2.13 now
+      is unstated (`kde-breeze.toml` `[light.toolbar]`, `[dark.toolbar]`),
+      so it inherits the window's #eff0f1 / #202326; §2.13 now
       gives the Header set's #dee0e2 / #292c30, the tools area's fill where
       the scheme has Header colours and the decoration's border size is
       automatic, None or NoSides (breezestyle.cpp:1322, :1341-1347).
@@ -1541,7 +1620,9 @@ model, the platform presets and the three connectors
         model's one shadow colour serves both the popup and the window
         shadows; unchanged. Decide what the one field states, or split it.
       - `list.alternate_row_background` `#f9f9f9` / `#262626`
-        (`native-theme/src/presets/windows-11.toml:339`, `:899`): no WinUI 3
+        (`native-theme/src/presets/windows-11.toml`
+        `[light.list] alternate_row_background`,
+        `[dark.list] alternate_row_background`): no WinUI 3
         source (❓, facts :1411); the field stays, as its fallback is the
         wrong kind.
       - Under high contrast the reader writes `input.background_color` as
@@ -2210,7 +2291,8 @@ What is still open on the iced side:
       round 2).
       M8 T21 fix round 1 (2026-10-17): the button half is fixed: since
       dc1b81aa (M8 T16) kde-breeze's `button.hover_background` is the rest
-      fill, `#fcfcfc` / `#292c30` (`kde-breeze.toml:131`, `:669`), §2.3's "no
+      fill, `#fcfcfc` / `#292c30` (`kde-breeze.toml`
+      `[light.button] hover_background`, `[dark.button] hover_background`), §2.3's "no
       hover fill". `#93cee9` stays in `checkbox.hover_background`,
       `scrollbar.thumb_hover_color`, `slider.thumb_hover_color` and
       `combo_box.hover_background` in both modes and in light's
@@ -2299,10 +2381,15 @@ What is still open on the iced side:
       heading goes with it:
       `windows-11.toml` states the `disabled_background` of `button`, `input`,
       `checkbox` and `combo_box` as `#f9f9f900` in light and `#33333300` in
-      dark (light `:127`, `:154`, `:186`, `:454`; dark `:624`, `:651`, `:683`,
-      `:950`): alpha `00`, so a disabled control shows no fill at all. The
-      button's comment names the source, "Fluent ControlFillColorDisabled"
-      (`:126`, `:623`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
+      dark (`[light.button] disabled_background`,
+      `[light.input] disabled_background`,
+      `[light.checkbox] disabled_background`,
+      `[light.combo_box] disabled_background` and the same four in `[dark.button]`,
+      `[dark.input]`, `[dark.checkbox]` and `[dark.combo_box]`): alpha `00`, so
+      a disabled control shows no fill at all. The button's comment names the
+      source, "Fluent ControlFillColorDisabled" (above
+      `[light.button] disabled_background`, `[dark.button] disabled_background`),
+      and WinUI 3 defines that brush as `#4DF9F9F9` in the
       `Light` dictionary and `#0BFFFFFF` in `Default`, the dark one — ARGB,
       so about 30 % and 4 % opaque, and white rather than `#333333` in dark
       ([Common_themeresources_any.xaml:223](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L223),
@@ -3229,7 +3316,9 @@ the gap — closing it is a change, and each wants its own decision.
       is done (v0.5.9). WinUI measures its combobox's right padding, 0, to
       a separate 38px arrow column (platform-facts §2.24), a structure the
       model has no field for, so windows-11 states WinUI's right padding, 0
-      (`native-theme/src/presets/windows-11.toml:506`, `:1065`), and no field
+      (`native-theme/src/presets/windows-11.toml`
+      `[light.combo_box.border] padding_right_px`,
+      `[dark.combo_box.border] padding_right_px`), and no field
       carries the column. An arrow-column field (or a
       right padding that includes it) would let a connector with such a
       column draw it.
@@ -3455,7 +3544,7 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 - [ ] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:157`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
 
 ### GNOME reader: title and heading sizes ignore the user's font
-- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; light `:92-104`, dark `:466-478`) and for `dialog.title_font` (15pt; `:326-329`, `:704-707`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
+- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; `[light.text_scale]`, `[dark.text_scale]`) and for `dialog.title_font` (15pt; `[light.dialog.title_font] size_pt`, `[dark.dialog.title_font] size_pt`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
 
 ### iced showcase: Widget Info claims a substituted family
 - [ ] [v0.7.0] For M9b: the iced and gpui showcases name a family the system lacks by its stated name alone while it is drawn in the platform's substitute. iced: since 2fcc26fb the family the showcase asks for (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:12466-12477`) is `system_font_family`'s, which is the platform's substitute where the system lacks the stated family; `family_label` (`:12376-12386`) returns the stated name alone wherever the drawn family is the one asked for, so `font_row_drawn` says "button.font, family, size and weight" for windows-11's "Segoe UI" drawn in fontconfig's match (Adwaita Sans on one Linux system); before 2fcc26fb the same row said "Segoe UI (not found; drawn in generic sans-serif: …)". gpui: the inspector's Theme tab (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:215-229`) shows the stated `font.family` under `font_family` and notes "drawn as" only for macOS's `.SystemUIFont`, while `Theme::font_family` holds `font_family`'s substitute (`connectors/native-theme-gpui/src/lib.rs:311`, `:747-750`), and its `mono_font_family` row has no note at all. Widget Info and the inspector must name the drawn family in both, e.g. "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans)". egui names it, in another place: its Theme panel's Notes section lists the atlas's `Note::FontFamilyUnavailable { family, substitute }` (`connectors/native-theme-egui/examples/showcase-egui/info.rs:1114-1121`), while its Fonts section just below (`:1129-1135`) prints the stated `font_family` and `mono_font_family` with no note; M9b makes the two sections agree.
@@ -3475,7 +3564,8 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ### Presets: material-3's platform-facts citations have drifted
 - [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1280` (`font.weight`) where the row is `:1282`, and the list's `header_font` cites `:1425-1426` (the selection rows) where the rows are `:1427-1428`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
       M8 T16 (2026-10-17): material-3's four §2.20 layout values
-      (`material-3.toml:1022-1026`: 6, 6, 10, 18) have no source: the
+      (`material-3.toml` `[layout] widget_gap_px, container_margin_px, window_margin_px, section_gap_px`:
+      6, 6, 10, 18) have no source: the
       Material cells are "(none)" (`docs/platform-facts.md` §2.20), and the
       preset-validator check found none. They join the four `layout.*` rows
       of *Follow-up plan: the other sizing fields a platform leaves
@@ -3614,7 +3704,7 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 - [ ] [upstream] iced 0.14 draws text with cosmic-text 0.15, which matches a face only at the weight fontdb filed it at (`font/fallback/mod.rs:279-287`, `:299-303`, `:446-456`), and fontdb 0.23 files a variable font at its OS/2 weight alone (`lib.rs:1034-1037`, `:1161`). The iced showcase therefore files an extra face at each weight a variable face's `wght` axis covers (`register_weight` in `connectors/native-theme-iced/examples/showcase-iced.rs`), and the iced connector's README and *Font Configuration* docs teach consumers the same. cosmic-text 0.19 matches a variable face at any weight its axis covers itself (`variable_weight_match`, `font/system.rs:38-44`, used at `font/fallback/mod.rs:285`, `:301`). When iced moves to cosmic-text 0.19 or later, remove `register_weight` and the recipe, and check whether the nearest-face fallback in `drawable_font` is still needed for families with no face at a weight.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
-- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font]` `:79` and `[dark.defaults.font]` `:544`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
+- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font] family` and `[dark.defaults.font] family`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
@@ -3656,7 +3746,7 @@ M8 T21 fix round 1 (2026-10-17): its M7, M8 and M9a items are closed, in
 [`archive/todo_closed.md`](archive/todo_closed.md) under *Closed items from M6 close
 (2026-10-16): items carried to M7, M8, M9a and the presets*; the three `[1.0]` preset
 items below stay.
-- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+- [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, `kde-breeze.toml` `[light.segmented_control] hover_background`, `[dark.segmented_control] hover_background`). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
       M8 T21 fix round 1 (2026-10-17): its
       `segmented_control.hover_background` and `expander.arrow_color` are also
       items of *Presets: values the M8 T15 platform-facts rows disagree with*
@@ -3666,7 +3756,8 @@ items below stay.
       `card.background_color` inherits `defaults.surface_color`
       (`docs/inheritance-rules.toml:274`), which windows-11 states as
       `CardBackgroundFillColorDefault`, #ffffffb3 / #ffffff0d
-      (`windows-11.toml:27-28`, `:609-610`), so the card is filled in the
+      (`windows-11.toml` `[light.defaults] surface_color`,
+      `[dark.defaults] surface_color`), so the card is filled in the
       platform's colour; what is left is stating it on the card itself.
 - [ ] [1.0] Presets (windows-11): the checkbox's hover fill cites no source of its own. Laid over the window, it lands within one 8-bit level of WinUI's `ControlAltFillColorTertiary` (M6 T9's note), but whether the preset means a layer or a replacement is open preset-data work.
 

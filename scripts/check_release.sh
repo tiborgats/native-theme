@@ -798,16 +798,19 @@ run_check "showcase parity: comparator self-test" \
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: data documents
 #
-# The three checks of the data documents, under the Python floor above
-# (check_wrong_safety_nets.py imports `tomllib`), each with its self-test:
+# The four checks of the data documents, under the Python floor above
+# (check_wrong_safety_nets.py and check_todo_citations.py import `tomllib`),
+# each with its self-test:
 # scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
 # field with no docs/platform-facts.md row; scripts/check_wrong_safety_nets.py
 # on a `# see wrong_safety_nets` mark in docs/inheritance-rules.toml without
 # its [wrong_safety_nets] entry, an entry its [uniform] rule does not mark, or
 # an entry no rule inherits; scripts/check_section_refs.py on a § reference in
 # the registry, the inheritance rules, docs/showcase-elements.toml or
-# docs/new-os-version-guide.md that names no platform-facts section. CI runs
-# the same six.
+# docs/new-os-version-guide.md that names no platform-facts section;
+# scripts/check_todo_citations.py on a preset key path in docs/todo.md that
+# names no key of its preset, or a preset line citation no commit dates. CI
+# runs the same eight.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Data documents"
 run_check "data documents: every registry field has a platform-facts row" \
@@ -822,6 +825,10 @@ run_check "data documents: § references name platform-facts sections" \
     python3 scripts/check_section_refs.py
 run_check "data documents: § references self-test" \
     python3 scripts/check_section_refs.py --self-test
+run_check "data documents: docs/todo.md cites preset values by key path" \
+    python3 scripts/check_todo_citations.py
+run_check "data documents: todo citations self-test" \
+    python3 scripts/check_todo_citations.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs

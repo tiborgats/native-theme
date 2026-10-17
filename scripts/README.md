@@ -613,6 +613,28 @@ python3 scripts/check_section_refs.py
 python3 scripts/check_section_refs.py --self-test
 ```
 
+## check_todo_citations.py
+
+Checks the preset citations in `docs/todo.md`, which cites a preset value by
+its TOML key path (`adwaita.toml` `[light.button] active_background`): each
+backticked `[light…]`, `[dark…]` or `[layout…]` path, with its keys, must
+name a table and keys of the presets the entry names before it, at the tree
+it runs on; a preset line citation (`adwaita.toml:122`) is a finding unless
+its line dates it to a commit (`at <sha>`), since a line number moves with
+every edit above it. The script's docstring states the whole rule. Prints
+one line per finding (file:line, citation, what is wrong) and exits 0 when
+there is none, 1 when there are some, 2 on an input it cannot read.
+`--self-test` runs the rule on a synthetic document and presets.
+`check_release.sh` (both modes) and `ci.yml`'s parity job run it and its
+self-test.
+
+Requires Python 3.11+ (for `tomllib`).
+
+```sh
+python3 scripts/check_todo_citations.py
+python3 scripts/check_todo_citations.py --self-test
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
