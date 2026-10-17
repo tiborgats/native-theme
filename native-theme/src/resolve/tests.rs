@@ -1317,10 +1317,9 @@ fn validate_missing_2_fields_returns_all_paths() {
     v.defaults.link_color = None;
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        // validate() always returns ResolutionIncomplete for missing fields
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert_eq!(
         missing.len(),
@@ -1339,9 +1338,9 @@ fn validate_error_message_includes_count_and_paths() {
     v.button.min_height = None;
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // ResolutionIncomplete Display includes count and paths
     let err = crate::Error::ResolutionIncomplete {
@@ -1358,9 +1357,9 @@ fn validate_checks_all_defaults_fields() {
     // Default variant has ALL fields None, so validate should report many missing
     let v = ThemeMode::default();
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // Should include defaults fields
     assert!(
@@ -1380,8 +1379,9 @@ fn validate_checks_all_defaults_fields() {
 fn validate_checks_all_widget_structs() {
     let v = ThemeMode::default();
     let result = v.validate();
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // Every widget should have at least one field reported
     for prefix in [
@@ -1427,8 +1427,9 @@ fn validate_checks_all_widget_structs() {
 fn validate_checks_text_scale_entries() {
     let v = ThemeMode::default();
     let result = v.validate();
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert!(missing.contains(&"text_scale.caption".to_string()));
     assert!(missing.contains(&"text_scale.section_heading".to_string()));
@@ -1657,9 +1658,9 @@ fn validate_catches_negative_radius() {
     v.defaults.border.corner_radius = Some(-5.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1676,9 +1677,9 @@ fn validate_catches_zero_font_size() {
     v.defaults.font.size = Some(FontSize::Px(0.0));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
@@ -1695,9 +1696,9 @@ fn validate_catches_opacity_out_of_range() {
     v.button.disabled_opacity = Some(3.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1729,9 +1730,9 @@ fn validate_catches_invalid_font_weight() {
     v.defaults.mono_font.weight = Some(1000); // above 900
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1760,9 +1761,9 @@ fn validate_reports_multiple_range_errors_together() {
     v.defaults.font.weight = Some(50);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     // All 4 range errors should be reported in one batch
     assert!(
@@ -1800,9 +1801,9 @@ fn validate_catches_negative_font_size() {
     v.defaults.font.size = Some(FontSize::Px(-1.0));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
@@ -1817,9 +1818,9 @@ fn validate_catches_disabled_opacity_above_one() {
     v.defaults.disabled_opacity = Some(2.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1836,9 +1837,9 @@ fn validate_catches_font_weight_zero() {
     v.defaults.font.weight = Some(0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1855,9 +1856,9 @@ fn validate_catches_nan_values() {
     v.defaults.border.corner_radius = Some(f32::NAN);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1874,9 +1875,9 @@ fn validate_catches_infinity() {
     v.defaults.font.size = Some(FontSize::Px(f32::INFINITY));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
@@ -1892,9 +1893,9 @@ fn validate_catches_negative_infinity() {
     v.defaults.border.line_width = Some(f32::NEG_INFINITY);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1917,9 +1918,9 @@ fn validate_missing_field_short_circuits_before_range_checks() {
     v.defaults.font.weight = Some(0); // out of range (100..=900)
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert!(
         missing.contains(&"defaults.accent_color".to_string()),
@@ -1935,9 +1936,9 @@ fn validate_range_only_errors_produce_resolution_invalid() {
     v.defaults.font.weight = Some(0); // out of range (100..=900)
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors

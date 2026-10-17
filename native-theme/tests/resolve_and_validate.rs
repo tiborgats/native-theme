@@ -76,9 +76,9 @@ accent_color = "#ff0000"
 #[test]
 fn preset_unknown_preset_returns_err() {
     let result = Theme::preset("no-such-preset");
-    assert!(result.is_err(), "unknown preset name should return Err");
-    let Error::UnknownPreset { name, .. } = result.unwrap_err() else {
-        return;
+    let name = match result {
+        Err(Error::UnknownPreset { name, .. }) => name,
+        other => panic!("expected UnknownPreset, got {other:?}"),
     };
     assert!(name.contains("no-such-preset"));
 }
