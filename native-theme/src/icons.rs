@@ -1632,17 +1632,43 @@ mod load_icon_tests {
         }
     }
 
+    /// A freedesktop icon the system's theme lacks, or asked of a theme that
+    /// is not installed, is `None`: Material's icon does not stand in. The
+    /// system's theme `lacking` is a fixture in a child process
+    /// ([`native_theme_test_fixtures`]) without `edit-copy`.
     #[test]
-    #[cfg(feature = "material-icons")]
-    fn load_icon_unknown_theme_no_cross_set_fallback() {
-        // On Linux (test platform), unknown theme resolves to system_icon_set() = Freedesktop.
-        // Without system-icons feature, Freedesktop falls through to wildcard -> None.
-        // No cross-set Material fallback.
-        let result = FreedesktopLoader::new(IconRole::ActionCopy).load();
-        // Without system-icons, this falls to wildcard which returns None
-        // With system-icons, this dispatches to load_freedesktop_icon which may return Some
-        // Either way, no panic
-        let _ = result;
+    #[cfg(all(
+        target_os = "linux",
+        feature = "system-icons",
+        feature = "material-icons"
+    ))]
+    fn load_icon_unknown_theme_no_cross_set_fallback() -> std::io::Result<()> {
+        const NAME: &str = "icons::load_icon_tests::load_icon_unknown_theme_no_cross_set_fallback";
+        const DIALOG_ERROR: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle fill="#da4453" cx="8" cy="8" r="7"/></svg>"##;
+        if native_theme_test_fixtures::in_child() {
+            assert!(MaterialLoader::new(IconRole::ActionCopy).load().is_some());
+            assert_eq!(
+                FreedesktopLoader::new(IconRole::ActionCopy).load(),
+                None,
+                "the system's theme lacks edit-copy"
+            );
+            assert_eq!(
+                FreedesktopLoader::new(IconRole::ActionCopy)
+                    .theme("native-theme-no-such-theme")
+                    .load(),
+                None,
+                "the theme given is not installed"
+            );
+            return Ok(());
+        }
+        let child = native_theme_test_fixtures::Child::kde("lacking");
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "lacking",
+                &[("dialog-error", DIALOG_ERROR)],
+            )
+        })
     }
 
     #[test]
@@ -1779,11 +1805,15 @@ mod load_icon_tests {
         );
     }
 
+    /// An SF Symbol loads only on macOS with `system-icons`; elsewhere it is
+    /// `None`, and no other set's icon stands in.
     #[test]
     fn load_icon_unrecognized_set_no_features() {
-        // SfSymbols on Linux without system-icons: falls through to wildcard -> None
-        let _result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
-        // Just verifying it doesn't panic
+        let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
+        assert_eq!(
+            result.is_some(),
+            cfg!(all(target_os = "macos", feature = "system-icons"))
+        );
     }
 
     #[test]
@@ -1903,9 +1933,12 @@ mod load_custom_icon_tests {
             }
         }
 
-        // Just verify it doesn't panic -- the actual set chosen depends on platform
         let provider: &dyn IconProvider = &NullProvider;
-        let _result = FreedesktopLoader::new(provider).load();
+        let result = FreedesktopLoader::new(provider).load();
+        assert!(
+            result.is_none(),
+            "NullProvider should return None (no cross-set fallback)"
+        );
     }
 
     #[test]
@@ -2371,9 +2404,21 @@ mod icon_loader_tests {
 
     #[test]
     fn load_icon_free_fn_dispatches() {
-        // load_icon() free function routes to the right per-set loader.
-        // SfSymbols on Linux is cfg-gated to macOS => None, no panic.
-        let _ = load_icon(IconRole::ActionCopy, IconSet::SfSymbols);
+        let role = IconRole::ActionCopy;
+        for (set, loaded) in [
+            (IconSet::Freedesktop, FreedesktopLoader::new(role).load()),
+            (IconSet::SfSymbols, SfSymbolsLoader::new(role).load()),
+            (IconSet::SegoeFluent, SegoeFluentLoader::new(role).load()),
+            (IconSet::Material, MaterialLoader::new(role).load()),
+            (IconSet::Lucide, LucideLoader::new(role).load()),
+        ] {
+            assert_eq!(load_icon(role, set), loaded, "{set}");
+        }
+        #[cfg(all(feature = "material-icons", feature = "lucide-icons"))]
+        assert_ne!(
+            load_icon(role, IconSet::Material),
+            load_icon(role, IconSet::Lucide)
+        );
     }
 
     #[test]

@@ -813,17 +813,44 @@ mod tests {
         Ok(())
     }
 
+    /// Notification is looked up as `notification-active` (KDE's name): a
+    /// theme holding it gives its SVG, and `fixture`, which lacks it, gives
+    /// `None`, not Material's icon. Both themes are fixtures in a child
+    /// process ([`native_theme_test_fixtures`]).
     #[test]
-    fn load_icon_notification_attempts_native_lookup() {
-        // Notification is mapped to "notification-active" (KDE convention).
-        // Result depends on whether the active theme ships this icon.
-        // This test verifies the loader does not panic and does not fall back to Material.
-        if let Ok(theme) = crate::system_icon_theme()
-            && let Some(name) = icon_name(IconRole::Notification, IconSet::Freedesktop)
-        {
-            let _result = load_freedesktop_icon_by_name(name, &theme, 24, None);
+    fn load_icon_notification_attempts_native_lookup() -> std::io::Result<()> {
+        const NAME: &str = "freedesktop::tests::load_icon_notification_attempts_native_lookup";
+        const NOTIFICATION: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#232629" d="M3 3h10v10H3z"/></svg>"##;
+        if native_theme_test_fixtures::in_child() {
+            let name = icon_name(IconRole::Notification, IconSet::Freedesktop).unwrap();
+            assert_eq!(name, "notification-active");
+            assert_eq!(
+                load_freedesktop_icon_by_name(name, "notifying", 24, None),
+                Some(IconData::Svg(Cow::Borrowed(NOTIFICATION.as_bytes())))
+            );
+            assert_eq!(
+                load_freedesktop_icon_by_name(name, "fixture", 24, None),
+                None,
+                "a theme without notification-active"
+            );
+            return Ok(());
         }
-        // No assertion on Some/None -- theme-dependent
+        let child = native_theme_test_fixtures::Child::kde("fixture");
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "fixture",
+                &[
+                    ("dialog-error", FIXTURE_DIALOG_ERROR),
+                    ("edit-copy", FIXTURE_EDIT_COPY),
+                ],
+            )?;
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "notifying",
+                &[("notification-active", NOTIFICATION)],
+            )
+        })
     }
 
     #[test]
