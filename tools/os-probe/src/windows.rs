@@ -260,7 +260,7 @@ fn sys_color_names() -> [(&'static str, SYS_COLOR_INDEX); 36] {
     ]
 }
 
-/// The constants docs/platform-facts.md:359-361 says Microsoft supports on
+/// The constants docs/platform-facts.md:358-360 says Microsoft supports on
 /// Windows 10 and later.
 const WIN10_SUPPORTED: [&str; 8] = [
     "COLOR_WINDOW",
@@ -273,7 +273,7 @@ const WIN10_SUPPORTED: [&str; 8] = [
     "COLOR_HOTLIGHT",
 ];
 
-/// The constants docs/platform-facts.md:364-369 says Microsoft annotates
+/// The constants docs/platform-facts.md:363-368 says Microsoft annotates
 /// "not supported" on Windows 10 and later.
 const WIN10_NOT_SUPPORTED: [&str; 11] = [
     "COLOR_MENU",
@@ -296,7 +296,7 @@ fn sys_colors_table() -> Table {
         &mut t,
         "format",
         out::text(
-            "#rrggbb from the COLORREF; windows10 marks follow docs/platform-facts.md:359-369",
+            "#rrggbb from the COLORREF; windows10 marks follow docs/platform-facts.md:358-368",
         ),
     );
     for index in 0..=30_i32 {
@@ -323,11 +323,11 @@ fn sys_colors_table() -> Table {
             },
         );
         let windows10 = if these.iter().any(|n| WIN10_SUPPORTED.contains(n)) {
-            "supported (docs/platform-facts.md:359-361)"
+            "supported (docs/platform-facts.md:358-360)"
         } else if these.iter().any(|n| WIN10_NOT_SUPPORTED.contains(n)) {
-            "not supported (docs/platform-facts.md:364-369)"
+            "not supported (docs/platform-facts.md:363-368)"
         } else {
-            "not listed in docs/platform-facts.md:359-369"
+            "not listed in docs/platform-facts.md:358-368"
         };
         out::put(&mut c, "windows10", out::text(windows10));
         out::put_table(&mut t, &format!("index_{index:02}"), c);
