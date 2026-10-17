@@ -1,14 +1,17 @@
 # Property Registry — machine-readable source of truth for widget fields.
 #
-# Derived from docs/platform-facts.md Chapter 2 (§2.1–§2.28).
-# Property names match the platform-facts.md table first-column entries exactly.
+# Derived from docs/platform-facts.md Chapter 2 (§2.1–§2.29).
+# Keys are the serialized TOML keys; without their unit suffix (`_px`, `_ms`,
+# `_pt`) they match the platform-facts.md table first-column entries
+# (scripts/check_platform_facts_rows.py states the matching rule).
 #
 # Each widget lists ALL fields from its platform-facts table. The test
 # `property_registry_keys_match_derive_inventory` (native-theme/src/model/mod.rs)
 # verifies every key in this file exists in the corresponding struct, and
-# every serialized field of the struct exists in this file.
+# every serialized field of the struct exists in this file, except
+# [theme_variant], whose `Theme` fields the inventory does not record.
 #
-# Source: docs/platform-facts.md  (2026-04-06 snapshot)
+# Source: docs/platform-facts.md
 # Struct: native-theme/src/model/
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -35,7 +38,9 @@
 # Widgets reference this as `font = "font"` or with a named prefix like
 # `title_bar_font = "font"`, `body_font = "font"`, `item_font = "font"`, etc.
 family                       = "string"
-# Exactly one of size_pt or size_px must be set.
+# At most one of size_pt or size_px: both is a parse error ("set `size_pt` or
+# `size_px`, not both", model/font.rs:214); a widget font with neither inherits
+# its size ([font_inheritance] in docs/inheritance-rules.toml).
 #   size_pt -- typographic points (1/72 inch), used by platform presets
 #   size_px -- logical pixels, used by community presets
 size_pt                      = "f32"
@@ -73,8 +78,11 @@ panel_px                     = "f32"
 
 [_structures.TextScaleEntry]
 # One entry in the text scale ramp (§2.19).
-# Exactly one of size_pt or size_px must be set (same as Font.size_*).
-# Exactly one of line_height_pt or line_height_px must be set; its unit need not match size's.
+# At most one of size_pt or size_px, and at most one of line_height_pt or
+# line_height_px: both is a parse error (model/font.rs:332, :337). An entry
+# with neither inherits its size, and its line height is computed
+# ([text_scale_inheritance] in docs/inheritance-rules.toml). The line height's
+# unit need not match the size's.
 size_pt                      = "f32"
 size_px                      = "f32"
 weight                       = "u16"
@@ -143,12 +151,15 @@ dialog_title                 = "text_scale_entry"
 display                      = "text_scale_entry"
 
 # ─── Top-level Theme fields (structural, not from §2.x tables) ──────────
-# icon_set is a field of `Theme`, not of `ThemeMode`: one icon set for both
-# variants. The table keeps its `theme_variant` name, which
-# docs/showcase-elements.toml cites (`theme_variant.icon_set`).
+# icon_set and icon_theme are fields of `Theme`, not of `ThemeMode`: one icon
+# set for both variants, and an icon theme both share unless a variant's
+# defaults.icon_theme overrides it (§2.1.9; model/mod.rs, `Theme::icon_theme`).
+# The table keeps its `theme_variant` name, which docs/showcase-elements.toml
+# cites (`theme_variant.icon_set`).
 
 [theme_variant]
 icon_set                     = "enum"
+icon_theme                   = "string"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.2 Window / Application Chrome
@@ -414,9 +425,13 @@ line_width_px                = "f32"
 #
 # Implemented as `Theme.layout` (`LayoutTheme`, model/widgets/mod.rs): a
 # top-level [layout] table shared by both variants, not a per-variant
-# widget. Every bundled preset states it; `SystemTheme.layout` carries the
-# reader's values merged over the preset's, unresolved (a field neither
-# states stays `None`). Values: platform-facts.md §2.20.
+# widget. Every bundled preset has the table; `SystemTheme.layout` carries
+# the reader's values merged over the preset's, unresolved (a field neither
+# states stays `None`). The platform presets' values follow platform-facts.md
+# §2.20 except the `[1.0]` rows (docs/todo.md, *Follow-up plan: the other
+# sizing fields a platform leaves unstated*); ios-13 (no platform-facts
+# column) and the community presets state their own; macos-tahoe states two
+# of the four on purpose.
 # No platform exposes these as user-configurable settings; all values
 # are compile-time constants or design guidelines.
 
