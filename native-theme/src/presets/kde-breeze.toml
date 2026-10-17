@@ -229,6 +229,9 @@ thumb_active_color = "#3daee9"
 track_height_px = 6.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
+# platform-facts.md:1306 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #fcfcfc
+# (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeLight.colors:31, breeze v6.7.5)
+thumb_color = "#fcfcfc"
 thumb_hover_color = "#93cee9"
 disabled_fill_color = "#bcc0bf"
 disabled_track_color = "#dee0e2"
@@ -711,6 +714,9 @@ thumb_active_color = "#3daee9"
 track_height_px = 6.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
+# platform-facts.md:1306 (§2.9): Breeze fills the handle with QPalette::Button, [Colors:Button] BackgroundNormal #292c30
+# (breezestyle.cpp:8122, breezehelper.cpp:1191-1195; BreezeDark.colors:32, breeze v6.7.5)
+thumb_color = "#292c30"
 thumb_hover_color = "#93cee9"
 disabled_fill_color = "#4d545b"
 disabled_track_color = "#2d3035"
