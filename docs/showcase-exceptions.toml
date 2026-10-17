@@ -400,6 +400,8 @@ keys = [
     "catppuccin-mocha:basic.separator.line.y",
     "kde-breeze:basic.list.heading.h",
     "kde-breeze:basic.list.frame.y",
+    "adwaita:basic.list.heading.h",
+    "adwaita:basic.list.frame.y",
     "kde-breeze:basic.list.row_2.h",
     "kde-breeze:basic.list.row_3.y",
     "kde-breeze:basic.expander.heading.h",
@@ -864,6 +866,12 @@ keys = [
 reason = "gpui-base halves a disabled Input's text colour whatever it is given (gpui-base src/input/base/element.rs:2541-2542, `dim`: color.opacity(0.5)), so input.disabled_text_color is drawn at half its alpha"
 keys = [
     "basic.text_inputs.disabled.text.text",
+]
+
+[[parity.group]]
+reason = "toolkit limit: adwaita's focus ring is translucent ($focus_border_color, the standalone accent at 50 %, docs/platform-facts.md section 2.1.5) and each toolkit lays it over something else, so the focused field's edge samples apart: iced draws it as the field's border, which replaces the fill in the border band (iced_wgpu 0.14.0 src/shader/quad/solid.wgsl:78-83, mix of color and border_color), so the ring lies over the window behind the field; egui strokes it after the field, over the field's fill (connectors/native-theme-egui/src/plugin.rs:663, rect_stroke on the widget's layer); gpui-component draws a focused Input's border_1 in the ring colour (gpui-component 0.7.3 src/input/input.rs:758-762) and its own focus band outside it (src/styled.rs:301-326, called at src/input/input.rs:806), two translucent layers at the sampled edge"
+keys = [
+    "rest@adwaita:basic.text_inputs.focused.border",
 ]
 
 [[parity.group]]
