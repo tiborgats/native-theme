@@ -115,7 +115,7 @@ WinUI3 Fluent Design specifications
 5. Test on the target Windows version: `cargo test -p native-theme --features windows`.
 
 **Note:** The Windows reader reads its system metrics (scrollbar width and thumb
-length, focus border, border width, icon sizes) through `GetSystemMetricsForDpi`
+length, border width, icon sizes) through `GetSystemMetricsForDpi`
 at 96 DPI (`USER_DEFAULT_SCREEN_DPI`), which gives the unscaled value in logical
 pixels, the model's unit; at the system DPI it would be device pixels. Verify
 these still return correct values on the new Windows version. The fonts
@@ -229,12 +229,16 @@ Steps:
    if widget sizing changed. State a new or changed size only from a source in
    `docs/platform-facts.md`. Where the platform documents none, leave it
    unstated only if it is a gated size (a padding side, a menu or list
-   `row_height`, the toolbar `bar_height` and `item_gap`, the tab `item_gap`
-   and `active_indicator_width`, the combobox `arrow_area_width`, the expander
-   `arrow_gap` and `content_indent`, the checkbox `radio_indicator_width`,
-   `radio_dot_diameter` and `check_mark_stroke_width`, the switch
-   `unchecked_thumb_diameter`); every other size is required, and those the presets
-   state today without a source are listed in `docs/todo.md`, Table B.
+   `row_height`, the list `header_height`, the toolbar `bar_height` and
+   `item_gap`, the tab `item_gap` and `active_indicator_width`, the combobox
+   `arrow_area_width`, the expander `arrow_gap` and `content_indent`, the
+   checkbox `radio_indicator_width`, `radio_dot_diameter` and
+   `check_mark_stroke_width`, the switch `unchecked_thumb_diameter`;
+   `native-theme/src/presets/documented_sizes.rs` checks them). The switch's
+   `track_border_line_width` and `thumb_border_line_width` are stated
+   only where the platform draws that outline (`docs/platform-facts.md`
+   §2.21), and unset draw none. Every other size is required, and those the
+   presets state today without a source are listed in `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).
 
@@ -248,8 +252,10 @@ own, taken from no platform, and are not affected by platform-specific changes.
 To add support for a new platform (e.g., a new Linux desktop environment):
 
 COSMIC is used as the running example below because it is the closest real case:
-`LinuxDesktop::CosmicDe` is already detected, but `select_reader()` returns
-`None` for it, so COSMIC currently falls through to the default preset.
+`LinuxDesktop::CosmicDe` is already detected, but `linux_reader_kind()` in
+`native-theme/src/pipeline.rs` returns `None` for it, so COSMIC gets no reader:
+`from_system()` gives the `adwaita` preset, which `linux_preset_for_de()` maps
+every desktop but KDE to, in the OS's light or dark mode.
 
 1. **Feature flag:** Add a new feature in `native-theme/Cargo.toml` with any
    required dependencies.
@@ -286,10 +292,22 @@ COSMIC is used as the running example below because it is the closest real case:
    in `native-theme/src/model/mod.rs` read from that table — neither needs
    editing.
 6. **Update dispatch:** Add a variant to `LinuxDesktop` in
-   `native-theme/src/detect.rs` if the desktop is not recognized yet, then give
-   it an arm in `select_reader()` in `native-theme/src/pipeline.rs` returning
-   your reader and its preset name. Gate the arm on your feature flag, and
-   keep a `#[cfg(not(feature = "..."))]` arm returning `None`.
+   `native-theme/src/detect.rs` if the desktop is not recognised yet;
+   `linux_reader_kind()` and the icon-theme detection's `icon_theme_source()`
+   name every variant, so the compiler asks for their arms. Then, in
+   `native-theme/src/pipeline.rs`:
+   - add a variant for your reader to the `LinuxReader` enum, gated on your
+     feature flag;
+   - give the desktop an arm in `linux_reader_kind()` returning that variant,
+     gated on your feature flag, and a `#[cfg(not(feature = "..."))]` arm
+     returning `None`;
+   - box your reader in `linux_reader()`'s match on the variant;
+   - map the desktop to your preset in `linux_preset_for_de()`.
+
+   `select_reader()` needs no change: on Linux it returns `linux_reader()`'s
+   reader and preset. The theme watcher picks its backend by desktop too, in
+   `linux_backend()` in `native-theme/src/watch/mod.rs`, whose wildcard arm
+   leaves a desktop it does not name unwatched.
    `SystemTheme::from_system()` and `from_system_async()` in
    `native-theme/src/lib.rs` both route through `pipeline::from_system_inner()`,
    so neither needs a per-platform change.
