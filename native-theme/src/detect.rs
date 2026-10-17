@@ -1920,7 +1920,9 @@ mod detection_context_tests {
     /// A font DPI, icon theme, dark mode or reduced motion read before the
     /// first system read came from the desktop refined without the portal; a
     /// portal answer that names another desktop clears them, so they are read
-    /// again from the reader's desktop (docs/todo.md:2628, M4-49).
+    /// again from the reader's desktop (docs/archive/todo_closed.md, *Closed
+    /// items from Font DPI*, 'For M4: an unrecognised `XDG_CURRENT_DESKTOP`
+    /// with a GNOME portal backend', M4-49).
     #[cfg(target_os = "linux")]
     #[test]
     fn a_portal_answer_that_changes_the_desktop_clears_what_was_read_from_it() {
