@@ -452,10 +452,14 @@ accent_color = "#00ff00"
                     "preset '{name}' {label}.progress_bar.fill_color: stated only where \
                      platform-facts does not derive it from the accent"
                 );
-                // switch.checked_background is derived from accent
-                assert!(
-                    variant.switch.checked_background.is_none(),
-                    "preset '{name}' {label}.switch.checked_background should be None (derived)"
+                // switch.checked_background is derived from accent, except on
+                // KDE, where qqc2-desktop-style lays the highlight at 0.5 over
+                // the off track (docs/platform-facts.md §2.21 checked_background)
+                assert_eq!(
+                    variant.switch.checked_background.is_some(),
+                    *name == "kde-breeze",
+                    "preset '{name}' {label}.switch.checked_background: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
             }
         }

@@ -386,7 +386,12 @@ divider_width_px = 1.0
 hover_color = "#bcc0bf"
 
 [light.switch]
-unchecked_background = "#bcc0bf"
+# platform-facts.md:1509 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
+# Qt.alpha(backgroundColor, 0.9)) of the Button set (SwitchIndicator.qml:21, :32-35, :49), #e6e7e7
+unchecked_background = "#e6e7e7"
+# platform-facts.md:1508 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
+# (SwitchIndicator.qml:53-63), #92cae8: an accent-derived blend, not the accent
+checked_background = "#92cae8"
 # platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 252,252,252 (BreezeLight.colors:31, breeze v6.7.5)
 thumb_background = "#fcfcfc"
 track_width_px = 36.0
@@ -872,7 +877,12 @@ divider_width_px = 1.0
 hover_color = "#4d545b"
 
 [dark.switch]
-unchecked_background = "#4d545b"
+# platform-facts.md:1509 (§2.21): qqc2-desktop-style's SwitchIndicator, the off track Qt.tint(textColor,
+# Qt.alpha(backgroundColor, 0.9)) of the Button set (SwitchIndicator.qml:21, :32-35, :49), #3e4144
+unchecked_background = "#3e4144"
+# platform-facts.md:1508 (§2.21): the off track with Qt.alpha(highlightColor, 0.5) laid over it up to the handle
+# (SwitchIndicator.qml:53-63), #3e7797: an accent-derived blend, not the accent
+checked_background = "#3e7797"
 # platform-facts.md:1510 (§2.21): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32, breeze v6.7.5)
 thumb_background = "#292c30"
 track_width_px = 36.0
