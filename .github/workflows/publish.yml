@@ -16,6 +16,13 @@ defaults:
   run:
     shell: bash
 
+# Every job, and every job of the called ci.yml (a called workflow's token can
+# only be downgraded), reads the repository and nothing more: no job pushes,
+# comments or deploys, and the upload authenticates with the
+# CARGO_REGISTRY_TOKEN secret, not with the GitHub token.
+permissions:
+  contents: read
+
 jobs:
   # Refuses a ref that is not a tag naming the workspace version, visual
   # assets captured from other sources, and a connector changed since it was
@@ -72,7 +79,10 @@ jobs:
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      # No rust-cache: cargo reuses a registry-sourced build of the same name
+      # and version without looking at its source (72ce91e7), so a cached
+      # target/ could verify a tarball against an earlier build of this
+      # version's native-theme. The seven crates are built from clean.
       - run: cargo package -p native-theme-derive -p native-theme -p native-theme-build -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets
 
   # docs.rs documents a crate only after it is published, so its build is
