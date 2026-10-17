@@ -1231,6 +1231,304 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
+    /// A colour scheme's background and text keys, `(BackgroundNormal,
+    /// ForegroundNormal)`, of the sets the derived leaves read, with an
+    /// optional `[Colors:Header]` group and `[KDE] frameContrast`.
+    struct Scheme {
+        button: (&'static str, &'static str),
+        header: Option<(&'static str, &'static str)>,
+        selection: &'static str,
+        view: (&'static str, &'static str),
+        window: (&'static str, &'static str),
+        frame_contrast: Option<&'static str>,
+    }
+
+    impl Scheme {
+        fn kdeglobals(&self) -> String {
+            let group = |name: &str, (bg, fg): (&str, &str)| {
+                format!("[Colors:{name}]\nBackgroundNormal={bg}\nForegroundNormal={fg}\n\n")
+            };
+            let mut content = group("Button", self.button);
+            if let Some(header) = self.header {
+                content.push_str(&group("Header", header));
+            }
+            content.push_str(&format!(
+                "[Colors:Selection]\nBackgroundNormal={}\n\n",
+                self.selection
+            ));
+            content.push_str(&group("View", self.view));
+            content.push_str(&group("Window", self.window));
+            if let Some(contrast) = self.frame_contrast {
+                content.push_str(&format!("[KDE]\nframeContrast={contrast}\n"));
+            }
+            content
+        }
+    }
+
+    /// The keys of BreezeLight.colors at breeze v6.7.5 (LGPL-2.0-or-later)
+    /// the derived leaves read: Button :31, :39; Header :59, :67; Selection
+    /// :87; View :115, :123; Window :129, :137. No `[KDE] frameContrast`
+    /// (:193-194), so KColorScheme's 0.2.
+    const BREEZE_LIGHT_SCHEME: Scheme = Scheme {
+        button: ("252,252,252", "35,38,41"),
+        header: Some(("222,224,226", "35,38,41")),
+        selection: "61,174,233",
+        view: ("255,255,255", "35,38,41"),
+        window: ("239,240,241", "35,38,41"),
+        frame_contrast: None,
+    };
+
+    /// The same keys of BreezeDark.colors at breeze v6.7.5
+    /// (LGPL-2.0-or-later): Button :32, :40; Header :60, :68; Selection :88;
+    /// View :116, :124; Window :130, :138; no frameContrast (:200-201).
+    const BREEZE_DARK_SCHEME: Scheme = Scheme {
+        button: ("41,44,48", "252,252,252"),
+        header: Some(("41,44,48", "252,252,252")),
+        selection: "61,174,233",
+        view: ("20,22,24", "252,252,252"),
+        window: ("32,35,38", "252,252,252"),
+        frame_contrast: None,
+    };
+
+    /// The eight colour leaves the reader derives from the colour scheme.
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 8] {
+        let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
+        [
+            ("button.hover_background", mode.button.hover_background),
+            ("slider.thumb_color", mode.slider.thumb_color),
+            (
+                "switch.unchecked_background",
+                mode.switch.unchecked_background,
+            ),
+            ("switch.checked_background", mode.switch.checked_background),
+            ("toolbar.background_color", mode.toolbar.background_color),
+            ("toolbar.border.color", border(&mode.toolbar.border)),
+            ("popover.border.color", border(&mode.popover.border)),
+            ("card.border.color", border(&mode.card.border)),
+        ]
+    }
+
+    /// The same leaves resolved.
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Rgba); 8] {
+        [
+            ("button.hover_background", theme.button.hover_background),
+            ("slider.thumb_color", theme.slider.thumb_color),
+            (
+                "switch.unchecked_background",
+                theme.switch.unchecked_background,
+            ),
+            ("switch.checked_background", theme.switch.checked_background),
+            ("toolbar.background_color", theme.toolbar.background_color),
+            ("toolbar.border.color", theme.toolbar.border.color),
+            ("popover.border.color", theme.popover.border.color),
+            ("card.border.color", theme.card.border.color),
+        ]
+    }
+
+    /// The resolved light variant of `scheme` over `kde-breeze`.
+    fn resolved_light(scheme: &Scheme) -> crate::Result<crate::ResolvedTheme> {
+        let content = scheme.kdeglobals();
+        let st = crate::pipeline::run_pipeline(from_kde_content(&content)?, "kde-breeze")?;
+        assert_eq!(st.mode, crate::ColorMode::Light, "{content}");
+        Ok(st.light)
+    }
+
+    /// The derived leaves whose resolved value differs between `scheme` and
+    /// Breeze Light.
+    fn moved_leaves(scheme: &Scheme) -> crate::Result<Vec<&'static str>> {
+        let breeze = resolved_leaves(&resolved_light(&BREEZE_LIGHT_SCHEME)?);
+        let other = resolved_leaves(&resolved_light(scheme)?);
+        Ok(breeze
+            .iter()
+            .zip(other.iter())
+            .filter(|(a, b)| a.1 != b.1)
+            .map(|(a, _)| a.0)
+            .collect())
+    }
+
+    /// Under Breeze Light and Breeze Dark the reader derives each leaf as
+    /// the `kde-breeze` preset states it.
+    #[test]
+    fn the_derived_colours_are_the_presets_under_breeze() -> crate::Result<()> {
+        let preset = crate::Theme::preset("kde-breeze")?;
+        let variants = [
+            (&BREEZE_LIGHT_SCHEME, preset.light.as_ref()),
+            (&BREEZE_DARK_SCHEME, preset.dark.as_ref()),
+        ];
+        for (scheme, stated) in variants {
+            let stated = derived_leaves(stated.expect("kde-breeze has both variants"));
+            let result = from_kde_content(&scheme.kdeglobals())?;
+            let read = derived_leaves(reader_mode(&result));
+            for ((leaf, read), (_, stated)) in read.iter().zip(stated.iter()) {
+                assert!(stated.is_some(), "kde-breeze states {leaf}");
+                assert_eq!(read, stated, "{leaf} under {}", scheme.window.0);
+            }
+        }
+        Ok(())
+    }
+
+    /// Another accent moves only the switch's on track; the checkbox and the
+    /// progress bar follow it as before.
+    #[test]
+    fn an_accent_moves_only_the_switch_on_track() -> crate::Result<()> {
+        let scheme = Scheme {
+            selection: "233,84,32",
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&scheme)?, ["switch.checked_background"]);
+        Ok(())
+    }
+
+    #[test]
+    fn the_button_set_moves_the_button_slider_and_switch_leaves() -> crate::Result<()> {
+        let scheme = Scheme {
+            button: ("200,180,150", "60,20,10"),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            [
+                "button.hover_background",
+                "slider.thumb_color",
+                "switch.unchecked_background",
+                "switch.checked_background",
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn the_header_set_moves_the_toolbar() -> crate::Result<()> {
+        let scheme = Scheme {
+            header: Some(("180,200,220", "10,40,80")),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            ["toolbar.background_color", "toolbar.border.color"]
+        );
+        Ok(())
+    }
+
+    /// The Window set moves the popover's edge, and the toolbar only where
+    /// the scheme has no Header group to take it from.
+    #[test]
+    fn the_window_set_moves_the_popover_edge() -> crate::Result<()> {
+        let window = ("230,220,200", "90,40,20");
+        let with_header = Scheme {
+            window,
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&with_header)?, ["popover.border.color"]);
+        let without_header = Scheme {
+            window,
+            header: None,
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(
+            moved_leaves(&without_header)?,
+            [
+                "toolbar.background_color",
+                "toolbar.border.color",
+                "popover.border.color",
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn the_view_set_moves_the_card_edge() -> crate::Result<()> {
+        let scheme = Scheme {
+            view: ("250,240,230", "120,30,60"),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&scheme)?, ["card.border.color"]);
+        Ok(())
+    }
+
+    #[test]
+    fn the_frame_contrast_moves_the_three_edges() -> crate::Result<()> {
+        let scheme = Scheme {
+            frame_contrast: Some("0.5"),
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(
+            moved_leaves(&scheme)?,
+            [
+                "toolbar.border.color",
+                "popover.border.color",
+                "card.border.color",
+            ]
+        );
+        Ok(())
+    }
+
+    /// Without a `[Colors:Header]` group KColorScheme's Header set is the
+    /// Window group's (kcolorscheme.cpp:330-332 at 27066d47) and Breeze
+    /// draws no tools-area fill (breezestyle.cpp:1322 at breeze f0b1d75), so
+    /// the toolbar shows the window and its edge is the Window set's
+    /// separator colour.
+    #[test]
+    fn without_a_header_group_the_toolbar_is_the_windows() -> crate::Result<()> {
+        let window = ("230,220,200", "90,40,20");
+        let without_header = resolved_light(&Scheme {
+            window,
+            header: None,
+            ..BREEZE_LIGHT_SCHEME
+        })?;
+        let header_as_window = resolved_light(&Scheme {
+            window,
+            header: Some(window),
+            ..BREEZE_LIGHT_SCHEME
+        })?;
+        assert_eq!(
+            without_header.toolbar.background_color,
+            Rgba::rgb(230, 220, 200)
+        );
+        assert_eq!(
+            without_header.toolbar.background_color,
+            header_as_window.toolbar.background_color
+        );
+        assert_eq!(
+            without_header.toolbar.border.color,
+            header_as_window.toolbar.border.color
+        );
+        Ok(())
+    }
+
+    /// A colour scheme moves none of the sizes and shadows `kde-breeze`
+    /// states beside the derived colours: the toolbar edge's width and
+    /// shadow, the popover's padding, the card's width, radius, shadow and
+    /// padding, the progress bar's padding.
+    #[test]
+    fn a_colour_scheme_keeps_the_stated_edge_geometry() -> crate::Result<()> {
+        let breeze = resolved_light(&BREEZE_LIGHT_SCHEME)?;
+        let other = resolved_light(&Scheme {
+            button: ("200,180,150", "60,20,10"),
+            header: Some(("180,200,220", "10,40,80")),
+            selection: "233,84,32",
+            view: ("250,240,230", "120,30,60"),
+            window: ("230,220,200", "90,40,20"),
+            frame_contrast: Some("0.5"),
+        })?;
+        let geometry = |b: &crate::ResolvedWidgetBorder| {
+            (b.corner_radius, b.line_width, b.shadow_enabled, b.padding)
+        };
+        for (leaf, a, b) in [
+            ("toolbar", &breeze.toolbar.border, &other.toolbar.border),
+            ("popover", &breeze.popover.border, &other.popover.border),
+            ("card", &breeze.card.border, &other.card.border),
+            (
+                "progress_bar",
+                &breeze.progress_bar.border,
+                &other.progress_bar.border,
+            ),
+        ] {
+            assert_eq!(geometry(a), geometry(b), "{leaf}.border");
+        }
+        Ok(())
+    }
+
     /// `menuFont` sets the menu's family, size, weight and style and keeps
     /// the colour the colour scheme gave it.
     #[test]

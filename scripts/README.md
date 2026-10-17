@@ -179,6 +179,23 @@ still renders, with a fallback face.
 ./scripts/generate_diagrams.sh
 ```
 
+## generate_qt_color_vectors.py
+
+Writes `native-theme/src/kde/qt_color_vectors.rs`, the Qt test vectors the
+KDE reader's colour helpers are checked against (`kde::colors`' tests):
+`Qt.tint`, run by Qt's own QML engine, and `KColorUtils::mix` and Kirigami's
+`ColorUtils::linearInterpolation`, transcribed over Qt's `QColor`. Each table
+holds the Breeze inputs, edge cases and seeded random inputs, among them
+inputs on which a naive float port gives another colour. The output is
+deterministic; run it again only to change the tables.
+
+Requires: Python 3 and PySide6 6.11.2 (Qt 6.11.2), the version the tables were
+generated with; it refuses another.
+
+```sh
+python3 -I scripts/generate_qt_color_vectors.py
+```
+
 ## generate_assets_release.sh
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
