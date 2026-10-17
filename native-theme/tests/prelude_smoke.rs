@@ -1,6 +1,6 @@
 //! Smoke test: verify the prelude re-exports exactly the expected set.
 
-/// Verify that `use native_theme::prelude::*` brings exactly the 10 expected items
+/// Verify that `use native_theme::prelude::*` brings the 10 expected items
 /// into scope and they are the correct types.
 #[test]
 fn prelude_reexports_expected_items() {
@@ -27,24 +27,60 @@ fn prelude_reexports_expected_items() {
     fn _assert_error_type(_e: &Error) {}
 }
 
+/// The names `src/prelude.rs` exports: the last path segment (or `as` name)
+/// of each `pub use`, each name of a `{..}` group, and any other `pub` item
+/// whole, so it never matches a name.
+fn exported_names(source: &str) -> Vec<String> {
+    let code: String = source
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut names = Vec::new();
+    for statement in code.split(';').map(str::trim) {
+        let Some(rest) = statement.strip_prefix("pub ") else {
+            continue;
+        };
+        let Some(path) = rest.trim_start().strip_prefix("use ") else {
+            names.push(statement.to_string());
+            continue;
+        };
+        let leaves = match path.split_once('{') {
+            Some((_, group)) => group.trim_end_matches('}').split(',').collect(),
+            None => vec![path],
+        };
+        for leaf in leaves.into_iter().map(str::trim).filter(|l| !l.is_empty()) {
+            let name = match leaf.rsplit_once(" as ") {
+                Some((_, alias)) => alias,
+                None => leaf.rsplit("::").next().unwrap_or(leaf),
+            };
+            names.push(name.trim().to_string());
+        }
+    }
+    names.sort();
+    names
+}
+
 /// Verify that prelude items are exactly what the design doc specifies.
 /// If this test fails, the prelude has been modified -- check design doc section 12.
 #[test]
 fn prelude_does_not_export_unexpected_items() {
-    // Import only the prelude
-    use native_theme::prelude::*;
-
-    // These 10 items should be accessible:
-    let _ = std::any::type_name::<Theme>();
-    let _ = std::any::type_name::<ColorMode>();
-    let _ = std::any::type_name::<Resolved>();
-    let _ = std::any::type_name::<ResolvedTheme>();
-    let _ = std::any::type_name::<SystemTheme>();
-    let _ = std::any::type_name::<AccessibilityPreferences>();
-    let _ = std::any::type_name::<ResolutionContext>();
-    let _ = std::any::type_name::<Rgba>();
-    let _ = std::any::type_name::<Error>();
-
-    // Result is a type alias, verify it works
-    let _: Result<i32> = Ok(42);
+    let mut expected = [
+        "AccessibilityPreferences",
+        "ColorMode",
+        "Error",
+        "Resolved",
+        "ResolvedTheme",
+        "ResolutionContext",
+        "Result",
+        "Rgba",
+        "SystemTheme",
+        "Theme",
+    ];
+    expected.sort_unstable();
+    assert_eq!(
+        exported_names(include_str!("../src/prelude.rs")),
+        expected,
+        "src/prelude.rs exports another set"
+    );
 }
