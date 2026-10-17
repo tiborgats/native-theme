@@ -7,7 +7,7 @@ See also:
 
 - [CHANGELOG.md](CHANGELOG.md) — what has already shipped
 - [`docs/archive/`](docs/archive/) — detailed design docs and phase notes from completed milestones
-- [`docs/todo.md`](docs/todo.md) — the backlog: every open item, tagged by milestone (`[v0.7.0]`, `[1.0]`, `[post-1.0]`, `[upstream]`)
+- [`docs/todo.md`](docs/todo.md) — the backlog: every open item, tagged by milestone (`[v0.7.0]`, `[v0.7.x]`, `[1.0]`, `[post-1.0]`, `[upstream]`)
 
 ## v0.6.0 — egui connector
 
@@ -62,8 +62,11 @@ Many of them break the public API too: among others, the `macos-sonoma` and
 `ios` presets are `macos-monterey` and `ios-13`, the `model` module is
 private and the icon and detection items have one path each (`icons`,
 `detect`), `Error::Io` names the file, more types are `#[non_exhaustive]`,
-and the gpui and egui connectors read the OS theme only with their `native`
-feature, as the iced connector does. The *Breaking Changes* of
+and the gpui and egui connectors run a platform reader only with their
+`native` feature (or one of native-theme's `kde`, `portal`, `macos` and
+`windows`), as the iced connector does: without one, Linux gives the
+platform preset in the OS's light or dark mode and reduced-motion
+preference, and macOS and Windows an error. The *Breaking Changes* of
 [CHANGELOG.md](CHANGELOG.md)'s *Unreleased* section list every one.
 
 It also moves the gpui connector to GPUI Kit 0.7.3 on gpui-pre 0.3.9, with a
