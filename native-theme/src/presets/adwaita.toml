@@ -131,6 +131,8 @@ checked_text_color = "#2e3436"
 # platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
 padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 
 [light.button.font]
 color = "#2e3436"
@@ -149,6 +151,8 @@ focus_border_color = "#3584e4"
 # platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
+line_width_px = 0.0
 # platform-facts.md §2.4 border.shadow_enabled: no shadow
 shadow_enabled = false
 
@@ -373,6 +377,8 @@ hover_background = "#d5d5d5"
 # platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 # platform-facts.md §2.24 border.shadow_enabled: no shadow
 shadow_enabled = false
 [light.segmented_control]
@@ -521,6 +527,8 @@ checked_text_color = "#ffffff"
 # platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
 padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 
 [dark.button.font]
 color = "#ffffff"
@@ -539,6 +547,8 @@ focus_border_color = "#3584e4"
 # platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
+line_width_px = 0.0
 # platform-facts.md §2.4 border.shadow_enabled: no shadow
 shadow_enabled = false
 
@@ -765,6 +775,8 @@ hover_background = "#464649"
 # platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 # platform-facts.md §2.24 border.shadow_enabled: no shadow
 shadow_enabled = false
 [dark.segmented_control]
