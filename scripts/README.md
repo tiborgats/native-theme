@@ -565,14 +565,51 @@ per-side paddings under their axis rows; the script's docstring states the
 whole rule. Prints one line per missing field (field, section, row name) and
 exits 0 when there is none, 1 when there are some, 2 on an input it cannot
 read. `--self-test` runs the rule on a synthetic registry and facts file. It
-is not part of `check_release.sh`: it still lists `defaults.icon_theme`,
-which has no §2.1.9 row yet.
+is not part of `check_release.sh`.
 
 Requires Python 3.
 
 ```sh
 python3 scripts/check_platform_facts_rows.py
 python3 scripts/check_platform_facts_rows.py --self-test
+```
+
+## check_wrong_safety_nets.py
+
+Checks `docs/inheritance-rules.toml`'s `[wrong_safety_nets]` against the
+file's rules: a `[uniform]` rule marked `# see wrong_safety_nets` has an entry
+with the rule's source, a `[uniform]` rule that has an entry carries the mark,
+and an entry that is no `[uniform]` rule is inherited by `[font_inheritance]`
+or `[border_inheritance]`, or states `removed`; the script's docstring states
+the whole rule. Prints one line per finding and exits 0 when there is none, 1
+when there are some, 2 on an input it cannot read. `--self-test` runs the
+rule on a synthetic rules file. It is not part of `check_release.sh`.
+
+Requires Python 3.11+ (for `tomllib`).
+
+```sh
+python3 scripts/check_wrong_safety_nets.py
+python3 scripts/check_wrong_safety_nets.py --self-test
+```
+
+## check_section_refs.py
+
+Lists every numbered `§` reference in `docs/property-registry.toml`,
+`docs/inheritance-rules.toml`, `docs/showcase-elements.toml` and
+`docs/new-os-version-guide.md` that names no section of
+`docs/platform-facts.md` (`§2` a chapter, `§2.21` a `###`, `§2.1.9` a `####`
+heading); a lettered `§` or one after another `.md` file's name is another
+document's and is skipped, as the script's docstring states. Prints one line
+per dangling reference (file:line, reference) and exits 0 when there is none,
+1 when there are some, 2 on an input it cannot read. `--self-test` runs the
+rule on a synthetic document and facts file. It is not part of
+`check_release.sh`.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_section_refs.py
+python3 scripts/check_section_refs.py --self-test
 ```
 
 ## update_icons.sh
