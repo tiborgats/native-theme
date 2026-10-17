@@ -126,7 +126,9 @@ background_color = "#fcfcfc"
 min_width_px = 80.0
 min_height_px = 32.0
 icon_text_gap_px = 4.0
-hover_background = "#93cee9"
+# platform-facts.md:1179 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
+# it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
+hover_background = "#fcfcfc"
 hover_text_color = "#232629"
 active_background = "#3daee9"
 # no facts row: the text on the accent fill, [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
@@ -615,7 +617,9 @@ background_color = "#292c30"
 min_width_px = 80.0
 min_height_px = 32.0
 icon_text_gap_px = 4.0
-hover_background = "#93cee9"
+# platform-facts.md:1179 (§2.3): ← background_color, no hover fill: a non-flat button's fill is palette.button() unless
+# it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
+hover_background = "#292c30"
 hover_text_color = "#fcfcfc"
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
