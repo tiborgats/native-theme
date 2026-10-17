@@ -671,6 +671,11 @@ the file was pruned on 2026-10-11, not reordered.
       inherits it, as Breeze's `separatorColor()`, mix(Window, WindowText,
       frameContrast). State the computed mix in the preset and the `:1051` cell
       together.
+      *M8 T16 (2026-10-17):* kde-breeze's `switch.unchecked_background` is
+      qqc2-desktop-style's off track, #e6e7e7 / #3e4144 (90672c08,
+      `docs/platform-facts.md` §2.21). *Fix round 1:* adwaita's
+      `focus_ring_color` is the computed `$focus_border_color`, #0461be80 /
+      #81d0ff80, which §2.1.5 now gives (b70a5968, cff0bc68).
 
 ### Disabled: presets that state both mechanisms
 
@@ -1461,6 +1466,20 @@ model, the platform presets and the three connectors
       presets keep the inherited fill and state only the box's 5 of padding.
       The `[wrong_safety_nets]` entries are T17's.
 
+### Model: the menu bar has no fill of its own
+
+- [ ] [1.0] From the M8 T16 review (2026-10-17, finding 10): Breeze fills a
+      `QMainWindow`'s tools area, its menu bar and its top toolbars, as one
+      area in the Header set's Window colour (`breezestyle.cpp:1341-1347`;
+      `breezetoolsareamanager.cpp:118-136`, Breeze f0b1d753), which
+      kde-breeze states as `toolbar.background_color` (#dee0e2 / #292c30,
+      `docs/platform-facts.md` §2.13). The model has no menu-bar fill, so the
+      three showcases draw the menu bar in the window's #eff0f1 / #202326
+      above the Header-filled toolbar: a two-tone tools area Breeze does not
+      draw. A `menu_bar` fill leaf (registry, inheritance, the three
+      connectors' menu bars), or the showcases' chrome taking the toolbar's
+      fill for the menu-bar row, would close it.
+
 ### Presets: expander hover fills with no source
 
 - [ ] [1.0] From M6 T16b (2026-10-16): `docs/platform-facts.md` §2.27 has no
@@ -1644,6 +1663,25 @@ model, the platform presets and the three connectors
       preset); and the state colours above, among them kde-breeze's switch
       hover tracks, which now differ from its rest tracks where §2.21 gives
       them equal.
+      M8 T16 fix round 1 (2026-10-17): the KDE reader
+      (`native-theme/src/kde/colors.rs`) derives none of kde-breeze's new
+      colour values, so under another colour scheme or accent they keep
+      Breeze's. Three of them followed the reader before T16 and are frozen
+      now: `slider.thumb_color` (it inherited the surface colour),
+      `toolbar.background_color` (the window colour) and
+      `switch.checked_background` (the accent): M8 T16b's (the T16 review's
+      finding 6). Also in fix round 1: the card's padding is 7, not 8, inside
+      its border line (Kirigami's 8 is from the outer edge; §2.26 corrected,
+      b7f16c0d, 60841b4f); adwaita's text input and drop-down fill with
+      `$button_color`, #e6e6e7 / #38383c (§2.4, §2.24 corrected), its input
+      states no hover edge and focuses in `$focus_border_color`, #0461be80 /
+      #81d0ff80. Still open: the switch track's and handle's outline, which
+      qqc2's `SwitchIndicator.qml` strokes (`handleBorderColor`, the
+      checked track's `highlightColor`), has no model field (`[switch]`,
+      `docs/property-registry.toml`), so #e6e7e7 shows on the window with no
+      edge; and adwaita `button.background_color` #e8e8e8 / #3a3a3e is
+      uncited, where the same `$button_color` composites to #e6e6e7 /
+      #38383c.
 
 ### windows-11: the validator's findings after T35 left open
 
