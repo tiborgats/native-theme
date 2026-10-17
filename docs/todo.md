@@ -798,6 +798,9 @@ model, the platform presets and the three connectors
       `scripts/generate_screenshots_gpui.sh` ("macOS Sonoma and Windows 11 are
       captured by CI") then names both macOS presets (`_egui.sh` has no such
       line).
+  *The header-comment half done by M8 T12 (2026-10-17, 7e450822):* the
+      sentence went (Step 6 ruling, M8-40), so the run leaves that header as
+      it is.
 
 ### windows-11: a border opacity with no source
 
@@ -2194,6 +2197,8 @@ What is still open on the iced side:
       appear in an artefact. Since 2026-09-28 every capture passes
       `--tab basic`, the Basic page all three showcases draw alike, so
       that the captures compare; those sections still appear in none.
+      Since M8 T12 (7e450822) the tab is passed in one place,
+      `capture_showcases` in `scripts/capture_window.sh`.
 - [ ] [1.0] Re-verify the upstream `file:line` citations in this file,
       `docs/todo_gpui-full-theme.md` and `ROADMAP.md`, which are still
       0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in
@@ -2203,12 +2208,22 @@ What is still open on the iced side:
       the locked registry sources (the showcase's colour claims have one,
       `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
       mapped 1237 of them by script (v0.6.1 spec, Appendix A).
-- [ ] [v0.7.0] Make the layout-dump gate deterministic: `--dump-layout` records the
+- [x] [v0.7.0] Make the layout-dump gate deterministic: `--dump-layout` records the
       Widget Info and status-bar readout of the element under the pointer
       (`chrome.info.*`, `chrome.status_bar.shown`), so a before/after
       comparison differs with where the pointer sat (v0.6.1 had to filter
       those keys); park the pointer outside the window during a dump, or
       leave those keys out of the dump.
+  *Closed by M8 T12 (2026-10-17, fc2fa811):* the dump ignores the pointer
+      (Step 6 ruling): under `--dump-layout` each showcase keeps the window's
+      own pointer off its widgets with its capture shield (gpui's and iced's
+      `CliArgs::shields_pointer`, egui's `CliArgs::shields_pointer` read by
+      `raw_input_hook`), so the keys stay in the list and the comparator, the
+      Widget Info rows hold their hint and `chrome.status_bar.shown` is not
+      drawn; `--pointer X,Y` still holds a pointer of its own. Each showcase's
+      `a_layout_dump_is_the_same_under_the_pointer` checks it. Two live dumps
+      of each showcase are byte-identical. The release asset run now compares
+      the three at rest (c20daadc).
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
