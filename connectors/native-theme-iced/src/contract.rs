@@ -5076,10 +5076,10 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         if !cited {
             failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
         }
-        if let Unread::Fallback { option, .. } = entry.why {
-            if let Some(failure) = fallback_unproved(entry.leaf, option, &combinations, &jsons) {
-                failures.push(failure);
-            }
+        if let Unread::Fallback { option, .. } = entry.why
+            && let Some(failure) = fallback_unproved(entry.leaf, option, &combinations, &jsons)
+        {
+            failures.push(failure);
         }
     }
 
