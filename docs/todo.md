@@ -709,6 +709,12 @@ the file was pruned on 2026-10-11, not reordered.
       disabled colours from it as the preset states them (Button, View and
       Window sets, `ForegroundLink`); until then the live reader's
       `defaults.disabled_text_color` is not Breeze's.
+      M8 T16c (2026-10-17): the switch's disabled outlines join them,
+      `switch.disabled_unchecked_track_border_color` (`handleBorderColor` in
+      the Disabled Button set, #e2e2e2 / #34373b) and
+      `disabled_checked_track_border_color` (Disabled Selection, #e3e5e7 /
+      #1f2124; `docs/platform-facts.md` §2.21), which kde-breeze states and the
+      reader leaves to the preset.
 
 ### The tab gap, the check mark's line, the expander's structure, the text area (2026-09-28)
 
@@ -972,7 +978,7 @@ model, the platform presets and the three connectors
 
 ### windows-11: the switch's off-track outline
 
-- [ ] [v0.7.0] For M3: WinUI 3 draws the off switch's track with a stroke,
+- [x] [v0.7.0] For M3: WinUI 3 draws the off switch's track with a stroke,
       `ToggleSwitchStrokeOff` = `ControlStrongStrokeColorDefault`, `#72000000`
       light and `#8BFFFFFF` dark (ToggleSwitch_themeresources.xaml:139, :19;
       Common_themeresources_any.xaml:252, :48, microsoft-ui-xaml 8463f45),
@@ -985,6 +991,16 @@ model, the platform presets and the three connectors
       :140, :142) have no field either. Decide whether the model gains an
       off-track border colour; M2b fix round 2 gave the off track's hover and
       disabled fills their WinUI resources.
+      *Closed by M8 T16c (2026-10-17):* `SwitchTheme` carries the track's
+      outline (`unchecked_track_border_color`, `checked_track_border_color`,
+      their `disabled_*` forms, `track_border_line_width`) and the thumb's
+      (`thumb_border_color`, `thumb_border_line_width`), soft options
+      (`docs/platform-facts.md` §2.21); windows-11 states the off stroke,
+      `#00000072` / `#ffffff8b`, its disabled form `#00000037` / `#ffffff28`,
+      and the width 1, and no on-track outline (`ToggleSwitchOnStrokeThickness`
+      0). The hover and pressed strokes are the rest colour, which the
+      connectors draw in those states. It moves to the archive at the next
+      prune.
 
 ### windows-11: accent-derived values stated for the default accent
 
@@ -1373,6 +1389,9 @@ model, the platform presets and the three connectors
       `SmallDefault` into `defaults.icon_sizes.small` only,
       `native-theme/src/kde/mod.rs:188`). Write both, citing the facts rows,
       and run the `preset-validator` over kde-breeze.
+      M8 T16c (2026-10-17): the reader writes `switch.thumb_background`, the
+      Button set's background (`SwitchIndicator.qml:29` at qqc2-desktop-style
+      v6.31.0; §2.21). `menu.icon_size` is still not read.
 
 ### kde-breeze: the Qt Widgets menu fill
 
@@ -1689,6 +1708,16 @@ model, the platform presets and the three connectors
       card's edges), in Qt's arithmetic, checked against Qt 6.11.2 test
       vectors (`scripts/generate_qt_color_vectors.py`); the toolbar fill's
       kwinrc condition is the next entry.
+      M8 T16c (2026-10-17): the switch's outlines are in the model
+      (`switch.*_track_border_color`, `track_border_line_width`,
+      `thumb_border_color`, `thumb_border_line_width`, soft options), stated
+      in kde-breeze, windows-11 and material-3 from §2.21 and drawn by the
+      three connectors; the KDE reader derives the rest outlines, the thumb's
+      fill and `button.hover_text_color`. kde-breeze's switch hover tracks are
+      its rest tracks now, and its track 12 tall with radius 6 (§2.21). Still
+      open: its disabled tracks, `#3daee980` / `#bcc0bf80` / `#4d545b80`
+      (`kde-breeze.toml`, `[light.switch]`, `[dark.switch]`), where §2.21
+      gives #e6e7e8 / #26292c checked and #e9e9e9 / #2e3135 unchecked.
 
 ### KDE reader: the toolbar's Header fill and the window border size
 
@@ -1797,6 +1826,26 @@ model, the platform presets and the three connectors
       so a Kirigami application's pressed link is not modelled. Decide whether
       the model states it (a derived value with that rule) or leaves it to the
       toolkit.
+
+### KDE: the switch's hover and disabled thumb outlines
+
+- [ ] [1.0] From M8 T16c (2026-10-17): `SwitchTheme`'s outline fields carry
+      the states at least two platforms distinguish (rest and disabled, the
+      track on and off; `docs/platform-facts.md` §2.21), and three values only
+      qqc2-desktop-style distinguishes are not carried:
+      - hover and keyboard focus: the off track's and the handle's outline
+        turn `hoverColor`, `[Colors:Button] DecorationHover`, #3daee9 in
+        both Breeze schemes (`SwitchIndicator.qml:30`, `:50`, `:78` at
+        qqc2-desktop-style v6.31.0; `plasmadesktoptheme.cpp:311`; §2.21
+        `hover_unchecked_track_border_color`, `hover_thumb_border_color`);
+      - disabled: the handle's outline in the Disabled group, #e2e2e2 /
+        #34373b (`plasmadesktoptheme.cpp:267-274`; §2.21
+        `disabled_thumb_border_color`).
+      The connectors draw the rest outline under the pointer and the enabled
+      thumb outline on a disabled switch, so kde-breeze's hovered off switch
+      keeps #cccfd2 / #4e5359 where Plasma draws #3daee9. Decide whether the
+      model gains hover outline fields (and the KDE reader derives them from
+      `DecorationHover`) and a disabled thumb outline.
 
 ---
 
