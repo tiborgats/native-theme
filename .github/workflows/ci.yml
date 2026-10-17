@@ -1,10 +1,13 @@
 name: CI
 
+# A `v*` tag runs this workflow inside publish.yml, which calls it
+# (`workflow_call`) and uploads only when every job here passed on the tag's
+# commit; a tag trigger here would run it a second time beside that run.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
+  workflow_call:
 
 env:
   CARGO_TERM_COLOR: always
@@ -29,6 +32,7 @@ jobs:
       matrix:
         include:
           - { name: "native-theme", package: "native-theme" }
+          - { name: "native-theme-derive", package: "native-theme-derive" }
           - { name: "native-theme-build", package: "native-theme-build" }
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "iced connector", package: "native-theme-iced" }
@@ -139,6 +143,7 @@ jobs:
           - { name: "Linux (linux, watch)", os: ubuntu-latest, flags: "--features linux,watch" }
           - { name: "Linux (native)", os: ubuntu-latest, flags: "--features native" }
           - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
+          - { name: "Linux (icons, system-fonts)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize,system-fonts" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
           - { name: "Windows (windows, watch, system-icons)", os: windows-latest, flags: "--features windows,watch,system-icons" }
@@ -344,6 +349,14 @@ jobs:
           python3 scripts/check_readme_versions.py
           python3 scripts/check_readme_versions.py --self-test
       - run: cargo doc --workspace --no-deps
+      # `--workspace` unifies the members' features, so native-theme is
+      # documented there with the features the connectors turn on; each
+      # published crate is documented alone too, as a dependent builds it.
+      - name: Documentation, each published crate alone
+        run: |
+          for crate in native-theme-derive native-theme native-theme-build native-theme-iced native-theme-gpui native-theme-egui native-theme-egui-widgets; do
+            cargo doc -p "$crate" --no-deps
+          done
       # docs.rs builds native-theme-iced with every feature, and a doc item
       # behind a feature gate can only break in that configuration.
       - run: cargo doc -p native-theme-iced --no-deps --all-features

@@ -1,5 +1,7 @@
 name: Publish to crates.io
 
+# A `workflow_dispatch` re-runs the upload of a tag, and must name that tag as
+# its ref: the release gate refuses any other.
 on:
   push:
     tags: ["v*"]
@@ -8,166 +10,62 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# `bash -eo pipefail` (GitHub's `shell: bash`) instead of the default
+# `bash -e`, so a failing command piped into another fails its step.
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  # Run full CI checks before publishing
-  ci:
-    name: CI Gate
+  # Refuses a ref that is not a tag naming the workspace version, visual
+  # assets captured from other sources, and a connector changed since it was
+  # verified against its upstream set. The checks need no history:
+  # scripts/update_provenance.sh and scripts/update_compatibility.sh hash
+  # HEAD's git object ids.
+  gate:
+    name: Release gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-
-      # Refuse to publish assets captured from other sources, or a tag whose
-      # name differs from the workspace version. Both checks need no history:
-      # scripts/update_provenance.sh hashes HEAD's git object ids.
-      - name: Visual assets and tag match this version
+      - name: A tag of this version, with current assets and compatibility claims
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if ! msg=$(bash scripts/update_provenance.sh check); then
-            echo "::error::$msg"
+          if [ "$REF_TYPE" != "tag" ]; then
+            echo "::error::publishing needs a v* tag as its ref; this run's ref is the $REF_TYPE $REF_NAME"
             exit 1
           fi
-          echo "$msg"
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            v=$(grep -E '^version\s*=' Cargo.toml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-            if [ "v$v" != "${{ github.ref_name }}" ]; then
-              echo "::error::tag ${{ github.ref_name }} does not match the workspace version $v"
+          v=$(grep -m1 -E '^version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "v$v" != "$REF_NAME" ]; then
+            echo "::error::tag $REF_NAME does not match the workspace version $v"
+            exit 1
+          fi
+          for script in update_provenance.sh update_compatibility.sh; do
+            if ! msg=$(bash "scripts/$script" check); then
+              echo "::error::$msg"
               exit 1
             fi
-          fi
+            echo "$msg"
+          done
 
-      - name: Install system dependencies (gpui)
-        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
+  # Every CI job on the tag's commit, MSRV and the macOS and Windows legs
+  # among them. ci.yml has no tag trigger of its own: this is its tag run, and
+  # nothing is uploaded unless it passed.
+  ci-full:
+    name: CI
+    needs: gate
+    uses: ./.github/workflows/ci.yml
 
-      - name: Format check
-        run: cargo fmt --all --check
-
-      - name: Clippy (core crates)
-        env:
-          RUSTFLAGS: -Dwarnings
-        run: |
-          cargo clippy -p native-theme-derive --all-targets
-          cargo clippy -p native-theme-build --all-targets
-          cargo clippy -p native-theme --all-targets
-          cargo clippy -p native-theme-iced --all-targets
-          cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
-          cargo clippy -p native-theme-egui --all-targets
-          cargo clippy -p native-theme-egui --all-targets --all-features
-          cargo clippy -p native-theme-egui-widgets --all-targets
-          cargo clippy -p native-theme-egui-widgets --all-targets --all-features
-
-      - name: Clippy native-theme-gpui
-        env:
-          RUSTFLAGS: -Dwarnings
-        run: |
-          cargo clippy -p native-theme-gpui --all-targets
-          cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
-
-      - name: Test native-theme-derive
-        run: cargo test -p native-theme-derive
-
-      - name: Test native-theme-build
-        run: cargo test -p native-theme-build
-
-      - name: Test native-theme
-        run: cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize,system-fonts
-
-      - name: Test native-theme-iced
-        run: |
-          cargo test -p native-theme-iced
-          cargo test -p native-theme-iced --no-default-features
-          cargo test -p native-theme-iced --features iced_aw,watch,native
-
-      - name: Test native-theme-gpui
-        run: |
-          cargo test -p native-theme-gpui
-          cargo test -p native-theme-gpui --lib --no-default-features
-          cargo test -p native-theme-gpui --features native,watch
-          cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
-
-      - name: Test native-theme-egui
-        run: |
-          cargo test -p native-theme-egui
-          cargo test -p native-theme-egui --no-default-features
-          cargo test -p native-theme-egui --all-features
-
-      - name: Test native-theme-egui-widgets
-        run: |
-          cargo test -p native-theme-egui-widgets
-          cargo test -p native-theme-egui-widgets --no-default-features
-          cargo test -p native-theme-egui-widgets --all-features
-
-      # Fails when an upstream release adds a widget that no showcase
-      # renders or docs/showcase-exceptions.toml excepts. ubuntu-latest ships
-      # Python 3.12, above the 3.11 the script's `tomllib` import requires.
-      - name: Widget coverage
-        run: |
-          python3 --version
-          python3 scripts/check_widget_coverage.py
-
-      # Fails on a connector accessor named unlike the `ResolvedTheme` leaf it
-      # reads, or a function absent from a sibling connector or present there
-      # under another signature, unless
-      # scripts/connector_parity_exceptions.toml lists it.
-      - name: Connector parity
-        run: |
-          python3 --version
-          python3 scripts/check_connector_parity.py
-
-      # Fails on a `native-theme*` dependency a README's `toml` block states
-      # at another `major.minor` than the version about to be published.
-      - name: README versions
-        run: |
-          python3 --version
-          python3 scripts/check_readme_versions.py
-
-      - name: Documentation (core)
-        env:
-          RUSTDOCFLAGS: -Dwarnings
-        run: |
-          cargo doc -p native-theme-derive --no-deps
-          cargo doc -p native-theme-build --no-deps
-          cargo doc -p native-theme --no-deps
-          cargo doc -p native-theme-iced --no-deps
-          # docs.rs builds native-theme-iced with every feature.
-          cargo doc -p native-theme-iced --no-deps --all-features
-          cargo doc -p native-theme-egui --no-deps
-          # docs.rs builds native-theme-egui with every feature.
-          cargo doc -p native-theme-egui --no-deps --all-features
-          cargo doc -p native-theme-egui-widgets --no-deps --all-features
-
-      - name: Documentation native-theme-gpui
-        env:
-          RUSTDOCFLAGS: -Dwarnings
-        run: cargo doc -p native-theme-gpui --no-deps
-
-  # Both connectors enable `system-icons` by default, and its icon code
-  # imports the platform crates, so it must build alone on each platform.
-  system-icons:
-    name: system-icons (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    steps:
-      - uses: actions/checkout@v6
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check -p native-theme --no-default-features --features system-icons
-      # The platform readers and icon loaders compile only on their own
-      # target, so their dead code and unchecked results show only here.
-      - name: Check all features, warnings denied
-        env:
-          RUSTFLAGS: -Dwarnings
-        run: cargo check -p native-theme --all-features
-
-  # Every crate's library with no default features, each feature alone and
-  # all features, as CI and scripts/check_release.sh run it.
-  features:
-    name: Feature combinations
+  # Every publishable crate's tarball, built and compiled as crates.io will
+  # serve it, before anything is uploaded: the upload job verifies a crate
+  # only as it uploads it, so v0.5.8's first run failed on the gpui connector
+  # after four crates were on crates.io (4dcc39e9). One invocation, so each
+  # tarball resolves the workspace crates it depends on from the tarballs
+  # built beside it, not from the registry; the crates in publish order.
+  package:
+    name: Package
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -175,7 +73,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: bash scripts/check_features.sh
+      - run: cargo package -p native-theme-derive -p native-theme -p native-theme-build -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets
 
   # docs.rs documents a crate only after it is published, so its build is
   # emulated here first: nightly rustdoc with each crate's
@@ -184,6 +82,7 @@ jobs:
   # scripts/check_release.sh runs too).
   docsrs:
     name: docs.rs emulation
+    needs: gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -193,23 +92,30 @@ jobs:
         with:
           targets: x86_64-apple-darwin, x86_64-pc-windows-msvc
       - uses: Swatinem/rust-cache@v2
+      # The crate list is collected first, so a listing that fails or lists
+      # nothing fails the step instead of documenting no crate.
       - name: Document every crate as docs.rs will
         run: |
           python3 --version
-          for crate in $(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))'); do
+          crates=$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json, sys; print(" ".join(p["name"] for p in json.load(sys.stdin)["packages"]))')
+          if [ -z "$crates" ]; then
+            echo "::error::cargo metadata listed no workspace crate"
+            exit 1
+          fi
+          for crate in $crates; do
             python3 -I scripts/check_docsrs.py "$crate"
           done
 
   publish:
     name: Publish
     runs-on: ubuntu-latest
-    needs: [ci, system-icons, features, docsrs]
+    needs: [gate, ci-full, package, docsrs]
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
 
       # `cargo publish` verifies each tarball by compiling it on this runner,
-      # so the gpui connector needs the same system libraries as the CI gate
+      # so the gpui connector needs the same system libraries as the package job
       # (v0.5.8's first run failed here on fontconfig.pc after four uploads).
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev

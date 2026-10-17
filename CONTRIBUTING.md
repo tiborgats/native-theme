@@ -238,7 +238,7 @@ showcases (crate sources, presets, icon bundles, `Cargo.lock`, the capture
 scripts, the screenshots workflow). `scripts/check_release.sh` recomputes that
 hash at HEAD; a mismatch is a warning while the CHANGELOG entry for the
 version still says Unreleased and a hard failure once the entry is dated. The
-publish workflow's CI gate runs the same check on the pushed tag, so a tag
+publish workflow's release gate runs the same check on the pushed tag, so a tag
 whose assets were captured from other sources is refused before anything is
 uploaded. Docs-only changes leave the hash untouched and need no recapture.
 

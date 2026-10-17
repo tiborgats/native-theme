@@ -195,7 +195,7 @@ and `windows_version`, every distinct OS version in DIR's sidecars
 and `[System.Environment]::OSVersion.Version` on the screenshot runners),
 empty without them. No gate checks the versions against a preset's range yet. `check` recomputes the hash at HEAD and exits
 non-zero with a message when the stamp is missing or the sources differ;
-`scripts/check_release.sh` and the crates.io workflow's CI gate call it, so a
+`scripts/check_release.sh` and the crates.io workflow's release gate call it, so a
 release whose assets were captured from other sources is refused. Docs-only
 changes do not alter the hash. `verify-clean` fails when a stamped path has
 uncommitted changes; `hash` prints the current value.
@@ -235,7 +235,10 @@ The upstream versions each connector has been verified against, recorded in
 - `check` exits 0 when the stamp exists and each connector's sources hash at
   HEAD matches the recorded one, and 1 with a message otherwise. It reads git
   and the stamp only, no network. `scripts/check_release.sh` runs it: a warning
-  while the CHANGELOG entry says "Unreleased", a failure once it is dated.
+  while the CHANGELOG entry says "Unreleased", a failure once it is dated. The
+  crates.io workflow's release gate runs it on the pushed tag, so a tag whose
+  connector changed since it was verified is refused before anything is
+  uploaded.
 - `hash <gpui|iced|egui>` prints a connector's sources hash at HEAD: a SHA-256
   over the git object ids of its `Cargo.toml`, `src`, `examples` and `tests`
   — for egui `mapping.toml` in place of `tests`.
