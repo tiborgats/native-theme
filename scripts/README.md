@@ -513,6 +513,27 @@ python3 scripts/check_showcase_parity.py --merge OUT.toml --proposal A.toml --pr
 python3 scripts/check_showcase_parity.py --merge OUT.toml --write --proposal A.toml DUMP_DIR [hover=HOVER_DIR] [menu=MENU_DIR]
 ```
 
+## check_platform_facts_rows.py
+
+Lists every field of `docs/property-registry.toml` that has no row in
+`docs/platform-facts.md`, so no preset value is left without a facts row to
+cite. A registry table is looked for in the section its `# §2.x` comment
+names (`[defaults]` in all of §2.1), a field under its name without the unit
+suffix, and a `border`, `font` or `icon_sizes` field part by part, the
+per-side paddings under their axis rows; the script's docstring states the
+whole rule. Prints one line per missing field (field, section, row name) and
+exits 0 when there is none, 1 when there are some, 2 on an input it cannot
+read. `--self-test` runs the rule on a synthetic registry and facts file. It
+is not part of `check_release.sh`: it still lists `defaults.icon_theme`,
+which has no §2.1.9 row yet.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_platform_facts_rows.py
+python3 scripts/check_platform_facts_rows.py --self-test
+```
+
 ## update_icons.sh
 
 Re-downloads every bundled SVG under `native-theme/icons/` from the
