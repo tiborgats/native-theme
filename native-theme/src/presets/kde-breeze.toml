@@ -366,6 +366,15 @@ color = "#232629"
 # background_color not stated: platform-facts.md:1441 (§2.16), ← defaults.background_color
 # font.color not stated: platform-facts.md:1443 (§2.16), ← defaults.font.color
 
+[light.popover.border]
+# platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup strokes linearInterpolation(backgroundColor, textColor,
+# frameContrast 0.2) of the Window set (Popup.qml:50, colorutils.cpp:61-80), #c2c5c9; line_width not stated, the
+# Popup's 1 (§2.16 border.line_width, Popup.qml:51), as defaults.border.line_width
+color = "#c2c5c9"
+# platform-facts.md:1448-1449 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
+padding_horizontal_px = 12.0
+padding_vertical_px = 12.0
+
 [light.separator]
 # line_color not stated: platform-facts.md:1463 (§2.18), ← defaults.border.color
 
@@ -839,6 +848,15 @@ color = "#fcfcfc"
 [dark.popover]
 # background_color not stated: platform-facts.md:1441 (§2.16), ← defaults.background_color
 # font.color not stated: platform-facts.md:1443 (§2.16), ← defaults.font.color
+
+[dark.popover.border]
+# platform-facts.md §2.16 border.color: qqc2-desktop-style's Popup strokes linearInterpolation(backgroundColor, textColor,
+# frameContrast 0.2) of the Window set (Popup.qml:50, colorutils.cpp:61-80), #474c51; line_width not stated, the
+# Popup's 1 (§2.16 border.line_width, Popup.qml:51), as defaults.border.line_width
+color = "#474c51"
+# platform-facts.md:1448-1449 (§2.16): the Popup's padding: 12 on all four sides (Popup.qml:24)
+padding_horizontal_px = 12.0
+padding_vertical_px = 12.0
 
 [dark.separator]
 # line_color not stated: platform-facts.md:1463 (§2.18), ← defaults.border.color

@@ -198,7 +198,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1401, 1402], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
     row(KdeBreeze, "list", axes(1.0, 2.0), &[1420, 1421], "2; 1")
         .with(&[("row_height", None, 1418), ("header_height", None, 1419)]),
-    row(KdeBreeze, "popover", NONE, &[1448, 1449], "(none)"),
+    row(KdeBreeze, "popover", all(12.0), &[1448, 1449], "qqc2-desktop-style Popup: padding 12"),
     row(KdeBreeze, "dialog", all(10.0), &[1533, 1534], "Layout_TopLevelMarginWidth = 10"),
     row(KdeBreeze, "combo_box", trbl(6.0, 0.0, 6.0, 6.0), &[1595, 1600], "ComboBox_FrameWidth = 6 left, top and bottom; 0 right, to the 20px arrow column")
         .with(&[("arrow_area_width", Some(20.0), 1597)]),
