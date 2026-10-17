@@ -1499,10 +1499,12 @@ BackgroundNormal=49,54,59
     /// A colour scheme moves none of the sizes and shadows `kde-breeze`
     /// states beside the derived colours: the toolbar edge's width and
     /// shadow, the popover's padding, the card's width, radius, shadow and
-    /// padding, the progress bar's padding.
+    /// padding, the progress bar's padding: each is the resolved preset's.
     #[test]
     fn a_colour_scheme_keeps_the_stated_edge_geometry() -> crate::Result<()> {
-        let breeze = resolved_light(&BREEZE_LIGHT_SCHEME)?;
+        let preset = crate::Theme::preset("kde-breeze")?
+            .resolve(crate::ColorMode::Light)?
+            .variant;
         let other = resolved_light(&Scheme {
             button: ("200,180,150", "60,20,10"),
             header: Some(("180,200,220", "10,40,80")),
@@ -1515,12 +1517,12 @@ BackgroundNormal=49,54,59
             (b.corner_radius, b.line_width, b.shadow_enabled, b.padding)
         };
         for (leaf, a, b) in [
-            ("toolbar", &breeze.toolbar.border, &other.toolbar.border),
-            ("popover", &breeze.popover.border, &other.popover.border),
-            ("card", &breeze.card.border, &other.card.border),
+            ("toolbar", &preset.toolbar.border, &other.toolbar.border),
+            ("popover", &preset.popover.border, &other.popover.border),
+            ("card", &preset.card.border, &other.card.border),
             (
                 "progress_bar",
-                &breeze.progress_bar.border,
+                &preset.progress_bar.border,
                 &other.progress_bar.border,
             ),
         ] {
