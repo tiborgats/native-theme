@@ -1306,8 +1306,16 @@ mod tests {
             ));
             let result = build_gnome_spec_pure(&data);
             let variant = reader_mode(&result);
-            assert_eq!(variant.defaults.focus_ring_color, Some(hex(ring)), "{accent:?} dark {dark}");
-            assert_eq!(variant.input.focus_border_color, Some(hex(ring)), "{accent:?} dark {dark}");
+            assert_eq!(
+                variant.defaults.focus_ring_color,
+                Some(hex(ring)),
+                "{accent:?} dark {dark}"
+            );
+            assert_eq!(
+                variant.input.focus_border_color,
+                Some(hex(ring)),
+                "{accent:?} dark {dark}"
+            );
         }
     }
 
