@@ -666,11 +666,6 @@ fn probed_menu_row(
     styled(div().flex().items_center().child(text_probe()), s)
 }
 
-/// Upstream draws a one-pixel border round the Select and Combobox triggers
-/// (`select.rs:542`, `combobox.rs:987`, `border_1()`), which the drawn inset
-/// includes; `geometry::select`/`combobox` set no border width.
-const TRIGGER_BORDER: f32 = 1.0;
-
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
 /// upstream pads each root before the refinement (`input/input.rs:785` then
@@ -695,7 +690,14 @@ fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
             let prefs = scaled_by(1.0);
             let (stated, border) = match widget {
                 "input" => (r.input.border.padding.left, r.input.border.line_width),
-                _ => (r.combo_box.border.padding.left, TRIGGER_BORDER),
+                // `geometry::select`/`combobox` give the trigger
+                // `combo_box.border.line_width` over upstream's `border_1()`
+                // (`select.rs:542`, `combobox.rs:987`), which the drawn inset
+                // includes.
+                _ => (
+                    r.combo_box.border.padding.left,
+                    r.combo_box.border.line_width,
+                ),
             };
             let Some(stated) = stated else {
                 continue;
