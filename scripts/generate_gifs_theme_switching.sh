@@ -15,18 +15,18 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-# `--capture` opens the showcase at its default size whatever the desktop
-# remembers for its window, with an app id of its own; capture_showcase makes
-# that window the active one, captures it, and fails the script unless the
-# frame is of that window at that size.
+# capture_showcases runs a showcase once per entry and fails the script unless
+# each frame is of its window at its default size.
 source "$SCRIPT_DIR/capture_window.sh"
 ICED_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 GPUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
+EGUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 ICED_FRAME_DIR="$(mktemp -d)"
 GPUI_FRAME_DIR="$(mktemp -d)"
-EGUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-egui/docs/assets"
 EGUI_FRAME_DIR="$(mktemp -d)"
-DELAY=3
+# The showcase and the frame directories go with the script, whether it ends,
+# fails or is interrupted.
+trap 'stop_showcase; rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR" "$EGUI_FRAME_DIR"' EXIT
 
 # 4 visually distinct Linux-native presets with matching icon sets
 # Format: theme:variant:icon-set:icon-theme
@@ -41,45 +41,11 @@ THEMES=(
 mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR" "$EGUI_OUTPUT_DIR"
 cd "$PROJECT_ROOT"
 
-# Kill any stale spectacle instances to avoid D-Bus singleton conflicts
-pkill spectacle 2>/dev/null || true
-
-echo "WARNING: Do not interact with the desktop during capture."
-echo ""
-
 # ── Iced GIF ──────────────────────────────────────────────────────────
 
 echo "=== Generating iced theme-switching GIF ==="
 echo ""
-
-echo "--- Building iced showcase binary (release mode) ---"
-cargo build -p native-theme-iced --example showcase-iced --release --features iced_aw
-echo ""
-
-# Clean up showcase process on exit (continued first: capture_showcase stops it).
-# `set -e` holds inside the trap too, so each kill of an already-exited showcase
-# needs its `|| true`, or the script exits 1 after it succeeded.
-trap 'kill -CONT "$PID" 2>/dev/null || true; kill "$PID" 2>/dev/null || true' EXIT
-
-echo "--- Capturing iced frames ---"
-for i in "${!THEMES[@]}"; do
-    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
-    frame_file="$ICED_FRAME_DIR/frame-$(printf '%02d' "$i").png"
-    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
-
-    # iced has no --icon-theme: an installed theme's name picks it as the icon set.
-    cargo run -p native-theme-iced --example showcase-iced --release --features iced_aw -- \
-        --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab basic --capture &
-    PID=$!
-
-    sleep "$DELAY"
-
-    capture_showcase iced "$PID" "$frame_file"
-
-    kill "$PID" 2>/dev/null || true
-    wait "$PID" 2>/dev/null || true
-done
+capture_showcases iced "--features iced_aw" "$ICED_FRAME_DIR/frame-{index}.png" "${THEMES[@]}"
 
 echo ""
 echo "--- Assembling iced GIF ---"
@@ -94,33 +60,7 @@ ls -lh "$ICED_OUTPUT_DIR/theme-switching.gif"
 echo ""
 echo "=== Generating gpui theme-switching GIF ==="
 echo ""
-
-echo "--- Building gpui showcase binary (release mode) ---"
-cargo build -p native-theme-gpui --example showcase-gpui --release
-echo ""
-
-echo "--- Capturing gpui frames ---"
-for i in "${!THEMES[@]}"; do
-    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
-    frame_file="$GPUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
-    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
-
-    # Build CLI args
-    cli_args=(--theme "$theme" --variant "$variant" --tab basic --icon-set "$icon_set" --capture)
-    if [ -n "$icon_theme" ]; then
-        cli_args+=(--icon-theme "$icon_theme")
-    fi
-
-    cargo run -p native-theme-gpui --example showcase-gpui --release -- "${cli_args[@]}" &
-    PID=$!
-
-    sleep "$DELAY"
-
-    capture_showcase gpui "$PID" "$frame_file"
-
-    kill "$PID" 2>/dev/null || true
-    wait "$PID" 2>/dev/null || true
-done
+capture_showcases gpui "" "$GPUI_FRAME_DIR/frame-{index}.png" "${THEMES[@]}"
 
 echo ""
 echo "--- Assembling gpui GIF ---"
@@ -135,30 +75,7 @@ ls -lh "$GPUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
 echo "=== Generating egui theme-switching GIF ==="
 echo ""
-
-echo "--- Building egui showcase binary (release mode) ---"
-cargo build -p native-theme-egui --example showcase-egui --release --all-features
-echo ""
-
-echo "--- Capturing egui frames ---"
-for i in "${!THEMES[@]}"; do
-    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
-    frame_file="$EGUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
-    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
-
-    # egui has no --icon-theme: an installed theme's name picks it as the icon set.
-    cargo run -p native-theme-egui --example showcase-egui --release --all-features -- \
-        --theme "$theme" --variant "$variant" --icon-set "${icon_theme:-$icon_set}" \
-        --tab basic --capture &
-    PID=$!
-
-    sleep "$DELAY"
-
-    capture_showcase egui "$PID" "$frame_file"
-
-    kill "$PID" 2>/dev/null || true
-    wait "$PID" 2>/dev/null || true
-done
+capture_showcases egui "--all-features" "$EGUI_FRAME_DIR/frame-{index}.png" "${THEMES[@]}"
 
 echo ""
 echo "--- Assembling egui GIF ---"
@@ -167,10 +84,6 @@ python3 "$SCRIPT_DIR/generate_gifs_spinners.py" \
     --theme-switching-output "$EGUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
 ls -lh "$EGUI_OUTPUT_DIR/theme-switching.gif"
-
-# ── Cleanup ───────────────────────────────────────────────────────────
-
-rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR" "$EGUI_FRAME_DIR"
 
 echo ""
 echo "=== Done: all three theme-switching GIFs generated ==="

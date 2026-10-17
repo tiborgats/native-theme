@@ -94,9 +94,22 @@ Requires: spectacle (KDE)
 
 ## capture_window.sh
 
-Sourced by the four spectacle scripts. `capture_showcase KIND PID FILE`
-captures the window of a showcase run with `--capture`, whose app id is
-`showcase-KIND-capture-PID`:
+Sourced by the four spectacle scripts, whose one launch-and-capture loop it
+holds: `capture_showcases KIND FEATURES OUTPUT ENTRY...` builds the showcase
+KIND in release mode with the cargo flags FEATURES, runs it once per ENTRY
+(`theme:variant:icon-set:icon-theme`) on its Basic page with `--capture`, and
+captures its window to OUTPUT, in which `{theme}`, `{variant}` and `{index}`
+stand for the entry's; `stop_showcase`, which each script's EXIT trap calls,
+stops the showcase a failed or interrupted run leaves. The features differ by
+showcase, as the screenshot workflow builds them: iced with
+`--features iced_aw`, egui with `--all-features`, gpui with its defaults. The
+gpui showcase takes an entry's icon theme as `--icon-theme`; iced and egui take
+it as their `--icon-set`. `SCREENSHOT_ENTRIES` lists the six captures the three
+screenshot scripts take (kde-breeze, material-3 and catppuccin-mocha, dark and
+light).
+
+`capture_showcase KIND PID FILE` captures the window of a showcase run with
+`--capture`, whose app id is `showcase-KIND-capture-PID`:
 
 - A KWin script, loaded through KWin's scripting D-Bus interface
   (`org.kde.kwin.Scripting.loadScript` at `/Scripting`, `run`, then
@@ -126,7 +139,8 @@ dbus-send (D-Bus), Python 3, Pillow
 Captures four preset/variant pairs (kde-breeze dark, material-3 light,
 catppuccin-mocha dark, kde-breeze light) from the iced, gpui and egui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs_spinners.py`.
-Each frame passes `capture_window.sh`'s check.
+Each frame passes `capture_window.sh`'s check. The frames go to temporary
+directories, which the script removes when it ends, fails or is interrupted.
 
 Produces:
 - `connectors/native-theme-iced/docs/assets/theme-switching.gif`

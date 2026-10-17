@@ -14,83 +14,24 @@ set -euo pipefail
 #     --tab basic --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-monterey-light.png
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
-# macOS Sonoma and Windows 11 are captured by CI on their native runners.
-# The line above is stale until the next asset run (docs/todo.md, "macos-monterey
-# and macos-tahoe: the screenshot names and the display name").
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-# `--capture` opens the showcase at its default size whatever the desktop
-# remembers for its window, with an app id of its own; capture_showcase makes
-# that window the active one, captures it, and fails the script unless the
-# capture is of that window at that size.
+# capture_showcases runs the showcase once per entry of SCREENSHOT_ENTRIES and
+# fails the script unless each capture is of its window at its default size.
 source "$SCRIPT_DIR/capture_window.sh"
 OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
-DELAY=3
-
-# Theme preset + variant + icon-set + icon-theme pairings
-# Format: theme:variant:icon-set:icon-theme
-# Icon theme must match the UI theme.
-THEMES=(
-    "kde-breeze:dark:freedesktop:breeze-dark"
-    "kde-breeze:light:freedesktop:breeze"
-    "material-3:dark:material:"
-    "material-3:light:material:"
-    "catppuccin-mocha:dark:lucide:"
-    "catppuccin-mocha:light:lucide:"
-)
 
 echo "=== Generating gpui showcase screenshots ==="
 echo "Presets: 3 (dark + light each)"
-echo "Total screenshots: ${#THEMES[@]}"
+echo "Total screenshots: ${#SCREENSHOT_ENTRIES[@]}"
 echo ""
 
-# Pre-build showcase binary to avoid compile delays during capture loop
-echo "--- Building showcase binary (release mode) ---"
 cd "$PROJECT_ROOT"
-cargo build -p native-theme-gpui --example showcase-gpui --release
-echo ""
-
-# Ensure output directory exists
 mkdir -p "$OUTPUT_DIR"
-
-# Kill any stale spectacle instances to avoid D-Bus singleton conflicts
-pkill spectacle 2>/dev/null || true
-
-# Clean up showcase process on exit (continued first: capture_showcase stops it).
-# `set -e` holds inside the trap too, so each kill of an already-exited showcase
-# needs its `|| true`, or the script exits 1 after it succeeded.
-trap 'kill -CONT "$PID" 2>/dev/null || true; kill "$PID" 2>/dev/null || true' EXIT
-
-echo "--- Capturing screenshots ---"
-echo "WARNING: Do not interact with the desktop during capture."
-echo ""
-
-count=0
-total=${#THEMES[@]}
-
-for entry in "${THEMES[@]}"; do
-    IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
-    output_file="$OUTPUT_DIR/linux-${theme}-${variant}.png"
-    count=$((count + 1))
-    echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$output_file")"
-
-    # Build CLI args
-    cli_args=(--theme "$theme" --variant "$variant" --tab basic --icon-set "$icon_set" --capture)
-    if [ -n "$icon_theme" ]; then
-        cli_args+=(--icon-theme "$icon_theme")
-    fi
-
-    cargo run -p native-theme-gpui --example showcase-gpui --release -- "${cli_args[@]}" &
-    PID=$!
-
-    sleep "$DELAY"
-
-    capture_showcase gpui "$PID" "$output_file"
-
-    kill "$PID" 2>/dev/null || true
-    wait "$PID" 2>/dev/null || true
-done
+trap stop_showcase EXIT
+capture_showcases gpui "" "$OUTPUT_DIR/linux-{theme}-{variant}.png" \
+    "${SCREENSHOT_ENTRIES[@]}"
 
 echo ""
 echo "=== Screenshot generation complete ==="
