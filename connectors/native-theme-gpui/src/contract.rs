@@ -995,6 +995,10 @@ enum Unread {
     /// it, which sinks read. The evidence cites
     /// `docs/inheritance-rules.toml:line`.
     Inherited(&'static str),
+    /// The value is a soft option's fallback, which the connector draws where
+    /// the option is unstated, and every bundled preset states the option.
+    /// The evidence cites the connector's `file.rs:line` that falls back.
+    Fallback(&'static str),
 }
 
 /// One colour leaf no sink reads, and why.
@@ -1263,6 +1267,14 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         why: Unread::NoReceiver(
             "a hovered sidebar item takes `sidebar_accent` at 0.8, the \
              selection's token (`sidebar/menu.rs:305-308`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "checkbox.background_color",
+        why: Unread::Fallback(
+            "`CheckboxLook` fills an unchecked box with it where \
+             `checkbox.unchecked_background` is unset (`widgets/checkbox.rs:123`), \
+             and every bundled preset states that",
         ),
     },
 ];
@@ -2704,9 +2716,9 @@ fn moved(
 /// so neither a passthrough of another leaf nor a composite under an opaque
 /// layer hides the change. A leaf *reaches* a sink when the sink's text
 /// moves, in at least one base: a soft option's fallback moves its sink only
-/// where the option is unstated (`checkbox.background_color`, in 2 of the
-/// 34), which is why every base is read. A leaf that reaches a sink is not
-/// spliced in the bases after.
+/// where the option is unstated, which is why every base is read, and one
+/// that no base leaves unstated is named by `UNREAD_COLOURS` as a fallback.
+/// A leaf that reaches a sink is not spliced in the bases after.
 ///
 /// Every leaf that reaches no sink must be named once, by `UNREAD_COLOURS` or
 /// `NO_RECEIVER`. An entry of either that names a leaf a sink reads is stale,
@@ -2817,6 +2829,9 @@ fn every_colour_leaf_reaches_a_sink_or_is_named() -> crate::Result<()> {
                 evidence.contains("inheritance-rules.toml:"),
                 "a docs/inheritance-rules.toml line",
             ),
+            Unread::Fallback(evidence) => {
+                (evidence.contains(".rs:"), "the connector's file.rs:line")
+            }
         };
         if !cited {
             failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));

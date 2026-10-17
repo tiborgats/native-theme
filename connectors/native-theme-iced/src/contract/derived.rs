@@ -1141,6 +1141,10 @@ pub(super) enum Unread {
     /// another leaf, or leaves it to iced. The evidence cites the source,
     /// `file.rs:line`.
     Ruled(&'static str),
+    /// The value is a soft option's fallback, which the connector draws where
+    /// the option is unstated, and every bundled preset states the option.
+    /// The evidence cites the connector's `file.rs:line` that falls back.
+    Fallback(&'static str),
 }
 
 /// One colour leaf no row reads, or one widget none of whose colour leaves a
@@ -1410,5 +1414,13 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "status_bar",
         why: Unread::NoWidget("iced 0.14 and `iced_aw` 0.14.1 have no status bar"),
+    },
+    UnreadColour {
+        leaf: "checkbox.background_color",
+        why: Unread::Fallback(
+            "`styles::checkbox` fills an unchecked box with it where \
+             `checkbox.unchecked_background` is unset (`styles.rs:705`), and \
+             every bundled preset states that",
+        ),
     },
 ];

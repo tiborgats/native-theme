@@ -4810,9 +4810,10 @@ fn names(entry: &str, leaf: &str) -> bool {
 /// shares its channels with, so neither a passthrough of another leaf nor a
 /// composite under an opaque layer hides the change. A leaf *reaches* a row
 /// when the row's native side moves, in at least one base: a soft option's
-/// fallback moves its row only where the option is unstated
-/// (`checkbox.background_color`, in 2 of the 34), which is why every base is
-/// read. A leaf that reaches a row is not spliced in the bases after.
+/// fallback moves its row only where the option is unstated, which is why
+/// every base is read, and one that no base leaves unstated is named by
+/// `UNREAD_COLOURS` as a fallback. A leaf that reaches a row is not spliced in
+/// the bases after.
 ///
 /// A row's native closure could read a leaf the connector does not, where the
 /// two are equal in every bundled combination (`text_area.border` and
@@ -4964,6 +4965,9 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         let (cited, needs) = match entry.why {
             Unread::NoReceiver(evidence) | Unread::Ruled(evidence) => {
                 (evidence.contains(".rs:"), "an upstream file.rs:line")
+            }
+            Unread::Fallback(evidence) => {
+                (evidence.contains(".rs:"), "the connector's file.rs:line")
             }
             Unread::Inherited(evidence) => (
                 evidence.contains("inheritance-rules.toml:"),
