@@ -44,7 +44,7 @@ are needed to use bundled presets.
 ## Core concepts
 
 - **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 29 optional ones, most of them state shades such as `checkbox.hover_background`, which every bundled preset states and a theme of your own may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`. Safe to hand to UI code.
+- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 34 optional ones, most of them state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`. The switch's track and thumb outlines, their colours and widths (`switch.track_border_line_width`, `switch.thumb_border_line_width`), are `None` too where the theme states none, and no outline is drawn. Safe to hand to UI code.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 17 ship today:
   - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`, `macos-tahoe`, `material-3`, `ios-13`
@@ -79,13 +79,18 @@ let mut theme = Theme::preset("nord")?;
 let overrides = Theme::from_toml(r##"
     [light.defaults]
     accent_color = "#ff6600"
+
+    [dark.defaults]
+    accent_color = "#ff6600"
 "##)?;
 theme.merge(&overrides);
 # Ok::<(), native_theme::Error>(())
 ```
 
 `merge` fills in only the fields present in the overlay; everything else stays
-from the base preset. An overlay needs no `name`: the base keeps its own.
+from the base preset. An overlay needs no `name`: the base keeps its own. It
+changes only the variants it states, so the recipes state both: an overlay of
+`[light.defaults]` alone leaves the dark variant as it was.
 
 ### Apply an overlay to the OS theme at runtime
 
@@ -96,22 +101,32 @@ let sys = SystemTheme::from_system()?;
 let overlay = Theme::from_toml(r##"
     [light.defaults]
     accent_color = "#ff6600"
+
+    [dark.defaults]
+    accent_color = "#ff6600"
 "##)?;
 let customised = sys.with_overlay(&overlay)?;
 # Ok::<(), native_theme::Error>(())
 ```
 
-### Cheap dark-mode poll
+### Cheap dark-mode check
 
 ```rust,no_run
-use native_theme::detect::system_is_dark;
+use native_theme::detect::{detect_is_dark, system_is_dark};
 
+// Cached: the first call reads the OS, later calls return its answer.
 if system_is_dark() {
     // …
 }
+
+// Uncached: reads the OS on every call, for polling.
+let dark_now = detect_is_dark();
 ```
 
-Cached, does not run the full theme-reader pipeline.
+Neither runs the full theme-reader pipeline. `system_is_dark()` keeps its
+answer until `detect::invalidate_caches()`, so a poll of it never sees the
+user switch modes; poll `detect_is_dark()`, or follow the changes as the next
+recipe does.
 
 ### Watch for OS theme changes
 
@@ -140,7 +155,12 @@ Keep the subscription alive: dropping it stops watching.
   <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner">
 </p>
 
-Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:
+Semantic icon roles map to platform-appropriate glyphs via typed per-set
+loaders. Each loader needs its set's feature and gives `None` without it:
+`MaterialLoader` needs `material-icons` and `LucideLoader` `lucide-icons`;
+the platform loaders need `system-icons` (which enables `material-icons` too)
+and their platform: `FreedesktopLoader` Linux, `SfSymbolsLoader` macOS and
+`SegoeFluentLoader` Windows.
 
 ```rust,no_run
 use native_theme::icons::{FreedesktopLoader, IconRole, MaterialLoader};
@@ -148,13 +168,17 @@ use native_theme::icons::{FreedesktopLoader, IconRole, MaterialLoader};
 // Bundled set (no system dependencies).
 let copy = MaterialLoader::new(IconRole::ActionCopy).load();
 
-// System icon theme on Linux (reads the active theme, e.g. breeze-dark).
-let sys = FreedesktopLoader::new(IconRole::ActionCopy)
+// System icon theme on Linux: the one the desktop has active.
+let sys = FreedesktopLoader::new(IconRole::ActionCopy).load();
+
+// A named icon theme instead of the active one.
+let breeze_dark = FreedesktopLoader::new(IconRole::ActionCopy)
     .theme("breeze-dark")
     .load();
 ```
 
-Animated spinners respect the OS `prefers-reduced-motion` preference:
+Animated spinners respect the OS `prefers-reduced-motion` preference
+(`MaterialLoader::load_indicator()` needs `material-icons` too):
 
 ```rust,no_run
 use native_theme::icons::MaterialLoader;
@@ -192,7 +216,7 @@ native-theme = { version = "0.6", features = ["native"] }
 | `watch` | Runtime theme-change notifications |
 | `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
 | `material-icons` / `lucide-icons` | Bundle those icon sets |
-| `svg-rasterize` | Rasterize SVG icons to RGBA via resvg |
+| `svg-rasterize` | Rasterise SVG icons to RGBA via resvg |
 | `system-fonts` | The platform's own typeface for a family: `fonts::system_face` over the system font database (fontdb), and on macOS the system UI font's file through Core Text |
 
 OS-specific dependencies are target-gated — `native` on macOS only pulls in
