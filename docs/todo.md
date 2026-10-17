@@ -1576,6 +1576,22 @@ model, the platform presets and the three connectors
       `native-theme/src/presets/documented_sizes.rs` cites §2.10 and §2.12 at
       their headings for the presets whose padding rows give a value they do
       not state yet; T16 states them and cites the rows.
+      M8 T15 fix round 1 (2026-10-17, after the independent verification):
+      further rows now disagree with presets, for T16. kde-breeze: the
+      toolbar's bottom edge, 1 in the Header set's separator colour (#b9bbbd /
+      #535659, §2.13, where the preset states `line_width_px = 0`); the
+      popover's padding, 12 (§2.16); the slider thumb, `[Colors:Button]`
+      #fcfcfc / #292c30 (§2.9); the switch tracks, checked #92cae8 /
+      #3e7797 and unchecked #e6e7e7 / #3e4144 (§2.21); the card, Kirigami's
+      `Card` (§2.26). windows-11: the tab label, `TextFillColorSecondary`
+      (§2.11 `font.color`). adwaita: no border at rest on the button, the
+      entry and the dropdown (§2.3, §2.4, §2.24), `$slider_color` for the
+      slider thumb (§2.9), `$button_color` behind the toggle group (§2.25).
+      The macOS presets: §2.26's cells are ❓ (the box's look is not
+      published) with a 5 padding from `NSBox.contentViewMargins`, so the
+      inherited card fill is not a wrong safety net; the progress bar's
+      padding is 0, and on macOS 26 the unchecked box is `#00000019` /
+      `#ffffff19` with no outline (§2.5, §2.10).
 
 ### windows-11: the validator's findings after T35 left open
 
