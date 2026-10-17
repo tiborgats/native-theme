@@ -881,6 +881,15 @@ impl CliArgs {
             && self.pointer.is_none()
     }
 
+    /// Whether the showcase follows the OS theme as it changes: not in a
+    /// capture (`--capture`, `--screenshot`) or a layout dump
+    /// (`--dump-layout`), which show the theme the run started with. As the
+    /// egui showcase's `CliArgs::follows_os`.
+    #[cfg_attr(not(feature = "watch"), allow(dead_code))]
+    fn follows_os(&self) -> bool {
+        !self.capture && self.screenshot.is_none() && self.dump_layout.is_none()
+    }
+
     fn parse() -> Self {
         let mut args = Self::default();
         let argv: Vec<String> = std::env::args().collect();

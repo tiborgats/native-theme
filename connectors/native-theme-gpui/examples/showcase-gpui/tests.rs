@@ -4696,6 +4696,42 @@ fn a_layout_dump_is_the_same_under_the_pointer(cx: &mut TestAppContext) {
     );
 }
 
+/// The showcase follows the OS theme in an interactive run only: a capture
+/// (`--capture`, `--screenshot`) and a layout dump (`--dump-layout`) show
+/// the theme the run started with, and its watcher is never started there.
+#[test]
+fn only_an_interactive_run_follows_the_os() {
+    assert!(
+        crate::CliArgs::default().follows_os(),
+        "a run without flags does not follow the OS"
+    );
+    for (flag, args) in [
+        (
+            "--capture",
+            crate::CliArgs {
+                capture: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "--screenshot p",
+            crate::CliArgs {
+                screenshot: Some("p".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "--dump-layout f",
+            crate::CliArgs {
+                dump_layout: Some("f".into()),
+                ..Default::default()
+            },
+        ),
+    ] {
+        assert!(!args.follows_os(), "{flag} follows the OS");
+    }
+}
+
 /// The chrome takes what the theme states: the side panel is filled with
 /// `sidebar.background_color`; the splitter is `splitter.divider_width`
 /// wide in `splitter.divider_color`; a menu title under the pointer fills

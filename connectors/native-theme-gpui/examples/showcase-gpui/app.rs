@@ -1519,13 +1519,16 @@ impl Showcase {
         });
 
         // Follow the OS theme while the colour mode is System (feature
-        // `watch`). Skip in screenshot mode — the watcher's background thread
-        // cleanup races with the Cocoa runtime on macOS CI, causing SIGTRAP on
-        // exit. Skip under `cargo test` too: the watcher puts a file watch on
-        // the desktop's own configuration, and the self-tests below build
-        // this view for real. Nothing they assert depends on it.
+        // `watch`), in an interactive run only (`CliArgs::follows_os`): a
+        // capture and a layout dump show the theme the run started with, and
+        // under `--screenshot` the watcher's background thread cleanup races
+        // with the Cocoa runtime on macOS CI, causing SIGTRAP on exit, so it
+        // is never started there. Skip under `cargo test` too: the watcher
+        // puts a file watch on the desktop's own configuration, and the
+        // self-tests below build this view for real. Nothing they assert
+        // depends on it.
         #[cfg(feature = "watch")]
-        let _theme_watcher = if cfg!(test) || std::env::args().any(|a| a == "--screenshot") {
+        let _theme_watcher = if cfg!(test) || !crate::CliArgs::parse().follows_os() {
             None
         } else {
             let showcase = cx.weak_entity();
