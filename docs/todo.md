@@ -1596,6 +1596,12 @@ model, the platform presets and the three connectors
       `disabled_checked_background` #e6e7e8 / #26292c and
       `disabled_unchecked_background` #e9e9e9 / #2e3135
       (`docs/platform-facts.md:1529-1530`); the switch's disabled tracks close.
+      M8 final fix (2026-10-17): adwaita `button.hover_background` `#d5d5d5` /
+      `#464649` (`adwaita.toml` `[light.button] hover_background`,
+      `[dark.button] hover_background`; §2.3 `hover_background`, whose GNOME
+      cell this fix gives its value: `$button_hover_color`, `currentColor` at
+      15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
+      the window).
 
 ### KDE reader: the toolbar's Header fill and the window border size
 
