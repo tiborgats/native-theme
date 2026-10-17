@@ -44,7 +44,7 @@ Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archiv
 
 ## v0.7.0 — Whole-codebase review
 
-The release after v0.6.1 is 0.7.0: the review's design phase accepted three
+The release after v0.6.1 is 0.7.0. The review's design phase accepted three
 breaking changes ([`docs/todo_code-review-plan.md`](docs/todo_code-review-plan.md), D1):
 
 - the `-live` preset tier is removed: the platform readers merge over the
@@ -58,6 +58,13 @@ breaking changes ([`docs/todo_code-review-plan.md`](docs/todo_code-review-plan.m
 The rest of the release is the review's fixes: its design decisions, platform
 fidelity per OS version, and the code review of every crate, recorded in
 [`docs/todo_code-review-findings.md`](docs/todo_code-review-findings.md).
+Many of them break the public API too: among others, the `macos-sonoma` and
+`ios` presets are `macos-monterey` and `ios-13`, the `model` module is
+private and the icon and detection items have one path each (`icons`,
+`detect`), `Error::Io` names the file, more types are `#[non_exhaustive]`,
+and the gpui and egui connectors read the OS theme only with their `native`
+feature, as the iced connector does. The *Breaking Changes* of
+[CHANGELOG.md](CHANGELOG.md)'s *Unreleased* section list every one.
 
 It also moves the gpui connector to GPUI Kit 0.7.3 on gpui-pre 0.3.9, with a
 `gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast, and
@@ -65,25 +72,31 @@ the gpui showcase's Typography page shows `Diff`.
 
 ## v0.7.1 — Full theme geometry in the iced connector
 
-v0.5.9 ships most of it. `native_theme_iced::styles` (feature `widgets`, on by
-default) replaces nineteen of iced's style functions with closures built
-from the resolved theme: every `Style` field — colours, border radius and
-width included — of the button (neutral, primary, danger, success, warning
-and link classes), text input, text editor, checkbox, radio, toggler, pick
-list, menu, slider, scrollable, progress bar, rule, tooltip and a card
-container; its twentieth item, `styles::scrollbar`, is the scrollbar's
-configuration, its widths and embedding. `styles::aw` (feature `iced_aw`)
-does the same for `iced_aw`'s card, menu bar, tab bar, sidebar, selection
-list and spinner, and `styles::segmented_control`, `segment` and `expander`
-style the containers and buttons the showcase builds those widgets from. Padding, which iced takes through each widget's builder
-rather than its `Style`, comes from `button_padding`, `input_padding`, `text_area_padding`,
-`combo_box_padding` and, for any other widget, `padding_or`,
-`padding_inside_border` and `stated_padding`, each keeping iced's own
-default for a side the theme does not state. A `Style` field the model does
-not carry is read from iced's default for that widget, and the twelve theme
-values iced 0.14 and `iced_aw` 0.14.1 have no receiver for (and one emitted
-field, `styles::aw::card.close_color`) are listed, with
-the upstream lines that show it, in the connector's mapping contract.
+v0.5.9 ships most of it, and the code review's M5 adds `styles::button_toggle`,
+`pane_grid` and `expander_frame` in v0.7.0. `native_theme_iced::styles`
+(feature `widgets`, on by default) has 28 style functions, closures built
+from the resolved theme. Twenty replace iced's own: every `Style` field —
+colours, border radius and width included — of the button (neutral, primary,
+danger, success, warning and link classes), text input, text editor,
+checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar,
+rule, pane grid split lines, tooltip and a card container.
+`styles::checkbox_over` and `toggler_over` are the checkbox and toggler of a
+control drawn on a backdrop rather than on the window (a disabled one is
+faded as one widget over it), `styles::button_toggle` is a toggle button,
+`styles::scrollbar` is the scrollbar's configuration, its widths and
+embedding, and `styles::segmented_control`, `segment`, `expander` and
+`expander_frame` style the containers and buttons the showcase builds those
+widgets from. `styles::aw` (feature `iced_aw`) gives `iced_aw`'s card, menu
+bar, tab bar, sidebar, selection list and spinner the same. Padding, which
+iced takes through each widget's builder rather than its `Style`, comes from
+`button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`
+and, for any other widget, `padding_or`, `padding_inside_border` and
+`stated_padding`, each keeping iced's own default for a side the theme does
+not state. A `Style` field the model does not carry is read from iced's
+default for that widget, and the thirteen theme values iced 0.14 and
+`iced_aw` 0.14.1 have no receiver for, or carry only in part (and one
+emitted field, `styles::aw::card.close_color`), are listed, with the
+upstream lines that show it, in the connector's mapping contract.
 
 **What remains** of the plan:
 
@@ -91,9 +104,11 @@ the upstream lines that show it, in the connector's mapping contract.
   palette: `button::background`, `checkbox::{secondary, success, danger}`,
   `progress_bar::{secondary, success, warning, danger}`,
   `container::{rounded_box, dark, primary, secondary, success, warning,
-  danger}` and `pane_grid::default`. `container::bordered_box` and
-  `button::subtle` stay iced's on purpose: they paint `background.weakest`,
-  a colour iced derives and no platform states;
+  danger}`. `container::bordered_box` and `button::subtle` stay iced's on
+  purpose: they paint `background.weakest`, a colour iced derives and no
+  platform states. `styles::pane_grid` leaves its `hovered_region`, the
+  highlight under a pane dragged over another, iced's too: the model states
+  no drop target;
 - helpers for the sizes iced takes through widget builders
   (`Checkbox::size`, `ProgressBar::girth`, a rule's thickness; a switch's
   and a radio's sizes already come through `switch` and `radio`), which an application reads from the `ResolvedTheme` itself
