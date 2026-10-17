@@ -4259,9 +4259,16 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
                 "showcase-egui-dump-{}-{pointer}.json",
                 std::process::id()
             ));
-            let _ = run(Some(&path), pointer);
+            let last = run(Some(&path), pointer);
             let text = std::fs::read_to_string(&path).expect("the layout dump was written");
             std::fs::remove_file(&path).expect("the layout dump is removed");
+            // The dump is the layout the run ended in, as the control below measures it (`{:#}`
+            // is `serde_json::to_string_pretty`, which the dump is written with): one written
+            // before the pointer reached the page would make the equality vacuous.
+            assert!(
+                text == format!("{last:#}"),
+                "pointer {pointer}: the dump is not the layout the run settled in:\n{text}\n---\n{last:#}"
+            );
             text
         })
         .collect();
