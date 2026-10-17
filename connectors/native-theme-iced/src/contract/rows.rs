@@ -572,13 +572,19 @@ fn native_input_fill(r: &ResolvedTheme, disabled: bool) -> Color {
 ///
 /// A theme whose focus ring is inset (`defaults.focus_ring_offset` = minus
 /// its width, `docs/platform-facts.md` §2.1.5) has the focused field drawn
-/// with the ring as its border, in the focus colour or the ring's.
+/// with the ring as its border, in the focus colour or the ring's laid over
+/// the field's fill.
 #[cfg(feature = "widgets")]
 fn native_input_border(r: &ResolvedTheme, rest: Rgba, hovered: bool, focused: bool) -> Color {
     let i = &r.input;
-    to_color(if focused && native_inset_ring(r).is_some() {
-        i.focus_border_color.unwrap_or(r.defaults.focus_ring_color)
-    } else if focused {
+    if focused && native_inset_ring(r).is_some() {
+        // The platform lays the ring over the field's fill.
+        return crate::styles::composite_over(
+            to_color(i.focus_border_color.unwrap_or(r.defaults.focus_ring_color)),
+            to_color(i.background_color),
+        );
+    }
+    to_color(if focused {
         i.focus_border_color.unwrap_or(rest)
     } else if hovered {
         i.hover_border_color.unwrap_or(rest)

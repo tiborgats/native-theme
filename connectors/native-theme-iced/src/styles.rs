@@ -533,13 +533,19 @@ impl InputColors {
         // -$width`, `docs/platform-facts.md` §2.1.5) lies inside the field's
         // edge, where iced paints a border (`renderer::Quad { bounds, border,
         // .. }`, iced_widget 0.14.2 `src/text_input.rs:473-478`), so it is
-        // drawn exactly as a border that wide, in the focus colour. Without a
-        // ring, or with one that lies outside the edge, which iced has
-        // nowhere to draw, a focused field recolours its rest line.
+        // drawn exactly as a border that wide. iced's quad puts the border in
+        // place of the fill under it rather than over it (`mix(color,
+        // border_color, ..)`, iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`),
+        // while the platform lays the ring over the field's fill, so a
+        // translucent ring is composited over the fill here. A ring that lies
+        // outside the edge (offset 0 or more: KDE's +2, Windows' +1) or
+        // straddles it (macOS's -1 with width 3) is not a border iced can
+        // draw; there a focused field recolours its rest line (the contract's
+        // `UNREACHABLE` entry for `defaults.focus_ring_offset`).
         let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
         let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {
             Border {
-                color: to_color(focus_color),
+                color: composite_over(to_color(focus_color), idle),
                 width: border.width.max(d.focus_ring_width),
                 ..border
             }

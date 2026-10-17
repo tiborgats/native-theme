@@ -3759,7 +3759,8 @@ fn a_text_editor_is_framed_by_the_text_areas_border() -> native_theme::Result<()
 /// adwaita states no border on a text input at rest (`input.border.line_width`
 /// 0, `docs/platform-facts.md` §2.4) and an inset focus ring, 2 px at offset
 /// -2 (§2.1.5): a focused field still shows an edge, the ring drawn as a
-/// border inside the field in `input.focus_border_color`.
+/// border inside the field in `input.focus_border_color` laid over the
+/// field's fill (iced's quad puts a border in place of the fill).
 #[cfg(feature = "widgets")]
 #[test]
 fn a_focused_borderless_input_draws_the_inset_focus_ring() -> native_theme::Result<()> {
@@ -3770,12 +3771,31 @@ fn a_focused_borderless_input_draws_the_inset_focus_ring() -> native_theme::Resu
         assert_eq!(resolved.input.border.line_width, 0.0, "adwaita {mode:?}");
         let d = &resolved.defaults;
         assert_eq!(d.focus_ring_offset, -d.focus_ring_width, "adwaita {mode:?}");
-        let ring = to_color(
-            resolved
-                .input
-                .focus_border_color
-                .unwrap_or(d.focus_ring_color),
+        // The translucent ring laid over the field's fill, as libadwaita
+        // draws it (and egui): #75a4d2 / #5d849e, each channel within the
+        // 8-bit rounding of the ring's 0x80 alpha.
+        let ring = styles::composite_over(
+            to_color(
+                resolved
+                    .input
+                    .focus_border_color
+                    .unwrap_or(d.focus_ring_color),
+            ),
+            to_color(resolved.input.background_color),
         );
+        let drawn = if mode == ColorMode::Dark {
+            [0x5d_u8, 0x84, 0x9e]
+        } else {
+            [0x75, 0xa4, 0xd2]
+        };
+        let rgb = [ring.r, ring.g, ring.b].map(|c| (c * 255.0).round());
+        for (got, want) in rgb.iter().zip(drawn) {
+            assert!(
+                (got - f32::from(want)).abs() <= 1.0,
+                "adwaita {mode:?}: the ring over the fill is {rgb:?}, libadwaita's {drawn:x?}"
+            );
+        }
+        assert_eq!(ring.a, 1.0, "adwaita {mode:?}: the field's fill is opaque");
         let theme = crate::to_theme(&resolved, "adwaita");
         let focused = text_input::Status::Focused { is_hovered: false };
         let input = styles::text_input(&resolved)(&theme, focused).border;

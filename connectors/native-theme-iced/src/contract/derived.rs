@@ -973,6 +973,37 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
     Unreachable {
+        field: "defaults.focus_ring_offset",
+        evidence: "a focused text field draws the theme's focus ring only where the \
+             ring lies inside its edge (offset minus the width), as its border: \
+             iced paints a quad's border inside the quad's bounds \
+             (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`) and a \
+             `text_input::Style` has one border and no outline \
+             (iced_widget 0.14.2 `src/text_input.rs:1713-1726`). A ring outside \
+             the edge (KDE's +2, Windows' and the colour schemes' +1) or across it \
+             (macOS's -1 with width 3) has nowhere to be drawn, so a focused \
+             field recolours its rest line in `input.focus_border_color` instead",
+        lost: |_, r| {
+            let d = &r.defaults;
+            (d.focus_ring_width > 0.0 && d.focus_ring_offset != -d.focus_ring_width).then(|| {
+                format!(
+                    "a {}px ring at offset {}px",
+                    d.focus_ring_width, d.focus_ring_offset
+                )
+            })
+        },
+        exceptions: &[
+            (
+                "adwaita/light",
+                "an inset ring, 2px at -2: drawn as the focused field's border",
+            ),
+            (
+                "adwaita/dark",
+                "an inset ring, 2px at -2: drawn as the focused field's border",
+            ),
+        ],
+    },
+    Unreachable {
         field: "scrollbar.min_thumb_length",
         evidence: "iced sizes the scroller itself and exposes no minimum: \
              `let scroller_length = (scrollbar_bounds.width * ratio).max(2.0);` \
