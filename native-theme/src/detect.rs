@@ -1689,42 +1689,63 @@ mod detection_context_tests {
         assert_eq!(a, b);
     }
 
-    #[test]
-    fn is_dark_caches_result() {
+    /// A context with every slot filled.
+    fn filled() -> DetectionContext {
         let ctx = DetectionContext::new();
-        let first = ctx.is_dark();
-        let second = ctx.is_dark();
-        assert_eq!(first, second);
+        ctx.is_dark.get_or_fill(|| true);
+        ctx.reduced_motion.get_or_fill(|| true);
+        ctx.reader_accessibility
+            .get_or_fill(crate::AccessibilityPreferences::default);
+        let _ = ctx.icon_theme.get_or_fill(|| Ok("breeze".to_string()));
+        #[cfg(target_os = "linux")]
+        ctx.linux_desktop.get_or_fill(|| LinuxDesktop::Kde);
+        #[cfg(target_os = "linux")]
+        ctx.refined_linux_desktop.get_or_fill(|| RefinedDesktop {
+            desktop: LinuxDesktop::Kde,
+            by_kdeglobals: false,
+        });
+        ctx.font_dpi.get_or_fill(|| 120.0);
+        ctx
     }
 
+    /// `invalidate_all` empties every slot. The pattern names each field, so
+    /// a slot added to [`DetectionContext`] does not compile until it is
+    /// checked here.
     #[test]
-    fn invalidate_is_dark_clears_cache() {
-        let ctx = DetectionContext::new();
-        let _ = ctx.is_dark(); // populate cache
-        ctx.invalidate_is_dark();
-        // After invalidation, next call re-queries (we just verify it doesn't panic)
-        let _ = ctx.is_dark();
-    }
-
-    #[test]
-    fn prefers_reduced_motion_caches_result() {
-        let ctx = DetectionContext::new();
-        let first = ctx.prefers_reduced_motion();
-        let second = ctx.prefers_reduced_motion();
-        assert_eq!(first, second);
-    }
-
-    #[test]
-    fn invalidate_all_clears_all_caches() {
-        let ctx = DetectionContext::new();
-        let _ = ctx.is_dark();
-        let _ = ctx.prefers_reduced_motion();
-        let _ = ctx.icon_theme();
+    fn invalidate_all_empties_every_slot() {
+        let ctx = filled();
         ctx.invalidate_all();
-        // Re-read all without panic
-        let _ = ctx.is_dark();
-        let _ = ctx.prefers_reduced_motion();
-        let _ = ctx.icon_theme();
+        let DetectionContext {
+            is_dark,
+            reduced_motion,
+            reader_accessibility,
+            icon_theme,
+            #[cfg(target_os = "linux")]
+            linux_desktop,
+            #[cfg(target_os = "linux")]
+            refined_linux_desktop,
+            font_dpi,
+        } = &ctx;
+        assert!(is_dark.get().is_none(), "is_dark");
+        assert!(reduced_motion.get().is_none(), "reduced_motion");
+        assert!(reader_accessibility.get().is_none(), "reader_accessibility");
+        assert!(icon_theme.get().is_none(), "icon_theme");
+        #[cfg(target_os = "linux")]
+        assert!(linux_desktop.get().is_none(), "linux_desktop");
+        #[cfg(target_os = "linux")]
+        assert!(
+            refined_linux_desktop.get().is_none(),
+            "refined_linux_desktop"
+        );
+        assert!(font_dpi.get().is_none(), "font_dpi");
+    }
+
+    #[test]
+    fn invalidate_is_dark_empties_only_is_dark() {
+        let ctx = filled();
+        ctx.invalidate_is_dark();
+        assert_eq!(ctx.is_dark.get(), None);
+        assert_eq!(ctx.font_dpi.get(), Some(120.0));
     }
 
     #[test]
@@ -1824,33 +1845,6 @@ mod detection_context_tests {
         ctx.invalidate_accessibility_preferences();
         assert_eq!(ctx.reader_accessibility_with(read), scaled_by(1.25));
         assert_eq!(runs.get(), 2);
-    }
-
-    #[test]
-    fn accessibility_preferences_caches_result() {
-        let ctx = DetectionContext::new();
-        assert_eq!(
-            ctx.accessibility_preferences(),
-            ctx.accessibility_preferences()
-        );
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn linux_desktop_caches_result() {
-        let ctx = DetectionContext::new();
-        let first = ctx.linux_desktop();
-        let second = ctx.linux_desktop();
-        assert_eq!(first, second);
-    }
-
-    #[cfg(target_os = "linux")]
-    #[test]
-    fn invalidate_linux_desktop_clears_cache() {
-        let ctx = DetectionContext::new();
-        let _ = ctx.linux_desktop();
-        ctx.invalidate_linux_desktop();
-        let _ = ctx.linux_desktop(); // re-reads without panic
     }
 
     /// A font DPI detected before an invalidation that lands mid-detection
