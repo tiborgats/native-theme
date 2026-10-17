@@ -114,7 +114,9 @@ color = "#2e3436"
 weight = 700
 
 [light.button]
-background_color = "#e8e8e8"
+# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #e6e6e7
+# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
+background_color = "#e6e6e7"
 min_width_px = 64.0
 min_height_px = 34.0
 icon_text_gap_px = 8.0
@@ -536,7 +538,9 @@ color = "#ffffff"
 weight = 700
 
 [dark.button]
-background_color = "#3a3a3e"
+# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #38383c
+# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
+background_color = "#38383c"
 min_width_px = 64.0
 min_height_px = 34.0
 icon_text_gap_px = 8.0
