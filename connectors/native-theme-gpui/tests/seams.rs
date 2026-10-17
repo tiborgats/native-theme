@@ -1294,6 +1294,10 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
     }
 }
 
+/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2063`,
+/// `border_b_1()`), inside the row's height.
+const ROW_BORDER: f32 = 1.0;
+
 /// Under every native preset, at its own DPI: the text of a cell in a
 /// `DataTable` sized with `geometry::data_table_size`, whose container is
 /// refined with `geometry::table`, lies inside its row at text scales 1, 1.1
@@ -1301,6 +1305,10 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
 /// a `Size::Size` row's height verbatim (`table/state.rs:2047`, `:2061`;
 /// `sizing.rs:57-64`), so above a text scale of 1 the builder grows the row
 /// around the scaled text, which at 2 overruns every native preset's row.
+/// Above 1 the text lies inside the cell's padding too, the cell's own
+/// (`table_cell_padding`, `sizing.rs:89-94`) above it and the padding and
+/// the row's bottom border ([`ROW_BORDER`]) below it, which a row that holds
+/// only the line and the padding overlaps.
 #[gpui::test]
 fn a_data_table_row_holds_its_text_at_every_scale(cx: &mut TestAppContext) {
     for (preset, dpi) in NATIVE {
@@ -1334,6 +1342,18 @@ fn a_data_table_row_holds_its_text_at_every_scale(cx: &mut TestAppContext) {
                 "{preset}: at text scale {factor} the cell text at {text:?} is not inside its \
                  row at {row:?}"
             );
+            if factor > 1.0 {
+                let gpui_component::Size::Size(stated) = geometry::data_table_size(n) else {
+                    panic!("{preset}: data_table_size is not a Size::Size");
+                };
+                let pad = gpui_component::Size::Size(stated).table_cell_padding();
+                assert!(
+                    text.top() >= row.top() + pad.top
+                        && text.bottom() <= row.bottom() - pad.bottom - px(ROW_BORDER),
+                    "{preset}: at text scale {factor} the cell text at {text:?} is not inside \
+                     the padding, {pad:?}, and the bottom border of its row at {row:?}"
+                );
+            }
         }
     }
 }

@@ -1037,11 +1037,12 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 /// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
 /// Medium row height where the theme states none. Above a text-scaling factor
 /// of 1 the row is at least the scaled `list.item_font`'s line box at
-/// `defaults.line_height`, rounded up, and upstream's own top and bottom cell
-/// padding (`Size::table_cell_padding`, `src/sizing.rs:89-94`): the
+/// `defaults.line_height`, rounded up, upstream's own top and bottom cell
+/// padding (`Size::table_cell_padding`, `src/sizing.rs:89-94`) and the row's
+/// 1 px bottom border (`border_b_1`, `src/table/state.rs:2063`): the
 /// control-height rule (module doc), computed here because upstream gives
-/// every row this height (`src/table/state.rs:2047`, `:2061`) and clips each
-/// cell to it (`:1406-1412`).
+/// every row this height (`src/table/state.rs:2047`, `:2061`), its border
+/// inside it, and clips each cell to it (`:1406-1412`).
 ///
 /// Under `Size::Size` gpui-component sets the row height verbatim
 /// (`src/sizing.rs:57-64`) and the cells no text size (`:323-333`), so they
@@ -1076,19 +1077,24 @@ pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
         .map(|h| table_row_height(px(h), &l.item_font, n))
 }
 
+/// The bottom border upstream draws under a `DataTable` row and under its
+/// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2063`,
+/// `:1899`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
+const TABLE_ROW_BORDER: f32 = 1.0;
+
 /// A `DataTable` row's height by the control-height rule (module doc): at a
 /// text-scaling factor of 1 or less `stated`, verbatim; above 1 at least the
 /// line box of `font`'s scaled size at `defaults.line_height`, rounded up,
-/// and upstream's own top and bottom cell padding for `Size::Size`. A `Size`
-/// is a number, so the growth the single-line controls get from an automatic
-/// height is computed here.
+/// upstream's own top and bottom cell padding for `Size::Size` and the row's
+/// bottom border ([`TABLE_ROW_BORDER`]). A `Size` is a number, so the growth
+/// the single-line controls get from an automatic height is computed here.
 fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
     if n.accessibility.text_scale_factor() <= 1.0 {
         return stated;
     }
     let padding = Size::Size(stated).table_cell_padding();
     let line = (f32::from(scaled_text_size(font, n)) * n.resolved.defaults.line_height).ceil();
-    let fit = line + f32::from(padding.top) + f32::from(padding.bottom);
+    let fit = line + f32::from(padding.top) + f32::from(padding.bottom) + TABLE_ROW_BORDER;
     px(f32::from(stated).max(fit))
 }
 
@@ -1634,24 +1640,15 @@ mod tests {
         });
     }
 
-    /// The control-height rule for a table row: `stated` at s <= 1; above 1
-    /// at least the scaled text's line box, rounded up, and upstream's own
-    /// `Size::Size` cell padding top and bottom.
-    fn grown_row(stated: Pixels, r: &ResolvedTheme, font: &ResolvedFontSpec, s: f32) -> Pixels {
-        if s <= 1.0 {
-            return stated;
-        }
-        let cell = Size::Size(stated).table_cell_padding();
-        let line = (font.size * s * r.defaults.line_height).ceil();
-        px(f32::from(stated).max(line + f32::from(cell.top) + f32::from(cell.bottom)))
-    }
-
+    /// The row the theme states, or upstream's Medium one, grown by
+    /// [`table_row_height`], whose formula `tests/seams.rs` checks against the
+    /// drawn row (`a_data_table_row_holds_its_text_at_every_scale`).
     #[test]
     fn data_table_size_falls_back_to_upstream_medium() {
         let mut stated = 0;
         let mut unstated = 0;
         let mut grown = 0;
-        for_each_case(|r, s, n| {
+        for_each_case(|r, _, n| {
             let base = match r.list.row_height {
                 Some(h) => {
                     stated += 1;
@@ -1662,7 +1659,7 @@ mod tests {
                     Size::Medium.table_row_height()
                 }
             };
-            let expected = grown_row(base, r, &r.list.item_font, s);
+            let expected = table_row_height(base, &r.list.item_font, n);
             if expected != base {
                 grown += 1;
             }
@@ -1703,7 +1700,7 @@ mod tests {
                         resolved: &r,
                         accessibility: &prefs,
                     };
-                    let expected = stated.map(|h| grown_row(px(h), &r, &r.list.item_font, factor));
+                    let expected = stated.map(|h| table_row_height(px(h), &r.list.item_font, n));
                     grown |= expected != stated.map(px);
                     assert_eq!(list_header_height(n), expected, "{preset} {mode:?}");
                 }
@@ -1731,7 +1728,7 @@ mod tests {
             resolved: &r,
             accessibility: &prefs,
         };
-        let expected = grown_row(px(stated), &r, &r.list.item_font, factor);
+        let expected = table_row_height(px(stated), &r.list.item_font, n);
         assert_ne!(
             expected,
             px(stated),
