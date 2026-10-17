@@ -311,7 +311,7 @@ const ROWS: &[Row] = &[
     row(Windows11, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1248, 1249], "11; mouse context 4 top / 5 bottom")
         .with(&[("row_height", Some(23.0), 1247)]),
     row(Windows11, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1270, 1271], "ToolTipBorderPadding=9,6,9,8"),
-    row(Windows11, "progress_bar", NONE, &[1316], "§2.10's padding rows give 0, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(Windows11, "progress_bar", all(0.0), &[1328, 1329], "Control.Padding's default 0; 0"),
     row(Windows11, "tab", axes(3.0, 8.0), &[1339, 1340], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
         .with(&[("item_gap", Some(0.0), 1347)]),
     row(Windows11, "sidebar", NONE, &[1353], "§2.12's padding rows give 3 across, the vertical ❓, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),

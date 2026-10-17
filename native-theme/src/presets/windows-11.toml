@@ -278,6 +278,10 @@ line_width_px = 0.0
 corner_radius_px = 1.5
 # platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0, ProgressBarRoot pads by the control's Padding, which the style leaves at
+# Control.Padding's default 0 (ProgressBar.xaml:155, :3-12)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [light.tab]
 # platform-facts.md:1337 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
@@ -857,6 +861,10 @@ line_width_px = 0.0
 corner_radius_px = 1.5
 # platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
+# platform-facts.md:1328-1329 (§2.10): 0; 0, ProgressBarRoot pads by the control's Padding, which the style leaves at
+# Control.Padding's default 0 (ProgressBar.xaml:155, :3-12)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [dark.tab]
 # platform-facts.md:1337 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
