@@ -5060,8 +5060,9 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
         }
     }
 
-    // The connector's own widget is a sink (docs/todo.md's ruling on the
-    // widgets' contracts): each leaf the `Spinner` draws in reaches its row.
+    // The connector's own widget is a sink (the ruling in docs/archive/todo_closed.md,
+    // *Contracts: the connectors' widgets*, "A design question for all connectors"): each
+    // leaf the `Spinner` draws in reaches its row.
     #[cfg(feature = "spinner")]
     for (leaf, row) in SPINNER_READS {
         let rows = reached.get(*leaf).map(Vec::as_slice).unwrap_or_default();

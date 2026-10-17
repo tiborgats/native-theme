@@ -846,46 +846,6 @@ and many have since drifted, as the archive's [README](README.md) warns.
       v0.5.8 for every widget with a reachable seam (`geometry` module,
       `base_layer`); the inner-element remainder is the upstream PR list
       below (v0.5.8 spec §14).
-- [x] [v0.7.0] Make the layout-dump gate deterministic: `--dump-layout` records the
-      Widget Info and status-bar readout of the element under the pointer
-      (`chrome.info.*`, `chrome.status_bar.shown`), so a before/after
-      comparison differs with where the pointer sat (v0.6.1 had to filter
-      those keys); park the pointer outside the window during a dump, or
-      leave those keys out of the dump.
-  *Closed by M8 T12 (2026-10-17, fc2fa811):* the dump ignores the pointer
-      (Step 6 ruling): under `--dump-layout` each showcase keeps the window's
-      own pointer off its widgets with its capture shield (gpui's and iced's
-      `CliArgs::shields_pointer`, egui's `CliArgs::shields_pointer` read by
-      `raw_input_hook`), so the keys stay in the list and the comparator, the
-      Widget Info rows hold their hint and `chrome.status_bar.shown` is not
-      drawn; `--pointer X,Y` still holds a pointer of its own. Each showcase's
-      `a_layout_dump_is_the_same_under_the_pointer` checks it. Two live dumps
-      of each showcase are byte-identical. The release asset run now compares
-      the three at rest (c20daadc).
-  Archived 2026-10-17 (M8 T21): ticked in 70ead29f.
-- [x] [1.0] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
-      heading at `rems(2.)`..`rems(1.)` resolved against `heading_base_font_size`
-      (`gpui-base text/node.rs:2891-2901`), which defaults to `px(14.)`
-      (`gpui-base text/style.rs:88`), and gpui-component's
-      `base_text_view_style` never sets it (`text/mod.rs:34-61`) -- so an H1 is
-      28px on every platform while the body text around it follows the
-      platform font. `TextViewStyle::with_heading_base_font_size` and
-      `with_heading_font_size` are public; find out whether an application can
-      install its own `TextViewDefaults` without upstream overwriting them on
-      the next theme change, and then whether the platform's `text_scale`
-      roles should drive the heading sizes. Found 2026-09-22.
-      *Closed by gpui-component 0.7.3 (2026-10-14):* fixed upstream. gpui-base
-      0.7.3 has no `heading_base_font_size`: a heading is the body size
-      times its level's ratio, 1.8, 4⁄3, 17⁄15, 1, 14⁄15 and 13⁄15, every level
-      semibold (`gpui-base text/node.rs:2867-2876, 2883-2888`), and the body
-      size follows the rem the connector sets from `defaults.font.size`.
-      Headings keep TextView's ratios rather than the platform's
-      `text_scale` roles: editors size their headings their own way, not as
-      the OS sizes its titles (the maintainer's decision for v0.7.0), and
-      gpui-component builds TextView's defaults from the theme itself
-      (`text/mod.rs:35-62`), so the connector installs nothing. It moves to
-      the archive at the next prune.
-  Archived 2026-10-17 (M8 T21): ticked in c0fa1b02.
 
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -969,6 +929,23 @@ and many have since drifted, as the archive's [README](README.md) warns.
       NumberInput, OtpInput, Checkbox, Radio, Select and Combobox infos take
       their fill claim from one mode-aware helper (`info/chrome.rs`,
       `input_background`).
+- [x] [v0.7.0] Make the layout-dump gate deterministic: `--dump-layout` records the
+      Widget Info and status-bar readout of the element under the pointer
+      (`chrome.info.*`, `chrome.status_bar.shown`), so a before/after
+      comparison differs with where the pointer sat (v0.6.1 had to filter
+      those keys); park the pointer outside the window during a dump, or
+      leave those keys out of the dump.
+  *Closed by M8 T12 (2026-10-17, fc2fa811):* the dump ignores the pointer
+      (Step 6 ruling): under `--dump-layout` each showcase keeps the window's
+      own pointer off its widgets with its capture shield (gpui's and iced's
+      `CliArgs::shields_pointer`, egui's `CliArgs::shields_pointer` read by
+      `raw_input_hook`), so the keys stay in the list and the comparator, the
+      Widget Info rows hold their hint and `chrome.status_bar.shown` is not
+      drawn; `--pointer X,Y` still holds a pointer of its own. Each showcase's
+      `a_layout_dump_is_the_same_under_the_pointer` checks it. Two live dumps
+      of each showcase are byte-identical. The release asset run now compares
+      the three at rest (c20daadc).
+  Archived 2026-10-17 (M8 T21): ticked in 70ead29f.
 
 ### Closed items from What the audit turned up that is ours to fix
 
@@ -1135,6 +1112,32 @@ and many have since drifted, as the archive's [README](README.md) warns.
       at (it is offered on macOS alone): rem 13px, items 34px wide, `p_2`
       6.5px, so 21px remains and the 16px icon fits inside the padding. The
       96 DPI case does not arise.
+
+### Closed items from Follow-ups from the v0.5.9 showcase and contract work
+
+- [x] [1.0] **Markdown headings are sized from a fixed 14px.** gpui-base draws a
+      heading at `rems(2.)`..`rems(1.)` resolved against `heading_base_font_size`
+      (`gpui-base text/node.rs:2891-2901`), which defaults to `px(14.)`
+      (`gpui-base text/style.rs:88`), and gpui-component's
+      `base_text_view_style` never sets it (`text/mod.rs:34-61`) -- so an H1 is
+      28px on every platform while the body text around it follows the
+      platform font. `TextViewStyle::with_heading_base_font_size` and
+      `with_heading_font_size` are public; find out whether an application can
+      install its own `TextViewDefaults` without upstream overwriting them on
+      the next theme change, and then whether the platform's `text_scale`
+      roles should drive the heading sizes. Found 2026-09-22.
+      *Closed by gpui-component 0.7.3 (2026-10-14):* fixed upstream. gpui-base
+      0.7.3 has no `heading_base_font_size`: a heading is the body size
+      times its level's ratio, 1.8, 4⁄3, 17⁄15, 1, 14⁄15 and 13⁄15, every level
+      semibold (`gpui-base text/node.rs:2867-2876, 2883-2888`), and the body
+      size follows the rem the connector sets from `defaults.font.size`.
+      Headings keep TextView's ratios rather than the platform's
+      `text_scale` roles: editors size their headings their own way, not as
+      the OS sizes its titles (the maintainer's decision for v0.7.0), and
+      gpui-component builds TextView's defaults from the theme itself
+      (`text/mod.rs:35-62`), so the connector installs nothing. It moves to
+      the archive at the next prune.
+  Archived 2026-10-17 (M8 T21): ticked in c0fa1b02.
 
 ### Connectors: `native` and `watch` passthrough features in gpui and egui
 
@@ -1313,7 +1316,7 @@ platform (`native-theme/src/watch/`).
 - [x] [v0.7.0] For M6 (M5 T1 review, Minor): gpui's `from_system_matches_system_theme_ext` (`connectors/native-theme-gpui/src/lib.rs:1549-1561`) compares every other `Loaded` field of `from_system()` with `SystemTheme::to_gpui_theme()`'s, but the gpui `Theme` only through `is_dark()` (`:1555`), where iced's sibling test compares the palette (`connectors/native-theme-iced/src/lib.rs:2208-2221`, `:2220`). Compare a `ThemeColor` field too, such as `background`, so the two tests are equally strong.
   *Closed by M8 T21 (2026-10-17, M8-82):* already done in M6, 4c5410e8 (2026-10-15):
       `from_system_matches_system_theme_ext`
-      (`connectors/native-theme-gpui/src/lib.rs:1915-1931`) asserts
+      (`connectors/native-theme-gpui/src/lib.rs:1915-1930`) asserts
       `loaded.theme.background == expected.theme.background` (`:1924`) beside
       `is_dark()` (`:1923`), the `ThemeColor` comparison this entry asks for.
   Archived 2026-10-17 (M8 T21): closed and moved here in the same commit.

@@ -97,6 +97,12 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       box and a 20 % ring on an unchecked one; Breeze no fill, a
       `DecorationFocus` ring either way; M3 a state layer around the box;
       macOS ❓. The model field is still the one.
+      M8 T21 fix round 1 (2026-10-17): the question whether `windows-11`'s
+      stated `hover_background` is `ControlAltFillColorTertiary` is also *M6
+      close (2026-10-16): items carried to M7, M8, M9a and the presets*,
+      "Presets (windows-11): the checkbox's hover fill", which *Presets:
+      values the M8 T15 platform-facts rows disagree with* links, and *Hover
+      fills: a layer or a replacement*'s fix round 1 line.
 
 ### Tab: an active-tab indicator
 
@@ -278,20 +284,6 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       accent in System Settings, and see the showcase follow (the CI macOS
       leg or the maintainer).
 
-### windows-11: the disabled fills are fully transparent
-
-- [ ] [1.0] `windows-11.toml` states the `disabled_background` of `button`, `input`,
-      `checkbox` and `combo_box` as `#f9f9f900` in light and `#33333300` in
-      dark (light `:127`, `:154`, `:186`, `:454`; dark `:624`, `:651`, `:683`,
-      `:950`): alpha `00`, so a disabled control shows no fill at all. The
-      button's comment names the source, "Fluent ControlFillColorDisabled"
-      (`:126`, `:623`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
-      `Light` dictionary and `#0BFFFFFF` in `Default`, the dark one — ARGB,
-      so about 30 % and 4 % opaque, and white rather than `#333333` in dark
-      ([Common_themeresources_any.xaml:223](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L223),
-      [:19](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L19)). Run the `preset-validator` agent over `windows-11.toml`
-      against that source, record the brush in `docs/platform-facts.md`, where
-      it is not yet, and correct the eight values.
 
 ### platform-facts: macOS vertical padding is measured outside the border
 
@@ -580,6 +572,10 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
       `docs/platform-facts.md` §2.21). *Fix round 1:* adwaita's
       `focus_ring_color` is the computed `$focus_border_color`, #0461be80 /
       #81d0ff80, which §2.1.5 now gives (b70a5968, cff0bc68).
+      M8 T21 fix round 1 (2026-10-17): kde-breeze's
+      `slider.disabled_fill_color`, `splitter.hover_color` and the switch's
+      disabled colours above are also items of *Presets: values the M8 T15
+      platform-facts rows disagree with* (kde-breeze, §2.9, §2.17 and §2.21).
 
 ### Disabled: presets that state both mechanisms
 
@@ -951,7 +947,7 @@ model, the platform presets and the three connectors
 
 ### Model: one `*_text_color` field, two meanings
 
-- [ ] [v0.7.0] For M3: `docs/platform-facts.md` §2.1.4's
+- [ ] [1.0] For M3: `docs/platform-facts.md` §2.1.4's
       `danger_text_color`, `warning_text_color`, `success_text_color` and
       `info_text_color` are the body text beside a status colour on macOS
       and KDE (footnote ¹) and the text on the status fill on Windows and
@@ -964,8 +960,10 @@ model, the platform presets and the three connectors
       (`connectors/native-theme-gpui/src/colors.rs:182`). Give the model
       one meaning per field (or two fields), then restate the presets.
       M8 T21 (2026-10-17): no longer for M3, which closed on 2026-10-12
-      (ledger "## M3") without naming this entry; it stays [v0.7.0], with no
-      milestone of the review assigned.
+      (ledger "## M3") without naming this entry, and no milestone of the
+      review is assigned.
+      M8 T21 fix round 1 (2026-10-17): [1.0], not [v0.7.0]: a model change
+      that no plan schedules fits neither of the header's `[v0.7.0]` clauses.
 
 ### Presets: kde-breeze's sidebar colour set
 
@@ -1002,6 +1000,12 @@ model, the platform presets and the three connectors
       var(--view-bg-color))` (`_scale.scss:50`, `_colors.scss:288`), a light
       grey on the dark `#1d1d20` where the preset resolves `#1d1d20`.
       Correct the cell, then the preset follows.
+      M8 T21 fix round 1 (2026-10-17): the slider half is closed: §2.9's GNOME
+      cell gives `$slider_color` since cbab21c4 (M8 T15), and adwaita states
+      it since 859bf526 (M8 T16), `#ffffff` / `#d2d2d2`
+      (`adwaita.toml:221-222`, `:645-646`); *Presets: values the M8 T15
+      platform-facts rows disagree with* records it among the values T16
+      stated. The list-header half stays.
 
 ### OS probe: macOS renders for the sidebar, the title bar and the list header
 
@@ -1382,8 +1386,9 @@ model, the platform presets and the three connectors
         and `combo_box.disabled_background` `#f9f9f900` / `#33333300`
         (`windows-11.toml:138`, `:177`, `:504`; `:702`, `:741`, `:1067`;
         §2.3, §2.4, §2.24: `ControlFillColorDisabled`, #4DF9F9F9 /
-        #0BFFFFFF; *windows-11: the disabled fills are fully transparent*
-        above); dark `input.hover_border_color` `#00000019` (`:733`; §2.4:
+        #0BFFFFFF; `docs/todo.md`, *native-theme-gpui connector*, *Research*,
+        "windows-11 light gives `button.disabled_background`"); dark
+        `input.hover_border_color` `#00000019` (`:733`; §2.4:
         the rest gradient, `ControlStrokeColorDefault` #12FFFFFF above the
         bottom edge); `checkbox.hover_background` `#0000000a` / `#ffffff0f`
         (`:208`, `:772`; §2.5: `ControlAltFillColorTertiary`, #0F000000 /
@@ -1625,6 +1630,10 @@ model, the platform presets and the three connectors
       so a Kirigami application's pressed link is not modelled. Decide whether
       the model states it (a derived value with that rule) or leaves it to the
       toolkit.
+      M8 T21 fix round 1 (2026-10-17): the pressed colour is also an item of
+      *Presets: values the M8 T15 platform-facts rows disagree with*
+      (kde-breeze, the inherited `link.active_text_color`; §2.28: `Qt.darker`,
+      #14405c / #0e4d79).
 
 ### KDE: the switch's hover and disabled thumb outlines
 
@@ -1721,6 +1730,8 @@ model, the platform presets and the three connectors
       the contract's `PRESSED_OVER_TRANSLUCENT` exception is gone. (2) stays:
       `DERIVED_PRESSED_FILL` still holds, the pressed fill is derived and
       translucent on both variants.
+      M8 T21 fix round 1 (2026-10-17): no longer for M6, which closed on
+      2026-10-16; it stays [1.0], with no milestone of the review assigned.
 
 - [ ] [upstream] **`unicode-properties` back to 0.1.4 when gpui-fast-web
       unpins it.** gpui-fast-web 0.1.7, GPUI Fast's wasm platform crate, asks
@@ -1879,11 +1890,33 @@ model, the platform presets and the three connectors
       (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
       and used by the connector only to switch the ring on or off
       (`lib.rs:180`) -- has no receiver. A `Theme::focus_ring_width`.
-- [ ] [upstream] `tokens.tab`, `tokens.list`, `sidebar_primary` and
+      M8 T21 fix round 1 (2026-10-17): the connector's own widgets draw the
+      same ring: *gpui: the theme-drawn widgets' focus ring*, "The connector's
+      `Checkbox`, `Radio`, `Slider` and `Switch`".
+- [ ] [v0.7.0] `tokens.tab`, `tokens.list`, `sidebar_primary` and
       `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
       `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
       connector maps them anyway, and the contract marks pairs over them as
       inert so they are not counted as coverage.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "`ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints"
+      (479e7284). Tagged [v0.7.0], that entry's tag, not [upstream]: its second
+      remedy, the contract recording the slots as write-only, is the connector's
+      own:
+      `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
+      The connector writes both on every `apply` and both have contract rows
+      (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
+      gpui-component or gpui-base (declared `theme_color.rs:261`, defaulted
+      `schema.rs:996`), and `list_even` is read only as `table_even`'s
+      fallback (`schema.rs:1005`) — which never fires, because the connector
+      writes `table_even` too (`contract.rs:391`). Every gate is green on
+      both: they are written, so no coverage check notices, and they are read
+      nowhere, so no widget can disagree with them. Either upstream should be
+      asked to read them or the contract should record them as write-only.
+      M8 T21 fix round 1 (2026-10-17): the list half overlaps
+      "**`geometry::list` could paint the list.**" (*Follow-ups from the
+      v0.5.9 showcase and contract work*), which would give
+      `list.background_color` a receiver.
 - [ ] [upstream] the segmented `TabBar` has receivers for the track only
       (`tab/tab_bar.rs:391`): the selected segment is filled with
       `tokens.background` and labelled `tab_active_foreground`
@@ -1955,10 +1988,17 @@ model, the platform presets and the three connectors
       the thumb without shortening it.
 - [ ] [upstream] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
 - [ ] [upstream] `Theme.shadow` honoured beyond `Button`; `tokens.shadow` consumed
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "**`Theme::shadow` has one reader.**" (*native-theme-gpui connector*,
+      *Follow-ups from the v0.5.9 showcase and contract work*; 6faef5b2):
+      **`Theme::shadow` has one reader.** The connector sets it from
+      `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
+      `button/button.rs:612`, for a `ButtonVariant::Custom` built with
+      `.shadow(true)`. The semantic shadow tokens it feeds have no reader
+      outside `theme/`. So the platform's shadow preference reaches nothing
+      an application builds by default. Found 2026-09-22 from eleven panels
+      that listed it as theme config.
 - [ ] [upstream] `Size::Size` honoured by `Checkbox` and `Switch`
-- [ ] [upstream] inner geometry exposed: checkbox/radio indicator, switch track and thumb,
-      slider track and thumb, separator thickness, resize-handle width, button
-      icon gap, popup-menu items, select arrow, accordion arrow
 - [ ] [upstream] a disabled `Button` should read the platform's disabled colours.
       `ButtonVariant::disabled` (`button/button.rs:1273-1284`) derives the
       whole state by multiplying: the variant's own token at 0.15 for the
@@ -1991,6 +2031,9 @@ model, the platform presets and the three connectors
       (`gpui-base/styled.rs:79`, derive-refineable `refine`). Found 2026-09-22.
 - [ ] [upstream] a `PopupMenu` item style hook; a `Button::tooltip` style hook
 - [ ] [upstream] button label text size independent of rem
+      M8 T21 fix round 1 (2026-10-17): the same label is "PR: Button: let the
+      caller's text size reach the label" (*native-theme-gpui connector*,
+      *Upstream PRs to gpui-component*).
 - [ ] [upstream] public base-palette fields on `ThemeConfigColors` (`red` … `cyan_light`, `schema.rs:657-668`)
 - [ ] [upstream] internal scrollbars reserve no gutter where the platform's scrollbars
       are not overlays. Each of these attaches `.vertical_scrollbar` or
@@ -2165,6 +2208,23 @@ What is still open on the iced side:
       the button's `#93cee9` is listed in *Presets: values the M8 T15
       platform-facts rows disagree with* ("From M8 T15 (2026-10-17)", fix
       round 2).
+      M8 T21 fix round 1 (2026-10-17): the button half is fixed: since
+      dc1b81aa (M8 T16) kde-breeze's `button.hover_background` is the rest
+      fill, `#fcfcfc` / `#292c30` (`kde-breeze.toml:131`, `:669`), §2.3's "no
+      hover fill". `#93cee9` stays in `checkbox.hover_background`,
+      `scrollbar.thumb_hover_color`, `slider.thumb_hover_color` and
+      `combo_box.hover_background` in both modes and in light's
+      `list.hover_background` and `sidebar.hover_background`; *Presets: values
+      the M8 T15 platform-facts rows disagree with* lists the checkbox's, the
+      slider's and the combo box's, and the scroll bar's only as the source of
+      `thumb_active_color`, so the list and sidebar hovers and the solarized
+      and tokyo-night label contrasts are this entry's alone.
+      M8 T21 fix round 1 (2026-10-17): the
+      `segmented_control.hover_background` `#dee0e2` / `#31363b` above is also
+      in *M6 close (2026-10-16): items carried to M7, M8, M9a and the
+      presets*, "Presets (kde-breeze), found by M6 T16b's", and in *Presets:
+      values the M8 T15 platform-facts rows disagree with* (kde-breeze,
+      §2.25).
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
@@ -2219,16 +2279,36 @@ What is still open on the iced side:
       (Breeze's Disabled palette has a Selection set, `#e3e5e7` / `#1f2124`,
       computed with KColorScheme 6.30.0): the model's one
       `disabled_background` cannot say so.
-- [ ] [1.0] `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
-      zero) and `material-3` `#1c1b1f1f`, so on those four combinations a disabled
-      box is effectively absent — the same shape as the button item below.
 - [ ] [1.0] Audit the other `docs/inheritance-rules.toml` rules against
       platform-facts the way `checkbox.indicator_color` was found: the
-      second half of the item above, which 890edc88 left open.
+      second half of `docs/archive/todo_closed.md`, *Closed items from
+      Research*, "`checkbox.indicator_color` inherited `defaults.text_color`
+      until v0.5.9", which 890edc88 left open.
 - [ ] [1.0] windows-11 light gives `button.disabled_background = "#f9f9f900"` — alpha
       zero, so a disabled button has no fill at all. Found 2026-09-21 while
       measuring translucent state colours; for `preset-validator` to judge
       against Fluent's `ControlFillColorDisabled`.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "`windows-11` states `checkbox.disabled_background`" (e9281823, which stood
+      two items above this one; its "button item below" is this entry):
+      `windows-11` states `checkbox.disabled_background = "#f9f9f900"` (alpha
+      zero) and `material-3` `#1c1b1f1f`, so on those four combinations a disabled
+      box is effectively absent — the same shape as the button item below.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the Core API
+      entry *windows-11: the disabled fills are fully transparent* (5cfe6220), whose
+      heading goes with it:
+      `windows-11.toml` states the `disabled_background` of `button`, `input`,
+      `checkbox` and `combo_box` as `#f9f9f900` in light and `#33333300` in
+      dark (light `:127`, `:154`, `:186`, `:454`; dark `:624`, `:651`, `:683`,
+      `:950`): alpha `00`, so a disabled control shows no fill at all. The
+      button's comment names the source, "Fluent ControlFillColorDisabled"
+      (`:126`, `:623`), and WinUI 3 defines that brush as `#4DF9F9F9` in the
+      `Light` dictionary and `#0BFFFFFF` in `Default`, the dark one — ARGB,
+      so about 30 % and 4 % opaque, and white rather than `#333333` in dark
+      ([Common_themeresources_any.xaml:223](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L223),
+      [:19](https://github.com/microsoft/microsoft-ui-xaml/blob/2b8c7757ef2dd57234d5d7c3016d136c59a24bad/controls/dev/CommonStyles/Common_themeresources_any.xaml#L19)). Run the `preset-validator` agent over `windows-11.toml`
+      against that source, record the brush in `docs/platform-facts.md`, where
+      it is not yet, and correct the eight values.
 
 - [ ] [1.0] Scrollbar thumb radius per platform: platform-facts records none, so the
       connector mirrors gpui-component's `radius` for the thumb.
@@ -2244,6 +2324,22 @@ What is still open on the iced side:
       Since M6 T5 (M6-01) `apply` keeps the installed theme's `motion`, as
       upstream's `Theme::change` does, so a value the application set survives
       a theme switch; the connector still sets none.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "**Model motion.** The big one" (*native-theme-gpui connector*, *Follow-ups
+      from the v0.5.9 showcase and contract work*; 923471e9; its "argued above"
+      means its place in `docs/todo.md` at b2524822), all but its 2026-10-15 line,
+      which says what this entry's "Since M6 T5" line says:
+      **Model motion.** The big one, argued above: `Theme::motion` is a
+      writable field of twelve tokens that eighteen-plus widgets read, and
+      `apply` overwrites all of it with `Default::default()` because
+      native-theme states no motion. KDE has `AnimationDurationFactor`,
+      Windows has `SPI_GETCLIENTAREAANIMATION`, and
+      `detect::prefers_reduced_motion()` already exists. A `MotionSpec` on the
+      theme plus one line in `apply` would light up Checkbox, Switch, Slider,
+      Accordion, Collapsible, Progress, ProgressCircle, TabBar, TabPanel,
+      Carousel, the charts and the plot tooltip at once. Decide first whether
+      a *theme* should carry motion at all, or whether this belongs with the
+      accessibility preferences.
 - [ ] [1.0] Preset font families that are not installed: GPUI resolves a named,
       missing family through its fallback stack on every text run (upstream's
       statement, gpui-component 0.6.4 `src/theme/system_font.rs:3-9`; not
@@ -2263,10 +2359,9 @@ What is still open on the iced side:
       0.6.0-era; four are known stale at 0.6.4 (`popup_menu.rs:749` — fixed in
       the gap analysis, `button.rs:360`, `switch.rs:136-146`,
       `checkbox.rs:195-199`).
-- [ ] [1.0] A mechanical check of the library's prose `file:line` citations against
-      the locked registry sources (the showcase's colour claims have one,
-      `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
-      mapped 1237 of them by script (v0.6.1 spec, Appendix A).
+      M8 T21 fix round 1 (2026-10-17): a mechanical check of such citations is
+      *gpui: a citation gate for the connector's doc comments*, "The
+      showcase's citations are checked by gates".
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
@@ -2305,7 +2400,9 @@ What is still open on the iced side:
       carried -- fixed, `geometry::button` now applies it. A Separator's
       thickness and a Slider's track height and thumb size are genuinely
       unreachable, but the model carries all three, so they are Tier U
-      (already in "inner geometry exposed" above) and the notes now say so
+      (already in "inner geometry exposed", now under *Upstream PRs to
+      gpui-component*, "PR: expose checkbox/radio indicator size as theme
+      token") and the notes now say so
       rather than "hardcoded".
 
       Forty more checked 2026-09-22, and the largest single finding is a
@@ -2532,21 +2629,6 @@ Each of these is a real route the connector or the model does not take. They
 are listed separately from the notes because correcting a note only records
 the gap — closing it is a change, and each wants its own decision.
 
-- [ ] [1.0] **Model motion.** The big one, argued above: `Theme::motion` is a
-      writable field of twelve tokens that eighteen-plus widgets read, and
-      `apply` overwrites all of it with `Default::default()` because
-      native-theme states no motion. KDE has `AnimationDurationFactor`,
-      Windows has `SPI_GETCLIENTAREAANIMATION`, and
-      `detect::prefers_reduced_motion()` already exists. A `MotionSpec` on the
-      theme plus one line in `apply` would light up Checkbox, Switch, Slider,
-      Accordion, Collapsible, Progress, ProgressCircle, TabBar, TabPanel,
-      Carousel, the charts and the plot tooltip at once. Decide first whether
-      a *theme* should carry motion at all, or whether this belongs with the
-      accessibility preferences.
-      2026-10-15: since c1208377 (M6 T5, M6-01) `apply` no longer overwrites
-      `motion`: it keeps the installed theme's, as upstream's `Theme::change`
-      does, so a value the application set survives a theme switch; the
-      connector still sets none.
 - [ ] [1.0] **There is no ambient `font.weight`.** The `geometry::` builders that
       carry a font spec already carry the weight with it — `with_text` sets
       `font_weight` alongside the size (`geometry.rs:80-83`), which covers
@@ -2727,13 +2809,6 @@ the gap — closing it is a change, and each wants its own decision.
       M6 T16c (2026-10-16, 12be97dd): with `widgets` the leaf reaches
       `SwitchLook` (the connector's own switch draws it), so the contract's
       `NoReceiver` entry for it exists only without `widgets`.
-- [ ] [upstream] **`Theme::shadow` has one reader.** The connector sets it from
-      `border.shadow_enabled` (`lib.rs:176`); gpui-component reads it only at
-      `button/button.rs:612`, for a `ButtonVariant::Custom` built with
-      `.shadow(true)`. The semantic shadow tokens it feeds have no reader
-      outside `theme/`. So the platform's shadow preference reaches nothing
-      an application builds by default. Found 2026-09-22 from eleven panels
-      that listed it as theme config.
 - [ ] [v0.7.0] **The code editor's background is a fixed colour.** `Theme::editor_background`
       returns the highlight theme's `editor.background` and falls back to
       `input_background()` only when that is unset (`theme/mod.rs:389-394`).
@@ -2788,16 +2863,6 @@ the gap — closing it is a change, and each wants its own decision.
       `painted_fill` (`tests.rs`) takes the largest opaque quad inside an
       element's bounds, which suits a filled widget and not a text colour,
       an edge or a state the test does not put the widget in.
-- [ ] [v0.7.0] `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
-      The connector writes both on every `apply` and both have contract rows
-      (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
-      gpui-component or gpui-base (declared `theme_color.rs:261`, defaulted
-      `schema.rs:996`), and `list_even` is read only as `table_even`'s
-      fallback (`schema.rs:1005`) — which never fires, because the connector
-      writes `table_even` too (`contract.rs:391`). Every gate is green on
-      both: they are written, so no coverage check notices, and they are read
-      nowhere, so no widget can disagree with them. Either upstream should be
-      asked to read them or the contract should record them as write-only.
 - [ ] [1.0] **Reference — how a theme colour reaches a gpui-component widget.**
       Eight routes, seven of which defeat a search for the field's own name,
       and the thing the next audit of this kind will need first:
@@ -3268,8 +3333,17 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       theme tokens (padding, icon sizes, corner radii, spacing)
 - [ ] [upstream] PR: expose per-widget padding/margin as theme-configurable
 - [ ] [upstream] PR: expose checkbox/radio indicator size as theme token
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "inner geometry exposed" (*Upstream PR candidates from v0.5.8 (Tier U)*;
+      5ec4f175), which holds this one whole:
+      inner geometry exposed: checkbox/radio indicator, switch track and thumb,
+      slider track and thumb, separator thickness, resize-handle width, button
+      icon gap, popup-menu items, select arrow, accordion arrow
 - [ ] [upstream] PR: expose scrollbar dimensions as theme-configurable
 - [ ] [upstream] PR: expose button min-height and icon spacing as theme tokens
+      M8 T21 fix round 1 (2026-10-17): the button icon gap is also in "PR:
+      expose checkbox/radio indicator size as theme token" above, the
+      inner-geometry list merged into it.
 - [ ] [upstream] PR: let a scroll container keep the wheel to itself. gpui dispatches
       `ScrollWheelEvent` in the bubble phase to every scroller whose hitbox is
       under the pointer and stops at none of them (gpui-pre-0.3.5
@@ -3553,6 +3627,13 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 
 ### gpui: a citation gate for the connector's doc comments
 - [ ] [1.0] The showcase's citations are checked by gates (`every_colour_claim_is_read_at_the_line_it_cites`, `every_prose_citation_still_exists`); the connector's own `src/*.rs` doc comments have none, so the 0.7.0 bump re-read about 200 of them by hand. Add a gate that resolves their `file.rs:N` citations against the pinned upstream sources.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry "A
+      mechanical check of the library's prose `file:line` citations"
+      (*native-theme-gpui connector*, *Research*; fb7f7ace):
+      A mechanical check of the library's prose `file:line` citations against
+      the locked registry sources (the showcase's colour claims have one,
+      `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
+      mapped 1237 of them by script (v0.6.1 spec, Appendix A).
 
 ### gpui: the splitter renderer into the connector
 - [ ] [1.0] The gpui showcase paints its splitters with a renderer of its own that follows `splitter.divider_width`, `divider_color` and `hover_color` (`examples/showcase-gpui/demo.rs`, `resize_handles`); gpui-base's own line is 1px. Move it into the connector as a public renderer an application can install.
@@ -3571,7 +3652,15 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 
 ### M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 The gpui connector's fix phase (M6, `1e60e1c9..`, ledger "## M6") left these. Each sits here until its milestone takes it.
+M8 T21 fix round 1 (2026-10-17): its M7, M8 and M9a items are closed, in
+[`archive/todo_closed.md`](archive/todo_closed.md) under *Closed items from M6 close
+(2026-10-16): items carried to M7, M8, M9a and the presets*; the three `[1.0]` preset
+items below stay.
 - [ ] [1.0] Presets (kde-breeze), found by M6 T16b's preset-validator run (2026-10-16): `segmented_control.hover_background` states the same uncited pair the expander's hover had (`#dee0e2` / `#31363b`, kde-breeze.toml:449, :913). `expander.arrow_color` is uncited. The expander's border inherits `defaults.border` while platform-facts §2.27's KDE cells say none (`frame_enabled = false` must be honoured by every connector). platform-facts.md:1676 names `ItemView_ArrowSize` where :1639 says the arrow is Breeze's `renderArrow` with `ArrowSize`.
+      M8 T21 fix round 1 (2026-10-17): its
+      `segmented_control.hover_background` and `expander.arrow_color` are also
+      items of *Presets: values the M8 T15 platform-facts rows disagree with*
+      (kde-breeze, §2.25 and §2.27).
 - [ ] [1.0] Presets (windows-11): platform-facts §2.26 states a Fluent card fill (`CardBackgroundFillColorDefault`), and windows-11.toml states no `card.background_color`. Found by M6 T16c's citation check.
       M8 T16 (2026-10-17): the inherited value is the stated token:
       `card.background_color` inherits `defaults.surface_color`

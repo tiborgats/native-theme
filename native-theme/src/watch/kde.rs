@@ -172,7 +172,9 @@ mod tests {
     }
 
     /// Writes 50 ms apart, closer than the debounce window, give one event,
-    /// after the last write (`docs/todo.md`, the KDE throttle entry).
+    /// after the last write (`docs/archive/todo_closed.md`, *Closed items from Theme watcher:
+    /// OS changes it does not report*, "KDE: the 300 ms throttle keeps the first event of a
+    /// burst").
     #[test]
     fn a_burst_of_writes_fires_once_after_the_last() {
         let dir = temp_config_dir("burst");
@@ -207,7 +209,9 @@ mod tests {
     }
 
     /// A write to `kdedefaults/kdeglobals`, which the KDE reader reads
-    /// beneath the user's file, fires (`docs/todo.md`, the watcher entry).
+    /// beneath the user's file, fires (`docs/archive/todo_closed.md`, *Closed items from Theme
+    /// watcher: OS changes it does not report*, "`watch::on_theme_change()` fires on fewer
+    /// changes").
     #[test]
     fn a_write_to_kdedefaults_fires() {
         let dir = temp_config_dir("kdedefaults");
