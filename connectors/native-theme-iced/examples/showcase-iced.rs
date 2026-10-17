@@ -863,6 +863,15 @@ impl CliArgs {
             && self.pointer.is_none()
     }
 
+    /// Whether the showcase follows the OS theme as it changes: not in a
+    /// capture (`--capture`, `--screenshot`) or a layout dump
+    /// (`--dump-layout`), which show the theme the run started with. As the
+    /// egui and gpui showcases' `CliArgs::follows_os`.
+    #[cfg_attr(not(feature = "watch"), allow(dead_code))]
+    fn follows_os(&self) -> bool {
+        !self.capture && self.screenshot.is_none() && self.dump_layout.is_none()
+    }
+
     fn parse() -> Self {
         let mut args = Self::default();
         let argv: Vec<String> = std::env::args().collect();
@@ -1857,15 +1866,16 @@ impl State {
             1
         };
 
-        // Watch the OS theme for runtime dark/light toggle detection.
-        // Not in screenshot mode — the watcher's background thread cleanup
-        // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
+        // Watch the OS theme for runtime dark/light toggle detection, in an
+        // interactive run only ([`CliArgs::follows_os`]): a capture and a
+        // layout dump show the theme the run started with, and under
+        // `--screenshot` the watcher's background thread cleanup races with
+        // the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
         // Not under `cargo test` either: a file watch on the desktop's own
         // configuration is host I/O, and nothing the self-tests assert
         // depends on it.
         #[cfg(feature = "watch")]
-        let watch_os_theme =
-            !cfg!(test) && !CLI_ARGS.get().is_some_and(|cli| cli.screenshot.is_some());
+        let watch_os_theme = !cfg!(test) && CLI_ARGS.get().is_none_or(CliArgs::follows_os);
 
         let mut state = Self {
             current_choice: fallback_choice
@@ -15962,6 +15972,42 @@ mod tests {
             captured.is_empty(),
             "a capture reacted to the pointer: {captured:?}"
         );
+    }
+
+    /// The showcase follows the OS theme in an interactive run only: a
+    /// capture (`--capture`, `--screenshot`) and a layout dump
+    /// (`--dump-layout`) show the theme the run started with.
+    #[test]
+    fn only_an_interactive_run_follows_the_os() {
+        assert!(
+            CliArgs::default().follows_os(),
+            "a run without flags does not follow the OS"
+        );
+        for (flag, args) in [
+            (
+                "--capture",
+                CliArgs {
+                    capture: true,
+                    ..CliArgs::default()
+                },
+            ),
+            (
+                "--screenshot p",
+                CliArgs {
+                    screenshot: Some("p".into()),
+                    ..CliArgs::default()
+                },
+            ),
+            (
+                "--dump-layout f",
+                CliArgs {
+                    dump_layout: Some("f".into()),
+                    ..CliArgs::default()
+                },
+            ),
+        ] {
+            assert!(!args.follows_os(), "{flag} follows the OS");
+        }
     }
 
     /// M8-44: a layout dump (`--dump-layout`) records the chrome at rest
