@@ -1688,6 +1688,17 @@ model, the platform presets and the three connectors
       `zbus` to 6 once ashpd releases on zbus 6, and remove the three
       `.cargo/audit.toml` entries once no dependency in `Cargo.lock` pulls
       zvariant 5, zvariant_derive 5 or zbus_names 4.
+      2026-10-17 (M8 Step 8, the full check_release on 3148f231): the
+      "Outdated dependencies" check runs no more. `cargo outdated --workspace
+      --depth 1` resolves every dependency at its latest release and fails on
+      zbus 6.0.0, which has no `blocking-api` feature (native-theme's `watch`
+      enables `zbus?/blocking-api`), and with `--exclude zbus` fails next on
+      gpui-kit 0.7.3's own graph: gpui-fast-web 0.1.8 pins
+      `unicode-properties = "=0.1.3"` while gpui-pre-web 0.3.9 selects 0.1.4.
+      check_release.sh reports the failure as a warning, "dependencies not
+      checked", and lists nothing. Settle it with the zbus move, or replace the
+      check with one that compares each direct dependency's requirement with
+      crates.io's newest stable release without resolving the graph.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 

@@ -11189,6 +11189,13 @@ Controller amendments (2026-10-16), binding over the draft above where they diff
 
 Statuses set from the Step 6 task table, the controller's progress ledger (each task's "complete" line) and the task reports. Counts over the 89 entries: fixed 89, deferred 0, rejected 0, open-to-rule 0. Where an entry spans several tasks (M8-10, -20, -27, -31, -47, -50, -51, -64, -69, -75, -84) the Status line names each task with its range. The docs/todo.md items the table lists beside the entries (T8, T16b, T16c, the known items) have no M8 entry and carry their statuses in docs/todo.md.
 
+
+### Step 8 — close, stop point B (2026-10-17)
+
+Fix phase 9e2527f5..3148f231: T1–T21 with T9a, T16b and T16c, each reviewed with its fix rounds re-reviewed; the final whole-phase review (Fable) was "Ready with fixes" (one Important, docs/todo.md's preset line citations; two Minor, iced's translucent switch outline and adwaita's button hover cell), fixed in 0a5d7305..22ae7f67 and 3148f231 after one scoped re-review.
+Full `./scripts/check_release.sh` on 3148f231: 136 checks, 126 ✅, 8 ⚠ (the v0.6.1 tag; the six crates' semver-checks, the approved 0.7.0 breaks, reconciled with `### Breaking Changes` by the final review; `cargo outdated` cannot resolve zbus 6.0.0 and gpui-kit's own pins, docs/todo.md *Dependencies: zbus 6 and the three unmaintained-crate advisories*), 2 ❌ expected (visual assets and compatibility stamps, refreshed by the release asset run). Cross-target clippy (macOS, Windows) is in the run and passes. Three RustSec advisories published 2026-10-16 (RUSTSEC-2026-0370/0371/0372) pass through `.cargo/audit.toml` with their reason (f0f17b95); `target/semver-checks` removed.
+Timings (release): no path slower than its baseline beyond the noise (core resolve 25–45 µs; gpui 53–83 µs; egui 0.30–0.63 ms for the presets without a native font).
+Captures (scratchpad only): gpui and egui under kde-breeze and material-3, both modes; iced's were refused twice because the maintainer was using the desktop, and are taken when it is free or by M9b's capture pair. Nothing pushed since M7.
 ## M9 — Showcases
 
 Mandatory (maintainer, 2026-10-16: "it absolutely is a must, not optional"). M9a (gpui), M9b (iced) and M9c (egui) were reviewed together, in parallel with M8's fix phase (maintainer, 2026-10-17: "yes, start the M9 reviews in parallel. Whenever you can speed up the development without losing quality, do it"), with one extra cross-showcase reviewer (M9x) for what spans the three: duplication, the shared chrome against gpui's, the command lines, the page lists, the theme-switch cost. The fix phases follow M8's close, one per showcase, M9x's entries taken by the showcase each names (or by the first that touches a shared one).
