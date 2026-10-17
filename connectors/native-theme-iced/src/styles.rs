@@ -1676,6 +1676,9 @@ impl SegmentPosition {
 /// container is the control's outline and its separators:
 ///
 /// ```rust,ignore
+/// use iced::widget::{container, row};
+/// use native_theme_iced::styles;
+///
 /// let sc = &resolved.segmented_control;
 /// container(row(segments).spacing(sc.separator_width))
 ///     .padding(sc.border.line_width)
@@ -1884,6 +1887,9 @@ pub fn expander(
 /// of its own:
 ///
 /// ```rust,ignore
+/// use iced::widget::{column, container};
+/// use native_theme_iced::styles;
+///
 /// let x = &resolved.expander;
 /// let item = column![header, body];
 /// match x.frame_enabled {
