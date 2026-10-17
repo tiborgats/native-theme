@@ -145,9 +145,9 @@ jobs:
       #
       # `!cancelled()` (after any earlier failure, but not in a cancelled run,
       # where `always()` would still run) because this step and the one after
-      # it report on a different failure mode than Test does: an upstream release can add a
-      # widget and break a test in the same night, and the evening's report
-      # should name both rather than stop at the first.
+      # it report on a different failure mode than Test does: an upstream
+      # release can add a widget and break a test in the same night, and the
+      # evening's report should name both rather than stop at the first.
       - name: Widget coverage
         if: ${{ !cancelled() }}
         run: |
