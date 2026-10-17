@@ -204,11 +204,15 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
         return None;
     }
 
+    // The negated height asks GetDIBits for top-down rows.
     let size = u32::try_from(bmp.bmWidth)
         .ok()
         .zip(u32::try_from(bmp.bmHeight).ok())
-        .and_then(|(w, h)| Some((w, h, crate::icons::raster_bytes_in_bound(w, h)?)));
-    let Some((width, height, bytes)) = size else {
+        .and_then(|(w, h)| {
+            let top_down = bmp.bmHeight.checked_neg()?;
+            Some((w, h, top_down, crate::icons::raster_bytes_in_bound(w, h)?))
+        });
+    let Some((width, height, top_down, bytes)) = size else {
         note_failure(format_args!(
             "a {} x {} bitmap is negative, empty or over the decode bound",
             bmp.bmWidth, bmp.bmHeight
@@ -220,7 +224,7 @@ unsafe fn bitmap_bgra(hbm: HBITMAP) -> Option<(u32, u32, Vec<u8>)> {
     let mut bmi = BITMAPINFO::default();
     bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
     bmi.bmiHeader.biWidth = bmp.bmWidth;
-    bmi.bmiHeader.biHeight = bmp.bmHeight.checked_neg()?; // negative = top-down
+    bmi.bmiHeader.biHeight = top_down;
     bmi.bmiHeader.biPlanes = 1;
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB.0;
