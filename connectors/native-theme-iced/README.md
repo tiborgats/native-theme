@@ -67,11 +67,14 @@ the CHANGELOG.
 
 ## Quick start
 
-Add the crate to your `Cargo.toml`, with the OS readers (`native`):
+Add the crate to your `Cargo.toml` beside iced, with the OS readers
+(`native`); its default `spinner` feature turns on the `svg`, `image` and
+`canvas` widgets of the `iced_widget` it shares with iced:
 
 ```toml
 [dependencies]
 native-theme-iced = { version = "0.6", features = ["native"] }
+iced = "0.14"
 ```
 
 Load a bundled preset:
@@ -247,7 +250,14 @@ that do: `card`, `menu` (for `MenuBar`), `tab_bar` (also `Tabs`'
 `tab_bar_style`), `sidebar`, `selection_list` and `spinner`. `iced_aw`'s
 `Spinner` — not this crate's `Spinner`, which draws the platform's indicator
 itself — has no style of its own and paints with the inherited text colour,
-so `spinner` styles a wrapping container:
+so `spinner` styles a wrapping container, with `iced_aw` a dependency of the
+application's own:
+
+```toml
+[dependencies]
+native-theme-iced = { version = "0.6", features = ["iced_aw"] }
+iced_aw = "0.14"
+```
 
 ```rust,no_run
 use iced::widget::{Container, container};
@@ -330,7 +340,7 @@ use native_theme_iced::{
 #     Choose(String),
 # }
 # fn f(resolved: native_theme_iced::ResolvedTheme, value: &str, options: &[String], selected: Option<&String>) {
-# let on_select = Message::Choose;
+let on_select = Message::Choose;
 // `loaded.accessibility` from `from_system()`; under a preset, the default:
 let accessibility = AccessibilityPreferences::default();
 let size = scaled_text_size(resolved.input.font.size, &accessibility);
@@ -405,7 +415,7 @@ use native_theme_iced::native_theme::theme::intern_font_family;
 # use std::collections::HashMap;
 # use std::sync::Arc;
 # fn f(resolved: native_theme_iced::ResolvedTheme, families: &mut HashMap<Arc<str>, &'static str>) {
-# let spec = &resolved.defaults.font;
+let spec = &resolved.defaults.font;
 
 let family: &'static str = *families // HashMap<Arc<str>, &'static str>
     .entry(intern_font_family(&spec.family))
@@ -743,15 +753,15 @@ To play the theme's indicator by hand, load it from the theme's set and
 convert it, coloured as that set is coloured:
 
 ```rust,no_run
-use iced::widget::svg::{self, Svg};
+use iced::widget::svg::{Handle, Svg};
 use iced::{Length, Rotation};
 use native_theme_iced::icons::{
     animated_frames_to_svg_handles_for, spin_rotation_radians, to_svg_handle,
 };
 use native_theme_iced::native_theme::detect::prefers_reduced_motion;
-use native_theme_iced::native_theme::icons::load_icon_indicator;
+use native_theme_iced::native_theme::icons::{fill_current_color, load_icon_indicator};
 use native_theme_iced::palette::to_color;
-use native_theme_iced::{AnimatedIcon, TransformAnimation};
+use native_theme_iced::{AnimatedIcon, IconData, IconSet, TransformAnimation};
 
 # fn f(elapsed: std::time::Duration) -> native_theme_iced::Result<()> {
 let loaded = native_theme_iced::from_system()?;
@@ -774,18 +784,28 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
                 }
             }
             AnimatedIcon::Transform(_) => {
-                // The icon carries its SVG and its period; `svg::Style::color`
-                // draws the icon's shape in the text colour.
+                // The icon carries its SVG and its period, coloured as its set
+                // is coloured, as the frames above are: a freedesktop icon's
+                // `currentColor` filled only where it sets no colour of its
+                // own, a Material or Lucide icon tinted.
                 if let (Some(data), Some(&TransformAnimation::Spin { duration_ms })) =
                     (anim.icon(), anim.animation())
-                    && let Some(handle) = to_svg_handle(data, None)
                 {
-                    let angle = spin_rotation_radians(elapsed, duration_ms);
-                    let spinning: Svg<'_> = Svg::new(handle)
-                        .width(diameter)
-                        .height(diameter)
-                        .rotation(Rotation::Floating(angle))
-                        .style(move |_, _| svg::Style { color: Some(text) });
+                    let handle = match (loaded.icon_set, data) {
+                        (IconSet::Freedesktop, IconData::Svg(bytes)) => Some(Handle::from_memory(
+                            fill_current_color(bytes, loaded.resolved.defaults.text_color)
+                                .into_owned(),
+                        )),
+                        (IconSet::Material | IconSet::Lucide, _) => to_svg_handle(data, Some(text)),
+                        _ => to_svg_handle(data, None),
+                    };
+                    if let Some(handle) = handle {
+                        let angle = spin_rotation_radians(elapsed, duration_ms);
+                        let spinning: Svg<'_> = Svg::new(handle)
+                            .width(diameter)
+                            .height(diameter)
+                            .rotation(Rotation::Floating(angle));
+                    }
                 }
             }
             _ => {}
@@ -796,7 +816,8 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
 # }
 ```
 
-`animated_frames_to_svg_handles_for` colours each frame as its set does: it
+`animated_frames_to_svg_handles_for` colours each frame as its set does, and
+the turning icon above is coloured the same way: it
 tints a Material or Lucide frame through the monochrome colouriser, fills a
 freedesktop frame's `currentColor` only where the document sets no `color` of
 its own (Breeze's `process-working` keeps its stylesheet's), and draws an SF

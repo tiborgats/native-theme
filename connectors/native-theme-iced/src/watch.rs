@@ -52,7 +52,7 @@ use std::sync::{Mutex, PoisonError};
 ///
 /// // In update():
 /// Message::ThemeChanged => {
-///     native_theme::detect::invalidate_caches();
+///     native_theme_iced::native_theme::detect::invalidate_caches();
 ///     if let Ok(loaded) = native_theme_iced::from_system() {
 ///         state.spinner = Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
 ///         state.loaded = loaded;

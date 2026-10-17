@@ -172,9 +172,15 @@ pub fn custom_icon_to_svg_handle(
 ///
 /// ```no_run
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
+/// use native_theme_iced::native_theme::icons::MaterialLoader;
+/// use native_theme_iced::palette::to_color;
 ///
-/// if let Some(anim) = native_theme::icons::MaterialLoader::load_indicator() {
-///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
+/// let (_, resolved) = native_theme_iced::from_preset("material-3", true)?;
+/// // Material's frames are monochrome: tinted the theme's text colour, not
+/// // drawn black on a dark theme.
+/// let text_color = to_color(resolved.defaults.text_color);
+/// if let Some(anim) = MaterialLoader::load_indicator() {
+///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, Some(text_color)) {
 ///         // Cache `anim_handles`, then in subscription():
 ///         // iced::time::every(Duration::from_millis(u64::from(anim_handles.frame_duration_ms.get())))
 ///         //     .map(|_| Message::AnimationTick)
@@ -182,6 +188,7 @@ pub fn custom_icon_to_svg_handle(
 ///         // In view(): Svg::new(anim_handles.handles[frame_index].clone())
 ///     }
 /// }
+/// # Ok::<(), native_theme_iced::Error>(())
 /// ```
 #[must_use]
 pub fn animated_frames_to_svg_handles(
@@ -217,8 +224,8 @@ pub fn animated_frames_to_svg_handles(
 /// # Examples
 ///
 /// ```no_run
-/// use native_theme::icons::load_icon_indicator;
 /// use native_theme_iced::icons::animated_frames_to_svg_handles_for;
+/// use native_theme_iced::native_theme::icons::load_icon_indicator;
 /// use native_theme_iced::palette::to_color;
 ///
 /// let loaded = native_theme_iced::from_system()?;
