@@ -23,11 +23,14 @@ it to `[build-dependencies]` and call it from `build.rs`.
 
 ## Quick start
 
-Add the build dependency:
+Add the build dependency, and native-theme, which the generated code names:
 
 ```toml
 [build-dependencies]
 native-theme-build = "0.6"
+
+[dependencies]
+native-theme = "0.6"
 ```
 
 Describe your icons in TOML:

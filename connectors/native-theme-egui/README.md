@@ -128,10 +128,16 @@ eframe = "0.36.2"
 native-theme-egui = { version = "0.6", features = ["native"] }
 ```
 
+The examples name egui through the connector's re-export,
+`native_theme_egui::egui`, which the Quick start's dependencies resolve. eframe's
+`eframe::egui` is the same crate; the examples name the connector's, the egui
+its `Style`s and frames are built for, as [How it fits](#how-it-fits) says.
+
 Install the OS theme once, where eframe hands you the `Context`, and let egui
 follow the OS light/dark preference:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::from_system;
 
 struct MyApp;
@@ -163,7 +169,7 @@ scheme on screen. A preset pins the scheme: set the one `is_dark` named.
 `from_system` instead follows the OS, with `ThemePreference::System`:
 
 ```rust,no_run
-use egui::ThemePreference;
+use native_theme_egui::egui::{self, ThemePreference};
 use native_theme_egui::{AccessibilityPreferences, from_preset};
 
 fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Result<()> {
@@ -190,6 +196,8 @@ over that colour, so return the base style's `panel_fill`, the theme's
 `defaults.background_color`, as the showcase does:
 
 ```rust,no_run
+use native_theme_egui::egui;
+
 struct MyApp;
 
 impl eframe::App for MyApp {
@@ -225,6 +233,7 @@ impl eframe::App for MyApp {
 ## Per-widget geometry
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::{NativeThemeUiExt, ResolvedTheme, Role, RoleVariant, Surface};
 
 fn form(ui: &mut egui::Ui, t: &ResolvedTheme, name: &mut String) {
@@ -266,6 +275,7 @@ before its `build()`, so every OS input stays and the second `fonts` call
 replaces the first:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::fonts::FontPlan;
 use native_theme_egui::native_theme::SystemTheme;
 use native_theme_egui::{SystemThemeExt, ThemeAtlas};
@@ -321,7 +331,7 @@ else: it sets no fonts, forgets no icon and requests no repaint.
 | `system-icons` | on | freedesktop, SF Symbols and Windows system icon lookup |
 | `system-fonts` | on | `FontPlan::from_system`, and the system typeface in `from_preset`, `from_system` and `to_egui_atlas` |
 | `svg-rasterize` | off | native-theme's in-process SVG rasteriser, whose output `icons::to_color_image` converts |
-| `native` | off | the OS readers, so `from_system`, `native_theme::SystemTheme::from_system` and `ThemeWatcher::system_rebuild` read the OS theme |
+| `native` | off | the OS readers, so `from_system`, `native_theme_egui::native_theme::SystemTheme::from_system` and `ThemeWatcher::system_rebuild` read the OS theme |
 | `watch` | off | `ThemeWatcher` |
 
 Each forwards to the `native-theme` feature of the same name.
@@ -352,6 +362,7 @@ both, and egui draws the one of its colour scheme, so an overlay of
 
 ```rust,no_run
 use native_theme_egui::SystemThemeExt;
+use native_theme_egui::egui;
 use native_theme_egui::native_theme::{SystemTheme, Theme};
 
 fn install_customised(ctx: &egui::Context) -> native_theme_egui::Result<()> {
@@ -377,6 +388,7 @@ With the `watch` feature and a reader feature (`native`),
 every OS theme change and wakes egui; the UI thread installs it:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::ThemeWatcher;
 
 struct MyApp {
@@ -409,8 +421,9 @@ again: with fonts or a `style_patch` of its own, which `system_rebuild` would
 drop, it adds them to `SystemThemeExt::to_egui_builder`, as in [Fonts](#fonts).
 `system_rebuild` reads with `from_system()`, which picks the running OS
 version's preset, so an application that pinned a preset with
-`native_theme::SystemTheme::from_system_with_preset(name)` passes a closure
-that reads with it again: `native_theme::detect::invalidate_caches()`, then
+`native_theme_egui::native_theme::SystemTheme::from_system_with_preset(name)`
+passes a closure that reads with it again:
+`native_theme_egui::native_theme::detect::invalidate_caches()`, then
 `from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas` (or
 `to_egui_builder`). A failed rebuild keeps the installed theme, reports its
 message through `last_error` and requests a repaint, as a successful one does.
@@ -427,6 +440,7 @@ An `IconKey` names the icon by the provider's own name for the set, where it
 has one, which is also its alt text:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
 use native_theme_egui::{IconProvider, ThemeAtlas};
 # use std::borrow::Cow;
@@ -463,6 +477,7 @@ fn play_pause_icon(ui: &mut egui::Ui) {
 An icon by its role, in the installed theme's icon set and a tint:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
 use native_theme_egui::{IconRole, ThemeAtlas};
 
@@ -501,6 +516,7 @@ the atlas's set once per installed atlas, and draw its frame for the moment
 through `icons::to_image` under one key, coloured as that set is coloured:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::icons::{IconKey, animated_frame_index, spin_angle, to_image};
 use native_theme_egui::native_theme::icons::load_icon_indicator;
 use native_theme_egui::{AnimatedIcon, ThemeAtlas};
