@@ -112,6 +112,7 @@ mod tests {
             "/// `ResolvedFontSpec` §3",
             "/// inspec §3",
             "/// spec_ §3",
+            "/// my_spec §3",
         ] {
             assert!(!every_section_is_named(bare, NAMES), "{bare}");
         }
