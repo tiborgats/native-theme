@@ -211,6 +211,8 @@ thumb_active_color = "#4e4e4e"
 track_height_px = 10.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 4.0
+# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #ffffff (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :36)
+thumb_color = "#ffffff"
 thumb_hover_color = "#ebebeb"
 # no disabled_*_color: platform-facts.md:1115 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
 
@@ -610,6 +612,8 @@ thumb_active_color = "#c0c0c0"
 track_height_px = 10.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 4.0
+# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #1d1d20 (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :99)
+thumb_color = "#d2d2d2"
 thumb_hover_color = "#3a3a3e"
 # no disabled_*_color: platform-facts.md:1115 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
 
