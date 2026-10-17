@@ -8466,7 +8466,6 @@ pub(crate) fn files_table(
         let [(first, _), (second, _)] = head;
         return table(ui, cx, id, "Files", [first, second], rows);
     };
-    let t = cx.theme();
     let r = n.resolved;
     let l = &r.list;
     let colour = info::stated;
@@ -8541,7 +8540,7 @@ pub(crate) fn files_table(
         };
     let [first, second] = head;
     let header_height = geometry::list_header_height(n);
-    let header_info = info::data::table_header(t, &format!("{}, {}", first.0, second.0));
+    let header_info = info::data::native_table_header(r, &format!("{}, {}", first.0, second.0));
     let header_info = if header_height.is_some() {
         header_info.geometry("list_header_height")
     } else {
@@ -8585,8 +8584,9 @@ pub(crate) fn files_table(
         .info(
             ui,
             SharedString::from(format!("{id}-row-{ix}")),
-            info::data::table_row(t, ix == 0, &cells.join(", ")),
+            info::data::native_table_row(r, ix == selected, &cells.join(", ")),
         )
+        .debug_selector(move || format!("{id}-row-{ix}"))
         .w_full()
     });
     v_flex()
@@ -8598,7 +8598,7 @@ pub(crate) fn files_table(
         .overflow_hidden()
         .child(header)
         .children(body)
-        .info(ui, id, info::data::table(t, rows.len()))
+        .info(ui, id, info::data::native_table_frame(r, rows.len()))
         .self_start()
         .debug_selector(move || id.into())
 }

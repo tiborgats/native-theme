@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim, stated,
+    claim, px_text, stated,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
 use crate::support::SampleIcon;
@@ -343,6 +343,155 @@ pub fn table_row(t: &Theme, first: bool, cells: &str) -> WidgetInfo {
         ))
     };
     info.instance("cells", cells.to_string())
+}
+
+/// The Basic page's table frame the showcase draws as `r`'s `list.*`
+/// states a list (`demo::files_table`), holding a header and `rows` body
+/// rows.
+pub fn native_table_frame(r: &ResolvedTheme, rows: usize) -> WidgetInfo {
+    let l = &r.list;
+    let info = WidgetInfo::new("Table")
+        .variant("drawn by the showcase")
+        .color(claim(
+            "bg",
+            "background_color",
+            stated(l.background_color),
+            "showcase",
+        ));
+    let info = if l.border.line_width > 0.0 {
+        info.color(claim("edge", "border", stated(l.border.color), "showcase"))
+            .config(
+                "edge",
+                format!(
+                    "list.border: {}px, radius {}px, round the header and the rows",
+                    px_text(l.border.line_width),
+                    px_text(l.border.corner_radius)
+                ),
+            )
+    } else {
+        info.config("edge", "none: list.border.line_width is 0")
+    };
+    info.config("why drawn", "upstream's Table fills itself with the table token and rules every row after the first with table_row_border (table/table.rs, Table and TableRow), so list.selection_background, selection_text_color, the list.hover_* pair and grid_color would have no receiver there")
+        .instance("rows", format!("a header and {rows} body rows, written out rather than driven by a delegate; each reports itself"))
+}
+
+/// The header row of the Basic page's table the showcase draws as `r`'s
+/// `list.*` states a list (`demo::files_table`), reading `columns`. Its
+/// geometry line is recorded where `demo::files_table` applies
+/// `geometry::list_header_height`.
+pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
+    let l = &r.list;
+    let info = WidgetInfo::new("Table header")
+        .variant("drawn by the showcase")
+        .color(claim(
+            "bg",
+            "header_background",
+            stated(l.header_background),
+            "showcase",
+        ))
+        .color(claim(
+            "text",
+            "header_font",
+            stated(l.header_font.color),
+            "showcase",
+        ));
+    grid_lines(info, r, "a line inside its bottom edge, under the header, and one down the first column's right edge")
+        .config("font", format!("list.header_font, {}px, weight {}, at defaults.line_height", px_text(l.header_font.size), l.header_font.weight))
+        .instance("columns", columns.to_string())
+}
+
+/// A body row of the Basic page's table the showcase draws as `r`'s
+/// `list.*` states a list (`demo::files_table`), reading `cells`;
+/// `selected` is whether it is the selected row. The info does not follow
+/// the pointer: a row that is not selected names the fill and text it takes
+/// under the pointer beside the ones it rests in.
+pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> WidgetInfo {
+    let l = &r.list;
+    let info = WidgetInfo::new("Table row").variant(if selected {
+        "drawn by the showcase, selected"
+    } else {
+        "drawn by the showcase"
+    });
+    let info = if selected {
+        info.color(claim(
+            "bg",
+            "selection_background",
+            stated(l.selection_background),
+            "showcase",
+        ))
+        .color(claim(
+            "text",
+            "selection_text_color",
+            stated(l.selection_text_color),
+            "showcase",
+        ))
+        .config(
+            "hover",
+            "none: the selected row keeps its fill and text under the pointer",
+        )
+    } else {
+        info.color(claim(
+            "bg, the frame's",
+            "background_color",
+            stated(l.background_color),
+            "showcase",
+        ))
+        .color(claim(
+            "text",
+            "item_font",
+            stated(l.item_font.color),
+            "showcase",
+        ))
+        .color(claim(
+            "hovered bg",
+            "hover_background",
+            stated(l.hover_background),
+            "showcase",
+        ))
+        .color(claim(
+            "hovered text",
+            "hover_text_color",
+            stated(l.hover_text_color),
+            "showcase",
+        ))
+    };
+    grid_lines(info, r, "a line down the first column's right edge")
+        .config(
+            "edges",
+            "none between rows: the header's bottom line is the table's one rule across",
+        )
+        .config(
+            "font",
+            format!(
+                "list.item_font, {}px, weight {}, at defaults.line_height",
+                px_text(l.item_font.size),
+                l.item_font.weight
+            ),
+        )
+        .instance("cells", cells.to_string())
+}
+
+/// `info` given the claim and the config line of the grid lines a row of the
+/// Basic page's table draws, `where_drawn` saying which:
+/// `list.grid_color` at `separator.line_width`, or none at a 0 width.
+fn grid_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetInfo {
+    if r.separator.line_width > 0.0 {
+        info.color(claim(
+            "grid line",
+            "grid_color",
+            stated(r.list.grid_color),
+            "showcase",
+        ))
+        .config(
+            "grid",
+            format!(
+                "{where_drawn}, list.grid_color at separator.line_width, {}px",
+                px_text(r.separator.line_width)
+            ),
+        )
+    } else {
+        info.config("grid", "none: separator.line_width is 0")
+    }
 }
 
 /// The fill of the page Button showing the current page: an outlined

@@ -6873,6 +6873,110 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
     );
 }
 
+/// The Basic page's table under a native theme -- the showcase's own rows,
+/// header and frame -- reports what it paints (M9-003), under kde-breeze
+/// light: the selected row `list.selection_background` and
+/// `selection_text_color`, the others `list.item_font`'s colour and the
+/// `list.hover_*` pair, no row a top edge, the two lines `list.grid_color`,
+/// the header `list.header_background` and `header_font`, the frame
+/// `list.border` round `list.background_color`. The fill painted on the
+/// selected row is its claim.
+#[gpui::test]
+fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    let l = &r.list;
+    assert!(
+        l.border.line_width > 0.0 && r.separator.line_width > 0.0,
+        "kde-breeze no longer frames its list or rules its grid, which this test reads"
+    );
+    let grid = Some(stated(l.grid_color));
+    let no_upstream_row = |info: &WidgetInfo, what: &str| {
+        assert!(
+            info.colors.iter().all(|c| !c.role.contains("top")
+                && !["table", "table_row_border", "foreground"].contains(&c.field)),
+            "the {what} claims the declarative Table's row: {info:?}"
+        );
+    };
+    let selected =
+        settle_on(&mut cx, &showcase, "basic-table-row-1").expect("the selected row shows an info");
+    for (leaf, want) in [
+        ("selection_background", Some(stated(l.selection_background))),
+        ("selection_text_color", Some(stated(l.selection_text_color))),
+        ("grid_color", grid),
+    ] {
+        assert_eq!(
+            claim_of(&selected, leaf),
+            want,
+            "the selected row's info does not claim list.{leaf}: {selected:?}"
+        );
+    }
+    no_upstream_row(&selected, "selected row");
+    let other =
+        settle_on(&mut cx, &showcase, "basic-table-row-0").expect("the first row shows an info");
+    for (leaf, want) in [
+        ("item_font", Some(stated(l.item_font.color))),
+        ("hover_background", Some(stated(l.hover_background))),
+        ("hover_text_color", Some(stated(l.hover_text_color))),
+        ("grid_color", grid),
+    ] {
+        assert_eq!(
+            claim_of(&other, leaf),
+            want,
+            "the unselected row's info does not claim list.{leaf}: {other:?}"
+        );
+    }
+    no_upstream_row(&other, "unselected row");
+    let header =
+        settle_on(&mut cx, &showcase, "basic-table-header").expect("the header shows an info");
+    for (leaf, want) in [
+        ("header_background", Some(stated(l.header_background))),
+        ("header_font", Some(stated(l.header_font.color))),
+        ("grid_color", grid),
+    ] {
+        assert_eq!(
+            claim_of(&header, leaf),
+            want,
+            "the header's info does not claim list.{leaf}: {header:?}"
+        );
+    }
+    // The frame's own target: inside its edge, which no row reaches.
+    let frame = bounds_of(&mut cx, "basic-table");
+    hover(
+        &mut cx,
+        point(
+            frame.left() + px(l.border.line_width / 2.),
+            frame.center().y,
+        ),
+    );
+    settle(&mut cx);
+    draw(&mut cx);
+    let table = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| (**info).clone())
+    })
+    .expect("the frame shows an info");
+    for (leaf, want) in [
+        ("background_color", Some(stated(l.background_color))),
+        ("border", Some(stated(l.border.color))),
+    ] {
+        assert_eq!(
+            claim_of(&table, leaf),
+            want,
+            "the table frame's info does not claim list.{leaf}: {table:?}"
+        );
+    }
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, "basic-table-row-1"),
+        claim_of(&selected, "selection_background"),
+        "the fill painted on the selected row is not the fill its info claims"
+    );
+}
+
 /// A hovered Tag fades to 90% (tag.rs:269), and its info names the fill
 /// that paints -- the painted value, not the token it fades.
 #[gpui::test]
