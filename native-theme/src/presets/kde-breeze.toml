@@ -323,6 +323,11 @@ color = "#232629"
 # platform-facts.md:1415 (§2.15): [Colors:Header] ForegroundNormal 35,38,41 (BreezeLight.colors:67, breeze v6.7.5)
 color = "#232629"
 [light.toolbar]
+# platform-facts.md §2.13 background_color: Breeze fills a QMainWindow's tools area with the Header set's Window colour,
+# [Colors:Header] BackgroundNormal #dee0e2 (BreezeLight.colors:59, breezestyle.cpp:1322, :1341-1347), where the scheme has Header colours
+# (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
+# as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
+background_color = "#dee0e2"
 # bar_height not stated: platform-facts.md:1376 (§2.13), (none), sizes to content
 # platform-facts.md:1377 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
@@ -792,6 +797,11 @@ color = "#fcfcfc"
 # platform-facts.md:1415 (§2.15): [Colors:Header] ForegroundNormal 252,252,252 (BreezeDark.colors:68, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.toolbar]
+# platform-facts.md §2.13 background_color: Breeze fills a QMainWindow's tools area with the Header set's Window colour,
+# [Colors:Header] BackgroundNormal #292c30 (BreezeDark.colors:60, breezestyle.cpp:1322, :1341-1347), where the scheme has Header colours
+# (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
+# as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
+background_color = "#292c30"
 # bar_height not stated: platform-facts.md:1376 (§2.13), (none), sizes to content
 # platform-facts.md:1377 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
