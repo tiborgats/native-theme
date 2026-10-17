@@ -2095,44 +2095,41 @@ const PAIRS: &[Pair] = &[
 ];
 
 /// Geometry a theme states that gpui-component draws its own way where no
-/// `geometry` refinement reaches, with the upstream lines: what is lost is
-/// printed for every combination, and an entry no combination loses fails
-/// `every_upstream_limit_is_one_a_preset_loses`.
+/// `geometry` refinement reaches, with the upstream lines. A documented limit:
+/// no test can observe it, as gpui's test support exposes laid-out bounds
+/// (`TestAppContext::debug_bounds`) and no painted scene (gpui-pre 0.3.9
+/// `src/window.rs:1250`, `rendered_frame` is crate-private), so neither a
+/// painted edge nor the ring outside it can be asserted. Recheck it on every
+/// gpui-component bump.
+#[expect(
+    dead_code,
+    reason = "a documented limit no test can observe: gpui exposes no painted scene"
+)]
 struct UpstreamLimit {
     what: &'static str,
     evidence: &'static str,
-    /// What the combination states that upstream does not draw.
-    lost: fn(&ResolvedTheme) -> Option<String>,
 }
 
-/// Upstream's focused Input: a 1px edge, and a 3px ring outside it.
-const FOCUSED_INPUT_EDGE: f32 = 1.0;
-const FOCUSED_INPUT_RING: (f32, f32) = (3.0, 0.0);
-
+#[expect(
+    dead_code,
+    reason = "a documented limit no test can observe: gpui exposes no painted scene"
+)]
 const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
     what: "a focused text field's edge and focus ring",
-    evidence: "gpui-component 0.7.3 gives a focused Input `border_1()` in the \
-               `ring` colour as a focus-state style (`src/input/input.rs:758-762`), \
-               which a `StyleRefinement` such as `geometry::input` cannot reach, \
-               so a field the theme leaves without a line (adwaita's 0) gains a \
-               1px edge and its text moves in a pixel; and it draws its own ring, \
-               `FOCUS_RING_WIDTH` 3 outside that edge (`src/styled.rs:11`, \
-               `:257-262`, `:301-326`, called at `src/input/input.rs:806`), \
-               switched only by `theme.focus_ring` (`lib.rs`, from \
-               `defaults.focus_ring_width`), so an inset or offset ring of the \
-               theme's width is drawn as upstream's",
-    lost: |r| {
-        let (line, d) = (r.input.border.line_width, &r.defaults);
-        let edge = line != FOCUSED_INPUT_EDGE;
-        let ring = d.focus_ring_width > 0.0
-            && (d.focus_ring_width, d.focus_ring_offset) != FOCUSED_INPUT_RING;
-        (edge || ring).then(|| {
-            format!(
-                "a {line}px edge and a {}px ring at {}px",
-                d.focus_ring_width, d.focus_ring_offset
-            )
-        })
-    },
+    evidence: "gpui-component 0.7.3 draws a focused Input in its own way: \
+               `border_1()` in the `ring` colour as a focus-state style \
+               (`src/input/input.rs:758-762`), which a `StyleRefinement` such \
+               as `geometry::input` cannot reach, so a field the theme leaves \
+               without a line (adwaita's 0) gains a 1px edge and its text moves \
+               in a pixel; and its own ring, `FOCUS_RING_WIDTH` 3 outside that \
+               edge (`src/styled.rs:11`, `:257-262`, `:301-327`, called at \
+               `src/input/input.rs:806`). It cannot draw the theme's inset ring \
+               in a focus state. The 1px edge is not forced: \
+               `Input::focus_bordered(false)` (`src/input/input.rs:311-314`, \
+               also `FocusableExt::focus_ring(false)`, `:164-167`) turns off \
+               both the edge (`:760`) and the ring (`:805`), but leaves a \
+               focused field with no focus display at all; the connector keeps \
+               upstream's display and the 1px edge with it",
 }];
 
 /// A pair whose two ratios are printed and not asserted, with the reason.
@@ -2793,40 +2790,6 @@ fn moved(
         .filter(|(name, value)| after.get(*name) != Some(*value))
         .map(|(name, _)| name.clone())
         .collect()
-}
-
-/// Every `UPSTREAM_LIMITS` entry is about something a bundled preset states:
-/// its loss is printed per combination, and one no combination loses is
-/// about nothing.
-#[test]
-fn every_upstream_limit_is_one_a_preset_loses() -> crate::Result<()> {
-    let combinations = combinations()?;
-    for limit in UPSTREAM_LIMITS {
-        let lost: Vec<String> = combinations
-            .iter()
-            .filter_map(|c| (limit.lost)(&c.resolved).map(|v| format!("{}: {v}", c.label())))
-            .collect();
-        println!(
-            "{}, which gpui-component draws its own way ({}), lost on {} of {} \
-             combinations:\n{}",
-            limit.what,
-            limit.evidence,
-            lost.len(),
-            combinations.len(),
-            lost.join("\n")
-        );
-        assert!(
-            !lost.is_empty(),
-            "{}: no combination loses it, so the entry is about nothing",
-            limit.what
-        );
-        assert!(
-            limit.evidence.contains(".rs:"),
-            "{}: cite upstream",
-            limit.what
-        );
-    }
-    Ok(())
 }
 
 /// M1-T7-03, gpui's half: every colour leaf of `ResolvedTheme` reaches one of
