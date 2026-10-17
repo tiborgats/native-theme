@@ -695,6 +695,10 @@ the file was pruned on 2026-10-11, not reordered.
       below 1 and disabled colours, so a disabled control is dimmed twice.
       Settle each from its source, then state 1.0 or drop the disabled
       colours.
+      M8 T21 (2026-10-17): macos-monterey states `disabled_opacity = 1.0`
+      since be69481a (M2a; `macos-monterey.toml:63`, `:528`), so of the
+      presets above only ios-13 (0.3, `ios-13.toml:68`, `:414`) and the ten
+      community presets (0.5) still state both.
 
 ### KDE: the live reader's disabled text colour
 
@@ -1101,6 +1105,9 @@ model, the platform presets and the three connectors
       `danger_fg`, the text on the fill
       (`connectors/native-theme-gpui/src/colors.rs:182`). Give the model
       one meaning per field (or two fields), then restate the presets.
+      M8 T21 (2026-10-17): no longer for M3, which closed on 2026-10-12
+      (ledger "## M3") without naming this entry; it stays [v0.7.0], with no
+      milestone of the review assigned.
 
 ### Presets: kde-breeze's sidebar colour set
 
@@ -1222,13 +1229,15 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] From M1-T6-07 (deferred by M4's plan ruling, 2026-10-12): the
       SF Symbols and Segoe Fluent loaders take a size since 34d6d1f7
-      (`.size(u32)`, `native-theme/src/icons.rs:362`, `:448`), but no display
+      (`.size(u32)`, `SfSymbolsLoader::size` and `SegoeFluentLoader::size`,
+      `native-theme/src/icons.rs:437`, `:522`), but no display
       scale. The SF Symbols raster comes from
       `CGImageForProposedRect_context_hints` with a null rect
       (`native-theme/src/sficons.rs:52`), which the code's own comment says
       AppKit answers with the full Retina resolution; unmeasured. The Segoe
       glyph is drawn at its em height in pixels
-      (`native-theme/src/winicons.rs:583-605`), whatever the display's scale.
+      (`load_windows_icon_by_name` and its doc,
+      `native-theme/src/winicons.rs:641-663`), whatever the display's scale.
       M1's decision makes `.scale()` conditional on a measurement: on the
       macOS leg, the raster's pixel size at 2×; on Windows, what a 150 % and a
       200 % display give. Measure on T1's CI legs or a real machine, then
@@ -1251,7 +1260,7 @@ model, the platform presets and the three connectors
 
 ### Segoe Fluent icons as SVG outlines
 
-- [ ] [v0.7.0] For M6 (M1-T6-07's Segoe item, deferred by M4's plan ruling,
+- [ ] [1.0] For M6 (M1-T6-07's Segoe item, deferred by M4's plan ruling,
       2026-10-12): Segoe Fluent glyphs reach the connectors as an RGBA raster
       (`GetGlyphOutlineW` with `GGO_GRAY8_BITMAP`,
       `native-theme/src/winicons.rs:425-433`), so they cannot be recoloured or
@@ -1261,6 +1270,12 @@ model, the platform presets and the three connectors
       raster (d1469e46, aed8b5f1) and `.size(u32)` (34d6d1f7) fixed the visible
       defects; the outline path is a new pipeline, to weigh in M6 with gpui's
       icon cache. SF Symbols have no public vector export, so they stay rasters.
+      M8 T21 (2026-10-17): [1.0], no longer for M6, by M6's Step 6 ruling
+      (`docs/todo_code-review-findings.md`, "## M6", *Step 6 — fix plan
+      (2026-10-15)*: "deferred, tag moved to [1.0]"): M4's em-box raster and
+      `.size(u32)` removed the visible defects, M6-13 routes the requested
+      size to the Segoe loader, and a `GGO_NATIVE` outline pipeline is
+      Windows-only code this host cannot run.
 
 ### Validation: a bad `defaults.border` value is reported once per widget
 
@@ -1786,12 +1801,17 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.x] M4 added CI test legs for `macos,watch,system-icons` and
       `windows,watch,system-icons` (9ed71649) and strict-panic steps for both
-      targets (c373fdb0, `.github/workflows/ci.yml:77-80`). CI runs on a push to
+      targets (c373fdb0, `.github/workflows/ci.yml`, *Strict panic lints
+      (native-theme, macOS and Windows targets)*, `:82-89`). CI runs on a push to
       `main`, a tag or a pull request (`ci.yml:3-7`), not on a branch push, so
       none of them has run, nor the macOS and Windows runtime tests the M4
       fixes wrote (the watcher, reader and icon tests of T2, T3, T5, T7, T19–T24
       and T26, known-unrun). Run them at the next pull request or push to
       `main`, and fix what fails.
+      M8 T21 (2026-10-17): since M8 T11 (60dcffbb) ci.yml has no tag trigger
+      of its own (its `on:` block, `ci.yml:6-10`): a `v*` tag runs it inside
+      publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
+      tag's commit before the upload; a branch push still runs nothing.
 
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
@@ -2300,7 +2320,7 @@ model, the platform presets and the three connectors
       wrapped for its entrance animation (`:803-841`); neither offers a hook.
       `sheet.rs` is unchanged.
 - [ ] [v0.7.0] the gpui connector reads `AccessibilityPreferences::high_contrast`
-      nowhere but its accessor (`native-theme-gpui` `lib.rs:356-357`,
+      nowhere but its accessor (`native-theme-gpui` `lib.rs:615-617`,
       `is_high_contrast`): `to_theme` and `apply` build the same theme with it
       set or unset, so the showcase's Preferences toggle changes only the
       stored value and the status bar's flag. Decide what it should change
@@ -2413,7 +2433,8 @@ What is still open on the iced side:
 - [ ] [1.0] kde-breeze states `button.hover_background = "#93cee9"` in both modes
       under a `#fcfcfc` label in dark mode: 1.67:1 (the pressed pair is 2.43
       in light mode). platform-facts records the KDE source as "`[Colors:Button]
-      DecorationHover` **blend**" (`platform-facts.md:1181`), and `#93cee9` is
+      DecorationHover` **blend**" (`platform-facts.md` §2.3, the button's
+      `hover_background` row, before M8 T15), and `#93cee9` is
       the raw `DecorationHover`, which Breeze paints as an outline — so the
       preset may be recording the unblended colour as a fill. Found 2026-09-21
       by the iced contrast report; for `preset-validator` to judge. The same
@@ -2430,6 +2451,12 @@ What is still open on the iced side:
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source
       gives them.
+      M8 T21 (2026-10-17): since M8 T15 that row's KDE cell
+      (`docs/platform-facts.md:1192`) reads "← `background_color`: no hover
+      fill" (breezehelper.cpp:693-707), hover being the `Highlight` outline;
+      the button's `#93cee9` is listed in *Presets: values the M8 T15
+      platform-facts rows disagree with* ("From M8 T15 (2026-10-17)", fix
+      round 2).
 - [ ] [1.0] `button.hover_text_color` and `button.active_text_color` equal
       `button.font.color` in all 16 presets, so the per-status label rows of
       both contracts cannot tell hover or pressed from idle today. Either the
@@ -3838,15 +3865,18 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 ### iced showcase: Widget Info claims a substituted family
 - [ ] [v0.7.0] For M9b: the iced and gpui showcases name a family the system lacks by its stated name alone while it is drawn in the platform's substitute. iced: since 2fcc26fb the family the showcase asks for (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:12466-12477`) is `system_font_family`'s, which is the platform's substitute where the system lacks the stated family; `family_label` (`:12376-12386`) returns the stated name alone wherever the drawn family is the one asked for, so `font_row_drawn` says "button.font, family, size and weight" for windows-11's "Segoe UI" drawn in fontconfig's match (Adwaita Sans on one Linux system); before 2fcc26fb the same row said "Segoe UI (not found; drawn in generic sans-serif: …)". gpui: the inspector's Theme tab (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:215-229`) shows the stated `font.family` under `font_family` and notes "drawn as" only for macOS's `.SystemUIFont`, while `Theme::font_family` holds `font_family`'s substitute (`connectors/native-theme-gpui/src/lib.rs:311`, `:747-750`), and its `mono_font_family` row has no note at all. Widget Info and the inspector must name the drawn family in both, e.g. "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans)". egui names it, in another place: its Theme panel's Notes section lists the atlas's `Note::FontFamilyUnavailable { family, substitute }` (`connectors/native-theme-egui/examples/showcase-egui/info.rs:1114-1121`), while its Fonts section just below (`:1129-1135`) prints the stated `font_family` and `mono_font_family` with no note; M9b makes the two sections agree.
+      M8 T21 (2026-10-17): each half is its showcase's milestone: iced's
+      Widget Info M9b's, gpui's inspector M9a's, egui's two Theme panel
+      sections M9c's.
 
 ### `system_icon_set()` decides where it should report
-- [ ] [1.0] `system_icon_set()` returns `IconSet::Material` on platforms other than macOS, iOS, Windows and Linux, documented as a "safe cross-platform fallback" (`native-theme/src/model/icons.rs:501`, `:519`): the icon-set counterpart of the icon-theme fallback removed in v0.5.9. By the rule that the library reports and the application decides, it should report there (e.g. `Result<IconSet>` with `Error::PlatformUnsupported`, or `Option<IconSet>`). It decides wrongly where it matters: the BSDs run the same freedesktop desktops as Linux (KDE Plasma, GNOME, XFCE) with freedesktop icon themes, and get the bundled Material set. Ripple: `Resolved::icon_set` and `SystemTheme::icon_set` are required `IconSet` fields filled from it when the theme states none (`Theme::resolve`, `pipeline::run_pipeline`), and `IconSetChoice::effective_icon_set` returns it for `IconSetChoice::System`; each would need a way to carry "none".
+- [ ] [1.0] `system_icon_set()` returns `IconSet::Material` on platforms other than macOS, iOS, Windows and Linux, documented as a "safe cross-platform fallback" (`system_icon_set` and its doc, `native-theme/src/detect/icon_theme.rs:12`, `:23`): the icon-set counterpart of the icon-theme fallback removed in v0.5.9. By the rule that the library reports and the application decides, it should report there (e.g. `Result<IconSet>` with `Error::PlatformUnsupported`, or `Option<IconSet>`). It decides wrongly where it matters: the BSDs run the same freedesktop desktops as Linux (KDE Plasma, GNOME, XFCE) with freedesktop icon themes, and get the bundled Material set. Ripple: `Resolved::icon_set` and `SystemTheme::icon_set` are required `IconSet` fields filled from it when the theme states none (`Theme::resolve`, `pipeline::run_pipeline`), and `IconSetChoice::effective_icon_set` returns it for `IconSetChoice::System`; each would need a way to carry "none".
 
 ### iced: filing variable-font weights is a workaround for cosmic-text 0.15
 - [ ] [upstream] iced 0.14 draws text with cosmic-text 0.15, which matches a face only at the weight fontdb filed it at (`font/fallback/mod.rs:279-287`, `:299-303`, `:446-456`), and fontdb 0.23 files a variable font at its OS/2 weight alone (`lib.rs:1034-1037`, `:1161`). The iced showcase therefore files an extra face at each weight a variable face's `wght` axis covers (`register_weight` in `connectors/native-theme-iced/examples/showcase-iced.rs`), and the iced connector's README and *Font Configuration* docs teach consumers the same. cosmic-text 0.19 matches a variable face at any weight its axis covers itself (`variable_weight_match`, `font/system.rs:38-44`, used at `font/fallback/mod.rs:285`, `:301`). When iced moves to cosmic-text 0.19 or later, remove `register_weight` and the recipe, and check whether the nearest-face fallback in `drawable_font` is still needed for families with no face at a weight.
 
 ### macOS: the stated font family "SF Pro" is not a family iced's font database holds
-- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-sonoma.toml:47`, `:403`, and the reader's non-macOS testable build, `macos.rs:565-624`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`macos.rs:205-206`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
+- [ ] [1.0] In the v0.5.9 CI screenshot of the iced showcase (`connectors/native-theme-iced/docs/assets/macos-macos-sonoma-light.png`, captured at `33fea0f7`) the inspector reads "Font: SF Pro (not found; drawn in generic sans-serif: .SF NS)": the family macos-sonoma states (`presets/macos-monterey.toml`, renamed from `macos-sonoma.toml` in 11017186, `[light.defaults.font]` `:79` and `[dark.defaults.font]` `:544`, and the reader's non-macOS testable build, the test fixtures `sample_widget_fonts`, `sample_light_defaults` and `sample_dark_defaults`, `macos.rs:590-661`) is not a family name in fontdb on `macos-latest`, which holds the system UI font as `.SF NS`, so iced reaches it only through cosmic-text's fallback list (`cosmic-text-0.15.0` `font/fallback/macos.rs:30-38`). "SF Pro" is the name `docs/platform-facts.md` §1 (`:63-71`) gives every system font, Apple's name for the typeface, not the name the font file declares. The live reader states `NSFont.familyName()` (`fontspec_from_nsfont`, `macos.rs:297-298`), which on a real Mac is presumably `.AppleSystemUIFont`; unverified, and whether iced (fontdb) or gpui (Core Text) resolve that name is not checked either. To decide: what family name a toolkit resolves the macOS system font by (fontdb family names on `macos-latest`, Core Text's name for `systemFontOfSize:`), whether the preset should state that name, keep "SF Pro" as the documented name with the connectors mapping it, or state none so the toolkit's system default stands; check it on the macOS CI runner rather than by assumption. gpui draws through Core Text, which may resolve "SF Pro" differently: check both connectors.
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
@@ -3858,7 +3888,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [1.0] All three showcases draw the reload button with rotate-cw; gpui-component 0.7.0 added `IconName::RefreshCw`, the glyph the icon roles map `ActionRefresh` to. Use `refresh-cw` / `refresh` / `view-refresh` (Lucide / Material / freedesktop) in all three.
 
 ### gpui: the base-palette repair writes colours without their tokens
-- [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1007-1024`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
+- [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
 
 ### gpui: a citation gate for the connector's doc comments
 - [ ] [1.0] The showcase's citations are checked by gates (`every_colour_claim_is_read_at_the_line_it_cites`, `every_prose_citation_still_exists`); the connector's own `src/*.rs` doc comments have none, so the 0.7.0 bump re-read about 200 of them by hand. Add a gate that resolves their `file.rs:N` citations against the pinned upstream sources.
@@ -3886,7 +3916,7 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 - [ ] [v0.7.0] gpui-component's charts derive `IntoPlot`, not `IntoElement`, so `scripts/check_widget_coverage.py` discovers none of them. Teach it `IntoPlot`, then show what it finds — today `RadarChart` and `SankeyChart`, which no showcase shows.
 
 ### gpui: Questionnaire needs an infallible state constructor
-- [ ] [upstream] `QuestionnaireState::new` returns a `Result` (gpui-base `questionnaire/state.rs:40-45`) while gpui builds entities infallibly, so the showcase cannot hold one without a panic path. Ask upstream for an infallible constructor (or schema validation at a later step), then show `Questionnaire` and drop its nine exceptions (`docs/showcase-exceptions.toml`).
+- [ ] [upstream] `QuestionnaireState::new` returns a `Result` (gpui-base 0.7.3 `questionnaire/state.rs:48-51`) while gpui builds entities infallibly, so the showcase cannot hold one without a panic path. Ask upstream for an infallible constructor (or schema validation at a later step), then show `Questionnaire` and drop its nine exceptions (`docs/showcase-exceptions.toml`).
 
 ### Presets: material-3's platform-facts citations have drifted
 - [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1280` (`font.weight`) where the row is `:1282`, and the list's `header_font` cites `:1425-1426` (the selection rows) where the rows are `:1427-1428`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
@@ -3947,12 +3977,18 @@ the plan's close.
       button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
       on the table-level info (`info/data.rs`), not on the header row's own
       (`data_table_header`).
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
 - [ ] [v0.7.0] For M6: the showcase's `SampleTableDelegate` does not override `move_column`
       while its columns are movable, so dragging a header moves the header and not the data,
       and the sortable Role column then sorts the wrong data (pre-existing).
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
 - [ ] [v0.7.0] For M6: the gpui showcase evaluates `themed_entrance(cx)` more than once per
       dialog (`examples/showcase-gpui/demo.rs`); `info/chrome.rs`'s `panel_toggle` carries a
       `too_many_arguments` allow.
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
 - [x] [v0.7.0] For M6: no test shows an application's own `TooltipDefaults` delay surviving
       an upstream mode switch to a variant that states no delay (the install path is tested,
       this case is not).
@@ -3964,6 +4000,9 @@ the plan's close.
       auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
       `catppuccin-mocha`'s header label (19 px) is taller than its stated header height
       (18 px), pre-existing.
+      M8 T21 (2026-10-17): for M9c, not M7: M7's Step 6 ruling sent it to
+      M9a as the showcases' milestone; M9's plan gives each showcase its
+      own, M9a gpui, M9b iced and M9c egui.
 - [x] [v0.7.0] For M8 (iced): the iced Layout table's header rule sits outside
       `list.header_height` (iced puts `separator_y` between rows) where the Basic table's is
       inside; say so beside the Layout table's header height in `examples/showcase-iced.rs`.
@@ -4068,4 +4107,5 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 - [x] [v0.7.0] For M7's follow-up in M8: the egui plugin's per-viewport focus entry (connectors/native-theme-egui/src/plugin.rs ~:82-84) stays after its viewport closes, the same leak shape M7 T9 fixed for the widgets' parts store.
   *Closed by M8 T6 (2026-10-16, 66053837):* at each pass's `input_hook` the install plugin drops the focus entry of every viewport whose input it saw and that egui no longer has (`Context::cumulative_pass_nr_for` is 0 for it; egui 0.36.2 has no accessor that lists its viewports), the viewports of the passes in progress excepted, and its `last_sent` window theme (fix round 1); at its first root pass it adds the viewports of the entries written before the install, found through `IdTypeMap::temp_keys`, to those it saw (fix round 1); a test opens an immediate viewport, closes it and holds one `FocusEntry` two passes later, where it held two.
 - [ ] [1.0] egui text-size cap residuals (M7 T1): the TrueType `ISECT` instruction, the autohinter's CJK and Indic script groups, and hinting settings an application changes itself are unbounded in the hinting source, so they are not covered. Neither is a viewport two immediate levels up during its very first pass, which loses that pass's parts.
-- [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12). The showcase's own parity items from M6's close (sort-button test, `move_column`, `themed_entrance`) are still there.
+- [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
+      M8 T21 (2026-10-17): `named_image`: M9c; the parity items are the G1/G2 section's (M9a), not repeated here.
