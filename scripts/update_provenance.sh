@@ -128,7 +128,7 @@ cmd_write() {
 # Provenance of the visual assets (screenshots and GIFs under
 # native-theme/docs/assets and connectors/*/docs/assets).
 # Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
-# read by scripts/check_release.sh and the crates.io workflow's CI gate.
+# read by scripts/check_release.sh and the crates.io workflow's release gate.
 # Do not edit by hand.
 
 # Workspace version and commit the assets were captured from.

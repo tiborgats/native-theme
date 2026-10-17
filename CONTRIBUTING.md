@@ -252,7 +252,13 @@ uploaded. Docs-only changes leave the hash untouched and need no recapture.
 4. `./scripts/check_release.sh` on that commit (the asset check is hard now).
 5. Fast-forward `main` to it and push; CI runs on the exact commit.
 6. `git tag vX.Y.Z` on that commit and push the one tag by name. The publish
-   workflow runs its CI gate, then uploads the crates in dependency order.
+   workflow runs its release gate (the tag names this version; the asset and
+   compatibility stamps are current), then all of CI on the tag's commit,
+   `cargo package` of every crate and the docs.rs emulation, and only when
+   all of them pass uploads the crates in dependency order. CI's security
+   audit is one of those gates: an advisory published on release day blocks
+   the upload until it is fixed or ignored, with its reason, in
+   `.cargo/audit.toml`.
 7. Create the GitHub release page from the tag with the CHANGELOG section as
    notes, then check the docs.rs build pages.
 

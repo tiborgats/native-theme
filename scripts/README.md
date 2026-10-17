@@ -295,7 +295,8 @@ is cargo's future-incompatibility notice, a `warning:` line about a
 dependency rather than a workspace crate. Prints one line per combination
 with an excerpt under each failure; exits 1 when any fails, naming each
 failure at the end, and 2 when `jq` is missing. `scripts/check_release.sh` (a
-hard failure), `ci.yml`, `publish.yml` and `dependency-canary.yml` run it.
+hard failure), `ci.yml` (and through it `publish.yml`'s CI run) and
+`dependency-canary.yml` run it.
 
 Requires jq.
 
@@ -354,8 +355,9 @@ when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
 package is absent from the metadata, the discovery finds no widget in it, or
 a file the rules read has moved upstream. `--self-test` runs those guards on
 synthetic crate roots, without cargo; `scripts/check_release.sh` and `ci.yml`
-run it beside the check. `scripts/check_release.sh`, `ci.yml`,
-`publish.yml`, `dependency-canary.yml` and `update_compatibility.sh run` run it, so an
+run it beside the check. `scripts/check_release.sh`, `ci.yml` (and through
+it `publish.yml`'s CI run), `dependency-canary.yml` and
+`update_compatibility.sh run` run it, so an
 upstream release that adds a widget is reported the evening it appears.
 
 Requires Python 3.11+ (for `tomllib`); no network of its own once the registry
@@ -393,8 +395,8 @@ scenarios, a planted violation of each rule among them and an absent
 function of each class; `--root DIR` reads a scratch copy of the tree
 instead, to try a change; `-v` lists every function with its class and
 signature. `scripts/check_release.sh` (in the `--commit` subset too) runs
-the check and the self-test; `ci.yml`, `publish.yml` and `dependency-canary.yml`
-run the check.
+the check and the self-test; `ci.yml` (and through it `publish.yml`'s CI
+run) runs the check and the self-test, and `dependency-canary.yml` the check.
 
 Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
 
@@ -421,8 +423,8 @@ cannot read (a version not of the form major.minor.patch, a missing root or
 crate README, a crate README without its own dependency). `--self-test` runs its built-in
 scenarios, a README naming another minor among them; `--root DIR` reads a
 scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`
-subset too) runs the check and the self-test; `ci.yml`'s documentation job
-and `publish.yml` run the check.
+subset too) and `ci.yml`'s documentation job (and through it `publish.yml`'s
+CI run) run the check and the self-test.
 
 Requires Python 3.11+ (for `tomllib`); reads no network and runs no cargo.
 

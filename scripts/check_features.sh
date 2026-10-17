@@ -17,8 +17,8 @@
 #
 #   scripts/check_features.sh
 #
-# Requires jq. scripts/check_release.sh, ci.yml, publish.yml and
-# dependency-canary.yml run it.
+# Requires jq. scripts/check_release.sh, ci.yml (and through it publish.yml's
+# CI run) and dependency-canary.yml run it.
 set -euo pipefail
 
 if ! command -v jq &>/dev/null; then

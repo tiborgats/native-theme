@@ -7,7 +7,7 @@ set -euo pipefail
 # Linux assets in parallel while CI runs, and finally downloads the
 # CI results into the per-connector docs/assets/ directories and stamps
 # docs/assets/PROVENANCE.toml (scripts/update_provenance.sh) with the sources the
-# assets came from. scripts/check_release.sh and the crates.io workflow's CI gate
+# assets came from. scripts/check_release.sh and the crates.io workflow's release gate
 # verify that stamp against HEAD.
 #
 # Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);

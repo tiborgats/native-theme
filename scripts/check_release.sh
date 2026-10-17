@@ -1030,7 +1030,7 @@ fi
 # (scripts/update_provenance.sh). A mismatch at HEAD is a warning while the
 # CHANGELOG entry for this version still says "Unreleased" and a hard failure
 # once it carries a date: the release commit exists, so this tree is about to
-# be tagged. The crates.io workflow's CI gate runs the same check on the tag.
+# be tagged. The crates.io workflow's release gate runs the same check on the tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Visual assets"
 if [[ $COMMIT_MODE ]]; then

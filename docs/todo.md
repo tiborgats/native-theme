@@ -3398,6 +3398,8 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       wrote them; the gpui, iced, core and build READMEs name 0.6 until the
       0.7.0 bump. `scripts/check_release.sh` (both modes), ci.yml's
       documentation job and publish.yml run it.
+      2026-10-17 (M8 T11): publish.yml no longer runs it itself; it calls
+      ci.yml, whose documentation job runs it, on the tag's commit.
 
 ### Connectors: a public theme builder that takes the mode
 
