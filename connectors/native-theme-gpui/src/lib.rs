@@ -378,7 +378,8 @@ pub fn to_theme(
 /// Pass `&AccessibilityPreferences::default()` for no scaling, or the OS
 /// preferences to honour them under a preset: accessibility is orthogonal to
 /// the theme choice, and a user with large text wants it under a preset too.
-/// On a preset switch, `native_theme::detect::accessibility_preferences()` is
+/// On a preset switch,
+/// `native_theme_gpui::native_theme::detect::accessibility_preferences()` is
 /// the cached reading: the first call after a system read may still run the
 /// reduced-motion detection (about 3 ms measured on one KDE machine), and
 /// every later call returns the cached block in nanoseconds;
@@ -533,9 +534,9 @@ mod sealed {
 /// ```no_run
 /// use native_theme_gpui::SystemThemeExt;
 ///
-/// let sys = native_theme::SystemTheme::from_system()?;
+/// let sys = native_theme_gpui::SystemTheme::from_system()?;
 /// let theme = sys.to_gpui_theme().theme;
-/// # Ok::<(), native_theme::Error>(())
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 pub trait SystemThemeExt: sealed::Sealed {
     /// Convert this system theme to a gpui-component [`GpuiTheme`], as a

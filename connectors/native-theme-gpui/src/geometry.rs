@@ -8,7 +8,7 @@
 //! `gpui_component::StyledExt::refine_style`:
 //!
 //! ```ignore
-//! use gpui_component::StyledExt;
+//! use gpui_kit::component::StyledExt;
 //! use native_theme_gpui::{ActiveNativeTheme, geometry};
 //!
 //! let n = cx.native();
@@ -257,8 +257,8 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// (`:748-751`) is then given explicitly:
 ///
 /// ```ignore
-/// use gpui::{ParentElement, Styled, div};
-/// use gpui_component::{StyledExt, button::Button};
+/// use gpui_kit::component::{StyledExt, button::Button};
+/// use gpui_kit::{ParentElement, Styled, div};
 /// use native_theme_gpui::geometry;
 ///
 /// Button::new("save")

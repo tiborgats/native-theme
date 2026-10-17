@@ -32,11 +32,11 @@
 //! theme's set.
 //!
 //! ```no_run
-//! use gpui::{Styled, img, px};
+//! use gpui_kit::{Styled, img, px};
 //! use native_theme_gpui::icons::to_image_source;
 //! use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
 //!
-//! # fn role_icon(window: &gpui::Window) -> native_theme_gpui::Result<()> {
+//! # fn role_icon(window: &gpui_kit::Window) -> native_theme_gpui::Result<()> {
 //! let sys = SystemTheme::from_system()?;
 //! let resolved = sys.pick(sys.mode);
 //! let fg = resolved.defaults.text_color;
@@ -130,8 +130,8 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// `IconName` has no `PartialEq`, so a variant is told by `matches!`:
 ///
 /// ```
-/// use gpui_component::IconName;
-/// use native_theme::icons::IconRole;
+/// use gpui_kit::component::IconName;
+/// use native_theme_gpui::IconRole;
 /// use native_theme_gpui::icons::icon_name;
 ///
 /// assert!(matches!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert)));
@@ -533,10 +533,10 @@ pub fn freedesktop_name_for_gpui_icon(
 /// of them has no icon for it.
 ///
 /// ```ignore
-/// use native_theme::icons::FreedesktopLoader;
 /// use native_theme_gpui::icons::freedesktop_name_candidates;
+/// use native_theme_gpui::native_theme::icons::FreedesktopLoader;
 ///
-/// let data = FreedesktopLoader::any(freedesktop_name_candidates(gpui_component::IconName::Eye))
+/// let data = FreedesktopLoader::any(freedesktop_name_candidates(gpui_kit::component::IconName::Eye))
 ///     .theme("Adwaita")
 ///     .load();
 /// ```
@@ -738,11 +738,11 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// # Examples
 ///
 /// ```no_run
-/// use native_theme::icons::IconData;
+/// use native_theme_gpui::IconData;
 /// use native_theme_gpui::icons::to_image_source;
 /// use std::borrow::Cow;
 ///
-/// # let color = gpui::black();
+/// # let color = gpui_kit::black();
 /// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// let source = to_image_source(&svg, None, None);         // uncolorized, 48px
 /// let colored = to_image_source(&svg, Some(color), None);  // colorized, 48px
@@ -845,8 +845,8 @@ pub fn custom_icon_to_image_source(
 /// # Examples
 ///
 /// ```no_run
-/// use gpui_component::IconName;
-/// use native_theme::theme::IconSet;
+/// use gpui_kit::component::IconName;
+/// use native_theme_gpui::IconSet;
 /// use native_theme_gpui::icons::bundled_icon_to_image_source;
 ///
 /// let source = bundled_icon_to_image_source(IconName::Search, IconSet::Lucide, None, None);
@@ -945,9 +945,9 @@ fn svg_bytes_to_image_source(
 /// # Examples
 ///
 /// ```no_run
-/// use native_theme::icons::load_icon_indicator;
-/// use native_theme::theme::IconSet;
+/// use native_theme_gpui::IconSet;
 /// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
+/// use native_theme_gpui::native_theme::icons::load_icon_indicator;
 ///
 /// if let Some(AnimatedImageSources { sources, frame_duration_ms, .. }) =
 ///     load_icon_indicator(IconSet::Lucide, None)
@@ -955,7 +955,7 @@ fn svg_bytes_to_image_source(
 /// {
 ///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):
 ///     // frame_index = (frame_index + 1) % sources.len();
-///     // gpui::img(sources[frame_index].clone())
+///     // gpui_kit::img(sources[frame_index].clone())
 /// }
 /// ```
 #[must_use]
@@ -993,15 +993,15 @@ pub fn animated_frames_to_image_sources(
 /// # Examples
 ///
 /// ```no_run
-/// use native_theme::icons::load_icon_indicator;
 /// use native_theme_gpui::icons::animated_frames_to_image_sources_for;
+/// use native_theme_gpui::native_theme::icons::load_icon_indicator;
 ///
-/// # let text_color = gpui::black();
+/// # let text_color = gpui_kit::black();
 /// let loaded = native_theme_gpui::from_system()?;
 /// let set = loaded.icon_set;
 /// let frames = load_icon_indicator(set, loaded.icon_theme.as_deref())
 ///     .and_then(|anim| animated_frames_to_image_sources_for(set, &anim, Some(text_color), None));
-/// # Ok::<(), native_theme::Error>(())
+/// # Ok::<(), native_theme_gpui::Error>(())
 /// ```
 #[must_use]
 pub fn animated_frames_to_image_sources_for(
@@ -1075,16 +1075,16 @@ fn frames_to_image_sources(
 /// # Examples
 ///
 /// ```no_run
-/// use native_theme::icons::{IconData, TransformAnimation, load_icon_indicator};
-/// use native_theme::theme::IconSet;
+/// use gpui_kit::Styled;
 /// use native_theme_gpui::icons::with_spin_animation;
-/// use gpui::Styled;
+/// use native_theme_gpui::native_theme::icons::load_icon_indicator;
+/// use native_theme_gpui::{IconData, IconSet, TransformAnimation};
 ///
 /// if let Some(anim) = load_icon_indicator(IconSet::Material, None)
 ///     && let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
 ///         (anim.icon(), anim.animation())
 /// {
-///     let spinner = gpui::svg().data(bytes).size_6();
+///     let spinner = gpui_kit::svg().data(bytes).size_6();
 ///     let animated = with_spin_animation(spinner, "my-spinner", *duration_ms);
 ///     // Use `animated` as a child element in your gpui view
 /// }

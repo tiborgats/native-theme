@@ -110,8 +110,8 @@ gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,no_run
-use gpui::{AppContext as _, WindowOptions};
-# use gpui::{Context, IntoElement, Render, Window, div};
+use gpui_kit::{AppContext as _, WindowOptions};
+# use gpui_kit::{Context, IntoElement, Render, Window, div};
 # struct MyView;
 # impl Render for MyView {
 #     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
@@ -136,6 +136,13 @@ gpui_kit::application().run(|cx| {
     }
 });
 ```
+
+The examples name GPUI and gpui-component through gpui-kit, as gpui-kit's own
+documentation does: GPUI at its root (`gpui_kit::Window`, `gpui_kit::div`)
+and gpui-component as `gpui_kit::component`. An application that depends on
+gpui-component and GPUI directly instead, with GPUI under the name
+gpui-component gives it (`gpui = { package = "gpui-pre", version = "0.3.9" }`),
+names the same items `gpui::…` and `gpui_component::…`.
 
 `gpui_kit::open_window` wraps the view in gpui-base's `Root`, which carries
 the dialogs, sheets and notifications. A window opened before
@@ -172,7 +179,7 @@ re-exports):
 use native_theme_gpui::native_theme::detect::accessibility_preferences;
 use native_theme_gpui::{apply, from_preset};
 
-# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
+# fn f(cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
 let prefs = accessibility_preferences();
 let (light, light_resolved) = from_preset("catppuccin-latte", false, &prefs)?;
 let (dark, dark_resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
@@ -239,11 +246,11 @@ the `geometry` module is a pure function of `Native<'_>` (the four layout
 accessors, of a `LayoutTheme`):
 
 ```rust,no_run
-use gpui::{ParentElement, Styled, div};
-use gpui_component::{StyledExt, button::Button};
+use gpui_kit::{ParentElement, Styled, div};
+use gpui_kit::component::{StyledExt, button::Button};
 use native_theme_gpui::{ActiveNativeTheme, geometry};
 
-# fn f(cx: &gpui::App) {
+# fn f(cx: &gpui_kit::App) {
 let button = match cx.native() {
     Some(n) => Button::new("save")
         .refine_style(&geometry::button(n))
@@ -386,12 +393,12 @@ native theme those two buttons hover in colours no other button uses.
 button hover and pressed colours:
 
 ```rust,no_run
-use gpui_component::IconName;
-use gpui_component::button::{Button, ButtonVariants as _};
-use gpui_component::input::InputGroupButton;
+use gpui_kit::component::IconName;
+use gpui_kit::component::button::{Button, ButtonVariants as _};
+use gpui_kit::component::input::InputGroupButton;
 use native_theme_gpui::variants;
 
-# fn f(cx: &gpui::App) {
+# fn f(cx: &gpui_kit::App) {
 Button::new("close").icon(IconName::Close).custom(variants::ghost_button(cx));
 InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
 # }
@@ -444,7 +451,7 @@ control. Each has a `…Look` type (`CheckboxLook::of(&resolved, …)`,
 that draws something of its own alike.
 
 ```rust,no_run
-use gpui::SharedString;
+use gpui_kit::SharedString;
 use native_theme_gpui::IconSet;
 use native_theme_gpui::widgets::{Checkbox, Separator, Spinner, Tab, TabBar};
 
@@ -453,7 +460,7 @@ use native_theme_gpui::widgets::{Checkbox, Separator, Spinner, Tab, TabBar};
 #     page: usize,
 # }
 # impl Settings {
-# fn controls(&self, cx: &mut gpui::Context<Self>) {
+# fn controls(&self, cx: &mut gpui_kit::Context<Self>) {
 Checkbox::new("autosave")
     .label("Autosave")
     .checked(self.autosave)
@@ -575,7 +582,7 @@ alone changes nothing on screen under a dark OS.
 ```rust,no_run
 use native_theme_gpui::{SystemTheme, Theme, apply_system_theme};
 
-# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
+# fn f(cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system()?;
 let overlay = Theme::from_toml(r##"
 [light.defaults]
@@ -618,7 +625,7 @@ struct MyView {
     _theme_watcher: Option<ThemeSubscription>,
 }
 
-# fn f(window: &mut gpui::Window, cx: &mut gpui::Context<MyView>) {
+# fn f(window: &mut gpui_kit::Window, cx: &mut gpui_kit::Context<MyView>) {
 // In the main window's view constructor, with `window: &mut Window` and
 // `cx: &mut Context<MyView>`: a watcher that cannot start (a desktop with
 // none) returns its error, and `ok()` drops it.
@@ -638,7 +645,7 @@ preset with `SystemTheme::from_system_with_preset` reads with it again, or
 
 ```rust,no_run
 # use native_theme_gpui::{SystemTheme, apply_system_theme};
-# fn f(cx: &mut gpui::App) -> native_theme_gpui::Result<()> {
+# fn f(cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system_with_preset("macos-monterey")?;
 apply_system_theme(&sys, cx);
 # Ok(())
@@ -692,11 +699,11 @@ own palette. An icon the set does not have is `None`; nothing is substituted.
 bundled Lucide glyph, whatever the theme's set.
 
 ```rust,no_run
-use gpui::{Styled, img, px};
+use gpui_kit::{Styled, img, px};
 use native_theme_gpui::icons::to_image_source;
 use native_theme_gpui::{IconRole, SystemTheme, icon_sizes};
 
-# fn f(window: &gpui::Window) -> native_theme_gpui::Result<()> {
+# fn f(window: &gpui_kit::Window) -> native_theme_gpui::Result<()> {
 let sys = SystemTheme::from_system()?;
 let resolved = sys.pick(sys.mode);
 let fg = resolved.defaults.text_color;
@@ -723,14 +730,14 @@ The theme-drawn `widgets::Spinner` draws the icon set's indicator itself (see
 indicator of the theme's set and convert it, coloured as that set is coloured:
 
 ```rust,no_run
-use gpui::{IntoElement, Styled, px};
-use gpui_component::ActiveTheme;
+use gpui_kit::{IntoElement, Styled, px};
+use gpui_kit::component::ActiveTheme;
 use native_theme_gpui::icons::{animated_frames_to_image_sources_for, with_spin_animation};
 use native_theme_gpui::native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::native_theme::icons::load_icon_indicator;
 use native_theme_gpui::{AnimatedIcon, IconData, TransformAnimation};
 
-# fn f(cx: &gpui::App) -> native_theme_gpui::Result<()> {
+# fn f(cx: &gpui_kit::App) -> native_theme_gpui::Result<()> {
 let loaded = native_theme_gpui::from_system()?;
 // The text colour: a Material or Lucide frame is tinted it, and a freedesktop
 // frame's `currentColor` takes it where the frame sets no colour of its own.
@@ -745,10 +752,10 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
             {
                 let element = if prefers_reduced_motion() {
                     // The first frame, standing still.
-                    frames.sources.first().cloned().map(gpui::img)
+                    frames.sources.first().cloned().map(gpui_kit::img)
                 } else {
                     // On each tick of `frames.frame_duration_ms`, the next of
-                    // `frames.sources`, through `gpui::img`.
+                    // `frames.sources`, through `gpui_kit::img`.
                     None
                 };
             }
@@ -759,7 +766,7 @@ if let Some(anim) = load_icon_indicator(loaded.icon_set, loaded.icon_theme.as_de
             if let (Some(IconData::Svg(bytes)), Some(TransformAnimation::Spin { duration_ms })) =
                 (anim.icon(), anim.animation())
             {
-                let icon = gpui::svg().data(bytes).size(diameter).text_color(text);
+                let icon = gpui_kit::svg().data(bytes).size(diameter).text_color(text);
                 let element = if prefers_reduced_motion() {
                     icon.into_any_element()
                 } else {

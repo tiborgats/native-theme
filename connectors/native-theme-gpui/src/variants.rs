@@ -31,7 +31,7 @@ use gpui_component::button::ButtonCustomVariant;
 /// colours every other button of the installed theme uses.
 ///
 /// ```ignore
-/// use gpui_component::button::{Button, ButtonVariants as _};
+/// use gpui_kit::component::button::{Button, ButtonVariants as _};
 /// use native_theme_gpui::variants;
 ///
 /// // instead of `.ghost()`

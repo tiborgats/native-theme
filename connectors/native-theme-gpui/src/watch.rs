@@ -37,7 +37,7 @@ use gpui::{App, Window};
 ///
 /// ```rust,ignore
 /// let watcher = native_theme_gpui::on_theme_change(window, cx, |_event, _window, cx| {
-///     native_theme::detect::invalidate_caches();
+///     native_theme_gpui::native_theme::detect::invalidate_caches();
 ///     if let Ok(sys) = native_theme_gpui::SystemTheme::from_system() {
 ///         native_theme_gpui::apply_system_theme(&sys, cx);
 ///     }
