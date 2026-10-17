@@ -573,6 +573,7 @@ pub fn custom_icon_to_image_source(
 /// egui draws and a size from the theme, drawn in a tint:
 ///
 /// ```no_run
+/// use native_theme_egui::egui;
 /// use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
 /// use native_theme_egui::{IconRole, ThemeAtlas};
 ///

@@ -185,10 +185,10 @@
 //!     let family: &'static str = *families
 //!         .entry(intern_font_family(&spec.family))
 //!         .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
-//!     iced_core::Font {
-//!         family: iced_core::font::Family::Name(family),
+//!     iced::Font {
+//!         family: iced::font::Family::Name(family),
 //!         weight: native_theme_iced::to_iced_weight(spec.weight),
-//!         ..iced_core::Font::DEFAULT
+//!         ..iced::Font::DEFAULT
 //!     }
 //! };
 //! # let _ = font;

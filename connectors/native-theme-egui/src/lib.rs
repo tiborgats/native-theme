@@ -20,12 +20,13 @@
 //! With feature `native`, the OS readers ([`from_system`] says what it returns without them):
 //!
 //! ```rust,no_run
+//! use native_theme_egui::egui;
 //! use native_theme_egui::from_system;
 //!
-//! # fn install(cc: &eframe::CreationContext<'_>) -> native_theme_egui::Result<()> {
+//! # fn install(ctx: &egui::Context) -> native_theme_egui::Result<()> {
 //! let loaded = from_system()?;
-//! loaded.atlas.install(&cc.egui_ctx);
-//! cc.egui_ctx.set_theme(egui::ThemePreference::System);
+//! loaded.atlas.install(ctx);
+//! ctx.set_theme(egui::ThemePreference::System);
 //! # Ok(())
 //! # }
 //! ```
@@ -34,7 +35,7 @@
 //! [`from_system`] instead follows the OS, with `ThemePreference::System`:
 //!
 //! ```rust,no_run
-//! use egui::ThemePreference;
+//! use native_theme_egui::egui::{self, ThemePreference};
 //! use native_theme_egui::{from_preset, AccessibilityPreferences};
 //!
 //! # fn install(ctx: &egui::Context) -> native_theme_egui::Result<()> {
@@ -52,20 +53,15 @@
 //! background colour (eframe `src/epi.rs:173`), and the default clear colour is a translucent
 //! near-black, `rgba(12, 12, 12, 180)` (`:248-252`). A panel fill the theme states translucent
 //! or transparent — `windows-11`'s sidebar, WinUI's docked `NavigationView` pane over the
-//! window backdrop — lies over that colour, so return the base style's `panel_fill`, the
-//! theme's `defaults.background_color`:
+//! window backdrop — lies over that colour, so an eframe application returns the base style's
+//! `panel_fill`, the theme's `defaults.background_color`, from `App::clear_color`:
 //!
 //! ```rust,no_run
-//! struct MyApp;
+//! use native_theme_egui::egui;
 //!
-//! impl eframe::App for MyApp {
-//!     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-//!         ui.label("Hello");
-//!     }
-//!
-//!     fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
-//!         visuals.panel_fill.to_normalized_gamma_f32()
-//!     }
+//! // The body of `eframe::App::clear_color(&self, visuals)`.
+//! fn clear_color(visuals: &egui::Visuals) -> [f32; 4] {
+//!     visuals.panel_fill.to_normalized_gamma_f32()
 //! }
 //! ```
 //!

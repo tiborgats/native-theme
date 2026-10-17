@@ -338,6 +338,7 @@ pub trait SystemThemeExt: sealed::Sealed {
     /// # #[cfg(feature = "system-fonts")]
     /// # fn atlas(sys: &native_theme_egui::native_theme::SystemTheme) -> native_theme_egui::ThemeAtlas {
     /// use native_theme_egui::SystemThemeExt;
+    /// use native_theme_egui::egui;
     /// use native_theme_egui::fonts::FontPlan;
     ///
     /// let defs = egui::FontDefinitions::default(); // the application's own
