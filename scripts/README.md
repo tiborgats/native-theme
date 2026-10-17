@@ -480,11 +480,15 @@ It also reads every README's Rust blocks (an empty or `rust…` info string, the
 doctest's hidden `# ` lines included, comments and string literals left out)
 and fails on a crate the code names first, the root of a `use` tree or of any
 other path the block does not bind itself, that no `[dependencies]`,
-`[build-dependencies]` or `[dev-dependencies]` table of the README's `toml`
-blocks states (`-` read as `_`; `std`, `core`, `alloc`, `crate`, `self`,
+`[build-dependencies]` or `[dev-dependencies]` table of a `toml` block above
+that code states, nor a `cargo add` line of a shell block above it (`-` read
+as `_`; `std`, `core`, `alloc`, `crate`, `self`,
 `super` and the primitives need none). A README's doctests compile against
 its crate's own dependencies, so a block naming `gpui::` passes there through
 the connector's `gpui` while a reader who copied the Quick start has none.
+The rule reads the code as text, not as a parse: a lowercase module that a glob
+import brings in or the block declares itself reads as a crate, and a path in
+a macro body as any other path; none occurs in a README today.
 `--self-test` runs its built-in scenarios, a README naming another minor and
 code naming an unstated crate among them; `--root DIR` reads a
 scratch copy of the tree. `scripts/check_release.sh` (in the `--commit`

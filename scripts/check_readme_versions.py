@@ -59,11 +59,21 @@ doctest's hidden `# ` lines included, comments and string literals left out)
 and requires every crate a path names first -- the root of a `use` tree, and
 the first segment of any other `name::` path whose name the block does not
 bind itself (a `use` binding, an alias, a `{self}` import) -- to be a
-dependency the README states: a key of a `[dependencies]`,
-`[build-dependencies]` or `[dev-dependencies]` table in one of its `toml`
-blocks, with `-` read as `_`. `std`, `core`, `alloc`, `crate`, `self`,
+dependency the README states before that block: a key of a `[dependencies]`,
+`[build-dependencies]` or `[dev-dependencies]` table in a `toml` block above
+it, or a crate a `cargo add` line of a shell block above it adds (the core
+README installs that way), with `-` read as `_`. A reader copies the Quick start and the blocks in
+order, so a crate a later section states is one the earlier code did not tell
+them to add. `std`, `core`, `alloc`, `crate`, `self`,
 `super` and the primitive types need none; a name beginning with an upper-case
 letter is a type, not a crate, and is not checked. A finding exits 1.
+
+The rule reads the code as text, not as a parse, and has three blind spots,
+none of which occurs in a README today: a lowercase module a glob import
+(`use x::*;`) brings in reads as a crate (a false finding), as does a
+lowercase module the block declares itself (`mod m { .. }` then `m::f`); and
+a path inside a macro body is read as any other path, though the macro may
+not expand it as one.
 """
 
 import argparse
@@ -176,17 +186,59 @@ def read_blocks(text):
 TABLE_RE = re.compile(r"\[\s*(?:[^\]]*\.)?(?:dev-|build-)?dependencies\s*\]")
 
 
+SHELL_INFO = {"sh", "bash", "shell", "console", "zsh", "fish"}
+# `cargo add` options that take a value: the token after one is not a crate.
+CARGO_ADD_VALUED = {"-F", "--features", "--rename", "-p", "--package", "--path",
+                    "--git", "--branch", "--tag", "--rev", "--registry", "--target",
+                    "--manifest-path", "--lockfile-path", "--config", "-Z"}
+
+
+def cargo_add_crates(line):
+    """The crate names, as code names them, a `cargo add` command line adds."""
+    tokens = line.split()
+    if tokens[:1] == ["$"]:
+        tokens = tokens[1:]
+    if tokens[:2] != ["cargo", "add"]:
+        return []
+    crates, rename, i = [], None, 2
+    while i < len(tokens):
+        token = tokens[i]
+        flag, eq, value = token.partition("=")
+        if token.startswith("-"):
+            if flag in CARGO_ADD_VALUED and not eq:
+                value = tokens[i + 1] if i + 1 < len(tokens) else ""
+                i += 1
+            if flag == "--rename":
+                rename = value
+        else:
+            crates.append(token.split("@", 1)[0])
+        i += 1
+    if rename and len(crates) == 1:
+        crates = [rename]
+    return [crate.replace("-", "_") for crate in crates]
+
+
 def stated_crates(text):
-    """The crate names a README's `toml` blocks depend on: each key of a
-    dependency table, `-` read as `_`, as code names the crate."""
-    names, block, table = set(), None, False
-    for line in text.splitlines():
+    """{crate: first line} of the crates a README states a dependency on:
+    each key of a dependency table in a `toml` block, and each crate a
+    `cargo add` line of a shell block adds, `-` read as `_`, as code names
+    the crate, with the line that first states it."""
+    names, block, table = {}, None, False
+    for number, line in enumerate(text.splitlines(), 1):
         fence = line.lstrip()
         if fence.startswith("```"):
-            block = None if block is not None else fence[3:].strip() == "toml"
+            if block is not None:
+                block = None
+            else:
+                info = fence[3:].strip()
+                block = "toml" if info == "toml" else "shell" if info in SHELL_INFO else ""
             table = False
             continue
-        if not block:
+        if block == "shell":
+            for crate in cargo_add_crates(line):
+                names.setdefault(crate, number)
+            continue
+        if block != "toml":
             continue
         stripped = line.split("#", 1)[0].strip()
         if stripped.startswith("["):
@@ -195,7 +247,7 @@ def stated_crates(text):
         if table:
             m = DEP_RE.fullmatch(stripped)
             if m:
-                names.add(m.group(1).replace("-", "_"))
+                names.setdefault(m.group(1).replace("-", "_"), number)
     return names
 
 
@@ -307,14 +359,15 @@ def named_crates(lines):
 
 
 def unstated_crates(rel, text):
-    """Findings for the crates a README's code names that its `toml` blocks do not depend on."""
+    """Findings for the crates a README's code names that no `toml` block
+    above that code depends on."""
     stated = stated_crates(text)
     findings = []
     for start, lines in rust_blocks(text):
         for offset, name in named_crates(lines):
-            if name not in stated:
+            if stated.get(name, start) >= start:
                 findings.append(f"{rel}:{start + offset}: the code names `{name}`, "
-                                "which no `toml` block of the README depends on")
+                                "which no `toml` block above it in the README depends on")
     return findings
 
 
@@ -485,6 +538,23 @@ gpui::named_in_a_text_block
 '''
 
 
+SELF_LATE = '''# late
+
+```rust
+let a = later::f();
+```
+
+```toml
+[dependencies]
+later = "1"
+```
+
+```rust
+let b = later::g();
+```
+'''
+
+
 def self_test():
     failures = []
 
@@ -563,17 +633,32 @@ def self_test():
     # a non-Rust block and a dependency outside a table do not
     expect("use_bindings", use_bindings("a::b::{c, d::{e, f as g}, self, h as _}"),
            {"c", "e", "g", "b"})
-    expect("stated_crates", stated_crates(SELF_CODE), {"kit", "native_theme_iced"})
+    expect("stated_crates", stated_crates(SELF_CODE), {"kit": 7, "native_theme_iced": 8})
     expect("unstated_crates", unstated_crates("r.md", SELF_CODE), [
-        "r.md:33: the code names `other`, which no `toml` block of the README depends on",
-        "r.md:34: the code names `gpui`, which no `toml` block of the README depends on",
-        "r.md:35: the code names `gpui_component`, which no `toml` block of the README depends on",
+        "r.md:33: the code names `other`, which no `toml` block above it in the README depends on",
+        "r.md:34: the code names `gpui`, which no `toml` block above it in the README depends on",
+        "r.md:35: the code names `gpui_component`, which no `toml` block above it in the README depends on",
+    ])
+    for line, want in (
+        ("cargo add native-theme", ["native_theme"]),
+        ("$ cargo add native-theme@0.7 --features native", ["native_theme"]),
+        ("cargo add -F watch iced iced_aw", ["iced", "iced_aw"]),
+        ("cargo add gpui-pre --rename gpui", ["gpui"]),
+        ("cargo build", []),
+    ):
+        expect(f"cargo_add_crates({line})", cargo_add_crates(line), want)
+    expect("a `cargo add` line states its crate",
+           stated_crates("```sh\ncargo add native-theme\n```\n"), {"native_theme": 2})
+    # a crate stated only in a block below the code that first names it: a
+    # reader who stops at that code has not been told to depend on it
+    expect("a crate stated only below its first use", unstated_crates("r.md", SELF_LATE), [
+        "r.md:4: the code names `later`, which no `toml` block above it in the README depends on",
     ])
     _, _, _, unstated = check(own_dependency=own, read_rel=tree(**{
         "README.md": "# root\n\n```rust\nlet w = gpui::div();\n```\n",
     }))
     expect("the root README's code is checked", unstated,
-           ["README.md:4: the code names `gpui`, which no `toml` block of the README depends on"])
+           ["README.md:4: the code names `gpui`, which no `toml` block above it in the README depends on"])
 
     fails("a workspace version that is not major.minor.patch",
           tree(**{"Cargo.toml": SELF_WORKSPACE.replace('"0.7.0"', '"1"')}))
