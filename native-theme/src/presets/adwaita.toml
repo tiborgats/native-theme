@@ -149,6 +149,8 @@ focus_border_color = "#3584e4"
 # platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [light.text_area.border]
 # platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
@@ -175,6 +177,8 @@ unchecked_border_color = "#d5d5d5"
 # platform-facts.md:1224-1225 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
+# platform-facts.md §2.5 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [light.tooltip]
 background_color = "#2e3436"
@@ -369,6 +373,8 @@ hover_background = "#d5d5d5"
 # platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.shadow_enabled: no shadow
+shadow_enabled = false
 [light.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -381,6 +387,8 @@ hover_background = "#d5d5d5"
 # platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.25 border.shadow_enabled: none
+shadow_enabled = false
 
 [light.card]
 
@@ -531,6 +539,8 @@ focus_border_color = "#3584e4"
 # platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [dark.text_area.border]
 # platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
@@ -557,6 +567,8 @@ unchecked_border_color = "#4a4a4e"
 # platform-facts.md:1224-1225 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
+# platform-facts.md §2.5 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [dark.tooltip]
 background_color = "#3a3a3e"
@@ -753,6 +765,8 @@ hover_background = "#464649"
 # platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.shadow_enabled: no shadow
+shadow_enabled = false
 [dark.segmented_control]
 segment_height_px = 28.0
 separator_width_px = 1.0
@@ -765,6 +779,8 @@ hover_background = "#464649"
 # platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.25 border.shadow_enabled: none
+shadow_enabled = false
 
 [dark.card]
 # platform-facts.md:1634 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
