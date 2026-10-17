@@ -4149,7 +4149,7 @@ fn within(a: Color, b: Color, tolerance: f32) -> bool {
 }
 
 /// The presets whose platform states no link hover background
-/// (docs/platform-facts.md:1629, §2.28: macOS, KDE and GNOME, and Windows,
+/// (docs/platform-facts.md:1675, §2.28: macOS, KDE and GNOME, and Windows,
 /// whose inline `Hyperlink` has no background), which they express as fully
 /// transparent.
 #[cfg(feature = "widgets")]

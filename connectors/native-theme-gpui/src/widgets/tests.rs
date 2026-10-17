@@ -151,12 +151,12 @@ fn the_checkbox_look_is_the_presets_values() {
     assert_eq!(
         kbl.mark_stroke,
         Some(px(2.)),
-        "Breeze's check pen (docs/platform-facts.md:1221)"
+        "Breeze's check pen (docs/platform-facts.md:1229)"
     );
     let md = CheckboxLook::of(&resolved("material-3", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
     // The radio is `checkbox.radio_indicator_width` across where stated
-    // (material-3's 20, docs/platform-facts.md:1222), the checkbox's elsewhere.
+    // (material-3's 20, docs/platform-facts.md:1230), the checkbox's elsewhere.
     let radio = |preset: &str| {
         CheckboxLook::radio(&resolved(preset, ColorMode::Dark), false, false).map(|l| l.indicator)
     };
@@ -165,7 +165,7 @@ fn the_checkbox_look_is_the_presets_values() {
     assert_eq!(
         md.mark_stroke,
         Some(px(2.)),
-        "material-web's $_mark-stroke (docs/platform-facts.md:1221)"
+        "material-web's $_mark-stroke (docs/platform-facts.md:1229)"
     );
 }
 
@@ -641,7 +641,7 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     );
 }
 
-/// docs/platform-facts.md:1328-1330: the selected tab's line, as thick as
+/// docs/platform-facts.md:1348-1350: the selected tab's line, as thick as
 /// stated, across the tab's outer edge on the stated side -- Breeze's on top,
 /// Material's at the bottom.
 #[gpui::test]
@@ -1066,7 +1066,7 @@ fn the_radio_indicator_is_the_stated_size(cx: &mut TestAppContext) {
     assert_eq!(b.size.height, px(20.));
 }
 
-/// docs/platform-facts.md:1220: Breeze's dot is 6px across, centred in the
+/// docs/platform-facts.md:1228: Breeze's dot is 6px across, centred in the
 /// 20px circle.
 #[gpui::test]
 fn a_selected_radio_draws_the_stated_dot(cx: &mut TestAppContext) {

@@ -120,13 +120,13 @@ padding_bottom_px = 3.0
 # platform-facts.md:1166 (§2.3): controlTextColor, probe :335; over the button's fill #272727
 color = "#000000d8"
 [light.input]
-# platform-facts.md:1186 (§2.4): textBackgroundColor, probe :328
+# platform-facts.md:1190 (§2.4): textBackgroundColor, probe :328
 background_color = "#ffffff"
-# platform-facts.md:1195 (§2.4): NSTextField intrinsicContentSize 21 (probe :1308)
+# platform-facts.md:1199 (§2.4): NSTextField intrinsicContentSize 21 (probe :1308)
 min_height_px = 21.0
-# platform-facts.md:1192 (§2.4): textInsertionPointColor, probe :329, the same in darkAqua (:403)
+# platform-facts.md:1196 (§2.4): textInsertionPointColor, probe :329, the same in darkAqua (:403)
 caret_color = "#007aff"
-# platform-facts.md:1191: placeholderTextColor, probe :314; over the field's background_color #c0c0c0
+# platform-facts.md:1195: placeholderTextColor, probe :314; over the field's background_color #c0c0c0
 placeholder_color = "#0000003f"
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
@@ -139,18 +139,18 @@ disabled_background = "#ffffff80"
 
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): the title rect [2, 2, 156, 17] in the 160 x 21 field
+# platform-facts.md:1200-1201 (§2.4): the title rect [2, 2, 156, 17] in the 160 x 21 field
 # (probe :1323), from its outer edge
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
-# platform-facts.md:1199 (§2.4): no shadow
+# platform-facts.md:1203 (§2.4): no shadow
 shadow_enabled = false
 
 [light.input.font]
-# platform-facts.md:1188 (§2.4): textColor, probe :327
+# platform-facts.md:1192 (§2.4): textColor, probe :327
 color = "#000000"
 [light.checkbox]
-# platform-facts.md:1212-1213 (§2.5): imageRectForBounds 14 x 14 (probe :1107); the title rect
+# platform-facts.md:1220-1221 (§2.5): imageRectForBounds 14 x 14 (probe :1107); the title rect
 # starts 6 after it (probe :1106)
 indicator_width_px = 14.0
 label_gap_px = 6.0
@@ -162,12 +162,12 @@ hover_background = "#e0e0e5"
 disabled_background = "#e8e8ed80"
 # soft_option: unchecked indicator fill = controlBackgroundColor, probe :323
 unchecked_background = "#ffffff"
-# soft_option, no source: platform-facts.md:1209 gives only "(measured) gray outline", and
+# soft_option, no source: platform-facts.md:1217 gives only "(measured) gray outline", and
 # controlColor is a fill (#ffffff, probe :334), not this outline
 unchecked_border_color = "#86868b"
 
 [light.checkbox.border]
-# platform-facts.md:1215 (§2.5): no shadow
+# platform-facts.md:1223 (§2.5): no shadow
 shadow_enabled = false
 
 [light.tooltip]
@@ -176,22 +176,22 @@ max_width_px = 300.0
 
 
 [light.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): NSToolTipManager 4; 4
+# platform-facts.md:1270-1271 (§2.7): NSToolTipManager 4; 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [light.tooltip.font]
-# platform-facts.md:65, :1253 (§2.7): toolTipsFontOfSize: 11, probe :98
+# platform-facts.md:65, :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
 size_pt = 11.0
 color = "#ffffff"
 [light.scrollbar]
-# platform-facts.md:1281 (§2.8): scrollerWidth overlay 16 (legacy 15), macOS 14.8.9; overlay_mode below
+# platform-facts.md:1294 (§2.8): scrollerWidth overlay 16 (legacy 15), macOS 14.8.9; overlay_mode below
 groove_width_px = 16.0
 thumb_width_px = 7.0
 overlay_mode = true
-# platform-facts.md:1278 (§2.8): transparent in overlay mode
+# platform-facts.md:1291 (§2.8): transparent in overlay mode
 track_color = "#00000000"
-# no source for the overlay mode overlay_mode states: platform-facts.md:1282's 40 (measured) is
+# no source for the overlay mode overlay_mode states: platform-facts.md:1295's 40 (measured) is
 # the legacy mode's; the field is required
 min_thumb_length_px = 40.0
 # Interactive state colors (platform-facts.md section 2.8 macOS)
@@ -201,9 +201,9 @@ thumb_hover_color = "#60606080"
 thumb_active_color = "#50505090"
 
 [light.slider]
-# platform-facts.md:1293 (§2.9): barRectFlipped 4 high (probe :1435)
+# platform-facts.md:1307 (§2.9): barRectFlipped 4 high (probe :1435)
 track_height_px = 4.0
-# platform-facts.md:1294 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
+# platform-facts.md:1308 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
@@ -221,98 +221,98 @@ track_height_px = 6.0
 min_width_px = 100.0
 
 [light.progress_bar.border]
-# platform-facts.md:1307 (§2.10): no shadow
+# platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
 
 [light.tab]
 min_width_px = 64.0
 min_height_px = 24.0
 # active_background and active_text_color inherit defaults.background_color and
-# defaults.text_color (platform-facts.md:1314-1315), hover_text_color font.color
+# defaults.text_color (platform-facts.md:1334-1335), hover_text_color font.color
 # Interactive state colors (platform-facts.md section 2.11 macOS)
 # soft_option: tab hover state -- subtle bg shift
 hover_background = "#e8e8ed"
 
 
 [light.tab.border]
-# platform-facts.md:1319-1320 (§2.11): NSTabView 12; 4 (measured)
+# platform-facts.md:1339-1340 (§2.11): NSTabView 12; 4 (measured)
 padding_horizontal_px = 12.0
 padding_vertical_px = 4.0
 [light.menu]
 row_height_px = 22.0
 icon_text_gap_px = 4.0
-# platform-facts.md:1242 (§2.6): 16 (cross-project)
+# platform-facts.md:1255 (§2.6): 16 (cross-project)
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 macOS)
 # hover_background and disabled_text_color inherit defaults.selection_background and
-# defaults.disabled_text_color: selectedContentBackgroundColor and disabledControlTextColor (:1243, :1245)
-# platform-facts.md:1244: selectedMenuItemTextColor, probe :316
+# defaults.disabled_text_color: selectedContentBackgroundColor and disabledControlTextColor (:1256, :1258)
+# platform-facts.md:1257: selectedMenuItemTextColor, probe :316
 hover_text_color = "#ffffff"
 
 
 [light.menu.border]
-# platform-facts.md:1235-1236 (§2.6): NSMenuItem 12; 3 (measured)
+# platform-facts.md:1248-1249 (§2.6): NSMenuItem 12; 3 (measured)
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [light.list]
-# platform-facts.md:1380 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0] (:377)
+# platform-facts.md:1408 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0] (:377)
 background_color = "#ffffff"
-# platform-facts.md:1383 (§2.15): alternatingContentBackgroundColors[1], probe :377
+# platform-facts.md:1411 (§2.15): alternatingContentBackgroundColors[1], probe :377
 alternate_row_background = "#f4f5f5"
-# platform-facts.md:1389: gridColor, probe :320
+# platform-facts.md:1417: gridColor, probe :320
 grid_color = "#e6e6e6"
 row_height_px = 24.0
-# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
+# platform-facts.md:1419 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no source: platform-facts.md:1394 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1422 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the accent at alpha 0x18
 hover_background = "#007aff18"
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
 [light.list.border]
-# platform-facts.md:1392-1393 (§2.15): NSTableView 4; 4 (measured)
+# platform-facts.md:1420-1421 (§2.15): NSTableView 4; 4 (measured)
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [light.list.header_font]
-# platform-facts.md:1387 (§2.15): headerTextColor, probe :318
+# platform-facts.md:1415 (§2.15): headerTextColor, probe :318
 color = "#000000d8"
 [light.toolbar]
-# platform-facts.md:1352 (§2.13): NSToolbar 38
+# platform-facts.md:1376 (§2.13): NSToolbar 38
 bar_height_px = 38.0
-# platform-facts.md:1353 (§2.13): AppKit 8
+# platform-facts.md:1377 (§2.13): AppKit 8
 item_gap_px = 8.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): NSToolbar 8 (measured); 0
+# platform-facts.md:1378-1379 (§2.13): NSToolbar 8 (measured); 0
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-# no source: a material (platform-facts.md:1334, §2.12: NSVisualEffectView.Material.sidebar, no
+# no source: a material (platform-facts.md:1356, §2.12: NSVisualEffectView.Material.sidebar, no
 # colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#e8e8ed"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1343 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1365 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the accent at alpha 0x18
 hover_background = "#007aff18"
 
 
 [light.sidebar.font]
-# platform-facts.md:1336 (§2.12): ← defaults.font.color, labelColor (probe :308)
+# platform-facts.md:1358 (§2.12): ← defaults.font.color, labelColor (probe :308)
 color = "#000000d8"
 [light.popover]
 # background_color and font.color inherit defaults.background_color and defaults.font.color
-# (platform-facts.md:1407, :1409)
+# (platform-facts.md:1441, :1443)
 
 [light.separator]
-# line_color inherits defaults.border.color, separatorColor (platform-facts.md:1428)
+# line_color inherits defaults.border.color, separatorColor (platform-facts.md:1463)
 
 [light.splitter]
-# platform-facts.md:1421-1422 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# platform-facts.md:1455-1456 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
 # (macOS 14.8.9 probe), dividerColor clear
 divider_width_px = 9.0
 divider_color = "#00000000"
@@ -320,15 +320,15 @@ divider_color = "#00000000"
 hover_color = "#d5d5d5"
 
 [light.switch]
-# platform-facts.md:1474 (§2.21): black at alpha 26/255 (measured, renders/aqua/switch-regular-off@2x.png);
+# platform-facts.md:1509 (§2.21): black at alpha 26/255 (measured, renders/aqua/switch-regular-off@2x.png);
 # over background_color #d4d4d4
 unchecked_background = "#0000001a"
-# platform-facts.md:1475 (§2.21): white (measured)
+# platform-facts.md:1510 (§2.21): white (measured)
 thumb_background = "#ffffff"
-# platform-facts.md:1469-1470 (§2.21): NSSwitch intrinsicContentSize 38 x 22 (probe :1194)
+# platform-facts.md:1504-1505 (§2.21): NSSwitch intrinsicContentSize 38 x 22 (probe :1194)
 track_width_px = 38.0
 track_height_px = 22.0
-# platform-facts.md:1471 (§2.21): the knob's fill, 20 (measured)
+# platform-facts.md:1506 (§2.21): the knob's fill, 20 (measured)
 thumb_diameter_px = 20.0
 track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
@@ -354,41 +354,41 @@ icon_size_px =64.0
 
 
 [light.dialog.title_font]
-# platform-facts.md:1498-1499 (§2.22): the emphasized system font, 13pt Bold
+# platform-facts.md:1538-1539 (§2.22): the emphasized system font, 13pt Bold
 size_pt =13.0
 weight = 700
 
 
 [light.dialog.border]
-# platform-facts.md:1493-1494 (§2.22): ~20 (measured)
+# platform-facts.md:1533-1534 (§2.22): ~20 (measured)
 padding_horizontal_px = 20.0
 padding_vertical_px = 20.0
 
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): macOS hover_background **(none)**, transparent as background_color
+# platform-facts.md:1675 (§2.28): macOS hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # hover_text_color, active_text_color and disabled_text_color inherit font.color (linkColor,
-# platform-facts.md:1625) and defaults.disabled_text_color
+# platform-facts.md:1671) and defaults.disabled_text_color
 
 [light.spinner]
 diameter_px = 32.0
 min_diameter_px = 10.0
 stroke_width_px = 2.0
-# platform-facts.md:1539 (§2.23): black fins at a graded alpha, the leading one 82/255 (measured in
+# platform-facts.md:1579 (§2.23): black fins at a graded alpha, the leading one 82/255 (measured in
 # the probe's renders/aqua/progress_spinning-regular@2x.png); over the window background #a0a0a0
 fill_color = "#00000052"
 
 [light.combo_box]
-# platform-facts.md:1548 (§2.24): controlColor, probe :334
+# platform-facts.md:1588 (§2.24): controlColor, probe :334
 background_color = "#ffffff"
-# platform-facts.md:1553 (§2.24): NSPopUpButton intrinsicContentSize 20 (probe :1237)
+# platform-facts.md:1593 (§2.24): NSPopUpButton intrinsicContentSize 20 (probe :1237)
 min_height_px = 20.0
 min_width_px = 120.0
-# no source: platform-facts.md:1556 measures the chevron 6 x 10, which a square icon size cannot carry
+# no source: platform-facts.md:1596 measures the chevron 6 x 10, which a square icon size cannot carry
 arrow_icon_size_px = 17.0
-# arrow_area_width not stated: platform-facts.md:1557 (§2.24), ~16–18px (measured) is a range
+# arrow_area_width not stated: platform-facts.md:1597 (§2.24), ~16–18px (measured) is a range
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: NSPopUpButton hover -- subtle highlight
@@ -398,42 +398,42 @@ disabled_background = "#e8e8ed80"
 
 
 [light.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): 8 left, 1 top / 3 bottom (API, the title rect, probe :1242,
+# platform-facts.md:1595, :1600 (§2.24): 8 left, 1 top / 3 bottom (API, the title rect, probe :1242,
 # :1251), from the bezel's outer edge; the right side holds the arrow
 padding_left_px = 8.0
 padding_top_px = 1.0
 padding_bottom_px = 3.0
-# platform-facts.md:1559 (§2.24): no shadow
+# platform-facts.md:1599 (§2.24): no shadow
 shadow_enabled = false
 
 [light.combo_box.font]
-# platform-facts.md:1550 (§2.24): controlTextColor, probe :335; over the fill #272727
+# platform-facts.md:1590 (§2.24): controlTextColor, probe :335; over the fill #272727
 color = "#000000d8"
 
 [light.segmented_control]
-# platform-facts.md:1572 (§2.25): intrinsicContentSize 22 high, the alignment rect (probe :1380, :1385)
+# platform-facts.md:1615 (§2.25): intrinsicContentSize 22 high, the alignment rect (probe :1380, :1385)
 segment_height_px = 22.0
 separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
-# platform-facts.md:1570: selectedContentBackgroundColor, probe :324
+# platform-facts.md:1613: selectedContentBackgroundColor, probe :324
 active_background = "#0064e1"
-# platform-facts.md:1571: alternateSelectedControlTextColor, probe :317
+# platform-facts.md:1614: alternateSelectedControlTextColor, probe :317
 active_text_color = "#ffffff"
 # soft_option: NSSegmentedControl hover -- subtle highlight
 hover_background = "#e0e0e5"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1574, :1579 (§2.25): ~3 (measured); horizontal ~8–10 is a range, not stated
+# platform-facts.md:1617, :1622 (§2.25): ~3 (measured); horizontal ~8–10 is a range, not stated
 padding_vertical_px = 3.0
-# platform-facts.md:1578 (§2.25): no shadow
+# platform-facts.md:1621 (§2.25): no shadow
 shadow_enabled = false
 [light.card]
 
 [light.expander]
 header_height_px = 40.0
 arrow_icon_size_px =13.0
-# platform-facts.md:1616 (§2.27): the HIG's disclosure triangle points in from the leading edge
+# platform-facts.md:1660 (§2.27): the HIG's disclosure triangle points in from the leading edge
 arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
@@ -443,7 +443,7 @@ hover_background = "#e0e0e5"
 arrow_color = "#86868b"
 
 [light.expander.border]
-# platform-facts.md:1615 (§2.27): no shadow
+# platform-facts.md:1659 (§2.27): no shadow
 shadow_enabled = false
 
 [light.window]
@@ -576,13 +576,13 @@ padding_bottom_px = 3.0
 # platform-facts.md:1166 (§2.3): controlTextColor, probe :409; over the button's fill #e7e7e7
 color = "#ffffffd8"
 [dark.input]
-# platform-facts.md:1186 (§2.4): textBackgroundColor, probe :402
+# platform-facts.md:1190 (§2.4): textBackgroundColor, probe :402
 background_color = "#1e1e1e"
-# platform-facts.md:1195 (§2.4): NSTextField intrinsicContentSize 21 (probe :1308)
+# platform-facts.md:1199 (§2.4): NSTextField intrinsicContentSize 21 (probe :1308)
 min_height_px = 21.0
-# platform-facts.md:1192 (§2.4): textInsertionPointColor, probe :403
+# platform-facts.md:1196 (§2.4): textInsertionPointColor, probe :403
 caret_color = "#007aff"
-# platform-facts.md:1191: placeholderTextColor, probe :388; over the field's background_color #565656
+# platform-facts.md:1195: placeholderTextColor, probe :388; over the field's background_color #565656
 placeholder_color = "#ffffff3f"
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
@@ -595,18 +595,18 @@ disabled_background = "#2d2d2d80"
 
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): the title rect [2, 2, 156, 17] in the 160 x 21 field
+# platform-facts.md:1200-1201 (§2.4): the title rect [2, 2, 156, 17] in the 160 x 21 field
 # (probe :1323), from its outer edge
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
-# platform-facts.md:1199 (§2.4): no shadow
+# platform-facts.md:1203 (§2.4): no shadow
 shadow_enabled = false
 
 [dark.input.font]
-# platform-facts.md:1188 (§2.4): textColor, probe :401
+# platform-facts.md:1192 (§2.4): textColor, probe :401
 color = "#ffffff"
 [dark.checkbox]
-# platform-facts.md:1212-1213 (§2.5): imageRectForBounds 14 x 14 (probe :1107); the title rect
+# platform-facts.md:1220-1221 (§2.5): imageRectForBounds 14 x 14 (probe :1107); the title rect
 # starts 6 after it (probe :1106)
 indicator_width_px = 14.0
 label_gap_px = 6.0
@@ -618,12 +618,12 @@ hover_background = "#444446"
 disabled_background = "#3a3a3c80"
 # soft_option: unchecked indicator fill = controlBackgroundColor, probe :397
 unchecked_background = "#1e1e1e"
-# soft_option, no source: platform-facts.md:1209 gives only "(measured) gray outline", and
+# soft_option, no source: platform-facts.md:1217 gives only "(measured) gray outline", and
 # controlColor is a fill (#ffffff3f, probe :408), not this outline
 unchecked_border_color = "#98989d"
 
 [dark.checkbox.border]
-# platform-facts.md:1215 (§2.5): no shadow
+# platform-facts.md:1223 (§2.5): no shadow
 shadow_enabled = false
 
 [dark.tooltip]
@@ -632,22 +632,22 @@ max_width_px = 300.0
 
 
 [dark.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): NSToolTipManager 4; 4
+# platform-facts.md:1270-1271 (§2.7): NSToolTipManager 4; 4
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [dark.tooltip.font]
-# platform-facts.md:65, :1253 (§2.7): toolTipsFontOfSize: 11, probe :98
+# platform-facts.md:65, :1266 (§2.7): toolTipsFontOfSize: 11, probe :98
 size_pt = 11.0
 color = "#ffffff"
 [dark.scrollbar]
-# platform-facts.md:1281 (§2.8): scrollerWidth overlay 16 (legacy 15), macOS 14.8.9; overlay_mode below
+# platform-facts.md:1294 (§2.8): scrollerWidth overlay 16 (legacy 15), macOS 14.8.9; overlay_mode below
 groove_width_px = 16.0
 thumb_width_px = 7.0
 overlay_mode = true
-# platform-facts.md:1278 (§2.8): transparent in overlay mode
+# platform-facts.md:1291 (§2.8): transparent in overlay mode
 track_color = "#00000000"
-# no source for the overlay mode overlay_mode states: platform-facts.md:1282's 40 (measured) is
+# no source for the overlay mode overlay_mode states: platform-facts.md:1295's 40 (measured) is
 # the legacy mode's; the field is required
 min_thumb_length_px = 40.0
 # Interactive state colors (platform-facts.md section 2.8 macOS)
@@ -657,12 +657,12 @@ thumb_hover_color = "#a0a0a080"
 thumb_active_color = "#b0b0b090"
 
 [dark.slider]
-# platform-facts.md:1293 (§2.9): barRectFlipped 4 high (probe :1435)
+# platform-facts.md:1307 (§2.9): barRectFlipped 4 high (probe :1435)
 track_height_px = 4.0
-# platform-facts.md:1292 (§2.9): the knob is white at alpha 128/255 (measured,
+# platform-facts.md:1306 (§2.9): the knob is white at alpha 128/255 (measured,
 # renders/darkAqua/slider-regular@2x.png); over background_color #999999
 thumb_color = "#ffffff80"
-# platform-facts.md:1294 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
+# platform-facts.md:1308 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
@@ -671,106 +671,106 @@ disabled_fill_color = "#0a84ff50"
 # disabled slider track -- no source: the former muted colour #98989d at alpha 0x50
 disabled_track_color = "#98989d50"
 # thumb_hover_color and disabled_thumb_color stay unset: no source gives either, and unset they
-# are the knob's thumb_color (platform-facts.md:1292)
+# are the knob's thumb_color (platform-facts.md:1306)
 
 [dark.progress_bar]
 track_height_px = 6.0
 min_width_px = 100.0
 
 [dark.progress_bar.border]
-# platform-facts.md:1307 (§2.10): no shadow
+# platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
 
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 24.0
 # active_background and active_text_color inherit defaults.background_color and
-# defaults.text_color (platform-facts.md:1314-1315), hover_text_color font.color
+# defaults.text_color (platform-facts.md:1334-1335), hover_text_color font.color
 # Interactive state colors (platform-facts.md section 2.11 macOS)
 # soft_option: tab hover state -- subtle bg shift
 hover_background = "#3a3a3c"
 
 
 [dark.tab.border]
-# platform-facts.md:1319-1320 (§2.11): NSTabView 12; 4 (measured)
+# platform-facts.md:1339-1340 (§2.11): NSTabView 12; 4 (measured)
 padding_horizontal_px = 12.0
 padding_vertical_px = 4.0
 [dark.menu]
 row_height_px = 22.0
 icon_text_gap_px = 4.0
-# platform-facts.md:1242 (§2.6): 16 (cross-project)
+# platform-facts.md:1255 (§2.6): 16 (cross-project)
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 macOS)
 # hover_background and disabled_text_color inherit defaults.selection_background and
-# defaults.disabled_text_color: selectedContentBackgroundColor and disabledControlTextColor (:1243, :1245)
-# platform-facts.md:1244: selectedMenuItemTextColor, probe :390
+# defaults.disabled_text_color: selectedContentBackgroundColor and disabledControlTextColor (:1256, :1258)
+# platform-facts.md:1257: selectedMenuItemTextColor, probe :390
 hover_text_color = "#ffffff"
 
 
 [dark.menu.border]
-# platform-facts.md:1235-1236 (§2.6): NSMenuItem 12; 3 (measured)
+# platform-facts.md:1248-1249 (§2.6): NSMenuItem 12; 3 (measured)
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [dark.list]
-# platform-facts.md:1380 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0] (:451)
+# platform-facts.md:1408 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0] (:451)
 background_color = "#1e1e1e"
-# platform-facts.md:1383 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
+# platform-facts.md:1411 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
 # list's background_color #292929
 alternate_row_background = "#ffffff0c"
-# platform-facts.md:1389: gridColor, probe :394
+# platform-facts.md:1417: gridColor, probe :394
 grid_color = "#1a1a1a"
 row_height_px = 24.0
-# platform-facts.md:1391 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
+# platform-facts.md:1419 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no source: platform-facts.md:1394 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1422 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
 hover_background = "#0a84ff18"
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
 [dark.list.border]
-# platform-facts.md:1392-1393 (§2.15): NSTableView 4; 4 (measured)
+# platform-facts.md:1420-1421 (§2.15): NSTableView 4; 4 (measured)
 padding_horizontal_px = 4.0
 padding_vertical_px = 4.0
 
 [dark.list.header_font]
-# platform-facts.md:1387 (§2.15): headerTextColor, probe :392
+# platform-facts.md:1415 (§2.15): headerTextColor, probe :392
 color = "#ffffff"
 [dark.toolbar]
-# platform-facts.md:1352 (§2.13): NSToolbar 38
+# platform-facts.md:1376 (§2.13): NSToolbar 38
 bar_height_px = 38.0
-# platform-facts.md:1353 (§2.13): AppKit 8
+# platform-facts.md:1377 (§2.13): AppKit 8
 item_gap_px = 8.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): NSToolbar 8 (measured); 0
+# platform-facts.md:1378-1379 (§2.13): NSToolbar 8 (measured); 0
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-# no source: a material (platform-facts.md:1334, §2.12: NSVisualEffectView.Material.sidebar, no
+# no source: a material (platform-facts.md:1356, §2.12: NSVisualEffectView.Material.sidebar, no
 # colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#262626"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1343 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1365 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
 hover_background = "#0a84ff18"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1336 (§2.12): ← defaults.font.color, labelColor (probe :382)
+# platform-facts.md:1358 (§2.12): ← defaults.font.color, labelColor (probe :382)
 color = "#ffffffd8"
 [dark.popover]
 # background_color and font.color inherit defaults.background_color and defaults.font.color
-# (platform-facts.md:1407, :1409)
+# (platform-facts.md:1441, :1443)
 
 [dark.separator]
-# line_color inherits defaults.border.color, separatorColor (platform-facts.md:1428)
+# line_color inherits defaults.border.color, separatorColor (platform-facts.md:1463)
 
 [dark.splitter]
-# platform-facts.md:1421-1422 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
+# platform-facts.md:1455-1456 (§2.17): NSSplitView's default .thick divider, dividerThickness 9
 # (macOS 14.8.9 probe), dividerColor clear
 divider_width_px = 9.0
 divider_color = "#00000000"
@@ -778,15 +778,15 @@ divider_color = "#00000000"
 hover_color = "#3d3d3d"
 
 [dark.switch]
-# platform-facts.md:1474 (§2.21): white at alpha 26/255 (measured, renders/darkAqua/switch-regular-off@2x.png);
+# platform-facts.md:1509 (§2.21): white at alpha 26/255 (measured, renders/darkAqua/switch-regular-off@2x.png);
 # over background_color #474747
 unchecked_background = "#ffffff1a"
-# platform-facts.md:1475 (§2.21): white at alpha 191/255 (measured)
+# platform-facts.md:1510 (§2.21): white at alpha 191/255 (measured)
 thumb_background = "#ffffffbf"
-# platform-facts.md:1469-1470 (§2.21): NSSwitch intrinsicContentSize 38 x 22 (probe :1194)
+# platform-facts.md:1504-1505 (§2.21): NSSwitch intrinsicContentSize 38 x 22 (probe :1194)
 track_width_px = 38.0
 track_height_px = 22.0
-# platform-facts.md:1471 (§2.21): the knob's fill, 20 (measured)
+# platform-facts.md:1506 (§2.21): the knob's fill, 20 (measured)
 thumb_diameter_px = 20.0
 track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
@@ -812,41 +812,41 @@ icon_size_px =64.0
 
 
 [dark.dialog.title_font]
-# platform-facts.md:1498-1499 (§2.22): the emphasized system font, 13pt Bold
+# platform-facts.md:1538-1539 (§2.22): the emphasized system font, 13pt Bold
 size_pt =13.0
 weight = 700
 
 
 [dark.dialog.border]
-# platform-facts.md:1493-1494 (§2.22): ~20 (measured)
+# platform-facts.md:1533-1534 (§2.22): ~20 (measured)
 padding_horizontal_px = 20.0
 padding_vertical_px = 20.0
 
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): macOS hover_background **(none)**, transparent as background_color
+# platform-facts.md:1675 (§2.28): macOS hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 # hover_text_color, active_text_color and disabled_text_color inherit font.color (linkColor,
-# platform-facts.md:1625) and defaults.disabled_text_color
+# platform-facts.md:1671) and defaults.disabled_text_color
 
 [dark.spinner]
 diameter_px = 32.0
 min_diameter_px = 10.0
 stroke_width_px = 2.0
-# platform-facts.md:1539 (§2.23): white fins at a graded alpha, the leading one 82/255 (measured in
+# platform-facts.md:1579 (§2.23): white fins at a graded alpha, the leading one 82/255 (measured in
 # the probe's renders/darkAqua/progress_spinning-regular@2x.png); over the window background #747474
 fill_color = "#ffffff52"
 
 [dark.combo_box]
-# platform-facts.md:1548 (§2.24): controlColor, probe :408; over the window background #656565
+# platform-facts.md:1588 (§2.24): controlColor, probe :408; over the window background #656565
 background_color = "#ffffff3f"
-# platform-facts.md:1553 (§2.24): NSPopUpButton intrinsicContentSize 20 (probe :1237)
+# platform-facts.md:1593 (§2.24): NSPopUpButton intrinsicContentSize 20 (probe :1237)
 min_height_px = 20.0
 min_width_px = 120.0
-# no source: platform-facts.md:1556 measures the chevron 6 x 10, which a square icon size cannot carry
+# no source: platform-facts.md:1596 measures the chevron 6 x 10, which a square icon size cannot carry
 arrow_icon_size_px = 17.0
-# arrow_area_width not stated: platform-facts.md:1557 (§2.24), ~16–18px (measured) is a range
+# arrow_area_width not stated: platform-facts.md:1597 (§2.24), ~16–18px (measured) is a range
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: NSPopUpButton hover -- subtle highlight
@@ -856,42 +856,42 @@ disabled_background = "#3a3a3c80"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): 8 left, 1 top / 3 bottom (API, the title rect, probe :1242,
+# platform-facts.md:1595, :1600 (§2.24): 8 left, 1 top / 3 bottom (API, the title rect, probe :1242,
 # :1251), from the bezel's outer edge; the right side holds the arrow
 padding_left_px = 8.0
 padding_top_px = 1.0
 padding_bottom_px = 3.0
-# platform-facts.md:1559 (§2.24): no shadow
+# platform-facts.md:1599 (§2.24): no shadow
 shadow_enabled = false
 
 [dark.combo_box.font]
-# platform-facts.md:1550 (§2.24): controlTextColor, probe :409; over the fill #e7e7e7
+# platform-facts.md:1590 (§2.24): controlTextColor, probe :409; over the fill #e7e7e7
 color = "#ffffffd8"
 
 [dark.segmented_control]
-# platform-facts.md:1572 (§2.25): intrinsicContentSize 22 high, the alignment rect (probe :1380, :1385)
+# platform-facts.md:1615 (§2.25): intrinsicContentSize 22 high, the alignment rect (probe :1380, :1385)
 segment_height_px = 22.0
 separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
-# platform-facts.md:1570: selectedContentBackgroundColor, probe :398
+# platform-facts.md:1613: selectedContentBackgroundColor, probe :398
 active_background = "#0059d1"
-# platform-facts.md:1571: alternateSelectedControlTextColor, probe :391
+# platform-facts.md:1614: alternateSelectedControlTextColor, probe :391
 active_text_color = "#ffffff"
 # soft_option: NSSegmentedControl hover -- subtle highlight
 hover_background = "#444446"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1574, :1579 (§2.25): ~3 (measured); horizontal ~8–10 is a range, not stated
+# platform-facts.md:1617, :1622 (§2.25): ~3 (measured); horizontal ~8–10 is a range, not stated
 padding_vertical_px = 3.0
-# platform-facts.md:1578 (§2.25): no shadow
+# platform-facts.md:1621 (§2.25): no shadow
 shadow_enabled = false
 [dark.card]
 
 [dark.expander]
 header_height_px = 40.0
 arrow_icon_size_px =13.0
-# platform-facts.md:1616 (§2.27): the HIG's disclosure triangle points in from the leading edge
+# platform-facts.md:1660 (§2.27): the HIG's disclosure triangle points in from the leading edge
 arrow_side = "leading"
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
@@ -901,7 +901,7 @@ hover_background = "#444446"
 arrow_color = "#98989d"
 
 [dark.expander.border]
-# platform-facts.md:1615 (§2.27): no shadow
+# platform-facts.md:1659 (§2.27): no shadow
 shadow_enabled = false
 
 [dark.window]

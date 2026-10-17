@@ -395,7 +395,7 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     variant.defaults.border.opacity = Some(1.0);
     // ProgressBarBorderThemeThickness is 1 in HighContrast, ProgressBarBorderBrush =
     // SystemColorWindowTextColor and ProgressBarBackground = SystemColorWindowColor
-    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1309).
+    // (ProgressBar_themeresources.xaml:13, :16, :15; docs/platform-facts.md:1327).
     let progress_border = variant.progress_bar.border.get_or_insert_default();
     progress_border.line_width = Some(1.0);
     progress_border.color = Some(colors.window_text);

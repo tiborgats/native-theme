@@ -158,7 +158,7 @@ padding_bottom_px = 6.0
 # platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.input]
-# platform-facts.md:1186 (§2.4): TextControlBackground = ControlFillColorDefault #B3FFFFFF
+# platform-facts.md:1190 (§2.4): TextControlBackground = ControlFillColorDefault #B3FFFFFF
 background_color = "#ffffffb3"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
@@ -171,33 +171,33 @@ hover_border_color = "#0000000f"
 # SystemAccentColorDark1 over ControlStrokeColorDefault (TextBox_themeresources.xaml:136, :164-173 at
 # microsoft-ui-xaml 8463f45), UISettings AccentDark1 for the accent above (OS probe, Windows 11 25H2)
 focus_border_color = "#0067c0"
-# platform-facts.md:1191 (§2.4): TextControlPlaceholderForeground = TextFillColorSecondary #9E000000
+# platform-facts.md:1195 (§2.4): TextControlPlaceholderForeground = TextFillColorSecondary #9E000000
 placeholder_color = "#0000009e"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#f9f9f900"
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
+# platform-facts.md:1200-1201 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
 padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
-# platform-facts.md:1199 (§2.4): no shadow
+# platform-facts.md:1203 (§2.4): no shadow
 shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1642-1643 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+# platform-facts.md:1691-1692 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
 padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [light.input.font]
-# platform-facts.md:1188 (§2.4): TextControlForeground = TextFillColorPrimary #E4000000
+# platform-facts.md:1192 (§2.4): TextControlForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.checkbox]
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
+# platform-facts.md:1228 (§2.5): RadioButtonCheckGlyphSize = 12
 radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.5 Windows)
@@ -208,51 +208,51 @@ disabled_text_color = "#0000005c"
 hover_background = "#0000000a"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#f9f9f900"
-# platform-facts.md:1206 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #06000000
+# platform-facts.md:1214 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #06000000
 unchecked_background = "#00000006"
-# platform-facts.md:1209 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
+# platform-facts.md:1217 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
 unchecked_border_color = "#00000072"
 
 [light.checkbox.border]
-# platform-facts.md:1215 (§2.5): no shadow
+# platform-facts.md:1223 (§2.5): no shadow
 shadow_enabled = false
 
 [light.tooltip]
-# platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #F9F9F9
+# platform-facts.md:1264 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #F9F9F9
 background_color = "#f9f9f9"
 max_width_px = 320.0
-# platform-facts.md:1264 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
+# platform-facts.md:1277 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
 show_delay_ms = 800
 
 
 [light.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
+# platform-facts.md:1270-1271 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
 padding_horizontal_px = 9.0
 padding_top_px = 6.0
 padding_bottom_px = 8.0
 
 [light.tooltip.font]
-# platform-facts.md:1256 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #E4000000
+# platform-facts.md:1269 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #E4000000
 color = "#000000e4"
-# platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
+# platform-facts.md:1266 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
 size_pt = 9.0
 [light.scrollbar]
-# platform-facts.md:1278 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
+# platform-facts.md:1291 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
 track_color = "#ffffff00"
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
 thumb_width_px = 6.0
-# platform-facts.md:1284 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
+# platform-facts.md:1297 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
 # bars follow it has no source ❓, so false stays (M2b-21)
 overlay_mode = false
-# platform-facts.md:1279 (§2.8): measured
+# platform-facts.md:1292 (§2.8): measured
 thumb_color = "#c2c2c2"
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
 thumb_hover_color = "#a0a0a0"
 
 [light.slider]
-# platform-facts.md:1291-1292 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #72000000;
+# platform-facts.md:1305-1306 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #72000000;
 # the outer thumb, SliderOuterThumbBackground = ControlSolidFillColorDefault #FFFFFF
 track_color = "#00000072"
 thumb_color = "#ffffff"
@@ -266,24 +266,24 @@ disabled_fill_color = "#00000037"
 disabled_track_color = "#00000051"
 
 [light.progress_bar]
-# platform-facts.md:1303 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #72000000
+# platform-facts.md:1321 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #72000000
 track_color = "#00000072"
 track_height_px = 1.0
 min_width_px = 100.0
 
 [light.progress_bar.border]
-# platform-facts.md:1309 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
+# platform-facts.md:1327 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
 line_width_px = 0.0
-# platform-facts.md:1306 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
+# platform-facts.md:1324 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
 corner_radius_px = 1.5
-# platform-facts.md:1307 (§2.10): no shadow
+# platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
 
 [light.tab]
-# platform-facts.md:1317 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
+# platform-facts.md:1337 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
 min_width_px = 100.0
 min_height_px = 32.0
-# platform-facts.md:1327 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+# platform-facts.md:1347 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
 item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#f3f3f3"
@@ -298,28 +298,28 @@ hover_background = "#0000000a"
 
 
 [light.tab.border]
-# platform-facts.md:1321 (§2.11): the selected tab's CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250
+# platform-facts.md:1341 (§2.11): the selected tab's CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250
 # at microsoft-ui-xaml 8463f45), top and sides
 color = "#0000000f"
-# platform-facts.md:1322-1324 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
+# platform-facts.md:1342-1344 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
 line_width_px = 1.0
 corner_radius_px = 8.0
 shadow_enabled = false
-# platform-facts.md:1319-1320 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
+# platform-facts.md:1339-1340 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [light.menu]
-# platform-facts.md:1227 (§2.6): MenuFlyoutPresenterBackground is transparent over the presenter's
+# platform-facts.md:1240 (§2.6): MenuFlyoutPresenterBackground is transparent over the presenter's
 # DesktopAcrylicBackdrop, AcrylicBackgroundFillColorDefaultBackdrop; the brush of that name falls back
 # to #F9F9F9; the backdrop's own fallback colour is not published ❓
 background_color = "#f9f9f9"
-# platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
+# platform-facts.md:1247 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
 row_height_px = 23.0
 icon_text_gap_px = 12.0
-# platform-facts.md:1242 (§2.6): SM_CXSMICON 16
+# platform-facts.md:1255 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
-# platform-facts.md:1243 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+# platform-facts.md:1256 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
 hover_background = "#00000009"
 # MenuFlyoutItemForegroundPointerOver = TextFillColorPrimary #E4000000; disabled TextFillColorDisabled
 # (MenuFlyout_themeresources.xaml:178, :180 at microsoft-ui-xaml 8463f45)
@@ -328,26 +328,26 @@ disabled_text_color = "#0000005c"
 
 
 [light.menu.border]
-# platform-facts.md:1235-1236 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
+# platform-facts.md:1248-1249 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
 padding_horizontal_px = 11.0
 padding_top_px = 4.0
 padding_bottom_px = 5.0
 
 [light.menu.font]
-# platform-facts.md:1233 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #E4000000
+# platform-facts.md:1246 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.list]
-# platform-facts.md:1383 (§2.15): the preset's value, no WinUI3 source ❓
+# platform-facts.md:1411 (§2.15): the preset's value, no WinUI3 source ❓
 alternate_row_background = "#f9f9f9"
-# platform-facts.md:1388 (§2.15): ≈ defaults.background_color
+# platform-facts.md:1416 (§2.15): ≈ defaults.background_color
 header_background = "#f3f3f3"
-# platform-facts.md:1384-1385 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
+# platform-facts.md:1412-1413 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
 # ListViewItemForegroundSelected = TextFillColorPrimary #E4000000
 selection_background = "#00000009"
 selection_text_color = "#000000e4"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
-# platform-facts.md:1394 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+# platform-facts.md:1422 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
 hover_background = "#00000009"
 # ListViewItemForegroundPointerOver = TextFillColorPrimary #E4000000
 # (ListViewItem_themeresources.xaml:176 at microsoft-ui-xaml 8463f45)
@@ -358,33 +358,33 @@ disabled_text_color = "#0000005c"
 
 
 [light.list.border]
-# platform-facts.md:1392-1393 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+# platform-facts.md:1420-1421 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
 padding_left_px = 16.0
 padding_right_px = 12.0
 padding_vertical_px = 0.0
 [light.toolbar]
-# platform-facts.md:1352 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
+# platform-facts.md:1376 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
 bar_height_px = 48.0
-# platform-facts.md:1353 (§2.13): WinUI3 0
+# platform-facts.md:1377 (§2.13): WinUI3 0
 item_gap_px = 0.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
+# platform-facts.md:1378-1379 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
 padding_right_px = 0.0
 padding_left_px = 4.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-# platform-facts.md:1334 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
+# platform-facts.md:1356 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
 # SolidBackgroundFillColorTransparent #00F3F3F3, so the window shows through
 background_color = "#f3f3f300"
-# platform-facts.md:1337-1338 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
+# platform-facts.md:1359-1360 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #09000000;
 # NavigationViewItemForegroundSelected = TextFillColorPrimary #E4000000
 selection_background = "#00000009"
 selection_text_color = "#000000e4"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
-# platform-facts.md:1343 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
+# platform-facts.md:1365 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #09000000
 hover_background = "#00000009"
 
 
@@ -393,35 +393,35 @@ hover_background = "#00000009"
 # (NavigationView_themeresources.xaml:87 at microsoft-ui-xaml 8463f45)
 color = "#000000e4"
 [light.popover]
-# platform-facts.md:1407 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #F9F9F9
+# platform-facts.md:1441 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #F9F9F9
 background_color = "#f9f9f9"
 
 
 [light.popover.font]
-# platform-facts.md:1409 (§2.16): ← defaults.font.color
+# platform-facts.md:1443 (§2.16): ← defaults.font.color
 color = "#000000e4"
 
 
 [light.popover.border]
-# platform-facts.md:1414-1415 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
+# platform-facts.md:1448-1449 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
 padding_horizontal_px = 16.0
 padding_top_px = 15.0
 padding_bottom_px = 17.0
 [light.separator]
-# line_color inherits defaults.border.color (platform-facts.md:1428)
+# line_color inherits defaults.border.color (platform-facts.md:1463)
 
 [light.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1421)
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1455)
 
 [light.switch]
-# platform-facts.md:1474 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000; its
+# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000; its
 # stroke, ToggleSwitchStrokeOff, the model does not carry
 unchecked_background = "#00000006"
-# platform-facts.md:1475 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #FFFFFF
+# platform-facts.md:1510 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #FFFFFF
 thumb_background = "#ffffff"
-# platform-facts.md:1478 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #9E000000
+# platform-facts.md:1513 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #9E000000
 unchecked_thumb_background = "#0000009e"
 track_width_px = 40.0
 track_height_px = 20.0
@@ -443,12 +443,12 @@ disabled_checked_background = "#00000037"
 disabled_unchecked_background = "#ffffff00"
 
 [light.dialog]
-# platform-facts.md:1485 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #F3F3F3
+# platform-facts.md:1525 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #F3F3F3
 background_color = "#f3f3f3"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
-# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1496, 1838-1839.
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1536, 1838-1839.
 button_order = "primary_left"
-# platform-facts.md:1506 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
+# platform-facts.md:1546 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
 entrance = "scale_fade"
 min_width_px = 320.0
 max_width_px = 548.0
@@ -463,15 +463,15 @@ weight = 600
 
 
 [light.dialog.border]
-# platform-facts.md:1493-1494 (§2.22): WinUI3 ContentDialogPadding=24
+# platform-facts.md:1533-1534 (§2.22): WinUI3 ContentDialogPadding=24
 padding_horizontal_px = 24.0
 padding_vertical_px = 24.0
 
 [light.link]
-# platform-facts.md:1627 (§2.28): an inline Hyperlink is underlined at rest
+# platform-facts.md:1673 (§2.28): an inline Hyperlink is underlined at rest
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): an inline Hyperlink has no background and changes only its foreground
+# platform-facts.md:1675 (§2.28): an inline Hyperlink has no background and changes only its foreground
 hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 Windows)
 # HyperlinkForegroundPointerOver = SystemAccentColorDark3, HyperlinkForegroundPressed =
@@ -488,7 +488,7 @@ min_diameter_px = 16.0
 stroke_width_px = 4.0
 
 [light.combo_box]
-# platform-facts.md:1548 (§2.24): ComboBoxBackground = ControlFillColorDefault #B3FFFFFF
+# platform-facts.md:1588 (§2.24): ComboBoxBackground = ControlFillColorDefault #B3FFFFFF
 background_color = "#ffffffb3"
 min_height_px = 32.0
 min_width_px = 64.0
@@ -505,16 +505,16 @@ disabled_background = "#f9f9f900"
 
 
 [light.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
+# platform-facts.md:1595, :1600 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
 padding_left_px = 12.0
 padding_right_px = 0.0
 padding_top_px = 5.0
 padding_bottom_px = 7.0
-# platform-facts.md:1559 (§2.24): no shadow
+# platform-facts.md:1599 (§2.24): no shadow
 shadow_enabled = false
 
 [light.combo_box.font]
-# platform-facts.md:1550 (§2.24): ComboBoxForeground = TextFillColorPrimary #E4000000
+# platform-facts.md:1590 (§2.24): ComboBoxForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.segmented_control]
 segment_height_px = 28.0
@@ -526,28 +526,28 @@ hover_background = "#f6f6f6"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1578 (§2.25): Windows has no segmented control, so no shadow
+# platform-facts.md:1621 (§2.25): Windows has no segmented control, so no shadow
 shadow_enabled = false
 
 [light.card]
 
 
 [light.card.border]
-# platform-facts.md:1591 (§2.26): CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250 at
+# platform-facts.md:1635 (§2.26): CardStrokeColorDefault #0F000000 (Common_themeresources_any.xaml:250 at
 # microsoft-ui-xaml 8463f45)
 color = "#0000000f"
-# platform-facts.md:1592-1594 (§2.26): 1px, OverlayCornerRadius 8, border only
+# platform-facts.md:1636-1638 (§2.26): 1px, OverlayCornerRadius 8, border only
 line_width_px = 1.0
 corner_radius_px = 8.0
 shadow_enabled = false
-# platform-facts.md:1595-1596 (§2.26): 12 (convention)
+# platform-facts.md:1639-1640 (§2.26): 12 (convention)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
 
 [light.expander]
 header_height_px = 48.0
 arrow_icon_size_px =12.0
-# platform-facts.md:1616-1619 (§2.27): the chevron at the row's end, its 12px glyph
+# platform-facts.md:1660-1663 (§2.27): the chevron at the row's end, its 12px glyph
 # 20 + (32 - 12) / 2 from the content, the content padded 16, header and content framed
 arrow_side = "trailing"
 arrow_gap_px = 30.0
@@ -559,11 +559,11 @@ arrow_color = "#000000e4"
 
 
 [light.expander.border]
-# platform-facts.md:1610-1611 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
+# platform-facts.md:1654-1655 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
 padding_right_px = 0.0
 padding_left_px = 16.0
 padding_vertical_px = 0.0
-# platform-facts.md:1615 (§2.27): no shadow
+# platform-facts.md:1659 (§2.27): no shadow
 shadow_enabled = false
 
 [light.window]
@@ -722,7 +722,7 @@ padding_bottom_px = 6.0
 # platform-facts.md:1166 (§2.3): ButtonForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.input]
-# platform-facts.md:1186 (§2.4): TextControlBackground = ControlFillColorDefault #0FFFFFFF
+# platform-facts.md:1190 (§2.4): TextControlBackground = ControlFillColorDefault #0FFFFFFF
 background_color = "#ffffff0f"
 min_height_px = 32.0
 # Interactive state colors (platform-facts.md section 2.4 Windows)
@@ -735,33 +735,33 @@ hover_border_color = "#00000019"
 # SystemAccentColorLight2 over ControlStrokeColorDefault (TextBox_themeresources.xaml:29, :57-66 at
 # microsoft-ui-xaml 8463f45), UISettings AccentLight2 for the accent above (OS probe, Windows 11 25H2)
 focus_border_color = "#4cc2ff"
-# platform-facts.md:1191 (§2.4): TextControlPlaceholderForeground = TextFillColorSecondary #C5FFFFFF
+# platform-facts.md:1195 (§2.4): TextControlPlaceholderForeground = TextFillColorSecondary #C5FFFFFF
 placeholder_color = "#ffffffc5"
 # soft_option: Fluent TextBox disabled bg
 disabled_background = "#33333300"
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
+# platform-facts.md:1200-1201 (§2.4): WinUI3 TextControlThemePadding=10,5,6,6
 padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
-# platform-facts.md:1199 (§2.4): no shadow
+# platform-facts.md:1203 (§2.4): no shadow
 shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1642-1643 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
+# platform-facts.md:1691-1692 (§2.29): the same TextBox, TextControlThemePadding=10,5,6,6
 padding_right_px = 6.0
 padding_left_px = 10.0
 padding_top_px = 5.0
 padding_bottom_px = 6.0
 
 [dark.input.font]
-# platform-facts.md:1188 (§2.4): TextControlForeground = TextFillColorPrimary #FFFFFF
+# platform-facts.md:1192 (§2.4): TextControlForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.checkbox]
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): RadioButtonCheckGlyphSize = 12
+# platform-facts.md:1228 (§2.5): RadioButtonCheckGlyphSize = 12
 radio_dot_diameter_px = 12.0
 label_gap_px = 8.0
 # Interactive state colors (platform-facts.md section 2.5 Windows)
@@ -772,51 +772,51 @@ disabled_text_color = "#ffffff5d"
 hover_background = "#ffffff0f"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#33333300"
-# platform-facts.md:1206 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #19000000
+# platform-facts.md:1214 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #19000000
 unchecked_background = "#00000019"
-# platform-facts.md:1209 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
+# platform-facts.md:1217 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
 unchecked_border_color = "#ffffff8b"
 
 [dark.checkbox.border]
-# platform-facts.md:1215 (§2.5): no shadow
+# platform-facts.md:1223 (§2.5): no shadow
 shadow_enabled = false
 
 [dark.tooltip]
-# platform-facts.md:1251 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #2C2C2C
+# platform-facts.md:1264 (§2.7): ToolTipBackgroundBrush = AcrylicInAppFillColorDefault, its FallbackColor #2C2C2C
 background_color = "#2c2c2c"
 max_width_px = 320.0
-# platform-facts.md:1264 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
+# platform-facts.md:1277 (§2.7): 2 × SPI_GETMOUSEHOVERTIME, 400 on the OS probe's Windows images (ToolTipService_Partial.cpp:1731-1783)
 show_delay_ms = 800
 
 
 [dark.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
+# platform-facts.md:1270-1271 (§2.7): WinUI3 ToolTipBorderPadding=9,6,9,8
 padding_horizontal_px = 9.0
 padding_top_px = 6.0
 padding_bottom_px = 8.0
 
 [dark.tooltip.font]
-# platform-facts.md:1256 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #FFFFFF
+# platform-facts.md:1269 (§2.7): ToolTipForegroundBrush = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
-# platform-facts.md:1253 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
+# platform-facts.md:1266 (§2.7): ToolTipContentThemeFontSize 12 (9pt at 96 DPI); lfStatusFont -12 (OS probe)
 size_pt = 9.0
 [dark.scrollbar]
-# platform-facts.md:1278 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
+# platform-facts.md:1291 (§2.8): ScrollBarBackground = SubtleFillColorTransparent #00FFFFFF
 track_color = "#ffffff00"
 groove_width_px = 17.0
 min_thumb_length_px = 17.0
 thumb_width_px = 6.0
-# platform-facts.md:1284 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
+# platform-facts.md:1297 (§2.8): AutoHideScrollBars reads true on the OS probe, but which scroll
 # bars follow it has no source ❓, so false stays (M2b-21)
 overlay_mode = false
-# thumb_color no source ❓: platform-facts.md:1279's measured #c2c2c2 names no mode, and no dark
+# thumb_color no source ❓: platform-facts.md:1292's measured #c2c2c2 names no mode, and no dark
 # measurement exists (docs/todo.md, "the scrollbar thumb colour platform-facts measures")
 # Interactive state colors (platform-facts.md section 2.8 Windows)
 # measured Windows scrollbar thumb hover
 thumb_hover_color = "#a0a0a0"
 
 [dark.slider]
-# platform-facts.md:1291-1292 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #8BFFFFFF;
+# platform-facts.md:1305-1306 (§2.9): SliderTrackFill = ControlStrongFillColorDefault #8BFFFFFF;
 # the outer thumb, SliderOuterThumbBackground = ControlSolidFillColorDefault #454545
 track_color = "#ffffff8b"
 thumb_color = "#454545"
@@ -830,24 +830,24 @@ disabled_fill_color = "#ffffff28"
 disabled_track_color = "#ffffff3f"
 
 [dark.progress_bar]
-# platform-facts.md:1303 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #8BFFFFFF
+# platform-facts.md:1321 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #8BFFFFFF
 track_color = "#ffffff8b"
 track_height_px = 1.0
 min_width_px = 100.0
 
 [dark.progress_bar.border]
-# platform-facts.md:1309 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
+# platform-facts.md:1327 (§2.10): ProgressBarBorderThemeThickness = 0 (1 in high contrast)
 line_width_px = 0.0
-# platform-facts.md:1306 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
+# platform-facts.md:1324 (§2.10): the control's CornerRadius, ProgressBarCornerRadius = 1.5
 corner_radius_px = 1.5
-# platform-facts.md:1307 (§2.10): no shadow
+# platform-facts.md:1325 (§2.10): no shadow
 shadow_enabled = false
 
 [dark.tab]
-# platform-facts.md:1317 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
+# platform-facts.md:1337 (§2.11): TabWidthMode Equal clamps a tab to TabViewItemMinWidth 100
 min_width_px = 100.0
 min_height_px = 32.0
-# platform-facts.md:1327 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
+# platform-facts.md:1347 (§2.11): TabView stacks its items with no margin (TabView.xaml:76-82, :292-300)
 item_gap_px = 0.0
 # Interactive state colors (platform-facts.md section 2.11 Windows)
 active_background = "#202020"
@@ -862,28 +862,28 @@ hover_background = "#ffffff0f"
 
 
 [dark.tab.border]
-# platform-facts.md:1321 (§2.11): the selected tab's CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46
+# platform-facts.md:1341 (§2.11): the selected tab's CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46
 # at microsoft-ui-xaml 8463f45), top and sides
 color = "#00000019"
-# platform-facts.md:1322-1324 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
+# platform-facts.md:1342-1344 (§2.11): 1, OverlayCornerRadius 8 on the top corners, no shadow
 line_width_px = 1.0
 corner_radius_px = 8.0
 shadow_enabled = false
-# platform-facts.md:1319-1320 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
+# platform-facts.md:1339-1340 (§2.11): WinUI3 without-close-button context, TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3
 padding_horizontal_px = 8.0
 padding_vertical_px = 3.0
 [dark.menu]
-# platform-facts.md:1227 (§2.6): MenuFlyoutPresenterBackground is transparent over the presenter's
+# platform-facts.md:1240 (§2.6): MenuFlyoutPresenterBackground is transparent over the presenter's
 # DesktopAcrylicBackdrop, AcrylicBackgroundFillColorDefaultBackdrop; the brush of that name falls back
 # to #2C2C2C; the backdrop's own fallback colour is not published ❓
 background_color = "#2c2c2c"
-# platform-facts.md:1234 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
+# platform-facts.md:1247 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
 row_height_px = 23.0
 icon_text_gap_px = 12.0
-# platform-facts.md:1242 (§2.6): SM_CXSMICON 16
+# platform-facts.md:1255 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
 # Interactive state colors (platform-facts.md section 2.6 Windows)
-# platform-facts.md:1243 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
+# platform-facts.md:1256 (§2.6): MenuFlyoutItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
 # MenuFlyoutItemForegroundPointerOver = TextFillColorPrimary #FFFFFF; disabled TextFillColorDisabled
 # (MenuFlyout_themeresources.xaml:12, :14 at microsoft-ui-xaml 8463f45)
@@ -892,26 +892,26 @@ disabled_text_color = "#ffffff5d"
 
 
 [dark.menu.border]
-# platform-facts.md:1235-1236 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
+# platform-facts.md:1248-1249 (§2.6): WinUI3 11; mouse context 4 top / 5 bottom
 padding_horizontal_px = 11.0
 padding_top_px = 4.0
 padding_bottom_px = 5.0
 
 [dark.menu.font]
-# platform-facts.md:1233 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #FFFFFF
+# platform-facts.md:1246 (§2.6): MenuFlyoutItemForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.list]
-# platform-facts.md:1383 (§2.15): the preset's value, no WinUI3 source ❓
+# platform-facts.md:1411 (§2.15): the preset's value, no WinUI3 source ❓
 alternate_row_background = "#262626"
-# platform-facts.md:1388 (§2.15): ≈ defaults.background_color
+# platform-facts.md:1416 (§2.15): ≈ defaults.background_color
 header_background = "#202020"
-# platform-facts.md:1384-1385 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
+# platform-facts.md:1412-1413 (§2.15): ListViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
 # ListViewItemForegroundSelected = TextFillColorPrimary #FFFFFF
 selection_background = "#ffffff0f"
 selection_text_color = "#ffffff"
 row_height_px = 40.0
 # Interactive state colors (platform-facts.md section 2.15 Windows)
-# platform-facts.md:1394 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
+# platform-facts.md:1422 (§2.15): ListViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
 # ListViewItemForegroundPointerOver = TextFillColorPrimary #FFFFFF
 # (ListViewItem_themeresources.xaml:24 at microsoft-ui-xaml 8463f45)
@@ -922,33 +922,33 @@ disabled_text_color = "#ffffff5d"
 
 
 [dark.list.border]
-# platform-facts.md:1392-1393 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
+# platform-facts.md:1420-1421 (§2.15): WinUI3 DefaultListViewItemStyle Padding=16,0,12,0
 padding_left_px = 16.0
 padding_right_px = 12.0
 padding_vertical_px = 0.0
 [dark.toolbar]
-# platform-facts.md:1352 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
+# platform-facts.md:1376 (§2.13): WinUI3 CommandBar compact (default) mode, AppBarThemeCompactHeight = 48
 bar_height_px = 48.0
-# platform-facts.md:1353 (§2.13): WinUI3 0
+# platform-facts.md:1377 (§2.13): WinUI3 0
 item_gap_px = 0.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
+# platform-facts.md:1378-1379 (§2.13): WinUI3 CommandBar Padding=4,0,0,0
 padding_right_px = 0.0
 padding_left_px = 4.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-# platform-facts.md:1334 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
+# platform-facts.md:1356 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
 # SolidBackgroundFillColorTransparent #00202020, so the window shows through
 background_color = "#20202000"
-# platform-facts.md:1337-1338 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
+# platform-facts.md:1359-1360 (§2.12): NavigationViewItemBackgroundSelected = SubtleFillColorSecondary #0FFFFFFF;
 # NavigationViewItemForegroundSelected = TextFillColorPrimary #FFFFFF
 selection_background = "#ffffff0f"
 selection_text_color = "#ffffff"
 # Interactive state colors (platform-facts.md section 2.12 Windows)
-# platform-facts.md:1343 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
+# platform-facts.md:1365 (§2.12): NavigationViewItemBackgroundPointerOver = SubtleFillColorSecondary #0FFFFFFF
 hover_background = "#ffffff0f"
 
 
@@ -957,7 +957,7 @@ hover_background = "#ffffff0f"
 # (NavigationView_themeresources.xaml:21 at microsoft-ui-xaml 8463f45)
 color = "#ffffff"
 [dark.popover]
-# platform-facts.md:1407 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #2C2C2C
+# platform-facts.md:1441 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #2C2C2C
 background_color = "#2c2c2c"
 
 
@@ -966,25 +966,25 @@ color = "#ffffff"
 
 
 [dark.popover.border]
-# platform-facts.md:1414-1415 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
+# platform-facts.md:1448-1449 (§2.16): WinUI3 FlyoutContentPadding=16,15,16,17
 padding_horizontal_px = 16.0
 padding_top_px = 15.0
 padding_bottom_px = 17.0
 [dark.separator]
-# line_color inherits defaults.border.color (platform-facts.md:1428)
+# line_color inherits defaults.border.color (platform-facts.md:1463)
 
 [dark.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1421)
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1455)
 
 [dark.switch]
-# platform-facts.md:1474 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000; its
+# platform-facts.md:1509 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000; its
 # stroke, ToggleSwitchStrokeOff, the model does not carry
 unchecked_background = "#00000019"
-# platform-facts.md:1475 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #000000
+# platform-facts.md:1510 (§2.21): ToggleSwitchKnobFillOn = TextOnAccentFillColorPrimary #000000
 thumb_background = "#000000"
-# platform-facts.md:1478 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #C5FFFFFF
+# platform-facts.md:1513 (§2.21): ToggleSwitchKnobFillOff = TextFillColorSecondary #C5FFFFFF
 unchecked_thumb_background = "#ffffffc5"
 track_width_px = 40.0
 track_height_px = 20.0
@@ -1006,12 +1006,12 @@ disabled_checked_background = "#ffffff28"
 disabled_unchecked_background = "#ffffff00"
 
 [dark.dialog]
-# platform-facts.md:1485 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #202020
+# platform-facts.md:1525 (§2.22): ContentDialogBackground = SolidBackgroundFillColorBase #202020
 background_color = "#202020"
 # Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
-# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1496, 1838-1839.
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1536, 1838-1839.
 button_order = "primary_left"
-# platform-facts.md:1506 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
+# platform-facts.md:1546 (§2.22): ContentDialog scales 1.05 → 1 while fading in (ContentDialog_themeresources.xaml:96-114)
 entrance = "scale_fade"
 min_width_px = 320.0
 max_width_px = 548.0
@@ -1026,15 +1026,15 @@ weight = 600
 
 
 [dark.dialog.border]
-# platform-facts.md:1493-1494 (§2.22): WinUI3 ContentDialogPadding=24
+# platform-facts.md:1533-1534 (§2.22): WinUI3 ContentDialogPadding=24
 padding_horizontal_px = 24.0
 padding_vertical_px = 24.0
 
 [dark.link]
-# platform-facts.md:1627 (§2.28): an inline Hyperlink is underlined at rest
+# platform-facts.md:1673 (§2.28): an inline Hyperlink is underlined at rest
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): an inline Hyperlink has no background and changes only its foreground
+# platform-facts.md:1675 (§2.28): an inline Hyperlink has no background and changes only its foreground
 hover_background = "#00000000"
 # Interactive state colors (platform-facts.md section 2.28 Windows)
 # HyperlinkForegroundPointerOver = SystemAccentColorLight3, HyperlinkForegroundPressed =
@@ -1051,7 +1051,7 @@ min_diameter_px = 16.0
 stroke_width_px = 4.0
 
 [dark.combo_box]
-# platform-facts.md:1548 (§2.24): ComboBoxBackground = ControlFillColorDefault #0FFFFFFF
+# platform-facts.md:1588 (§2.24): ComboBoxBackground = ControlFillColorDefault #0FFFFFFF
 background_color = "#ffffff0f"
 min_height_px = 32.0
 min_width_px = 64.0
@@ -1068,16 +1068,16 @@ disabled_background = "#33333300"
 
 
 [dark.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
+# platform-facts.md:1595, :1600 (§2.24): WinUI3 ComboBoxPadding=12,5,0,7; 0 right, where the text column meets the 38px arrow column
 padding_left_px = 12.0
 padding_right_px = 0.0
 padding_top_px = 5.0
 padding_bottom_px = 7.0
-# platform-facts.md:1559 (§2.24): no shadow
+# platform-facts.md:1599 (§2.24): no shadow
 shadow_enabled = false
 
 [dark.combo_box.font]
-# platform-facts.md:1550 (§2.24): ComboBoxForeground = TextFillColorPrimary #FFFFFF
+# platform-facts.md:1590 (§2.24): ComboBoxForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.segmented_control]
 segment_height_px = 28.0
@@ -1089,28 +1089,28 @@ hover_background = "#323232"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1578 (§2.25): Windows has no segmented control, so no shadow
+# platform-facts.md:1621 (§2.25): Windows has no segmented control, so no shadow
 shadow_enabled = false
 
 [dark.card]
 
 
 [dark.card.border]
-# platform-facts.md:1591 (§2.26): CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46 at
+# platform-facts.md:1635 (§2.26): CardStrokeColorDefault #19000000 (Common_themeresources_any.xaml:46 at
 # microsoft-ui-xaml 8463f45)
 color = "#00000019"
-# platform-facts.md:1592-1594 (§2.26): 1px, OverlayCornerRadius 8, border only
+# platform-facts.md:1636-1638 (§2.26): 1px, OverlayCornerRadius 8, border only
 line_width_px = 1.0
 corner_radius_px = 8.0
 shadow_enabled = false
-# platform-facts.md:1595-1596 (§2.26): 12 (convention)
+# platform-facts.md:1639-1640 (§2.26): 12 (convention)
 padding_horizontal_px = 12.0
 padding_vertical_px = 12.0
 
 [dark.expander]
 header_height_px = 48.0
 arrow_icon_size_px =12.0
-# platform-facts.md:1616-1619 (§2.27): the chevron at the row's end, its 12px glyph
+# platform-facts.md:1660-1663 (§2.27): the chevron at the row's end, its 12px glyph
 # 20 + (32 - 12) / 2 from the content, the content padded 16, header and content framed
 arrow_side = "trailing"
 arrow_gap_px = 30.0
@@ -1122,11 +1122,11 @@ arrow_color = "#ffffff"
 
 
 [dark.expander.border]
-# platform-facts.md:1610-1611 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
+# platform-facts.md:1654-1655 (§2.27): WinUI3 header context, ExpanderHeaderPadding=16,0,0,0
 padding_right_px = 0.0
 padding_left_px = 16.0
 padding_vertical_px = 0.0
-# platform-facts.md:1615 (§2.27): no shadow
+# platform-facts.md:1659 (§2.27): no shadow
 shadow_enabled = false
 
 [dark.window]

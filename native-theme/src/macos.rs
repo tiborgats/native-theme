@@ -182,7 +182,7 @@ fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
 /// The scroll bar for the user's scroller style: `overlay` (else legacy)
 /// and the groove width AppKit gives that style, `width_for(overlay)`.
 /// The width differs per style and macOS version: legacy 15 and overlay 16
-/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1281).
+/// on macOS 14.8.9, 17 for both on macOS 26 (docs/platform-facts.md:1294).
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn scrollbar_for_style(overlay: bool, width_for: impl Fn(bool) -> f64) -> crate::ScrollbarTheme {
     crate::ScrollbarTheme {
@@ -869,7 +869,7 @@ mod tests {
     }
 
     /// The groove width is the one AppKit gives the user's scroller style,
-    /// not the overlay style's always (docs/platform-facts.md:1281: legacy 15,
+    /// not the overlay style's always (docs/platform-facts.md:1294: legacy 15,
     /// overlay 16 on macOS 14.8.9).
     #[test]
     fn scrollbar_for_style_takes_the_styles_width() {
@@ -978,7 +978,7 @@ mod tests {
         );
     }
 
-    // === The NSColor mapping (platform-facts.md:1053, :1056, :1058-1059, :1193) ===
+    // === The NSColor mapping (platform-facts.md:1053, :1056, :1058-1059, :1197) ===
 
     #[cfg(all(target_os = "macos", feature = "macos"))]
     #[test]
@@ -1022,7 +1022,7 @@ mod tests {
                 crate::ReaderOutput::Dual { light, .. } if light.input.selection_background.is_none()
             ),
             "the reader should return both variants, light input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1193)"
+             inherits defaults.text_selection_background (platform-facts.md:1197)"
         );
         assert!(
             matches!(
@@ -1030,7 +1030,7 @@ mod tests {
                 crate::ReaderOutput::Dual { dark, .. } if dark.input.selection_background.is_none()
             ),
             "the reader should return both variants, dark input.selection_background unset: it \
-             inherits defaults.text_selection_background (platform-facts.md:1193)"
+             inherits defaults.text_selection_background (platform-facts.md:1197)"
         );
     }
 

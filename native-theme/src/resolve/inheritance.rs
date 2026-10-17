@@ -58,7 +58,7 @@ fn resolve_text_scale_entry(
 /// left). On GNOME, macOS, and iOS the convention is trailing-affirmative.
 /// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
 /// and modern WinUI 3 ContentDialog — see
-/// `docs/platform-facts.md:1496, 1516-1523, 1838-1839`.
+/// `docs/platform-facts.md:1536, 1516-1523, 1838-1839`.
 pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {

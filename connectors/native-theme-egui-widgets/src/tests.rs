@@ -429,7 +429,7 @@ fn every_widget_reports_its_role() {
 
 /// An off switch's thumb is `switch.unchecked_thumb_diameter` across in
 /// `unchecked_thumb_background` where the theme states them (Material's 16 in `outline`,
-/// docs/platform-facts.md:1477-1478), centred on the track's axis.
+/// docs/platform-facts.md:1512-1513), centred on the track's axis.
 #[test]
 fn the_off_thumb_is_the_stated_off_thumb() {
     let mut t = kde();
@@ -448,7 +448,7 @@ fn the_off_thumb_is_the_stated_off_thumb() {
 }
 
 /// The radio button's circle is `checkbox.radio_indicator_width` across its outline where the
-/// theme states one (Material's 20 against its check box's 18, docs/platform-facts.md:1222).
+/// theme states one (Material's 20 against its check box's 18, docs/platform-facts.md:1230).
 #[test]
 fn the_radio_circle_is_the_stated_radio_width() {
     let mut t = kde();

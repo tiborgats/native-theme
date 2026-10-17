@@ -138,7 +138,7 @@ color = "#2e3436"
 background_color = "#ffffff"
 placeholder_color = "#929595"
 min_height_px = 34.0
-# platform-facts.md:1192 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+# platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#2e3436"
 hover_border_color = "#3584e4"
 focus_border_color = "#3584e4"
@@ -146,23 +146,23 @@ focus_border_color = "#3584e4"
 
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
+# platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 
 [light.text_area.border]
-# platform-facts.md:1642-1643 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
 [light.input.font]
 color = "#2e3436"
 [light.checkbox]
-# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
+# platform-facts.md:1220 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+# platform-facts.md:1228 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
-# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+# platform-facts.md:1229 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
 check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#d5d5d5"
@@ -172,19 +172,19 @@ unchecked_border_color = "#d5d5d5"
 
 
 [light.checkbox.border]
-# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+# platform-facts.md:1224-1225 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [light.tooltip]
 background_color = "#2e3436"
 max_width_px = 360.0
-# platform-facts.md:1264 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+# platform-facts.md:1277 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
 show_delay_ms = 500
 
 
 [light.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
+# platform-facts.md:1270-1271 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -193,7 +193,7 @@ color = "#ffffff"
 [light.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 8.0
-# platform-facts.md:1284 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
+# platform-facts.md:1297 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
 overlay_mode = true
 min_thumb_length_px = 40.0
 thumb_hover_color = "#6e6e6e"
@@ -211,26 +211,26 @@ track_height_px = 8.0
 min_width_px = 80.0
 
 [light.progress_bar.border]
-# platform-facts.md:1309 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
+# platform-facts.md:1327 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
 
 [light.tab]
 min_width_px = 64.0
 min_height_px = 30.0
-# platform-facts.md:1327 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+# platform-facts.md:1347 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
 active_background = "#fafafb"
 active_text_color = "#2e3436"
 hover_background = "#e8e8e8"
 hover_text_color = "#2e3436"
-# platform-facts.md:1328-1330 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
+# platform-facts.md:1348-1350 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
 active_indicator_color = "#3584e4"
 active_indicator_width_px = 4.0
 active_indicator_side = "bottom"
 
 
 [light.tab.border]
-# platform-facts.md:1319-1320 (§2.11): Adwaita CSS 12; 3
+# platform-facts.md:1339-1340 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [light.menu]
@@ -242,13 +242,13 @@ hover_text_color = "#2e3436"
 
 
 [light.menu.border]
-# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
+# platform-facts.md:1248-1249 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [light.list]
 alternate_row_background = "#f5f5f5"
-# row_height not stated: platform-facts.md:1390 (§2.15), plain list context, no min-height
-# platform-facts.md:1391 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+# row_height not stated: platform-facts.md:1418 (§2.15), plain list context, no min-height
+# platform-facts.md:1419 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
 header_height_px = 30.0
 hover_background = "#ebebed"
 hover_text_color = "#2e3436"
@@ -256,23 +256,23 @@ hover_text_color = "#2e3436"
 
 
 [light.list.border]
-# platform-facts.md:1392-1393 (§2.15): Adwaita CSS plain list context, 2
+# platform-facts.md:1420-1421 (§2.15): Adwaita CSS plain list context, 2
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
 [light.toolbar]
-# bar_height not stated: platform-facts.md:1352 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1353 (§2.13): Adwaita CSS .toolbar border-spacing 6
+# bar_height not stated: platform-facts.md:1376 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1377 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+# platform-facts.md:1378-1379 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 
 [light.status_bar.border]
-# platform-facts.md:1373-1374 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+# platform-facts.md:1401-1402 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -292,11 +292,11 @@ color = "#2e3436"
 
 
 [light.popover.border]
-# platform-facts.md:1410 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+# platform-facts.md:1444 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
 color = "#0000000d"
-# platform-facts.md:1411 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+# platform-facts.md:1445 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
 line_width_px = 1.0
-# platform-facts.md:1414-1415 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+# platform-facts.md:1448-1449 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0
 [light.separator]
@@ -319,7 +319,7 @@ hover_unchecked_background = "#c8c8c8"
 
 [light.dialog]
 button_order = "primary_right"
-# platform-facts.md:1506 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+# platform-facts.md:1546 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
 entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
@@ -330,21 +330,21 @@ icon_size_px =32.0
 
 
 [light.dialog.title_font]
-# platform-facts.md:1498-1499 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1538-1539 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [light.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1493-1494 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1533-1534 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1675 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#1b6acb"
 active_text_color = "#1b6acb"
@@ -360,13 +360,13 @@ stroke_width_px = 2.0
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1557 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1597 (§2.24), (none), inline icon
 hover_background = "#d5d5d5"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [light.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [light.segmented_control]
@@ -378,7 +378,7 @@ hover_background = "#d5d5d5"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1574, :1579 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
@@ -390,7 +390,7 @@ corner_radius_px = 12.0
 [light.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1616-1619 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1660-1663 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -402,7 +402,7 @@ arrow_color = "#2e3436"
 
 [light.expander.border]
 corner_radius_px = 6.0
-# platform-facts.md:1610-1611 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
 
@@ -520,7 +520,7 @@ color = "#ffffff"
 background_color = "#303034"
 placeholder_color = "#8b8b8b"
 min_height_px = 34.0
-# platform-facts.md:1192 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+# platform-facts.md:1196 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
 caret_color = "#ffffff"
 hover_border_color = "#3584e4"
 focus_border_color = "#3584e4"
@@ -528,23 +528,23 @@ focus_border_color = "#3584e4"
 
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
+# platform-facts.md:1200-1201 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
 
 [dark.text_area.border]
-# platform-facts.md:1642-1643 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1691-1692 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
 [dark.input.font]
 color = "#ffffff"
 [dark.checkbox]
-# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
+# platform-facts.md:1220 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+# platform-facts.md:1228 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
-# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+# platform-facts.md:1229 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
 check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#464649"
@@ -554,19 +554,19 @@ unchecked_border_color = "#4a4a4e"
 
 
 [dark.checkbox.border]
-# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+# platform-facts.md:1224-1225 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
 
 [dark.tooltip]
 background_color = "#3a3a3e"
 max_width_px = 360.0
-# platform-facts.md:1264 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+# platform-facts.md:1277 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
 show_delay_ms = 500
 
 
 [dark.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
+# platform-facts.md:1270-1271 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -575,7 +575,7 @@ color = "#ffffff"
 [dark.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 8.0
-# platform-facts.md:1284 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
+# platform-facts.md:1297 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
 overlay_mode = true
 min_thumb_length_px = 40.0
 thumb_hover_color = "#a0a0a0"
@@ -593,26 +593,26 @@ track_height_px = 8.0
 min_width_px = 80.0
 
 [dark.progress_bar.border]
-# platform-facts.md:1309 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
+# platform-facts.md:1327 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
 
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 30.0
-# platform-facts.md:1327 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+# platform-facts.md:1347 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
 active_background = "#222226"
 active_text_color = "#ffffff"
 hover_background = "#3a3a3e"
 hover_text_color = "#ffffff"
-# platform-facts.md:1328-1330 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
+# platform-facts.md:1348-1350 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
 active_indicator_color = "#3584e4"
 active_indicator_width_px = 4.0
 active_indicator_side = "bottom"
 
 
 [dark.tab.border]
-# platform-facts.md:1319-1320 (§2.11): Adwaita CSS 12; 3
+# platform-facts.md:1339-1340 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [dark.menu]
@@ -624,13 +624,13 @@ hover_text_color = "#ffffff"
 
 
 [dark.menu.border]
-# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
+# platform-facts.md:1248-1249 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [dark.list]
 alternate_row_background = "#2a2a2e"
-# row_height not stated: platform-facts.md:1390 (§2.15), plain list context, no min-height
-# platform-facts.md:1391 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+# row_height not stated: platform-facts.md:1418 (§2.15), plain list context, no min-height
+# platform-facts.md:1419 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
 header_height_px = 30.0
 hover_background = "#303034"
 hover_text_color = "#ffffff"
@@ -638,23 +638,23 @@ hover_text_color = "#ffffff"
 
 
 [dark.list.border]
-# platform-facts.md:1392-1393 (§2.15): Adwaita CSS plain list context, 2
+# platform-facts.md:1420-1421 (§2.15): Adwaita CSS plain list context, 2
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
 [dark.toolbar]
-# bar_height not stated: platform-facts.md:1352 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1353 (§2.13): Adwaita CSS .toolbar border-spacing 6
+# bar_height not stated: platform-facts.md:1376 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1377 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1354-1355 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+# platform-facts.md:1378-1379 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 
 
 [dark.status_bar.border]
-# platform-facts.md:1373-1374 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+# platform-facts.md:1401-1402 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -674,11 +674,11 @@ color = "#ffffff"
 
 
 [dark.popover.border]
-# platform-facts.md:1410 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+# platform-facts.md:1444 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
 color = "#0000000d"
-# platform-facts.md:1411 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+# platform-facts.md:1445 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
 line_width_px = 1.0
-# platform-facts.md:1414-1415 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+# platform-facts.md:1448-1449 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0
 [dark.separator]
@@ -691,7 +691,7 @@ hover_color = "#4a4a4e"
 [dark.switch]
 unchecked_background = "#4a4a4e"
 thumb_background = "#ffffff"
-# platform-facts.md:1478 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
+# platform-facts.md:1513 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
 unchecked_thumb_background = "#d2d2d2"
 track_width_px = 46.0
 track_height_px = 26.0
@@ -703,7 +703,7 @@ hover_unchecked_background = "#56565a"
 
 [dark.dialog]
 button_order = "primary_right"
-# platform-facts.md:1506 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+# platform-facts.md:1546 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
 entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
@@ -714,21 +714,21 @@ icon_size_px =32.0
 
 
 [dark.dialog.title_font]
-# platform-facts.md:1498-1499 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1538-1539 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [dark.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1493-1494 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1533-1534 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1629 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1675 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#5b9bf8"
 active_text_color = "#5b9bf8"
@@ -744,13 +744,13 @@ stroke_width_px = 2.0
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1557 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1597 (§2.24), (none), inline icon
 hover_background = "#464649"
 # no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [dark.combo_box.border]
-# platform-facts.md:1555, :1560 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1595, :1600 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
 [dark.segmented_control]
@@ -762,12 +762,12 @@ hover_background = "#464649"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1574, :1579 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1617, :1622 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.card]
-# platform-facts.md:1590 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
+# platform-facts.md:1634 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
 background_color = "#ffffff14"
 
 [dark.card.border]
@@ -775,7 +775,7 @@ corner_radius_px = 12.0
 [dark.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1616-1619 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1660-1663 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -787,7 +787,7 @@ arrow_color = "#ffffff"
 
 [dark.expander.border]
 corner_radius_px = 6.0
-# platform-facts.md:1610-1611 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md:1654-1655 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
 

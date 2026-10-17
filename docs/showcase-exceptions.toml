@@ -748,7 +748,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence, material-3: checkbox.border.padding and check_mark_stroke_width are unstated there; gpui's check mark then fills the indicator inside its border ('checkmark fills indicator', docs/platform-facts.md:1216), gpui-component's Check icon 16 px across in an 18 px box rounded 12 px, so the glyph sample over the mark's box reaches the page beyond the rounded corners"
+reason = "theme silence, material-3: checkbox.border.padding and check_mark_stroke_width are unstated there; gpui's check mark then fills the indicator inside its border ('checkmark fills indicator', docs/platform-facts.md:1224), gpui-component's Check icon 16 px across in an 18 px box rounded 12 px, so the glyph sample over the mark's box reaches the page beyond the rounded corners"
 keys = [
     "catppuccin-mocha:basic.checkboxes.checked.mark.mark",
 ]

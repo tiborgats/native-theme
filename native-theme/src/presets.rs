@@ -431,7 +431,7 @@ accent_color = "#00ff00"
                 );
                 // checkbox.checked_background is derived from accent, except on
                 // KDE, where Breeze tints the button colour instead
-                // (docs/platform-facts.md:1218, §2.5)
+                // (docs/platform-facts.md:1226, §2.5)
                 assert_eq!(
                     variant.checkbox.checked_background.is_some(),
                     *name == "kde-breeze",
@@ -445,7 +445,7 @@ accent_color = "#00ff00"
                 );
                 // progress_bar.fill is derived from accent, except on KDE,
                 // where Breeze lays the accent at 0.7 over the window
-                // (docs/platform-facts.md:1302, §2.10)
+                // (docs/platform-facts.md:1320, §2.10)
                 assert_eq!(
                     variant.progress_bar.fill_color.is_some(),
                     *name == "kde-breeze",
