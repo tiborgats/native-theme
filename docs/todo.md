@@ -3817,6 +3817,23 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       unstated*; the preset keeps them, as they pad all three showcases'
       chrome.
 
+### gpui showcase: two 1px offsets under adwaita's borderless fields
+
+- [ ] [v0.7.0] For M9a (M8 T16 fix round 2, 2026-10-17): under adwaita, whose
+      button, text input and drop-down have no line at rest
+      (`docs/platform-facts.md` §2.3, §2.4, §2.24 `border.line_width` 0), the
+      parity comparison at rest (M8 T16's last after-run, both variants)
+      finds two gpui positions a pixel off that no exception covers:
+      `basic.text_inputs.focused.text.x` gpui 10, iced 9, egui 9 (the
+      focused field's text); `basic.buttons.primary.x` gpui 86, iced 85
+      (85.18), egui 85 (85.19). gpui-component's focused Input adds
+      `border_1()` in the ring colour (gpui-component 0.7.3
+      `src/input/input.rs:758-762`) over the 0 the theme states, which moves
+      the text a pixel in; the primary button sits after the default one,
+      80 wide in gpui and 79.18 / 79.19 in iced / egui. Find what the gpui
+      showcase or connector must change so the two land where iced and egui
+      put them, or the forced cause with its source.
+
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.
 
