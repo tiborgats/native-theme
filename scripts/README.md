@@ -190,7 +190,8 @@ inputs on which a naive float port gives another colour. The output is
 deterministic; run it again only to change the tables.
 
 Requires: Python 3 and PySide6 6.11.2 (Qt 6.11.2), the version the tables were
-generated with; it refuses another.
+generated with; it refuses another, and a Qt build whose `QColor::toRgb` does
+not fuse `1.0f - (s * f)` into one multiply-add, as the reference build does.
 
 ```sh
 python3 -I scripts/generate_qt_color_vectors.py
