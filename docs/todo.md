@@ -18,7 +18,8 @@ under that heading (`docs/todo.md`, *Font DPI*, "Unverified: do the Linux reader
 value is cited by its TOML key path, which no preset edit shifts (`adwaita.toml`
 `[light.button] active_background`), and a preset line only with the commit it
 holds at (`kde-breeze.toml:8` at 2ca74471), as `scripts/check_todo_citations.py`
-checks.
+checks. A bare `:N` continuing a preset's line citation is never written: the script
+cannot tell which file a bare number continues, so it does not look for one.
 
 ---
 
@@ -896,9 +897,9 @@ model, the platform presets and the three connectors
       cites them). The text selection now inherits the accent
       (`TextControlSelectionHighlightColor` = `SystemAccentColor`), so it
       follows the user's. Still without a source: the dark
-      `defaults.selection_text_color` (`#ffffff`, `:593`; `COLOR_HIGHLIGHTTEXT`
+      `defaults.selection_text_color` (`#ffffff`, `[dark.defaults] selection_text_color`; `COLOR_HIGHLIGHTTEXT`
       was read in light mode only, and WinUI 3 states no selected-text
-      foreground) and the menu's background (`:294`, `:837`): WinUI 3 draws the
+      foreground) and the menu's background (`[light.menu]`, `[dark.menu]`): WinUI 3 draws the
       menu on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does
       not publish; the preset states the fallback of the acrylic brush of the
       same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1253`). Under
