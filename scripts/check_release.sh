@@ -1003,9 +1003,11 @@ else
     set -e
     # A row is outdated when Latest ($4) is a version other than Project ($2).
     # Compat ($3) is `---` when every newer release is semver-incompatible, as
-    # each 0.x minor bump is, so it is not the column to read.
+    # each 0.x minor bump is, so it is not the column to read. `--workspace`
+    # lists a dependency under every member that has it, so each name and
+    # version is counted once.
     OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
-        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $4 ~ /^[0-9]/ && $2 != $4 {c++} END {print c+0}')
+        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $4 ~ /^[0-9]/ && $2 != $4 && !seen[$1 " " $2]++ {c++} END {print c+0}')
     if [ "$OUTDATED_STATUS" -ne 0 ]; then
         # A failed run lists no rows, so its count says nothing.
         print_warn "cargo outdated failed (exit $OUTDATED_STATUS): dependencies not checked"
