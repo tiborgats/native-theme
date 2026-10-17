@@ -18,10 +18,11 @@
 #   update_compatibility.sh hash <connector>      print a connector's sources hash at HEAD
 #
 # The hash covers the git object ids of that connector's Cargo.toml, src,
-# examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest
-# its showcase embeds, and the egui widgets crate's Cargo.toml and src): a connector that has changed has not been verified, the
-# rule scripts/update_provenance.sh applies to the sources its screenshots came
-# from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
+# examples and tests (for egui also mapping.toml, the manifest its showcase
+# embeds, and the egui widgets crate's Cargo.toml and src, which its showcase
+# draws with and its gates test): a connector that has changed has not been
+# verified, the rule scripts/update_provenance.sh applies to the sources its
+# screenshots came from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
 # on a depth-1 checkout and needs no network.
 #
 # There is deliberately no `write` verb. A stamp written without the run it
@@ -68,9 +69,10 @@ family_of() {
 source_paths() {
     local dir="connectors/$(crate_of "$1")"
     case "$1" in
-        # No `tests` directory; the showcase embeds `mapping.toml` and draws
-        # with the egui widgets crate, which depends on egui too.
-        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/mapping.toml" \
+        # The showcase embeds `mapping.toml` and draws with the egui widgets
+        # crate, which depends on egui too and which gates_egui tests.
+        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" \
+                  "$dir/mapping.toml" \
                   connectors/native-theme-egui-widgets/Cargo.toml \
                   connectors/native-theme-egui-widgets/src ;;
         *)    printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" ;;
@@ -160,10 +162,10 @@ write_stamp() {
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
-# Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
-# mapping.toml, the manifest its showcase embeds, and the egui widgets crate's
-# Cargo.toml and src). A connector whose sources have changed
-# has not been verified, whatever this file says about the set.
+# Cargo.toml, src, examples and tests (for egui also mapping.toml, the manifest
+# its showcase embeds, and the egui widgets crate's Cargo.toml and src). A
+# connector whose sources have changed has not been verified, whatever this
+# file says about the set.
 # Do not edit by hand.
 EOF
         for block in "${blocks[@]}"; do

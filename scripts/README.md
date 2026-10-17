@@ -225,24 +225,27 @@ The upstream versions each connector has been verified against, recorded in
 `docs/COMPATIBILITY.toml` and stated on each connector README's Verified line.
 
 - `run [gpui|iced|egui]` (all when none is named) refuses to start while the
-  connector's `Cargo.toml`, `src`, `examples` or `tests` — for egui
-  `mapping.toml` in place of `tests` — have uncommitted
-  changes, then runs `cargo update` on the connector's upstream family
-  (gpui-base, gpui-component, gpui-fast, gpui-fast-apple, gpui-fast-linux,
-  gpui-fast-macos, gpui-fast-macros, gpui-fast-platform, gpui-fast-web,
-  gpui-fast-wgpu, gpui-fast-windows, gpui-kit, gpui-kit-assets, gpui-pre; or iced,
-  iced_aw, iced_core, iced_test, iced_widget; or the egui release train —
-  ecolor, eframe, egui, egui-wgpu, egui-winit, egui_extras, egui_kittest,
-  emath, epaint, epaint_default_fonts, kittest) and that connector's gates on
-  the result with `--locked`: tests (for gpui with `--features native,watch`
-  and `--features gpui-fast,native,watch --all-targets`; for iced also `--no-default-features` and
-  `--features iced_aw`; for egui also `--no-default-features` and
-  `--all-features`), clippy with `-D warnings` (for gpui with
-  `--features native,watch`, for iced and egui with `--all-features`),
-  documentation with `RUSTDOCFLAGS="-D warnings"` (for
-  iced and egui also `--all-features`) and `check_widget_coverage.py`. Only when every gate passes does it write the
-  versions the lockfile resolved, the commit and a sources hash into the
-  stamp and rewrite the README's Verified line between its
+  connector's `Cargo.toml`, `src`, `examples` or `tests` — for egui also
+  `mapping.toml` and the egui widgets crate's `Cargo.toml` and `src` — have
+  uncommitted changes, then runs `cargo update` on the connector's upstream
+  family (gpui-base, gpui-component, gpui-fast, gpui-fast-apple,
+  gpui-fast-linux, gpui-fast-macos, gpui-fast-macros, gpui-fast-platform,
+  gpui-fast-web, gpui-fast-wgpu, gpui-fast-windows, gpui-kit, gpui-kit-assets,
+  gpui-pre; or iced, iced_aw, iced_core, iced_futures, iced_test, iced_widget;
+  or the egui release train — ecolor, eframe, egui, egui-wgpu, egui-winit,
+  egui_extras, egui_kittest, emath, epaint, epaint_default_fonts, kittest) and
+  that connector's gates on the result with `--locked`: tests (for gpui with
+  `--features native,watch` and `--features gpui-fast,native,watch
+  --all-targets`; for iced with its defaults, `--no-default-features` and
+  `--features iced_aw,watch,native`; for egui with its defaults,
+  `--no-default-features` and `--all-features`), clippy with `-D warnings` (for
+  gpui with `--features native,watch`, for iced and egui with
+  `--all-features`), documentation with `RUSTDOCFLAGS="-D warnings"` (for iced
+  and egui also `--all-features`), for egui the widgets crate's four gates
+  (tests with no features and with all features, clippy and documentation with
+  all features), and `check_widget_coverage.py`. Only when every gate passes
+  does it write the versions the lockfile resolved, the commit and a sources
+  hash into the stamp and rewrite the README's Verified line between its
   `<!-- compat:begin -->` / `<!-- compat:end -->` markers. `Cargo.lock` is
   restored on exit, pass or fail. Needs the network, and Python 3.11+ for the
   coverage script.
@@ -255,7 +258,8 @@ The upstream versions each connector has been verified against, recorded in
   uploaded.
 - `hash <gpui|iced|egui>` prints a connector's sources hash at HEAD: a SHA-256
   over the git object ids of its `Cargo.toml`, `src`, `examples` and `tests`
-  — for egui `mapping.toml` in place of `tests`.
+  — for egui also `mapping.toml` and the egui widgets crate's `Cargo.toml` and
+  `src`.
 
 There is no verb that writes the stamp without the run.
 

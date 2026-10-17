@@ -8,10 +8,10 @@
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
-# Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
-# mapping.toml, the manifest its showcase embeds, and the egui widgets crate's
-# Cargo.toml and src). A connector whose sources have changed
-# has not been verified, whatever this file says about the set.
+# Cargo.toml, src, examples and tests (for egui also mapping.toml, the manifest
+# its showcase embeds, and the egui widgets crate's Cargo.toml and src). A
+# connector whose sources have changed has not been verified, whatever this
+# file says about the set.
 # Do not edit by hand.
 
 [native-theme-gpui]
