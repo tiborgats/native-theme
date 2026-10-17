@@ -215,7 +215,7 @@ const ROWS: &[Row] = &[
     row(Adwaita, "menu", axes(0.0, 12.0), &[1248, 1249], "12 ($menu_padding); 0")
         .with(&[("row_height", Some(32.0), 1247)]),
     row(Adwaita, "tooltip", axes(6.0, 10.0), &[1270, 1271], "10; 6"),
-    row(Adwaita, "progress_bar", NONE, &[1316], "§2.10's padding rows give 0, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(Adwaita, "progress_bar", all(0.0), &[1328, 1329], "0; 0, the progress fills the trough"),
     row(Adwaita, "tab", axes(3.0, 12.0), &[1339, 1340], "12; 3")
         .with(&[("item_gap", Some(0.0), 1347)]),
     row(Adwaita, "sidebar", NONE, &[1353], "§2.12's padding rows give 6, 6 top / 4 bottom, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),

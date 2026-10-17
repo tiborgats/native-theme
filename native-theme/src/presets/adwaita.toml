@@ -223,6 +223,9 @@ min_width_px = 80.0
 [light.progress_bar.border]
 # platform-facts.md:1327 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
+# platform-facts.md:1328-1329 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [light.tab]
 min_width_px = 64.0
@@ -633,6 +636,9 @@ min_width_px = 80.0
 [dark.progress_bar.border]
 # platform-facts.md:1327 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
+# platform-facts.md:1328-1329 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [dark.tab]
 min_width_px = 64.0
