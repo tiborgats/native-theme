@@ -279,6 +279,9 @@ item_gap_px = 6.0
 # platform-facts.md:1378-1379 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
+line_width_px = 0.0
+shadow_enabled = false
 
 
 [light.status_bar.border]
@@ -686,6 +689,9 @@ item_gap_px = 6.0
 # platform-facts.md:1378-1379 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
+line_width_px = 0.0
+shadow_enabled = false
 
 
 [dark.status_bar.border]
