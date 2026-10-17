@@ -374,6 +374,12 @@ item_gap_px = 0.0
 padding_right_px = 0.0
 padding_left_px = 4.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.13 border.line_width, border.corner_radius: 0 at rest, a closed CommandBar's ContentRoot has no
+# border and its OpenBorder is collapsed; ControlCornerRadius reaches ContentRoot only open (CommandBar_themeresources.xaml:795, :842, :559-560)
+line_width_px = 0.0
+corner_radius_px = 0.0
+# platform-facts.md §2.13 border.shadow_enabled: none, the template's only shadow wraps the overflow menu (:863-864)
+shadow_enabled = false
 
 [light.sidebar]
 # platform-facts.md:1356 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
@@ -938,6 +944,12 @@ item_gap_px = 0.0
 padding_right_px = 0.0
 padding_left_px = 4.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.13 border.line_width, border.corner_radius: 0 at rest, a closed CommandBar's ContentRoot has no
+# border and its OpenBorder is collapsed; ControlCornerRadius reaches ContentRoot only open (CommandBar_themeresources.xaml:795, :842, :559-560)
+line_width_px = 0.0
+corner_radius_px = 0.0
+# platform-facts.md §2.13 border.shadow_enabled: none, the template's only shadow wraps the overflow menu (:863-864)
+shadow_enabled = false
 
 [dark.sidebar]
 # platform-facts.md:1356 (§2.12): the docked pane, NavigationViewExpandedPaneBackground =
