@@ -1673,6 +1673,21 @@ model, the platform presets and the three connectors
       publish.yml, whose `ci-full` job calls it (`workflow_call`) on the
       tag's commit before the upload; a branch push still runs nothing.
 
+### Dependencies: zbus 6 and the three unmaintained-crate advisories
+
+- [ ] [v0.7.x] From M8 Step 8 (2026-10-17, f0f17b95): zbus 6.0.0 merged
+      zvariant, zvariant_derive and zbus_names into itself, so the zbus 5
+      line's copies, zvariant 5.15.0, zvariant_derive 5.15.0 and zbus_names
+      4.3.4, are unmaintained (RUSTSEC-2026-0370, -0371, -0372), and
+      `.cargo/audit.toml` passes the three with that reason. native-theme's
+      `portal` and `watch` features need zbus 5 for ashpd 0.13.13, the latest
+      ashpd, which requires zbus ^5.13 (`native-theme/Cargo.toml`, `ashpd`,
+      `zbus`); accesskit_unix, atspi and oo7, in the connectors' winit and
+      GPUI stacks, also require zbus ^5 as of 2026-10-17. Move native-theme's
+      `zbus` to 6 once ashpd releases on zbus 6, and remove the three
+      `.cargo/audit.toml` entries once no dependency in `Cargo.lock` pulls
+      zvariant 5, zvariant_derive 5 or zbus_names 4.
+
 ### detect: `prefers_reduced_motion` and the reader's block are two caches of one read
 
 - [ ] [v0.7.x] From M4's final review (P2-2, 2026-10-13):
@@ -2414,14 +2429,16 @@ What is still open on the iced side:
       (`native-theme/src/kde/mod.rs:42-52`, `src/detect.rs:674-685`). Decide
       whether native-theme should model motion — durations, easings,
       distances — which is a core-type change.
-      Since M6 T5 (M6-01) `apply` keeps the installed theme's `motion`, as
-      upstream's `Theme::change` does, so a value the application set survives
-      a theme switch; the connector still sets none.
+      2026-10-15: since c1208377 (M6 T5, M6-01) `apply` no longer overwrites
+      `motion` with upstream's defaults: it copies the installed theme's before
+      the write, as upstream's `Theme::change` leaves it (gpui-component 0.7.3
+      `src/theme/schema.rs:1064-1108`), so a value the application set
+      survives a theme switch; the connector still sets none.
       M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
       "**Model motion.** The big one" (*native-theme-gpui connector*, *Follow-ups
       from the v0.5.9 showcase and contract work*; 923471e9; its "argued above"
       means its place in `docs/todo.md` at b2524822), all but its 2026-10-15 line,
-      which says what this entry's "Since M6 T5" line says:
+      which is the line of that date above:
       **Model motion.** The big one, argued above: `Theme::motion` is a
       writable field of twelve tokens that eighteen-plus widgets read, and
       `apply` overwrites all of it with `Default::default()` because
