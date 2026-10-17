@@ -30,6 +30,7 @@ use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeMode};
 /// Per `inheritance-rules.toml [text_scale_inheritance]`:
 /// - size inherits from defaults.font.size
 /// - weight inherits from defaults.font.weight
+/// - line_height is defaults.line_height * size, in the size's unit
 fn resolve_text_scale_entry(
     entry: &mut Option<TextScaleEntry>,
     defaults_font: &FontSpec,

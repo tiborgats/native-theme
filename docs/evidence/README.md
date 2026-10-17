@@ -5,6 +5,8 @@ the repository because GitHub deletes a workflow run's artifacts after 90
 days. Each run directory holds that run's artifacts and a `README.md` of
 its own that states the runner images and what the run reported. A recorded
 file is not edited after it is added: a later reading is a new run directory.
+A recorded file's own `docs/platform-facts.md:N` citations (the Windows
+`probe.toml`s' notes, for one) refer to the facts file at that run's commit.
 
 ## `os-probe/`
 
