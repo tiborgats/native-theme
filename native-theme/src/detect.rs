@@ -938,8 +938,11 @@ pub fn detect_reduced_motion() -> bool {
 /// (`watch::on_theme_change`) reports a change of every accessibility setting
 /// the reader reads but one, Windows' high contrast, which Windows announces
 /// only to top-level windows, as it does the non-client fonts; nothing clears
-/// the cache when it changes. Where the current setting matters more than the
-/// cost, read [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system),
+/// the cache when it changes. That holds from Windows 10 2004: before it the
+/// watcher has no `AnimationsEnabledChanged`, so a reduced-motion change is
+/// not reported either (and before 1703, with no
+/// `AdvancedEffectsEnabledChanged`, a transparency change). Where the current
+/// setting matters more than the cost, read [`AccessibilityPreferences::from_system`](crate::AccessibilityPreferences::from_system),
 /// which runs the reader every time.
 #[must_use]
 pub fn accessibility_preferences() -> crate::AccessibilityPreferences {
