@@ -3859,6 +3859,14 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       refinement reaches, recorded with its ring as the gpui contract's
       `UPSTREAM_LIMITS` entry (`connectors/native-theme-gpui/src/contract.rs`);
       the primary button's 86 stays open here.
+      M8 T16 fix round 4 (2026-10-17): "forced" above overstates it. What
+      upstream cannot do is draw the theme's inset ring in a focus state;
+      the 1px edge, and the text offset with it, is the price of keeping
+      upstream's focus display, as `Input::focus_bordered(false)`
+      (gpui-component 0.7.3 `src/input/input.rs:311-314`) would drop both the
+      edge and the ring, leaving a focused field with no focus display. The
+      contract entry and the exception reason now say so; the entry is a
+      documented limit, as no test can observe gpui's painted scene.
 
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.

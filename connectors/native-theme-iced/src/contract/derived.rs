@@ -905,11 +905,14 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// with its evidence.
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
-/// value at all, so approximating it would state something untrue. The list
-/// holds values with no receiver anywhere in iced or `iced_aw`, which is
-/// narrower than what the `styles` doc comments call receiverless: those
-/// speak of one widget's `Style`, and several of their values are carried
-/// elsewhere or left to the consumer on purpose.
+/// value, so approximating it would state something untrue. The list holds
+/// values with no receiver anywhere in iced or `iced_aw`, which is narrower
+/// than what the `styles` doc comments call receiverless: those speak of one
+/// widget's `Style`, and several of their values are carried elsewhere or
+/// left to the consumer on purpose. A value carried for some combinations
+/// and not others is listed too, with the combinations iced does draw it
+/// for as its declared exceptions (`defaults.focus_ring_offset`: an inset
+/// ring is drawn, one outside or across the edge is not).
 ///
 /// - `menu.font.color` and `.hover_text_color` have no receiver in `iced_aw`'s
 ///   `menu_bar::Style`, but iced's own menu takes both: `styles::menu` emits
