@@ -413,8 +413,11 @@ track_radius_px = 6.0
 hover_checked_background = "#92cae8"
 # platform-facts.md:1515 (§2.21): the same, the rest fill
 hover_unchecked_background = "#e6e7e7"
-disabled_checked_background = "#3daee980"
-disabled_unchecked_background = "#bcc0bf80"
+# platform-facts.md:1516 (§2.21): the checked track's composition from the Disabled group
+# (plasmadesktoptheme.cpp:267-274), Disabled Button and Selection, KColorScheme 6.30.0
+disabled_checked_background = "#e6e7e8"
+# platform-facts.md:1517 (§2.21): the off track's tint from the Disabled group
+disabled_unchecked_background = "#e9e9e9"
 # platform-facts.md:1510 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#f0f0f0"
 # platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,
@@ -950,8 +953,11 @@ track_radius_px = 6.0
 hover_checked_background = "#3e7797"
 # platform-facts.md:1515 (§2.21): the same, the rest fill
 hover_unchecked_background = "#3e4144"
-disabled_checked_background = "#3daee980"
-disabled_unchecked_background = "#4d545b80"
+# platform-facts.md:1516 (§2.21): the checked track's composition from the Disabled group
+# (plasmadesktoptheme.cpp:267-274), Disabled Button and Selection, KColorScheme 6.30.0
+disabled_checked_background = "#26292c"
+# platform-facts.md:1517 (§2.21): the off track's tint from the Disabled group
+disabled_unchecked_background = "#2e3135"
 # platform-facts.md:1510 (§2.21): the handle in the Disabled group, Disabled [Colors:Button] BackgroundNormal, KColorScheme 6.31.0 (:1115)
 disabled_thumb_color = "#272a2e"
 # platform-facts.md:1519 (§2.21): handleBorderColor, linearInterpolation(backgroundColor, textColor,

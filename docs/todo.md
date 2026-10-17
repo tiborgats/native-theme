@@ -1718,6 +1718,10 @@ model, the platform presets and the three connectors
       open: its disabled tracks, `#3daee980` / `#bcc0bf80` / `#4d545b80`
       (`kde-breeze.toml`, `[light.switch]`, `[dark.switch]`), where §2.21
       gives #e6e7e8 / #26292c checked and #e9e9e9 / #2e3135 unchecked.
+      M8 T16c fix round 1 (2026-10-17): kde-breeze states those four now,
+      `disabled_checked_background` #e6e7e8 / #26292c and
+      `disabled_unchecked_background` #e9e9e9 / #2e3135
+      (`docs/platform-facts.md:1516-1517`); the switch's disabled tracks close.
 
 ### KDE reader: the toolbar's Header fill and the window border size
 
