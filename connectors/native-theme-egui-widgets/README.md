@@ -24,6 +24,13 @@ in the colour scheme egui is drawing, and contains no colour, radius or
 metric of its own. With no atlas installed, each renders as egui's own
 counterpart.
 
+## Compatibility
+
+Built for egui 0.36.2, which it reaches through the connector, with
+`rust-version = "1.95"`, as the connector; the connector's
+[Compatibility](../native-theme-egui/README.md#compatibility) section has the
+floors and the versions verified.
+
 ## Quick start
 
 Add the connector, with the OS readers (`native`), and this crate:
@@ -60,13 +67,6 @@ The connector's, forwarded one to one, with the connector's default set:
 and `svg-rasterize`, `native` (the OS readers) and `watch` (`ThemeWatcher`),
 off by default as there. This crate adds none of its own.
 
-## Compatibility
-
-Built for egui 0.36.2, which it reaches through the connector, with
-`rust-version = "1.95"`, as the connector; the connector's
-[Compatibility](../native-theme-egui/README.md#compatibility) section has the
-floors and the versions verified.
-
 ## Limits
 
 * Existing calls to egui's widgets do not change; each call site adopts a
@@ -81,4 +81,10 @@ floors and the versions verified.
 
 ## License
 
-MIT OR Apache-2.0 OR 0BSD
+Licensed under any of
+
+- [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
+- [MIT License](http://opensource.org/licenses/MIT)
+- [0BSD License](https://opensource.org/license/0bsd)
+
+at your option.
