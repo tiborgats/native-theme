@@ -222,15 +222,15 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (gpui-component/tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
     ),
     (
         "tooltip_content",
-        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (tooltip.rs, Tooltip::render) -- and its 1px border (tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
+        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its 1px border (gpui-component/tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
     (
         "popover",
-        "the popover.border.padding sides the theme states, corner_radius, and the edge, popover.border.color at line_width, inside the shadow ring popover_style draws; an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
+        "the popover.border.padding sides the theme states, corner_radius, and the edge, popover.border.color at line_width, inside the shadow ring popover_style draws; an unstated side keeps upstream's p_3 (gpui-component/popover.rs, Popover::render)",
     ),
     (
         "status_bar",
@@ -278,23 +278,23 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "accordion_title",
-        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (accordion.rs, AccordionItem::render)",
+        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
     ),
     (
         "accordion",
-        "expander.border.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (accordion.rs, RenderOnce for Accordion and AccordionItem::render); where neither is drawn, nothing",
+        "expander.border.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (gpui-component/accordion.rs, RenderOnce for Accordion and AccordionItem::render); where neither is drawn, nothing",
     ),
     (
         "accordion_hover",
-        "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (accordion.rs, AccordionItem::hover)",
+        "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (gpui-component/accordion.rs, AccordionItem::hover)",
     ),
     (
         "checkbox",
-        "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (checkbox.rs, RenderOnce for Checkbox)",
+        "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/checkbox.rs, RenderOnce for Checkbox)",
     ),
     (
         "radio",
-        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (radio.rs, RenderOnce for Radio)",
+        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/radio.rs, RenderOnce for Radio)",
     ),
     (
         "select",
@@ -314,7 +314,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, font size, weight and colour -- upstream's Toolbar sets no colour (toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, font size, weight and colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
@@ -351,7 +351,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "combo_box_fill",
-        "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; select.rs, Select::render; combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
+        "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
     (
         "button_disabled",
@@ -367,7 +367,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "link",
-        "link.font size and weight, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+        "link.font size and weight, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
     (
         "widget_gap",
@@ -414,7 +414,7 @@ pub fn native_info<W: Styled>(
 /// asset path (icon.rs, `Icon::into_svg`), and gpui draws a path at a size
 /// once and keeps the result in the window's sprite atlas, which it never
 /// asks the asset source about again and which nothing outside gpui can
-/// clear (gpui-pre window.rs, `Window::paint_svg`; the atlas field is
+/// clear (gpui-pre/window.rs, `Window::paint_svg`; the atlas field is
 /// private), so an asset source answering those paths from the chosen
 /// theme could not show a switch. `docs/todo.md` records it.
 pub fn own_icons(icons: &str) -> String {

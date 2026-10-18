@@ -12,7 +12,7 @@ use crate::demo::{LabelKind, TextSize};
 pub(super) fn label_of(variant: impl Into<String>) -> WidgetInfo {
     WidgetInfo::new("Label").variant(variant).not_themeable(
         "line height",
-        "rems(1.25), a literal, so it follows the platform's font (label.rs, Label::render)",
+        "rems(1.25), a literal, so it follows the platform's font (gpui-component/label.rs, Label::render)",
     )
 }
 
@@ -27,16 +27,16 @@ pub fn heading(t: &Theme, native: bool) -> WidgetInfo {
     if native {
         info.config(
             "style",
-            "text_scale.section_heading: its size and line height, scaled by the text-scaling factor, and its weight -- the platform's section heading (platform-facts §2.19) -- in the foreground the Label paints itself (label.rs, Label::render)",
+            "text_scale.section_heading: its size and line height, scaled by the text-scaling factor, and its weight -- the platform's section heading (platform-facts §2.19) -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render)",
         )
         .not_themeable(
             "weight of a variable face",
-            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (cosmic_text_system.rs:992-1037), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
+            "on Linux gpui-pre-wgpu picks a face by style and weight and sets no variation axis (gpui-pre-wgpu/cosmic_text_system.rs:992-1037), so a weight a variable face covers only through its wght axis draws at the face's default: adwaita's 700 over Adwaita Sans draws regular",
         )
     } else {
         info.instance(
             "style",
-            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (label.rs, Label::render): no native theme is installed, so the showcase's own heading style",
+            "semibold at text_base -- one rem, so it follows the platform's font, a step above the text_sm of the captions and labels -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render): no native theme is installed, so the showcase's own heading style",
         )
     }
 }
@@ -52,7 +52,7 @@ pub fn caption(t: &Theme) -> WidgetInfo {
         ))
         .instance(
             "style",
-            "text_sm -- a rem, so it follows the platform's font -- in muted_foreground: the showcase's own caption style, which the Label applies over the foreground it paints (label.rs, Label::render)",
+            "text_sm -- a rem, so it follows the platform's font -- in muted_foreground: the showcase's own caption style, which the Label applies over the foreground it paints (gpui-component/label.rs, Label::render)",
         )
 }
 
@@ -67,7 +67,7 @@ pub fn label(t: &Theme) -> WidgetInfo {
         ))
         .instance(
             "style",
-            "text_sm -- a rem, so it follows the platform's font -- in the foreground the Label paints itself (label.rs, Label::render)",
+            "text_sm -- a rem, so it follows the platform's font -- in the foreground the Label paints itself (gpui-component/label.rs, Label::render)",
         )
 }
 
@@ -75,8 +75,8 @@ pub fn label(t: &Theme) -> WidgetInfo {
 /// font: the family and the size it inherits from the window.
 fn inherited_font(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.config("font", format!("font_family: {}", t.font_family))
-        .not_themeable("highlights", "blue, on the ranges Label::highlights marks, which this demo does not set (label.rs, Label::highlights)")
-        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and gpui-component's WindowState root plugin sets the rem size, the family and the foreground but no weight (root.rs, WindowState::prepare and WindowState::style). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")
+        .not_themeable("highlights", "blue, on the ranges Label::highlights marks, which this demo does not set (gpui-component/label.rs, Label::highlights)")
+        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and gpui-component's WindowState root plugin sets the rem size, the family and the foreground but no weight (gpui-component/root.rs, WindowState::prepare and WindowState::style). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")
 }
 
 /// A Label of the Typography page's Label gallery, of `kind`, reading
@@ -100,7 +100,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
             .instance("text", text.to_string())
             .instance(
                 "secondary",
-                format!("\"{secondary}\", after a space, the two drawn as one text with the second part highlighted in muted_foreground (label.rs, Label::full_text)"),
+                format!("\"{secondary}\", after a space, the two drawn as one text with the second part highlighted in muted_foreground (gpui-component/label.rs, Label::full_text)"),
             ),
         // Label::render repeats the mask once per character of the whole
         // text (label.rs:201-205), and measure_highlights gives up on a
@@ -108,7 +108,7 @@ pub fn gallery_label(t: &Theme, kind: LabelKind, text: &str) -> WidgetInfo {
         LabelKind::Masked => info.instance(
             "masked",
             format!(
-                "every character of \"{text}\" is drawn as a •, {} of them, so the text itself never reaches the screen. A masked Label paints no secondary colour and no highlight either (label.rs, Label::measure_highlights)",
+                "every character of \"{text}\" is drawn as a •, {} of them, so the text itself never reaches the screen. A masked Label paints no secondary colour and no highlight either (gpui-component/label.rs, Label::measure_highlights)",
                 text.chars().count()
             ),
         ),
@@ -151,5 +151,5 @@ pub fn sized_label(t: &Theme, size: TextSize) -> WidgetInfo {
                 px_text(rem)
             ),
         )
-        .not_themeable("rem", "Theme::font_size, which gpui-component's WindowState root plugin makes the window's rem (root.rs, WindowState::prepare set_rem_size) and the connector fills from the platform's font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). So all five sizes follow the platform's font and none is a size of its own: the model's text_scale roles, each with its own size, reach none of them")
+        .not_themeable("rem", "Theme::font_size, which gpui-component's WindowState root plugin makes the window's rem (gpui-component/root.rs, WindowState::prepare set_rem_size) and the connector fills from the platform's font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). So all five sizes follow the platform's font and none is a size of its own: the model's text_scale roles, each with its own size, reach none of them")
 }

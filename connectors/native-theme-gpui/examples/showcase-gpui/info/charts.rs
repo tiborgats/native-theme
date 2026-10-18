@@ -71,7 +71,7 @@ fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {
             t.muted_foreground,
             "gpui-component/plot/tooltip.rs:545",
         ))
-        .not_themeable("draw-in", "on first paint the data draws in over 1000ms on easeOutQuart (theme/mod.rs, PLOT_APPEAR and plot_appear_easing), and the tooltip waits for it; skipped under reduced motion, which this connector forwards from the platform (gpui-base plot/appear.rs and motion/presence.rs); the page replays it on every visit");
+        .not_themeable("draw-in", "on first paint the data draws in over 1000ms on easeOutQuart (theme/mod.rs, PLOT_APPEAR and plot_appear_easing), and the tooltip waits for it; skipped under reduced motion, which this connector forwards from the platform (gpui-base/plot/appear.rs and motion/presence.rs); the page replays it on every visit");
     match guide {
         Guide::Dashed => info.color(claim(
             "guide line, dashed: border mixed 80% toward foreground",
@@ -194,7 +194,7 @@ pub fn area_chart(t: &Theme) -> WidgetInfo {
     let info = WidgetInfo::new("AreaChart")
         .color(claim("line", "chart_3", t.chart_3, "showcase"))
         // The showcase asks for the series colour at AREA_FILL_OPACITY, and
-        // upstream paints the fill as given (gpui-base plot/shape/area.rs:212,
+        // upstream paints the fill as given (gpui-base/plot/shape/area.rs:212,
         // 224).
         .color(claim(
             "fill, faded",

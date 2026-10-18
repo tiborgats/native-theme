@@ -1841,7 +1841,19 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 /// The crates a citation may name, by package name.
-const CITED_CRATES: &[&str] = &["gpui-component", "gpui-base", "gpui-pre"];
+const CITED_CRATES: &[&str] = &[
+    "gpui-component",
+    "gpui-base",
+    "gpui-pre",
+    "gpui-pre-wgpu",
+    "native-theme",
+    "egui",
+];
+
+/// The cited crates a citation reaches only by naming them
+/// (`native-theme/icons.rs`): their `icons.rs`, `lib.rs` and the like would
+/// otherwise join every bare name's candidates, which say nothing about them.
+const NAMED_ONLY: &[&str] = &["gpui-pre-wgpu", "native-theme", "egui"];
 
 /// Set once the citation pass has finished, so an uncited claim fails too
 /// (spec section 6.6). Until then the count is reported.
@@ -2268,10 +2280,17 @@ fn parse_citation(text: &str) -> Option<(&str, usize, usize)> {
 
 /// Every file a citation could name, across the crates searched.
 ///
-/// A citation gives a path, not a crate: `button.rs` is gpui-component's
-/// `button/button.rs`, `resizable/mod.rs` is gpui-base's, and `geometry.rs`
-/// names a file here *and* one in gpui-pre. Rather than guess, every
-/// candidate is returned and the claim holds if any bears it out.
+/// A citation gives a path, not always a crate. One that starts with a
+/// crate's name is that crate's file alone: `gpui-component/button/button.rs`.
+/// One that names a directory is the file at that path in each crate, or,
+/// where none has it, every file of its name below one -- a citation that
+/// names its directory has said which file it means, and a basename sweep
+/// would drag the other crates' same-named files back in. A bare name is
+/// every file of that name in every crate searched: gpui-component has
+/// `button/button.rs` and `speech/button.rs`, gpui-base `src/button.rs`, and
+/// no first match can say which of them the author read. Rather than guess,
+/// every candidate is returned; the gate keeps those that bear the citation
+/// out, and where more than one does, it asks for the crate.
 fn candidates(citation: &str, roots: &[(String, PathBuf)]) -> Vec<PathBuf> {
     // A leading crate name picks one root: `radio.rs` sits at `src/radio.rs`
     // in gpui-component *and* gpui-base, so no directory can tell them
@@ -2287,21 +2306,25 @@ fn candidates(citation: &str, roots: &[(String, PathBuf)]) -> Vec<PathBuf> {
         };
     }
 
+    let searched = roots
+        .iter()
+        .filter(|(name, _)| !NAMED_ONLY.contains(&name.as_str()))
+        .map(|(_, root)| root);
     let mut out = Vec::new();
-    for (_, root) in roots {
-        let direct = root.join(citation);
-        if direct.is_file() {
-            out.push(direct);
+    if citation.contains('/') {
+        for root in searched.clone() {
+            let direct = root.join(citation);
+            if direct.is_file() {
+                out.push(direct);
+            }
+        }
+        if !out.is_empty() {
+            return out;
         }
     }
-    // Only when the path as written matches nothing: a citation that names
-    // its directory has said which file it means, and a basename sweep would
-    // drag the other crates' same-named files back in.
-    if out.is_empty() {
-        let base = citation.rsplit('/').next().unwrap_or(citation);
-        for (_, root) in roots {
-            collect_named(root, base, &mut out);
-        }
+    let base = citation.rsplit('/').next().unwrap_or(citation);
+    for root in searched {
+        collect_named(root, base, &mut out);
     }
     out
 }
@@ -2312,7 +2335,11 @@ fn shorten(path: &Path) -> String {
     let mut parts: Vec<&str> = Vec::new();
     for part in path.iter().rev().filter_map(|p| p.to_str()) {
         parts.push(part);
-        if part.starts_with("gpui-") || part == "native-theme-gpui" {
+        if part.starts_with("gpui-")
+            || part.starts_with("egui-")
+            || part == "native-theme-gpui"
+            || part == "native-theme"
+        {
             break;
         }
     }
@@ -2944,12 +2971,216 @@ fn prose_citations(text: &str) -> Vec<(&str, &str)> {
     out
 }
 
-/// Spec section 4.6: a symbol a "Not themeable" note cites still exists.
+/// Every `file.rs:N` and `file.rs:N-M` in a panel's prose, as the path and
+/// its line ranges: a `, A`, `, A-B` or `, :A-B` straight after one is
+/// another range of the same file (`button.rs:102-141, 1185`).
+fn line_citations(text: &str) -> Vec<(&str, Vec<(usize, usize)>)> {
+    /// A line number at the start of `s` and what follows it, where the
+    /// number ends a word: `3px` is no line.
+    fn number(s: &str) -> Option<(usize, &str)> {
+        let end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
+        let rest = s.get(end..)?;
+        if end == 0 || rest.starts_with(|c: char| c.is_alphanumeric() || c == '.' || c == '_') {
+            return None;
+        }
+        Some((s.get(..end)?.parse().ok()?, rest))
+    }
+    /// A range `N` or `N-M` at the start of `s`, and what follows it.
+    fn range(s: &str) -> Option<((usize, usize), &str)> {
+        let (first, rest) = number(s)?;
+        match rest.strip_prefix('-').and_then(number) {
+            Some((last, rest)) => Some(((first, last), rest)),
+            None => Some(((first, first), rest)),
+        }
+    }
+    let mut out = Vec::new();
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs:")) {
+        let dot = from + ix;
+        from = dot + ".rs:".len();
+        let Some(head) = text.get(..dot) else {
+            continue;
+        };
+        let start = match head
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
+        {
+            Some(i) => i + 1,
+            None => 0,
+        };
+        let (Some(path), Some(after)) = (text.get(start..dot + 3), text.get(from..)) else {
+            continue;
+        };
+        let Some((first, mut rest)) = range(after) else {
+            continue;
+        };
+        let mut spans = vec![first];
+        while let Some((next, tail)) = rest
+            .strip_prefix(", ")
+            .map(|t| t.strip_prefix(':').unwrap_or(t))
+            .and_then(range)
+        {
+            spans.push(next);
+            rest = tail;
+        }
+        from = text.len() - rest.len();
+        out.push((path, spans));
+    }
+    out
+}
+
+/// What is wrong with the citation of `symbol` in `path`, if anything: no
+/// file of that name has it, or more than one does and the citation does not
+/// say which.
+fn symbol_citation_finding(
+    path: &str,
+    symbol: &str,
+    roots: &[(String, PathBuf)],
+) -> Option<String> {
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!("cites {path}, which does not exist"));
+    }
+    let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
+    let holding: Vec<String> = files
+        .iter()
+        .filter(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)))
+        .map(|f| shorten(f))
+        .collect();
+    match holding.as_slice() {
+        [] => Some(format!(
+            "cites {path}, {symbol} — `{leaf}` is in none of them"
+        )),
+        [_] => None,
+        many => Some(format!(
+            "cites {path}, {symbol}, which is ambiguous; name the crate. It matches: {}",
+            many.join(", ")
+        )),
+    }
+}
+
+/// What is wrong with the citation of `spans` in `path`, if anything: no
+/// file of that name holds every range, or more than one does and the
+/// citation does not say which.
+fn line_citation_finding(
+    path: &str,
+    spans: &[(usize, usize)],
+    roots: &[(String, PathBuf)],
+) -> Option<String> {
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!("cites {path}, which does not exist"));
+    }
+    let held = |file: &&PathBuf| {
+        std::fs::read_to_string(file).is_ok_and(|text| {
+            let lines = text.lines().count();
+            spans
+                .iter()
+                .all(|&(first, last)| first > 0 && first <= last && last <= lines)
+        })
+    };
+    let named = |files: &[&PathBuf]| {
+        files
+            .iter()
+            .map(|f| shorten(f))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let cited = spans
+        .iter()
+        .map(|&(a, b)| {
+            if a == b {
+                a.to_string()
+            } else {
+                format!("{a}-{b}")
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let all: Vec<&PathBuf> = files.iter().collect();
+    let holding: Vec<&PathBuf> = all.iter().copied().filter(held).collect();
+    match holding.as_slice() {
+        [] => Some(format!(
+            "cites {path}:{cited}, past the end of {}",
+            named(&all)
+        )),
+        [_] => None,
+        many => Some(format!(
+            "cites {path}:{cited}, which is ambiguous; name the crate. It matches: {}",
+            named(many)
+        )),
+    }
+}
+
+/// The prose readers read both citation forms, and the resolver asks for the
+/// crate where a bare name could be several files: a bare `button.rs` whose
+/// lines gpui-base's `src/button.rs` and gpui-component's `button/button.rs`
+/// both hold is ambiguous, where today's first-match rule would read
+/// gpui-base's alone and say nothing; a range only one holds picks it; a
+/// crate the bare-name sweep leaves out is reached by naming it.
+#[test]
+fn the_prose_citation_readers_do_their_jobs() {
+    assert_eq!(
+        line_citations(
+            "x (button.rs:102-141, 1185) y (status_bar.rs:88, :96) z (a/b.rs:7, 3px) \
+             (styled.rs:179-184, focus_ring_style) (c.rs:9.5) (d.rs:)"
+        ),
+        [
+            ("button.rs", vec![(102, 141), (1185, 1185)]),
+            ("status_bar.rs", vec![(88, 88), (96, 96)]),
+            ("a/b.rs", vec![(7, 7)]),
+            ("styled.rs", vec![(179, 184)]),
+        ]
+    );
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let planted = line_citation_finding("button.rs", &[(10, 20)], &roots);
+    assert!(
+        planted.as_deref().is_some_and(|f| f.contains("ambiguous")
+            && f.contains("gpui-base-0.7.3/src/button.rs")
+            && f.contains("gpui-component-0.7.3/src/button/button.rs")),
+        "a bare button.rs both crates' files hold is not reported ambiguous: {planted:?}"
+    );
+    assert_eq!(
+        line_citation_finding("gpui-component/button/button.rs", &[(10, 20)], &roots),
+        None
+    );
+    assert_eq!(
+        line_citation_finding("button.rs", &[(1185, 1185)], &roots),
+        None
+    );
+    assert!(
+        line_citation_finding("gpui-base/button.rs", &[(1185, 1185)], &roots)
+            .is_some_and(|f| f.contains("past the end"))
+    );
+    assert!(
+        symbol_citation_finding("link.rs", "Link", &roots).is_some_and(|f| f.contains("ambiguous"))
+    );
+    assert_eq!(
+        symbol_citation_finding("native-theme/sficons.rs", "load_sf_icon_by_name", &roots),
+        None
+    );
+    assert!(
+        symbol_citation_finding("sficons.rs", "load_sf_icon_by_name", &roots)
+            .is_some_and(|f| f.contains("does not exist")),
+        "native-theme's files joined the bare-name sweep"
+    );
+}
+
+/// Spec section 4.6: a symbol a "Not themeable" note cites still exists, and
+/// a line it cites is still in the file.
 ///
 /// A note written as a call is read whichever section it fills -- a config
 /// line or an instance note citing upstream is as exposed to a deletion -- and
 /// so is every `GEOMETRY_NOTES` text, which reaches the inspector as a config
-/// line.
+/// line, and every `HOW` line, which Widget Info shows under a listed leaf.
+/// Both forms are read: `file.rs, Symbol` holds where exactly one file of
+/// that name has the symbol, `file.rs:N-M` where exactly one has the lines;
+/// where several do, the citation has to name its crate.
 ///
 /// Existence, never semantics. What a note *says* about upstream is a human's
 /// to keep true; a note pointing at something upstream has **deleted** is one
@@ -2989,6 +3220,21 @@ fn every_prose_citation_still_exists() {
         let line = line_at(&starts, offset_in(info, text));
         prose.push((GEOMETRY_NOTES_FILE, line, name, text));
     }
+    // The route lines, which a listed element's info shows under each leaf.
+    let how = how_lines(how_source());
+    assert!(
+        how.is_ok(),
+        "{}",
+        how.as_ref().err().cloned().unwrap_or_default()
+    );
+    let how = how.unwrap_or_default();
+    let how_citations: usize = how
+        .iter()
+        .map(|h| line_citations(h.text).len() + prose_citations(h.text).len())
+        .sum();
+    for h in &how {
+        prose.push((HOW_FILE, h.line, h.leaf, h.text));
+    }
 
     let unreadable: Vec<String> = SHOWCASE_FILES
         .iter()
@@ -3012,21 +3258,14 @@ fn every_prose_citation_still_exists() {
     for (file, line, widget, text) in &prose {
         for (path, symbol) in prose_citations(text) {
             checked += 1;
-            let files = candidates(path, &roots);
-            if files.is_empty() {
-                missing.push(format!(
-                    "{widget} {file}:{line}: cites {path}, which does not exist"
-                ));
-                continue;
+            if let Some(finding) = symbol_citation_finding(path, symbol, &roots) {
+                missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
-            let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
-            let found = files
-                .iter()
-                .any(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)));
-            if !found {
-                missing.push(format!(
-                    "{widget} {file}:{line}: cites {path}, {symbol} — `{leaf}` is in none of them"
-                ));
+        }
+        for (path, spans) in line_citations(text) {
+            checked += 1;
+            if let Some(finding) = line_citation_finding(path, &spans, &roots) {
+                missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
         }
     }
@@ -3040,6 +3279,10 @@ fn every_prose_citation_still_exists() {
         geometry_citations > 0,
         "no `file.rs, Symbol` citation found in GEOMETRY_NOTES, so its texts \
          went unchecked"
+    );
+    assert!(
+        how_citations > 0,
+        "no citation found in a HOW line, so its texts went unchecked"
     );
     assert!(
         missing.is_empty(),
@@ -3116,15 +3359,14 @@ fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
         ));
     }
     Ok(strings
-        .chunks_exact(3)
-        .filter_map(|entry| match entry {
-            &[(line, prefix), (_, leaf), (_, text)] => Some(HowLine {
-                line,
-                prefix,
-                leaf,
-                text,
-            }),
-            _ => None,
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|&[(line, prefix), (_, leaf), (_, text)]| HowLine {
+            line,
+            prefix,
+            leaf,
+            text,
         })
         .collect())
 }

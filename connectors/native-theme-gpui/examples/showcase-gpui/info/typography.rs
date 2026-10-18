@@ -35,7 +35,7 @@ pub fn heading_level(t: &Theme, level: HeadingLevel) -> WidgetInfo {
                 px_text(rem)
             ),
         )
-        .not_themeable("size", "a rem ladder of this showcase's own -- 1.875 / 1.5 / 1.25 / 1.125 / 1 / 0.875 -- so it follows the platform: gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). What is unused is text_scale: the model states four named roles, each with its own size, weight and line height, and this demo states six of its own")
+        .not_themeable("size", "a rem ladder of this showcase's own -- 1.875 / 1.5 / 1.25 / 1.125 / 1 / 0.875 -- so it follows the platform: gpui-component's WindowState root plugin sets the rem to Theme::font_size (gpui-component/root.rs, WindowState::prepare set_rem_size), which this connector fills from font.size times the text-scaling factor (native-theme-gpui/lib.rs, to_theme). What is unused is text_scale: the model states four named roles, each with its own size, weight and line height, and this demo states six of its own")
         .instance(
             "weight",
             format!(
@@ -78,7 +78,7 @@ pub fn decoration(t: &Theme, decoration: DecorationKind) -> WidgetInfo {
         ))
         .config("font", format!("font_family: {}", t.font_family));
     // A line given no colour is drawn in its text run's colour
-    // (gpui-pre text_system/line.rs:663, :683), which is inherited here.
+    // (gpui-pre/text_system/line.rs:663, :683), which is inherited here.
     match decoration {
         DecorationKind::Bold => info.instance("style", "FontWeight::BOLD, a gpui constant the showcase sets"),
         DecorationKind::Underline => info
@@ -199,9 +199,9 @@ pub fn link(t: &Theme) -> WidgetInfo {
             t.link,
             "gpui-component/link.rs:87",
         ))
-        .not_themeable("underline", "always on, and out of reach: the decoration is set on the base style before the caller's refinement merges into it (link.rs, Link), and a refinement whose `underline` is None leaves the base's `Some` standing -- `text_decoration_none` sets exactly that None, so it cannot switch one off. link.underline_enabled is modelled and has no receiver: Tier U")
-        .not_themeable("hover text", "link at 0.8, computed from the one token (link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
-        .not_themeable("pressed text", "link at 0.6, the same story: link_active is written by the connector from link.active_text_color and read by the Button variant, not here (link.rs, Link)")
+        .not_themeable("underline", "always on, and out of reach: the decoration is set on the base style before the caller's refinement merges into it (gpui-component/link.rs, Link), and a refinement whose `underline` is None leaves the base's `Some` standing -- `text_decoration_none` sets exactly that None, so it cannot switch one off. link.underline_enabled is modelled and has no receiver: Tier U")
+        .not_themeable("hover text", "link at 0.8, computed from the one token (gpui-component/link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
+        .not_themeable("pressed text", "link at 0.6, the same story: link_active is written by the connector from link.active_text_color and read by the Button variant, not here (gpui-component/link.rs, Link)")
 }
 
 /// A `Kbd` for `keys`, which `Kbd::format` draws as `drawn` on this
@@ -236,7 +236,7 @@ pub fn kbd(t: &Theme, keys: &str, drawn: &str) -> WidgetInfo {
         )
         .not_themeable("edge", "none: only an outline Kbd draws one, in border, and these are not outlined (kbd.rs, Kbd)")
         .not_themeable("padding", "py_0p5 and px_1 (kbd.rs, Kbd) -- rems, so already proportional to the platform font")
-        .not_themeable("font", "not monospace, and not set at all: kbd.rs states a text size and a colour and no family (kbd.rs, Kbd), so a Kbd inherits the window's -- the platform UI font gpui-component's WindowState root plugin applies (root.rs, WindowState::style). The panel claimed a family nothing produces")
+        .not_themeable("font", "not monospace, and not set at all: kbd.rs states a text size and a colour and no family (kbd.rs, Kbd), so a Kbd inherits the window's -- the platform UI font gpui-component's WindowState root plugin applies (gpui-component/root.rs, WindowState::style). The panel claimed a family nothing produces")
         .instance(
             "keys",
             format!("{keys}, drawn as \"{drawn}\" on this platform (kbd.rs, Kbd::format)"),
@@ -253,7 +253,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-component/input/input.rs:798",
         ))
         // Painted at a literal 85% of the style block's border
-        // (gpui-base input/base/element.rs:3121).
+        // (gpui-base/input/base/element.rs:3121).
         .color(claim(
             "indent guides, border at 85%",
             "border",
@@ -261,7 +261,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-base/input/base/element.rs:3121",
         ))
         // Unhighlighted text is painted in the colour the element inherits
-        // (gpui-base input/base/element.rs:2542), not the style block's
+        // (gpui-base/input/base/element.rs:2542), not the style block's
         // foreground, and Input sets none (input/input.rs:707): so the
         // colour the showcase sets on its window.
         .color(claim(
@@ -289,7 +289,7 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "gpui-component/input/input.rs:559",
         ))
         // The current line's number takes the style block's foreground
-        // (gpui-base input/base/element.rs:2920).
+        // (gpui-base/input/base/element.rs:2920).
         .color(claim(
             "current line number",
             "foreground",

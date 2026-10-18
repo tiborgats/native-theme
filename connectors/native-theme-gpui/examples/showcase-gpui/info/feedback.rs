@@ -179,7 +179,7 @@ pub fn progress(t: &Theme, label: &str, value: Option<f32>, reduce_motion: bool)
 fn loading(info: WidgetInfo, reduce_motion: bool, source: &str) -> WidgetInfo {
     let info = info
         .variant("loading")
-        .instance("value", "none: indeterminate, so a screen reader is given no value (gpui-base progress.rs, Progress::indeterminate)");
+        .instance("value", "none: indeterminate, so a screen reader is given no value (gpui-base/progress.rs, Progress::indeterminate)");
     if reduce_motion {
         info.instance("reduced motion", format!("on, so the fill stands still in the middle of the track, 0.325 of it in from either end ({source})"))
     } else {
@@ -275,7 +275,7 @@ pub fn native_spinner(
                 stated(r.defaults.text_color),
                 "native-theme-gpui/widgets/spinner.rs:466",
             ))
-            .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
+            .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre/scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
             info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is defaults.text_color (native-theme/icons.rs, fill_current_color)")
         };
@@ -290,7 +290,7 @@ pub fn native_spinner(
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
         .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:93"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
-        .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
+        .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
             "none: reduced motion is on, so the arc stands still"
         } else {
@@ -371,7 +371,7 @@ pub fn spinner(
         .variant(kind.name())
         .not_themeable(
             "own icons",
-            super::own_icons("Loader, the icon it turns (spinner.rs, Spinner::new)"),
+            super::own_icons("Loader, the icon it turns (gpui-component/spinner.rs, Spinner::new)"),
         );
     let info = match native {
         Some(r) => info.color(claim(
@@ -394,13 +394,13 @@ pub fn spinner(
         SpinnerKind::Small => info.instance("size", "Small via the Size enum: size_3p5, a rem (icon.rs, Icon::into_svg)"),
         SpinnerKind::Large => info.instance("size", "Large via the Size enum: size_6, a rem (icon.rs, Icon::into_svg)"),
         SpinnerKind::Medium if styled => info,
-        SpinnerKind::Medium => info.instance("size", "Medium, upstream's default (spinner.rs, Spinner::new): size_4, a rem (icon.rs, Icon::into_svg)"),
+        SpinnerKind::Medium => info.instance("size", "Medium, upstream's default (gpui-component/spinner.rs, Spinner::new): size_4, a rem (icon.rs, Icon::into_svg)"),
     };
-    info.not_themeable("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (spinner.rs, Spinner) -- nothing to write, upstream or here")
+    info.not_themeable("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (gpui-component/spinner.rs, Spinner) -- nothing to write, upstream or here")
         .instance("animation", if reduce_motion {
-            "none: reduced motion is on, so the Loader icon stands still at its start angle and no frames are drawn for it (spinner.rs, Spinner::render; gpui-pre/elements/animation.rs, AnimationExt)"
+            "none: reduced motion is on, so the Loader icon stands still at its start angle and no frames are drawn for it (gpui-component/spinner.rs, Spinner::render; gpui-pre/elements/animation.rs, AnimationExt)"
         } else {
-            "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (spinner.rs, Spinner::render)"
+            "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (gpui-component/spinner.rs, Spinner::render)"
         })
 }
 
@@ -647,7 +647,7 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4687-4694 for fills and edges, :4831 and
+    // inside it (gpui-pre/window.rs:4687-4694 for fills and edges, :4831 and
     // :4880 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
@@ -775,7 +775,7 @@ pub fn marker(
         MarkerKind::Spinner => info
             .not_themeable(
                 "own icons",
-                super::own_icons("the Loader of the Spinner it adds (spinner.rs, Spinner::new)"),
+                super::own_icons("the Loader of the Spinner it adds (gpui-component/spinner.rs, Spinner::new)"),
             )
             .color(claim(
                 "spinner, the row's text colour",
@@ -786,7 +786,7 @@ pub fn marker(
             .instance("spinner", if reduce_motion {
                 "added by the Marker itself, loading with no icon slot: an XSmall Spinner, standing still at its start angle while reduced motion is on (marker.rs, Marker::render; gpui-pre/elements/animation.rs, AnimationExt)"
             } else {
-                "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; spinner.rs, Spinner)"
+                "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; gpui-component/spinner.rs, Spinner)"
             }),
         MarkerKind::Shimmer if reduce_motion => info
             .not_themeable("shimmer", "none while reduced motion is on: the content slot falls back to plain text (marker.rs, MarkerContent::render)")

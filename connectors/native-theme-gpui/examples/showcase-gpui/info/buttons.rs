@@ -512,7 +512,7 @@ pub fn button(
         ButtonState::Disabled => {
             let info = match kind {
                 ButtonKind::Primary | ButtonKind::Danger => info.not_themeable("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
-                ButtonKind::Secondary => info.not_themeable("fill", "the variant's own token at 1.5, a literal that gpui clamps to 1 (color.rs, Hsla::opacity), so a disabled Secondary keeps its fill while a disabled Primary or Danger fades to 0.15 -- and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
+                ButtonKind::Secondary => info.not_themeable("fill", "the variant's own token at 1.5, a literal that gpui clamps to 1 (gpui-pre/color.rs, Hsla::opacity), so a disabled Secondary keeps its fill while a disabled Primary or Danger fades to 0.15 -- and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 ButtonKind::Default => info.not_themeable("fill", "input_background() at 0.5, a literal, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 _ => info,
             };
@@ -555,7 +555,7 @@ pub fn button(
     let info = if styled {
         info.config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
     } else {
-        info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
+        info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (gpui-component/root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
     };
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
@@ -587,7 +587,7 @@ pub fn button(
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
         ButtonState::Loading if icon => info
-            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (spinner.rs, Spinner::new)")
+            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
         ButtonState::Loading => info
             .not_themeable("spinner", "none: a Button shows its spinner in place of its icon, so only a button with one shows it (button/button_icon.rs, ButtonIcon), and the chosen icon theme has no loading icon to give this one; upstream's own Loader would be another icon theme's")
@@ -778,13 +778,13 @@ pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
 pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let group_gap = match item_gap {
         Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
-        None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
+        None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base/toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
     };
     let info = WidgetInfo::new("Toolbar")
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
-            "h_8, p_1, gap_1 and text_sm at its default Small Size (toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
+            "h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
         )
         .not_themeable(
             "items",
@@ -793,28 +793,28 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
     let info = match native {
         Some(_) => info.config(
             "fill",
-            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar)",
+            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
         None => info.not_themeable(
             "fill",
-            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar)",
+            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
         ),
     };
     let info = match native {
         Some(r) if r.toolbar.border.line_width > 0.0 => info.config(
             "edge",
             format!(
-                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (toolbar.rs, RenderOnce for Toolbar)",
+                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
                 px_text(r.toolbar.border.line_width)
             ),
         ),
         Some(_) => info.config(
             "edge",
-            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (toolbar.rs, RenderOnce for Toolbar)",
+            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
         None => info.not_themeable(
             "edge",
-            "none of its own (toolbar.rs, RenderOnce for Toolbar)",
+            "none of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
         ),
     };
     info.instance("group gap", group_gap)

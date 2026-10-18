@@ -112,7 +112,7 @@ pub fn dialog(
         )
         .instance(
             "closes",
-            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base dialog.rs:613)",
+            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base/dialog.rs:613)",
         )
 }
 
@@ -218,16 +218,16 @@ pub fn sheet(t: &Theme, side: SheetSide, reduce_motion: bool) -> WidgetInfo {
         "size",
         match side {
             SheetSide::Right => {
-                "upstream's 350px default, as its width (sheet.rs, Sheet::new): the model states no sheet, and the showcase sets no size of its own"
+                "upstream's 350px default, as its width (gpui-component/sheet.rs, Sheet::new): the model states no sheet, and the showcase sets no size of its own"
             }
             SheetSide::Bottom => {
-                "upstream's 350px default, as its height (sheet.rs, Sheet::new): the model states no sheet, and the showcase sets no size of its own"
+                "upstream's 350px default, as its height (gpui-component/sheet.rs, Sheet::new): the model states no sheet, and the showcase sets no size of its own"
             }
         },
     )
     .instance(
         "closes",
-        "from its close button, on Escape, or on a click on the backdrop (sheet.rs, Sheet::render)",
+        "from its close button, on Escape, or on a click on the backdrop (gpui-component/sheet.rs, Sheet::render)",
     )
 }
 
@@ -266,7 +266,7 @@ fn popover_surface(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
         Some(r) => {
             let info = info.not_themeable(
                 "corner radius",
-                "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
+                "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component/styled.rs, popover_style)",
             ).colors(edge_claim(
                 "edge",
                 "border",
@@ -278,14 +278,14 @@ fn popover_surface(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
                 info.config(
                     "edge",
                     format!(
-                        "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component styled.rs, popover_style)",
+                        "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component/styled.rs, popover_style)",
                         px_text(r.popover.border.line_width)
                     ),
                 )
             } else {
                 info.config(
                     "edge",
-                    "none of the theme's: popover.border.line_width is 0, so geometry::popover draws no border, and the edge is popover_style's ring alone (gpui-component styled.rs, popover_style)",
+                    "none of the theme's: popover.border.line_width is 0, so geometry::popover draws no border, and the edge is popover_style's ring alone (gpui-component/styled.rs, popover_style)",
                 )
             }
         }
@@ -303,20 +303,20 @@ pub fn popover(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         Some(_) => info,
         None => info.not_themeable(
             "edge",
-            "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it; popover.border.color reaches the surface only through geometry::popover (gpui-component styled.rs, popover_style and popover_ring)",
+            "no border token: the surface is painted by popover_style, whose edge is a 1px shadow ring of foreground at low alpha. That is how the shadow shows through it; popover.border.color reaches the surface only through geometry::popover (gpui-component/styled.rs, popover_style and popover_ring)",
         ),
     };
     info.instance(
             "trigger",
-            "any Selectable element: here a Default Button reading Click for Popover, which reports the Popover and is drawn selected while it is open (popover.rs, Popover::trigger). Its own colours are a Default Button's, which the Buttons page's Default Button states",
+            "any Selectable element: here a Default Button reading Click for Popover, which reports the Popover and is drawn selected while it is open (gpui-component/popover.rs, Popover::trigger). Its own colours are a Default Button's, which the Buttons page's Default Button states",
         )
         .instance(
             "anchor",
-            "Anchor::TopLeft unless Popover::anchor picks another of its eight points (popover.rs, Popover::anchor)",
+            "Anchor::TopLeft unless Popover::anchor picks another of its eight points (gpui-component/popover.rs, Popover::anchor)",
         )
         .instance(
             "opens",
-            "on a click on the trigger; a click outside closes it (popover.rs, Popover::overlay_closable)",
+            "on a click on the trigger; a click outside closes it (gpui-component/popover.rs, Popover::overlay_closable)",
         )
         .instance(
             "content",
@@ -324,7 +324,7 @@ pub fn popover(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "unreported",
-            "the surface's padding shows no info of its own: upstream builds the surface inline around the content the showcase passes in (popover.rs, Popover::render: popover_style and p_3 on the content's own v_flex), so only the trigger and the content report",
+            "the surface's padding shows no info of its own: upstream builds the surface inline around the content the showcase passes in (gpui-component/popover.rs, Popover::render: popover_style and p_3 on the content's own v_flex), so only the trigger and the content report",
         )
 }
 
@@ -338,12 +338,12 @@ pub fn hover_card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         Some(_) => info,
         None => info.not_themeable(
             "edge",
-            "no border: the card is Popover::render_popover_content, whose popover_style draws a shadow ring instead (gpui-component popover.rs and styled.rs)",
+            "no border: the card is Popover::render_popover_content, whose popover_style draws a shadow ring instead (gpui-component/popover.rs and styled.rs)",
         ),
     };
     info.not_themeable(
             "delays",
-            "600ms to open and 300ms to close by default, which HoverCard::open_delay and close_delay replace (hover_card.rs, HoverCard::new)",
+            "600ms to open and 300ms to close by default, which HoverCard::open_delay and close_delay replace (gpui-component/hover_card.rs, HoverCard::new)",
         )
         .instance(
             "trigger",
@@ -351,7 +351,7 @@ pub fn hover_card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "anchor",
-            "Anchor::TopCenter unless HoverCard::anchor picks another (hover_card.rs, HoverCard::new)",
+            "Anchor::TopCenter unless HoverCard::anchor picks another (gpui-component/hover_card.rs, HoverCard::new)",
         )
         .instance(
             "secondary text",
@@ -359,7 +359,7 @@ pub fn hover_card(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .instance(
             "unreported",
-            "the card's own padding shows no info of its own: upstream builds the card around the content the showcase passes in (hover_card.rs, HoverCard::render), so only the trigger and the content report",
+            "the card's own padding shows no info of its own: upstream builds the card around the content the showcase passes in (gpui-component/hover_card.rs, HoverCard::render), so only the trigger and the content report",
         )
 }
 
@@ -421,7 +421,7 @@ pub fn dropdown_menu(t: &Theme) -> WidgetInfo {
     )
     .instance(
         "trigger",
-        "a Default Button reading Click for Menu, which reports the menu: a click opens it, anchored at its top-left corner (menu/dropdown_menu.rs, DropdownMenu::dropdown_menu), and the Button is drawn selected while it is open (popover.rs, Popover::trigger). Its own colours are a Default Button's, which the Buttons page's Default Button states",
+        "a Default Button reading Click for Menu, which reports the menu: a click opens it, anchored at its top-left corner (menu/dropdown_menu.rs, DropdownMenu::dropdown_menu), and the Button is drawn selected while it is open (gpui-component/popover.rs, Popover::trigger). Its own colours are a Default Button's, which the Buttons page's Default Button states",
     )
     .instance("items", menu_items())
     .instance(
@@ -524,7 +524,7 @@ pub fn menu_row(
     };
     info.instance(
         "label",
-        "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.font from the row",
+        "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (gpui-component/label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.font from the row",
     )
     .instance("icon", icon.note("the row shows its label alone"))
 }

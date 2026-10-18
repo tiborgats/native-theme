@@ -557,10 +557,10 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
                 t.input.mix_oklab(t.transparent, 0.7),
                 "gpui-component/button/button.rs:925-929",
             ))
-            .not_themeable("buttons", "built by the widget as ghost/outline Button (pagination.rs, Pagination::render page items); no refinement reaches them")
+            .not_themeable("buttons", "built by the widget as ghost/outline Button (gpui-component/pagination.rs, Pagination::render page items); no refinement reaches them")
             .not_themeable("other pages", "no fill until hovered: a ghost Button is transparent, and it then hovers with accent -- the menu highlight, halved in dark mode (button/button.rs, ButtonVariant::hovered Ghost arm)")
             .not_themeable("current page", "an outlined Default Button, so it fills with input_background() and edges with input, not with the button family (button/button.rs, ButtonVariant::outline_background)")
-            .not_themeable("ellipsis", "a ghost Button whose dropdown lists the hidden pages (pagination.rs, PageItem::Ellipsis)")
+            .not_themeable("ellipsis", "a ghost Button whose dropdown lists the hidden pages (gpui-component/pagination.rs, PageItem::Ellipsis)")
     };
     let edge = match (page <= 1, page >= pages) {
         (true, true) => Some("both the previous and the next button"),
@@ -580,11 +580,11 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
         None => info,
     };
     let info = if gap {
-        info.not_themeable("gap", "upstream's own is gap_1, which the refinement replaces (pagination.rs, Pagination::render)")
+        info.not_themeable("gap", "upstream's own is gap_1, which the refinement replaces (gpui-component/pagination.rs, Pagination::render)")
     } else {
-        info.not_themeable("gap", "gap_1, upstream's own -- a rem, so the platform's font (pagination.rs, Pagination::render)")
+        info.not_themeable("gap", "gap_1, upstream's own -- a rem, so the platform's font (gpui-component/pagination.rs, Pagination::render)")
     };
-    info.not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its previous and next buttons (pagination.rs, render_nav_button), and Ellipsis where it leaves pages out (pagination.rs, Pagination::render)"))
+    info.not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its previous and next buttons (pagination.rs, render_nav_button), and Ellipsis where it leaves pages out (gpui-component/pagination.rs, Pagination::render)"))
         .instance("page", format!("{page} of {pages}"))
         .instance("click", "a page or an arrow moves to that page; the showcase keeps it, and both Paginations follow it")
 }
@@ -704,7 +704,7 @@ pub fn list_row(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Wi
 /// themselves (`tree_row`).
 pub fn tree(native: Option<&ResolvedTheme>) -> WidgetInfo {
     list_fill(WidgetInfo::new("Tree"), native)
-        .not_themeable("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none")
+        .not_themeable("indent", "none here, and none upstream: Tree::new takes a render_item closure and tree.rs draws no row content of its own (gpui-component/tree.rs, Tree), so a row's indent is whatever the application's closure applies -- this demo's applies none")
         .not_themeable("disclosure icon", "the same: tree.rs contains no icon, so a chevron would be the closure's to draw. The panel used to claim a hardcoded ChevronRight, which is in neither this demo nor upstream")
         .instance("frame", "a tree is a list view and the model gives it no theme of its own, so its frame is the list's: the box around it")
         .instance("rows", "a file structure with src open; each row reports itself")
@@ -718,7 +718,7 @@ pub fn tree_row(t: &Theme, label: &str, selected: bool, styled: bool) -> WidgetI
         ListRowState::Idle
     };
     list_item(t, label, state, styled)
-        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (tree.rs, Tree::new), and marks a right-clicked row after it is built (tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
+        .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (gpui-component/tree.rs, Tree::new), and marks a right-clicked row after it is built (gpui-component/tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
         .instance("click", "selects the row, and opens or closes a folder (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
 
@@ -1052,7 +1052,7 @@ pub fn attachment(
         AttachmentStatus::Pending => info.not_themeable("pending", "a dashed border (attachment.rs, Attachment::render: border_dashed)"),
         AttachmentStatus::Uploading | AttachmentStatus::Processing => info
             .not_themeable("in-progress title", "the ShimmerText highlight, driven by the status (attachment.rs, AttachmentTitle::render)")
-            .not_themeable("own icons", super::own_icons("the status Spinner's Loader (attachment.rs, AttachmentMedia::render; spinner.rs, Spinner)")),
+            .not_themeable("own icons", super::own_icons("the status Spinner's Loader (attachment.rs, AttachmentMedia::render; gpui-component/spinner.rs, Spinner)")),
         AttachmentStatus::Failed => info.not_themeable("own icons", super::own_icons("the failed status glyph, Ban (attachment.rs, AttachmentMedia::render)")),
         AttachmentStatus::Complete => info,
     };

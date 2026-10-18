@@ -33,7 +33,7 @@ pub fn title_bar(t: &Theme, label: &str, inactive: bool) -> WidgetInfo {
     )
     .instance(
         "label",
-        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::title_bar gives the bar"),
+        format!("\"{label}\", this crate's name and version: the same string, WINDOW_TITLE, is the title the OS shows and the one the Windows screenshot capture finds the window by. The installed preset and colour mode are in the status bar. Plain text rather than a Label: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::title_bar gives the bar"),
     )
     .instance(
         "window controls",
@@ -570,7 +570,7 @@ pub fn sidebar_label(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         Some(r) => info.config(
             "font",
             format!(
-                "sidebar.font: {}: plain text, not a Label, whose render paints foreground over the side panel's colour (label.rs, Label::render)",
+                "sidebar.font: {}: plain text, not a Label, whose render paints foreground over the side panel's colour (gpui-component/label.rs, Label::render)",
                 super::drawn_font(&r.sidebar.font)
             ),
         ),
@@ -844,7 +844,7 @@ pub(super) fn input_background(t: &Theme) -> ColorClaim {
 pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Combobox").variant("searchable").not_themeable(
         "own icons",
-        super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (combobox.rs, ComboboxState::new)"),
+        super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the search matches nothing (gpui-component/combobox.rs, ComboboxState::new)"),
     );
     super::inputs::combo_fill(info, t, native, true)
         .color(claim(
@@ -881,7 +881,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .not_themeable(
             "caret",
-            "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all. Tier U for the size",
+            "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (gpui-component/select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all. Tier U for the size",
         )
         .instance(
             "switch",
@@ -889,7 +889,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .instance(
             "delegate",
-            "SearchableListDelegate, implemented in this showcase (combobox.rs, Combobox)",
+            "SearchableListDelegate, implemented in this showcase (gpui-component/combobox.rs, Combobox)",
         )
 }
 
@@ -907,7 +907,7 @@ pub fn color_mode_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInf
         )
         .instance(
             "width",
-            "the settings': the trigger takes it and truncates its text (select.rs, SelectState::render), so its text never widens it past the side panel",
+            "the settings': the trigger takes it and truncates its text (gpui-component/select.rs, SelectState::render), so its text never widens it past the side panel",
         )
 }
 
@@ -929,11 +929,11 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
         )
         .instance(
             "raster sets",
-            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (sficons.rs:110 and winicons.rs:173, native-theme 0.5.9) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the chrome and the pages' samples show none of their icons",
+            "on macOS and Windows the system icon sets come as pixels, not SVG -- native-theme's loaders there return IconData::Rgba (native-theme/sficons.rs, load_sf_icon_by_name; native-theme/winicons.rs, hicon_to_rgba) -- and an Icon draws only a path or SVG bytes (icon.rs, Icon::data), so with the system icon theme chosen there the chrome and the pages' samples show none of their icons",
         )
         .not_themeable(
             "upstream's icons",
-            "the icons a widget names as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (select.rs, SelectState::new; combobox.rs, ComboboxState::new); the page TabBar's menu Button's caret, a Caret too (button/button.rs, RenderOnce for Button) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
+            "the icons a widget names as it renders, with no setter: this Select's and the preset Combobox's caret (select.rs, Caret), the check mark on their chosen row (searchable_list/item.rs, SearchableListItemElement) and an empty list's Inbox (gpui-component/select.rs, SelectState::new; gpui-component/combobox.rs, ComboboxState::new); the page TabBar's menu Button's caret, a Caret too (button/button.rs, RenderOnce for Button) and the check mark on the shown page's row in its menu (menu/popup_menu.rs, PopupMenu); the window controls (title_bar.rs, ControlIcon); a Dialog's close button (dialog/dialog.rs, Dialog::render) and a Sheet's (gpui-component/sheet.rs, Sheet::render); the command palette's search icon and check mark (command/state.rs, CommandState); and in the Preferences sheet the search field's icon (setting/settings.rs, Settings) and the text scale's minus and plus (input/number_input.rs, NumberInput)",
         )
         .not_themeable(
             "why they stay",
@@ -1109,7 +1109,7 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
     )
     .instance(
         "text",
-        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
+        "the environment and the shown title are plain text rather than Labels: a Label paints foreground on its own element (gpui-component/label.rs, Label), which would hide the colour geometry::status_bar gives the bar",
     )
 }
 
@@ -1283,7 +1283,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bo
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base/dialog.rs:613)",
     )
 }
 
@@ -1415,17 +1415,17 @@ pub(super) fn sheet_surface(
         ))
         .not_themeable(
             "fill",
-            "the window's own background, not the popover colour, as a Dialog's (sheet.rs, Sheet)",
+            "the window's own background, not the popover colour, as a Dialog's (gpui-component/sheet.rs, Sheet)",
         )
         .not_themeable(
             "own icons",
-            super::own_icons("the close button's Close (sheet.rs, Sheet::render)"),
+            super::own_icons("the close button's Close (gpui-component/sheet.rs, Sheet::render)"),
         );
     let info = match side {
         SheetSide::Right => info
             .not_themeable(
                 "edge",
-                "a 1px rule of border along its left edge, the one facing the window, a literal (sheet.rs, Sheet::render)",
+                "a 1px rule of border along its left edge, the one facing the window, a literal (gpui-component/sheet.rs, Sheet::render)",
             )
             .not_themeable(
                 "top margin",
@@ -1434,29 +1434,29 @@ pub(super) fn sheet_surface(
         SheetSide::Bottom => info
             .not_themeable(
                 "edge",
-                "a 1px rule of border along its top edge, the one facing the window, a literal (sheet.rs, Sheet::render)",
+                "a 1px rule of border along its top edge, the one facing the window, a literal (gpui-component/sheet.rs, Sheet::render)",
             )
             .not_themeable(
                 "top margin",
-                "none: a bottom Sheet sits on the window's bottom edge and spans its width, so Theme::sheet.margin_top does not reach it (sheet.rs, Sheet::render)",
+                "none: a bottom Sheet sits on the window's bottom edge and spans its width, so Theme::sheet.margin_top does not reach it (gpui-component/sheet.rs, Sheet::render)",
             ),
     };
     info.not_themeable(
         "scrollbar",
-        "the body scrolls on an element the Sheet builds itself, and a Sheet's refinement lands on its surface, not there -- Tier U (sheet.rs, Sheet)",
+        "the body scrolls on an element the Sheet builds itself, and a Sheet's refinement lands on its surface, not there -- Tier U (gpui-component/sheet.rs, Sheet)",
     )
     .not_themeable(
         "animation",
         if reduce_motion {
-            "none: reduced motion is on, so the Sheet appears in place at once, where it would slide in over 0.15s, a literal, not the theme's motion tokens (sheet.rs, Sheet::render; gpui-pre/elements/animation.rs, AnimationExt)"
+            "none: reduced motion is on, so the Sheet appears in place at once, where it would slide in over 0.15s, a literal, not the theme's motion tokens (gpui-component/sheet.rs, Sheet::render; gpui-pre/elements/animation.rs, AnimationExt)"
         } else {
-            "a 0.15s literal slide, not the theme's motion tokens (sheet.rs, Sheet)"
+            "a 0.15s literal slide, not the theme's motion tokens (gpui-component/sheet.rs, Sheet)"
         },
     )
     .instance(
         "unreported",
         format!(
-            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (sheet.rs, Sheet::render, lines 167-245), so {rest} shows no info"
+            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (gpui-component/sheet.rs, Sheet::render, lines 167-245), so {rest} shows no info"
         ),
     )
 }
@@ -1574,7 +1574,7 @@ pub fn preference_switch(
     let info = match (checked, disabled) {
         (_, true) => info.not_themeable(
             "disabled",
-            "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (switch.rs, Switch)",
+            "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (gpui-component/switch.rs, Switch)",
         ),
         (true, false) => info.color(claim(
             "track",
@@ -1597,11 +1597,11 @@ pub fn preference_switch(
     ))
     .not_themeable(
         "size",
-        "Tier U: track and thumb are px literals per Size, on children of the wrapper a refinement lands on (switch.rs, Switch), while the model states switch.track_width, track_height and thumb_diameter",
+        "Tier U: track and thumb are px literals per Size, on children of the wrapper a refinement lands on (gpui-component/switch.rs, Switch), while the model states switch.track_width, track_height and thumb_diameter",
     )
     .not_themeable(
         "on track",
-        "primary by default; Switch::color would replace it, a receiver for the model's switch.checked_background that nothing in the connector feeds (switch.rs, Switch)",
+        "primary by default; Switch::color would replace it, a receiver for the model's switch.checked_background that nothing in the connector feeds (gpui-component/switch.rs, Switch)",
     )
     .instance(
         "preference",

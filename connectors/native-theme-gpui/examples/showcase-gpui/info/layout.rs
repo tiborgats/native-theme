@@ -113,7 +113,7 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
             ))
             .not_themeable(
                 "label",
-                "text_xs with px_2 / py_1 -- rems, so the platform's font -- on a box the caller's refinement does not reach: the Separator refines its outer container and builds the label as a child after it (separator.rs, Separator::render)",
+                "text_xs with px_2 / py_1 -- rems, so the platform's font -- on a box the caller's refinement does not reach: the Separator refines its outer container and builds the label as a child after it (gpui-component/separator.rs, Separator::render)",
             )
             .instance("label", label),
         SeparatorKind::Dashed => info.not_themeable(
@@ -122,7 +122,7 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
         ),
         SeparatorKind::Vertical => info.not_themeable(
             "length",
-            "the height of the row it stands in: a vertical Separator is h_full (separator.rs, Separator::vertical)",
+            "the height of the row it stands in: a vertical Separator is h_full (gpui-component/separator.rs, Separator::vertical)",
         ),
     }
 }
@@ -273,7 +273,7 @@ pub fn group_box(
 /// then name the colours.
 pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> WidgetInfo {
     upstream_accordion(WidgetInfo::new("Accordion"), t, reduce_motion, styled)
-        .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
+        .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (gpui-component/accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
 }
 
 /// The Basic page's two expanders where no native theme is installed:
@@ -297,7 +297,7 @@ pub fn expander(
     .instance(
         "items",
         format!(
-            "{first} ({}), {second} ({}); Accordion::item takes a closure over an AccordionItem the Accordion renders itself (accordion.rs, Accordion::item), so the Accordion reports for its items; each body is a Label that reports itself",
+            "{first} ({}), {second} ({}); Accordion::item takes a closure over an AccordionItem the Accordion renders itself (gpui-component/accordion.rs, Accordion::item), so the Accordion reports for its items; each body is a Label that reports itself",
             state(first_open),
             state(second_open)
         ),
@@ -317,7 +317,7 @@ fn upstream_accordion(
     let info = info
         .not_themeable(
             "own icons",
-            super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
+            super::own_icons("ChevronDown on each item's header, turned while the item is open (gpui-component/accordion.rs, AccordionItem::render)"),
         )
         .color(claim(
             "bg",
@@ -355,7 +355,7 @@ fn upstream_accordion(
             t.foreground,
             "showcase",
         ))
-        .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)")
+        .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (gpui-component/accordion.rs, AccordionItem::hover)")
     };
     info.color(claim(
             "chevron",
@@ -368,16 +368,16 @@ fn upstream_accordion(
             format!("radius_lg: {}px", t.radius_lg.as_f32()),
         )
         .not_themeable("padding", if styled {
-            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour"
+            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (gpui-component/accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour"
         } else {
-            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable"
+            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (gpui-component/accordion.rs, AccordionItem::render), so both are reachable"
         })
-        .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver -- Tier U")
-        .not_themeable("animation", "reads the theme's spring_control (accordion.rs, AccordionItem). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
+        .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (gpui-component/accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver -- Tier U")
+        .not_themeable("animation", "reads the theme's spring_control (gpui-component/accordion.rs, AccordionItem). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
         .instance("animation", if reduce_motion {
             "none: reduced motion is on, so an item's content opens and closes at once (gpui-base/motion.rs, spring)"
         } else {
-            "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
+            "an item's content springs open and shut on spring_control; the chevron turns at once (gpui-component/accordion.rs, AccordionItem::render)"
         })
 }
 
@@ -525,7 +525,7 @@ pub fn native_expander(
     let glyph = if leading {
         "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
     } else {
-        "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (accordion.rs, AccordionItem::render)"
+        "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render)"
     };
     let info = info.instance(
         "arrow glyph",
@@ -544,11 +544,11 @@ pub fn native_expander(
         .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
         .config("arrow side", match e.arrow_side {
             Some(side) => format!("expander.arrow_side, {side:?}"),
-            None => "not stated: upstream's Accordion's, after the title (accordion.rs, AccordionItem::render)".to_string(),
+            None => "not stated: upstream's Accordion's, after the title (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
         })
         .config("arrow gap", match e.arrow_gap {
             Some(gap) => format!("expander.arrow_gap, {}px", px_text(gap)),
-            None => "not stated: upstream's AccordionItem's gap_3 (accordion.rs, AccordionItem::render)".to_string(),
+            None => "not stated: upstream's AccordionItem's gap_3 (gpui-component/accordion.rs, AccordionItem::render)".to_string(),
         })
     } else {
         info
@@ -585,7 +585,7 @@ pub fn native_expander(
         match e.content_indent {
             Some(indent) => format!("expander.content_indent, {}px", px_text(indent)),
             None => {
-                "not stated: upstream's AccordionItem's px_3 (accordion.rs, AccordionItem::render)"
+                "not stated: upstream's AccordionItem's px_3 (gpui-component/accordion.rs, AccordionItem::render)"
                     .to_string()
             }
         },
@@ -662,10 +662,10 @@ fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
             "the body has no padding beyond its indent, a title being layout.widget_gap above its body"
         }
         (Some(_), None) => {
-            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), as no layout.widget_gap is stated to part it from its title"
+            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (gpui-component/accordion.rs, AccordionItem::render), as no layout.widget_gap is stated to part it from its title"
         }
         (None, _) => {
-            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), inside the frame upstream's Accordion draws"
+            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (gpui-component/accordion.rs, AccordionItem::render), inside the frame upstream's Accordion draws"
         }
     };
     format!(
@@ -842,8 +842,8 @@ pub fn segmented(
 pub fn collapsible(open: bool) -> WidgetInfo {
     WidgetInfo::new("Collapsible")
         .variant(if open { "open" } else { "closed" })
-        .not_themeable("fill and edge", "none: a Collapsible only shows or hides its content and paints nothing of its own (collapsible.rs, Collapsible). The toggle is this demo's ghost Button and the content a Label, which report themselves")
-        .instance("animation", "none: a Collapsible springs its reveal on the theme's spring_control only when it is given a motion_id (collapsible.rs, Collapsible::render), and this one is not, so its content appears and disappears at once")
+        .not_themeable("fill and edge", "none: a Collapsible only shows or hides its content and paints nothing of its own (gpui-component/collapsible.rs, Collapsible). The toggle is this demo's ghost Button and the content a Label, which report themselves")
+        .instance("animation", "none: a Collapsible springs its reveal on the theme's spring_control only when it is given a motion_id (gpui-component/collapsible.rs, Collapsible::render), and this one is not, so its content appears and disappears at once")
 }
 
 /// The Collapsible's toggle: an upstream Ghost `Button` reading `label`,

@@ -168,11 +168,11 @@ pub fn gpui_icon(
         ),
         (_, Some(role)) => info.instance(
             "lookup",
-            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
+            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (native-theme-gpui/icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
         ),
         (_, None) => info.instance(
             "lookup",
-            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
+            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
         ),
     }
 }
@@ -217,7 +217,7 @@ pub fn animated_icon(
         AnimatedKind::Spin { duration_ms } => info
             .variant(format!("{set}, spin"))
             // An SVG element paints every shape in its text colour
-            // (gpui-pre elements/svg.rs, Svg::paint), which the showcase
+            // (gpui-pre/elements/svg.rs, Svg::paint), which the showcase
             // sets to foreground.
             .color(claim("icon", "foreground", t.foreground, "showcase"))
             .not_themeable(

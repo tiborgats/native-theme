@@ -89,7 +89,7 @@ pub fn disabled_input_surface(
         ..c
     }))
     .instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
-        .config("surface", "geometry::input_fill's fill inside input.border.color's line, none where input.border.line_width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+        .config("surface", "geometry::input_fill's fill inside input.border.color's line, none where input.border.line_width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre/window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
@@ -228,7 +228,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
             t.ring,
             "gpui-component/input/input.rs:761",
         ))
-        .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base input/base/element.rs, TextElement::request_layout)")
+        .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
         .instance("padding", "text_area.border.padding, the multi-line field's own (docs/platform-facts.md §2.29), where it reaches: upstream pads a Textarea's editor in render by its Size's input padding (input/input.rs, Input::render; sizing.rs, input_px and input_py), Size::Medium's 10 across and 8 down here; the Size is the one seam (input/textarea.rs, Textarea::with_size), and it moves every side together by a fixed step, so no stated side reaches the editor through it, and geometry::text_area pads the root by the rest of each stated side; a stated side below the editor's stays the editor's, and an unstated side is upstream's")
         .instance("refinement", "geometry::text_area: the input's font, and text_area.border's padding, radius and line width, which inherit the input's frame (a Textarea renders as an Input, input/textarea.rs, Textarea::into_input)")
@@ -239,7 +239,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
 pub fn rows_textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let mut info = textarea(t, filled);
     info.instance.retain(|note| note.what != "height");
-    info.instance("height", "the rows its state was built to show, three, each the row height above: geometry::text_area sets no height, so the state's rows size it (gpui-base input/base/state.rs, InputBaseState::auto_grow)")
+    info.instance("height", "the rows its state was built to show, three, each the row height above: geometry::text_area sets no height, so the state's rows size it (gpui-base/input/base/state.rs, InputBaseState::auto_grow)")
 }
 
 /// The three `InputGroup`s, which report as one. Their geometry lines are
@@ -476,7 +476,7 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
         ),
     );
     // The disabled style is resolved after the checked one, so it wins
-    // (gpui-base checkbox.rs:302-316).
+    // (gpui-base/checkbox.rs:302-316).
     let info = match (checked, disabled) {
         (true, false) => info
             .color(claim(
@@ -540,9 +540,9 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
     };
     let info = info
         .config("indicator radius", format!("radius, capped at 4px: {}px", t.radius.as_f32().min(4.0)))
-        .not_themeable("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)")
-        .not_themeable("unchecked fill", "input_background(), as an Input's: the window background in light mode, input faded toward transparent in dark (checkbox.rs, Checkbox::render)")
-        .not_themeable("indicator size", "rems(0.75 / 0.875 / 1 / 1.125) per Size (checkbox.rs, Checkbox::render indicator_size), so the box already scales with the platform font -- the rem is Theme::font_size. What has no route is checkbox.indicator_width, which the model states in absolute px: Size::Size falls into the same catch-all arm as Medium. Tier U for the px, not for the scaling")
+        .not_themeable("font colour", "carried as size and weight only. Upstream wraps a Checkbox label in a div that sets foreground itself and re-sets muted_foreground there when disabled (gpui-component/checkbox.rs, Checkbox::render), and the disabled hook applies muted_foreground before this refinement, so a carried colour would never reach the label and would displace the disabled colour of custom children (native-theme-gpui geometry.rs, geometry::checkbox)")
+        .not_themeable("unchecked fill", "input_background(), as an Input's: the window background in light mode, input faded toward transparent in dark (gpui-component/checkbox.rs, Checkbox::render)")
+        .not_themeable("indicator size", "rems(0.75 / 0.875 / 1 / 1.125) per Size (gpui-component/checkbox.rs, Checkbox::render indicator_size), so the box already scales with the platform font -- the rem is Theme::font_size. What has no route is checkbox.indicator_width, which the model states in absolute px: Size::Size falls into the same catch-all arm as Medium. Tier U for the px, not for the scaling")
         .instance("label", label);
     toggled(info, CHECKBOX, checked, disabled)
 }
@@ -577,9 +577,9 @@ pub fn radio_group(t: &Theme, labels: &[&'static str], selected: Option<usize>) 
             t.foreground,
             "gpui-component/radio.rs:220",
         ))
-        .not_themeable("unselected fill", "input_background(), as an Input's -- not the input at 50% upstream computes and never paints. Disabled halves the border and a checked fill, never an unchecked one (gpui-component radio.rs, Radio::render)")
-        .not_themeable("corner radius", "a circle, through radius_full() -- and square where the theme's radius is 0, since radius_full() follows it (gpui-component styled.rs, rounded_full_style). The radius * 0.5 is the row's, which only the focus ring shows (gpui-component radio.rs, Radio::render)")
-        .not_themeable("indicator size", "rems per the Size enum, so it follows the root font size rather than the theme's checkbox metrics (gpui-component radio.rs, Radio::render indicator_size)")
+        .not_themeable("unselected fill", "input_background(), as an Input's -- not the input at 50% upstream computes and never paints. Disabled halves the border and a checked fill, never an unchecked one (gpui-component/radio.rs, Radio::render)")
+        .not_themeable("corner radius", "a circle, through radius_full() -- and square where the theme's radius is 0, since radius_full() follows it (gpui-component/styled.rs, rounded_full_style). The radius * 0.5 is the row's, which only the focus ring shows (gpui-component/radio.rs, Radio::render)")
+        .not_themeable("indicator size", "rems per the Size enum, so it follows the root font size rather than the theme's checkbox metrics (gpui-component/radio.rs, Radio::render indicator_size)")
         .instance("radios", format!("{}. RadioGroup::child takes an Into<Radio>, not an element a target could wrap, so they report through the group (radio.rs, RadioGroup::child)", labels.join(", ")))
         .instance("selected", selected)
 }
@@ -687,14 +687,14 @@ pub fn switch(
         info.config("border-radius", format!("fully round: the theme's radius, {}px, is 4px or more, so the track is rounded by its own height instead", t.radius.as_f32()))
     };
     let info = match native {
-        Some(_) => info.config("on track", "switch.checked_background, which the showcase hands Switch::color, a per-instance receiver: ThemeColor has no field for it, so the connector cannot install it (gpui-component switch.rs, Switch::color)"),
-        None => info.not_themeable("on track", "primary: no native theme is installed, so the showcase has no switch.checked_background to hand Switch::color (gpui-component switch.rs, Switch::color)"),
+        Some(_) => info.config("on track", "switch.checked_background, which the showcase hands Switch::color, a per-instance receiver: ThemeColor has no field for it, so the connector cannot install it (gpui-component/switch.rs, Switch::color)"),
+        None => info.not_themeable("on track", "primary: no native theme is installed, so the showcase has no switch.checked_background to hand Switch::color (gpui-component/switch.rs, Switch::color)"),
     };
     let info = info
-        .not_themeable("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component switch.rs, Switch::render disabled_bg)")
-        .not_themeable("size", "Tier U: track and thumb are px literals per Size, on children of the wrapper the refinement lands on (gpui-component switch.rs, Switch::render), while the model states switch.track_width, track_height and thumb_diameter")
-        .not_themeable("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius). switch.track_radius is modelled and has no receiver")
-        .not_themeable("animation timing", "reads the theme's spring_move (switch.rs, Switch), the same writable Theme::motion the Accordion and Collapsible use; the connector leaves it at its default because native-theme models no motion")
+        .not_themeable("disabled", "the track at 50%, never the thumb: gpui multiplies each primitive's alpha rather than fading the subtree as a group, so fading both would let the track show through (gpui-component/switch.rs, Switch::render disabled_bg)")
+        .not_themeable("size", "Tier U: track and thumb are px literals per Size, on children of the wrapper the refinement lands on (gpui-component/switch.rs, Switch::render), while the model states switch.track_width, track_height and thumb_diameter")
+        .not_themeable("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component/switch.rs, Switch::render radius). switch.track_radius is modelled and has no receiver")
+        .not_themeable("animation timing", "reads the theme's spring_move (gpui-component/switch.rs, Switch), the same writable Theme::motion the Accordion and Collapsible use; the connector leaves it at its default because native-theme models no motion")
         .instance("label", label);
     toggled(info, SWITCH, checked, disabled)
 }
@@ -720,8 +720,8 @@ pub fn slider(t: &Theme, vertical: bool, range: bool) -> WidgetInfo {
             t.foreground,
             "gpui-component/slider.rs:272",
         ))
-        .not_themeable("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (slider.rs, Slider::render)")
-        .not_themeable("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (slider.rs, Slider::render)")
+        .not_themeable("track height", "Tier U, not an absence: slider.track_height is modelled and carried. Upstream sets h_1p5() on SliderIndicator, a child of the element the refinement lands on (gpui-component/slider.rs, Slider::render)")
+        .not_themeable("thumb size", "Tier U, not an absence: slider.thumb_diameter is modelled and carried. The thumb is built by a closure inside the indicator, deeper still than the track (gpui-component/slider.rs, Slider::render)")
 }
 
 /// A slider's variant: a range state's two thumbs, a vertical one's axis.
@@ -733,7 +733,7 @@ fn slider_shape(info: WidgetInfo, vertical: bool, range: bool) -> WidgetInfo {
         (false, false) => info,
     };
     let info = if range {
-        info.instance("range", "a thumb at each end of the range and the fill between them; a press moves the nearer thumb (gpui-base slider.rs, SliderTrack)")
+        info.instance("range", "a thumb at each end of the range and the fill between them; a press moves the nearer thumb (gpui-base/slider.rs, SliderTrack)")
     } else {
         info
     };
@@ -935,7 +935,7 @@ pub fn native_radio_column(
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));
     let info = match k.radio_dot_diameter {
         Some(dot) => info.config("dot", format!("checkbox.radio_dot_diameter: a dot {dot}px across in indicator_color, centred in the circle (platform-facts §2.5)")),
-        None => info.not_themeable("mark", "gpui-component's own check glyph (radio.rs, Radio::render): the theme states no radio dot size (checkbox.radio_dot_diameter), and gpui has no dot of its own"),
+        None => info.not_themeable("mark", "gpui-component's own check glyph (gpui-component/radio.rs, Radio::render): the theme states no radio dot size (checkbox.radio_dot_diameter), and gpui has no dot of its own"),
     };
     let info = info.instance(
         "radios",
@@ -1070,7 +1070,7 @@ pub fn native_switch(
         "native-theme-gpui/widgets/switch.rs:142",
     ));
     // While focused the track draws the focus ring in `ring` at 50% alpha
-    // (gpui-component styled.rs:261), `ring` being the connector's
+    // (gpui-component/styled.rs:261), `ring` being the connector's
     // `defaults.focus_ring_color`; a disabled switch takes no focus.
     let info = if disabled {
         info
@@ -1160,7 +1160,7 @@ pub fn native_switch(
         )
         .not_themeable(
             "label gap",
-            "gpui-component's gap_2 (switch.rs, Switch::render): SwitchTheme states no label gap",
+            "gpui-component's gap_2 (gpui-component/switch.rs, Switch::render): SwitchTheme states no label gap",
         )
         .instance("label", label);
     toggled(info, SWITCH, checked, disabled)
@@ -1182,10 +1182,10 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
         )
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
-        .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")
-        .not_themeable("rail radius", "a pill, gpui-component's radius_full (slider.rs, Slider::render); SliderTheme states no rail radius");
+        .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (gpui-component/slider.rs, Slider::render); the model states no thumb outline")
+        .not_themeable("rail radius", "a pill, gpui-component's radius_full (gpui-component/slider.rs, Slider::render); SliderTheme states no rail radius");
     let info = if vertical {
-        info.not_themeable("length", "the caller's height; gpui-component's 120px where none is given (slider.rs, Slider::render): SliderTheme states no length")
+        info.not_themeable("length", "the caller's height; gpui-component's 120px where none is given (gpui-component/slider.rs, Slider::render): SliderTheme states no length")
     } else {
         info
     };
@@ -1281,10 +1281,10 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
 pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = combo_fill(WidgetInfo::new("Select"), t, native, false);
     // The trigger sets text_color(foreground) and then refines its style
-    // (select.rs, SelectState::render), so geometry::select's combo_box.font
+    // (gpui-component/select.rs, SelectState::render), so geometry::select's combo_box.font
     // colour wins where a native theme is installed.
     let info = match native {
-        Some(_) => info.instance("trigger text", "combo_box.font's colour, which geometry::select letters the trigger in over upstream's foreground: the trigger sets its text colour and then refines its style (select.rs, SelectState::render)"),
+        Some(_) => info.instance("trigger text", "combo_box.font's colour, which geometry::select letters the trigger in over upstream's foreground: the trigger sets its text colour and then refines its style (gpui-component/select.rs, SelectState::render)"),
         None => info.color(claim(
             "upstream trigger text",
             "foreground",
@@ -1305,8 +1305,8 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "gpui-component/select.rs:452",
         ))
         .not_themeable("carried colour", "the one difference from a Combobox, such as the theme settings' preset switch: Select's selected-title child sets its own colour, so a carried colour yields to the disabled colour instead of beating it, and the connector carries it (native-theme-gpui geometry.rs, combobox)")
-        .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
-        .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (select.rs, SelectState::new)"))
+        .not_themeable("caret", "its colour is themed -- upstream paints it with muted_foreground (select.rs, Caret) -- and its size is not: Caret maps Size::Size into the same arm as Medium (gpui-component/select.rs, Caret::render), so combo_box.arrow_icon_size has no route at all, not even through the Size::Size escape hatch a DataTable row accepts. Tier U for the size")
+        .not_themeable("own icons", super::own_icons("the caret's ChevronDown (select.rs, Caret), and in its open list Check beside the chosen row (searchable_list/item.rs, SearchableListItemElement) and Inbox while the list is empty (gpui-component/select.rs, SelectState::new)"))
 }
 
 /// A drop-down trigger's fill and edge: `native`'s `combo_box.background_color`,
@@ -1345,7 +1345,7 @@ pub fn combo_fill(
                     "showcase",
                 ))
                 .geometry("combo_box_fill");
-            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (select.rs, Select::render; combobox.rs, Combobox::render)")
+            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render)")
         }
         None => info
             .color(input_background(t))
@@ -1627,7 +1627,7 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
         .not_themeable("segment radius", "half the theme's radius (time/time_field.rs, TimeField)")
         .not_themeable("size", "input_h and the input text size of its Size, Medium unless the caller sizes it -- rems, so the platform's font (time/time_field.rs, TimeField; sizing.rs, input_h)")
         .not_themeable("figures", "tabular figures, a font feature the field sets itself (time/time_field.rs, tabular_figures)")
-        .instance("value", "none until one is typed: TimeFieldState::new holds no time (gpui-base time_field.rs, TimeFieldState::new)")
+        .instance("value", "none until one is typed: TimeFieldState::new holds no time (gpui-base/time_field.rs, TimeFieldState::new)")
 }
 
 /// `info`, an `Input`'s, for one that holds an inline token (spec §8.3),
@@ -1660,5 +1660,5 @@ pub fn with_token(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         ))
         .config("token radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("token", "an InputToken chip the Input's token renderer draws, one line tall, gap_1 and px_1 inside a 1px border (input/token.rs, InputToken)")
-        .instance("token", "@native-theme, a mention inserted once when the state is built (gpui-base input/base/inline_tokens.rs, InlineToken::new)")
+        .instance("token", "@native-theme, a mention inserted once when the state is built (gpui-base/input/base/inline_tokens.rs, InlineToken::new)")
 }

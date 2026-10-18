@@ -207,7 +207,7 @@ impl InfoRegistry {
 
 /// Tell the registry's observers, once the frame being drawn is done: a
 /// notify raised while a frame is drawn does not ask for the next one
-/// (gpui-base resizable/panel.rs, `ResizablePanelGroup` defers its own for
+/// (gpui-base/resizable/panel.rs, `ResizablePanelGroup` defers its own for
 /// the same reason).
 fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut App) {
     let ui = ui.clone();

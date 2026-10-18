@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1312)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1312)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1167-1172)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1274-1278)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1274-1278)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (button.rs:1110-1115)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1110-1115)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1198-1203)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1198-1203)",
     ),
     (
         "",
@@ -662,7 +662,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (styled.rs:179-184, focus_ring_style, which hands it to focus_style, :250-298)",
+        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (gpui-component/styled.rs:179-184, 250-298: focus_ring_style hands it to focus_style)",
     ),
     (
         "",
@@ -672,7 +672,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_width_px",
-        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (styled.rs:11); a width > 0 turns it on",
+        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11); a width > 0 turns it on",
     ),
     (
         "basic.typography.body",
@@ -762,7 +762,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (switch.rs:300)",
+        "gpui: not applied — the label's line box is the track's height (gpui-component/switch.rs:300)",
     ),
     (
         "basic.text_inputs",
@@ -787,17 +787,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -812,22 +812,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "chrome.page_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "basic.tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "basic.segmented",
         "defaults.line_height",
-        "gpui: not applied — a segment's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — a segment's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "basic.list",
@@ -852,7 +852,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.expander",
         "defaults.line_height",
-        "gpui: the body Label's (demo::body_label); the header keeps gpui's, phi (style.rs:494)",
+        "gpui: the body Label's (demo::body_label); the header keeps gpui's, phi (gpui-pre/style.rs:494)",
     ),
     (
         "basic.card",
@@ -877,7 +877,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "defaults.line_height",
-        "gpui: not applied — the bar's text keeps gpui's line height, phi (style.rs:494)",
+        "gpui: not applied — the bar's text keeps gpui's line height, phi (gpui-pre/style.rs:494)",
     ),
     (
         "chrome.info",
@@ -1211,12 +1211,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.active_text_color",
-        "not reachable: a pressed Link is `link` at 0.6 opacity (link.rs:84-85)",
+        "not reachable: a pressed Link is `link` at 0.6 opacity (gpui-component/link.rs:84-85)",
     ),
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (link.rs:70-90)",
+        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90)",
     ),
     (
         "",
@@ -1226,17 +1226,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.font.color",
-        "gpui: ThemeColor link (colors.rs): the Link's text (link.rs:76)",
+        "gpui: ThemeColor link (colors.rs): the Link's text (gpui-component/link.rs:76)",
     ),
     (
         "",
         "link.hover_background",
-        "not reachable: the Link's hover style is upstream's, no fill (link.rs:79-83)",
+        "not reachable: the Link's hover style is upstream's, no fill (gpui-component/link.rs:79-83)",
     ),
     (
         "",
         "link.hover_text_color",
-        "not reachable: a hovered Link is `link` at 0.8 opacity (link.rs:79-80)",
+        "not reachable: a hovered Link is `link` at 0.8 opacity (gpui-component/link.rs:79-80)",
     ),
     (
         "",
