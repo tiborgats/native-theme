@@ -4576,9 +4576,71 @@ impl Selectable for ListRow {
 /// The group a list row's label takes its hover colour from.
 const LIST_ROW_GROUP: &str = "list-row";
 
-/// The room a List's row leaves for the scrollbar: its groove, where the
-/// theme's scrollbar is not an overlay (`geometry::scrollbar_gutter`'s
-/// width); `None` for an overlay, or before `apply` ran.
+/// The colour a List or Tree row under the pointer letters its label in:
+/// `list.hover_text_color`, with its config line recorded in `row_info`.
+/// The ListItem's own hover sets its fill alone, inside render
+/// (list/list_item.rs:231), so the label takes the colour from the row's
+/// group hover (`row_label`). `None` on a selected row, which does not hover
+/// (:228-229), and where no native theme is installed.
+fn list_hover_text(cx: &App, selected: bool, row_info: &mut WidgetInfo) -> Option<Hsla> {
+    let hover_text = (!selected)
+        .then(|| native_color(cx, |n| n.resolved.list.hover_text_color))
+        .flatten();
+    if hover_text.is_some() {
+        *row_info = std::mem::take(row_info).config(
+            "hovered text",
+            "list.hover_text_color, which the showcase sets on the label while the row is hovered",
+        );
+    }
+    hover_text
+}
+
+/// A List or Tree row's `ListItem` after `geometry::list_item`: lettered by
+/// `selected_text` where the row is selected, clear of the scrollbar its view
+/// lays over the rows, and the `LIST_ROW_GROUP` its label's hover colour
+/// follows.
+///
+/// Clear of the scrollbar where the theme's is not an overlay: the List and
+/// the Tree draw their bar over their rows (list/list.rs, `List::render`;
+/// tree.rs, `RenderOnce for Tree`), where a scrollbar that is not an overlay
+/// takes the room beside them (`scrollbar.overlay_mode`, its `groove_width`).
+fn list_row_item(item: ListItem, cx: &App, selected_text: Option<&StyleRefinement>) -> ListItem {
+    refined(item, selected_text)
+        .when_some(list_gutter(cx), |item, gutter| item.mr(gutter))
+        .group(LIST_ROW_GROUP)
+}
+
+/// The label of the List or Tree row `id`, reading `label`, lettered in
+/// `hover_text` while its row (`LIST_ROW_GROUP`) is under the pointer.
+///
+/// Plain text, not a Label: `Label::render` paints foreground on its own
+/// element (label.rs:211) over the list font the row carries. It has an id
+/// because a text takes its colour as it is laid out, and in layout the
+/// group hover is known only from the hover state an element with an id
+/// keeps between frames: the group's hitbox is made in paint (gpui-pre
+/// src/elements/div.rs, `Interactivity::compute_style_internal` and
+/// `GroupHitboxes`), so a label without an id is laid out unhovered.
+fn row_label(
+    #[cfg_attr(not(test), allow(unused_variables))] ui: &Entity<InfoRegistry>,
+    #[cfg_attr(not(test), allow(unused_variables))] id: &str,
+    label: SharedString,
+    hover_text: Option<Hsla>,
+) -> Stateful<Div> {
+    let label = div()
+        .id("label")
+        .child(label)
+        .when_some(hover_text, |label, text| {
+            label.group_hover(LIST_ROW_GROUP, move |style| style.text_color(text))
+        });
+    #[cfg(test)]
+    let label = label.child(crate::elements::label_probe(ui, id.to_string()));
+    label
+}
+
+/// The room a List's or a Tree's row leaves for the scrollbar: its groove,
+/// where the theme's scrollbar is not an overlay
+/// (`geometry::scrollbar_gutter`'s width); `None` for an overlay, or before
+/// `apply` ran.
 fn list_gutter(cx: &App) -> Option<Pixels> {
     native_value(cx, |n| {
         (!n.resolved.scrollbar.overlay_mode)
@@ -4605,20 +4667,11 @@ impl RenderOnce for ListRow {
         if selected_text.is_some() {
             row_info = row_info.geometry("list_item_selected");
         }
-        // A row under the pointer lettered in `list.hover_text_color`: the
-        // ListItem's own hover sets its fill alone, inside render
-        // (list/list_item.rs:231), so the label takes the colour from the
-        // row's group hover. Not on a selected row, which does not hover
-        // (:228-229).
-        let hover_text = (!self.selected && !self.right_clicked)
-            .then(|| native_color(cx, |n| n.resolved.list.hover_text_color))
+        // Not on a right-clicked row, which does not hover either
+        // (list/list_item.rs, `ListItem::render`).
+        let hover_text = (!self.right_clicked)
+            .then(|| list_hover_text(cx, self.selected, &mut row_info))
             .flatten();
-        if hover_text.is_some() {
-            row_info = row_info.config(
-                "hovered text",
-                "list.hover_text_color, which the showcase sets on the label while the row is hovered",
-            );
-        }
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
@@ -4626,22 +4679,8 @@ impl RenderOnce for ListRow {
             "list_item",
             &mut row_info,
         )
-        .map(|item| refined(item, selected_text.as_ref()))
-        // Clear of the List's scrollbar where the theme's is not an overlay:
-        // the List draws its bar over its rows (list/list.rs, `List::render`),
-        // where a scrollbar that is not an overlay takes the room beside them
-        // (`scrollbar.overlay_mode`, its `groove_width`).
-        .when_some(list_gutter(cx), |item, gutter| item.mr(gutter))
-        .group(LIST_ROW_GROUP)
-        // Plain text, not a Label: `Label::render` paints foreground on its
-        // own element (label.rs:211) over the list font the row carries.
-        .child(
-            div()
-                .child(self.label)
-                .when_some(hover_text, |label, text| {
-                    label.group_hover(LIST_ROW_GROUP, move |style| style.text_color(text))
-                }),
-        )
+        .map(|item| list_row_item(item, cx, selected_text.as_ref()))
+        .child(row_label(&self.ui, &id, self.label, hover_text))
         .selected(self.selected)
         .secondary_selected(self.right_clicked);
         item.info(&self.ui, SharedString::from(id.clone()), row_info)
@@ -4687,7 +4726,8 @@ pub(crate) fn tree(
 }
 
 /// Row `ix` of the Tree, reading `label`, `selected` or not: a `ListItem`
-/// refined by `geometry::list_item`.
+/// refined by `geometry::list_item` and laid out as a List's row is
+/// (`list_row_item`, `row_label`).
 ///
 /// `Tree::new` takes a closure that returns the `ListItem` itself and wraps
 /// it in a box of its own (tree.rs:41-44, 87-93), so nothing can be put
@@ -4707,13 +4747,19 @@ fn tree_row(
     // What `native_info` applies the builder under.
     let styled = cx.native().is_some();
     let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
-    // As a List row's: a selected row's text in `list.selection_text_color`.
+    // As a List row's: a selected row's text in `list.selection_text_color`,
+    // a hovered one's in `list.hover_text_color`.
     let selected_text = selected
         .then(|| native_geometry(cx, geometry::list_item_selected))
         .flatten();
     if selected_text.is_some() {
         row_info = row_info.geometry("list_item_selected");
     }
+    // The Tree marks a row right-clicked only after this closure built it
+    // (tree.rs, `RenderOnce for Tree`), and gives the closure no way to
+    // learn it, so unlike a List row's this label cannot leave out a
+    // right-clicked row, which does not hover.
+    let hover_text = list_hover_text(cx, selected, &mut row_info);
     let item = native_info(
         ListItem::new(SharedString::from(id.clone())),
         cx,
@@ -4721,10 +4767,9 @@ fn tree_row(
         "list_item",
         &mut row_info,
     )
-    .map(|item| refined(item, selected_text.as_ref()));
+    .map(|item| list_row_item(item, cx, selected_text.as_ref()));
     let ui = ui.clone();
-    // Plain text, as the List's rows.
-    item.child(label)
+    item.child(row_label(&ui, &id, label, hover_text))
         .selected(selected)
         .suffix(move |_window, _cx| {
             let id = id.clone();

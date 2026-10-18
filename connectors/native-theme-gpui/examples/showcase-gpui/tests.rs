@@ -6111,6 +6111,92 @@ fn a_tree_row_reports_itself(cx: &mut TestAppContext) {
     );
 }
 
+/// A List row and a Tree row under the pointer letter their label in
+/// `list.hover_text_color` (M9-008), and in `list.item_font`'s colour at
+/// rest. The label is plain text, so it is painted in the text colour it is
+/// laid out under, which the registry records per row (a text colour is no
+/// quad of the scene). kde-breeze light states the same colour for its list
+/// text and its hovered list text, so the hovered one is set to the theme's
+/// accent, a colour of the same theme that differs from both.
+#[gpui::test]
+fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
+    cx: &mut TestAppContext,
+) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let mut r = resolved_theme(&mut cx, &showcase);
+    r.list.hover_text_color = r.defaults.accent_color;
+    assert_ne!(
+        r.list.hover_text_color, r.list.item_font.color,
+        "kde-breeze light's accent is its list text, so the test could not tell the two apart"
+    );
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
+            &r,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    show(&mut cx, &showcase, Page::Data);
+    let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
+    for row in ["data-list-row-0", "data-tree-row-1"] {
+        let text = |cx: &mut VisualTestContext| {
+            cx.update(|_window, cx| ui.read(cx).label_colours.get(row).copied())
+        };
+        assert_eq!(
+            text(&mut cx),
+            Some(stated(r.list.item_font.color)),
+            "{row}: the label at rest is not list.item_font's colour"
+        );
+        let bounds = bounds_of(&mut cx, row);
+        hover(&mut cx, bounds.center());
+        draw(&mut cx);
+        assert_eq!(
+            text(&mut cx),
+            Some(stated(r.list.hover_text_color)),
+            "{row}: the label under the pointer is not list.hover_text_color"
+        );
+        hover(&mut cx, point(px(0.), px(0.)));
+        draw(&mut cx);
+    }
+}
+
+/// A Tree row keeps clear of the Tree's scrollbar where the theme's is not
+/// an overlay, as the List's rows do (M9-008): the Tree lays its bar over
+/// its rows (gpui-component `src/tree.rs`, `RenderOnce for Tree`), so the
+/// row ends the groove short of the box's inner edge, and at that edge
+/// where the bar is an overlay. kde-breeze's scrollbar is no overlay;
+/// macos-monterey's is, and must not lose a strip of width to it.
+#[gpui::test]
+fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["kde-breeze", "macos-monterey"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Data);
+        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        assert!(
+            groove > px(0.),
+            "{preset}: no native theme is installed, so nothing was measured"
+        );
+        let edge = px(resolved_theme(&mut cx, &showcase).list.border.line_width);
+        let gutter = if overlay { px(0.) } else { groove };
+        let tree = bounds_of(&mut cx, TREE_DEMO);
+        let row = bounds_of(&mut cx, "data-tree-row-1");
+        assert_eq!(
+            tree.right() - edge - row.right(),
+            gutter,
+            "{preset}: the row ends at {:?} inside a Tree whose inner edge is at {:?}, \
+                 which leaves no {gutter:?} for a {groove:?} scrollbar (overlay: {overlay})",
+            row.right(),
+            tree.right() - edge,
+        );
+    }
+}
+
 /// Two Tags of different variants show different infos (spec §4.3.2): the
 /// Primary Tag's info names Primary and its colours, and the Danger Tag's
 /// beside it, Danger's -- not one info for the whole gallery.

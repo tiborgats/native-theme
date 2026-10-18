@@ -45,6 +45,11 @@ pub struct InfoRegistry {
     /// painted in, which no quad of the scene carries. The tests read it.
     #[cfg(test)]
     pub text_colours: HashMap<&'static str, gpui::Hsla>,
+    /// The text colour each List and Tree row's label was laid out under in
+    /// the last frame that drew it, by the row's info id
+    /// (`crate::elements::label_probe`). The tests read it.
+    #[cfg(test)]
+    pub label_colours: HashMap<String, gpui::Hsla>,
 }
 
 impl InfoRegistry {

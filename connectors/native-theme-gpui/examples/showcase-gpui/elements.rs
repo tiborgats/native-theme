@@ -355,6 +355,27 @@ pub fn record(ui: &Entity<InfoRegistry>, id: &'static str) -> impl IntoElement {
     .size_full()
 }
 
+/// Records, as the row `id`'s, the text colour in force where it is
+/// prepainted inside a label, for the tests: the colour the label's text was
+/// laid out in. A text takes its colour from the text style it is laid out
+/// under, which no quad of the scene carries, and the label computes that
+/// style alike in layout and in prepaint, both before paint makes its row
+/// group's hitbox.
+#[cfg(test)]
+pub fn label_probe(ui: &Entity<InfoRegistry>, id: String) -> impl IntoElement {
+    let ui = ui.clone();
+    canvas(
+        move |_bounds, window: &mut Window, cx: &mut App| {
+            let colour = window.text_style().color;
+            ui.update(cx, |r, _| {
+                r.label_colours.insert(id, colour);
+            });
+        },
+        |_, _, _, _| {},
+    )
+    .absolute()
+}
+
 /// The segments of the Basic page's segmented control, by index, and the
 /// dividing line before each after the first, as elements of the list.
 const SEGMENTS: [(&str, Option<&str>); 3] = [
