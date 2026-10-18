@@ -14424,3 +14424,52 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
         }
     }
 }
+
+/// The Layout page's "Supported toolkits" answer counts and names the
+/// connectors from `pages::layout::CONNECTORS`, and that list is the
+/// workspace's: every `connectors/` member of the root Cargo.toml is a
+/// listed connector or the widget crate beside one (`<connector>-widgets`,
+/// native-theme-egui-widgets beside native-theme-egui), and every listed
+/// connector is a member.
+#[test]
+fn the_supported_toolkits_answer_counts_the_connectors() {
+    use crate::pages::layout::{CONNECTORS, supported_toolkits};
+    let manifest: toml::Table = toml::from_str(include_str!("../../../../Cargo.toml"))
+        .expect("the workspace manifest parses");
+    let members: Vec<&str> = manifest
+        .get("workspace")
+        .and_then(|w| w.get("members"))
+        .and_then(|m| m.as_array())
+        .expect("the workspace manifest lists its members")
+        .iter()
+        .filter_map(|m| m.as_str()?.strip_prefix("connectors/"))
+        .collect();
+    let listed: Vec<&str> = CONNECTORS.iter().map(|&(_, krate)| krate).collect();
+    for krate in &listed {
+        assert!(
+            members.contains(krate),
+            "{krate} is listed as a connector, but the workspace has no connectors/{krate}"
+        );
+    }
+    for member in &members {
+        assert!(
+            listed.contains(member)
+                || member
+                    .strip_suffix("-widgets")
+                    .is_some_and(|connector| listed.contains(&connector)),
+            "connectors/{member} is a connector CONNECTORS leaves out"
+        );
+    }
+    let answer = supported_toolkits();
+    assert!(
+        answer.starts_with(&format!("{} toolkits", CONNECTORS.len())),
+        "the answer does not count the {} connectors: {answer:?}",
+        CONNECTORS.len()
+    );
+    for (toolkit, krate) in CONNECTORS {
+        assert!(
+            answer.contains(&format!("{toolkit} ({krate})")),
+            "the answer does not name {toolkit} through {krate}: {answer:?}"
+        );
+    }
+}

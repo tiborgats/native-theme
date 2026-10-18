@@ -71,6 +71,34 @@ const SIDEBAR_HEADER: &str = "Workspace";
 /// grows with the text as the rows do (`h_7`, sidebar/menu.rs:323).
 const SIDEBAR_HEIGHT: Rems = rems(12.);
 
+/// The toolkits native-theme has a connector for, as `(toolkit, crate)`:
+/// the workspace's `connectors/` members less the widget crate beside one
+/// (native-theme-egui-widgets, beside native-theme-egui), which a test holds
+/// to the root Cargo.toml.
+pub(crate) const CONNECTORS: [(&str, &str); 3] = [
+    ("gpui", "native-theme-gpui"),
+    ("iced", "native-theme-iced"),
+    ("egui", "native-theme-egui"),
+];
+
+/// The Accordion's "Supported toolkits" answer, counted and named from
+/// [`CONNECTORS`], so it cannot go stale as the presets' answer cannot.
+pub(crate) fn supported_toolkits() -> String {
+    let names: Vec<String> = CONNECTORS
+        .iter()
+        .map(|(toolkit, krate)| format!("{toolkit} ({krate})"))
+        .collect();
+    let named = match names.split_last() {
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+        None => String::new(),
+    };
+    format!(
+        "{} toolkits, each through its own connector crate: {named}.",
+        CONNECTORS.len()
+    )
+}
+
 /// The pages the Breadcrumb leads through to this one.
 const BREADCRUMB_PAGES: [Page; 4] = [Page::Buttons, Page::Inputs, Page::Data, Page::Feedback];
 
@@ -303,7 +331,7 @@ impl Showcase {
                     (
                         "Supported toolkits",
                         "layout-accordion-answer-2",
-                        "gpui-component and iced; an egui connector is planned for v0.6.0.".into(),
+                        supported_toolkits().into(),
                     ),
                     (
                         "How many presets?",

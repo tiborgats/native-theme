@@ -14,7 +14,7 @@ mod data;
 mod feedback;
 mod icons;
 mod inputs;
-mod layout;
+pub(crate) mod layout;
 mod overlays;
 mod theme_map;
 mod typography;
