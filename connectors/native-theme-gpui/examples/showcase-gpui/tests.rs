@@ -2485,6 +2485,62 @@ fn the_page_tabs_navigate(cx: &mut TestAppContext) {
     }
 }
 
+/// The page row's menu icon, the chosen set's ChevronDown, is
+/// `geometry::icon_size_small` as every other small icon is (M9-015), and
+/// the row's info names that builder while the icon shows.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_page_tabs_menu_icon_is_icon_size_small(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx);
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (small, icon) = read(&mut cx, &showcase, |this, cx| {
+        (
+            native_value(cx, geometry::icon_size_small),
+            this.info_ui
+                .read(cx)
+                .layout_drawn()
+                .get("chrome.page_tabs.menu.icon")
+                .copied(),
+        )
+    });
+    let small = match small {
+        Some(gpui_component::Size::Size(small)) => Some(small),
+        _ => None,
+    };
+    assert!(
+        small.is_some(),
+        "geometry::icon_size_small gives no size under kde-breeze"
+    );
+    assert!(
+        icon.is_some(),
+        "Material's ChevronDown is not drawn as the page row's menu icon"
+    );
+    let (Some(small), Some(icon)) = (small, icon) else {
+        return;
+    };
+    assert_eq!(
+        (icon.size.width, icon.size.height),
+        (small, small),
+        "the page row's menu icon is laid out at {:?}, not geometry::icon_size_small's {small:?}",
+        icon.size
+    );
+    let info = settle_on(&mut cx, &showcase, Page::Charts.tab());
+    assert!(
+        info.as_ref().is_some_and(|i| i
+            .config
+            .iter()
+            .any(|n| n.what == "geometry" && n.text.starts_with("geometry::icon_size_small:"))),
+        "the page row's info does not name geometry::icon_size_small while its menu icon shows: {info:?}"
+    );
+}
+
 /// The Basic page's theme-drawn controls paint the theme's colours
 /// (ISSUES D1-D4): each widest painted box is the leaf that fills it -- the
 /// checkbox indicator's fill, the switch track, the slider rail, the

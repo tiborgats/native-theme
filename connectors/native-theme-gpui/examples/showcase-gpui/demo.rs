@@ -1845,13 +1845,16 @@ fn native_tab_bar(
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
     }
+    if menu && menu_icon.is_some() {
+        bar_info = bar_info.geometry("icon_size_small");
+    }
     let labels: Vec<&'static str> = tabs.iter().map(|&(label, _)| label).collect();
     let on_click: TabClick = Rc::new(on_click);
     let on_tab = on_click.clone();
     let tool_box = Some(tool_box_of(*n));
     let ghost = variants::ghost_button(cx);
     let menu = menu.then(|| {
-        // The chosen set's ChevronDown at `defaults.icon_sizes.small`, where
+        // The chosen set's ChevronDown at `geometry::icon_size_small`, where
         // the set has one, in place of upstream's caret, which draws
         // gpui-component's own glyph at a size of its own (button/button.rs,
         // `Caret`); upstream's caret where the set has none, the button
@@ -1864,7 +1867,7 @@ fn native_tab_bar(
         .map(|button| match menu_icon {
             Some(icon) => button.child(listed_icon(
                 ui,
-                icon.with_size(px(n.resolved.defaults.icon_sizes.small)),
+                native_sized(cx, icon, geometry::icon_size_small),
                 Some("chrome.page_tabs.menu.icon"),
             )),
             None => button.dropdown_caret(true),
