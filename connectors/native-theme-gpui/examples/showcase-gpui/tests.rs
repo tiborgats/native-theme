@@ -6057,6 +6057,143 @@ fn a_table_row_reports_what_the_table_paints_on_it(cx: &mut TestAppContext) {
     );
 }
 
+/// The DataTable's rows, as its delegate holds them for the table to draw.
+fn table_rows(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Vec<[String; 3]> {
+    read(cx, showcase, |this, cx| {
+        this.table_state
+            .read(cx)
+            .delegate()
+            .rows
+            .iter()
+            .map(|row| row.clone().map(|cell| cell.to_string()))
+            .collect()
+    })
+}
+
+/// The DataTable's column keys, in the order its delegate holds them.
+fn table_columns(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Vec<String> {
+    read(cx, showcase, |this, cx| {
+        this.table_state
+            .read(cx)
+            .delegate()
+            .columns
+            .iter()
+            .map(|column| column.key.to_string())
+            .collect()
+    })
+}
+
+/// `rows` with each row's cells in the order `order` names, each the index
+/// a row holds that cell at.
+fn reordered(rows: &[[String; 3]], order: [usize; 3]) -> Vec<[String; 3]> {
+    rows.iter()
+        .map(|row| order.map(|ix| row.get(ix).cloned().unwrap_or_default()))
+        .collect()
+}
+
+/// `rows` sorted by the cell at `by`: descending where `descending`, else
+/// ascending.
+fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[String; 3]> {
+    rows.sort_by(|a, b| {
+        let order = a.get(by).cmp(&b.get(by));
+        if descending { order.reverse() } else { order }
+    });
+    rows
+}
+
+/// Click the sort button of the DataTable's column `col_ix`: upstream's
+/// `("icon-sort", col_ix)` (gpui-component 0.7.3 table/state.rs:1643, with
+/// `test_support()`).
+fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
+    cx.update(|window, cx| {
+        gpui_kit::test::TestWindowExt::click(window, ("icon-sort", col_ix), cx);
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// The Data page's sort button sorts the rows (`SampleTableDelegate::
+/// perform_sort`): one click descending by the Role column, the next
+/// ascending, the third back to the rows as given, the cycle upstream's
+/// `TableState::perform_sort` steps the button through.
+#[gpui::test]
+fn the_tables_sort_button_sorts_its_rows(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let given = table_rows(&mut cx, &showcase);
+    let sortable = read(&mut cx, &showcase, |this, cx| {
+        this.table_state
+            .read(cx)
+            .delegate()
+            .columns
+            .iter()
+            .position(|column| column.sort.is_some())
+    });
+    assert!(sortable.is_some(), "the table has no sortable column");
+    let role = sortable.unwrap_or_default();
+    for (descending, label) in [(true, "descending"), (false, "ascending")] {
+        click_sort(&mut cx, role);
+        assert_eq!(
+            table_rows(&mut cx, &showcase),
+            sorted(given.clone(), role, descending),
+            "the sort button did not sort the rows {label} by column {role}"
+        );
+    }
+    click_sort(&mut cx, role);
+    assert_eq!(
+        table_rows(&mut cx, &showcase),
+        given,
+        "the sort button's third click did not restore the rows as given"
+    );
+}
+
+/// A header dragged to another place takes its cells with it
+/// (`SampleTableDelegate::move_column`, which upstream asks for in
+/// table/delegate.rs:120-130): the Role column dragged before the Name
+/// column holds the roles, and its sort button then sorts the rows by them.
+#[gpui::test]
+fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Data);
+    let given = table_rows(&mut cx, &showcase);
+    assert_eq!(
+        table_columns(&mut cx, &showcase),
+        ["name", "role", "status"],
+        "the table's columns are not the ones this test moves"
+    );
+    // The drag lands left of the first column's centre: upstream's gap
+    // before it (table/state.rs, `drag_gap_at`).
+    cx.update(|window, cx| {
+        let from = gpui_kit::test::TestWindowExt::find(window, ("col-header", 1_usize)).bounds();
+        let to = gpui_kit::test::TestWindowExt::find(window, ("col-header", 0_usize)).bounds();
+        gpui_kit::test::TestWindowExt::drag(
+            window,
+            from.center(),
+            point(to.left() + px(4.), to.center().y),
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        table_columns(&mut cx, &showcase),
+        ["role", "name", "status"],
+        "the drag did not move the Role column first"
+    );
+    let moved = reordered(&given, [1, 0, 2]);
+    assert_eq!(
+        table_rows(&mut cx, &showcase),
+        moved,
+        "the moved Role column does not hold the roles"
+    );
+    click_sort(&mut cx, 0);
+    assert_eq!(
+        table_rows(&mut cx, &showcase),
+        sorted(moved, 0, true),
+        "the moved Role column's sort button did not sort the rows by the roles"
+    );
+}
+
 /// A List row's text is plain text, so it takes the list font
 /// `geometry::list_item` gives the row, and its info says so; without a
 /// native theme it is ListItem's own foreground.

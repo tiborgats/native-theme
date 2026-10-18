@@ -949,6 +949,24 @@ impl TableDelegate for SampleTableDelegate {
         }
     }
 
+    /// Move column `col_ix` to `to_ix` with its cells, in `rows` and in
+    /// `unsorted`, as upstream asks (table/delegate.rs, `move_column`): the
+    /// table moves only its own header (table/state.rs,
+    /// `TableState::move_column`), and asks the delegate for each cell and
+    /// each sort by the column's new index.
+    fn move_column(
+        &mut self,
+        col_ix: usize,
+        to_ix: usize,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) {
+        move_item(&mut self.columns, col_ix, to_ix);
+        for row in self.rows.iter_mut().chain(self.unsorted.iter_mut()) {
+            move_item(row, col_ix, to_ix);
+        }
+    }
+
     fn render_tr(
         &mut self,
         row_ix: usize,
@@ -991,6 +1009,18 @@ impl TableDelegate for SampleTableDelegate {
         // this showcase's text_sm on its own element (label.rs:211), over what
         // the table gives the row.
         text
+    }
+}
+
+/// Move the item at `from` to `to`, the items between shifting over by one;
+/// nothing where either index is past `items`.
+fn move_item<T>(items: &mut [T], from: usize, to: usize) {
+    if from < to {
+        if let Some(span) = items.get_mut(from..=to) {
+            span.rotate_left(1);
+        }
+    } else if let Some(span) = items.get_mut(to..=from) {
+        span.rotate_right(1);
     }
 }
 
