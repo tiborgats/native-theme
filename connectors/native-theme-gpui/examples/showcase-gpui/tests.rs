@@ -14986,6 +14986,32 @@ fn the_tags_heading_counts_the_tags_colours() {
     );
 }
 
+/// The Feedback page's Marker heading counts `MARKERS`: its variants, one
+/// Marker each, and its loading styles, one each.
+#[test]
+fn the_markers_heading_counts_the_markers() {
+    use crate::pages::feedback::{MARKERS, markers_heading};
+    for (ix, &(_, kind, _)) in MARKERS.iter().enumerate() {
+        assert!(
+            !MARKERS.iter().take(ix).any(|&(_, k, _)| k == kind),
+            "two Markers of one kind, which the heading would count twice"
+        );
+    }
+    let loading = MARKERS.iter().filter(|&&(_, k, _)| k.is_loading()).count();
+    assert!(
+        loading > 0 && loading < MARKERS.len(),
+        "the heading names variants and loading styles, and MARKERS holds {loading} loading of {}",
+        MARKERS.len()
+    );
+    assert_eq!(
+        markers_heading(),
+        format!(
+            "Marker ({} variants, {loading} loading styles)",
+            MARKERS.len() - loading
+        )
+    );
+}
+
 /// The Typography page's Kbds take gpui's `secondary` modifier, as the
 /// showcase's own bindings do (`app::init`): Ctrl off macOS and Cmd on it.
 /// A `cmd-` keystroke is the platform key everywhere, which gpui-component
@@ -15000,7 +15026,13 @@ fn the_kbds_take_the_showcases_modifier() {
             "{id}: {keys:?} is not on the showcase's modifier, secondary"
         );
         let drawn = gpui_component::kbd::Kbd::format(&stroke);
-        if !cfg!(target_os = "macos") {
+        // Cmd is drawn ⌘ on macOS, and Control ⌃ (kbd.rs, Kbd::format).
+        if cfg!(target_os = "macos") {
+            assert!(
+                drawn.contains('⌘') && !drawn.contains('⌃'),
+                "{id}: {keys:?} is drawn as {drawn:?}, not on Cmd"
+            );
+        } else {
             assert!(
                 drawn.starts_with("Ctrl+") && !drawn.contains("Win"),
                 "{id}: {keys:?} is drawn as {drawn:?}, not on Ctrl"
@@ -15010,7 +15042,8 @@ fn the_kbds_take_the_showcases_modifier() {
 }
 
 /// The Feedback page's shortcut tooltip names its keystroke as a Kbd draws
-/// it on this platform, on the showcase's modifier: "Ctrl+S" off macOS.
+/// it on this platform, on the showcase's modifier: "Ctrl+S" off macOS,
+/// "⌘S", Cmd's glyph, on it.
 #[test]
 fn the_shortcut_tooltip_names_its_keystroke() {
     use crate::pages::feedback::{SAVE_KEYS, save_tooltip};
@@ -15021,7 +15054,9 @@ fn the_shortcut_tooltip_names_its_keystroke() {
     );
     let drawn = gpui_component::kbd::Kbd::format(&stroke);
     assert_eq!(save_tooltip(), format!("Save file ({drawn})"));
-    if !cfg!(target_os = "macos") {
+    if cfg!(target_os = "macos") {
+        assert_eq!(save_tooltip(), "Save file (⌘S)");
+    } else {
         assert_eq!(save_tooltip(), "Save file (Ctrl+S)");
     }
 }

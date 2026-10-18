@@ -91,8 +91,9 @@ const DECORATIONS: [(&str, DecorationKind, &str); 4] = [
     ),
 ];
 
-/// The Kbds, as `(id, keys)`, on gpui's `secondary` modifier as the
-/// showcase's own bindings are (`app::init`): Ctrl off macOS, Cmd on it.
+/// The Kbds, as `(id, keys)`: samples a Kbd draws, not the showcase's key
+/// bindings, each on gpui's `secondary` modifier, the one those bindings
+/// take (`app::init`), Ctrl off macOS and Cmd on it.
 pub(crate) const KBDS: [(&str, &str); 4] = [
     ("typography-kbd-copy", "secondary-c"),
     ("typography-kbd-paste", "secondary-v"),

@@ -5537,6 +5537,12 @@ pub(crate) enum MarkerKind {
 }
 
 impl MarkerKind {
+    /// Whether the Marker shows loading, a style of upstream's loading
+    /// Marker rather than a variant of its own.
+    pub(crate) const fn is_loading(self) -> bool {
+        matches!(self, Self::Spinner | Self::Shimmer)
+    }
+
     pub(crate) fn name(self) -> &'static str {
         match self {
             Self::Plain => "Plain, with an icon",

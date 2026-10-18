@@ -119,9 +119,20 @@ pub(crate) fn tags_heading() -> String {
     format!("Tags ({colours} colors + outline)")
 }
 
-/// The keystroke the shortcut tooltip names, on gpui's `secondary`
-/// modifier as the showcase's own bindings are (`app::init`): Ctrl off
-/// macOS, Cmd on it.
+/// The Markers section's heading, counting [`MARKERS`]: its variants, then
+/// its loading styles ([`MarkerKind::is_loading`]).
+pub(crate) fn markers_heading() -> String {
+    let loading = MARKERS
+        .iter()
+        .filter(|&&(_, kind, _)| kind.is_loading())
+        .count();
+    let variants = MARKERS.len().saturating_sub(loading);
+    format!("Marker ({variants} variants, {loading} loading styles)")
+}
+
+/// The keystroke the shortcut tooltip names, a sample and no binding of the
+/// showcase's: on gpui's `secondary` modifier, the one the showcase's
+/// bindings take (`app::init`), Ctrl off macOS and Cmd on it.
 pub(crate) const SAVE_KEYS: &str = "secondary-s";
 
 /// The shortcut tooltip's text: [`SAVE_KEYS`] as a `Kbd` draws it on this
@@ -141,7 +152,7 @@ const BADGES: [(&str, Option<usize>, &str); 3] = [
 ];
 
 /// The Markers, as `(id, kind, text)`.
-const MARKERS: [(&str, MarkerKind, &str); 5] = [
+pub(crate) const MARKERS: [(&str, MarkerKind, &str); 5] = [
     ("feedback-marker-plain", MarkerKind::Plain, "Theme applied"),
     ("feedback-marker-separator", MarkerKind::Separator, "Today"),
     (
@@ -420,7 +431,7 @@ impl Showcase {
                 ui,
                 cx,
                 "feedback-heading-marker",
-                "Marker (3 variants, 2 loading styles)",
+                markers_heading(),
             ))
             .child(with_gap(v_flex(), widget_gap).w(px(360.0)).children(
                 MARKERS.map(|(id, kind, text)| demo::marker(ui, cx, id, kind, text, &marker_icon)),
