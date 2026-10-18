@@ -272,7 +272,49 @@ pub fn group_box(
 /// geometry lines -- recorded where `demo::accordion` applies the builders --
 /// then name the colours.
 pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Accordion")
+    upstream_accordion(WidgetInfo::new("Accordion"), t, reduce_motion, styled)
+        .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
+}
+
+/// The Basic page's two expanders where no native theme is installed:
+/// upstream's Accordion of items titled `titles`, open as `open` says,
+/// drawn while gpui's `reduce_motion` is as given (`demo::expander`).
+pub fn expander(
+    t: &Theme,
+    reduce_motion: bool,
+    titles: [&'static str; 2],
+    open: [bool; 2],
+) -> WidgetInfo {
+    let state = |open: bool| if open { "open" } else { "closed" };
+    let [first, second] = titles;
+    let [first_open, second_open] = open;
+    upstream_accordion(
+        WidgetInfo::new("Accordion").variant("expanders"),
+        t,
+        reduce_motion,
+        false,
+    )
+    .instance(
+        "items",
+        format!(
+            "{first} ({}), {second} ({}); Accordion::item takes a closure over an AccordionItem the Accordion renders itself (accordion.rs, Accordion::item), so the Accordion reports for its items; each body is a Label that reports itself",
+            state(first_open),
+            state(second_open)
+        ),
+    )
+    .instance("click", "a title opens its item and closes the other; the showcase keeps the state")
+}
+
+/// What upstream's Accordion draws of its own, onto `info`: the Layout
+/// page's and, without a native theme, the Basic page's expanders. `styled`
+/// as [`accordion`] takes it.
+fn upstream_accordion(
+    info: WidgetInfo,
+    t: &Theme,
+    reduce_motion: bool,
+    styled: bool,
+) -> WidgetInfo {
+    let info = info
         .not_themeable(
             "own icons",
             super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
@@ -313,6 +355,7 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> 
             t.foreground,
             "showcase",
         ))
+        .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)")
     };
     info.color(claim(
             "chevron",
@@ -332,112 +375,6 @@ pub fn accordion(t: &Theme, reduce_motion: bool, items: usize, styled: bool) -> 
         } else {
             "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
         })
-        .instance("items", format!("{items}, the first open. Accordion::item takes a closure over an AccordionItem that the Accordion builds and renders itself (accordion.rs, Accordion::item), so an item cannot be wrapped: the Accordion reports for its items and their titles. Each answer is a Label that reports itself"))
-}
-
-/// The Basic page's two expanders, an Accordion of items titled `titles`,
-/// open as `open` says, drawn while gpui's `reduce_motion` is as given, its
-/// per-call seams taken from `native` where a native theme is installed
-/// (`demo::expander`). Its title rows' geometry line is recorded where the
-/// helper applies the builder.
-pub fn expander(
-    t: &Theme,
-    reduce_motion: bool,
-    titles: [&'static str; 2],
-    open: [bool; 2],
-    native: Option<&ResolvedTheme>,
-) -> WidgetInfo {
-    let info = WidgetInfo::new("Accordion")
-        .variant("expanders")
-        .not_themeable(
-            "own icons",
-            super::own_icons("ChevronDown on each item's header, turned while the item is open (accordion.rs, AccordionItem::render)"),
-        )
-        .color(claim(
-            "bg",
-            "accordion",
-            t.accordion,
-            "gpui-component/accordion.rs:378",
-        ))
-        .color(claim(
-            "open item's title",
-            "foreground",
-            t.foreground,
-            "gpui-component/accordion.rs:306",
-        ))
-        .color(claim(
-            "closed item's title, inherited",
-            "foreground",
-            t.foreground,
-            "showcase",
-        ))
-        .color(claim(
-            "chevron",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/accordion.rs:330",
-        ))
-        .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver")
-        .not_themeable("fill", "the accordion token, which the connector gives the window's background: the model states no expander fill");
-    let hover = native.map(|r| {
-        stated_claim(
-            "hovered title",
-            "hover_background",
-            r.expander.hover_background,
-            "showcase",
-        )
-    });
-    let info = match hover {
-        Some(Some(hover)) => info.color(hover),
-        Some(None) => info.not_themeable(
-            "hover",
-            "none: the theme states no expander.hover_background, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)",
-        ),
-        None => info,
-    };
-    let info = match native {
-        Some(r) => info
-            .colors(edge_claim(
-                "border and the line between items",
-                "border",
-                Some(r.expander.border.color),
-                Some(r.expander.border.line_width),
-                "showcase",
-            ))
-            .config("border", format!("expander.border: {}px, radius {}px, which the showcase refines the Accordion with over its bordered card (accordion.rs, RenderOnce for Accordion)", px_text(r.expander.border.line_width), px_text(r.expander.border.corner_radius)))
-            .config("font", format!("expander.font, {}px, through each item's style, which upstream refines the item with after its own text_size (accordion.rs, RenderOnce for AccordionItem)", px_text(r.expander.font.size))),
-        None => info
-            .color(claim(
-                "border",
-                "border",
-                t.border,
-                "gpui-component/accordion.rs:110",
-            ))
-            .color(claim(
-                "line between items",
-                "border",
-                t.border,
-                "gpui-component/accordion.rs:381",
-            ))
-            .not_themeable("hover", "none: no native theme is installed, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)"),
-    };
-    let state = |open: bool| if open { "open" } else { "closed" };
-    let [first, second] = titles;
-    let [first_open, second_open] = open;
-    info.instance(
-        "items",
-        format!(
-            "{first} ({}), {second} ({}); Accordion::item takes a closure over an AccordionItem the Accordion renders itself (accordion.rs, Accordion::item), so the Accordion reports for its items; each body is a Label that reports itself",
-            state(first_open),
-            state(second_open)
-        ),
-    )
-    .instance("animation", if reduce_motion {
-        "none: reduced motion is on, so an item's content opens and closes at once (gpui-base/motion.rs, spring)"
-    } else {
-        "an item's content springs open and shut on spring_control; the chevron turns at once (accordion.rs, AccordionItem::render)"
-    })
-    .instance("click", "a title opens its item and closes the other; the showcase keeps the state")
 }
 
 /// A card: a Fill `GroupBox` with no title, its content filled with

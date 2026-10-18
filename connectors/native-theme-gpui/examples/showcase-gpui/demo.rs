@@ -6371,29 +6371,20 @@ pub(crate) fn accordion(
         .debug_selector(move || id.into())
 }
 
-/// An Accordion of two expanders, as `spec` describes them: an item per
+/// The Basic page's two expanders, as `spec` describes them: an item per
 /// `(title, body id, body)`, open as `open` says; a click on a title hands
 /// `on_toggle` which are open after it. Each body is a body-text Label that
-/// reports itself. Under a native theme, [`native_expander`].
-///
-/// What the theme states reaches it per call: each title row is
-/// `expander.header_height` tall (`geometry::accordion_title`), and fills
-/// with `expander.hover_background` under the pointer through the item's
-/// hover style (accordion.rs, `AccordionItem::hover`); each item takes
-/// `expander.font`'s size through its own style, which upstream refines it
-/// with after its `text_size` (accordion.rs, `RenderOnce for AccordionItem`),
-/// and so do the lines between items their colour; the Accordion takes
-/// `expander.border`, which it refines its bordered card with last
-/// (accordion.rs, `RenderOnce for Accordion`).
+/// reports itself. Under a native theme the showcase draws them as
+/// `expander.*` states them ([`native_expander`]); without one they are
+/// upstream's Accordion, an item each.
 pub(crate) fn expander(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     spec: ExpanderSpec,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let native = cx.native();
-    if let Some(n) = &native {
-        return native_expander(ui, cx, n, spec, Rc::new(on_toggle));
+    if let Some(n) = cx.native() {
+        return native_expander(ui, cx, &n, spec, Rc::new(on_toggle));
     }
     let ExpanderSpec {
         id,
@@ -6402,67 +6393,25 @@ pub(crate) fn expander(
         width,
         ..
     } = spec;
-    let mut expander_info = info::layout::expander(
+    let expander_info = info::layout::expander(
         cx.theme(),
         cx.reduce_motion(),
         items.map(|(title, _, _)| title),
         open,
-        native.as_ref().map(|n| n.resolved),
-    );
-    // `AccordionItem::title_style` takes a refinement rather than being one.
-    let title_style = native_info(
-        StyleRefinement::default(),
-        cx,
-        geometry::accordion_title,
-        "accordion_title",
-        &mut expander_info,
     );
     let accordion = Accordion::new(id)
         .w(width)
         .on_toggle_click(move |open, window, cx| {
             on_toggle(&[open.contains(&0), open.contains(&1)], window, cx)
         });
-    let accordion = match &native {
-        Some(n) => {
-            let b = &n.resolved.expander.border;
-            accordion
-                .border(px(b.line_width))
-                .border_color(info::stated(b.color))
-                .rounded(px(b.corner_radius.max(0.0)))
-        }
-        None => accordion,
-    };
     items
         .into_iter()
         .zip(open)
         .fold(accordion, |accordion, ((title, body_id, body), open)| {
-            let title_style = title_style.clone();
-            let native = native.as_ref().map(|n| {
-                let e = &n.resolved.expander;
-                (
-                    px(native_theme_gpui::scaled_text_size(
-                        e.font.size,
-                        n.accessibility,
-                    )),
-                    e.hover_background.map(info::stated),
-                    info::stated(e.border.color),
-                )
-            });
             accordion.item(move |item| {
-                let item = item
-                    .title_style(title_style)
-                    .title(title)
+                item.title(title)
                     .open(open)
-                    .child(body_label(ui, cx, body_id, body));
-                match native {
-                    Some((size, hover, line)) => item
-                        .text_size(size)
-                        .border_color(line)
-                        .when_some(hover, |item, hover| {
-                            item.hover(move |style| style.bg(hover))
-                        }),
-                    None => item,
-                }
+                    .child(body_label(ui, cx, body_id, body))
             })
         })
         .info(ui, id, expander_info)
