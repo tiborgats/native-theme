@@ -10787,3 +10787,51 @@ fn the_basic_pages_icon_buttons_claim_no_edge(cx: &mut TestAppContext) {
         "an icon button's info names geometry::button, which it does not take: {info:?}"
     );
 }
+
+/// A disabled refined field's edge swatch is the colour painted: the
+/// surface's `input.border.color` faded with the field by the opacity
+/// `geometry::input_fill` gives it (`input.disabled_opacity`) -- under the
+/// first bundled preset of this platform whose light field is stroked and
+/// faded, chosen at test time.
+#[gpui::test]
+fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
+    let offered = native_theme::theme::Theme::list_presets_for_platform();
+    let preset = every_bundled_variant()
+        .into_iter()
+        .find(|(name, r, _)| {
+            name.ends_with(" light")
+                && r.input.border.line_width > 0.0
+                && r.input.disabled_opacity < 1.0
+                && offered
+                    .iter()
+                    .any(|p| name.starts_with(&format!("{} ", p.key)))
+        })
+        .and_then(|(name, _, _)| name.strip_suffix(" light").map(str::to_string));
+    assert!(
+        preset.is_some(),
+        "no bundled preset of this platform strokes and fades a disabled field, which this test reads"
+    );
+    let Some(preset) = preset else { return };
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, &preset);
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, BASIC_INPUT_DISABLED);
+    assert!(info.is_some(), "the disabled field shows no info");
+    let Some(info) = info else { return };
+    let claimed = info
+        .colors
+        .iter()
+        .find(|c| c.role.starts_with("edge"))
+        .map(|c| c.value);
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert!(
+        claimed.is_some(),
+        "the disabled field claims no edge: {info:?}"
+    );
+    assert_eq!(
+        claimed,
+        painted_edge(&mut cx, BASIC_INPUT_DISABLED),
+        "the disabled field's edge swatch is not the edge painted: {info:?}"
+    );
+}

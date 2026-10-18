@@ -3201,7 +3201,7 @@ fn text_field(
             }
             let resolved = cx.native_theme().and_then(|nt| nt.resolved(cx));
             if let (true, Some(r), Some(fill)) = (disabled, resolved, &fill) {
-                input_info = info::inputs::disabled_input_surface(input_info, r);
+                input_info = info::inputs::disabled_input_surface(input_info, r, fill.opacity);
                 let none = cx.theme().transparent;
                 // The fill goes under the field; the disabled text colour
                 // stays on it, where the editor reads it.

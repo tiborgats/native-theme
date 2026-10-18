@@ -70,15 +70,24 @@ fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) ->
 }
 
 /// `info` of a disabled field over its surface (`demo::faded_surface`),
-/// edged by `r`'s `input.border` under the field's fade.
-pub fn disabled_input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    info.colors(edge_claim(
-        "edge, under the field's fade",
+/// edged by `r`'s `input.border` and faded with it by `fade`, the opacity
+/// `geometry::input_fill` gives the surface.
+pub fn disabled_input_surface(
+    info: WidgetInfo,
+    r: &ResolvedTheme,
+    fade: Option<f32>,
+) -> WidgetInfo {
+    let edge = edge_claim(
+        "edge, faded with the field by input.disabled_opacity",
         "border",
         Some(r.input.border.color),
         Some(r.input.border.line_width),
         "showcase",
-    ))
+    );
+    info.colors(edge.map(|c| super::ColorClaim {
+        value: c.value.opacity(fade.unwrap_or(1.)),
+        ..c
+    }))
     .instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
         .config("surface", "geometry::input_fill's fill inside input.border.color's line, none where input.border.line_width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
