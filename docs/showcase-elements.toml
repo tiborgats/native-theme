@@ -92,7 +92,6 @@
 #
 # A showcase not yet on the crate reads the list with a copy of that reader and an
 # `include_str!` of its own, the path relative to the file that holds it:
-#   gpui: examples/showcase-gpui/elements.rs -> "../../../../docs/showcase-elements.toml" (until M9a T4)
 #   iced: examples/showcase-iced.rs          -> "../../../docs/showcase-elements.toml"    (until M9b T1)
 #   egui: examples/showcase-egui/elements.rs -> "../../../../docs/showcase-elements.toml" (until M9c T1)
 #

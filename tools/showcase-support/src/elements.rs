@@ -1,9 +1,9 @@
 //! The elements the three showcases share, read from
 //! `docs/showcase-elements.toml`: the list's reader, which its header names.
-//! Until each showcase moves onto it (gpui in M9a T4, iced in M9b T1, egui in
-//! M9c T1), that showcase reads the list with a copy of its own. Widget Info
-//! shows an element's name, state and leaves from it, and each showcase's
-//! layout dump records where it drew each of them.
+//! The gpui showcase reads the list through it; until iced and egui move onto
+//! it (M9b T1, M9c T1), each reads the list with a copy of its own. Widget
+//! Info shows an element's name, state and leaves from it, and each
+//! showcase's layout dump records where it drew each of them.
 
 use std::sync::OnceLock;
 

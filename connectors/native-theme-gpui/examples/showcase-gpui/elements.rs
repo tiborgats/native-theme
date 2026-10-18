@@ -1,112 +1,24 @@
 //! The elements the three showcases share, read from
-//! `docs/showcase-elements.toml`, and where this showcase drew each of them,
-//! which the layout dump reports (`--dump-layout`, `layout_dump` in main.rs).
+//! `docs/showcase-elements.toml` through the crate they share
+//! (`native_theme_showcase_support::elements`, the list's one reader), and
+//! where this showcase drew each of them, which the layout dump reports
+//! (`--dump-layout`, `layout_dump` in main.rs).
 //!
 //! The list is the one place those elements are named: Widget Info shows an
 //! element's name, state and leaves from it, and
 //! `scripts/check_showcase_parity.py` compares the gpui, iced and egui dumps
 //! and captures element by element against it.
 
-use std::sync::OnceLock;
-
 use gpui::{App, Div, Entity, IntoElement, ParentElement as _, Styled as _, Window, canvas, div};
 
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{Part, PartBounds};
 
+#[cfg(test)]
+pub use native_theme_showcase_support::elements::elements;
+pub use native_theme_showcase_support::elements::{ShowcaseElement, element};
+
 use crate::info::InfoRegistry;
-
-/// One element of `docs/showcase-elements.toml`, as the list's header
-/// gives the three showcases to read it: every field of the schema, though
-/// the running showcase reads only some (`parent` is the comparator's, `when`
-/// the tests').
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct ShowcaseElement {
-    pub id: String,
-    pub name: String,
-    pub parent: String,
-    pub leaves: Vec<String>,
-    pub states: Vec<String>,
-    pub part: bool,
-    pub when: Option<String>,
-}
-
-impl ShowcaseElement {
-    /// The Widget Info title: the name, then the state or variant shown.
-    pub fn title(&self) -> String {
-        match self.states.first() {
-            Some(state) => format!("{} · {state}", self.name),
-            None => self.name.clone(),
-        }
-    }
-}
-
-const SHOWCASE_ELEMENTS: &str = include_str!("../../../../docs/showcase-elements.toml");
-
-pub fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
-    let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
-    let rows = table
-        .get("element")
-        .and_then(toml::Value::as_array)
-        .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
-    rows.iter()
-        .map(|row| {
-            let text = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned)
-                    .ok_or_else(|| format!("an element has no `{key}`"))
-            };
-            let list = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_array)
-                    .ok_or_else(|| format!("an element has no `{key}`"))?
-                    .iter()
-                    .map(|v| {
-                        v.as_str()
-                            .map(str::to_owned)
-                            .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            };
-            Ok(ShowcaseElement {
-                id: text("id")?,
-                name: text("name")?,
-                parent: text("parent")?,
-                leaves: list("leaves")?,
-                states: list("states")?,
-                part: row
-                    .get("part")
-                    .and_then(toml::Value::as_bool)
-                    .unwrap_or(false),
-                when: row
-                    .get("when")
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned),
-            })
-        })
-        .collect()
-}
-
-/// The list, parsed once. A list that does not parse is reported once on
-/// stderr and taken as empty: Widget Info then falls back to each widget's
-/// own info, and the dump holds nothing, which the comparator reports.
-/// `the_element_list_parses` holds the committed list to parsing.
-pub fn elements() -> &'static [ShowcaseElement] {
-    static LIST: OnceLock<Vec<ShowcaseElement>> = OnceLock::new();
-    LIST.get_or_init(|| {
-        showcase_elements().unwrap_or_else(|error| {
-            eprintln!("docs/showcase-elements.toml: {error}");
-            Vec::new()
-        })
-    })
-}
-
-/// The element of the list with `id`.
-pub fn element(id: &str) -> Option<&'static ShowcaseElement> {
-    elements().iter().find(|e| e.id == id)
-}
 
 /// The elements of the list that a widget reporting itself under an info id
 /// (`InfoExt::info`) is, as (info id, element id): the widget's info is then

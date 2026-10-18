@@ -2925,6 +2925,45 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
     }
 }
 
+/// A toolbar button's Widget Info names the installed theme's icon theme
+/// under `defaults.icon_theme`: under kde-breeze the variant's own, as the
+/// iced and egui panels name it, where the resolved theme's JSON holds none.
+#[gpui::test]
+fn a_tool_buttons_info_names_its_icon_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let at = bounds_of(&mut cx, CHROME_TOOLBAR_PALETTE).center();
+    hover(&mut cx, at);
+    settle(&mut cx);
+    draw(&mut cx);
+    let (is_dark, loaded) = read(&mut cx, &showcase, |this, _| {
+        (this.is_dark, this.current_icon_theme.clone())
+    });
+    let stated = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|theme| if is_dark { theme.dark } else { theme.light })
+        .and_then(|variant| variant.defaults.icon_theme)
+        .map(|name| name.to_string());
+    assert!(
+        stated.is_some(),
+        "kde-breeze's variant states no icon theme"
+    );
+    assert_eq!(
+        loaded, stated,
+        "the showcase did not take kde-breeze's own icon theme"
+    );
+    let stated = stated.unwrap_or_default();
+    click(&mut cx, INSPECTOR_COPY);
+    let copied = cx
+        .read_from_clipboard()
+        .and_then(|item| item.text())
+        .unwrap_or_default();
+    assert!(
+        copied.contains(&format!("\ndefaults.icon_theme {stated}\n")),
+        "the tool button's info does not name the icon theme {stated}: {copied:?}"
+    );
+}
+
 /// A page change keeps an info whose target is still drawn, as chrome is
 /// (spec §4.3.4 as ruled: only what left the screen is cleared).
 #[gpui::test]
@@ -9144,17 +9183,6 @@ const NOT_RECORDED: &[(&str, &str)] = &[
     ),
 ];
 
-/// The list parses, as the showcase reads it.
-#[test]
-fn the_element_list_parses() {
-    let list = crate::elements::showcase_elements().expect("docs/showcase-elements.toml parses");
-    assert!(
-        !list.is_empty(),
-        "docs/showcase-elements.toml lists nothing"
-    );
-    assert_eq!(crate::elements::elements().len(), list.len());
-}
-
 /// Every id the showcase records is an element of the list, none is
 /// recorded twice in one frame, and every element of the list the Basic
 /// page and the chrome show at rest is recorded, but for [`NOT_RECORDED`].
@@ -9330,104 +9358,6 @@ fn every_listed_id_is_in_the_list() {
             "{id} is named by the showcase but is no element of docs/showcase-elements.toml"
         );
     }
-}
-
-/// A leaf's value reads as the three showcases agreed: a colour as `Rgba`
-/// prints it, a length with ` px`, a font as family, stated size and weight,
-/// a text-scale entry as size and weight, a number as itself.
-#[test]
-fn a_leaf_value_reads_as_the_showcases_agreed() {
-    use crate::info::values::leaf_value;
-    let theme = native_theme::theme::Theme::preset("kde-breeze").expect("the preset loads");
-    let layout = theme.layout.clone();
-    let resolved = theme
-        .into_variant(native_theme::theme::ColorMode::Light)
-        .expect("the preset has the variant")
-        .into_resolved(&native_theme::ResolutionContext::for_tests())
-        .expect("the preset resolves");
-    let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
-    let value = |leaf: &str| leaf_value(leaf, &json, &layout, None).text;
-    let font = &resolved.button.font;
-    let stated = match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v} pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v} px"),
-        None => format!("{} px", font.size),
-    };
-    assert_eq!(
-        value("button.font"),
-        format!("{} {stated} {}", font.family, font.weight)
-    );
-    assert_eq!(
-        value("button.font.color"),
-        resolved.button.font.color.to_string()
-    );
-    assert_eq!(
-        value("defaults.line_height"),
-        format!("{}", resolved.defaults.line_height)
-    );
-    assert_eq!(
-        value("button.border.corner_radius_px"),
-        format!("{} px", resolved.button.border.corner_radius)
-    );
-    assert_eq!(
-        value("defaults.icon_sizes.small_px"),
-        format!("{} px", resolved.defaults.icon_sizes.small)
-    );
-    assert_eq!(
-        value("text_scale.section_heading"),
-        format!(
-            "{} px {}",
-            resolved.text_scale.section_heading.size, resolved.text_scale.section_heading.weight
-        )
-    );
-    assert_eq!(value("theme_variant.icon_set"), "not stated");
-    match layout.widget_gap {
-        Some(gap) => assert_eq!(value("layout.widget_gap_px"), format!("{gap} px")),
-        None => assert_eq!(value("layout.widget_gap_px"), "not stated"),
-    }
-    match resolved.button.border.padding.top {
-        Some(top) => assert_eq!(value("button.border.padding_top_px"), format!("{top} px")),
-        None => assert_eq!(value("button.border.padding_top_px"), "not stated"),
-    }
-    assert!(
-        leaf_value("button.background_color", &json, &layout, None)
-            .colour
-            .is_some(),
-        "a colour leaf has no swatch"
-    );
-    for e in crate::elements::elements() {
-        for leaf in &e.leaves {
-            let shown = value(leaf);
-            assert!(
-                !shown.starts_with('{') && !shown.starts_with('['),
-                "{} {leaf} shows raw JSON: {shown}",
-                e.id
-            );
-        }
-    }
-}
-
-/// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is the
-/// resolved theme's `tooltip.show_delay`, with ` ms`.
-#[test]
-fn a_ms_leaf_reads_its_value() {
-    use crate::info::values::leaf_value;
-    let theme = native_theme::theme::Theme::preset("kde-breeze").expect("the preset loads");
-    let layout = theme.layout.clone();
-    let resolved = theme
-        .into_variant(native_theme::theme::ColorMode::Light)
-        .expect("the preset has the variant")
-        .into_resolved(&native_theme::ResolutionContext::for_tests())
-        .expect("the preset resolves");
-    let delay = resolved
-        .tooltip
-        .show_delay
-        .expect("kde-breeze states a tooltip delay");
-    let json = serde_json::to_value(&resolved).expect("the resolved theme serialises");
-    assert_eq!(
-        leaf_value("tooltip.show_delay_ms", &json, &layout, None).text,
-        format!("{delay} ms")
-    );
 }
 
 #[gpui::test]

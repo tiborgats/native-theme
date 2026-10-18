@@ -19,7 +19,6 @@ pub mod registry;
 pub mod text;
 pub mod theme_map;
 pub mod typography;
-pub mod values;
 pub use chrome::*;
 pub use registry::*;
 

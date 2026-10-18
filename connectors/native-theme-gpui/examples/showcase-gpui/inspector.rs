@@ -17,11 +17,13 @@ use gpui_component::{
     v_flex, window_paddings,
 };
 use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
+use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::values;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
-use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex, leaves, stated, values};
+use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex, leaves, stated};
 use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
@@ -405,6 +407,9 @@ const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 /// none; a swatch framed as `defaults.border` frames a control; the Copy
 /// button padded by `button.border`'s sides and rounded by its radius,
 /// `button.hover_background` and `active_background` under the pointer.
+/// With it, what the rows' values are read from: the resolved theme's JSON,
+/// and the layout, icon set and icon theme the showcase installed, which the
+/// JSON does not hold (`values::leaf_value`).
 pub(crate) struct PanelLook {
     family: SharedString,
     size: gpui::Pixels,
@@ -422,19 +427,24 @@ pub(crate) struct PanelLook {
     resolved: serde_json::Value,
     layout: native_theme::theme::LayoutTheme,
     icon_set: Option<native_theme::theme::IconSet>,
+    icon_theme: Option<String>,
 }
 
 impl PanelLook {
-    /// The look under the installed native theme, with the layout and icon
-    /// set `showcase` installed; `None` before `apply` ran.
+    /// The look under the installed native theme, with the layout, icon set
+    /// and icon theme `showcase` installed; `None` before `apply` ran.
     fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
         let n = cx.native()?;
         let r = n.resolved;
-        let (layout, icon_set) = showcase
+        let (layout, icon_set, icon_theme) = showcase
             .upgrade()
             .map(|s| {
                 let s = s.read(cx);
-                (s.layout.clone(), Some(s.current_icon_set))
+                (
+                    s.layout.clone(),
+                    Some(s.current_icon_set),
+                    s.current_icon_theme.clone(),
+                )
             })
             .unwrap_or_default();
         let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
@@ -458,9 +468,10 @@ impl PanelLook {
             copy_radius: gpui::px(r.button.border.corner_radius.max(0.)),
             copy_hover: Some(stated(r.button.hover_background)),
             copy_active: r.button.active_background.map(stated),
-            resolved: serde_json::to_value(r).unwrap_or_default(),
+            resolved: values::theme_json(r).unwrap_or_default(),
             layout,
             icon_set,
+            icon_theme,
         })
     }
 
@@ -476,30 +487,42 @@ impl PanelLook {
 }
 
 /// Widget Info for `element` of docs/showcase-elements.toml, whose widget
-/// reported `info`, in the list's form: the title row -- its name and state,
-/// Copy at the end -- then the "Theme" section, a row per leaf the list
-/// names: a swatch where the value is a colour, `<leaf> <value>`, and under
-/// it how gpui applies the leaf (`info::leaves`); then "Not themeable",
-/// where the widget's info says what the theme states nothing for. The
-/// title, the Copy button, the section name and the first row record where
-/// they were laid out. Copy copies the text the panel shows. Also the
-/// title.
+/// reported `info`, in the list's form (the shared crate's `ListedInfo`): the
+/// title row -- its name and state, Copy at the end -- then the "Theme"
+/// section, a row per leaf the list names: a swatch where the value is a
+/// colour, `<leaf> <value>`, and under it how gpui applies the leaf
+/// (`info::leaves`); then "Not themeable", where the widget's info says what
+/// the theme states nothing for. The title, the Copy button, the section
+/// name and the first row record where they were laid out. Copy copies the
+/// text the panel shows (`ListedInfo::copy_text`). Also the title.
 fn listed_info(
     ui: &Entity<InfoRegistry>,
     look: &PanelLook,
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
 ) -> (gpui::Div, SharedString) {
-    let title = SharedString::from(element.title());
-    let mut copied = format!("{title}\n\nTheme\n");
-    let rows: Vec<gpui::AnyElement> = element
-        .leaves
+    let listed = ListedInfo::new(
+        element,
+        &look.resolved,
+        &look.layout,
+        look.icon_set,
+        look.icon_theme.as_deref(),
+        |leaf| {
+            leaves::how(&element.id, leaf)
+                .unwrap_or(NO_ROUTE)
+                .to_string()
+        },
+        info.not_themeable
+            .iter()
+            .map(|note| format!("{}: {}", note.what, note.text))
+            .collect(),
+    );
+    let title = SharedString::from(listed.title.clone());
+    let rows: Vec<gpui::AnyElement> = listed
+        .rows
         .iter()
         .enumerate()
-        .map(|(ix, leaf)| {
-            let value = values::leaf_value(leaf, &look.resolved, &look.layout, look.icon_set);
-            let route = leaves::how(&element.id, leaf).unwrap_or(NO_ROUTE);
-            copied.push_str(&format!("{leaf} {}\n  {route}\n", value.text));
+        .map(|(ix, row)| {
             let first = ix == 0;
             let recorded = |id: &'static str| first.then(|| elements::record(ui, id));
             // Each line its own width, clipped at the row's end.
@@ -511,7 +534,7 @@ fn listed_info(
                     look.text(div().relative())
                         .max_w_full()
                         .overflow_hidden()
-                        .child(format!("{leaf} {}", value.text))
+                        .child(format!("{} {}", row.leaf, row.value))
                         .children(recorded("chrome.info.row_1.text")),
                 )
                 .child(
@@ -519,16 +542,16 @@ fn listed_info(
                         .max_w_full()
                         .overflow_hidden()
                         .text_color(look.muted)
-                        .child(route)
+                        .child(row.how.clone())
                         .children(recorded("chrome.info.row_1.how")),
                 );
             let (frame, width, radius) = look.frame;
-            let swatch = value.colour.map(|colour| {
+            let swatch = row.colour.map(|colour| {
                 div()
                     .relative()
                     .flex_none()
                     .size(look.line)
-                    .bg(colour)
+                    .bg(stated(colour))
                     .border(width)
                     .border_color(frame)
                     .rounded(radius)
@@ -559,28 +582,18 @@ fn listed_info(
                 .into_any_element()
         })
         .collect();
-    let notes: Vec<String> = info
+    let not_themeable: Vec<gpui::AnyElement> = listed
         .not_themeable
         .iter()
-        .map(|note| format!("{}: {}", note.what, note.text))
-        .collect();
-    if !notes.is_empty() {
-        copied.push_str("\nNot themeable\n");
-        for note in &notes {
-            copied.push_str(&format!("{note}\n"));
-        }
-    }
-    let not_themeable: Vec<gpui::AnyElement> = notes
-        .into_iter()
         .map(|note| {
             look.text(div())
                 .text_color(look.muted)
                 .mt(look.row_gap)
-                .child(note)
+                .child(note.clone())
                 .into_any_element()
         })
         .collect();
-    let copy_text = copied;
+    let copy_text = listed.copy_text();
     let [top, right, bottom, left] = look.copy_padding;
     let copy = div()
         .id("inspector-copy")
