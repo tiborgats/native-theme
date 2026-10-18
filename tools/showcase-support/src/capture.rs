@@ -167,10 +167,11 @@ impl FrameCapture {
         }
     }
 
-    /// `None` while the capture is under way; then whether it was written
-    /// and passed [`check_frame_capture`], with the content size and scale
-    /// `content` gives at that moment. A capture that fails the check is not
-    /// left at the path.
+    /// `None` while the capture is under way; then, once, whether it was
+    /// written and passed [`check_frame_capture`], with the content size and
+    /// scale `content` gives at that moment. A capture that fails the check
+    /// is not left at the path. Poll until it returns `Some`, then stop: on
+    /// Windows a later poll returns `None` again, as the finder run is gone.
     pub fn poll(
         &mut self,
         content: impl FnOnce() -> Result<Content, String>,

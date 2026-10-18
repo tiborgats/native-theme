@@ -1,12 +1,15 @@
 //! The elements the three showcases share, read from
-//! `docs/showcase-elements.toml`: the list's one reader, which its header
-//! names. Widget Info shows an element's name, state and leaves from it, and
-//! each showcase's layout dump records where it drew each of them.
+//! `docs/showcase-elements.toml`: the list's reader, which its header names.
+//! Until each showcase moves onto it (gpui in M9a T4, iced in M9b T1, egui in
+//! M9c T1), that showcase reads the list with a copy of its own. Widget Info
+//! shows an element's name, state and leaves from it, and each showcase's
+//! layout dump records where it drew each of them.
 
 use std::sync::OnceLock;
 
 /// One element of `docs/showcase-elements.toml`: every field of the schema
-/// but the comparator's sample points, which a showcase ignores.
+/// but `clip` and the sample points, the comparator's, which a showcase
+/// ignores.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ShowcaseElement {
     /// Stable, dotted, lower case; the layout dump's key.

@@ -62,6 +62,15 @@ jobs:
       - name: Clippy (egui widgets, all features)
         if: matrix.package == 'native-theme-egui-widgets'
         run: cargo clippy -p native-theme-egui-widgets --all-targets --all-features
+      # The test fixtures (tools/test-fixtures) and the showcases' shared crate
+      # (tools/showcase-support), never published and with no leg of their
+      # own: their tests and Linux-only code, as scripts/check_release.sh
+      # lints every workspace crate.
+      - name: Clippy (the test fixtures and the showcase support)
+        if: matrix.package == 'native-theme'
+        run: |
+          cargo clippy -p native-theme-test-fixtures --all-targets
+          cargo clippy -p native-theme-showcase-support --all-targets
       # The strict panic lints on library code, as scripts/check_release.sh
       # runs them: native-theme and the connectors deny unwrap_used and
       # expect_used in their crate roots, and scripts/check_strict_panic.sh

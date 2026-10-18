@@ -1,5 +1,6 @@
 //! The status bar's environment text
-//! (`docs/archive/todo_v0.5.9_showcase-app-spec.md` §2.7), one item each: the desktop, the preset and colour mode, the installed theme's
+//! (`docs/archive/todo_v0.5.9_showcase-app-spec.md` §2.7), one item each:
+//! the desktop, the preset and colour mode, the installed theme's
 //! `defaults.font` with its stated size, and, once a native theme is
 //! installed, its text-scale factor and each accessibility preference that
 //! is set.

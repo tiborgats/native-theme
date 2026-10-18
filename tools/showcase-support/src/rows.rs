@@ -122,12 +122,12 @@ mod tests {
                 IconSetChoice::Material,
             ]
         );
-        let theme = Some("material");
-        let rows = icon_rows(IconSet::Material, theme, &[]);
-        match default_icon_choice(IconSet::Material, theme) {
-            choice @ IconSetChoice::Default(_) => assert_eq!(rows.first(), Some(&choice)),
-            _ => assert_eq!(rows.first(), Some(&IconSetChoice::System)),
-        }
+        // A bundled set is always available, so its `default` row leads.
+        let rows = icon_rows(IconSet::Material, Some("material"), &[]);
+        assert_eq!(
+            rows.first(),
+            Some(&IconSetChoice::Default("material".into()))
+        );
         assert_eq!(
             rows.iter().rev().take(2).collect::<Vec<_>>(),
             [&IconSetChoice::Material, &IconSetChoice::Lucide]
