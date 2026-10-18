@@ -58,8 +58,6 @@ pub fn spacing_box(
     )
 }
 
-/// A `Separator` of `kind`, its line `native`'s `separator.line_color`
-/// where a native theme is installed (`demo::separator`).
 /// A plain line drawn by `native_theme_gpui::widgets::Separator` from `r`.
 #[cfg(feature = "widgets")]
 pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
@@ -79,6 +77,8 @@ pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
         )
 }
 
+/// A `Separator` of `kind`, its line `native`'s `separator.line_color`
+/// where a native theme is installed (`demo::separator`).
 pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let info = WidgetInfo::new("Separator").variant(kind.name());
     let info = match native {

@@ -41,8 +41,6 @@ fn series_colours(info: WidgetInfo) -> WidgetInfo {
     )
 }
 
-/// A chart the showcase builds without an id, which upstream draws as a
-/// plain plot.
 /// The guide a chart draws at the hovered point.
 enum Guide {
     /// A dashed hairline, the Line and Area charts'.
