@@ -337,7 +337,13 @@ pub fn record(ui: &Entity<InfoRegistry>, id: &'static str) -> impl IntoElement {
     let ui = ui.clone();
     canvas(
         move |bounds, _window: &mut Window, cx: &mut App| {
-            ui.update(cx, |r, _| r.record_layout(id, bounds));
+            #[cfg(test)]
+            let colour = _window.text_style().color;
+            ui.update(cx, |r, _| {
+                r.record_layout(id, bounds);
+                #[cfg(test)]
+                r.text_colours.insert(id, colour);
+            });
         },
         |_, _, _, _| {},
     )

@@ -407,7 +407,9 @@ const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 /// `layout.section_gap` before each section, none where the layout states
 /// none; a swatch framed as `defaults.border` frames a control; the Copy
 /// button padded by `button.border`'s sides and rounded by its radius,
-/// `button.hover_background` and `active_background` under the pointer.
+/// filled with `button.hover_background` and lettered in
+/// `hover_text_color` under the pointer, `active_background` (where stated)
+/// and `active_text_color` while pressed.
 /// With it, what the rows' values are read from: the resolved theme's JSON,
 /// and the layout, icon set and icon theme the showcase installed, which the
 /// JSON does not hold (`values::leaf_value`).
@@ -423,8 +425,10 @@ pub(crate) struct PanelLook {
     frame: (gpui::Hsla, gpui::Pixels, gpui::Pixels),
     copy_padding: [gpui::Pixels; 4],
     copy_radius: gpui::Pixels,
-    copy_hover: Option<gpui::Hsla>,
-    copy_active: Option<gpui::Hsla>,
+    /// The Copy box's fill and text colour under the pointer.
+    copy_hover: (gpui::Hsla, gpui::Hsla),
+    /// The Copy box's fill, where stated, and text colour while pressed.
+    copy_active: (Option<gpui::Hsla>, gpui::Hsla),
     resolved: serde_json::Value,
     layout: native_theme::theme::LayoutTheme,
     icon_set: Option<native_theme::theme::IconSet>,
@@ -467,8 +471,14 @@ impl PanelLook {
             ),
             copy_padding: [side(p.top), side(p.right), side(p.bottom), side(p.left)],
             copy_radius: gpui::px(r.button.border.corner_radius.max(0.)),
-            copy_hover: Some(stated(r.button.hover_background)),
-            copy_active: r.button.active_background.map(stated),
+            copy_hover: (
+                stated(r.button.hover_background),
+                stated(r.button.hover_text_color),
+            ),
+            copy_active: (
+                r.button.active_background.map(stated),
+                stated(r.button.active_text_color),
+            ),
             resolved: values::theme_json(r).unwrap_or_default(),
             layout,
             icon_set,
@@ -596,7 +606,12 @@ fn listed_info(
         .collect();
     let copy_text = listed.copy_text();
     let [top, right, bottom, left] = look.copy_padding;
-    let copy = div()
+    let ((hover_fill, hover_text), (active_fill, active_text)) =
+        (look.copy_hover, look.copy_active);
+    // The label is the box's own text, so the box's hover and pressed text
+    // colours letter it; a child setting its own colour would keep it.
+    let copy = look
+        .text(div())
         .id("inspector-copy")
         .relative()
         .cursor_pointer()
@@ -605,13 +620,15 @@ fn listed_info(
         .pb(bottom)
         .pl(left)
         .rounded(look.copy_radius)
-        .when_some(look.copy_hover, |copy, hover| {
-            copy.hover(move |style| style.bg(hover))
+        .hover(move |style| style.bg(hover_fill).text_color(hover_text))
+        .active(move |style| {
+            let style = style.text_color(active_text);
+            match active_fill {
+                Some(fill) => style.bg(fill),
+                None => style,
+            }
         })
-        .when_some(look.copy_active, |copy, active| {
-            copy.active(move |style| style.bg(active))
-        })
-        .child(look.text(div()).child("Copy"))
+        .child("Copy")
         .child(elements::record(ui, "chrome.info.copy"))
         .on_click(move |_, _, cx| {
             cx.write_to_clipboard(ClipboardItem::new_string(copy_text.clone()))

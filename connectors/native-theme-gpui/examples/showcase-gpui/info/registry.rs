@@ -40,6 +40,11 @@ pub struct InfoRegistry {
     /// Every element id recorded twice in one frame; the tests read it.
     #[cfg(test)]
     pub listed_twice: std::collections::BTreeSet<&'static str>,
+    /// The text colour each element of the list was laid out under in the
+    /// last frame that recorded it: what a text the element's box holds is
+    /// painted in, which no quad of the scene carries. The tests read it.
+    #[cfg(test)]
+    pub text_colours: HashMap<&'static str, gpui::Hsla>,
 }
 
 impl InfoRegistry {

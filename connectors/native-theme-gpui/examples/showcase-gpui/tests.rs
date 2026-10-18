@@ -3151,6 +3151,91 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
     }
 }
 
+/// The inspector's Copy box letters its text as its routes say (M9-037): in
+/// `sidebar.font.color` at rest, `button.hover_text_color` under the pointer
+/// and `button.active_text_color` while pressed. The text is the box's own
+/// child, so it is painted in the text colour the box is laid out under,
+/// which the registry records for `chrome.info.copy` (a text colour is no
+/// quad of the scene). kde-breeze light states the same colour for its
+/// sidebar text and its hovered button text, so the hovered one is set to
+/// the theme's accent, a colour of the same theme that differs from both.
+#[gpui::test]
+fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let mut r = resolved_theme(&mut cx, &showcase);
+    r.button.hover_text_color = r.defaults.accent_color;
+    for (state, colour) in [
+        ("hovered", r.button.hover_text_color),
+        ("pressed", r.button.active_text_color),
+    ] {
+        assert_ne!(
+            colour, r.sidebar.font.color,
+            "kde-breeze light's {state} button text is its sidebar text, so the test could not tell the two apart"
+        );
+    }
+    assert_ne!(r.button.hover_text_color, r.button.active_text_color);
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
+            &r,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let tab = bounds_of(&mut cx, Page::Charts.tab());
+    hover(&mut cx, tab.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
+    let text = |cx: &mut VisualTestContext| {
+        cx.update(|_window, cx| ui.read(cx).text_colours.get("chrome.info.copy").copied())
+    };
+    assert_eq!(
+        text(&mut cx),
+        Some(stated(r.sidebar.font.color)),
+        "the Copy box's text at rest is not sidebar.font.color"
+    );
+    let copy = bounds_of(&mut cx, INSPECTOR_COPY).center();
+    hover(&mut cx, copy);
+    draw(&mut cx);
+    assert_eq!(
+        text(&mut cx),
+        Some(stated(r.button.hover_text_color)),
+        "the Copy box's text under the pointer is not button.hover_text_color"
+    );
+    cx.simulate_mouse_down(copy, MouseButton::Left, Modifiers::default());
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        text(&mut cx),
+        Some(stated(r.button.active_text_color)),
+        "the Copy box's text while pressed is not button.active_text_color"
+    );
+    cx.simulate_mouse_up(copy, MouseButton::Left, Modifiers::default());
+    cx.run_until_parked();
+    for (leaf, says) in [
+        (
+            "button.hover_text_color",
+            "the Copy box's text under the pointer",
+        ),
+        (
+            "button.active_text_color",
+            "the Copy box's text while pressed",
+        ),
+    ] {
+        let how = crate::info::leaves::how("chrome.info.copy", leaf);
+        assert!(
+            how.is_some_and(|line| line.contains(says)),
+            "chrome.info.copy's {leaf} route does not say {says:?}: {how:?}"
+        );
+    }
+}
+
 /// A toolbar button's Widget Info names the installed theme's icon theme
 /// under `defaults.icon_theme`: under kde-breeze the variant's own, as the
 /// iced and egui panels name it, where the resolved theme's JSON holds none.

@@ -3453,6 +3453,190 @@ fn the_how_reader_does_its_job() {
     assert!(how_lines("const NOT: u8 = 1;").is_err());
 }
 
+/// The field a leaf names, as code reads it: its last segment without the
+/// unit suffix, and `padding` for a padding side (`border.padding_top_px`
+/// is read as `padding.top`).
+fn leaf_field(leaf: &str) -> &str {
+    let last = leaf.rsplit('.').next().unwrap_or(leaf);
+    let bare = last
+        .strip_suffix("_px")
+        .or_else(|| last.strip_suffix("_ms"))
+        .unwrap_or(last);
+    if bare.starts_with("padding_") {
+        "padding"
+    } else {
+        bare
+    }
+}
+
+/// The identifiers that follow `module::` in `text`, in order.
+fn paths_after<'a>(text: &'a str, module: &str) -> Vec<&'a str> {
+    let open = format!("{module}::");
+    text.match_indices(&open)
+        .filter(|(ix, _)| {
+            text.get(..*ix)
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_' || c == ':'))
+        })
+        .map(|(ix, _)| leading_ident(text.get(ix + open.len()..).unwrap_or("")))
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+/// The bodies, in `code` (a [`blanked`] text), of the `impl` blocks for the
+/// type `name`.
+fn impl_bodies(code: &str, name: &str) -> Vec<std::ops::Range<usize>> {
+    code.match_indices("impl")
+        .filter(|(ix, _)| {
+            code.get(..*ix)
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+        })
+        .filter_map(|(ix, _)| {
+            let open = ix + code.get(ix..)?.find('{')?;
+            let header = code.get(ix..open)?;
+            let ty = header.split_whitespace().last()?;
+            let ty = ty.split('<').next().unwrap_or(ty);
+            (ty == name).then(|| open..block_end(code, open).unwrap_or(open))
+        })
+        .collect()
+}
+
+/// What a `HOW` line says applies its leaf: each showcase function it names
+/// (`demo::name`, or a `demo::Type`'s methods), each showcase file it names
+/// whole (`(inspector.rs)`), each connector builder (`geometry::name`) and
+/// each connector control (`widgets::Name`, its file), as (the route, its
+/// code). A route this cannot find is listed with no code.
+fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<String>)> {
+    let file = |path: &str| {
+        SHOWCASE_FILES
+            .iter()
+            .find(|(p, _)| *p == path)
+            .map(|(_, raw)| *raw)
+    };
+    let mut out = Vec::new();
+    if let Some(demo) = file("demo.rs") {
+        let code = blanked(demo);
+        let items = fn_items(demo, &code);
+        for name in paths_after(text, "demo") {
+            let bodies: Vec<std::ops::Range<usize>> = if name.starts_with(char::is_uppercase) {
+                impl_bodies(&code, name)
+            } else {
+                items
+                    .iter()
+                    .filter(|f| f.name == name)
+                    .map(|f| f.body.clone())
+                    .collect()
+            };
+            let body: String = bodies
+                .iter()
+                .filter_map(|range| code.get(range.clone()))
+                .collect();
+            out.push((format!("demo::{name}"), (!body.is_empty()).then_some(body)));
+        }
+    }
+    for (path, raw) in SHOWCASE_FILES {
+        if !path.contains('/') && text.contains(&format!("({path})")) {
+            out.push(((*path).to_string(), Some(blanked(raw))));
+        }
+    }
+    let code = blanked(GEOMETRY);
+    let items = fn_items(GEOMETRY, &code);
+    for name in paths_after(text, "geometry") {
+        let body = items
+            .iter()
+            .find(|f| f.name == name)
+            .and_then(|f| code.get(f.body.clone()))
+            .map(str::to_string);
+        out.push((format!("geometry::{name}"), body));
+    }
+    for name in paths_after(text, "widgets") {
+        let declared = format!("pub struct {name}");
+        let body = widgets
+            .iter()
+            .find(|(_, code)| {
+                code.match_indices(&declared).any(|(ix, _)| {
+                    code.get(ix + declared.len()..)
+                        .and_then(|t| t.chars().next())
+                        .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+                })
+            })
+            .map(|(_, code)| code.clone());
+        out.push((format!("widgets::{name}"), body));
+    }
+    out
+}
+
+/// Evidence for the reviewer, not a gate: for every `HOW` line that names
+/// what applies its leaf -- a showcase function, file, builder or control --
+/// whether that code reads the leaf's field. A route's text is prose and a
+/// read is a substring, so a line that reads it by coincidence passes and
+/// one that reaches it through a helper does not; the list says which is
+/// which for a human to judge. A line saying "not applied" or "not
+/// reachable" names no route that applies the leaf, and is listed apart.
+#[test]
+fn every_how_route_reads_its_leaf() {
+    let lines = how_lines(how_source());
+    assert!(
+        lines.is_ok(),
+        "{}",
+        lines.as_ref().err().cloned().unwrap_or_default()
+    );
+    let lines = lines.unwrap_or_default();
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
+    let mut widgets: Vec<(String, String)> = std::fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|e| e == "rs"))
+        .filter_map(|path| {
+            let raw = std::fs::read_to_string(&path).ok()?;
+            Some((shorten(&path), blanked(&raw)))
+        })
+        .collect();
+    widgets.sort();
+    let mut read = Vec::new();
+    let mut unread = Vec::new();
+    let mut exempt = Vec::new();
+    for h in &lines {
+        let at = format!("{HOW_FILE}:{} (\"{}\", {})", h.line, h.prefix, h.leaf);
+        if h.text.contains("not applied") || h.text.contains("not reachable") {
+            exempt.push(format!("{at}: {}", h.text));
+            continue;
+        }
+        let field = leaf_field(h.leaf);
+        for (route, code) in how_routes(h.text, &widgets) {
+            match code {
+                Some(code) if mentions(&code, field) => {
+                    read.push(format!("{at}: {route} reads `{field}`"));
+                }
+                Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
+                None => unread.push(format!("{at}: {route} not found")),
+            }
+        }
+    }
+    assert!(
+        !read.is_empty() && !widgets.is_empty(),
+        "no HOW route was found reading its leaf, so the list below says nothing"
+    );
+    println!(
+        "HOW routes: {} read their leaf's field, {} do not or were not found, {} lines \
+         exempt",
+        read.len(),
+        unread.len(),
+        exempt.len()
+    );
+    println!("  Not read or not found (a reviewer reads each against the code):");
+    for line in &unread {
+        println!("    {line}");
+    }
+    println!("  Exempt (\"not applied\" or \"not reachable\"):");
+    for line in &exempt {
+        println!("    {line}");
+    }
+}
+
 /// The `pub(crate)` constants of gpui-base the showcase names again, as
 /// (upstream file, constant): demo.rs repeats them, since it cannot import
 /// them, to lay a handle's info target over the handle's hit area.
