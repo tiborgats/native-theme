@@ -1543,7 +1543,10 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
         ))
         .not_themeable(
             "geometry",
-            "none: a square of the showcase's own in its frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
+            format!(
+                "none: a {}px square, SWATCH_SIZE, the showcase's own choice rather than a platform's, as the theme states no swatch (spec §3.1), in its frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
+                px_text(crate::pages::SWATCH_SIZE.as_f32())
+            ),
         )
         .not_themeable(
             "swatch gaps",

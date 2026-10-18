@@ -400,6 +400,13 @@ pub fn context_menu(t: &Theme) -> WidgetInfo {
             "area",
             "the showcase's own frame, not a widget of gpui-component's: secondary, edged with Theme::border at the platform's border line width and rounded with Theme::radius",
         )
+        .not_themeable(
+            "area padding",
+            format!(
+                "{} inside the area, CONTEXT_AREA_PADDING, the showcase's own choice rather than a platform's, as the theme states no such area (spec §3.1)",
+                super::rems_text(crate::demo::CONTEXT_AREA_PADDING, t)
+            ),
+        )
         .instance(
             "opens",
             "with its top-left corner at the pointer where the area was right-clicked (menu/context_menu.rs, ContextMenu)",

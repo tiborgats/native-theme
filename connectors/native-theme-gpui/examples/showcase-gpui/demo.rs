@@ -6217,6 +6217,12 @@ impl SeparatorKind {
     }
 }
 
+/// The room above and below a horizontal Separator sample that is no
+/// element of docs/showcase-elements.toml, which leaves something to point
+/// at: the showcase's own, gpui's `py_1`, as the theme states none (spec
+/// §3.1). The Separator's info says so.
+pub(crate) const SEPARATOR_SAMPLE_ROOM: Rems = rems(0.25);
+
 /// A `Separator` of `kind`, its line in `separator.line_color` through
 /// `Separator::color` where a native theme is installed.
 pub(crate) fn separator(
@@ -6237,8 +6243,12 @@ pub(crate) fn separator(
         // some to point at.
         let listed = elements::listed_for(id).is_some();
         return widgets::Separator::horizontal()
-            .info(ui, id, info::layout::native_separator(r))
-            .when(!listed, |separator| separator.py_1())
+            .info(
+                ui,
+                id,
+                info::layout::native_separator(cx.theme(), r, !listed),
+            )
+            .when(!listed, |separator| separator.py(SEPARATOR_SAMPLE_ROOM))
             .debug_selector(move || id.into());
     }
     let separator = match kind {
@@ -6263,7 +6273,7 @@ pub(crate) fn separator(
         // (separator.rs:28), which stretches to the row.
         .map(|separator| match kind {
             SeparatorKind::Vertical => separator.self_stretch(),
-            _ => separator.py_1(),
+            _ => separator.py(SEPARATOR_SAMPLE_ROOM),
         })
         .debug_selector(move || id.into())
 }
@@ -6398,6 +6408,12 @@ pub(crate) fn card(
         .debug_selector(move || id.into())
 }
 
+/// The space between the scroll area's sample labels, and the padding
+/// round them: the showcase's own, gpui's `gap_2` and `p_3`, as the theme
+/// states no such column (spec §3.1). The area's info says so.
+pub(crate) const SCROLL_SAMPLE_GAP: Rems = rems(0.5);
+pub(crate) const SCROLL_SAMPLE_PADDING: Rems = rems(0.75);
+
 /// A column of `items` small Labels, each reporting itself, `height` tall in
 /// the showcase's frame, scrolled by gpui-component's scrollbar and kept
 /// clear of it by `geometry::scrollbar_gutter`.
@@ -6426,14 +6442,19 @@ pub(crate) fn scroll_area(
         "scrollbar_gutter",
         &mut area_info,
     )
-    .child(v_flex().gap_2().p_3().children((1..=items).map(|n| {
-        label(
-            ui,
-            cx,
-            format!("{id}-item-{n}"),
-            format!("Scrollable item #{n} - demonstrates scrollbar theming"),
-        )
-    })));
+    .child(
+        v_flex()
+            .gap(SCROLL_SAMPLE_GAP)
+            .p(SCROLL_SAMPLE_PADDING)
+            .children((1..=items).map(|n| {
+                label(
+                    ui,
+                    cx,
+                    format!("{id}-item-{n}"),
+                    format!("Scrollable item #{n} - demonstrates scrollbar theming"),
+                )
+            })),
+    );
     div()
         .h(height)
         .w_full()
@@ -6788,6 +6809,11 @@ pub(crate) struct DemoCollapsible {
     pub icon: SampleIcon,
 }
 
+/// The padding round the Collapsible sample's content: the showcase's own,
+/// gpui's `p_3`, as the theme states none for it (spec §3.1). The
+/// Collapsible's info says so.
+pub(crate) const COLLAPSIBLE_CONTENT_PADDING: Rems = rems(0.75);
+
 /// A `Collapsible` toggled by an upstream Ghost Button that runs
 /// `on_toggle`, over a small Label, as `spec` describes it. The Collapsible,
 /// the Button and the Label each report themselves.
@@ -6824,15 +6850,21 @@ pub(crate) fn collapsible(
     gpui_component::collapsible::Collapsible::new()
         .open(open)
         .child(button)
-        .content(v_flex().p_3().child(label(
+        .content(v_flex().p(COLLAPSIBLE_CONTENT_PADDING).child(label(
             ui,
             cx,
             content,
             "This content is shown when collapsible is open.",
         )))
-        .info(ui, id, info::layout::collapsible(open))
+        .info(ui, id, info::layout::collapsible(cx.theme(), open))
         .debug_selector(move || id.into())
 }
+
+/// The padding of a Carousel slide, and between its title and its caption:
+/// the showcase's own, gpui's `p_4` and `gap_1`, as the theme states no
+/// slide (spec §3.1). Each slide's info says so.
+pub(crate) const CAROUSEL_SLIDE_PADDING: Rems = rems(1.);
+pub(crate) const CAROUSEL_SLIDE_GAP: Rems = rems(0.25);
 
 /// The Carousel over `state`, `width` wide with slides `height` tall: a
 /// slide per `CAROUSEL_SLIDES` entry, a page button for each, and its
@@ -6858,8 +6890,8 @@ pub(crate) fn carousel(
                 v_flex()
                     .size_full()
                     .justify_center()
-                    .gap_1()
-                    .p_4()
+                    .gap(CAROUSEL_SLIDE_GAP)
+                    .p(CAROUSEL_SLIDE_PADDING)
                     .rounded(t.radius)
                     .bg(t.muted)
                     .child(Label::new(*title).font_semibold())
@@ -7544,6 +7576,11 @@ pub(crate) fn hover_card(
     .debug_selector(move || id.into())
 }
 
+/// The padding inside the Overlays page's ContextMenu area: the showcase's
+/// own, gpui's `p_6`, as the theme states no such area (spec §3.1). The
+/// area's info says so.
+pub(crate) const CONTEXT_AREA_PADDING: Rems = rems(1.5);
+
 /// The Overlays page's ContextMenu: the showcase's own framed area, which a
 /// right-click opens `SAMPLE_MENU` over. The menu's items are upstream's, on
 /// a layer above the page, so the area reports the menu.
@@ -7555,7 +7592,7 @@ pub(crate) fn context_menu_area(
     let t = cx.theme();
     div()
         .id("overlays-context-menu-area")
-        .p_6()
+        .p(CONTEXT_AREA_PADDING)
         .w_full()
         .demo_frame(cx)
         .bg(t.secondary)
@@ -7820,6 +7857,19 @@ pub(crate) const ICON_CELL_SIZE: Pixels = px(20.);
 /// for the same reason.
 pub(crate) const ANIMATED_ICON_SIZE: Pixels = px(32.);
 
+/// The padding round an Icons page gallery cell, and between its icon and
+/// its name: the showcase's own, gpui's `p_2` and `gap_1`, as the theme
+/// states no icon grid, and a cell is a gallery's, not a widget (spec
+/// §3.1). The cells' infos say so.
+pub(crate) const ICON_CELL_PADDING: Rems = rems(0.5);
+pub(crate) const ICON_CELL_GAP: Rems = rems(0.25);
+
+/// The padding of an animated icon's card on the Icons page, and between
+/// its icon and its label: the showcase's own, gpui's `p_4` and `gap_2`, as
+/// the theme states no such card (spec §3.1). The card's info says so.
+pub(crate) const ANIMATED_CARD_PADDING: Rems = rems(1.);
+pub(crate) const ANIMATED_CARD_GAP: Rems = rems(0.5);
+
 /// What a cell of the Icons page's galleries draws, so the matches over it
 /// in `info::icons` are exhaustive.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -7885,9 +7935,8 @@ fn icon_cell(cx: &App, art: IconArt, label: &str) -> Div {
         .flex()
         .flex_col()
         .items_center()
-        .py_2()
-        .px_2()
-        .gap_1()
+        .p(ICON_CELL_PADDING)
+        .gap(ICON_CELL_GAP)
         .child(icon)
         .child(Label::new(label.to_string()).text_xs())
 }
@@ -8034,9 +8083,8 @@ pub(crate) fn icon_size_cell(
         .flex()
         .flex_col()
         .items_center()
-        .py_2()
-        .px_2()
-        .gap_1()
+        .p(ICON_CELL_PADDING)
+        .gap(ICON_CELL_GAP)
         .when_some(icon, |cell, icon| {
             cell.child(
                 div()
@@ -8123,8 +8171,8 @@ pub(crate) fn animated_icon(
     };
     v_flex()
         .items_center()
-        .gap_2()
-        .p_4()
+        .gap(ANIMATED_CARD_GAP)
+        .p(ANIMATED_CARD_PADDING)
         .demo_frame(cx)
         .child(icon)
         .child(Label::new(label).text_xs())
@@ -8306,7 +8354,10 @@ pub(crate) fn swatch(
     h_flex()
         .gap(crate::pages::SWATCH_LABEL_GAP)
         .items_center()
-        .child(refined(div().size(px(16.0)).bg(value.value), Some(frame)))
+        .child(refined(
+            div().size(crate::pages::SWATCH_SIZE).bg(value.value),
+            Some(frame),
+        ))
         .child(Label::new(label).text_sm())
         .info(ui, id.clone(), info::theme_map::swatch(t, token, native))
         .debug_selector(move || id.to_string())

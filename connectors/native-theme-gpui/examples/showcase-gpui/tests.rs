@@ -13697,62 +13697,22 @@ fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
 /// the showcase's, with its comment and its info line (spec §3.1).
 ///
 /// The gate reads `pages/` and `demo.rs`, whose builders lay out much of
-/// the pages' content. A `_0` size sets none and passes. In `demo.rs` the
-/// calls inside a widget sample the showcase builds -- a cell's, a card's,
-/// a slide's padding, no page section and no row of controls -- are
-/// listed by their function with the reason, and printed.
+/// the pages' content. A `_0` size sets none and passes. A distance inside
+/// a widget sample the showcase builds -- a cell's, a card's, a slide's
+/// padding -- is a named constant too, its info naming it; in `demo.rs` a
+/// call that is upstream's own value, kept so the sample shows upstream's
+/// widget as upstream lays it out, is listed by its function with the
+/// reason, and printed.
 #[test]
 fn no_page_spaces_by_a_bare_rem_multiple() {
     const BARE: [&str; 10] = [
         "gap_x_", "gap_y_", "gap_", "px_", "py_", "pt_", "pr_", "pb_", "pl_", "p_",
     ];
-    const INSIDE_A_SAMPLE: [(&str, &[&str], &str); 9] = [
-        (
-            "component_toolbar",
-            &[".gap_1()"],
-            "a ToolbarGroup's gap where toolbar.item_gap is unstated: the Toolbar's own Small gap, upstream's (its doc)",
-        ),
-        (
-            "separator",
-            &[".py_1()"],
-            "the room round an unlisted Separator sample, which points at it",
-        ),
-        (
-            "scroll_area",
-            &[".gap_2()", ".p_3()"],
-            "the twenty labels the scroll area's sample scrolls",
-        ),
-        (
-            "collapsible",
-            &[".p_3()"],
-            "the Collapsible sample's content",
-        ),
-        (
-            "carousel",
-            &[".gap_1()", ".p_4()"],
-            "a Carousel slide's title over its caption",
-        ),
-        (
-            "context_menu_area",
-            &[".p_6()"],
-            "the room inside the area a right-click opens the ContextMenu over",
-        ),
-        (
-            "icon_cell",
-            &[".py_2()", ".px_2()", ".gap_1()"],
-            "an icon grid cell's padding and its icon over its name, which the cell's info calls the showcase's own layout",
-        ),
-        (
-            "icon_size_cell",
-            &[".py_2()", ".px_2()", ".gap_1()"],
-            "an icon-size cell, laid out as an icon grid cell is",
-        ),
-        (
-            "animated_icon",
-            &[".gap_2()", ".p_4()"],
-            "an animated icon's card",
-        ),
-    ];
+    const INSIDE_A_SAMPLE: [(&str, &[&str], &str); 1] = [(
+        "component_toolbar",
+        &[".gap_1()"],
+        "a ToolbarGroup's gap where toolbar.item_gap is unstated: upstream's own, the gap_1 a Small Toolbar spaces its items by (gpui-component 0.7.3 toolbar.rs:254), which a group, spacing nothing itself (gpui-base 0.7.3 toolbar.rs:251-262), takes from the caller; the sample shows upstream's Toolbar, so it keeps upstream's value and names no constant",
+    )];
     let sources = showcase_sources();
     let read: Vec<_> = sources
         .iter()
@@ -14056,9 +14016,13 @@ fn shown_note(info: Option<&WidgetInfo>, what: &str) -> Option<String> {
 }
 
 /// Each distance of the showcase's own that the theme states nothing for,
-/// on the pages and in the inspector's swatches, is a named constant whose
-/// size the info of what it spaces prints, at the rem the window lays it
-/// out at (spec §3.1).
+/// on the pages, inside their widget samples and in the inspector's
+/// swatches, is a named constant whose size the info of what it spaces
+/// prints, at the rem the window lays it out at (spec §3.1). Where the
+/// sample's info is not the one its middle shows -- a Collapsible's content
+/// and an animated icon's card report their children, a theme-drawn
+/// Separator sample that is listed takes no room -- the info is read from
+/// its builder.
 #[gpui::test]
 fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -14071,7 +14035,16 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
         rem(&mut cx, crate::pages::ICON_GRID_GAP),
         "ICON_GRID_GAP".to_string(),
     ];
-    let cases: [(Page, &'static str, bool, &str, Vec<String>); 5] = [
+    let cell = |cx: &mut VisualTestContext| {
+        vec![
+            rem(cx, crate::demo::ICON_CELL_PADDING),
+            rem(cx, crate::demo::ICON_CELL_GAP),
+            "ICON_CELL_PADDING".to_string(),
+            "ICON_CELL_GAP".to_string(),
+        ]
+    };
+    let cell_spacing = cell(&mut cx);
+    let cases: [(Page, &'static str, bool, &str, Vec<String>); 12] = [
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
@@ -14111,6 +14084,71 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             ],
         ),
         (
+            Page::ThemeMap,
+            "theme-map-swatch-background",
+            false,
+            "geometry",
+            vec![pixels(crate::pages::SWATCH_SIZE), "SWATCH_SIZE".to_string()],
+        ),
+        (
+            Page::Icons,
+            ICONS_NATIVE_DIALOG_WARNING,
+            false,
+            "cell spacing",
+            cell_spacing.clone(),
+        ),
+        (
+            Page::Icons,
+            "icons-size-small",
+            false,
+            "cell spacing",
+            cell_spacing,
+        ),
+        (
+            Page::Layout,
+            LAYOUT_SEPARATOR_DASHED,
+            false,
+            "room",
+            vec![
+                rem(&mut cx, crate::demo::SEPARATOR_SAMPLE_ROOM),
+                "SEPARATOR_SAMPLE_ROOM".to_string(),
+            ],
+        ),
+        (
+            Page::Layout,
+            "layout-scroll-area",
+            true,
+            "content spacing",
+            vec![
+                rem(&mut cx, crate::demo::SCROLL_SAMPLE_GAP),
+                rem(&mut cx, crate::demo::SCROLL_SAMPLE_PADDING),
+                "SCROLL_SAMPLE_GAP".to_string(),
+                "SCROLL_SAMPLE_PADDING".to_string(),
+            ],
+        ),
+        (
+            Page::Layout,
+            "layout-carousel-slide-1",
+            false,
+            "slide padding",
+            vec![
+                rem(&mut cx, crate::demo::CAROUSEL_SLIDE_PADDING),
+                rem(&mut cx, crate::demo::CAROUSEL_SLIDE_GAP),
+                "CAROUSEL_SLIDE_PADDING".to_string(),
+                "CAROUSEL_SLIDE_GAP".to_string(),
+            ],
+        ),
+        (
+            Page::Overlays,
+            "overlays-context-menu",
+            false,
+            "area padding",
+            vec![
+                rem(&mut cx, crate::demo::CONTEXT_AREA_PADDING),
+                "CONTEXT_AREA_PADDING".to_string(),
+            ],
+        ),
+        (
             Page::Basic,
             CHROME_SIDE_PANEL,
             false,
@@ -14139,6 +14177,61 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             note.as_deref()
                 .is_some_and(|t| texts.iter().all(|text| t.contains(text.as_str()))),
             "{selector}: its {what} line does not name {texts:?}: {note:?}"
+        );
+    }
+    let built = cx.update(|_window, cx| {
+        let t = Theme::global(cx);
+        let mut built = vec![
+            (
+                "the Collapsible",
+                crate::info::layout::collapsible(t, true),
+                "content padding",
+                vec![
+                    crate::info::rems_text(crate::demo::COLLAPSIBLE_CONTENT_PADDING, t),
+                    "COLLAPSIBLE_CONTENT_PADDING".to_string(),
+                ],
+            ),
+            (
+                "an animated icon's card",
+                crate::info::icons::animated_icon(
+                    t,
+                    "set",
+                    crate::demo::AnimatedKind::Spin {
+                        duration_ms: std::num::NonZeroU32::MIN,
+                    },
+                    false,
+                    t.foreground,
+                    false,
+                ),
+                "card spacing",
+                vec![
+                    crate::info::rems_text(crate::demo::ANIMATED_CARD_PADDING, t),
+                    crate::info::rems_text(crate::demo::ANIMATED_CARD_GAP, t),
+                    "ANIMATED_CARD_PADDING".to_string(),
+                    "ANIMATED_CARD_GAP".to_string(),
+                ],
+            ),
+        ];
+        #[cfg(feature = "widgets")]
+        if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+            built.push((
+                "a theme-drawn Separator sample",
+                crate::info::layout::native_separator(t, r, true),
+                "room",
+                vec![
+                    crate::info::rems_text(crate::demo::SEPARATOR_SAMPLE_ROOM, t),
+                    "SEPARATOR_SAMPLE_ROOM".to_string(),
+                ],
+            ));
+        }
+        built
+    });
+    for (sample, info, what, texts) in built {
+        let note = shown_note(Some(&info), what);
+        assert!(
+            note.as_deref()
+                .is_some_and(|t| texts.iter().all(|text| t.contains(text.as_str()))),
+            "{sample}: its {what} line does not name {texts:?}: {note:?}"
         );
     }
 }

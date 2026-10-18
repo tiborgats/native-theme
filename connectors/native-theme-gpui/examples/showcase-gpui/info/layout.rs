@@ -58,11 +58,27 @@ pub fn spacing_box(
     )
 }
 
-/// A plain line drawn by `native_theme_gpui::widgets::Separator` from `r`.
+/// The room above and below a Separator sample, which is
+/// `SEPARATOR_SAMPLE_ROOM`.
+fn sample_room(t: &Theme) -> String {
+    format!(
+        "{} above and below, SEPARATOR_SAMPLE_ROOM, the showcase's own choice rather than a platform's, as the theme states none: the sample's box is as tall as its line or label, and the room leaves something to point at (spec §3.1)",
+        super::rems_text(crate::demo::SEPARATOR_SAMPLE_ROOM, t)
+    )
+}
+
+/// A plain line drawn by `native_theme_gpui::widgets::Separator` from `r`,
+/// with `room` above and below where `demo::separator` gives it some.
 #[cfg(feature = "widgets")]
-pub fn native_separator(r: &ResolvedTheme) -> WidgetInfo {
+pub fn native_separator(t: &Theme, r: &ResolvedTheme, room: bool) -> WidgetInfo {
     let s = &r.separator;
-    WidgetInfo::new("Separator")
+    let info = WidgetInfo::new("Separator");
+    let info = if room {
+        info.not_themeable("room", sample_room(t))
+    } else {
+        info
+    };
+    info
         .variant(SeparatorKind::Horizontal.name())
         .config("drawn by", "native_theme_gpui::widgets::Separator, a line as thick as the theme states: gpui-component's Separator draws its line an absolute child at px(1.), which no caller style reaches (separator.rs, Separator::render_base)")
         .color(claim(
@@ -100,6 +116,10 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
             "thickness",
             "Tier U, not an absence: the platform states separator.line_width and the model carries it. Upstream draws the line on an inner absolutely-positioned div at px(1.) and applies the caller's refinement to the outer container instead, so nothing reaches the line (separator.rs, Separator::render_base)",
         );
+    let info = match kind {
+        SeparatorKind::Vertical => info,
+        _ => info.not_themeable("room", sample_room(t)),
+    };
     match kind {
         SeparatorKind::Horizontal => info,
         SeparatorKind::Labelled(label) => info
@@ -885,10 +905,17 @@ pub fn segmented(
 }
 
 /// The `Collapsible`, `open` or not.
-pub fn collapsible(open: bool) -> WidgetInfo {
+pub fn collapsible(t: &Theme, open: bool) -> WidgetInfo {
     WidgetInfo::new("Collapsible")
         .variant(if open { "open" } else { "closed" })
         .not_themeable("fill and edge", "none: a Collapsible only shows or hides its content and paints nothing of its own (gpui-component/collapsible.rs, Collapsible). The toggle is this demo's ghost Button and the content a Label, which report themselves")
+        .not_themeable(
+            "content padding",
+            format!(
+                "{} round the content, COLLAPSIBLE_CONTENT_PADDING, the showcase's own choice rather than a platform's, as the theme states none for it (spec §3.1)",
+                super::rems_text(crate::demo::COLLAPSIBLE_CONTENT_PADDING, t)
+            ),
+        )
         .instance("animation", "none: a Collapsible springs its reveal on the theme's spring_control only when it is given a motion_id (gpui-component/collapsible.rs, Collapsible::render), and this one is not, so its content appears and disappears at once")
 }
 
@@ -988,6 +1015,14 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
         ))
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("item", "a CarouselItem paints nothing of its own and only pads its slide from the one before (carousel/carousel.rs, CarouselItem): the fill, the rounding and the text colours are the showcase's")
+        .not_themeable(
+            "slide padding",
+            format!(
+                "{} round the slide's content, CAROUSEL_SLIDE_PADDING, and {} between its title and its caption, CAROUSEL_SLIDE_GAP: the showcase's own choices rather than a platform's, as the theme states no slide (spec §3.1)",
+                super::rems_text(crate::demo::CAROUSEL_SLIDE_PADDING, t),
+                super::rems_text(crate::demo::CAROUSEL_SLIDE_GAP, t)
+            ),
+        )
         .instance("title", title.to_string())
         .instance("caption", caption.to_string())
 }
@@ -1315,6 +1350,14 @@ pub fn scroll_area(t: &Theme, styled: bool, items: usize) -> WidgetInfo {
         "content",
         format!(
             "{items} Labels, each of which reports itself; the strip beside them is the scrollbar's"
+        ),
+    )
+    .not_themeable(
+        "content spacing",
+        format!(
+            "{} between the Labels, SCROLL_SAMPLE_GAP, and {} round them, SCROLL_SAMPLE_PADDING: the showcase's own choices rather than a platform's, as the theme states no such column (spec §3.1)",
+            super::rems_text(crate::demo::SCROLL_SAMPLE_GAP, t),
+            super::rems_text(crate::demo::SCROLL_SAMPLE_PADDING, t)
         ),
     )
 }

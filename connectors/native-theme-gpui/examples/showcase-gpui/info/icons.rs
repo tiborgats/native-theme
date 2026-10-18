@@ -105,6 +105,16 @@ fn grid_gap(t: &Theme) -> String {
     )
 }
 
+/// The padding of an Icons page gallery cell and the space between its icon
+/// and its name, which are `ICON_CELL_PADDING` and `ICON_CELL_GAP`.
+fn cell_spacing(t: &Theme) -> String {
+    format!(
+        "{} round the cell, ICON_CELL_PADDING, and {} between its icon and its name, ICON_CELL_GAP: the showcase's own choices rather than a platform's, as the theme states no icon grid, and a cell is a gallery's, not a widget (spec §3.1)",
+        super::rems_text(crate::demo::ICON_CELL_PADDING, t),
+        super::rems_text(crate::demo::ICON_CELL_GAP, t)
+    )
+}
+
 /// A cell of the Native Theme Icons grid: native-theme's icon for `role` in
 /// `set`, which calls it `name` where the showcase knows the name. Where
 /// the set is gpui-component's own (`builtin`), `name` is the asset of the
@@ -122,8 +132,9 @@ pub fn role_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding is the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid",
         )
+        .not_themeable("cell spacing", cell_spacing(t))
         .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (builtin, name) {
@@ -157,8 +168,9 @@ pub fn gpui_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding is the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid",
         )
+        .not_themeable("cell spacing", cell_spacing(t))
         .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (icon, role) {
@@ -242,6 +254,14 @@ pub fn animated_icon(
         .not_themeable(
             "geometry",
             "none: each card takes the showcase's own frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
+        )
+        .not_themeable(
+            "card spacing",
+            format!(
+                "{} round the card's content, ANIMATED_CARD_PADDING, and {} between its icon and its label, ANIMATED_CARD_GAP: the showcase's own choices rather than a platform's, as the theme states no such card (spec §3.1)",
+                super::rems_text(crate::demo::ANIMATED_CARD_PADDING, t),
+                super::rems_text(crate::demo::ANIMATED_CARD_GAP, t)
+            ),
         );
     info.instance(
         "size",
@@ -381,7 +401,8 @@ pub fn icon_size(
             },
         ),
     };
-    info.instance("field", field)
+    info.not_themeable("cell spacing", cell_spacing(t))
+        .instance("field", field)
         .instance("context", icon_size_context(context))
         .instance(
             "unstated",

@@ -64,6 +64,11 @@ pub(crate) const CAROUSEL_SIDE_ROOM: Rems = rems(4.);
 pub(crate) const SWATCH_GAP_X: Pixels = px(16.);
 pub(crate) const SWATCH_GAP_Y: Pixels = px(4.);
 
+/// The side of a Theme Map swatch's square: the showcase's own, as the
+/// theme states no swatch (spec §3.1), the size of the inspector's
+/// (`inspector::SWATCH_SIZE`). Each swatch's info says so.
+pub(crate) const SWATCH_SIZE: Pixels = px(16.);
+
 /// The space between a Theme Map swatch's square and its label: the
 /// showcase's own, gpui's `gap_2`, as the theme states no swatch (spec
 /// §3.1). Each swatch's info says so.
