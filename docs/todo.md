@@ -3318,17 +3318,6 @@ the gap — closing it is a change, and each wants its own decision.
       `bar_height_px` (40, material 64). Decide, field by field, what a
       colour-scheme preset's size is: a value with a source, or absent, so
       that the toolkit's default or the application's stands.
-- [ ] [1.0] **The showcase's pages: the application's own values, as the chrome
-      has them.** The unstated-sizes spec §3.1 rule — a named showcase
-      constant only where the theme states nothing, for an element the
-      showcase draws itself, with its comment and its info saying so — is
-      applied to the toolbar row and the Sidebar header only. The pages
-      still use `with_gap` (`support.rs`), which leaves a gap absent where
-      `layout.widget_gap` is unstated, so gpui's own default gap
-      applies. Every bundled preset states `widget_gap` today, but windows-11's
-      6 is itself unsourced (platform-facts §2.20 says (none), see the
-      follow-up plan above), so the question becomes live when that plan
-      removes it.
 - [ ] [1.0] **A machine-readable platform-facts.** The documented-sizes gate
       (`native-theme/src/presets/documented_sizes.rs`) copies each value it
       checks by hand from `docs/platform-facts.md` and cites the line; a
