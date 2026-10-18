@@ -1480,6 +1480,18 @@ fn reads_secondary_active(token: ThemeToken) -> bool {
     )
 }
 
+/// A swatch's "translucent" note, where `value` is not opaque as its colour
+/// text prints it (`as_rgba`: an alpha byte below 255): its alpha, and that
+/// the page's background shows through.
+pub fn translucent_note(value: gpui::Hsla) -> Option<String> {
+    (as_rgba(value).a < u8::MAX).then(|| {
+        format!(
+            "{} alpha: the swatch paints it over the page's background, which shows through",
+            percent_text(value.a)
+        )
+    })
+}
+
 /// The Theme Map's swatch of `token`. `native` is the native theme installed
 /// for the current mode, if one is, which is when the connector wrote the
 /// value.
@@ -1487,7 +1499,7 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
     let Row { value, notes } = row(t, token);
     let field = value.field;
     let hex = as_rgba(value.value);
-    let alpha = value.value.a;
+    let translucent = translucent_note(value.value);
     let info = WidgetInfo::new("ThemeColor").variant(field);
     let info = if let Some(n) = native {
         let info = notes(info.color(value));
@@ -1518,16 +1530,9 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
             ),
         )
     };
-    let info = if alpha < 1. {
-        info.instance(
-            "translucent",
-            format!(
-                "{} alpha: the swatch paints it over the page's background, which shows through",
-                percent_text(alpha)
-            ),
-        )
-    } else {
-        info
+    let info = match translucent {
+        Some(note) => info.instance("translucent", note),
+        None => info,
     };
     info.color(claim("frame", "border", t.border, "showcase"))
         .color(claim(

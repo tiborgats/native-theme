@@ -9003,6 +9003,29 @@ fn a_translucent_colour_prints_its_alpha() {
     }
 }
 
+/// A Theme Map swatch is noted translucent exactly where its colour text
+/// carries an alpha: an alpha that rounds to 255 prints `#rrggbb` and has no
+/// note, one that rounds to 254 prints `#rrggbbfe` and has it.
+#[test]
+fn a_swatch_is_translucent_where_its_text_carries_an_alpha() {
+    use crate::info::theme_map::translucent_note;
+    let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    for (alpha, text, noted) in [
+        (1.0, "#ff0000", false),
+        (0.9999, "#ff0000", false),
+        (0.998, "#ff0000fe", true),
+        (0.8, "#ff0000cc", true),
+    ] {
+        let colour = red.opacity(alpha);
+        assert_eq!(as_rgba(colour).to_string(), text, "alpha {alpha}");
+        assert_eq!(
+            translucent_note(colour).is_some(),
+            noted,
+            "alpha {alpha}: the note does not follow the printed {text}"
+        );
+    }
+}
+
 #[test]
 fn an_empty_section_is_not_printed() {
     let text = WidgetInfo::new("Label").to_text();
