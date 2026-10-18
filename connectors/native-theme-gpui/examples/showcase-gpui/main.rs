@@ -64,6 +64,8 @@ mod pages;
 mod speech;
 mod support;
 
+use std::cell::Cell;
+use std::rc::Rc;
 use std::time::Duration;
 
 use gpui::{
@@ -73,7 +75,9 @@ use gpui::{
 };
 use gpui_component::IconName;
 
-use native_theme_showcase_support::cli::{self, CliArgs, IconPick, ThemeKey, reported};
+use native_theme_showcase_support::cli::{
+    self, CliArgs, IconPick, Output, Outputs, ThemeKey, reported,
+};
 use native_theme_showcase_support::{Kind, capture, dump};
 
 use crate::app::Showcase;
@@ -749,18 +753,35 @@ fn layout_dump(s: &Showcase, window: &gpui::Window, cx: &App) -> serde_json::Val
     )
 }
 
+/// The files the run asked for and which are written yet (`cli::Outputs`),
+/// shared by the tasks that write them.
+pub(crate) type RunOutputs = Rc<Cell<Outputs>>;
+
+/// Records `output` as written in `outputs`, and quits once every file the
+/// run asked for is written and no `--capture` keeps the window
+/// (`cli::Outputs::written`): the showcases' exit rule, so the last of
+/// `--dump-layout F` and `--screenshot P` to be written quits.
+fn output_written(outputs: &RunOutputs, output: Output, cx: &mut App) {
+    let mut now = outputs.get();
+    let quit = now.written(output);
+    outputs.set(now);
+    if quit {
+        app::quit(cx);
+    }
+}
+
 /// `--dump-layout`: once `DUMP_SETTLED_READINGS` readings in a row find the
 /// last frame's layout of the list's elements unchanged, writes it to
 /// `path` as docs/showcase-elements.toml's "The layout dump" describes, then
-/// quits when `quit` (`CliArgs::quits_after_dump`). A write that fails is
+/// records it in `outputs` (`output_written`). A write that fails is
 /// reported and exits with 1 (`cli::refuse`), as a failed `--screenshot`
 /// does.
-fn dump_layout(
+pub(crate) fn dump_layout(
     cx: &mut App,
     window: AnyWindowHandle,
     showcase: gpui::Entity<Showcase>,
     path: String,
-    quit: bool,
+    outputs: RunOutputs,
 ) {
     cx.spawn(async move |cx| {
         let mut last = None;
@@ -786,9 +807,7 @@ fn dump_layout(
             if let Err(error) = dump::write_layout(&path, &reading) {
                 cli::refuse(&error);
             }
-            if quit {
-                cx.update(app::quit);
-            }
+            cx.update(|cx| output_written(&outputs, Output::Dump, cx));
             break;
         }
     })
@@ -826,11 +845,12 @@ fn content_size(window: &gpui::Window) -> capture::Content {
 }
 
 /// `--screenshot`: captures `window` with its frame to `path` once it has
-/// settled (`capture::FrameCapture`), then quits. A capture that fails, or
-/// fails the frame check, is reported and exits with 1 (`cli::refuse`).
-/// `main` refuses the flag before the window opens where the frame cannot
-/// be captured (`cli::screenshot_support`).
-fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String) {
+/// settled (`capture::FrameCapture`), then records it in `outputs`
+/// (`output_written`). A capture that fails, or fails the frame check, is
+/// reported and exits with 1 (`cli::refuse`). `main` refuses the flag
+/// before the window opens where the frame cannot be captured
+/// (`cli::screenshot_support`).
+fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String, outputs: RunOutputs) {
     cx.spawn(async move |cx| {
         // The Retina nudge, again once the window has been laid out: calls
         // `-[NSWindow setContentSize:]` directly (synchronous) rather than
@@ -843,7 +863,7 @@ fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String) {
             capture::nudge_content_size(1.0, 0.0);
         }
         cx.background_executor().timer(SCREENSHOT_SETTLE).await;
-        let failed = |error: &str| format!("screenshot capture failed for {path}: {error}");
+        let failed = |error: &str| Output::Screenshot.failure(&path, error);
         let mut capture = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
             Ok(capture) => capture,
             Err(error) => cli::refuse(&failed(&error)),
@@ -860,7 +880,7 @@ fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String) {
             }
         }
         eprintln!("Screenshot saved to {path}");
-        cx.update(app::quit);
+        cx.update(|cx| output_written(&outputs, Output::Screenshot, cx));
     })
     .detach();
 }
@@ -1010,13 +1030,14 @@ fn main() {
             window_handle
                 .update(cx, |_, window, _| name_window(window))
                 .ok();
+            let outputs = Rc::new(Cell::new(Outputs::new(&cli_args)));
             if let Some(path) = &cli_args.dump_layout {
                 dump_layout(
                     cx,
                     window_handle,
                     showcase_entity.clone(),
                     path.clone(),
-                    cli_args.quits_after_dump(),
+                    outputs.clone(),
                 );
             }
             if let Some(at) = cli_args.pointer {
@@ -1050,7 +1071,7 @@ fn main() {
                         "font-names: stated mono family {mono:?} in gpui's font names: {held}"
                     );
                 }
-                screenshot(cx, window_handle, path.clone());
+                screenshot(cx, window_handle, path.clone(), outputs);
             }
         });
 }

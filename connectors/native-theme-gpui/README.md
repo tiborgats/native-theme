@@ -928,8 +928,9 @@ capture scripts take the window), `--capture` (open at 1280 × 720 for a
 capture taken by another tool), `--pointer X,Y` and `--press` (hold the
 pointer, and the primary button, at a point of the window),
 `--dump-layout FILE` (the rectangles of the elements
-`docs/showcase-elements.toml` lists; the showcase then quits, unless
-`--capture` or `--screenshot` keeps the window) and `--open-menu TITLE`.
+`docs/showcase-elements.toml` lists; the showcase quits once it and any
+`--screenshot` are written, unless `--capture` keeps the window) and
+`--open-menu TITLE`.
 
 ## Gallery
 

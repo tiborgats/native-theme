@@ -9558,11 +9558,75 @@ fn a_gallery_icons_role_is_the_first_the_connector_names_it_for() {
         ("User", IconRole::UserAccount),
         ("Bell", IconRole::Notification),
     ];
+    for (named, _) in roles {
+        assert!(
+            crate::support::GPUI_ICONS
+                .iter()
+                .any(|(name, _)| *name == named),
+            "{named} is not in the gallery: its role is checked against nothing"
+        );
+    }
     for (name, icon) in crate::support::GPUI_ICONS {
         let wanted = roles
             .iter()
             .find(|(named, _)| named == name)
             .map(|(_, role)| *role);
         assert_eq!(crate::support::role_for_gpui_icon(icon), wanted, "{name}");
+    }
+}
+
+/// The layout dump keeps to the showcases' exit rule (`cli::Outputs`):
+/// `--dump-layout F` alone writes F and quits, and with `--screenshot P` it
+/// writes F and leaves the window open for P, whose capture quits once both
+/// are written.
+#[gpui::test]
+fn the_layout_dump_quits_only_once_every_file_is_written(cx: &mut TestAppContext) {
+    for (case, argv) in [
+        ("alone", &["--dump-layout", "F"][..]),
+        (
+            "with-screenshot",
+            &["--dump-layout", "F", "--screenshot", "P"][..],
+        ),
+    ] {
+        let (showcase, root, mut vcx) = open(cx, WINDOW_SIZE);
+        show(&mut vcx, &showcase, Page::Basic);
+        draw(&mut vcx);
+        let path = std::env::temp_dir().join(format!(
+            "showcase-gpui-{}-dump-{case}.json",
+            std::process::id()
+        ));
+        let _ = std::fs::remove_file(&path);
+        let cli = crate::CliArgs::parse(argv.iter().map(|arg| arg.to_string()));
+        let outputs = Rc::new(std::cell::Cell::new(crate::Outputs::new(&cli)));
+        let dumped = path.to_string_lossy().into_owned();
+        vcx.update(|_window, cx| {
+            crate::dump_layout(cx, root, showcase.clone(), dumped, outputs.clone())
+        });
+        for _ in 0..20 {
+            cx.executor().advance_clock(Duration::from_millis(250));
+            cx.run_until_parked();
+        }
+        assert!(path.is_file(), "{case}: the dump was not written");
+        let _ = std::fs::remove_file(&path);
+        let open_windows = cx.update(|cx| cx.windows().len());
+        let quit = cli.screenshot.is_none();
+        assert_eq!(
+            open_windows == 0,
+            quit,
+            "{case}: the dump {} the window",
+            if quit { "kept" } else { "closed" }
+        );
+        if !quit {
+            let mut left = outputs.get();
+            assert!(
+                left.written(crate::Output::Screenshot),
+                "{case}: the screenshot written after the dump does not quit"
+            );
+            vcx.update(|_window, cx| crate::app::quit(cx));
+            for _ in 0..4 {
+                cx.executor().advance_clock(Duration::from_millis(100));
+                cx.run_until_parked();
+            }
+        }
     }
 }

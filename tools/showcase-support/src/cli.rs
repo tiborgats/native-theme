@@ -10,9 +10,11 @@
 //!   capture its frame ([`screenshot_support`]);
 //! - a value a picker does not offer is reported and ignored ([`reported`]),
 //!   `--open-menu` included;
-//! - a layout dump quits only when nothing captures
-//!   ([`CliArgs::quits_after_dump`]);
-//! - a failed `--screenshot`, dump write or window open exits 1 ([`refuse`]).
+//! - a run that writes files (`--dump-layout`, `--screenshot`) quits once
+//!   every file it asked for is written, and keeps its window while a tool
+//!   outside it captures it (`--capture`) ([`Outputs`]);
+//! - a failed `--screenshot`, dump write or window open exits 1 ([`refuse`]),
+//!   a failed file naming its flag and path ([`Output::failure`]).
 //!
 //! A toolkit that needs a flag of its own reads it in its own `main` after
 //! [`CliArgs::parse`], which ignores what it does not know.
@@ -141,10 +143,74 @@ impl CliArgs {
     /// Whether the showcase quits once its layout dump is written: only when
     /// nothing captures the window, so `--dump-layout F --screenshot P`
     /// writes P too, and `--dump-layout F --capture` keeps the window for
-    /// the capture.
+    /// the capture. A run that writes both quits once both are written
+    /// ([`Outputs`]).
     #[must_use]
     pub fn quits_after_dump(&self) -> bool {
         !self.capturing()
+    }
+}
+
+/// A file a run writes before it quits.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Output {
+    /// `--dump-layout`'s layout dump ([`crate::dump`]).
+    Dump,
+    /// `--screenshot`'s capture of the window with its frame
+    /// ([`crate::capture::FrameCapture`]).
+    Screenshot,
+}
+
+impl Output {
+    /// The flag that asks for the file.
+    #[must_use]
+    pub fn flag(self) -> &'static str {
+        match self {
+            Output::Dump => "--dump-layout",
+            Output::Screenshot => "--screenshot",
+        }
+    }
+
+    /// Why the file at `path` was not written, naming its flag and path:
+    /// the text a showcase hands [`refuse`], so the run exits 1.
+    #[must_use]
+    pub fn failure(self, path: &str, error: &str) -> String {
+        format!("{} {path}: {error}", self.flag())
+    }
+}
+
+/// The showcases' exit rule for the files a run writes: `--dump-layout F`
+/// and `--screenshot P`, alone or together. The run quits once every file
+/// it asked for is written, whichever is written last, so neither is lost
+/// to the other's quit; under `--capture` it keeps its window for the tool
+/// that captures it, which closes it. A file that fails exits 1 at once
+/// ([`Output::failure`], [`refuse`]).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Outputs {
+    dump: bool,
+    screenshot: bool,
+    keep_window: bool,
+}
+
+impl Outputs {
+    /// The files `cli` asks for, none of them written yet.
+    #[must_use]
+    pub fn new(cli: &CliArgs) -> Self {
+        Self {
+            dump: cli.dump_layout.is_some(),
+            screenshot: cli.screenshot.is_some(),
+            keep_window: cli.capture,
+        }
+    }
+
+    /// Records `output` as written, and whether the run quits now: every
+    /// file it asked for is written and no `--capture` keeps the window.
+    pub fn written(&mut self, output: Output) -> bool {
+        match output {
+            Output::Dump => self.dump = false,
+            Output::Screenshot => self.screenshot = false,
+        }
+        !self.dump && !self.screenshot && !self.keep_window
     }
 }
 
@@ -491,6 +557,51 @@ mod tests {
         assert!(!parse(&["--dump-layout", "f", "--screenshot", "p"]).quits_after_dump());
         assert!(!parse(&["--dump-layout", "f", "--capture"]).quits_after_dump());
         assert!(parse(&["--dump-layout", "f"]).quits_after_dump());
+    }
+
+    /// A run quits once every file it asked for is written, in either order,
+    /// and never under `--capture`.
+    #[test]
+    fn a_run_quits_once_every_file_it_asked_for_is_written() {
+        let both = ["--dump-layout", "f", "--screenshot", "p"];
+        for order in [
+            [Output::Dump, Output::Screenshot],
+            [Output::Screenshot, Output::Dump],
+        ] {
+            let mut outputs = Outputs::new(&parse(&both));
+            assert!(
+                !outputs.written(order[0]),
+                "{order:?}: quit after the first"
+            );
+            assert!(outputs.written(order[1]), "{order:?}: no quit after both");
+        }
+        for (argv, output) in [
+            (&["--dump-layout", "f"][..], Output::Dump),
+            (&["--screenshot", "p"][..], Output::Screenshot),
+        ] {
+            assert!(
+                Outputs::new(&parse(argv)).written(output),
+                "{argv:?}: no quit after its one file"
+            );
+        }
+        let mut kept = Outputs::new(&parse(&["--dump-layout", "f", "--capture"]));
+        assert!(
+            !kept.written(Output::Dump),
+            "--capture's window was not kept"
+        );
+    }
+
+    /// A file that is not written is reported with its flag and path.
+    #[test]
+    fn a_failed_file_names_its_flag_and_path() {
+        assert_eq!(
+            Output::Screenshot.failure("p.png", "the frame check failed"),
+            "--screenshot p.png: the frame check failed"
+        );
+        assert_eq!(
+            Output::Dump.failure("f.json", "denied"),
+            "--dump-layout f.json: denied"
+        );
     }
 
     /// `--variant` takes `light`, `dark` and `system`, and names the three

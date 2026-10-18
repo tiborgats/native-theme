@@ -49,7 +49,7 @@ pub fn write_layout(path: &str, json: &serde_json::Value) -> Result<(), String> 
     serde_json::to_string_pretty(json)
         .map_err(|e| e.to_string())
         .and_then(|text| std::fs::write(path, text).map_err(|e| e.to_string()))
-        .map_err(|error| format!("--dump-layout {path}: {error}"))
+        .map_err(|error| crate::cli::Output::Dump.failure(path, &error))
 }
 
 #[cfg(test)]
