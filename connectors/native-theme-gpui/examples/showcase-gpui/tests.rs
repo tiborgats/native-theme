@@ -12779,37 +12779,53 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
     let Some((name, r, t)) = variants.first() else {
         return;
     };
-    let shapes: [(&str, [Option<f32>; 4], &[&str], &[&str], &[&str]); 5] = [
-        // (shape, [top, right, bottom, left], in the note, not in it, in the config)
-        (
+    // One spliced padding, [top, right, bottom, left], and the words the
+    // size note holds, those the info does not hold, and what the radius
+    // and padding line says.
+    struct Shape {
+        name: &'static str,
+        sides: [Option<f32>; 4],
+        said: &'static [&'static str],
+        unsaid: &'static [&'static str],
+        config: &'static [&'static str],
+    }
+    let shape = |name, sides, said, unsaid, config| Shape {
+        name,
+        sides,
+        said,
+        unsaid,
+        config,
+    };
+    let shapes = [
+        shape(
             "across only",
             [None, Some(9.), None, Some(9.)],
             &["h_8"],
             &["px_2p5"],
             &[],
         ),
-        (
+        shape(
             "up and down only",
             [Some(3.), None, Some(3.), None],
             &["px_2p5"],
             &["h_8"],
             &["h_auto"],
         ),
-        (
+        shape(
             "the top alone, and across",
             [Some(3.), Some(9.), None, Some(9.)],
             &[],
             &["h_8", "px_2p5"],
             &["h_auto", "an unstated one none"],
         ),
-        (
+        shape(
             "the left alone",
             [None, None, None, Some(9.)],
             &["h_8", "px_2p5", "right"],
             &[],
             &[],
         ),
-        (
+        shape(
             "the right alone",
             [None, Some(9.), None, None],
             &["h_8", "px_2p5", "left"],
@@ -12817,7 +12833,14 @@ fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
             &[],
         ),
     ];
-    for (shape, [top, right, bottom, left], said, unsaid, config) in shapes {
+    for Shape {
+        name: shape,
+        sides: [top, right, bottom, left],
+        said,
+        unsaid,
+        config,
+    } in shapes
+    {
         let mut button = r.button.clone();
         button.border.padding.top = top;
         button.border.padding.right = right;
