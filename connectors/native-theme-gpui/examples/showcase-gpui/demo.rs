@@ -1937,6 +1937,8 @@ pub(crate) fn text_in(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static st
         .line_height(line_height_of(n, font))
         .font_weight(FontWeight(f32::from(font.weight)))
         .child(text);
+    // The connector's own mapping, `font_style` (native-theme-gpui
+    // src/lib.rs:765-771), is private to its crate.
     label.text_style().font_style = Some(match font.style {
         FontStyle::Normal => gpui::FontStyle::Normal,
         FontStyle::Italic => gpui::FontStyle::Italic,
@@ -5909,9 +5911,9 @@ pub(crate) fn muted_text(
         .debug_selector(move || id.into())
 }
 
-/// Plain text reading `text` in `defaults.mono_font` ([`text_in`], as
-/// `type_line`'s Monospace line) where a native theme is installed, else in
-/// the mono family alone.
+/// Plain text reading `text` in `defaults.mono_font` ([`text_in`]: its size,
+/// weight and line box as `type_line`'s Monospace line, and its style) where
+/// a native theme is installed, else in the mono family alone.
 pub(crate) fn mono_text(
     ui: &Entity<InfoRegistry>,
     cx: &App,

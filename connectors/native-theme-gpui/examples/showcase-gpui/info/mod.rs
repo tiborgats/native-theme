@@ -439,8 +439,9 @@ pub fn px_text(v: f32) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
-/// `font` as `demo::text_in` draws a label in it, for that label's font
-/// line: the family as `status::family_label` names what gpui is asked for
+/// `font` as `demo::text_in`, the connector's `with_text` (geometry.rs) and
+/// its widgets' labels (widgets/mod.rs, `font_text`) draw text in it, for a
+/// font line of the showcase's own Widget Info: the family as `status::family_label` names what gpui is asked for
 /// (`native_theme_gpui::font_family`), the stated size the text-scaling
 /// factor scales, the weight, the style where it is not normal, and the line
 /// box.

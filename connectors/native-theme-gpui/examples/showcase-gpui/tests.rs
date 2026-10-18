@@ -5754,8 +5754,7 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
     let r = resolved_theme(&mut cx, &showcase);
     for scale in [1.0, 1.5] {
         scale_text(&mut cx, scale);
-        let (text, theme) = read(&mut cx, &showcase, |this, cx| {
-            let _ = &this.info_ui;
+        let (text, theme) = read(&mut cx, &showcase, |_this, cx| {
             let mut sample = crate::demo::mono_sample(cx, "mono");
             (sample.style().text.clone(), Theme::global(cx).clone())
         });
@@ -5783,10 +5782,10 @@ fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
             .and_then(|i| i.config.iter().find(|n| n.what == "size"));
         assert!(
             line.is_some_and(|l| l.text.starts_with(&format!(
-                "{}px: Theme::mono_font_size",
+                "{}px: defaults.mono_font.size scaled by the text-scaling factor",
                 crate::info::px_text(size.as_f32())
             ))),
-            "at text scale {scale} the monospace sample's size line does not claim mono_font_size: {line:?}"
+            "at text scale {scale} the monospace sample's size line does not claim the scaled defaults.mono_font.size: {line:?}"
         );
     }
 }
@@ -7802,6 +7801,110 @@ fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
             "at text scale {scale} the label's line box is not the scaled size by defaults.line_height"
         );
     }
+}
+
+/// `demo::text_in` maps every `FontStyle` to gpui's as the connector's own
+/// `font_style` does (native-theme-gpui `src/lib.rs`, private to the crate),
+/// read through `geometry::menu_item`, which applies it.
+#[test]
+fn text_ins_style_is_the_connectors_on_every_font_style() {
+    use native_theme::theme::FontStyle;
+    use native_theme_gpui::Native;
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "kde-breeze light does not resolve");
+    let Some(mut resolved) = resolved else { return };
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    for style in [FontStyle::Normal, FontStyle::Italic, FontStyle::Oblique] {
+        resolved.menu.font.style = style;
+        let n = Native {
+            resolved: &resolved,
+            accessibility: &prefs,
+        };
+        let connector = geometry::menu_item(n).text.font_style;
+        let mut label = crate::demo::text_in(&n, &resolved.menu.font, "label");
+        assert_eq!(
+            label.style().text.font_style,
+            connector,
+            "text_in draws {style:?} otherwise than the connector's font_style"
+        );
+    }
+}
+
+/// The font lines of the showcase's own Widget Info name a family the
+/// system lacks as `info::drawn_font` does, with the substitute gpui is
+/// asked for, where the chrome menus' line named no family and the
+/// theme-drawn Checkbox's and TabBar's named the stated family alone.
+#[test]
+fn a_substituted_family_is_named_in_every_own_font_line() {
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "kde-breeze light does not resolve");
+    let Some(mut resolved) = resolved else { return };
+    let absent: std::sync::Arc<str> = "Native Theme Absent Sans".into();
+    let drawn = native_theme_gpui::font_family(&absent);
+    assert_ne!(
+        drawn.as_ref(),
+        absent.as_ref(),
+        "the platform names no substitute for a family it lacks, so this test cannot tell the two forms apart"
+    );
+    let label = native_theme_showcase_support::status::family_label(&absent, Some(drawn.as_ref()));
+    resolved.menu.font.family = absent.clone();
+    resolved.checkbox.font.family = absent.clone();
+    resolved.tab.font.family = absent;
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    let theme = native_theme_gpui::to_theme(&resolved, "kde-breeze", false, &prefs);
+    let line = |info: WidgetInfo, what: &str| {
+        info.config
+            .iter()
+            .find(|n| n.what == what)
+            .map(|n| n.text.clone())
+            .unwrap_or_default()
+    };
+    let mut lines = vec![(
+        "the chrome menus",
+        line(
+            crate::info::app_menus(&theme, crate::info::MenuHost::Row, Some(&resolved)),
+            "font",
+        ),
+    )];
+    #[cfg(feature = "widgets")]
+    lines.extend([
+        (
+            "the theme-drawn Checkbox",
+            line(
+                crate::info::inputs::native_checkbox(&resolved, "label", false, false),
+                "label font",
+            ),
+        ),
+        (
+            "the theme-drawn TabBar",
+            line(
+                crate::info::layout::native_tab_row(&resolved, "widgets::TabBar"),
+                "font",
+            ),
+        ),
+    ]);
+    let missed: Vec<String> = lines
+        .into_iter()
+        .filter(|(_, text)| !text.contains(&label))
+        .map(|(whose, text)| format!("{whose}: {text:?}"))
+        .collect();
+    assert!(
+        missed.is_empty(),
+        "these font lines do not name the substituted family as {label:?}:\n{}",
+        missed.join("\n")
+    );
 }
 
 /// Where the theme states neither `menu.row_height` nor a vertical padding

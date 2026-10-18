@@ -247,7 +247,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 .color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
                 .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
                 .colors(edge_claim("menu edge", "border", Some(r.popover.border.color), Some(r.popover.border.line_width), "showcase"))
-                .config("font", format!("menu.font, {}px, on the titles and the items: its family, size, weight and style as geometry::menu_item sets them", px_text(m.font.size)))
+                .config("font", format!("menu.font: {}, on the titles and the items, as geometry::menu_item sets it", super::drawn_font(&m.font)))
                 .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
                 .config("padding", "menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5 and an item's 8px (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)")
                 .config("item height", match m.row_height {

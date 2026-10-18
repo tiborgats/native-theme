@@ -973,7 +973,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "expander.font",
-        "gpui: the header's family, size, weight and style (demo::native_expander)",
+        "gpui: the title's family, size, weight and style (demo::native_expander)",
     ),
     (
         "",
