@@ -306,6 +306,14 @@ hover_background = "#e0e0e2"
 
 [light.sidebar.font]
 color = "#2e3436"
+
+
+[light.sidebar.border]
+# platform-facts.md:1379 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
+padding_horizontal_px = 6.0
+# platform-facts.md:1380 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
+padding_top_px = 6.0
+padding_bottom_px = 4.0
 [light.popover]
 background_color = "#ffffff"
 
@@ -730,6 +738,14 @@ hover_background = "#36363a"
 
 [dark.sidebar.font]
 color = "#ffffff"
+
+
+[dark.sidebar.border]
+# platform-facts.md:1379 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
+padding_horizontal_px = 6.0
+# platform-facts.md:1380 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
+padding_top_px = 6.0
+padding_bottom_px = 4.0
 [dark.popover]
 background_color = "#36363a"
 

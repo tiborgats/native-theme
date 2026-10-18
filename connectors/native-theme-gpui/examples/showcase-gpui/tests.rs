@@ -1601,11 +1601,14 @@ fn the_side_panel_holds_the_theme_settings_and_the_inspector(cx: &mut TestAppCon
                 "{at}: the inspector at {inspector:?}, its TabBar at {tabs:?}, is not below the \
                  Separator at {separator:?}"
             );
+            // The panel's own bottom padding where the theme states a
+            // sidebar padding (adwaita), else none.
+            let bottom = panel.bottom() - side_panel_padding(&mut cx, &showcase).bottom;
             assert!(
-                (inspector.bottom() - panel.bottom()).abs() <= px(0.01),
-                "{at}: the inspector ends at {:?}, not at the side panel's bottom {:?}",
+                (inspector.bottom() - bottom).abs() <= px(0.01),
+                "{at}: the inspector ends at {:?}, not at the side panel's bottom less its \
+                 padding, {bottom:?}",
                 inspector.bottom(),
-                panel.bottom()
             );
         }
     }
@@ -3196,10 +3199,14 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 
 /// Upstream's Underline TabBar pads neither itself nor its tabs
 /// (tab/tab.rs:79-81, tab/tab_bar.rs:395-404): it leaves the inset to the
-/// container it is in. So each of the showcase's two TabBars is inset by
-/// `layout.container_margin`, the padding the side panel's settings and the
-/// inspector's content take: its first tab starts that far from the edge of
-/// its panel, not against the resize handle's line or the window's edge.
+/// container it is in. So the page TabBar is inset by
+/// `layout.container_margin`, and the inspector's by what pads the side
+/// panel's content: the panel's own padding where the theme states a
+/// `sidebar.border.padding` (adwaita), a side it leaves unstated taking
+/// `layout.container_margin`, else `layout.container_margin` on the content
+/// (kde-breeze) -- read from the theme installed. Its first tab starts that
+/// far from the edge of its panel, not against the resize handle's line or
+/// the window's edge.
 ///
 /// On the right, the page TabBar's menu Button (tab/tab_bar.rs, `menu`)
 /// ends that far from the panel's right edge, and the inspector's last tab
@@ -3217,18 +3224,25 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
         let Some(margin) = margin else {
             panic!("{preset} states no layout.container_margin");
         };
-        for (bar, selector, panel, first, last) in [
+        let pad = side_panel_padding(&mut cx, &showcase);
+        let content = read(&mut cx, &showcase, |_, cx| {
+            crate::demo::side_panel_content_margin(cx, Some(margin))
+        })
+        .unwrap_or_default();
+        for (bar, selector, panel, (left, right), first, last) in [
             (
                 "page",
                 CHROME_PAGE_TABS,
                 CONTENT_PANEL,
+                (margin, margin),
                 Page::ALL[0].tab(),
                 None,
             ),
             (
                 "inspector",
                 INSPECTOR_TABS,
-                INSPECTOR_PANEL,
+                CHROME_SIDE_PANEL,
+                (pad.left + content, pad.right + content),
                 InspectorTab::Widget.tab(),
                 Some(InspectorTab::Theme.tab()),
             ),
@@ -3236,9 +3250,10 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
             let panel = bounds_of(&mut cx, panel);
             let tab = bounds_of(&mut cx, first);
             assert!(
-                (tab.left() - panel.left() - margin).abs() <= slack,
+                (tab.left() - panel.left() - left).abs() <= slack,
                 "{preset}: the {bar} TabBar's first tab starts at {:?}, {:?} from its panel's \
-                 left edge, not layout.container_margin, {margin:?}",
+                 left edge, not {left:?} (layout.container_margin {margin:?}, the side panel's \
+                 padding {pad:?})",
                 tab.left(),
                 tab.left() - panel.left()
             );
@@ -3266,9 +3281,9 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                 Some(last) => {
                     let last = bounds_of(&mut cx, last);
                     assert!(
-                        last.right() <= panel.right() - margin + slack,
-                        "{preset}: the {bar} TabBar's last tab ends at {:?}, within \
-                         layout.container_margin, {margin:?}, of its panel's right edge at {:?}",
+                        last.right() <= panel.right() - right + slack,
+                        "{preset}: the {bar} TabBar's last tab ends at {:?}, within {right:?} \
+                         of its panel's right edge at {:?}",
                         last.right(),
                         panel.right()
                     );
@@ -3283,20 +3298,44 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
                 None => {
                     let menu = hover_box(
                         &mut cx,
-                        point(panel.right() - margin - px(4.), tabs.center().y),
+                        point(panel.right() - right - px(4.), tabs.center().y),
                     );
                     assert!(
                         menu.is_some_and(
-                            |menu| (panel.right() - menu.right() - margin).abs() <= slack
+                            |menu| (panel.right() - menu.right() - right).abs() <= slack
                         ),
                         "{preset}: the {bar} TabBar's menu Button at {menu:?} does not end \
-                         layout.container_margin, {margin:?}, from its panel's right edge at {:?}",
+                         layout.container_margin, {right:?}, from its panel's right edge at {:?}",
                         panel.right()
                     );
                 }
             }
         }
     }
+}
+
+/// The side panel's own padding per side, as `demo::side_panel` draws it
+/// under the theme installed: where the theme states any side of
+/// `sidebar.border.padding`, that side, else `layout.container_margin`, else
+/// none; where it states no side, none (the margin then pads the content,
+/// `demo::side_panel_content_margin`).
+fn side_panel_padding(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> gpui::Edges<Pixels> {
+    read(cx, showcase, |this, cx| {
+        let margin = geometry::container_margin(&this.layout);
+        crate::demo::sidebar_padding(cx).map(|p| {
+            let side = |v: Option<f32>| v.map(px).or(margin).unwrap_or_default();
+            gpui::Edges {
+                top: side(p.top),
+                right: side(p.right),
+                bottom: side(p.bottom),
+                left: side(p.left),
+            }
+        })
+    })
+    .unwrap_or_default()
 }
 
 /// The title of the info the inspector drew in the last frame, and whether
@@ -11791,61 +11830,63 @@ fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
 /// side by `sidebar.border`'s value and no `container_margin` line, the
 /// margin padding nothing; with some sides stated, those by `sidebar.border`
 /// and the rest by `layout.container_margin`, whose line is then recorded.
-/// The padding is spliced into kde-breeze, which states none.
+/// The paddings are spliced into kde-breeze, which states none, and adwaita
+/// states all four sides itself.
 #[gpui::test]
 fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
     use crate::info::px_text;
+    use native_theme::theme::ResolvedPadding;
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    let margin = read(&mut cx, &showcase, |this, _| {
-        geometry::container_margin(&this.layout)
-    });
-    let Some(margin) = margin else {
-        panic!("kde-breeze states no container_margin");
-    };
-    let resolved = native_theme::theme::Theme::preset("kde-breeze")
-        .ok()
-        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
-        .and_then(|v| {
-            v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                .ok()
-        });
-    let Some(resolved) = resolved else {
-        panic!("kde-breeze light does not resolve");
-    };
-    assert_eq!(
-        resolved.sidebar.border.padding,
-        native_theme::theme::ResolvedPadding::default(),
-        "kde-breeze now states a sidebar padding; the unstated case needs another preset"
-    );
-    let all = native_theme::theme::ResolvedPadding {
+    let all = ResolvedPadding {
         top: Some(3.0),
         right: Some(5.0),
         bottom: Some(4.0),
         left: Some(7.0),
     };
-    let some = native_theme::theme::ResolvedPadding {
+    let some = ResolvedPadding {
         top: Some(3.0),
         left: Some(7.0),
         ..Default::default()
     };
-    for padding in [native_theme::theme::ResolvedPadding::default(), all, some] {
-        let mut theme = resolved.clone();
-        theme.sidebar.border.padding = padding;
-        cx.update(|_window, cx| {
-            let prefs = native_theme::AccessibilityPreferences::default();
-            native_theme_gpui::apply(
-                native_theme_gpui::to_theme(&theme, "kde-breeze", false, &prefs),
-                &theme,
-                &prefs,
-                cx,
-            );
+    let mut bundled_all = false;
+    for (preset, splice) in [
+        ("kde-breeze", Some(ResolvedPadding::default())),
+        ("kde-breeze", Some(all)),
+        ("kde-breeze", Some(some)),
+        ("adwaita", None),
+    ] {
+        use_preset(&mut cx, &showcase, preset);
+        let margin = read(&mut cx, &showcase, |this, _| {
+            geometry::container_margin(&this.layout)
         });
-        cx.run_until_parked();
-        draw(&mut cx);
+        let Some(margin) = margin else {
+            panic!("{preset} states no container_margin");
+        };
+        if let Some(padding) = splice {
+            let mut theme = resolved_theme(&mut cx, &showcase);
+            assert_eq!(
+                theme.sidebar.border.padding,
+                ResolvedPadding::default(),
+                "{preset} now states a sidebar padding; the spliced cases need another preset"
+            );
+            theme.sidebar.border.padding = padding;
+            cx.update(|_window, cx| {
+                let prefs = native_theme::AccessibilityPreferences::default();
+                native_theme_gpui::apply(
+                    native_theme_gpui::to_theme(&theme, preset, false, &prefs),
+                    &theme,
+                    &prefs,
+                    cx,
+                );
+            });
+            cx.run_until_parked();
+            draw(&mut cx);
+        }
+        let padding = resolved_theme(&mut cx, &showcase).sidebar.border.padding;
+        let at = format!("{preset}, sidebar.border.padding {padding:?}");
         let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL);
         let Some(info) = info else {
-            panic!("{padding:?}: the side panel shows no info");
+            panic!("{at}: the side panel shows no info");
         };
         let sides = [
             ("top", padding.top),
@@ -11855,11 +11896,12 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
         ];
         let stated = sides.iter().any(|(_, v)| v.is_some());
         let unstated = sides.iter().any(|(_, v)| v.is_none());
+        bundled_all |= splice.is_none() && !unstated;
         assert_eq!(
             names_the_container_margin(&info),
             unstated,
-            "{padding:?}: the side panel's info {} geometry::container_margin, which pads {} \
-             side: {info:?}",
+            "{at}: the side panel's info {} geometry::container_margin, which pads {} side: \
+             {info:?}",
             if unstated {
                 "does not record"
             } else {
@@ -11888,10 +11930,15 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
         for want in wants {
             assert!(
                 line.contains(&want),
-                "{padding:?}: the side panel's padding line {line:?} does not say {want:?}"
+                "{at}: the side panel's padding line {line:?} does not say {want:?}"
             );
         }
     }
+    assert!(
+        bundled_all,
+        "adwaita no longer states every side of sidebar.border.padding, the bundled case of a \
+         side panel the margin pads nothing of"
+    );
 }
 
 /// The segmented control's padding line says what pads each side of a

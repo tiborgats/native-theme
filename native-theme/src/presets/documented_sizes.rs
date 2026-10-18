@@ -218,7 +218,7 @@ const ROWS: &[Row] = &[
     row(Adwaita, "progress_bar", all(0.0), &[1341, 1342], "0; 0, the progress fills the trough"),
     row(Adwaita, "tab", axes(3.0, 12.0), &[1352, 1353], "12; 3")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(Adwaita, "sidebar", NONE, &[1366], "§2.12's padding rows give 6, 6 top / 4 bottom, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(Adwaita, "sidebar", trbl(6.0, 6.0, 4.0, 6.0), &[1379, 1380], ".navigation-sidebar > row margin 0 $menu_margin, 6; padding-top 6, padding-bottom $menu_margin - 2px, 4"),
     Row {
         preset: Adwaita,
         widget: "toolbar",
@@ -314,7 +314,7 @@ const ROWS: &[Row] = &[
     row(Windows11, "progress_bar", all(0.0), &[1341, 1342], "Control.Padding's default 0; 0"),
     row(Windows11, "tab", axes(3.0, 8.0), &[1352, 1353], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(Windows11, "sidebar", NONE, &[1366], "§2.12's padding rows give 3 across, the vertical ❓, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(Windows11, "sidebar", [None, Some(3.0), None, Some(3.0)], &[1379, 1380], "(derived) 3 across, -1 + 4; the vertical ❓, no one value"),
     Row {
         preset: Windows11,
         widget: "toolbar",
@@ -346,7 +346,7 @@ const ROWS: &[Row] = &[
     row(Material3, "progress_bar", NONE, &[1329], "§2.10's padding rows give 0, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
     row(Material3, "tab", [None, Some(16.0), None, Some(16.0)], &[1352, 1353], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
         .with(&[("item_gap", None, 1360)]),
-    row(Material3, "sidebar", NONE, &[1366], "§2.12's padding rows give 12 across (Compose), the vertical app-defined, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
+    row(Material3, "sidebar", [None, Some(12.0), None, Some(12.0)], &[1379, 1380], "Compose NavigationDrawerItemDefaults.ItemPadding horizontal 12; the vertical app-defined, not stated"),
     Row {
         preset: Material3,
         widget: "toolbar",

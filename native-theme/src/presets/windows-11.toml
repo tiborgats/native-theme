@@ -406,6 +406,11 @@ hover_background = "#00000009"
 # NavigationViewItemForeground = TextFillColorPrimary #E4000000
 # (NavigationView_themeresources.xaml:87 at microsoft-ui-xaml 8463f45)
 color = "#000000e4"
+
+
+[light.sidebar.border]
+# platform-facts.md:1379 (§2.12): (derived) 3, the pane's PaneContentGrid sits NavigationViewPaneContentGridMargin -1,3 inside it and each item lays its fill NavigationViewItemButtonMargin 4,2 inside that: -1 + 4 (microsoft-ui-xaml 8463f45, NavigationView.xaml:291, NavigationView_themeresources.xaml:233, :228, :451); the vertical has no one value (:1380), so it is unstated
+padding_horizontal_px = 3.0
 [light.popover]
 # platform-facts.md:1454 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #F9F9F9
 background_color = "#f9f9f9"
@@ -998,6 +1003,11 @@ hover_background = "#ffffff0f"
 # NavigationViewItemForeground = TextFillColorPrimary #FFFFFF
 # (NavigationView_themeresources.xaml:21 at microsoft-ui-xaml 8463f45)
 color = "#ffffff"
+
+
+[dark.sidebar.border]
+# platform-facts.md:1379 (§2.12): (derived) 3, the pane's PaneContentGrid sits NavigationViewPaneContentGridMargin -1,3 inside it and each item lays its fill NavigationViewItemButtonMargin 4,2 inside that: -1 + 4 (microsoft-ui-xaml 8463f45, NavigationView.xaml:291, NavigationView_themeresources.xaml:233, :228, :451); the vertical has no one value (:1380), so it is unstated
+padding_horizontal_px = 3.0
 [dark.popover]
 # platform-facts.md:1454 (§2.16): AcrylicInAppFillColorDefault's FallbackColor #2C2C2C
 background_color = "#2c2c2c"

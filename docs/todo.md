@@ -1603,6 +1603,20 @@ model, the platform presets and the three connectors
       cell this fix gives its value: `$button_hover_color`, `currentColor` at
       15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
       the window).
+      M9a T17 (2026-10-18): the sidebar padding is stated from §2.12's rows
+      (`docs/platform-facts.md:1379-1380`): adwaita 6 across, 6 top and 4
+      bottom (`adwaita.toml`
+      `[light.sidebar.border] padding_horizontal_px, padding_top_px, padding_bottom_px`,
+      the same in `[dark.sidebar.border]`); windows-11 3 across
+      (`windows-11.toml` `[light.sidebar.border] padding_horizontal_px`,
+      `[dark.sidebar.border] padding_horizontal_px`), its vertical ❓ and
+      unstated; material-3 12 across, Compose's
+      `NavigationDrawerItemDefaults.ItemPadding` (`material-3.toml`
+      `[light.sidebar.border] padding_horizontal_px`,
+      `[dark.sidebar.border] padding_horizontal_px`), its vertical
+      app-defined and unstated. The three sidebar-padding clauses above are
+      fixed, and the gpui showcase's two side-panel tests take the panel's
+      padding from the theme. The rest of this item stays open.
 
 ### KDE reader: the toolbar's Header fill and the window border size
 

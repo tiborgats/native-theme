@@ -355,6 +355,11 @@ hover_background = "#1d1b2014"
 # platform-facts.md:1370-1371 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#49454f"
 weight = 500
+
+
+[light.sidebar.border]
+# platform-facts.md:1379 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1380), so it is unstated
+padding_horizontal_px = 12.0
 [light.popover]
 # platform-facts.md:1452 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
 background_color = "#f3edf7"
@@ -869,6 +874,11 @@ hover_background = "#e6e0e914"
 # platform-facts.md:1370-1371 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#cac4d0"
 weight = 500
+
+
+[dark.sidebar.border]
+# platform-facts.md:1379 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1380), so it is unstated
+padding_horizontal_px = 12.0
 [dark.popover]
 # platform-facts.md:1452 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
 background_color = "#211f26"
