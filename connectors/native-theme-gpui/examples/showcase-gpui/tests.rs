@@ -12888,6 +12888,10 @@ fn a_layout_that_never_settles_fails_the_dump() {
         let step = empty.read(serde_json::json!({"elements": {}}));
         assert_eq!(step, DumpStep::Wait, "empty reading {reading}");
     }
+    assert_eq!(
+        empty.read(serde_json::json!({"elements": {}})),
+        DumpStep::GiveUp
+    );
 
     let mut moving = DumpSettle::default();
     for reading in 1..DUMP_MAX_READINGS {
@@ -14191,7 +14195,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
         ]
     };
     let cell_spacing = cell(&mut cx);
-    let cases: [(Page, &'static str, bool, &str, Vec<String>); 12] = [
+    let cases: [(Page, &'static str, bool, &str, Vec<String>); 13] = [
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
@@ -14240,6 +14244,13 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
+            false,
+            "cell spacing",
+            cell_spacing.clone(),
+        ),
+        (
+            Page::Icons,
+            ICONS_GPUI_TRIANGLE_ALERT,
             false,
             "cell spacing",
             cell_spacing.clone(),
