@@ -439,6 +439,26 @@ pub fn px_text(v: f32) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
+/// `font` as `demo::text_in` draws a label in it, for that label's font
+/// line: the family as `status::family_label` names what gpui is asked for
+/// (`native_theme_gpui::font_family`), the stated size the text-scaling
+/// factor scales, the weight, the style where it is not normal, and the line
+/// box.
+pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
+    let drawn = native_theme_gpui::font_family(&font.family);
+    let style = match font.style {
+        native_theme::theme::FontStyle::Normal => "",
+        native_theme::theme::FontStyle::Italic => ", italic",
+        native_theme::theme::FontStyle::Oblique => ", oblique",
+    };
+    format!(
+        "{}, {}px scaled by the text-scaling factor, weight {}{style}, at defaults.line_height",
+        native_theme_showcase_support::status::family_label(&font.family, Some(&drawn)),
+        px_text(font.size),
+        font.weight
+    )
+}
+
 /// A rem multiple of the showcase's own as the window lays it out: its size
 /// in logical pixels at gpui-component's rem, which is `Theme::font_size`
 /// (gpui-component 0.7.3 `root.rs:440`), then the multiple itself.

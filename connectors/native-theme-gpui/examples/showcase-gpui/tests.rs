@@ -7627,6 +7627,77 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
     }
 }
 
+/// A label the showcase draws in a widget's font (`demo::text_in`: the side
+/// panel's labels, the tab rows' labels without `widgets`, the segments, the
+/// native expander's titles and the Basic table's cells) takes the font as
+/// the connector's `with_text` sets it (M9-013, M9-040): family, size,
+/// weight and style as `geometry::menu_item` sets `menu.font`, and its line
+/// box, the scaled size by `defaults.line_height`, read from a fixture whose
+/// font is italic in a family other than the window's.
+#[test]
+fn a_label_in_a_widgets_font_takes_it_as_with_text_does() {
+    use native_theme_gpui::Native;
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "kde-breeze light does not resolve");
+    let Some(mut resolved) = resolved else { return };
+    let family = resolved.defaults.mono_font.family.clone();
+    assert_ne!(
+        family, resolved.defaults.font.family,
+        "kde-breeze's mono family is now the window's, which this test needs apart"
+    );
+    resolved.menu.font.family = family;
+    resolved.menu.font.style = native_theme::theme::FontStyle::Italic;
+    let line_height = resolved.defaults.line_height;
+    for scale in [1.0, 2.0] {
+        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+        prefs.text_scaling_factor = scale;
+        let n = Native {
+            resolved: &resolved,
+            accessibility: &prefs,
+        };
+        let expected = geometry::menu_item(n).text;
+        let mut label = crate::demo::text_in(&n, &resolved.menu.font, "label");
+        let text = label.style().text.clone();
+        assert_eq!(
+            (
+                text.font_family.clone(),
+                text.font_style,
+                text.font_size,
+                text.font_weight
+            ),
+            (
+                expected.font_family.clone(),
+                expected.font_style,
+                expected.font_size,
+                expected.font_weight
+            ),
+            "at text scale {scale} the label does not take the font's family, style, size and weight as with_text does"
+        );
+        assert_eq!(
+            text.font_style,
+            Some(gpui::FontStyle::Italic),
+            "at text scale {scale} the label is not in the fixture's italic"
+        );
+        assert_eq!(
+            expected.line_height,
+            Some(gpui::relative(line_height)),
+            "with_text no longer sets defaults.line_height as a fraction of the size"
+        );
+        let size = native_theme_gpui::scaled_text_size(resolved.menu.font.size, &prefs);
+        assert_eq!(
+            text.line_height,
+            Some(px(size * line_height).into()),
+            "at text scale {scale} the label's line box is not the scaled size by defaults.line_height"
+        );
+    }
+}
+
 /// Where the theme states neither `menu.row_height` nor a vertical padding
 /// side (catppuccin-mocha), a chrome popup row is `MENU_ROW_HEIGHT` by the
 /// connector's control-height rule (`geometry.rs`, `with_height_rule`): that

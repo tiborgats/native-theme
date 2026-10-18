@@ -95,7 +95,7 @@ use gpui_component::{
     tree::{Tree, TreeState},
     v_flex,
 };
-use native_theme::theme::{ArrowSide, IconSet, ResolvedFontSpec, ResolvedPadding};
+use native_theme::theme::{ArrowSide, FontStyle, IconSet, ResolvedFontSpec, ResolvedPadding};
 use native_theme_gpui::icons::with_spin_animation;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets;
@@ -1417,7 +1417,7 @@ pub(crate) fn theme_settings<const N: usize>(
 }
 
 /// A label of the side panel reading `text`, `id` its info's id and debug
-/// selector: plain text in `sidebar.font`'s size and weight where a native
+/// selector: plain text in `sidebar.font` ([`text_in`]) where a native
 /// theme is installed, in the colour the side panel sets. Not a `Label`:
 /// `Label::render` paints `foreground` on its own element (label.rs:211),
 /// over the sidebar's text colour.
@@ -1429,7 +1429,7 @@ fn sidebar_label(
 ) -> Stateful<Div> {
     let native = cx.native();
     let text_div = match &native {
-        Some(n) => font_text(n, &n.resolved.sidebar.font, text),
+        Some(n) => text_in(n, &n.resolved.sidebar.font, text),
         None => div().text_sm().child(text),
     };
     text_div
@@ -1747,7 +1747,7 @@ pub(crate) fn tab_bar(
                 Some(n) => {
                     let t = &n.resolved.tab;
                     Tab::new()
-                        .child(font_text(n, &t.font, label))
+                        .child(text_in(n, &t.font, label))
                         .min_w(px(t.min_width))
                         .min_h(px(t.min_height))
                 }
@@ -1923,14 +1923,23 @@ pub(crate) const NATIVE_TAB_BAR: &str = "widgets::TabBar";
 #[cfg(feature = "widgets")]
 pub(crate) const NATIVE_TAB_BAR_MENU: &str = "widgets::TabBar, menu";
 
-/// `text` in `font`, at the size the text-scaling factor makes of it: a
-/// label a widget's own text size would otherwise set, as its child.
-fn font_text(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
-    div()
+/// `text` in `font` as the connector's `with_text` sets a font (geometry.rs):
+/// its family through `native_theme_gpui::font_family`, its size scaled by
+/// the text-scaling factor, its weight and style, one [`line_height_of`]
+/// tall. A widget's label the showcase draws as the widget's child.
+pub(crate) fn text_in(n: &Native<'_>, font: &ResolvedFontSpec, text: &'static str) -> Div {
+    let mut label = div()
+        .font_family(native_theme_gpui::font_family(&font.family))
         .text_size(text_size_of(n, font))
         .line_height(line_height_of(n, font))
         .font_weight(FontWeight(f32::from(font.weight)))
-        .child(text)
+        .child(text);
+    label.text_style().font_style = Some(match font.style {
+        FontStyle::Normal => gpui::FontStyle::Normal,
+        FontStyle::Italic => gpui::FontStyle::Italic,
+        FontStyle::Oblique => gpui::FontStyle::Oblique,
+    });
+    label
 }
 
 /// `font`'s size, scaled by the text-scaling factor, as the connector's
@@ -1955,7 +1964,7 @@ fn line_height_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
 /// the tab clicked.
 ///
 /// What the theme states reaches it per call where upstream leaves a seam:
-/// each label is a child in `tab.font`'s size and weight over the `text_sm`
+/// each label is a child in `tab.font` ([`text_in`]) over the `text_sm`
 /// the Tab sets on itself (tab/tab.rs, `RenderOnce for Tab`), and each tab
 /// is at least `tab.min_width` wide and `tab.min_height` tall through the
 /// Tab's style, which its own `h` does not clear.
@@ -1998,7 +2007,7 @@ pub(crate) fn tab_row(
         Some(n) => {
             let t = &n.resolved.tab;
             Tab::new()
-                .child(font_text(n, &t.font, label))
+                .child(text_in(n, &t.font, label))
                 .min_w(px(t.min_width))
                 .min_h(px(t.min_height))
         }
@@ -2088,7 +2097,7 @@ pub(crate) fn segmented(
                     .hover(move |style| style.bg(colour(hover))),
                 (false, None) => segment.text_color(colour(s.font.color)),
             })
-            .child(font_text(&n, &s.font, label))
+            .child(text_in(&n, &s.font, label))
             // The segment inside its dividing line -- an absolute child is
             // laid out inside the border -- and the line, the segment's left
             // border, `separator_width` wide, out over it.
@@ -6491,10 +6500,6 @@ fn native_expander(
     let arrow = colour(e.arrow_color.unwrap_or(e.font.color));
     let hover = e.hover_background.map(colour);
     let title_style = geometry::accordion_title(*n);
-    let text_size = px(native_theme_gpui::scaled_text_size(
-        e.font.size,
-        n.accessibility,
-    ));
     let leading = e.arrow_side == Some(ArrowSide::Leading);
     // A leading arrow points at the title while closed and down while open;
     // a trailing one down while closed and up while open (§2.27,
@@ -6555,9 +6560,8 @@ fn native_expander(
                         .child(glyph.rotate(gpui::percentage(turn)))
                         .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)))
                 });
-                let title = div()
+                let title = text_in(n, &e.font, title)
                     .relative()
-                    .child(title)
                     .children(listed.map(|[_, _, _, title]| elements::record(ui, title)));
                 let header = padded(
                     h_flex().id((id, ix)).w_full().items_center().gap(arrow_gap),
@@ -6566,9 +6570,6 @@ fn native_expander(
                     None,
                 )
                 .refine_style(&title_style)
-                .text_size(text_size)
-                .line_height(line_height_of(n, &e.font))
-                .font_weight(FontWeight(f32::from(e.font.weight)))
                 .text_color(text)
                 .when_some(hover, |header, hover| {
                     header.hover(move |style| style.bg(hover))
@@ -8468,12 +8469,12 @@ pub(crate) fn sized_icon(
 
 /// One row of [`files_table`]: its two cells' texts, the elements of
 /// docs/showcase-elements.toml its cells are, where they are ones, its font
-/// as (size, weight, line height, colour), its fill, and whether the
-/// header's line closes it.
-struct TableLine {
+/// and text colour, its fill, and whether the header's line closes it.
+struct TableLine<'a> {
     cells: [&'static str; 2],
     listed: [Option<&'static str>; 2],
-    font: (Pixels, FontWeight, Pixels, Hsla),
+    font: &'a ResolvedFontSpec,
+    text: Hsla,
     fill: Option<Hsla>,
     closed: bool,
     /// The row's height where it is not a body row's.
@@ -8519,22 +8520,12 @@ pub(crate) fn files_table(
     let line = px(r.separator.line_width);
     let pad = &l.border.padding;
     let side = |v: Option<f32>| v.map_or(px(0.), px);
-    let font = |f: &ResolvedFontSpec, colour: Hsla| {
-        let size = native_theme_gpui::scaled_text_size(f.size, n.accessibility);
-        (
-            px(size),
-            FontWeight(f32::from(f.weight)),
-            px(size * r.defaults.line_height),
-            colour,
-        )
-    };
     let height = |line_height: Pixels| {
         l.row_height
             .map_or(side(pad.top) + line_height + side(pad.bottom), px)
     };
     let row =
-        |spec: TableLine| {
-            let (size, weight, line_height, text) = spec.font;
+        |spec: TableLine<'_>| {
             let cells = spec.cells.into_iter().zip(spec.listed).enumerate().map(
                 |(ix, (content, listed))| {
                     div()
@@ -8547,7 +8538,7 @@ pub(crate) fn files_table(
                         .pr(side(pad.right))
                         .pb(side(pad.bottom))
                         .pl(side(pad.left))
-                        .child(content)
+                        .child(text_in(&n, spec.font, content))
                         .when(ix == 0, |cell| {
                             cell.child(
                                 div()
@@ -8565,11 +8556,10 @@ pub(crate) fn files_table(
             h_flex()
                 .relative()
                 .w_full()
-                .h(spec.height.unwrap_or_else(|| height(line_height)))
-                .text_size(size)
-                .font_weight(weight)
-                .line_height(line_height)
-                .text_color(text)
+                .h(spec
+                    .height
+                    .unwrap_or_else(|| height(line_height_of(&n, spec.font))))
+                .text_color(spec.text)
                 .when_some(spec.fill, |row, fill| row.bg(fill))
                 .children(cells)
                 .when(spec.closed, |row| {
@@ -8595,7 +8585,8 @@ pub(crate) fn files_table(
     let header = row(TableLine {
         cells: [first.0, second.0],
         listed: [Some(first.1), Some(second.1)],
-        font: font(&l.header_font, colour(l.header_font.color)),
+        font: &l.header_font,
+        text: colour(l.header_font.color),
         fill: Some(colour(l.header_background)),
         closed: true,
         height: header_height,
@@ -8618,7 +8609,8 @@ pub(crate) fn files_table(
         row(TableLine {
             cells: *cells,
             listed: [None, None],
-            font: font(&l.item_font, text),
+            font: &l.item_font,
+            text,
             fill,
             closed: false,
             height: None,

@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim, edge_claim, px_text, stated,
+    claim, drawn_font, edge_claim, px_text, stated,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
 use crate::support::SampleIcon;
@@ -410,7 +410,7 @@ pub fn native_table_header(r: &ResolvedTheme, columns: &str) -> WidgetInfo {
             "showcase",
         ));
     grid_lines(info, r, "a line inside its bottom edge, under the header, and one down the first column's right edge")
-        .config("font", format!("list.header_font, {}px, weight {}, at defaults.line_height", px_text(l.header_font.size), l.header_font.weight))
+        .config("font", format!("list.header_font: {}", drawn_font(&l.header_font)))
         .instance("columns", columns.to_string())
 }
 
@@ -476,11 +476,7 @@ pub fn native_table_row(r: &ResolvedTheme, selected: bool, cells: &str) -> Widge
         )
         .config(
             "font",
-            format!(
-                "list.item_font, {}px, weight {}, at defaults.line_height",
-                px_text(l.item_font.size),
-                l.item_font.weight
-            ),
+            format!("list.item_font: {}", drawn_font(&l.item_font)),
         )
         .instance("cells", cells.to_string())
 }

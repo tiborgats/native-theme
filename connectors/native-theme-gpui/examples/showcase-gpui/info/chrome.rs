@@ -562,9 +562,8 @@ pub fn sidebar_label(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         Some(r) => info.config(
             "font",
             format!(
-                "sidebar.font, {}px, weight {}: plain text, not a Label, whose render paints foreground over the side panel's colour (label.rs, Label::render)",
-                px_text(r.sidebar.font.size),
-                r.sidebar.font.weight
+                "sidebar.font: {}: plain text, not a Label, whose render paints foreground over the side panel's colour (label.rs, Label::render)",
+                super::drawn_font(&r.sidebar.font)
             ),
         ),
         None => info.not_themeable(
@@ -679,7 +678,7 @@ pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
 pub fn tab_font(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
     match native {
         Some(r) => info
-            .config("font", format!("tab.font, {}px, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.font.size)))
+            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", super::drawn_font(&r.tab.font)))
             .config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
         None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
     }

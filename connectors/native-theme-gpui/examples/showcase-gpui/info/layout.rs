@@ -8,7 +8,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, edge_claim, px_text, stated, stated_claim,
+    claim, drawn_font, edge_claim, px_text, stated, stated_claim,
 };
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
@@ -472,7 +472,7 @@ pub fn tab_row(
             .not_themeable("padding", "the tab's inner padding is a px literal per variant and Size on a child the Tab builds (tab/tab.rs, TabVariant::inner_paddings), so a caller's padding adds to it rather than replacing it, and the model's tab.border.padding is not applied");
     let info = match native {
         Some(r) => info
-            .config("font", format!("tab.font, {}px, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.font.size)))
+            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
             .config("size", format!("at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
         None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
     };
@@ -574,10 +574,9 @@ pub fn native_expander(
     info.config(
         "title row",
         format!(
-            "expander.header_height, {}px, in expander.font, {}px, weight {}",
+            "expander.header_height, {}px, the title in expander.font: {}",
             px_text(e.header_height),
-            px_text(e.font.size),
-            e.font.weight
+            drawn_font(&e.font)
         ),
     )
     .config("edge", expander_edge(e, gap))
@@ -794,7 +793,7 @@ pub fn segmented(
             };
             info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
                 .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall, padded by the stated border.padding sides and, on a side left unstated, by 12px, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)", px_text(s.segment_height)))
-                .config("font", format!("segmented_control.font, {}px", px_text(s.font.size)))
+                .config("font", format!("segmented_control.font: {}", drawn_font(&s.font)))
                 .config("border", if s.border.line_width > 0.0 {
                     format!("segmented_control.border: {}px, radius {}px", px_text(s.border.line_width), px_text(s.border.corner_radius))
                 } else {

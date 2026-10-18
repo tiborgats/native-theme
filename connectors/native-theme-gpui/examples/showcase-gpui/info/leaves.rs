@@ -973,7 +973,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "expander.font",
-        "gpui: the header's size and weight (demo::native_expander); family: the window's",
+        "gpui: the header's family, size, weight and style (demo::native_expander)",
     ),
     (
         "",
@@ -1317,7 +1317,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "list.item_font",
-        "gpui: each row's size and weight (demo::files_table); family: the window's",
+        "gpui: each row's family, size, weight and style (demo::files_table)",
     ),
     (
         "basic.table",
@@ -1352,7 +1352,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.header_font",
-        "gpui: the header row's size and weight (demo::files_table); family: the window's",
+        "gpui: the header row's family, size, weight and style (demo::files_table)",
     ),
     (
         "",
@@ -1698,7 +1698,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "segmented_control.font",
-        "gpui: each label's size and weight (demo::segmented); family: the window's",
+        "gpui: each label's family, size, weight and style (demo::segmented)",
     ),
     (
         "",
@@ -1780,7 +1780,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's size and weight (demo::sidebar_label); family: the window's",
+        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
     ),
     (
         "chrome.info",
