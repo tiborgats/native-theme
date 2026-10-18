@@ -3675,8 +3675,9 @@ fn the_prose_citation_readers_do_their_jobs() {
 /// lines and the symbol inside them; where several do, the citation has to
 /// name its crate. The lines a symbol's citation names inside it
 /// (`file.rs, Symbol, lines N-M`) have to exist in its file, and a citation
-/// that ends a sentence (`file.rs:N.`) is read as any other. A note's line citation may leave the symbol out; a `HOW`
-/// line's may not, so a range that drifts inside its file is caught there.
+/// that ends a sentence (`file.rs:N.`) is read as any other. A note's line
+/// citation may leave the symbol out; a `HOW` line's may not, so a range that
+/// drifts inside its file is caught there.
 ///
 /// Existence, never semantics. What a note *says* about upstream is a human's
 /// to keep true; a note pointing at something upstream has **deleted** is one

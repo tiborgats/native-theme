@@ -1155,7 +1155,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "layout.container_margin_px",
-        "gpui: pads the theme settings where sidebar.border.padding states no side, and where it states any, a side of the side panel the padding leaves unstated (none where that is unstated) (demo::side_panel)",
+        "gpui: the margin (none where that is unstated) pads the theme settings where sidebar.border.padding states no side, and where it states any, a side of the side panel the padding leaves unstated (demo::side_panel)",
     ),
     (
         "chrome.info",

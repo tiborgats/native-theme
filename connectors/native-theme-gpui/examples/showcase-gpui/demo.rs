@@ -6231,10 +6231,13 @@ impl SeparatorKind {
     }
 }
 
-/// The room above and below a horizontal Separator sample that is no
-/// element of docs/showcase-elements.toml, which leaves something to point
-/// at: the showcase's own, gpui's `py_1`, as the theme states none (spec
-/// §3.1). The Separator's info says so.
+/// The room above and below a horizontal Separator sample, which leaves
+/// something to point at: the showcase's own, gpui's `py_1`, as the theme
+/// states none (spec §3.1). The connector's plain line, under a native theme
+/// with `widgets`, takes it only where it is no element of
+/// docs/showcase-elements.toml; upstream's line -- a labelled or dashed
+/// one, or any without a native theme or `widgets` -- takes it always. The
+/// Separator's info says so.
 pub(crate) const SEPARATOR_SAMPLE_ROOM: Rems = rems(0.25);
 
 /// A `Separator` of `kind`, its line in `separator.line_color` through
