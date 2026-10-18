@@ -430,32 +430,93 @@ pub fn dropdown_menu(t: &Theme) -> WidgetInfo {
 }
 
 /// One of the menu rows the application draws itself, reading `label`,
-/// with `icon` of the chosen icon theme. Its geometry lines are recorded
-/// where `demo::menu_rows` applies the builders.
-pub fn menu_row(t: &Theme, label: &'static str, icon: &SampleIcon) -> WidgetInfo {
-    WidgetInfo::new("Menu row")
-        .variant(label)
-        .color(claim("bg (the frame's)", "popover", t.popover, "showcase"))
-        .color(claim(
-            "text",
-            "popover_foreground",
-            t.popover_foreground,
-            "showcase",
-        ))
-        .color(claim("hover", "accent", t.accent, "showcase"))
-        .color(claim(
-            "hover text",
-            "accent_foreground",
-            t.accent_foreground,
-            "showcase",
-        ))
-        .instance(
-            "drawn by",
-            "the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents. They hover as a PopupMenu's item does, with accent and accent_foreground",
-        )
-        .instance(
-            "label",
-            "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.font from the row",
-        )
-        .instance("icon", icon.note("the row shows its label alone"))
+/// with `icon` of the chosen icon theme, painted from `native`'s menu as
+/// the showcase's menus are (`demo::MenuLook`) where a native theme is
+/// installed. Its geometry lines are recorded where `demo::menu_rows`
+/// applies the builders.
+pub fn menu_row(
+    t: &Theme,
+    native: Option<&ResolvedTheme>,
+    label: &'static str,
+    icon: &SampleIcon,
+) -> WidgetInfo {
+    let info = WidgetInfo::new("Menu row").variant(label);
+    let info = match native {
+        Some(r) => {
+            let m = &r.menu;
+            let info = info
+                .color(claim(
+                    "bg (the frame's)",
+                    "background_color",
+                    stated(m.background_color),
+                    "showcase",
+                ))
+                .color(claim("text", "color", stated(m.font.color), "showcase"))
+                .color(claim(
+                    "hover",
+                    "hover_background",
+                    stated(m.hover_background),
+                    "showcase",
+                ))
+                .color(claim(
+                    "hover text",
+                    "hover_text_color",
+                    stated(m.hover_text_color),
+                    "showcase",
+                ));
+            let info = if r.popover.border.line_width > 0.0 {
+                info.color(claim(
+                    "frame edge",
+                    "color",
+                    stated(r.popover.border.color),
+                    "showcase",
+                ))
+                .config(
+                    "frame edge",
+                    format!(
+                        "popover.border: {}px, radius {}px, as the showcase's menus frame their popup (platform-facts §2.6: a menu's popup border is §2.16's)",
+                        px_text(r.popover.border.line_width),
+                        px_text(r.popover.border.corner_radius)
+                    ),
+                )
+            } else {
+                info.config("frame edge", "none: popover.border.line_width is 0")
+            };
+            info.config(
+                "highlight",
+                format!(
+                    "menu.border.corner_radius on each row, {}px (platform-facts §2.6: the items are rectangular where it is 0)",
+                    px_text(m.border.corner_radius)
+                ),
+            )
+            .instance(
+                "drawn by",
+                "the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents. They are painted as the showcase's own menus are, in menu.background_color, menu.font.color and the menu's hover colours",
+            )
+        }
+        None => info
+            .color(claim("bg (the frame's)", "popover", t.popover, "showcase"))
+            .color(claim(
+                "text",
+                "popover_foreground",
+                t.popover_foreground,
+                "showcase",
+            ))
+            .color(claim("hover", "accent", t.accent, "showcase"))
+            .color(claim(
+                "hover text",
+                "accent_foreground",
+                t.accent_foreground,
+                "showcase",
+            ))
+            .instance(
+                "drawn by",
+                "the application: upstream's MenuItemElement is crate-private and PopupMenu builds its own rows (menu/menu_item.rs, MenuItemElement), so these rows are the receiver geometry::menu_item documents. With no native theme they take the popover's tokens and hover as a PopupMenu's item does, with accent and accent_foreground",
+            ),
+    };
+    info.instance(
+        "label",
+        "plain text rather than a Label: a Label paints foreground on its own element and sets its own line height (label.rs, Label::render), which would hide the frame's text colour; plain text takes menu.font from the row",
+    )
+    .instance("icon", icon.note("the row shows its label alone"))
 }

@@ -7454,27 +7454,57 @@ pub(crate) fn dropdown_menu(
 /// the showcase's own, as the model states no menu width.
 const MENU_ROWS_WIDTH: Pixels = px(220.);
 
+/// The debug selector of the Overlays page's frame of menu rows.
+pub(crate) const MENU_ROWS_FRAME: &str = "overlays-menu-rows";
+
 /// The menu rows an application draws itself, one per `(id, icon, label)`
-/// of `rows`, in a frame painted as a menu is. Each icon is the chosen icon
-/// theme's, and a row whose icon that theme lacks shows its label alone.
-/// Upstream's `MenuItemElement` is crate-private and `PopupMenu` builds its
-/// own rows, so `geometry::menu_item` has no widget to refine: these rows
-/// are the receiver it documents.
+/// of `rows`, in a frame painted as the showcase's menus are, from
+/// [`MenuLook`]: `menu.background_color` edged by `popover.border`, the rows
+/// in `menu.font.color`, hovered in `menu.hover_background` and
+/// `hover_text_color`, rounded by `menu.border.corner_radius`; without a
+/// native theme, the popover's tokens and the accent. Each icon is the
+/// chosen icon theme's, and a row whose icon that theme lacks shows its
+/// label alone. Upstream's `MenuItemElement` is crate-private and
+/// `PopupMenu` builds its own rows, so `geometry::menu_item` has no widget
+/// to refine: these rows are the receiver it documents.
 pub(crate) fn menu_rows(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     rows: &[(&'static str, SampleIcon, &'static str)],
 ) -> Div {
     let t = cx.theme();
-    let (hover_bg, hover_text) = (t.accent, t.accent_foreground);
-    v_flex()
-        .w(MENU_ROWS_WIDTH)
-        .bg(t.popover)
-        .text_color(t.popover_foreground)
-        .demo_frame(cx)
+    let native = cx.native();
+    let look = native.as_ref().map(MenuLook::of);
+    let frame = v_flex().w(MENU_ROWS_WIDTH);
+    let (frame, hover_bg, hover_text, radius) = match &look {
+        Some(look) => (
+            frame
+                .bg(look.background)
+                .text_color(look.text)
+                .border(look.frame_width)
+                .border_color(look.frame)
+                .rounded(look.frame_radius)
+                .overflow_hidden(),
+            look.hover,
+            look.hover_text,
+            Some(look.radius),
+        ),
+        None => (
+            frame
+                .bg(t.popover)
+                .text_color(t.popover_foreground)
+                .demo_frame(cx),
+            t.accent,
+            t.accent_foreground,
+            None,
+        ),
+    };
+    frame
+        .debug_selector(|| MENU_ROWS_FRAME.into())
         .children(rows.iter().map(|(id, icon, label)| {
             let (id, label) = (*id, *label);
-            let mut row_info = info::overlays::menu_row(t, label, icon);
+            let mut row_info =
+                info::overlays::menu_row(t, native.as_ref().map(|n| n.resolved), label, icon);
             if icon.shown() && native_value(cx, geometry::icon_size_small).is_some() {
                 row_info = row_info.geometry("icon_size_small");
             }
@@ -7483,6 +7513,7 @@ pub(crate) fn menu_rows(
             let row = div()
                 .flex()
                 .items_center()
+                .when_some(radius, |row, radius| row.rounded(radius))
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
                 .children(icon.sized(cx, geometry::icon_size_small))
                 .child(label);

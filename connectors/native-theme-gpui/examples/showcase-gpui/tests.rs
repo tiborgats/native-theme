@@ -7082,6 +7082,121 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
     );
 }
 
+/// The Overlays page's menu rows, which the application draws itself, are
+/// painted as the showcase's own menus are (M9-007): the frame in
+/// `menu.background_color` and edged by `popover.border`, a hovered row in
+/// `menu.hover_background`, not in the popover's fill. Under adwaita light
+/// `menu.background_color` inherits `defaults.background_color`, which is
+/// not the popover's fill, so the two can be told apart. The connector
+/// fills the `accent` token the rows hovered in before from
+/// `menu.hover_background` (src/colors.rs, `tc.accent`), so the hovered
+/// row's colour is the same either way; the test holds it.
+#[gpui::test]
+fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) {
+    use crate::demo::MENU_ROWS_FRAME;
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Overlays);
+    let r = resolved_theme(&mut cx, &showcase);
+    let fill = stated(r.menu.background_color);
+    assert_ne!(
+        fill,
+        stated(r.popover.background_color),
+        "adwaita light's menu fill is the popover's, so this test cannot tell them apart"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, MENU_ROWS_FRAME),
+        Some(fill),
+        "the menu rows' frame is not filled with menu.background_color"
+    );
+    assert_eq!(
+        painted_edge(&mut cx, MENU_ROWS_FRAME),
+        (r.popover.border.line_width > 0.0).then(|| stated(r.popover.border.color)),
+        "the menu rows' frame is not edged as popover.border strokes it"
+    );
+    let row = "overlays-menu-row-copy";
+    let at = bounds_of(&mut cx, row).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_fill(&mut cx, row),
+        Some(stated(r.menu.hover_background)),
+        "the hovered menu row is not filled with menu.hover_background"
+    );
+}
+
+/// The Overlays page's menu rows' info claims the menu leaves the rows are
+/// painted with (M9-007), and no popover or accent token.
+#[gpui::test]
+fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Overlays);
+    let r = resolved_theme(&mut cx, &showcase);
+    let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
+    assert!(info.is_some(), "the menu row shows no info");
+    let Some(info) = info else { return };
+    let by_role = |role: &str| {
+        info.colors
+            .iter()
+            .find(|c| c.role == role)
+            .map(|c| (c.field, c.value))
+    };
+    for (role, field, value) in [
+        (
+            "bg (the frame's)",
+            "background_color",
+            r.menu.background_color,
+        ),
+        ("text", "color", r.menu.font.color),
+        ("hover", "hover_background", r.menu.hover_background),
+        ("hover text", "hover_text_color", r.menu.hover_text_color),
+    ] {
+        assert_eq!(
+            by_role(role),
+            Some((field, stated(value))),
+            "the menu row's info does not claim menu.{field} as its {role}: {info:?}"
+        );
+    }
+    for token in [
+        "popover",
+        "popover_foreground",
+        "accent",
+        "accent_foreground",
+    ] {
+        assert_eq!(
+            claim_of(&info, token),
+            None,
+            "the menu row's info claims the {token} token, which no longer paints it: {info:?}"
+        );
+    }
+    if r.popover.border.line_width > 0.0 {
+        assert_eq!(
+            by_role("frame edge"),
+            Some(("color", stated(r.popover.border.color))),
+            "the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
+        );
+    } else {
+        assert_eq!(
+            by_role("frame edge"),
+            None,
+            "the menu row's info claims an edge popover.border does not stroke: {info:?}"
+        );
+        assert_eq!(
+            info.config
+                .iter()
+                .find(|n| n.what == "frame edge")
+                .map(|n| n.text.as_str()),
+            Some("none: popover.border.line_width is 0"),
+            "the menu row's info does not say its frame strokes no edge: {info:?}"
+        );
+    }
+}
+
 /// The chrome popup's rows and titles take `menu.font` as
 /// `geometry::menu_item` sets it, its style included, and the rows the
 /// builder's control-height rule on `menu.row_height` -- `h` at text scale
