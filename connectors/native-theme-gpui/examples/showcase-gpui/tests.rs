@@ -11941,6 +11941,44 @@ fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
     );
 }
 
+/// The side panel's Widget Info routes each `sidebar.border.padding_*` leaf
+/// as `demo::side_panel` draws it (Addendum I S2): under windows-11, which
+/// states the sidebar's left and right padding alone, the panel's top is
+/// padded by `layout.container_margin`, and the route the inspector shows
+/// and copies for `sidebar.border.padding_top_px` says that a side the
+/// padding leaves unstated takes the margin, not that the margin pads the
+/// content, which the panel then leaves unpadded.
+#[gpui::test]
+fn the_side_panels_padding_routes_name_the_margin_on_an_unstated_side(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "windows-11");
+    let p = resolved_theme(&mut cx, &showcase).sidebar.border.padding;
+    assert!(
+        p.top.is_none() && p.left.is_some(),
+        "windows-11 no longer states its sidebar's left padding without its top: {p:?}"
+    );
+    let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL);
+    assert!(
+        info.as_ref().is_some_and(|info| info.listed.is_some()),
+        "the side panel's info is not an element of the list: {info:?}"
+    );
+    click(&mut cx, INSPECTOR_COPY);
+    let copied = cx
+        .read_from_clipboard()
+        .and_then(|item| item.text())
+        .unwrap_or_default();
+    let route = copied
+        .lines()
+        .skip_while(|line| !line.starts_with("sidebar.border.padding_top_px "))
+        .nth(1)
+        .unwrap_or_default();
+    assert!(
+        route.contains("a side it leaves unstated by layout.container_margin"),
+        "windows-11: the side panel's sidebar.border.padding_top_px route {route:?} does not \
+         say the margin pads the unstated top: {copied:?}"
+    );
+}
+
 /// The segmented control's padding line says what pads each side of a
 /// segment (M9-048): a stated `segmented_control.border.padding` side by its
 /// value, an unstated left or right by `SEGMENT_PADDING`, upstream's 12px,
