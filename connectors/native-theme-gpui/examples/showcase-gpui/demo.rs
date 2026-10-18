@@ -4622,8 +4622,9 @@ fn list_row_item(item: ListItem, cx: &App, selected_text: Option<&StyleRefinemen
         .group(LIST_ROW_GROUP)
 }
 
-/// The label of the List or Tree row `id`, reading `label`, lettered in
-/// `hover_text` while its row (`LIST_ROW_GROUP`) is under the pointer.
+/// A List or Tree row's label, reading `label`, lettered in `hover_text`
+/// while its row (`LIST_ROW_GROUP`) is under the pointer. The self-tests
+/// read the colour it is laid out in through [`probed_label`].
 ///
 /// Plain text, not a Label: `Label::render` paints foreground on its own
 /// element (label.rs:211) over the list font the row carries. It has an id
@@ -4632,21 +4633,20 @@ fn list_row_item(item: ListItem, cx: &App, selected_text: Option<&StyleRefinemen
 /// keeps between frames: the group's hitbox is made in paint (gpui-pre
 /// src/elements/div.rs, `Interactivity::compute_style_internal` and
 /// `GroupHitboxes`), so a label without an id is laid out unhovered.
-fn row_label(
-    #[cfg_attr(not(test), allow(unused_variables))] ui: &Entity<InfoRegistry>,
-    #[cfg_attr(not(test), allow(unused_variables))] id: &str,
-    label: SharedString,
-    hover_text: Option<Hsla>,
-) -> Stateful<Div> {
-    let label = div()
+fn row_label(label: SharedString, hover_text: Option<Hsla>) -> Stateful<Div> {
+    div()
         .id("label")
         .child(label)
         .when_some(hover_text, |label, text| {
             label.group_hover(LIST_ROW_GROUP, move |style| style.text_color(text))
-        });
-    #[cfg(test)]
-    let label = label.child(crate::elements::label_probe(ui, id.to_string()));
-    label
+        })
+}
+
+/// `label`, the row `id`'s, recording the colour its text is laid out in
+/// for the self-tests (`elements::label_probe`).
+#[cfg(test)]
+fn probed_label(label: Stateful<Div>, ui: &Entity<InfoRegistry>, id: &str) -> Stateful<Div> {
+    label.child(crate::elements::label_probe(ui, id.to_string()))
 }
 
 /// The room a List's or a Tree's row leaves for the scrollbar: its groove,
@@ -4693,7 +4693,12 @@ impl RenderOnce for ListRow {
             &mut row_info,
         )
         .map(|item| list_row_item(item, cx, selected_text.as_ref()))
-        .child(row_label(&self.ui, &id, self.label, hover_text))
+        .child({
+            let label = row_label(self.label, hover_text);
+            #[cfg(test)]
+            let label = probed_label(label, &self.ui, &id);
+            label
+        })
         .selected(self.selected)
         .secondary_selected(self.right_clicked);
         item.info(&self.ui, SharedString::from(id.clone()), row_info)
@@ -4782,7 +4787,10 @@ fn tree_row(
     )
     .map(|item| list_row_item(item, cx, selected_text.as_ref()));
     let ui = ui.clone();
-    item.child(row_label(&ui, &id, label, hover_text))
+    let label = row_label(label, hover_text);
+    #[cfg(test)]
+    let label = probed_label(label, &ui, &id);
+    item.child(label)
         .selected(selected)
         .suffix(move |_window, _cx| {
             let id = id.clone();
