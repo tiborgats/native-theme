@@ -6671,6 +6671,71 @@ fn the_icon_animation_steps_only_on_the_icons_page(cx: &mut TestAppContext) {
     );
 }
 
+/// `--tab` opens a page as the page tabs do (`show_page`), so `--tab icons`
+/// starts the Icons page's animation timer and the frames step, and
+/// `--tab basic` stops it again. With Material chosen (a frame animation),
+/// the executor's clock is moved on by ten frame durations after each.
+// The bundled Material set, and its frames drawn on their first draw, which
+// only `svg-rasterize` promises (`icons::animated_frames_to_image_sources`).
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
+#[gpui::test]
+fn the_tab_flag_starts_the_icon_animation_on_the_icons_page_alone(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let steps = || crate::app::ANIMATION_STEPS.with(std::cell::Cell::get);
+    cx.update(|window, cx| {
+        cx.set_reduce_motion(false);
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx)
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let frame = read(&mut cx, &showcase, |this, _| {
+        this.animated_frame_durations.iter().copied().min()
+    });
+    assert!(
+        frame.is_some(),
+        "Material's indicator is no frame animation"
+    );
+    let Some(frame) = frame else { return };
+    let frame = Duration::from_millis(u64::from(frame));
+    let ten_frames = |cx: &mut VisualTestContext| {
+        for _ in 0..10 {
+            cx.executor().advance_clock(frame);
+            cx.run_until_parked();
+        }
+    };
+    let timer = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, _| {
+            (this.active_page, this.animation_timer.is_some())
+        })
+    };
+    assert_eq!(timer(&mut cx), (Page::Basic, false));
+    for (tab, page, runs) in [("icons", Page::Icons, true), ("basic", Page::Basic, false)] {
+        apply_cli(
+            &mut cx,
+            &showcase,
+            &crate::CliArgs {
+                tab: Some(tab.into()),
+                ..Default::default()
+            },
+        );
+        assert_eq!(
+            timer(&mut cx),
+            (page, runs),
+            "--tab {tab}: the page shown and whether the animation timer runs"
+        );
+        let before = steps();
+        ten_frames(&mut cx);
+        assert_eq!(
+            steps() > before,
+            runs,
+            "--tab {tab}: the animation stepped {} times in ten frame durations",
+            steps() - before
+        );
+    }
+}
+
 /// A role the icon set has no icon for says so and shows the placeholder,
 /// never another set's icon: gpui-component has none for Shield, and the
 /// cell's info claims the placeholder's colour and no icon's.
