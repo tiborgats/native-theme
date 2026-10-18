@@ -9,6 +9,7 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, InputField, InputGroupStates, StepIcons};
+use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
@@ -53,9 +54,7 @@ impl Showcase {
         };
         let speech_state = self.speech_state.clone();
 
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -159,8 +158,7 @@ impl Showcase {
                 "Checkboxes",
             ))
             .child(
-                v_flex()
-                    .gap_3()
+                with_gap(v_flex(), widget_gap)
                     .child(
                         demo::checkbox(
                             ui,
@@ -206,8 +204,7 @@ impl Showcase {
             ))
             .child(demo::heading(ui, cx, "inputs-heading-switch", "Switch"))
             .child(
-                h_flex()
-                    .gap_6()
+                with_gap(h_flex(), widget_gap)
                     .child(demo::switch(
                         ui,
                         cx,

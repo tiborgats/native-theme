@@ -6,9 +6,12 @@ use gpui_component::{IconName, IconNamed as _, h_flex, v_flex};
 use native_theme::icons::icon_name as native_icon_name;
 use native_theme::theme::IconSet;
 
+use native_theme_gpui::geometry;
+
 use crate::app::Showcase;
 use crate::demo::{self, AnimatedArt, IconArt, IconCell, IconSizeContext};
-use crate::support::{IconSource, is_native_icon_set};
+use crate::pages::{ICON_GRID_GAP, page_root};
+use crate::support::{IconSource, is_native_icon_set, with_gap};
 
 /// The icon the Icon Sizes section shows at each size.
 pub(crate) const ICON_SIZES_ICON: IconName = IconName::Folder;
@@ -24,10 +27,15 @@ impl Showcase {
         let cells = IconSizeContext::ALL.map(|context| {
             demo::icon_size_cell(ui, cx, context, &drawn, &ICON_SIZES_ICON, &set, preset)
         });
-        v_flex()
-            .gap_2()
+        let widget_gap = geometry::widget_gap(&self.layout);
+        with_gap(v_flex(), widget_gap)
             .child(demo::heading(ui, cx, "icons-heading-sizes", "Icon Sizes"))
-            .child(h_flex().items_end().flex_wrap().gap_2().children(cells))
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_end()
+                    .flex_wrap()
+                    .children(cells),
+            )
     }
 
     /// The Animated Icons section: the loading indicator the chosen icon theme ships,
@@ -101,14 +109,12 @@ impl Showcase {
             )
             .into_any_element()
         } else {
-            h_flex()
-                .gap_6()
+            with_gap(h_flex(), geometry::widget_gap(&self.layout))
                 .flex_wrap()
                 .children(cards)
                 .into_any_element()
         };
-        v_flex()
-            .gap_2()
+        with_gap(v_flex(), geometry::widget_gap(&self.layout))
             .child(demo::heading(
                 ui,
                 cx,
@@ -198,10 +204,9 @@ impl Showcase {
             })
             .collect();
 
-        v_flex()
-            .gap_2()
+        with_gap(v_flex(), geometry::widget_gap(&self.layout))
             .child(demo::heading(ui, cx, "icons-heading-native", title))
-            .child(div().flex().flex_wrap().gap_2().children(icons))
+            .child(div().flex().flex_wrap().gap(ICON_GRID_GAP).children(icons))
     }
 
     /// The gpui-component Icons section: the icon the current set gives
@@ -254,10 +259,9 @@ impl Showcase {
             self.gpui_icons.len(),
         );
 
-        v_flex()
-            .gap_2()
+        with_gap(v_flex(), geometry::widget_gap(&self.layout))
             .child(demo::heading(ui, cx, "icons-heading-gpui", title))
-            .child(div().flex().flex_wrap().gap_2().children(icons))
+            .child(div().flex().flex_wrap().gap(ICON_GRID_GAP).children(icons))
     }
 
     // -----------------------------------------------------------------------
@@ -267,9 +271,7 @@ impl Showcase {
         &self,
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .child(self.render_icon_sizes_section(cx))
             .child(self.render_animated_icons_section(cx))
             .child(self.render_native_icons_section(cx))

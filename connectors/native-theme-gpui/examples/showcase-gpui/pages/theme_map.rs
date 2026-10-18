@@ -3,10 +3,10 @@
 use gpui::{
     Context, IntoElement, ParentElement, Pixels, StyleRefinement, Styled, div, prelude::*, px,
 };
-use gpui_component::v_flex;
 
 use crate::app::Showcase;
 use crate::demo::{self, ThemeToken};
+use crate::pages::page_root;
 use crate::support::NativeStyled as _;
 
 /// The space between two swatches of a row, and between two rows: the
@@ -273,9 +273,7 @@ impl Showcase {
         // Built once, so every swatch sits in the showcase's one frame
         // without the theme being reached for a hundred and forty times.
         let frame = StyleRefinement::default().demo_frame(cx);
-        v_flex()
-            .gap_4()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,

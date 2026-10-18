@@ -7,6 +7,7 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
+use crate::pages::{BADGE_ROW_GAP, page_root};
 use crate::support::with_gap;
 use crate::{
     FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
@@ -172,9 +173,7 @@ impl Showcase {
         let spinner_icons = self.spinner_icons();
         let marker_icon = self.sample_icon(IconName::CircleCheck);
         let widget_gap = geometry::widget_gap(&self.layout);
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -193,23 +192,23 @@ impl Showcase {
                 "feedback-heading-progress",
                 "Progress Bars",
             ))
-            .child(v_flex().gap_3().w(px(360.0)).children(BARS.map(
-                |(id, label_id, label, value_id, value)| {
-                    v_flex()
-                        .gap_3()
-                        .child(
-                            h_flex()
-                                .justify_between()
-                                .child(demo::label(ui, cx, label_id, label))
-                                .child(demo::label(ui, cx, value_id, format!("{value}%"))),
-                        )
-                        .child(demo::progress(ui, cx, id, label, Some(value)))
-                },
-            )))
+            .child(
+                with_gap(v_flex(), widget_gap)
+                    .w(px(360.0))
+                    .children(BARS.map(|(id, label_id, label, value_id, value)| {
+                        with_gap(v_flex(), widget_gap)
+                            .child(
+                                h_flex()
+                                    .justify_between()
+                                    .child(demo::label(ui, cx, label_id, label))
+                                    .child(demo::label(ui, cx, value_id, format!("{value}%"))),
+                            )
+                            .child(demo::progress(ui, cx, id, label, Some(value)))
+                    })),
+            )
             // Indeterminate: the fill sweeps the track.
             .child(
-                v_flex()
-                    .gap_3()
+                with_gap(v_flex(), widget_gap)
                     .w(px(360.0))
                     .child(demo::label(
                         ui,
@@ -275,15 +274,16 @@ impl Showcase {
                 "feedback-heading-spinner",
                 "Spinner (3 sizes)",
             ))
-            .child(h_flex().gap_6().items_center().children(SPINNERS.map(
-                |(id, label_id, kind)| {
-                    h_flex()
-                        .gap_2()
-                        .items_center()
-                        .child(demo::spinner(ui, cx, id, kind, &spinner_icons))
-                        .child(demo::label(ui, cx, label_id, kind.name()))
-                },
-            )))
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_center()
+                    .children(SPINNERS.map(|(id, label_id, kind)| {
+                        with_gap(h_flex(), widget_gap)
+                            .items_center()
+                            .child(demo::spinner(ui, cx, id, kind, &spinner_icons))
+                            .child(demo::label(ui, cx, label_id, kind.name()))
+                    })),
+            )
             .child(demo::heading(
                 ui,
                 cx,
@@ -291,8 +291,7 @@ impl Showcase {
                 "Skeleton Placeholders",
             ))
             .child(
-                v_flex()
-                    .gap_2()
+                with_gap(v_flex(), widget_gap)
                     .w(px(360.0))
                     // The block keeps the larger of the two roundings this
                     // section always had.
@@ -383,12 +382,12 @@ impl Showcase {
                 "feedback-heading-tags",
                 "Tags (7 colors + outline)",
             ))
-            .child(h_flex().gap_2().flex_wrap().children(
+            .child(with_gap(h_flex(), widget_gap).flex_wrap().children(
                 TAGS.map(|(id, kind, outline, label)| demo::tag(ui, cx, id, kind, outline, label)),
             ))
             .child(demo::heading(ui, cx, "feedback-heading-badge", "Badge"))
             .child(
-                h_flex().gap_8().children(
+                h_flex().gap(BADGE_ROW_GAP).children(
                     BADGES.map(|(id, count, label)| demo::badge(ui, cx, id, count, label)),
                 ),
             )
@@ -403,8 +402,7 @@ impl Showcase {
             ))
             .child(demo::heading(ui, cx, "feedback-heading-tooltip", "Tooltip"))
             .child(
-                h_flex()
-                    .gap_4()
+                with_gap(h_flex(), widget_gap)
                     .child(demo::tooltip_button(
                         ui,
                         cx,
@@ -436,8 +434,7 @@ impl Showcase {
                 "Notification (push via WindowExt)",
             ))
             .child(
-                h_flex()
-                    .gap_3()
+                with_gap(h_flex(), widget_gap)
                     .child(probe(
                         PROBE_NOTIFICATION,
                         demo::notification_button(

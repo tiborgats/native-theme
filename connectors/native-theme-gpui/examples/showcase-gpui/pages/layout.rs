@@ -13,6 +13,7 @@ use crate::demo::{
     self, ButtonKind, ButtonState, DemoButton, DemoCollapsible, GroupBoxKind, SeparatorKind,
     SidebarSample, SpacingBox, StepperKind,
 };
+use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
 use crate::support::{NativeStyled as _, STEPPER_STEPS, SampleIcon, layout_value, with_gap};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
@@ -85,8 +86,8 @@ impl Showcase {
         let ui = &self.info_ui;
         let collapsible_open = self.collapsible_open;
         // The four layout accessors. `None` where the platform specifies
-        // nothing (platform-facts §2.20), and then the showcase's own spacing
-        // stands — nothing is invented to fill the gap.
+        // nothing (platform-facts §2.20), and then no space is drawn for
+        // it, here or round the page -- nothing is invented to fill the gap.
         let widget_gap = geometry::widget_gap(&self.layout);
         let container_margin = geometry::container_margin(&self.layout);
         let window_margin = geometry::window_margin(&self.layout);
@@ -139,9 +140,9 @@ impl Showcase {
                 .into_any_element()
             }),
         );
-        v_flex()
-            .gap_5()
-            .p_4()
+        // The page is laid out by the window margin and the section gap it
+        // prints.
+        page_root(&self.layout)
             .flex_1()
             // The four layout accessors, applied rather than printed: the outer
             // box takes the platform's window margin, the row inside it the
@@ -173,8 +174,7 @@ impl Showcase {
                 "Separator (solid / labelled / dashed)",
             ))
             .child(
-                v_flex()
-                    .gap_3()
+                with_gap(v_flex(), widget_gap)
                     .children(SEPARATORS.map(|(id, kind)| demo::separator(ui, cx, id, kind))),
             )
             .child(demo::heading(
@@ -184,7 +184,7 @@ impl Showcase {
                 "Sidebar (expanded / collapsed to its icons)",
             ))
             .child(
-                h_flex().items_start().gap_4().children(
+                with_gap(h_flex(), widget_gap).items_start().children(
                     [
                         (LAYOUT_SIDEBAR_EXPANDED, false),
                         (LAYOUT_SIDEBAR_COLLAPSED, true),
@@ -235,16 +235,14 @@ impl Showcase {
                 "layout-group-box-container",
                 GroupBoxKind::Fill,
                 "Contained Content",
-                v_flex()
-                    .gap_2()
+                with_gap(v_flex(), widget_gap)
                     .child(
                         div()
                             .text_sm()
                             .child("GroupBox can wrap any content as a visual container."),
                     )
                     .child(
-                        h_flex()
-                            .gap_2()
+                        with_gap(h_flex(), widget_gap)
                             .child(demo::button(
                                 ui,
                                 cx,
@@ -357,7 +355,7 @@ impl Showcase {
                 )
                 // The slide controls are positioned outside the frame, so
                 // the section leaves a button's width on either side.
-                .px_16(),
+                .px(CAROUSEL_SIDE_ROOM),
             )
             .child(demo::heading(
                 ui,
@@ -365,7 +363,7 @@ impl Showcase {
                 "layout-heading-group-box",
                 "GroupBox (3 variants)",
             ))
-            .child(h_flex().gap_4().children(GROUP_BOXES.map(
+            .child(with_gap(h_flex(), widget_gap).children(GROUP_BOXES.map(
                 |(id, kind, title, content)| {
                     demo::group_box(
                         ui,

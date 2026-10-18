@@ -3,9 +3,12 @@
 use gpui::{Context, IntoElement, ParentElement, Styled, prelude::*, px};
 use gpui_component::{h_flex, v_flex};
 
+use native_theme_gpui::geometry;
+
 use crate::app::Showcase;
 use crate::demo::{self, DecorationKind, HeadingLevel, LabelKind, TextSize, WeightKind};
-use crate::support::MARKDOWN_SAMPLE;
+use crate::pages::page_root;
+use crate::support::{MARKDOWN_SAMPLE, with_gap};
 use crate::{TYPOGRAPHY_H1, TYPOGRAPHY_H2, TYPOGRAPHY_LABEL_PLAIN, TYPOGRAPHY_LABEL_SECONDARY};
 
 /// The Labels above the masked one, as `(id, kind, text)`.
@@ -105,22 +108,23 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        v_flex()
-            .gap_5()
-            .p_4()
+        let widget_gap = geometry::widget_gap(&self.layout);
+        // Samples one over another, and side by side, `layout.widget_gap`
+        // apart, as the Basic page's typography lines are.
+        let column = || with_gap(v_flex(), widget_gap);
+        let row = || with_gap(h_flex(), widget_gap);
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(ui, cx, "typography-heading-label", "Label"))
             .child(
-                v_flex()
-                    .gap_2()
+                column()
                     .children(
                         LABELS.map(|(id, kind, text)| demo::gallery_label(ui, cx, id, kind, text)),
                     )
                     // Only the secret is masked: the words naming it are page
                     // text beside it.
                     .child(
-                        h_flex()
-                            .gap_2()
+                        row()
                             .items_center()
                             .child(demo::label(
                                 ui,
@@ -138,18 +142,14 @@ impl Showcase {
                     ),
             )
             .child(demo::heading(ui, cx, "typography-heading-link", "Link"))
-            .child(
-                h_flex()
-                    .gap_4()
-                    .children(LINKS.map(|(id, text, href)| demo::link(ui, cx, id, text, href))),
-            )
+            .child(row().children(LINKS.map(|(id, text, href)| demo::link(ui, cx, id, text, href))))
             .child(demo::heading(
                 ui,
                 cx,
                 "typography-heading-headings",
                 "Headings (H1–H6)",
             ))
-            .child(v_flex().gap_1().children(
+            .child(column().children(
                 HEADINGS.map(|(id, level, text)| demo::heading_level(ui, cx, id, level, text)),
             ))
             .child(demo::heading(
@@ -159,8 +159,7 @@ impl Showcase {
                 "Font Weights (Thin → Black)",
             ))
             .child(
-                v_flex()
-                    .gap_1()
+                column()
                     .children(WEIGHTS.map(|(id, weight)| demo::weight_sample(ui, cx, id, weight))),
             )
             .child(demo::heading(
@@ -170,7 +169,7 @@ impl Showcase {
                 "Font Sizes (XS → XL)",
             ))
             .child(
-                v_flex().gap_1().children(
+                column().children(
                     SIZES.map(|(id, size, text)| demo::sized_label(ui, cx, id, size, text)),
                 ),
             )
@@ -180,13 +179,9 @@ impl Showcase {
                 "typography-heading-decorations",
                 "Text Decorations",
             ))
-            .child(
-                v_flex()
-                    .gap_1()
-                    .children(DECORATIONS.map(|(id, decoration, text)| {
-                        demo::decoration_sample(ui, cx, id, decoration, text)
-                    })),
-            )
+            .child(column().children(DECORATIONS.map(|(id, decoration, text)| {
+                demo::decoration_sample(ui, cx, id, decoration, text)
+            })))
             .child(demo::heading(
                 ui,
                 cx,
@@ -194,7 +189,7 @@ impl Showcase {
                 "Kbd (keyboard shortcuts)",
             ))
             .child(
-                h_flex().gap_4().items_center().children(
+                row().items_center().children(
                     KBDS.iter()
                         .filter_map(|&(id, keys)| demo::kbd(ui, cx, id, keys)),
                 ),
@@ -206,8 +201,7 @@ impl Showcase {
                 "Muted & Monospace Text",
             ))
             .child(
-                v_flex()
-                    .gap_2()
+                column()
                     .child(demo::muted_text(
                         ui,
                         cx,

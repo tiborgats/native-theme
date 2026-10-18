@@ -1,6 +1,7 @@
 //! What the inspector shows for one widget instance (spec §3).
 
-use gpui::{App, Hsla, StyleRefinement, Styled};
+use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
+use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
 
 use crate::support::{native_geometry, refined};
@@ -436,6 +437,18 @@ pub fn stated(color: native_theme::color::Rgba) -> Hsla {
 pub fn px_text(v: f32) -> String {
     let s = format!("{v:.2}");
     s.trim_end_matches('0').trim_end_matches('.').to_string()
+}
+
+/// A rem multiple of the showcase's own as the window lays it out: its size
+/// in logical pixels at gpui-component's rem, which is `Theme::font_size`
+/// (gpui-component 0.7.3 `root.rs:440`), then the multiple itself.
+pub fn rems_text(r: Rems, t: &Theme) -> String {
+    format!(
+        "{}px ({} rem of the {}px font_size)",
+        px_text(r.0 * t.font_size.as_f32()),
+        px_text(r.0),
+        px_text(t.font_size.as_f32())
+    )
 }
 
 /// An opacity as a percentage, the way `px_text` prints a size: the prose

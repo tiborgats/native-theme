@@ -11409,3 +11409,315 @@ fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
         "the disabled field's edge swatch is not the edge painted: {info:?}"
     );
 }
+
+/// No page spaces or pads anything with one of gpui's bare rem multiples
+/// (`gap_<n>()`, `gap_x_<n>()`, `gap_y_<n>()`, `p_<n>()` and its axes and
+/// sides), which stand for no value of the theme's (M9-022). A page's root
+/// takes `layout.window_margin` and `layout.section_gap`, a row of controls
+/// `layout.widget_gap`, each none where the theme states none, as the Basic
+/// page lays them out; a distance of another role is a named constant of
+/// the showcase's, with its comment and its info line (spec §3.1).
+#[test]
+fn no_page_spaces_by_a_bare_rem_multiple() {
+    const BARE: [&str; 10] = [
+        "gap_x_", "gap_y_", "gap_", "px_", "py_", "pt_", "pr_", "pb_", "pl_", "p_",
+    ];
+    let sources = showcase_sources();
+    let pages: Vec<_> = sources
+        .iter()
+        .filter(|(path, _)| path.starts_with("pages/"))
+        .collect();
+    assert!(
+        pages.len() >= 11,
+        "the page files were not found: {:?}",
+        pages.iter().map(|(path, _)| path).collect::<Vec<_>>()
+    );
+    let mut found = Vec::new();
+    for (path, source) in pages {
+        let code = code_only(source);
+        for (at, _) in code.match_indices('.') {
+            let rest = &code[at + 1..];
+            let Some(prefix) = BARE.iter().find(|p| rest.starts_with(**p)) else {
+                continue;
+            };
+            let size = &rest[prefix.len()..];
+            let size_len = size
+                .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                .unwrap_or(size.len());
+            if size_len > 0 && size[size_len..].starts_with("()") {
+                let line = code[..at].matches('\n').count() + 1;
+                found.push(format!("{path}:{line}: .{prefix}{}()", &size[..size_len]));
+            }
+        }
+    }
+    println!("bare rem multiples on the pages: {found:#?}");
+    assert!(
+        found.is_empty(),
+        "these page sites space or pad by one of gpui's rem multiples, not by the theme's \
+         layout or a named showcase constant:\n{}",
+        found.join("\n")
+    );
+}
+
+/// Each page other than Basic as `(page, first heading, (upper, lower))`:
+/// the heading the page's content starts with, and two of the page root's
+/// children, one right above the other, whose edges are their sections'
+/// (the Icons page's first section ends where its cells do: they stand on
+/// one line, bottom-aligned).
+const PAGE_SECTIONS: [(Page, &str, (&str, &str)); 10] = [
+    (
+        Page::Buttons,
+        BUTTONS_HEADING_VARIANTS,
+        ("buttons-heading-disabled", "buttons-disabled-primary"),
+    ),
+    (
+        Page::Inputs,
+        "inputs-heading-text-input",
+        ("inputs-heading-text-input", INPUTS_FIELD),
+    ),
+    (
+        Page::Data,
+        "data-heading-description-list",
+        (LIST_DEMO, "data-heading-tree"),
+    ),
+    (
+        Page::Feedback,
+        "feedback-heading-alerts",
+        ("feedback-heading-alerts", FEEDBACK_ALERT_INFO),
+    ),
+    (
+        Page::Typography,
+        "typography-heading-label",
+        ("typography-heading-editor", "typography-editor"),
+    ),
+    (
+        Page::Layout,
+        "layout-heading-spacing",
+        ("layout-heading-scroll", "layout-scroll-area"),
+    ),
+    (
+        Page::Overlays,
+        "overlays-heading-dialog",
+        ("overlays-heading-dialog", OVERLAYS_DIALOG_TRIGGER),
+    ),
+    (
+        Page::Charts,
+        "charts-heading-bar-chart",
+        ("charts-heading-bar-chart", CHARTS_BAR_CHART),
+    ),
+    (
+        Page::Icons,
+        "icons-heading-sizes",
+        ("icons-size-toolbar", "icons-heading-animated"),
+    ),
+    (
+        Page::ThemeMap,
+        "theme-map-heading-all",
+        ("theme-map-heading-all", "theme-map-heading-core"),
+    ),
+];
+
+/// Where `selector` was laid out on the page shown, and its offsets from
+/// the page root's top left corner.
+fn page_offset(cx: &mut VisualTestContext, selector: &'static str) -> (Pixels, Pixels) {
+    let page = bounds_of(cx, PAGE_ROOT);
+    let at = bounds_of(cx, selector);
+    (at.left() - page.left(), at.top() - page.top())
+}
+
+/// Every page other than Basic is padded by `layout.window_margin` and
+/// spaces its sections `layout.section_gap` apart, read from the layout the
+/// showcase installed, as the Basic page lays out its own (M9-022); the
+/// Layout page prints the two values it is laid out by.
+#[gpui::test]
+fn each_page_is_padded_and_spaced_by_the_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let layout = read(&mut cx, &showcase, |this, _| this.layout.clone());
+    let (Some(margin), Some(gap)) = (layout.window_margin, layout.section_gap) else {
+        panic!("kde-breeze states no window_margin or section_gap: {layout:?}");
+    };
+    let mut wrong = Vec::new();
+    for (page, first, (upper, lower)) in PAGE_SECTIONS {
+        show(&mut cx, &showcase, page);
+        let missing: Vec<_> = [first, upper, lower]
+            .into_iter()
+            .filter(|s| cx.debug_bounds(s).is_none())
+            .collect();
+        if !missing.is_empty() {
+            wrong.push(format!("{page:?}: {missing:?} not laid out"));
+            continue;
+        }
+        let (x, y) = page_offset(&mut cx, first);
+        if (x - px(margin)).abs() > px(0.01) || (y - px(margin)).abs() > px(0.01) {
+            wrong.push(format!(
+                "{page:?}: {first} starts at {x:?}, {y:?} from the page's corner, not \
+                 layout.window_margin {margin}px"
+            ));
+        }
+        let apart = bounds_of(&mut cx, lower).top() - bounds_of(&mut cx, upper).bottom();
+        if (apart - px(gap)).abs() > px(0.01) {
+            wrong.push(format!(
+                "{page:?}: {lower} is {apart:?} below {upper}, not layout.section_gap {gap}px"
+            ));
+        }
+        if page == Page::Layout {
+            let printed = format!(
+                "window_margin {} · section_gap {}",
+                crate::support::layout_value(Some(px(margin))),
+                crate::support::layout_value(Some(px(gap)))
+            );
+            let shown = format!(
+                "window_margin {} · section_gap {}",
+                crate::support::layout_value(geometry::window_margin(&layout)),
+                crate::support::layout_value(geometry::section_gap(&layout))
+            );
+            assert_eq!(
+                printed, shown,
+                "the Layout page prints other spacing than it is laid out by"
+            );
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "these pages are not spaced by the theme's layout:\n{}",
+        wrong.join("\n")
+    );
+}
+
+/// Where the theme states none of the layout's roles, no page draws one:
+/// no padding round a page, and no gap between its sections or between the
+/// controls of a row, on the Basic page as on the others (M9-022). Nothing
+/// is invented to fill a role the theme leaves unstated.
+#[gpui::test]
+fn an_unstated_layout_spaces_no_page(cx: &mut TestAppContext) {
+    let unstated = native_theme::theme::LayoutTheme::default();
+    let mut root = crate::pages::page_root(&unstated);
+    let style = root.style();
+    assert_eq!(
+        (
+            style.padding.top,
+            style.padding.right,
+            style.padding.bottom,
+            style.padding.left
+        ),
+        (None, None, None, None),
+        "a page root is padded where the theme states no window_margin"
+    );
+    assert_eq!(
+        (style.gap.width, style.gap.height),
+        (None, None),
+        "a page root spaces its sections where the theme states no section_gap"
+    );
+
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.layout = native_theme::theme::LayoutTheme::default();
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+
+    show(&mut cx, &showcase, Page::Buttons);
+    assert_eq!(
+        page_offset(&mut cx, BUTTONS_HEADING_VARIANTS),
+        (px(0.), px(0.)),
+        "the Buttons page is padded where the theme states no window_margin"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, "buttons-disabled-primary").top()
+            - bounds_of(&mut cx, "buttons-heading-disabled").bottom(),
+        px(0.),
+        "the Buttons page spaces its sections where the theme states no section_gap"
+    );
+    assert_eq!(
+        bounds_of(&mut cx, "buttons-secondary").left()
+            - bounds_of(&mut cx, BUTTONS_PRIMARY).right(),
+        px(0.),
+        "the Buttons page spaces a row's controls where the theme states no widget_gap"
+    );
+
+    show(&mut cx, &showcase, Page::Basic);
+    let dump = cx.update(|window, cx| crate::layout_dump(showcase.read(cx), window, cx));
+    let rect = |id: &str| {
+        let r = &dump["elements"][id];
+        let at = |k: &str| r[k].as_f64().map(|v| px(v as f32));
+        match (at("x"), at("y"), at("w")) {
+            (Some(x), Some(y), Some(w)) => (x, y, w),
+            _ => panic!("the layout dump holds no {id}: {dump:#}"),
+        }
+    };
+    let page = bounds_of(&mut cx, PAGE_ROOT);
+    let (x1, y1, w1) = rect("basic.column_1");
+    let (x2, _, _) = rect("basic.column_2");
+    assert_eq!(
+        (x1 - page.left(), y1 - page.top()),
+        (px(0.), px(0.)),
+        "the Basic page is padded where the theme states no window_margin"
+    );
+    assert_eq!(
+        x2 - (x1 + w1),
+        px(0.),
+        "the Basic page spaces its columns where the theme states no section_gap"
+    );
+}
+
+/// Each distance of the pages' own that the theme states nothing for is a
+/// named constant whose size the info of what it spaces prints, at the rem
+/// the window lays it out at (spec §3.1).
+#[gpui::test]
+fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    for (page, selector, what, name, distance) in [
+        (
+            Page::Icons,
+            ICONS_NATIVE_DIALOG_WARNING,
+            "grid gap",
+            "ICON_GRID_GAP",
+            crate::pages::ICON_GRID_GAP,
+        ),
+        (
+            Page::Icons,
+            ICONS_GPUI_TRIANGLE_ALERT,
+            "grid gap",
+            "ICON_GRID_GAP",
+            crate::pages::ICON_GRID_GAP,
+        ),
+        (
+            Page::Feedback,
+            FEEDBACK_BADGE_COUNT,
+            "row gap",
+            "BADGE_ROW_GAP",
+            crate::pages::BADGE_ROW_GAP,
+        ),
+        (
+            Page::Layout,
+            "layout-carousel",
+            "side room",
+            "CAROUSEL_SIDE_ROOM",
+            crate::pages::CAROUSEL_SIDE_ROOM,
+        ),
+    ] {
+        show(&mut cx, &showcase, page);
+        let size = cx.update(|_w, cx| crate::info::rems_text(distance, Theme::global(cx)));
+        // Inside the element's top left corner, which on the Carousel is the
+        // room it keeps beside its frame, clear of the slides and controls.
+        let at = bounds_of(&mut cx, selector).origin + point(px(2.), px(2.));
+        let info = settle_at(&mut cx, &showcase, at);
+        let note = info.as_ref().and_then(|info| {
+            info.not_themeable
+                .iter()
+                .find(|n| n.what == what)
+                .map(|n| n.text.clone())
+        });
+        assert!(
+            note.as_deref()
+                .is_some_and(|t| t.starts_with(&size) && t.contains(name)),
+            "{selector}: its {what} line does not name {name} at {size}: {note:?}"
+        );
+    }
+}

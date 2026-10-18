@@ -689,6 +689,7 @@ pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
+        .not_themeable("row gap", format!("{} between the Badges, BADGE_ROW_GAP, the showcase's own choice rather than a platform's: the theme states no distance for it, and a count stands 3px per digit past its Button's right edge (badge.rs, Badge::render), so Badges layout.widget_gap apart could let it touch or cover the next (spec §3.1)", super::rems_text(crate::pages::BADGE_ROW_GAP, t)))
         .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
 }
 

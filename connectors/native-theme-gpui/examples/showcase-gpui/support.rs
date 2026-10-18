@@ -283,10 +283,11 @@ pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
 }
 
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
-/// wherever the platform specifies nothing (platform-facts §2.20). All 16
-/// bundled presets state `layout.widget_gap`, so the `None` arm is reached
-/// only on the `from_system()` error branch; there the widget keeps gpui's own
-/// default gap, because nothing native is known to set.
+/// wherever the platform specifies nothing (platform-facts §2.20). Where it
+/// is `None` no gap is set, so none is drawn: nothing native is known to
+/// set, and the showcase invents none. Every bundled preset states
+/// `widget_gap` and `window_margin`; macos-tahoe states no `section_gap` (nor
+/// `container_margin`), so its pages' sections touch.
 pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
     match gap {
         Some(g) => widget.gap(g),
@@ -354,6 +355,8 @@ pub(crate) fn gutter_scroll(
         )
 }
 
+/// `widget` padded on every side by one of the layout accessors, and not at
+/// all where it is `None`, as [`with_gap`] spaces.
 pub(crate) fn with_padding<W: Styled>(widget: W, padding: Option<Pixels>) -> W {
     match padding {
         Some(p) => widget.p(p),

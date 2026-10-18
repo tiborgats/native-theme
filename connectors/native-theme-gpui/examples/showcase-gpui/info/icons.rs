@@ -96,6 +96,15 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
     )
 }
 
+/// The space between the cells of the Icons page's icon grids, which is
+/// `ICON_GRID_GAP`.
+fn grid_gap(t: &Theme) -> String {
+    format!(
+        "{} between the cells, ICON_GRID_GAP, the showcase's own choice rather than a platform's: the theme states no icon grid, and the cells are a gallery's, not a row of widgets for layout.widget_gap to space (spec §3.1)",
+        super::rems_text(crate::pages::ICON_GRID_GAP, t)
+    )
+}
+
 /// A cell of the Native Theme Icons grid: native-theme's icon for `role` in
 /// `set`, which calls it `name` where the showcase knows the name. Where
 /// the set is gpui-component's own (`builtin`), `name` is the asset of the
@@ -113,8 +122,9 @@ pub fn role_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid. The cell padding is the showcase's own layout",
         )
+        .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (builtin, name) {
         (true, Some(name)) => info.instance(
@@ -147,8 +157,9 @@ pub fn gpui_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid. The cell padding is the showcase's own layout",
         )
+        .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (icon, role) {
         (IconDrawn::Builtin, _) => info.instance(

@@ -919,6 +919,7 @@ pub fn carousel(t: &Theme, reduce_motion: bool) -> WidgetInfo {
             "a change of slide springs the track to it on spring_move (carousel/carousel.rs, CarouselContent)"
         })
         .not_themeable("own icons", super::own_icons("ChevronLeft and ChevronRight on its Previous and Next Buttons (carousel/carousel.rs, carousel_control)"))
+        .not_themeable("side room", format!("{} on either side, CAROUSEL_SIDE_ROOM, the showcase's own choice rather than a platform's: the theme states no distance for it, and the Previous and Next Buttons stand outside the frame, mr_4 and ml_4 past its edges (carousel/carousel.rs, carousel_control), so the page keeps their room free", super::rems_text(crate::pages::CAROUSEL_SIDE_ROOM, t)))
         .instance("controls", "the Previous and Next Buttons place themselves outside the frame, positioned against the Carousel (carousel/carousel.rs, carousel_control), so a wrapper around one would become what it is positioned against: they report through the Carousel. The slides and the page buttons report themselves")
 }
 
