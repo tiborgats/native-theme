@@ -2,11 +2,12 @@
 //! themselves (spec §3.4). Its Labels are `info::text`'s.
 
 use gpui_component::theme::Theme;
+use native_theme_gpui::ResolvedTheme;
 
 use super::{
     WidgetInfo,
     chrome::{GhostContent, ghost_colours},
-    claim, px_text,
+    claim, drawn_font, px_text,
 };
 use crate::demo::{DecorationKind, HeadingLevel, TextSize, WeightKind};
 
@@ -115,10 +116,11 @@ pub fn muted_text(t: &Theme) -> WidgetInfo {
         .instance("style", "muted_foreground, set by the showcase on a plain div: no Label is involved, so neither label.rs's foreground nor its secondary highlight is")
 }
 
-/// The monospace sample: plain text in a div given the mono family and
-/// nothing else.
-pub fn mono_text(t: &Theme) -> WidgetInfo {
-    WidgetInfo::new("Text")
+/// The monospace sample: plain text in a div given `native`'s
+/// `defaults.mono_font` where a native theme is installed
+/// (`demo::text_in`), the mono family and nothing else without one.
+pub fn mono_text(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Text")
         .variant("monospace")
         .color(claim(
             "text, inherited",
@@ -129,15 +131,25 @@ pub fn mono_text(t: &Theme) -> WidgetInfo {
         .config(
             "mono font",
             format!("mono_font_family: {}", t.mono_font_family),
-        )
-        .config(
+        );
+    match native {
+        Some(r) => info.config(
             "size",
             format!(
-                "{}px: font_size, the window's rem. The sample sets the mono family and no size, so mono_font_size ({}px) does not reach it",
+                "{}px: Theme::mono_font_size, the size the sample sets; defaults.mono_font: {}",
+                px_text(t.mono_font_size.as_f32()),
+                drawn_font(&r.defaults.mono_font)
+            ),
+        ),
+        None => info.config(
+            "size",
+            format!(
+                "{}px: font_size, the window's rem. The sample sets the mono family and no size, so mono_font_size ({}px) does not reach it: no native theme is installed",
                 px_text(t.font_size.as_f32()),
                 px_text(t.mono_font_size.as_f32())
             ),
-        )
+        ),
+    }
 }
 
 /// A `Link`, wherever the showcase shows one; the caller adds what it reads

@@ -5877,19 +5877,32 @@ pub(crate) fn muted_text(
         .debug_selector(move || id.into())
 }
 
-/// Plain text reading `text` in the mono family.
+/// Plain text reading `text` in `defaults.mono_font` ([`text_in`], as
+/// `type_line`'s Monospace line) where a native theme is installed, else in
+/// the mono family alone.
 pub(crate) fn mono_text(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     text: &'static str,
 ) -> Stateful<Div> {
-    div()
-        .font_family(cx.theme().mono_font_family.clone())
-        .child(text)
-        .info(ui, id, info::typography::mono_text(cx.theme()))
+    mono_sample(cx, text)
+        .info(
+            ui,
+            id,
+            info::typography::mono_text(cx.theme(), cx.native().map(|n| n.resolved)),
+        )
         .self_start()
         .debug_selector(move || id.into())
+}
+
+/// [`mono_text`]'s text.
+pub(crate) fn mono_sample(cx: &App, text: &'static str) -> Div {
+    native_value(cx, |n| text_in(&n, &n.resolved.defaults.mono_font, text)).unwrap_or_else(|| {
+        div()
+            .font_family(cx.theme().mono_font_family.clone())
+            .child(text)
+    })
 }
 
 /// A `Link` reading `text` that opens `href`.

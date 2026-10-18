@@ -5685,6 +5685,56 @@ fn two_heading_levels_show_different_infos(cx: &mut TestAppContext) {
     );
 }
 
+/// The Typography page's monospace sample takes `defaults.mono_font` under a
+/// native theme (M9-014), as the Basic page's Monospace type line does: its
+/// family, size (`Theme::mono_font_size`, the stated size the text-scaling
+/// factor scales), weight and line box, at text scale 1 and 1.5; and its
+/// info's size line names that size.
+#[gpui::test]
+fn the_mono_sample_takes_the_mono_font(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Typography);
+    let r = resolved_theme(&mut cx, &showcase);
+    for scale in [1.0, 1.5] {
+        scale_text(&mut cx, scale);
+        let (text, theme) = read(&mut cx, &showcase, |this, cx| {
+            let _ = &this.info_ui;
+            let mut sample = crate::demo::mono_sample(cx, "mono");
+            (sample.style().text.clone(), Theme::global(cx).clone())
+        });
+        let size = theme.mono_font_size;
+        assert_eq!(
+            (
+                text.font_family,
+                text.font_size,
+                text.font_weight,
+                text.line_height
+            ),
+            (
+                Some(theme.mono_font_family.clone()),
+                Some(size.into()),
+                Some(gpui::FontWeight(f32::from(
+                    native_theme_gpui::mono_font_weight(&r)
+                ))),
+                Some((size * r.defaults.line_height).into()),
+            ),
+            "at text scale {scale} the monospace sample does not take defaults.mono_font's family, size, weight and line box"
+        );
+        let info = settle_on(&mut cx, &showcase, "typography-mono");
+        let line = info
+            .as_ref()
+            .and_then(|i| i.config.iter().find(|n| n.what == "size"));
+        assert!(
+            line.is_some_and(|l| l.text.starts_with(&format!(
+                "{}px: Theme::mono_font_size",
+                crate::info::px_text(size.as_f32())
+            ))),
+            "at text scale {scale} the monospace sample's size line does not claim mono_font_size: {line:?}"
+        );
+    }
+}
+
 /// The Typography page's `Diff` sample is one file's patch that removes and
 /// adds lines: `parse` reads it whole, so the `unwrap_or_default` the
 /// showcase builds its state with never stands in for it.
