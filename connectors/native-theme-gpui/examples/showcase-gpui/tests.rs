@@ -4067,6 +4067,16 @@ fn settle_on(
     selector: &'static str,
 ) -> Option<WidgetInfo> {
     let at = bounds_of(cx, selector).center();
+    settle_at(cx, showcase, at)
+}
+
+/// Settle the pointer at `at` and return the info the inspector then shows:
+/// [`settle_on`] for a target whose centre another target covers.
+fn settle_at(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    at: Point<Pixels>,
+) -> Option<WidgetInfo> {
     hover(cx, at);
     settle(cx);
     draw(cx);
@@ -6945,19 +6955,11 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
     }
     // The frame's own target: inside its edge, which no row reaches.
     let frame = bounds_of(&mut cx, "basic-table");
-    hover(
-        &mut cx,
-        point(
-            frame.left() + px(l.border.line_width / 2.),
-            frame.center().y,
-        ),
+    let inside_edge = point(
+        frame.left() + px(l.border.line_width / 2.),
+        frame.center().y,
     );
-    settle(&mut cx);
-    draw(&mut cx);
-    let table = read(&mut cx, &showcase, |this, cx| {
-        this.info_ui.read(cx).shown().map(|info| (**info).clone())
-    })
-    .expect("the frame shows an info");
+    let table = settle_at(&mut cx, &showcase, inside_edge).expect("the frame shows an info");
     for (leaf, want) in [
         ("background_color", Some(stated(l.background_color))),
         ("border", Some(stated(l.border.color))),
@@ -6975,6 +6977,72 @@ fn the_basic_tables_infos_report_what_it_draws(cx: &mut TestAppContext) {
         claim_of(&selected, "selection_background"),
         "the fill painted on the selected row is not the fill its info claims"
     );
+}
+
+/// Where the theme strokes no line, the native number field's and the
+/// Basic table's infos claim none (M9-001, M9-003). Under adwaita light the
+/// field's `input.border.line_width` is 0: its info claims no edge, says so,
+/// and no edge is painted round it. adwaita states the list's and the
+/// separator's widths (1px, inherited), so the table's infos run their
+/// 0-width branches on its resolved theme with those two widths set to 0:
+/// no frame edge, no grid line.
+#[gpui::test]
+fn an_unstroked_edge_is_claimed_by_no_native_info(cx: &mut TestAppContext) {
+    use crate::info::data::{native_table_frame, native_table_header, native_table_row};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Basic);
+    let mut r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.input.border.line_width <= 0.0,
+        "adwaita now strokes its field, so this test no longer runs the number field's no-edge branch"
+    );
+    let edges = ["border", "hover_border_color", "focus_border_color"];
+    let config = |info: &WidgetInfo, what: &str| {
+        info.config
+            .iter()
+            .find(|n| n.what == what)
+            .map(|n| n.text.clone())
+    };
+    let field = "basic-number";
+    let info = settle_on(&mut cx, &showcase, field).expect("the number field shows an info");
+    assert!(
+        info.colors
+            .iter()
+            .all(|c| !edges.contains(&c.field) || c.role.starts_with("step")),
+        "the number field claims an edge it does not stroke: {info:?}"
+    );
+    assert_eq!(
+        config(&info, "edge").as_deref(),
+        Some("none: input.border.line_width is 0"),
+        "the number field's info does not say it strokes no edge: {info:?}"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, field),
+        None,
+        "an edge is painted round the number field, whose info claims none"
+    );
+    r.list.border.line_width = 0.0;
+    r.separator.line_width = 0.0;
+    let frame = native_table_frame(&r, 2);
+    assert!(
+        claim_of(&frame, "border").is_none()
+            && config(&frame, "edge").as_deref() == Some("none: list.border.line_width is 0"),
+        "the table frame claims an edge at a 0 width: {frame:?}"
+    );
+    for info in [
+        native_table_header(&r, "Name, Size"),
+        native_table_row(&r, true, "b.png, 20 KB"),
+        native_table_row(&r, false, "a.txt, 1 KB"),
+    ] {
+        assert!(
+            claim_of(&info, "grid_color").is_none()
+                && config(&info, "grid").as_deref() == Some("none: separator.line_width is 0"),
+            "a table row claims a grid line at a 0 width: {info:?}"
+        );
+    }
 }
 
 /// A hovered Tag fades to 90% (tag.rs:269), and its info names the fill

@@ -363,14 +363,22 @@ pub fn native_table_frame(r: &ResolvedTheme, rows: usize) -> WidgetInfo {
             .config(
                 "edge",
                 format!(
-                    "list.border: {}px, radius {}px, round the header and the rows",
-                    px_text(l.border.line_width),
-                    px_text(l.border.corner_radius)
+                    "list.border at {}px, round the header and the rows",
+                    px_text(l.border.line_width)
                 ),
             )
     } else {
         info.config("edge", "none: list.border.line_width is 0")
     };
+    // The frame clips the rows to its corners whether or not it draws an
+    // edge, at the radius demo::files_table rounds it with.
+    let info = info.config(
+        "corners",
+        format!(
+            "list.border.corner_radius, {}px, which the header and the rows are clipped to",
+            px_text(l.border.corner_radius.max(0.0))
+        ),
+    );
     info.config("why drawn", "upstream's Table fills itself with the table token and rules every row after the first with table_row_border (table/table.rs, Table and TableRow), so list.selection_background, selection_text_color, the list.hover_* pair and grid_color would have no receiver there")
         .instance("rows", format!("a header and {rows} body rows, written out rather than driven by a delegate; each reports itself"))
 }
