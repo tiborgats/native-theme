@@ -425,8 +425,8 @@ impl Showcase {
                 "layout-heading-stepper",
                 format!(
                     "Stepper (step {} of {steps}: {step} completed, one current, {} pending)",
-                    step + 1,
-                    steps.saturating_sub(step + 1),
+                    step.saturating_add(1),
+                    steps.saturating_sub(step.saturating_add(1)),
                 ),
             ))
             .child(

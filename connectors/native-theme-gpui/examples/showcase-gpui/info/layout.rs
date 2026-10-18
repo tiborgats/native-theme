@@ -999,7 +999,7 @@ pub fn carousel(t: &Theme, reduce_motion: bool) -> WidgetInfo {
 /// showcase's own content in a `CarouselItem`.
 pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> WidgetInfo {
     WidgetInfo::new("CarouselItem")
-        .variant(format!("slide {}", index + 1))
+        .variant(format!("slide {}", index.saturating_add(1)))
         .color(claim("slide bg", "muted", t.muted, "showcase"))
         .color(claim(
             "title",
@@ -1094,7 +1094,7 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
         .not_themeable("size", "a compact Button at Size::XSmall, CarouselPaginationItem's default: h_5, at least w_5, px_1 -- rems, so the platform's font (carousel/carousel.rs, CarouselPaginationItem::new; button/button.rs, RenderOnce for Button)")
         .instance(
             "slide",
-            format!("{}: a click shows that slide", index + 1),
+            format!("{}: a click shows that slide", index.saturating_add(1)),
         )
 }
 
@@ -1115,7 +1115,7 @@ pub fn stepper(
     // there is always one; a pending one only before the last step. The
     // separator after step i is passed while i is before the current step
     // (stepper/item.rs:117).
-    let pending = step + 1 < count;
+    let pending = step.saturating_add(1) < count;
     let passed = step > 0 && count > 1;
     // (on a checked step, on a pending one): the icon or the number the
     // indicator holds takes the indicator's text colour (icon.rs, Icon).
@@ -1232,8 +1232,8 @@ pub fn stepper(
         "steps",
         format!(
             "{count}; step {} is current, so {step} completed and {} pending. A click on a step makes it current, in both Steppers",
-            step + 1,
-            count.saturating_sub(step + 1)
+            step.saturating_add(1),
+            count.saturating_sub(step.saturating_add(1))
         ),
     )
     .instance("items", "Stepper::item takes a StepperItem, which the Stepper numbers and renders itself (stepper/stepper.rs, Stepper::item), so a step cannot be wrapped: the Stepper reports for its steps. Each step's label is a Label that reports itself")

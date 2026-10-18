@@ -41,7 +41,7 @@ impl AudioInput for SyntheticAudio {
         let per_block = u64::from(format.sample_rate())
             .saturating_mul(u64::from(format.channels()))
             .saturating_mul(u64::try_from(BLOCK.as_millis()).unwrap_or(u64::MAX))
-            / 1000;
+            .div_euclid(1000);
         let per_block = usize::try_from(per_block).unwrap_or(usize::MAX);
         let blocks = self.blocks.clone();
         let task = cx.spawn(async move |cx| {

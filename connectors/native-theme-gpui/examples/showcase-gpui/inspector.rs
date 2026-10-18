@@ -604,12 +604,13 @@ fn listed_info(
                     row.child(swatch.children(first.then(|| {
                         // Out over the swatch's frame: an absolute child is
                         // laid out inside it.
+                        let out = gpui::px(-f32::from(width));
                         div()
                             .absolute()
-                            .top(-width)
-                            .left(-width)
-                            .right(-width)
-                            .bottom(-width)
+                            .top(out)
+                            .left(out)
+                            .right(out)
+                            .bottom(out)
                             .child(elements::record(ui, "chrome.info.row_1.swatch"))
                     })))
                 })

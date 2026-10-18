@@ -239,12 +239,14 @@ impl Page {
 
 /// `Page::ALL` is in TabBar order and holds each page once.
 const _: () = {
+    let mut pages: &[Page] = &Page::ALL;
     let mut i = 0;
-    while i < Page::ALL.len() {
+    while let [page, rest @ ..] = pages {
         assert!(
-            Page::ALL[i].index() == i,
+            page.index() == i,
             "Page::ALL is not the pages in TabBar order"
         );
+        pages = rest;
         i += 1;
     }
 };
@@ -683,7 +685,7 @@ fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bo
         let mut pressed = false;
         loop {
             cx.background_executor().timer(HELD_POINTER_PERIOD).await;
-            held += HELD_POINTER_PERIOD;
+            held = held.saturating_add(HELD_POINTER_PERIOD);
             let press_now = press && !pressed && held >= HELD_PRESS_AFTER;
             let delivered = cx.update_window(window, |_view, window, cx| {
                 window.dispatch_event(
@@ -758,8 +760,9 @@ impl DumpSettle {
     /// with no element, or one unlike the last, starts the count again.
     pub(crate) fn read(&mut self, reading: serde_json::Value) -> DumpStep {
         self.readings = self.readings.saturating_add(1);
-        let empty = reading["elements"]
-            .as_object()
+        let empty = reading
+            .get("elements")
+            .and_then(serde_json::Value::as_object)
             .is_none_or(serde_json::Map::is_empty);
         if empty || self.last.as_ref() != Some(&reading) {
             self.last = Some(reading);

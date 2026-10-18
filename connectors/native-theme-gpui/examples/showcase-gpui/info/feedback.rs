@@ -752,7 +752,7 @@ fn next_badge(overhang: Pixels, next: Option<Option<Pixels>>, count: String) -> 
     match next {
         Some(Some(gap)) => format!(
             "{}px after the Button: layout.widget_gap, {}px, from the count to the next Badge, as the controls of a row are apart, and {count}",
-            px_text((gap + overhang).as_f32()),
+            px_text(gap.as_f32() + overhang.as_f32()),
             px_text(gap.as_f32()),
         ),
         Some(None) => format!(

@@ -136,8 +136,8 @@ impl Showcase {
                         "data-pagination-rows",
                         SharedString::from(format!(
                             "Rows {}–{} of {}",
-                            (self.page - 1) * 10 + 1,
-                            self.page * 10,
+                            self.page.saturating_sub(1).saturating_mul(10).saturating_add(1),
+                            self.page.saturating_mul(10),
                             PAGE_COUNT * 10
                         )),
                     ))

@@ -484,8 +484,10 @@ fn next_row(menu: &[MenuRow], from: Option<usize>, forward: bool) -> Option<usiz
     let next = match (at, forward) {
         (None, true) => Some(0),
         (None, false) => actions.len().checked_sub(1),
-        (Some(at), true) => (at + 1).checked_rem(actions.len()),
-        (Some(at), false) => (at + actions.len() - 1).checked_rem(actions.len()),
+        (Some(at), true) => at.saturating_add(1).checked_rem(actions.len()),
+        (Some(at), false) => at
+            .saturating_add(actions.len().saturating_sub(1))
+            .checked_rem(actions.len()),
     };
     next.and_then(|at| actions.get(at).copied())
 }
@@ -592,12 +594,15 @@ impl MenuBar {
         match event.keystroke.key.as_str() {
             "escape" => self.close(window, cx),
             "left" => {
-                if let Some(ix) = (open + count.saturating_sub(1)).checked_rem(count) {
+                if let Some(ix) = open
+                    .saturating_add(count.saturating_sub(1))
+                    .checked_rem(count)
+                {
                     self.open(ix, window, cx);
                 }
             }
             "right" => {
-                if let Some(ix) = (open + 1).checked_rem(count) {
+                if let Some(ix) = open.saturating_add(1).checked_rem(count) {
                     self.open(ix, window, cx);
                 }
             }
@@ -1938,7 +1943,7 @@ fn native_tab_bar(
                     .absolute()
                     .left_0()
                     .right_0()
-                    .bottom(-width)
+                    .bottom(px(-s.line_width))
                     .h(width)
                     .bg(info::stated(s.line_color))
                     .child(elements::record(ui, "chrome.page_tabs.rule")),
@@ -1988,7 +1993,7 @@ fn text_size_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
 /// `defaults.line_height`), in place of gpui's own, which is the golden
 /// ratio (gpui-pre style.rs, `phi`).
 fn line_height_of(n: &Native<'_>, font: &ResolvedFontSpec) -> Pixels {
-    text_size_of(n, font) * n.resolved.defaults.line_height
+    px(f32::from(text_size_of(n, font)) * n.resolved.defaults.line_height)
 }
 
 /// A `TabBar` of upstream's default variant, `TabVariant::Tab`, over
@@ -2138,7 +2143,7 @@ pub(crate) fn segmented(
                             .absolute()
                             .top_0()
                             .bottom_0()
-                            .left(-px(s.separator_width))
+                            .left(px(-s.separator_width))
                             .w(px(s.separator_width))
                             .child(elements::record(ui, divider))
                     }))
@@ -2177,7 +2182,7 @@ pub(crate) const HANDLE_SIZE: Pixels = px(1.);
 /// back over this strip, so it takes neither panel's content or margin.
 pub(crate) fn splitter_reserve(cx: &App) -> Option<Pixels> {
     let width = native_value(cx, |n| px(n.resolved.splitter.divider_width))?;
-    (width > HANDLE_SIZE).then(|| width - HANDLE_SIZE)
+    (width > HANDLE_SIZE).then(|| px(f32::from(width) - f32::from(HANDLE_SIZE)))
 }
 
 /// What each handle of a horizontal resizable group paints: upstream's line
@@ -2214,7 +2219,7 @@ pub(crate) fn resize_handles(
             // builds its handle (resizable/panel.rs:307) and would shift the
             // count, so an absent panel is left out of the group instead.
             let ix = next.get();
-            next.set(ix + 1);
+            next.set(ix.saturating_add(1));
             if handle.axis() != Axis::Horizontal {
                 return None;
             }
@@ -2248,7 +2253,7 @@ pub(crate) fn resize_handles(
                 .top_0()
                 .bottom_0()
                 .left(-HANDLE_PADDING)
-                .right(-(HANDLE_PADDING - HANDLE_SIZE))
+                .right(px(-(f32::from(HANDLE_PADDING) - f32::from(HANDLE_SIZE))))
                 .debug_selector(move || id.into());
             let painted = match splitter {
                 Some((width, hover)) => div()
@@ -3693,7 +3698,7 @@ pub(crate) fn number_input(
     // colors.rs).
     let foreground = info::stated(n.resolved.button.font.color);
     let tint = info::stated(i.border.color);
-    let radius = (px(i.border.corner_radius.max(0.0)) - px(i.border.line_width)).max(px(0.));
+    let radius = px(i.border.corner_radius.max(0.0) - i.border.line_width).max(px(0.));
     let (up, down) = (
         steps.up.sized(cx, geometry::icon_size_small),
         steps.down.sized(cx, geometry::icon_size_small),
@@ -5517,7 +5522,7 @@ pub(crate) fn badge(
         .child(target)
         .info(ui, id, badge_info)
         .when_some(next, |badge, gap| {
-            badge.mr(overhang + gap.unwrap_or_default())
+            badge.mr(px(f32::from(overhang) + f32::from(gap.unwrap_or_default())))
         })
         .debug_selector(move || id.into())
 }
@@ -6901,7 +6906,7 @@ pub(crate) fn carousel(
         .iter()
         .enumerate()
         .map(|(ix, (title, caption))| {
-            let slide_id = SharedString::from(format!("{id}-slide-{}", ix + 1));
+            let slide_id = SharedString::from(format!("{id}-slide-{}", ix.saturating_add(1)));
             let selector = slide_id.clone();
             CarouselItem::new((id, ix), ix, state).child(
                 v_flex()
@@ -6928,10 +6933,10 @@ pub(crate) fn carousel(
         });
     let last = CAROUSEL_SLIDES.len().saturating_sub(1);
     let pages = (0..CAROUSEL_SLIDES.len()).map(|ix| {
-        let page_id = SharedString::from(format!("{id}-page-{}", ix + 1));
+        let page_id = SharedString::from(format!("{id}-page-{}", ix.saturating_add(1)));
         let selector = page_id.clone();
         let page = CarouselPaginationItem::new(page_id.clone(), ix, state)
-            .child(SharedString::from((ix + 1).to_string()))
+            .child(SharedString::from(ix.saturating_add(1).to_string()))
             .info(
                 ui,
                 page_id,
@@ -7020,8 +7025,12 @@ pub(crate) fn stepper(
     stepper
         .selected_index(step)
         .items(STEPPER_STEPS.iter().enumerate().map(|(ix, (text, _))| {
-            let item =
-                StepperItem::new().child(label(ui, cx, format!("{id}-step-{}", ix + 1), *text));
+            let item = StepperItem::new().child(label(
+                ui,
+                cx,
+                format!("{id}-step-{}", ix.saturating_add(1)),
+                *text,
+            ));
             let icon = labelled
                 .get(ix)
                 .and_then(|(_, icon)| icon.sized(cx, geometry::icon_size_small));
@@ -8708,8 +8717,10 @@ pub(crate) fn files_table(
     let pad = &l.border.padding;
     let side = |v: Option<f32>| v.map_or(px(0.), px);
     let height = |line_height: Pixels| {
-        l.row_height
-            .map_or(side(pad.top) + line_height + side(pad.bottom), px)
+        l.row_height.map_or(
+            px(f32::from(side(pad.top)) + f32::from(line_height) + f32::from(side(pad.bottom))),
+            px,
+        )
     };
     let row =
         |spec: TableLine<'_>| {

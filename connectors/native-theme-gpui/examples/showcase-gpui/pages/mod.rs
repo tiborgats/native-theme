@@ -47,7 +47,7 @@ pub(crate) fn badge_count_overhang(count: Option<usize>) -> Pixels {
         Some(c) if c > BADGE_MAX => format!("{BADGE_MAX}+").len(),
         Some(c) => c.to_string().len(),
     };
-    BADGE_COUNT_OVERHANG * printed as f32
+    px(f32::from(BADGE_COUNT_OVERHANG) * printed as f32)
 }
 
 /// The room the Layout page leaves on either side of the Carousel: the

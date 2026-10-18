@@ -717,8 +717,10 @@ impl Showcase {
                         return;
                     }
                     for (i, (_name, frames)) in this.animated_frame_sources.iter().enumerate() {
-                        if let Some(idx) = this.animated_frame_indices.get_mut(i) {
-                            *idx = (*idx + 1) % frames.len();
+                        if let Some(idx) = this.animated_frame_indices.get_mut(i)
+                            && let Some(next) = idx.saturating_add(1).checked_rem(frames.len())
+                        {
+                            *idx = next;
                         }
                     }
                     #[cfg(test)]
@@ -754,10 +756,12 @@ impl Showcase {
         if !self.side_panel_visible {
             return viewport;
         }
-        viewport
-            - self.side_panel_width
-            - crate::demo::splitter_reserve(cx).unwrap_or_default()
-            - crate::demo::HANDLE_SIZE
+        gpui::px(
+            f32::from(viewport)
+                - f32::from(self.side_panel_width)
+                - f32::from(crate::demo::splitter_reserve(cx).unwrap_or_default())
+                - f32::from(crate::demo::HANDLE_SIZE),
+        )
     }
 
     /// The icon set the theme-drawn Spinner draws its indicator from: the
@@ -851,14 +855,14 @@ impl Showcase {
             .collect();
         let area = self.basic_textarea.read(cx);
         let text = area.value();
-        let mut start = 0;
+        let mut start: usize = 0;
         let mut lines: Option<gpui::Bounds<Pixels>> = None;
         for piece in text.split('\n') {
-            let end = start + piece.len();
+            let end = start.saturating_add(piece.len());
             if let Some(b) = area.range_to_bounds(&(start..end)) {
                 lines = Some(lines.map_or(b, |so_far| so_far.union(&b)));
             }
-            start = end + 1;
+            start = end.saturating_add(1);
         }
         found.extend(lines.map(|b| ("basic.text_area.field.text", b)));
         found
@@ -1908,7 +1912,7 @@ impl Showcase {
     /// listeners the last frame painted, whole.
     fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
         let sizes = self.body_layout.read(cx).sizes().clone();
-        let panels = usize::from(self.side_panel_visible) + 1;
+        let panels = usize::from(self.side_panel_visible).saturating_add(1);
         if self.side_panel_visible
             && sizes.len() == panels
             && let Some(&width) = sizes.first()
@@ -2105,7 +2109,9 @@ impl Render for Showcase {
             // the line's.
             let reserve = demo::splitter_reserve(cx).unwrap_or_default();
             resizable_panel()
-                .size(self.side_panel_width + reserve)
+                .size(gpui::px(
+                    f32::from(self.side_panel_width) + f32::from(reserve),
+                ))
                 .flex_none()
                 .child(
                     div()

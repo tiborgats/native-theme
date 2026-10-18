@@ -980,7 +980,7 @@ impl TableDelegate for SampleTableDelegate {
             Some(cells) => (
                 DataTableRow::Body(BodyRow {
                     striped,
-                    last: row_ix + 1 == self.rows.len(),
+                    last: row_ix.saturating_add(1) == self.rows.len(),
                     selected: self.selected_row == Some(row_ix),
                     selection_shown: self.selection_shown,
                     right_clicked: self.right_clicked_row == Some(row_ix),

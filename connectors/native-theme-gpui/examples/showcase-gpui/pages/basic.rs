@@ -816,6 +816,6 @@ impl Showcase {
             cx,
         );
         let frame = px(native_value(cx, |n| n.resolved.list.border.line_width).unwrap_or_default());
-        measured.height * BASIC_LIST_VISIBLE + frame + frame
+        px(f32::from(measured.height) * BASIC_LIST_VISIBLE + f32::from(frame) + f32::from(frame))
     }
 }

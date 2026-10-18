@@ -423,7 +423,7 @@ impl Showcase {
             .child(demo::heading(ui, cx, "feedback-heading-badge", "Badge"))
             .child(
                 h_flex().children(BADGES.iter().enumerate().map(|(ix, &(id, count, label))| {
-                    let next = (ix + 1 < BADGES.len()).then_some(widget_gap);
+                    let next = (ix.saturating_add(1) < BADGES.len()).then_some(widget_gap);
                     demo::badge(ui, cx, id, count, label, next)
                 })),
             )
