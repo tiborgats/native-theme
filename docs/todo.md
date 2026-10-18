@@ -2143,6 +2143,14 @@ model, the platform presets and the three connectors
       receiver — a caller's refinement cannot remove a decoration, because
       `refine` only overrides on `Some` and `text_decoration_none` sets `None`
       (`gpui-base/styled.rs:79`, derive-refineable `refine`). Found 2026-09-22.
+      M9a T15 (2026-10-18, 8524e44d): the underline half is closed, by
+      e6b2034e: `geometry::link` removes the resting underline where
+      `link.underline_enabled` is false with a zero thickness
+      (`text_decoration_0`), a `Some` the refinement carries over upstream's
+      `text_decoration_1`, and a Link's hover and press still underline. The
+      gpui showcase's Link info now says so (`ios-13.toml`
+      `[light.link] underline_enabled`, false). The `link_hover` and
+      `link_active` half stays.
 - [ ] [upstream] a `PopupMenu` item style hook; a `Button::tooltip` style hook
 - [ ] [upstream] button label text size independent of rem
       M8 T21 fix round 1 (2026-10-17): the same label is "PR: Button: let the
