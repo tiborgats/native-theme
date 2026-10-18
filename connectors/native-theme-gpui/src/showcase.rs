@@ -616,6 +616,162 @@ fn every_geometry_builder_has_a_note() {
     );
 }
 
+/// The `pub fn`s of geometry.rs whose refinement sets a font's text: each
+/// that calls `with_text` or `with_coloured_text`, and each that calls
+/// another such builder (`toggle` is `button_label`'s), in source order.
+fn text_builders() -> Vec<&'static str> {
+    let code = blanked(GEOMETRY);
+    let items = fn_items(GEOMETRY, &code);
+    let calls = |name: &str, callee: &str| {
+        items
+            .iter()
+            .find(|f| f.name == name)
+            .and_then(|f| code.get(f.body.clone()))
+            .is_some_and(|body| {
+                body.match_indices(&format!("{callee}(")).any(|(at, _)| {
+                    body.get(..at)
+                        .and_then(|t| t.chars().next_back())
+                        .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+                })
+            })
+    };
+    let public = public_fns(GEOMETRY);
+    let mut found: Vec<&str> = Vec::new();
+    loop {
+        let more: Vec<&str> = public
+            .iter()
+            .copied()
+            .filter(|name| !found.contains(name))
+            .filter(|name| {
+                ["with_text", "with_coloured_text"]
+                    .iter()
+                    .chain(&found)
+                    .any(|callee| calls(name, callee))
+            })
+            .collect();
+        if more.is_empty() {
+            break;
+        }
+        found.extend(more);
+    }
+    public
+        .into_iter()
+        .filter(|name| found.contains(name))
+        .collect()
+}
+
+/// A builder that sets a font's text sets all of it -- `with_text` gives the
+/// family, size, weight and style (and `with_coloured_text` the colour) --
+/// so its `GEOMETRY_NOTES` entry, where it lists the font's parts at all (it
+/// names the weight), lists every one: a note that names a size and a
+/// weight alone hides the family the KDE reader states for the menu,
+/// toolbar and title-bar fonts (M9-039). A note naming the font spec alone
+/// (`input.font`) names all of it.
+#[test]
+fn every_text_builders_note_names_the_whole_font() {
+    let builders = text_builders();
+    assert!(
+        !builders.is_empty(),
+        "no geometry.rs builder calls with_text, so this test would pass vacuously"
+    );
+    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    assert!(
+        unreadable.is_empty(),
+        "GEOMETRY_NOTES could not be read:\n  {}",
+        unreadable.join("\n  ")
+    );
+    let findings: Vec<String> = entries
+        .iter()
+        .filter(|(_, name, text)| {
+            builders.contains(name)
+                && mentions(text, "weight")
+                && !text.contains("family, size, weight and style")
+        })
+        .map(|(line, name, _)| {
+            format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's family, size, \
+                 weight and style (geometry.rs, with_text), but its note names only some of them"
+            )
+        })
+        .collect();
+    assert!(
+        findings.is_empty(),
+        "a text builder's note understates the font it carries:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// The reader behind `every_text_builders_note_names_the_whole_font`: the
+/// builders that call `with_text` directly and through `button_label`, and
+/// not `button`, which sets the weight alone.
+#[test]
+fn the_text_builder_reader_does_its_job() {
+    let builders = text_builders();
+    for name in [
+        "button_label",
+        "toggle",
+        "title_bar",
+        "toolbar",
+        "link",
+        "tooltip",
+    ] {
+        assert!(
+            builders.contains(&name),
+            "geometry::{name} sets a font's text, but the reader missed it: {builders:?}"
+        );
+    }
+    for name in ["button", "tooltip_content", "icon_size_small"] {
+        assert!(
+            !builders.contains(&name),
+            "geometry::{name} sets no font's text, but the reader took it: {builders:?}"
+        );
+    }
+}
+
+/// The tooltip builders' notes name what geometry.rs sets beyond the font
+/// and the colours: `geometry::tooltip` draws the edge
+/// `tooltip.border.line_width` wide over upstream's `border_1`, and
+/// `shadow_md`'s layers in `defaults.shadow_color` where
+/// `tooltip.border.shadow_enabled` holds; `geometry::tooltip_content`
+/// subtracts that width on each side, which a `1px border` would misstate
+/// under any other (material-3 states 0) (M9-038, M9-039).
+#[test]
+fn the_tooltip_notes_name_the_edge_and_the_shadow() {
+    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    assert!(
+        unreadable.is_empty(),
+        "GEOMETRY_NOTES could not be read:\n  {}",
+        unreadable.join("\n  ")
+    );
+    let note = |builder: &str| {
+        entries
+            .iter()
+            .find(|(_, name, _)| *name == builder)
+            .map_or("", |(_, _, text)| *text)
+    };
+    let tooltip = note("tooltip");
+    let missing: Vec<&str> = [
+        "tooltip.border.line_width",
+        "border_1",
+        "shadow_md",
+        "defaults.shadow_color",
+        "tooltip.border.shadow_enabled",
+    ]
+    .into_iter()
+    .filter(|part| !tooltip.contains(part))
+    .collect();
+    assert!(
+        missing.is_empty(),
+        "geometry::tooltip's note does not name {missing:?}: {tooltip}"
+    );
+    let content = note("tooltip_content");
+    assert!(
+        content.contains("tooltip.border.line_width on each side")
+            && !content.contains("1px border"),
+        "geometry::tooltip_content's note does not subtract tooltip.border.line_width on each side: {content}"
+    );
+}
+
 /// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
 /// builder it applies, `X == Y`.
 #[test]

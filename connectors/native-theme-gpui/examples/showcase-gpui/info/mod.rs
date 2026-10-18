@@ -198,11 +198,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_label",
-        "button.font's size and weight, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
+        "button.font's family, size, weight and style, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
     ),
     (
         "toggle",
-        "button.font's size and weight, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
+        "button.font's family, size, weight and style, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
     ),
     (
         "input",
@@ -222,11 +222,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (gpui-component/tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.border.line_width wide in place of upstream's border_1, and shadow_md's two layers in defaults.shadow_color where tooltip.border.shadow_enabled holds, no shadow where it does not, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
     ),
     (
         "tooltip_content",
-        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its 1px border (gpui-component/tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
+        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
     (
         "popover",
@@ -306,7 +306,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "title_bar",
-        "window.title_bar_font size, weight and colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
+        "window.title_bar_font's family, size, weight and style, and its colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
     ),
     (
         "title_bar_inactive",
@@ -314,7 +314,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, font size, weight and colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, toolbar.font's family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
@@ -367,7 +367,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "link",
-        "link.font size and weight, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+        "link.font's family, size, weight and style, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
     (
         "widget_gap",
