@@ -3725,6 +3725,15 @@ name in [`archive/todo_closed.md`](archive/todo_closed.md).
       to ci.yml's strict-panic step, beside the connector's. M9b's iced
       showcase (`--example showcase-iced`) and M9c's egui showcase
       (`--example showcase-egui`) need the same run.
+      M9a T21 (2026-10-18): the gpui half is closed. `30c49fc1` fixes the
+      45 (integer arithmetic saturating or checked, the `Duration` sum
+      through `saturating_add`, the integer division through `div_euclid`,
+      the two indexings through `Value::get` and a slice pattern, `Pixels`
+      arithmetic in `f32` through `f32::from` and `px`, as the connector's
+      widgets spell it), and `259a8146` adds the example's line, with
+      `native,watch` and with `gpui-fast,native,watch`, to check_release.sh's
+      strict-panic section and ci.yml's two gpui strict-panic steps. The
+      iced and egui showcases' runs stay open, for M9b and M9c.
 
 ### M7 close (2026-10-16), its `[v0.7.0]` entries
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
