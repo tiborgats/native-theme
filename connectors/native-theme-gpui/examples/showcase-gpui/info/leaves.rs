@@ -720,11 +720,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: geometry::icon_size_large sizes the icon (demo::sized_icon)",
     ),
     (
-        "",
-        "defaults.icon_sizes.large_px",
-        "gpui: geometry::icon_size_large sizes the icon",
-    ),
-    (
         "basic.icons",
         "defaults.icon_sizes.small_px",
         "gpui: geometry::icon_size_small sizes the icon (demo::sized_icon)",
@@ -888,11 +883,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "chrome.info",
         "defaults.line_height",
         "gpui: the line box of every Widget Info line (inspector.rs)",
-    ),
-    (
-        "",
-        "defaults.line_height",
-        "gpui: the element's line height, as the connector's control-height rule sets it",
     ),
     (
         "",
@@ -2223,11 +2213,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "toolbar.border.padding_left_px",
         "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
-    ),
-    (
-        "",
-        "toolbar.font",
-        "gpui: geometry::toolbar's family, size, weight, style and colour on the row; no text is drawn in it",
     ),
     (
         "",

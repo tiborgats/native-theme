@@ -3049,6 +3049,168 @@ fn every_prose_citation_still_exists() {
     );
 }
 
+// ---------------------------------------------------------------------------
+// The route lines: info::leaves::HOW
+// ---------------------------------------------------------------------------
+//
+// Under each `<leaf> <value>` row of a listed element, Widget Info shows how
+// gpui applies the leaf: the first `HOW` entry whose prefix the element's id
+// starts with and whose leaf matches (`info::leaves::how`). The table is a
+// `const` of string tuples, so no note call carries its texts and the prose
+// gates would not read them; it is read here, from the file as written.
+
+/// The file that holds `HOW`, as `SHOWCASE_FILES` names it.
+const HOW_FILE: &str = "info/leaves.rs";
+
+/// The line that opens `HOW`.
+const HOW_OPEN: &str = "pub const HOW: &[(&str, &str, &str)] = &[";
+
+/// One entry of `HOW`, and the line its first string is written on.
+struct HowLine<'a> {
+    line: usize,
+    prefix: &'a str,
+    leaf: &'a str,
+    text: &'a str,
+}
+
+/// `HOW`'s source as written.
+fn how_source() -> &'static str {
+    SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == HOW_FILE)
+        .map_or("", |(_, text)| *text)
+}
+
+/// Every entry of the `HOW` table in `raw`, in order: its strings read three
+/// at a time, comments skipped. An error where the table is missing, does
+/// not close, or holds a string count that is no multiple of three.
+fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
+    let open = raw
+        .find(HOW_OPEN)
+        .map(|at| at + HOW_OPEN.len())
+        .ok_or_else(|| format!("{HOW_FILE} holds no `{HOW_OPEN}`"))?;
+    let close = blanked(raw)
+        .get(open..)
+        .and_then(|code| code.find("\n];"))
+        .map(|ix| open + ix)
+        .ok_or_else(|| format!("{HOW_FILE}'s HOW does not close"))?;
+    let starts = line_offsets(raw);
+    let mut strings = Vec::new();
+    let mut at = open;
+    while let Some(rest) = raw.get(at..close).filter(|rest| !rest.is_empty()) {
+        if let Some(after) = rest.strip_prefix("//") {
+            at += 2 + after.find('\n').unwrap_or(after.len());
+        } else if let Some(body) = rest.strip_prefix('"') {
+            let len = end_of_string(body, "\"");
+            let text = body.get(..len.saturating_sub(1)).unwrap_or("");
+            strings.push((line_at(&starts, at), text));
+            at += 1 + len;
+        } else {
+            at += char_len(rest);
+        }
+    }
+    if strings.len() % 3 != 0 {
+        return Err(format!(
+            "{HOW_FILE}'s HOW holds {} strings, not three to an entry",
+            strings.len()
+        ));
+    }
+    Ok(strings
+        .chunks_exact(3)
+        .filter_map(|entry| match entry {
+            &[(line, prefix), (_, leaf), (_, text)] => Some(HowLine {
+                line,
+                prefix,
+                leaf,
+                text,
+            }),
+            _ => None,
+        })
+        .collect())
+}
+
+/// The index in `lines` of the entry `info::leaves::how` picks for `leaf` of
+/// the element `element`: the first whose leaf matches and whose prefix the
+/// id starts with.
+fn chosen_how(lines: &[HowLine<'_>], element: &str, leaf: &str) -> Option<usize> {
+    lines
+        .iter()
+        .position(|h| h.leaf == leaf && element.starts_with(h.prefix))
+}
+
+/// Every `HOW` entry is the line Widget Info shows for at least one leaf of
+/// one element of docs/showcase-elements.toml. An entry every lister of its
+/// leaf reaches a more specific entry before is a line no reader ever sees,
+/// and one nobody reads either, so it drifts unnoticed.
+#[test]
+fn every_how_entry_is_shown() {
+    let lines = how_lines(how_source());
+    assert!(
+        lines.is_ok(),
+        "{}",
+        lines.as_ref().err().cloned().unwrap_or_default()
+    );
+    let lines = lines.unwrap_or_default();
+    let elements = native_theme_showcase_support::elements::showcase_elements();
+    assert!(
+        elements.is_ok(),
+        "docs/showcase-elements.toml does not parse: {}",
+        elements.as_ref().err().cloned().unwrap_or_default()
+    );
+    let elements = elements.unwrap_or_default();
+    assert!(
+        lines.len() > 1 && !elements.is_empty(),
+        "{} HOW entries and {} elements read, so this would pass vacuously",
+        lines.len(),
+        elements.len()
+    );
+    let shown: BTreeSet<usize> = elements
+        .iter()
+        .flat_map(|e| e.leaves.iter().map(move |leaf| (e.id.as_str(), leaf)))
+        .filter_map(|(id, leaf)| chosen_how(&lines, id, leaf))
+        .collect();
+    let unseen: Vec<String> = lines
+        .iter()
+        .enumerate()
+        .filter(|(ix, _)| !shown.contains(ix))
+        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", \"{}\")", h.line, h.prefix, h.leaf))
+        .collect();
+    assert!(
+        unseen.is_empty(),
+        "{} of {} HOW entries are the shown line for no listed element's leaf -- every \
+         element that lists the leaf takes an earlier entry:\n  {}",
+        unseen.len(),
+        lines.len(),
+        unseen.join("\n  ")
+    );
+}
+
+/// The `HOW` reader reads each entry, written on three lines or one, and
+/// skips a comment between them; a stray string is an error.
+#[test]
+fn the_how_reader_does_its_job() {
+    let source = "x\npub const HOW: &[(&str, &str, &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        \"a.b\",\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", \"a.b\", \"gpui: e\"),\n];\n";
+    let lines = how_lines(source).unwrap_or_default();
+    let read: Vec<(usize, &str, &str, &str)> = lines
+        .iter()
+        .map(|h| (h.line, h.prefix, h.leaf, h.text))
+        .collect();
+    assert_eq!(
+        read,
+        [
+            (5, "basic.a", "a.b", "gpui: c (demo::d)"),
+            (9, "", "a.b", "gpui: e")
+        ]
+    );
+    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b"), Some(0));
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.b"), Some(1));
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.c"), None);
+    assert!(
+        how_lines("pub const HOW: &[(&str, &str, &str)] = &[\n    (\"a\", \"b\"),\n];\n").is_err()
+    );
+    assert!(how_lines("const NOT: u8 = 1;").is_err());
+}
+
 /// The `pub(crate)` constants of gpui-base the showcase names again, as
 /// (upstream file, constant): demo.rs repeats them, since it cannot import
 /// them, to lay a handle's info target over the handle's hit area.
