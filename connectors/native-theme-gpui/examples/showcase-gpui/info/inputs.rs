@@ -963,7 +963,8 @@ pub fn native_radio_column(
             .instance("radios", radios)
             .instance("selected", chosen);
     };
-    // The page's radios are never disabled, so neither look is faded.
+    // The page's radios are never disabled, so `faded_over` leaves both
+    // looks as they are; they go through it as the widget's do.
     let unselected = off.faded_over(ground(r));
     // The selected radio's colours, then the unselected ones'.
     let info = native_indicator(
