@@ -1089,7 +1089,7 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
     )
     .not_themeable(
         "item gap",
-        "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84)",
+        "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the left region holds one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
     )
     .not_themeable(
         "edge",

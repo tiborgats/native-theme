@@ -3410,6 +3410,25 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
     assert!(panel.size.width > px(0.) && panel.size.height > px(0.));
 }
 
+/// The status bar's "item gap" note names the gap inside its left region's
+/// one item, the toggle and the environment `layout.widget_gap` apart
+/// (demo::status_bar), beside upstream's `gap_2` between a region's items
+/// (M9-032).
+#[gpui::test]
+fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let info = settle_on(&mut cx, &showcase, CHROME_STATUS_BAR);
+    let note = info
+        .as_ref()
+        .and_then(|info| info.not_themeable.iter().find(|n| n.what == "item gap"));
+    assert!(
+        note.is_some_and(|n| n.text.contains("gap_2")
+            && n.text.contains("layout.widget_gap")
+            && n.text.contains("demo::status_bar")),
+        "the status bar's item gap note does not name the left item's layout.widget_gap: {note:?}"
+    );
+}
+
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
 /// (button/button.rs:1312, `colors.active`, which `variants::ghost_button`
@@ -11203,6 +11222,96 @@ fn every_listed_leaf_has_a_route() {
         })
         .collect();
     assert!(missing.is_empty(), "no route: {missing:?}");
+}
+
+/// The labels the showcase lays out one `defaults.line_height` line tall
+/// name the route that does it (M9-031): widgets::Switch's label, the side
+/// panel's labels and the segments in demo::text_in's line box, the tab
+/// rows' labels in widgets::TabBar's, the expander's title and body, and
+/// the status bar's text in geometry::status_bar's; none says "not applied"
+/// or names gpui's own line height. The status bar's toggle and environment
+/// are `layout.widget_gap` apart, and its row says so (M9-032).
+#[test]
+fn the_line_height_and_status_gap_routes_name_what_applies_them() {
+    let routes = [
+        ("basic.switches.", "defaults.line_height", "widgets::Switch"),
+        (
+            "chrome.side_panel.settings.",
+            "defaults.line_height",
+            "demo::text_in",
+        ),
+        (
+            "chrome.side_panel.inspector_tabs.",
+            "defaults.line_height",
+            "widgets::TabBar",
+        ),
+        (
+            "chrome.page_tabs.",
+            "defaults.line_height",
+            "widgets::TabBar",
+        ),
+        ("basic.tabs.", "defaults.line_height", "widgets::TabBar"),
+        ("basic.segmented.", "defaults.line_height", "demo::text_in"),
+        ("basic.expander.", "defaults.line_height", "demo::text_in"),
+        (
+            "chrome.status_bar",
+            "defaults.line_height",
+            "geometry::status_bar",
+        ),
+        (
+            "chrome.status_bar",
+            "layout.widget_gap_px",
+            "demo::status_bar",
+        ),
+    ];
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for element in crate::elements::elements() {
+        for (prefix, leaf, names) in routes {
+            if !element.id.starts_with(prefix)
+                || !element.leaves.iter().any(|l| l == leaf)
+                || (prefix == "chrome.side_panel.settings." && !element.id.ends_with("_label"))
+            {
+                continue;
+            }
+            checked += 1;
+            let how = crate::info::leaves::how(&element.id, leaf).unwrap_or_default();
+            if how.contains("not applied") || how.contains("phi") || !how.contains(names) {
+                wrong.push(format!("{} {leaf}: {how:?}, not {names}", element.id));
+            }
+        }
+    }
+    assert!(
+        checked >= 20,
+        "only {checked} rows matched, so this proves little"
+    );
+    assert!(
+        wrong.is_empty(),
+        "routes that do not name what applies them:\n  {}",
+        wrong.join("\n  ")
+    );
+}
+
+/// The number field pads its value's Input left of the step buttons, which
+/// stack at its right (demo::number_input), and a disabled text field's edge
+/// is `input.border.color` itself, on the faded surface the showcase draws
+/// under it (demo::faded_surface), not upstream's `input` token.
+#[test]
+fn the_number_and_disabled_field_routes_name_what_draws_them() {
+    for side in ["top", "right", "bottom", "left"] {
+        let leaf = format!("input.border.padding_{side}_px");
+        let how = crate::info::leaves::how("basic.number_input.field", &leaf).unwrap_or_default();
+        assert!(
+            how.contains("left of the step buttons") && !how.contains("between"),
+            "{leaf}: {how:?}"
+        );
+    }
+    let how = crate::info::leaves::how("basic.text_inputs.disabled", "input.border.color")
+        .unwrap_or_default();
+    assert!(
+        how.contains("demo::faded_surface") && !how.contains("ThemeColor input"),
+        "the disabled field's edge route: {how:?}"
+    );
 }
 
 /// Every id the showcase's tables name is an element of the list.

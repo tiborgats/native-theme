@@ -762,7 +762,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (gpui-component/switch.rs:300)",
+        "gpui: widgets::Switch's label, one line of its font's size by it",
     ),
     (
         "basic.text_inputs",
@@ -787,17 +787,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -812,22 +812,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "chrome.page_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "basic.tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "basic.segmented",
         "defaults.line_height",
-        "gpui: not applied — a segment's label keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: a segment's line box, segmented_control.font's size by it (demo::text_in)",
     ),
     (
         "basic.list",
@@ -852,7 +852,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.expander",
         "defaults.line_height",
-        "gpui: the body Label's (demo::body_label); the header keeps gpui's, phi (gpui-pre/style.rs:494)",
+        "gpui: the title's line box, expander.font's size by it (demo::text_in), and the body Label's (demo::body_label)",
     ),
     (
         "basic.card",
@@ -877,7 +877,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "defaults.line_height",
-        "gpui: not applied — the bar's text keeps gpui's line height, phi (gpui-pre/style.rs:494)",
+        "gpui: geometry::status_bar's line height, status_bar.font's size by it, which the bar's text takes (demo::status_bar)",
     ),
     (
         "chrome.info",
@@ -1004,7 +1004,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.color",
-        "gpui: the surface's edge (demo::input_surface); a disabled field's, ThemeColor input",
+        "gpui: the surface's edge (demo::input_surface); a disabled field's, the line of its faded surface (demo::faded_surface)",
     ),
     (
         "",
@@ -1019,22 +1019,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.border.padding_top_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_right_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_bottom_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_left_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "",
@@ -1190,7 +1190,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "layout.widget_gap_px",
-        "gpui: not applied — StatusBar's own gap_2 between its items (status_bar.rs:88)",
+        "gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's left region (demo::status_bar)",
     ),
     (
         "",
