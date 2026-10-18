@@ -12613,3 +12613,94 @@ fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
         "with no native theme the page tab bar's height note does not say nothing applies tab.min_height: {note:?}"
     );
 }
+
+/// Every theme-drawn tab row's info marks the selected tab as
+/// `widgets::TabBar` does, from `TabLook::of(..).indicator`: a line
+/// `tab.active_indicator_width` thick along `tab.active_indicator_side` in
+/// `tab.active_indicator_color` where the look has one, claimed then and
+/// only then, and none where it has not; and it gives the gap between the
+/// tabs, `tab.item_gap` (M9-045). Over every bundled preset in both modes,
+/// and one with the indicator's colour taken away.
+#[cfg(feature = "widgets")]
+#[test]
+fn every_native_tab_rows_selection_mark_is_the_looks() {
+    let mut variants: Vec<(String, native_theme_gpui::ResolvedTheme)> = every_bundled_variant()
+        .into_iter()
+        .map(|(name, r, _)| (name, r))
+        .collect();
+    if let Some((name, r)) = variants.first().cloned() {
+        let mut r = r;
+        r.tab.active_indicator_color = None;
+        variants.push((format!("{name}, no indicator colour"), r));
+    }
+    let mut seen = (false, false);
+    for (name, r) in &variants {
+        let look = native_theme_gpui::widgets::TabLook::of(r);
+        assert!(look.is_some(), "{name}: the tab look does not build");
+        let Some(look) = look else { continue };
+        let info = crate::info::layout::native_tab_row(r, "widgets::TabBar");
+        let mark = shown_note(Some(&info), "selection mark").unwrap_or_default();
+        let claimed = info
+            .colors
+            .iter()
+            .find(|c| c.field == "active_indicator_color")
+            .map(|c| c.value);
+        match look.indicator {
+            Some(line) => {
+                seen.0 = true;
+                let side = match line.side {
+                    native_theme::theme::TabIndicatorSide::Top => "top",
+                    native_theme::theme::TabIndicatorSide::Bottom => "bottom",
+                };
+                let width = format!("{}px", crate::info::px_text(f32::from(line.width)));
+                assert!(
+                    mark.contains("tab.active_indicator_width")
+                        && mark.contains(&width)
+                        && mark.contains("tab.active_indicator_side")
+                        && words(&mark).contains(side),
+                    "{name}: the selection mark is not the look's {width} line along the {side}: {mark:?}"
+                );
+                assert_eq!(
+                    claimed,
+                    Some(line.color),
+                    "{name}: the selected tab's line is not claimed in the look's colour"
+                );
+            }
+            None => {
+                seen.1 = true;
+                assert!(
+                    mark.starts_with("none: the theme states no indicator"),
+                    "{name}: the look has no indicator, but the selection mark says {mark:?}"
+                );
+                assert_eq!(
+                    claimed, None,
+                    "{name}: an indicator colour is claimed that widgets::TabBar does not draw"
+                );
+            }
+        }
+        assert!(
+            info.config.iter().any(|n| n.what == "selection mark")
+                && !info
+                    .not_themeable
+                    .iter()
+                    .any(|n| n.what == "selection mark"),
+            "{name}: the selection mark is not a config line: {:?}",
+            info.not_themeable
+        );
+        let gap = shown_note(Some(&info), "gap").unwrap_or_default();
+        let stated = r
+            .tab
+            .item_gap
+            .map(|g| format!("{}px", crate::info::px_text(g)));
+        assert!(
+            gap.contains("tab.item_gap")
+                && stated.as_deref().is_none_or(|g| gap.starts_with(g))
+                && (stated.is_some() || gap.starts_with("none")),
+            "{name}: the gap line does not give tab.item_gap {stated:?}: {gap:?}"
+        );
+    }
+    assert!(
+        seen.0 && seen.1,
+        "the presets did not cover both an indicator and none: {seen:?}"
+    );
+}

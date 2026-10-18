@@ -432,6 +432,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (gpui)**: under a native theme the status bar's Widget Info no longer says upstream's 1 px `border_t_1` is its top edge; the showcase draws that edge `status_bar.border.line_width` wide, as the panel's row for the leaf says.
 - **Showcases (gpui)**: the Widget Info of the toolbar's buttons, the status bar's side-panel toggle and the Buttons page's toolbar items names, under a theme that states `button.border.padding`, the stated sides and `button.border.corner_radius` the showcase sizes and rounds them by, and upstream's `h_8` with `px_2p5` (the toggle's `h_6` with `px_2`) only for what the theme leaves unstated; it gave upstream's size as the size drawn under every theme.
 - **Showcases (gpui)**: built without the `widgets` feature, the chrome tab bars' Widget Info under a native theme says each tab's height is raised to `tab.min_height`, as the showcase lays it out, where it said nothing applies `tab.min_height`.
+- **Showcases (gpui)**: the theme-drawn tab rows' Widget Info (the page tabs, the inspector's and the Basic page's) gives the line that marks the selected tab, `tab.active_indicator_width` thick along `tab.active_indicator_side`, where the theme states the line, claims its colour only then, and gives the gap between the tabs, `tab.item_gap`; it said the theme states no indicator, and that Breeze's highlight strip is no tab field, while the row drew that strip.
 
 ## [0.6.1] - 2026-10-09
 
