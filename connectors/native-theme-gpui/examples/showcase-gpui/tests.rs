@@ -6165,6 +6165,55 @@ fn a_hovered_list_or_tree_row_letters_its_label_in_the_lists_hover_text_colour(
     }
 }
 
+/// A selected List or Tree row's info says its text is
+/// `list.selection_text_color`, which `geometry::list_item_selected` sets
+/// over the list font's colour (M9-056), and an unselected one's says the
+/// list font's colour and names the hovered text the showcase sets
+/// (M9-008), under a native theme.
+#[gpui::test]
+fn a_selected_list_or_tree_rows_info_names_the_selection_text_colour(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Data);
+    let text = |info: &Option<WidgetInfo>| {
+        info.as_ref()
+            .and_then(|info| info.instance.iter().find(|n| n.what == "text"))
+            .map(|n| n.text.clone())
+    };
+    let hovered_text = |info: &Option<WidgetInfo>| {
+        info.as_ref()
+            .is_some_and(|info| info.config.iter().any(|n| n.what == "hovered text"))
+    };
+    for (selected, unselected) in [
+        ("data-list-row-1", "data-list-row-0"),
+        ("data-tree-row-1", "data-tree-row-2"),
+    ] {
+        click(&mut cx, selected);
+        let info = settle_on(&mut cx, &showcase, selected);
+        let says = text(&info).unwrap_or_default();
+        assert!(
+            says.starts_with("list.selection_text_color")
+                && says.contains("geometry::list_item_selected"),
+            "{selected}: the selected row's text is list.selection_text_color through \
+                 geometry::list_item_selected, and its info says {says:?}"
+        );
+        assert!(
+            !hovered_text(&info),
+            "{selected}: a selected row does not hover, and its info names a hovered text: {info:?}"
+        );
+        let info = settle_on(&mut cx, &showcase, unselected);
+        let says = text(&info).unwrap_or_default();
+        assert!(
+            says.starts_with("list.item_font"),
+            "{unselected}: the unselected row's text is list.item_font's, and its info says {says:?}"
+        );
+        assert!(
+            hovered_text(&info),
+            "{unselected}: the row's info does not name the hovered text: {info:?}"
+        );
+    }
+}
+
 /// A Tree row keeps clear of the Tree's scrollbar where the theme's is not
 /// an overlay, as the List's rows do (M9-008): the Tree lays its bar over
 /// its rows (gpui-component `src/tree.rs`, `RenderOnce for Tree`), so the

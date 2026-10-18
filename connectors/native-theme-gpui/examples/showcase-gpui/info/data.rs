@@ -680,8 +680,15 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
     // The label is plain text, so it takes the row's own text style: the
     // foreground and text_base ListItem sets (list/list_item.rs:204-205),
     // which geometry::list_item then refines with list.item_font, colour
-    // included -- a colour no ThemeColor field holds.
-    if styled {
+    // included -- a colour no ThemeColor field holds. A selected row is
+    // refined by geometry::list_item_selected after it, over that colour.
+    let selected = matches!(
+        state,
+        ListRowState::Selected | ListRowState::SelectedRightClicked
+    );
+    if styled && selected {
+        info.instance("text", "list.selection_text_color, which geometry::list_item_selected sets on the selected row over list.item_font's colour; the size is list.item_font's, from geometry::list_item, over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
+    } else if styled {
         info.instance("text", "list.item_font's size and colour, which geometry::list_item refines the row with over the text_base and foreground ListItem sets first (list/list_item.rs, ListItem::render)")
     } else {
         info.color(claim(
