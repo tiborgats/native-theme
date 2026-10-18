@@ -85,11 +85,13 @@ impl Showcase {
         cx: &mut Context<Self>,
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
-        let on_bold = cx.listener(|this, checked: &bool, _w, _cx| {
+        let on_bold = cx.listener(|this, checked: &bool, _w, cx| {
             this.toggle_bold = *checked;
+            cx.notify();
         });
-        let on_italic = cx.listener(|this, checked: &bool, _w, _cx| {
+        let on_italic = cx.listener(|this, checked: &bool, _w, cx| {
             this.toggle_italic = *checked;
+            cx.notify();
         });
         v_flex()
             .gap_5()

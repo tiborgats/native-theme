@@ -26,17 +26,21 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
-        let on_checkbox_a = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_checkbox_a = cx.listener(|this, val: &bool, _w, cx| {
             this.checkbox_a = *val;
+            cx.notify();
         });
-        let on_checkbox_b = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_checkbox_b = cx.listener(|this, val: &bool, _w, cx| {
             this.checkbox_b = *val;
+            cx.notify();
         });
-        let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
+        let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.radio_index = Some(*ix);
+            cx.notify();
         });
-        let on_switch = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_switch = cx.listener(|this, val: &bool, _w, cx| {
             this.switch_on = *val;
+            cx.notify();
         });
         let on_rating = cx.listener(|this, value: &usize, _w, cx| {
             this.rating_value = *value;

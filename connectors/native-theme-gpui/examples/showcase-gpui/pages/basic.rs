@@ -290,8 +290,9 @@ impl Showcase {
             .flatten()
             .map(px);
 
-        let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
+        let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_radio = Some(*ix);
+            cx.notify();
         });
         let on_tab = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_tab = *ix;

@@ -10100,6 +10100,222 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
 }
 
 // ---------------------------------------------------------------------------
+// The listeners: a state a listener writes is drawn on the next frame
+// ---------------------------------------------------------------------------
+
+/// The files whose `cx.listener(` closures `every_listener_that_writes_state_notifies`
+/// reads: `demo.rs` and every page.
+const LISTENER_FILES: &[(&str, &str)] = &[
+    ("demo.rs", include_str!("demo.rs")),
+    ("pages/basic.rs", include_str!("pages/basic.rs")),
+    ("pages/buttons.rs", include_str!("pages/buttons.rs")),
+    ("pages/charts.rs", include_str!("pages/charts.rs")),
+    ("pages/data.rs", include_str!("pages/data.rs")),
+    ("pages/feedback.rs", include_str!("pages/feedback.rs")),
+    ("pages/icons.rs", include_str!("pages/icons.rs")),
+    ("pages/inputs.rs", include_str!("pages/inputs.rs")),
+    ("pages/layout.rs", include_str!("pages/layout.rs")),
+    ("pages/mod.rs", include_str!("pages/mod.rs")),
+    ("pages/overlays.rs", include_str!("pages/overlays.rs")),
+    ("pages/theme_map.rs", include_str!("pages/theme_map.rs")),
+    ("pages/typography.rs", include_str!("pages/typography.rs")),
+];
+
+/// `source` with its line comments and the insides of its string and char
+/// literals blanked, its line breaks kept, so a bracket in a text is not
+/// counted and a line number in the result is one in `source`.
+fn code_only(source: &str) -> String {
+    let mut out = String::with_capacity(source.len());
+    let mut chars = source.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '/' if chars.peek() == Some(&'/') => {
+                while chars.next_if(|next| *next != '\n').is_some() {}
+            }
+            '"' => {
+                out.push('"');
+                while let Some(inner) = chars.next() {
+                    match inner {
+                        '\\' => {
+                            chars.next();
+                        }
+                        '"' => break,
+                        '\n' => out.push('\n'),
+                        _ => {}
+                    }
+                }
+                out.push('"');
+            }
+            // A char literal, not a lifetime: `'x'` or an escape `'\n'`.
+            '\'' if chars.peek() == Some(&'\\') || chars.clone().nth(1) == Some('\'') => {
+                out.push_str("' '");
+                if chars.next() == Some('\\') {
+                    chars.next();
+                }
+                while chars.next_if(|next| *next != '\'').is_some() {}
+                chars.next();
+            }
+            _ => out.push(c),
+        }
+    }
+    out
+}
+
+/// The fields a closure body writes, as `this.<field> =` or a compound
+/// `this.<field> += …`, each with its byte offset in `body`.
+fn fields_written(body: &str) -> Vec<(usize, &str)> {
+    let ident = |c: char| c.is_alphanumeric() || c == '_';
+    let mut written = Vec::new();
+    for (at, _) in body.match_indices("this.") {
+        if body[..at].chars().next_back().is_some_and(ident) {
+            continue;
+        }
+        let rest = &body[at + "this.".len()..];
+        let path_len = rest
+            .find(|c: char| !ident(c) && c != '.')
+            .unwrap_or(rest.len());
+        let after = rest[path_len..].trim_start();
+        let after = after
+            .strip_prefix(['+', '-', '*', '/', '%', '|', '&', '^'])
+            .unwrap_or(after);
+        if path_len > 0 && after.starts_with('=') && !after.starts_with("==") {
+            written.push((at, &rest[..path_len]));
+        }
+    }
+    written
+}
+
+/// Every `cx.listener(` closure in `demo.rs` and the pages that writes a
+/// field of the showcase calls `cx.notify()` (M9-017).
+///
+/// `cx.listener` only updates the entity (gpui-pre 0.3.9
+/// `src/app/context.rs:246-256`). A mouse click is followed by a refresh of
+/// the window (`src/elements/div.rs:3086-3089`); a keyboard click calls the
+/// same listeners and refreshes nothing (`:3040-3071`), so a control
+/// activated from the keyboard by a listener that does not notify stays
+/// drawn as it was until something else redraws the window. gpui-component
+/// documents these values as controlled: the owner writes the value and calls
+/// `cx.notify()` (gpui-component 0.7.3 `src/checkbox.rs:104-108`).
+#[test]
+fn every_listener_that_writes_state_notifies() {
+    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/showcase-gpui/pages");
+    let mut on_disk: Vec<String> = std::fs::read_dir(&dir)
+        .unwrap_or_else(|e| panic!("{} cannot be read: {e}", dir.display()))
+        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
+        .filter(|name| name.ends_with(".rs"))
+        .map(|name| format!("pages/{name}"))
+        .collect();
+    on_disk.sort();
+    let listed: Vec<String> = LISTENER_FILES
+        .iter()
+        .map(|(path, _)| (*path).to_string())
+        .filter(|path| path.starts_with("pages/"))
+        .collect();
+    assert_eq!(listed, on_disk, "LISTENER_FILES and pages/ disagree");
+
+    let mut listeners = 0;
+    let mut offenders = Vec::new();
+    for (path, source) in LISTENER_FILES {
+        let code = code_only(source);
+        for (at, call) in code.match_indices("cx.listener(") {
+            let open = at + call.len() - 1;
+            let mut depth = 0usize;
+            let close = code[open..].char_indices().find_map(|(ix, c)| {
+                match c {
+                    '(' => depth += 1,
+                    ')' => {
+                        depth = depth.saturating_sub(1);
+                        if depth == 0 {
+                            return Some(open + ix);
+                        }
+                    }
+                    _ => {}
+                }
+                None
+            });
+            let Some(close) = close else {
+                panic!("{path}: the cx.listener( at byte {at} never closes");
+            };
+            listeners += 1;
+            let body = &code[open..close];
+            if body.contains("cx.notify()") {
+                continue;
+            }
+            for (offset, field) in fields_written(body) {
+                let line = code[..open + offset].matches('\n').count() + 1;
+                offenders.push(format!("{path}:{line}: this.{field} ="));
+            }
+        }
+    }
+    assert!(
+        listeners > 0,
+        "no cx.listener( was found, so nothing was checked"
+    );
+    assert!(
+        offenders.is_empty(),
+        "these listeners write the showcase's state and do not call cx.notify(), \
+         so a keyboard activation is not drawn:\n{}",
+        offenders.join("\n")
+    );
+}
+
+/// Space on the Inputs page's first checkbox notifies the showcase, which is
+/// what asks for the frame that draws it unchecked (M9-017).
+///
+/// Focus moves to the checkbox by Tab from the number field before it, and
+/// Space activates it as a keyboard click: gpui calls the listener and
+/// refreshes nothing (gpui-pre 0.3.9 `src/elements/div.rs:3040-3071`), so
+/// the window is marked dirty, and a frame drawn, only if the listener calls
+/// `cx.notify()`. That missing frame request is the bug, and it is what this
+/// counts, through an observer of the showcase, which runs on a notify
+/// alone. A drawn frame cannot show it: a test draws its frames itself, dirty
+/// window or not, and on GPUI Fast 0.1.7 a view that is not cached is drawn
+/// again whenever an entity it read was written, notified or not
+/// (`src/fast/retained.rs:579-601`, `src/fast/dependencies.rs:513-527`), so
+/// the frame after Space shows the new state on both backends either way.
+#[gpui::test]
+fn a_checkbox_toggled_from_the_keyboard_notifies_the_showcase(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    // A bundled icon set: no icon loads in the background and notifies the
+    // showcase, which would count for a listener that does not.
+    use_preset(&mut cx, &showcase, "material-3");
+    show(&mut cx, &showcase, Page::Inputs);
+    let field = read(&mut cx, &showcase, |this, cx| {
+        this.number_input_state.read(cx).focus_handle(cx)
+    });
+    cx.update(|window, cx| {
+        window.focus(&field, cx);
+        window.focus_next(cx);
+    });
+    draw(&mut cx);
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.checkbox_a),
+        "the checkbox does not start checked"
+    );
+    let notified = Rc::new(std::cell::Cell::new(0usize));
+    let count = notified.clone();
+    let _observer =
+        cx.update(|_window, cx| cx.observe(&showcase, move |_, _| count.set(count.get() + 1)));
+    let space = gpui::Keystroke::parse("space").expect("space is a keystroke");
+    cx.simulate_event(gpui::KeyDownEvent {
+        keystroke: space.clone(),
+        is_held: false,
+        prefer_character_input: false,
+    });
+    cx.simulate_event(gpui::KeyUpEvent { keystroke: space });
+    cx.run_until_parked();
+    assert!(
+        !read(&mut cx, &showcase, |this, _| this.checkbox_a),
+        "Space did not reach the checkbox: Tab from the number field focused something else"
+    );
+    assert!(
+        notified.get() > 0,
+        "Space unchecked the checkbox without notifying the showcase, so no frame is asked for \
+         and the checkbox stays drawn checked"
+    );
+}
+
+// ---------------------------------------------------------------------------
 // docs/showcase-elements.toml: the layout dump and Widget Info
 // ---------------------------------------------------------------------------
 
