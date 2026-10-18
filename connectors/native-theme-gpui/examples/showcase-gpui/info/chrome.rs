@@ -1671,9 +1671,10 @@ pub fn about_dialog(
 }
 
 /// The About dialog's link to the README's Compatibility table: the
-/// Typography page's Link, pointing somewhere else.
+/// Typography page's Link, pointing somewhere else, which `geometry::link`
+/// does not refine.
 pub fn about_link(t: &Theme) -> WidgetInfo {
-    super::typography::link(t).instance(
+    super::typography::link(t, None).instance(
         "target",
         "the connector README at this version's tag, v-prefixed as the text says, at its Compatibility heading. The tag exists once the version is released; before that the page is missing",
     )

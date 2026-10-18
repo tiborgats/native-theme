@@ -5973,7 +5973,9 @@ pub(crate) fn link(
     text: &'static str,
     href: &'static str,
 ) -> Stateful<Div> {
-    let mut link_info = info::typography::link(cx.theme())
+    // The underline `geometry::link` leaves or removes at rest.
+    let underline = native_value(cx, |n| n.resolved.link.underline_enabled);
+    let mut link_info = info::typography::link(cx.theme(), underline)
         .instance("text", text)
         .instance("target", href);
     // One line of `link.font` tall (`line_height_of`).

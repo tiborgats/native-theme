@@ -2630,6 +2630,72 @@ fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext
     );
 }
 
+/// A Link is underlined at rest only where the theme says so (M9-061):
+/// under ios-13 and material-3, which state `link.underline_enabled =
+/// false`, no underline is painted inside the resting Link and its info
+/// claims none and says `geometry::link` removes it; under kde-breeze one is,
+/// and its info claims it.
+#[gpui::test]
+fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let mut reached = (false, false);
+    for preset in ["ios-13", "material-3", "kde-breeze"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        if underlined {
+            reached.0 = true;
+        } else {
+            reached.1 = true;
+        }
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        let link = bounds_of(&mut cx, "basic-link");
+        let painted = cx.update(|window, _| {
+            let link = link.scale(window.scale_factor());
+            window
+                .painted_underlines()
+                .into_iter()
+                .filter(|u| u.bounds.intersects(&link))
+                .count()
+        });
+        assert_eq!(
+            painted,
+            usize::from(underlined),
+            "{preset}: link.underline_enabled is {underlined}, and the resting Link paints {painted} underlines"
+        );
+        let info = settle_on(&mut cx, &showcase, "basic-link");
+        let resting = info.as_ref().is_some_and(|info| {
+            info.colors
+                .iter()
+                .any(|c| c.role.starts_with("resting underline"))
+        });
+        assert_eq!(
+            resting, underlined,
+            "{preset}: link.underline_enabled is {underlined}, and the Link's info claims a resting underline: {resting}: {info:?}"
+        );
+        let removed = info.as_ref().is_some_and(|info| {
+            info.to_text().contains(
+                "geometry::link removes the resting underline; hover and press still underline",
+            )
+        });
+        assert_eq!(
+            removed, !underlined,
+            "{preset}: link.underline_enabled is {underlined}, and the Link's info says geometry::link removes the underline: {removed}: {info:?}"
+        );
+        assert!(
+            info.as_ref()
+                .is_some_and(|info| !info.to_text().contains("no receiver")),
+            "{preset}: the Link's info says link.underline_enabled has no receiver: {info:?}"
+        );
+    }
+    assert_eq!(
+        reached,
+        (true, true),
+        "the presets no longer leave one Link underlined and one not, so a branch went unread"
+    );
+}
+
 /// Both tables draw their header row `list.header_height` tall where the
 /// theme states it (adwaita, 30), and as tall as a body row is drawn where it
 /// does not (kde-breeze, which states no header height): the Data page's

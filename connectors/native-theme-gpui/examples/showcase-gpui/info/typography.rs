@@ -156,25 +156,27 @@ pub fn mono_text(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
 }
 
 /// A `Link`, wherever the showcase shows one; the caller adds what it reads
-/// and where it goes.
-pub fn link(t: &Theme) -> WidgetInfo {
+/// and where it goes. `underline` is the `link.underline_enabled` that
+/// `geometry::link` refined it by, `None` where it refines none.
+pub fn link(t: &Theme, underline: Option<bool>) -> WidgetInfo {
     // link.rs:74-88: the text and its underline, then a hover and an active
     // style over them, all from the one token. The resting underline and the
     // hovered and pressed text are literal opacities of it, so those
     // swatches are the opacities.
-    WidgetInfo::new("Link")
-        .color(claim(
-            "text",
-            "link",
-            t.link,
-            "gpui-component/link.rs:76",
-        ))
-        .color(claim(
-            "resting underline, at 50%, where link.underline_enabled",
+    let info =
+        WidgetInfo::new("Link").color(claim("text", "link", t.link, "gpui-component/link.rs:76"));
+    // geometry::link removes the resting underline where the theme says so.
+    let info = if underline == Some(false) {
+        info
+    } else {
+        info.color(claim(
+            "resting underline, at 50%",
             "link",
             t.link.opacity(0.5),
             "gpui-component/link.rs:78",
         ))
+    };
+    let info = info
         .color(claim(
             "hover text, at 80%",
             "link",
@@ -198,9 +200,13 @@ pub fn link(t: &Theme) -> WidgetInfo {
             "link",
             t.link,
             "gpui-component/link.rs:87",
-        ))
-        .not_themeable("underline", "always on, and out of reach: the decoration is set on the base style before the caller's refinement merges into it (gpui-component/link.rs, Link), and a refinement whose `underline` is None leaves the base's `Some` standing -- `text_decoration_none` sets exactly that None, so it cannot switch one off. link.underline_enabled is modelled and has no receiver: Tier U")
-        .not_themeable("hover text", "link at 0.8, computed from the one token (gpui-component/link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
+        ));
+    let info = match underline {
+        Some(true) => info.config("underline", "at rest, as upstream draws it: link.underline_enabled is true, so geometry::link leaves the underline gpui-component sets on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link)"),
+        Some(false) => info.config("underline", "none at rest: link.underline_enabled is false, so geometry::link removes the resting underline; hover and press still underline. The refinement sets the underline's thickness to 0, which paints none, over the text_decoration_1 upstream sets on the base style first, and upstream's hover and active styles set it again over the refinement (gpui-component/link.rs, RenderOnce for Link)"),
+        None => info.not_themeable("underline", "always on: gpui-component sets it on the base style before the caller's refinement (gpui-component/link.rs, RenderOnce for Link), and this Link takes no geometry::link, which removes it at rest where link.underline_enabled is false"),
+    };
+    info.not_themeable("hover text", "link at 0.8, computed from the one token (gpui-component/link.rs, Link). Upstream has a link_hover token, the connector writes it from link.hover_text_color, and a Button::link() reads it (button/button.rs, ButtonVariant) -- this widget is the one place that does not. Tier U")
         .not_themeable("pressed text", "link at 0.6, the same story: link_active is written by the connector from link.active_text_color and read by the Button variant, not here (gpui-component/link.rs, Link)")
 }
 
