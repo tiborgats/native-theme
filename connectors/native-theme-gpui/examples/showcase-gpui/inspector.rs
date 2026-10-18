@@ -360,11 +360,12 @@ fn row(what: &'static str, value: String, cx: &gpui::App) -> gpui::Div {
 /// The side of a swatch's square. A swatch is the inspector's own element,
 /// which the model states nothing of, so this is the showcase's own choice,
 /// not a platform's.
-const SWATCH_SIZE: gpui::Pixels = gpui::px(16.);
+pub(crate) const SWATCH_SIZE: gpui::Pixels = gpui::px(16.);
 
 /// The gap between a swatch's square and its label, gpui's `gap_2`: the
-/// showcase's own choice, as [`SWATCH_SIZE`] is.
-const SWATCH_GAP: gpui::Rems = gpui::rems(0.5);
+/// showcase's own choice, as [`SWATCH_SIZE`] is. The side panel's info,
+/// which the inspector's content reports through, says both.
+pub(crate) const SWATCH_GAP: gpui::Rems = gpui::rems(0.5);
 
 /// A colour swatch labelled `name` and the colour's hex value, its square
 /// in `frame`, the showcase's frame, built once by the caller.

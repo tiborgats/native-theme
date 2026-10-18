@@ -2808,6 +2808,26 @@ pub(crate) fn label(
         .debug_selector(move || id.to_string())
 }
 
+/// A [`label`] whose info also holds the text it prints, for a label that
+/// states values the page reads (the Layout page's spacing summary).
+pub(crate) fn printed_label(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    text: impl Into<SharedString>,
+) -> Stateful<Div> {
+    let text: SharedString = text.into();
+    Label::new(text.clone())
+        .text_sm()
+        .info(
+            ui,
+            id,
+            info::text::label(cx.theme()).instance("text", text.to_string()),
+        )
+        .self_start()
+        .debug_selector(move || id.into())
+}
+
 // ---------------------------------------------------------------------------
 // The Buttons page
 // ---------------------------------------------------------------------------
@@ -3436,7 +3456,8 @@ pub(crate) struct InputGroupStates<'a> {
     pub copy_icon: SampleIcon,
 }
 
-/// Three `InputGroup`s, `width` wide, one above the other: a field behind a
+/// Three `InputGroup`s, `width` wide, one above the other `gap` apart (the
+/// page's `layout.widget_gap`, none where it is unstated): a field behind a
 /// Search icon, a field with a Copy button after it, which puts the field's
 /// text on the clipboard and says so in a notification, and a textarea with
 /// a note under it. Where the chosen icon theme has no Search icon the first
@@ -3449,6 +3470,7 @@ pub(crate) fn input_groups(
     id: &'static str,
     states: InputGroupStates<'_>,
     width: Pixels,
+    gap: Option<Pixels>,
 ) -> Stateful<Div> {
     let mut groups_info = info::inputs::input_groups(cx.theme())
         .instance(
@@ -3501,8 +3523,7 @@ pub(crate) fn input_groups(
             );
         }
     });
-    v_flex()
-        .gap_3()
+    with_gap(v_flex(), gap)
         .w(width)
         .child(
             InputGroup::new("input-group-inline")
@@ -5349,15 +5370,20 @@ pub(crate) fn tag(
 /// A `Badge` showing `count`, or a dot where `count` is `None`, on a
 /// Default Button reading `label` and refined by `geometry::button`. The
 /// Badge is exactly as large as the Button, so the Button reports through
-/// it.
+/// it. Where `next` is given, the next Badge of the row follows its count
+/// that far (the page's `layout.widget_gap`, none where it is unstated):
+/// the Badge keeps that and the count's overhang
+/// (`pages::badge_count_overhang`) free after it.
 pub(crate) fn badge(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     count: Option<usize>,
     label: &'static str,
+    next: Option<Option<Pixels>>,
 ) -> Stateful<Div> {
-    let mut badge_info = info::feedback::badge(cx.theme(), count, label);
+    let overhang = crate::pages::badge_count_overhang(count);
+    let mut badge_info = info::feedback::badge(cx.theme(), count, label, overhang, next);
     let target = labelled(
         ui,
         cx,
@@ -5378,6 +5404,9 @@ pub(crate) fn badge(
     badge
         .child(target)
         .info(ui, id, badge_info)
+        .when_some(next, |badge, gap| {
+            badge.mr(overhang + gap.unwrap_or_default())
+        })
         .debug_selector(move || id.into())
 }
 
@@ -8190,7 +8219,7 @@ pub(crate) fn swatch(
     // The fill is the datum this swatch exists to show; everything around it
     // is `frame`, the box every other demonstration sits in.
     h_flex()
-        .gap_2()
+        .gap(crate::pages::SWATCH_LABEL_GAP)
         .items_center()
         .child(refined(div().size(px(16.0)).bg(value.value), Some(frame)))
         .child(Label::new(label).text_sm())

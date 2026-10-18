@@ -539,6 +539,14 @@ pub fn side_panel(t: &Theme, container_margin: Option<Pixels>) -> WidgetInfo {
                 None => "none around the theme settings: layout.container_margin, which pads them and the inspector's content, is unstated".to_string(),
             },
         )
+        .not_themeable(
+            "swatches",
+            format!(
+                "in the inspector's list of an unlisted widget's colours, each a {}px square, SWATCH_SIZE, {} from its label, SWATCH_GAP: the showcase's own choices rather than a platform's, as the theme states no swatch (spec §3.1)",
+                px_text(crate::inspector::SWATCH_SIZE.as_f32()),
+                super::rems_text(crate::inspector::SWATCH_GAP, t)
+            ),
+        )
         .instance(
             "width",
             "the first panel of the window's resizable group: LEFT_PANEL_WIDTH, 300px, the showcase's own default -- the model states no such width -- until its handle is dragged",

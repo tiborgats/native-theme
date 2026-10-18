@@ -127,6 +127,7 @@ impl Showcase {
                         copy_icon: self.sample_icon(IconName::Copy),
                     },
                     px(360.0),
+                    widget_gap,
                 )
                 .self_start(),
             )

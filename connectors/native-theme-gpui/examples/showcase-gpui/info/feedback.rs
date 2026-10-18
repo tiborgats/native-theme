@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use gpui::transparent_white;
+use gpui::{Pixels, px, transparent_white};
 use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
@@ -672,8 +672,16 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
 /// A `Badge` showing `count`, or a dot where it is `None`, on a Default
 /// Button reading `label`, which reports
 /// through the Badge. The Button's `geometry::button` line is recorded where
-/// `demo::badge` applies it.
-pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
+/// `demo::badge` applies it. Its count stands `overhang` past the Button's
+/// right edge, and `next`, where another Badge follows, is the gap after it,
+/// `layout.widget_gap`.
+pub fn badge(
+    t: &Theme,
+    count: Option<usize>,
+    label: &str,
+    overhang: Pixels,
+    next: Option<Option<Pixels>>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Badge");
     let info = match count {
         Some(count) => info
@@ -689,8 +697,34 @@ pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
-        .not_themeable("row gap", format!("{} between the Badges, BADGE_ROW_GAP, the showcase's own choice rather than a platform's: the theme states no distance for it, and a count stands 3px per digit past its Button's right edge (badge.rs, Badge::render), so Badges layout.widget_gap apart could let it touch or cover the next (spec §3.1)", super::rems_text(crate::pages::BADGE_ROW_GAP, t)))
+        .instance("next badge", next_badge(overhang, next))
         .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
+}
+
+/// The space a Badge keeps after it: `next` (`layout.widget_gap`) from its
+/// count to the next Badge, where one follows, and the `overhang` the count
+/// stands past the Button's right edge.
+fn next_badge(overhang: Pixels, next: Option<Option<Pixels>>) -> String {
+    let count = if overhang > px(0.) {
+        format!(
+            "the {}px its count stands past the Button's right edge, BADGE_COUNT_OVERHANG a character (gpui-component/badge.rs:137-146)",
+            px_text(overhang.as_f32())
+        )
+    } else {
+        "no overhang: its dot stands inside the Button (badge.rs, Badge::render)".to_string()
+    };
+    match next {
+        Some(Some(gap)) => format!(
+            "{}px after the Button: layout.widget_gap, {}px, from the count to the next Badge, as the controls of a row are apart, and {count}",
+            px_text((gap + overhang).as_f32()),
+            px_text(gap.as_f32()),
+        ),
+        Some(None) => format!(
+            "{}px after the Button, {count}: layout.widget_gap is unstated, so nothing parts the count from the next Badge",
+            px_text(overhang.as_f32()),
+        ),
+        None => "none: the last Badge of its row".to_string(),
+    }
 }
 
 /// A `Marker` of `kind` reading `text`. A Plain one shows `plain_icon`, of

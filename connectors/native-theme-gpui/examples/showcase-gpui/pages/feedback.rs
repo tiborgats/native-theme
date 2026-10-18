@@ -7,7 +7,7 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
-use crate::pages::{BADGE_ROW_GAP, page_root};
+use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
     FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
@@ -387,9 +387,10 @@ impl Showcase {
             ))
             .child(demo::heading(ui, cx, "feedback-heading-badge", "Badge"))
             .child(
-                h_flex().gap(BADGE_ROW_GAP).children(
-                    BADGES.map(|(id, count, label)| demo::badge(ui, cx, id, count, label)),
-                ),
+                h_flex().children(BADGES.iter().enumerate().map(|(ix, &(id, count, label))| {
+                    let next = (ix + 1 < BADGES.len()).then_some(widget_gap);
+                    demo::badge(ui, cx, id, count, label, next)
+                })),
             )
             .child(demo::heading(
                 ui,

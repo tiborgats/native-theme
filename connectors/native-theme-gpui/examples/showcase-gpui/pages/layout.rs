@@ -163,7 +163,7 @@ impl Showcase {
                 section_gap,
                 [
                     spacing_row.into_any_element(),
-                    demo::label(ui, cx, "layout-spacing-summary", spacing_summary)
+                    demo::printed_label(ui, cx, "layout-spacing-summary", spacing_summary)
                         .into_any_element(),
                 ],
             ))

@@ -1,18 +1,11 @@
 //! The Theme Map page.
 
-use gpui::{
-    Context, IntoElement, ParentElement, Pixels, StyleRefinement, Styled, div, prelude::*, px,
-};
+use gpui::{Context, IntoElement, ParentElement, StyleRefinement, Styled, div, prelude::*};
 
 use crate::app::Showcase;
 use crate::demo::{self, ThemeToken};
-use crate::pages::page_root;
+use crate::pages::{SWATCH_GAP_X, SWATCH_GAP_Y, page_root};
 use crate::support::NativeStyled as _;
-
-/// The space between two swatches of a row, and between two rows: the
-/// showcase's own, as the model states no swatch table.
-const SWATCH_GAP_X: Pixels = px(16.);
-const SWATCH_GAP_Y: Pixels = px(4.);
 
 /// The swatch table, as `(heading id, heading, fields)`: every ThemeColor
 /// field once.

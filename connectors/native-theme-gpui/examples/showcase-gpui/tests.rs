@@ -11594,23 +11594,94 @@ fn a_disabled_fields_edge_swatch_is_its_faded_edge(cx: &mut TestAppContext) {
 /// `layout.widget_gap`, each none where the theme states none, as the Basic
 /// page lays them out; a distance of another role is a named constant of
 /// the showcase's, with its comment and its info line (spec §3.1).
+///
+/// The gate reads `pages/` and `demo.rs`, whose builders lay out much of
+/// the pages' content. A `_0` size sets none and passes. In `demo.rs` the
+/// calls inside a widget sample the showcase builds -- a cell's, a card's,
+/// a slide's padding, no page section and no row of controls -- are
+/// listed by their function with the reason, and printed.
 #[test]
 fn no_page_spaces_by_a_bare_rem_multiple() {
     const BARE: [&str; 10] = [
         "gap_x_", "gap_y_", "gap_", "px_", "py_", "pt_", "pr_", "pb_", "pl_", "p_",
     ];
+    const INSIDE_A_SAMPLE: [(&str, &[&str], &str); 9] = [
+        (
+            "component_toolbar",
+            &[".gap_1()"],
+            "a ToolbarGroup's gap where toolbar.item_gap is unstated: the Toolbar's own Small gap, upstream's (its doc)",
+        ),
+        (
+            "separator",
+            &[".py_1()"],
+            "the room round an unlisted Separator sample, which points at it",
+        ),
+        (
+            "scroll_area",
+            &[".gap_2()", ".p_3()"],
+            "the twenty labels the scroll area's sample scrolls",
+        ),
+        (
+            "collapsible",
+            &[".p_3()"],
+            "the Collapsible sample's content",
+        ),
+        (
+            "carousel",
+            &[".gap_1()", ".p_4()"],
+            "a Carousel slide's title over its caption",
+        ),
+        (
+            "context_menu_area",
+            &[".p_6()"],
+            "the room inside the area a right-click opens the ContextMenu over",
+        ),
+        (
+            "icon_cell",
+            &[".py_2()", ".px_2()", ".gap_1()"],
+            "an icon grid cell's padding and its icon over its name, which the cell's info calls the showcase's own layout",
+        ),
+        (
+            "icon_size_cell",
+            &[".py_2()", ".px_2()", ".gap_1()"],
+            "an icon-size cell, laid out as an icon grid cell is",
+        ),
+        (
+            "animated_icon",
+            &[".gap_2()", ".p_4()"],
+            "an animated icon's card",
+        ),
+    ];
     let sources = showcase_sources();
-    let pages: Vec<_> = sources
+    let read: Vec<_> = sources
         .iter()
-        .filter(|(path, _)| path.starts_with("pages/"))
+        .filter(|(path, _)| path.starts_with("pages/") || path == "demo.rs")
         .collect();
     assert!(
-        pages.len() >= 11,
-        "the page files were not found: {:?}",
-        pages.iter().map(|(path, _)| path).collect::<Vec<_>>()
+        read.len() >= 12,
+        "the page files and demo.rs were not found: {:?}",
+        read.iter().map(|(path, _)| path).collect::<Vec<_>>()
     );
+    // The name of the last `fn` item that starts before `at`.
+    let enclosing = |code: &str, at: usize| -> String {
+        let before = &code[..at];
+        let mut end = before.len();
+        while let Some(ix) = before[..end].rfind("fn ") {
+            let starts = ix == 0 || before[..ix].ends_with(|c: char| c.is_whitespace());
+            if starts {
+                let name = &before[ix + 3..];
+                let len = name
+                    .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
+                    .unwrap_or(name.len());
+                return name[..len].to_string();
+            }
+            end = ix;
+        }
+        String::new()
+    };
     let mut found = Vec::new();
-    for (path, source) in pages {
+    let mut listed = Vec::new();
+    for (path, source) in read {
         let code = code_only(source);
         for (at, _) in code.match_indices('.') {
             let rest = &code[at + 1..];
@@ -11621,12 +11692,30 @@ fn no_page_spaces_by_a_bare_rem_multiple() {
             let size_len = size
                 .find(|c: char| !(c.is_ascii_alphanumeric() || c == '_'))
                 .unwrap_or(size.len());
-            if size_len > 0 && size[size_len..].starts_with("()") {
-                let line = code[..at].matches('\n').count() + 1;
-                found.push(format!("{path}:{line}: .{prefix}{}()", &size[..size_len]));
+            let size = &size[..size_len];
+            if size.is_empty() || size == "0" || !rest[prefix.len() + size_len..].starts_with("()")
+            {
+                continue;
+            }
+            let call = format!(".{prefix}{size}()");
+            let line = code[..at].matches('\n').count() + 1;
+            let function = enclosing(&code, at);
+            let sample = (path == "demo.rs")
+                .then(|| {
+                    INSIDE_A_SAMPLE
+                        .iter()
+                        .find(|(f, calls, _)| *f == function && calls.contains(&call.as_str()))
+                })
+                .flatten();
+            match sample {
+                Some((_, _, why)) => {
+                    listed.push(format!("{path}:{line}: {call} in {function}: {why}"))
+                }
+                None => found.push(format!("{path}:{line}: {call} in {function}")),
             }
         }
     }
+    println!("inside a widget sample, listed: {listed:#?}");
     println!("bare rem multiples on the pages: {found:#?}");
     assert!(
         found.is_empty(),
@@ -11739,20 +11828,31 @@ fn each_page_is_padded_and_spaced_by_the_theme(cx: &mut TestAppContext) {
             ));
         }
         if page == Page::Layout {
-            let printed = format!(
-                "window_margin {} · section_gap {}",
-                crate::support::layout_value(Some(px(margin))),
-                crate::support::layout_value(Some(px(gap)))
-            );
-            let shown = format!(
-                "window_margin {} · section_gap {}",
-                crate::support::layout_value(geometry::window_margin(&layout)),
-                crate::support::layout_value(geometry::section_gap(&layout))
-            );
-            assert_eq!(
-                printed, shown,
-                "the Layout page prints other spacing than it is laid out by"
-            );
+            // What the page prints, as its spacing summary's info holds the
+            // text the label draws, against what it was measured laid out by.
+            let info = settle_on(&mut cx, &showcase, "layout-spacing-summary");
+            let printed = info.as_ref().and_then(|info| {
+                info.instance
+                    .iter()
+                    .find(|n| n.what == "text")
+                    .map(|n| n.text.clone())
+            });
+            let value = |role: &str| {
+                printed.as_deref().and_then(|text| {
+                    let (_, after) = text.split_once(&format!("{role} "))?;
+                    let (number, _) = after.split_once("px")?;
+                    number.parse::<f32>().ok().map(px)
+                })
+            };
+            for (role, measured) in [("window_margin", x), ("section_gap", apart)] {
+                let shown = value(role);
+                if !shown.is_some_and(|v| (v - measured).abs() <= px(0.01)) {
+                    wrong.push(format!(
+                        "Layout: the page prints {role} {shown:?} ({printed:?}) and is laid out \
+                         by {measured:?}"
+                    ));
+                }
+            }
         }
     }
     assert!(
@@ -11842,59 +11942,154 @@ fn an_unstated_layout_spaces_no_page(cx: &mut TestAppContext) {
     );
 }
 
-/// Each distance of the pages' own that the theme states nothing for is a
-/// named constant whose size the info of what it spaces prints, at the rem
-/// the window lays it out at (spec §3.1).
+/// The note `what` of the info shown, from any of its note lists.
+fn shown_note(info: Option<&WidgetInfo>, what: &str) -> Option<String> {
+    info.and_then(|info| {
+        info.config
+            .iter()
+            .chain(&info.not_themeable)
+            .chain(&info.instance)
+            .find(|n| n.what == what)
+            .map(|n| n.text.clone())
+    })
+}
+
+/// Each distance of the showcase's own that the theme states nothing for,
+/// on the pages and in the inspector's swatches, is a named constant whose
+/// size the info of what it spaces prints, at the rem the window lays it
+/// out at (spec §3.1).
 #[gpui::test]
 fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    for (page, selector, what, name, distance) in [
+    let rem = |cx: &mut VisualTestContext, r: gpui::Rems| {
+        cx.update(|_w, cx| crate::info::rems_text(r, Theme::global(cx)))
+    };
+    let pixels = |p: Pixels| format!("{}px", crate::info::px_text(p.as_f32()));
+    let grid = vec![
+        rem(&mut cx, crate::pages::ICON_GRID_GAP),
+        "ICON_GRID_GAP".to_string(),
+    ];
+    let cases: [(Page, &'static str, bool, &str, Vec<String>); 5] = [
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
+            false,
             "grid gap",
-            "ICON_GRID_GAP",
-            crate::pages::ICON_GRID_GAP,
+            grid.clone(),
         ),
         (
             Page::Icons,
             ICONS_GPUI_TRIANGLE_ALERT,
+            false,
             "grid gap",
-            "ICON_GRID_GAP",
-            crate::pages::ICON_GRID_GAP,
-        ),
-        (
-            Page::Feedback,
-            FEEDBACK_BADGE_COUNT,
-            "row gap",
-            "BADGE_ROW_GAP",
-            crate::pages::BADGE_ROW_GAP,
+            grid,
         ),
         (
             Page::Layout,
             "layout-carousel",
+            true,
             "side room",
-            "CAROUSEL_SIDE_ROOM",
-            crate::pages::CAROUSEL_SIDE_ROOM,
+            vec![
+                rem(&mut cx, crate::pages::CAROUSEL_SIDE_ROOM),
+                "CAROUSEL_SIDE_ROOM".to_string(),
+            ],
         ),
-    ] {
+        (
+            Page::ThemeMap,
+            "theme-map-swatch-background",
+            false,
+            "swatch gaps",
+            vec![
+                pixels(crate::pages::SWATCH_GAP_X),
+                pixels(crate::pages::SWATCH_GAP_Y),
+                rem(&mut cx, crate::pages::SWATCH_LABEL_GAP),
+                "SWATCH_GAP_X".to_string(),
+                "SWATCH_GAP_Y".to_string(),
+                "SWATCH_LABEL_GAP".to_string(),
+            ],
+        ),
+        (
+            Page::Basic,
+            CHROME_SIDE_PANEL,
+            false,
+            "swatches",
+            vec![
+                pixels(crate::inspector::SWATCH_SIZE),
+                rem(&mut cx, crate::inspector::SWATCH_GAP),
+                "SWATCH_SIZE".to_string(),
+                "SWATCH_GAP".to_string(),
+            ],
+        ),
+    ];
+    for (page, selector, corner, what, texts) in cases {
         show(&mut cx, &showcase, page);
-        let size = cx.update(|_w, cx| crate::info::rems_text(distance, Theme::global(cx)));
-        // Inside the element's top left corner, which on the Carousel is the
-        // room it keeps beside its frame, clear of the slides and controls.
-        let at = bounds_of(&mut cx, selector).origin + point(px(2.), px(2.));
+        let bounds = bounds_of(&mut cx, selector);
+        // The Carousel's top left corner is the room it keeps beside its
+        // frame, clear of the slides and controls.
+        let at = if corner {
+            bounds.origin + point(px(2.), px(2.))
+        } else {
+            bounds.center()
+        };
         let info = settle_at(&mut cx, &showcase, at);
-        let note = info.as_ref().and_then(|info| {
-            info.not_themeable
-                .iter()
-                .find(|n| n.what == what)
-                .map(|n| n.text.clone())
-        });
+        let note = shown_note(info.as_ref(), what);
         assert!(
             note.as_deref()
-                .is_some_and(|t| t.starts_with(&size) && t.contains(name)),
-            "{selector}: its {what} line does not name {name} at {size}: {note:?}"
+                .is_some_and(|t| texts.iter().all(|text| t.contains(text.as_str()))),
+            "{selector}: its {what} line does not name {texts:?}: {note:?}"
+        );
+    }
+}
+
+/// The Feedback page's Badges are a row of controls: a count stands
+/// `layout.widget_gap` from the next Badge, as the controls of every other
+/// row are apart, and touches it where the theme states no gap. Upstream
+/// draws a Medium count 3px per digit past its Button's right edge
+/// (gpui-component 0.7.3 `badge.rs:137-146`), so the Buttons are that much
+/// further apart (M9-022).
+#[gpui::test]
+fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    for stated in [true, false] {
+        if !stated {
+            cx.update(|_window, cx| {
+                showcase.update(cx, |this, cx| {
+                    this.layout.widget_gap = None;
+                    cx.notify();
+                });
+            });
+            cx.run_until_parked();
+            draw(&mut cx);
+        }
+        show(&mut cx, &showcase, Page::Feedback);
+        let gap = read(&mut cx, &showcase, |this, _| this.layout.widget_gap).map_or(px(0.), px);
+        assert_eq!(stated, gap > px(0.), "kde-breeze states no widget_gap");
+        // Messages (5) before Notifications (99): one digit.
+        let apart = bounds_of(&mut cx, "feedback-badge-notifications").left()
+            - bounds_of(&mut cx, FEEDBACK_BADGE_COUNT).right();
+        assert!(
+            (apart - (gap + px(3.))).abs() <= px(0.01),
+            "widget_gap {gap:?}: the Badges are {apart:?} apart, not the gap and the one-digit \
+             count's 3px"
+        );
+        let info = settle_on(&mut cx, &showcase, FEEDBACK_BADGE_COUNT);
+        let note = shown_note(info.as_ref(), "next badge");
+        let says = if stated {
+            format!(
+                "{}px after the Button: layout.widget_gap, {}px",
+                crate::info::px_text((gap + px(3.)).as_f32()),
+                crate::info::px_text(gap.as_f32())
+            )
+        } else {
+            "3px after the Button".to_string()
+        };
+        assert!(
+            note.as_deref().is_some_and(|t| t.starts_with(&says)
+                && t.contains("BADGE_COUNT_OVERHANG")
+                && (stated || t.contains("layout.widget_gap is unstated"))),
+            "widget_gap {gap:?}: the Badge's info does not say what follows it: {note:?}"
         );
     }
 }

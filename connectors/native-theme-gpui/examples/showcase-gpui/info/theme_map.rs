@@ -10,7 +10,7 @@
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
 
-use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text};
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, px_text};
 use crate::demo::ThemeToken;
 
 /// `hover_color`, which makes the field from the model's colour.
@@ -1544,6 +1544,15 @@ pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> Widge
         .not_themeable(
             "geometry",
             "none: a square of the showcase's own in its frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
+        )
+        .not_themeable(
+            "swatch gaps",
+            format!(
+                "{}px between two swatches of a row and {}px between the rows, SWATCH_GAP_X and SWATCH_GAP_Y, and {} between the square and its label, SWATCH_LABEL_GAP: the showcase's own choices rather than a platform's, as the theme states no swatch table (spec §3.1)",
+                px_text(crate::pages::SWATCH_GAP_X.as_f32()),
+                px_text(crate::pages::SWATCH_GAP_Y.as_f32()),
+                super::rems_text(crate::pages::SWATCH_LABEL_GAP, t)
+            ),
         )
         .instance("label", format!("{field} {hex}"))
 }
