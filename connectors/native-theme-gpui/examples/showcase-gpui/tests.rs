@@ -10368,23 +10368,39 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
 // The listeners: a state a listener writes is drawn on the next frame
 // ---------------------------------------------------------------------------
 
-/// The files whose `cx.listener(` closures `every_listener_that_writes_state_notifies`
-/// reads: `demo.rs` and every page.
-const LISTENER_FILES: &[(&str, &str)] = &[
-    ("demo.rs", include_str!("demo.rs")),
-    ("pages/basic.rs", include_str!("pages/basic.rs")),
-    ("pages/buttons.rs", include_str!("pages/buttons.rs")),
-    ("pages/charts.rs", include_str!("pages/charts.rs")),
-    ("pages/data.rs", include_str!("pages/data.rs")),
-    ("pages/feedback.rs", include_str!("pages/feedback.rs")),
-    ("pages/icons.rs", include_str!("pages/icons.rs")),
-    ("pages/inputs.rs", include_str!("pages/inputs.rs")),
-    ("pages/layout.rs", include_str!("pages/layout.rs")),
-    ("pages/mod.rs", include_str!("pages/mod.rs")),
-    ("pages/overlays.rs", include_str!("pages/overlays.rs")),
-    ("pages/theme_map.rs", include_str!("pages/theme_map.rs")),
-    ("pages/typography.rs", include_str!("pages/typography.rs")),
-];
+/// Every `.rs` file of the showcase example, as (path under
+/// `examples/showcase-gpui/` written with `/`, contents), sorted by path:
+/// what `every_listener_that_writes_state_notifies` reads, so a file added
+/// to the example is read with no list to update.
+fn showcase_sources() -> Vec<(String, String)> {
+    fn walk(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<(String, String)>) {
+        let entries = std::fs::read_dir(dir)
+            .unwrap_or_else(|e| panic!("{} cannot be read: {e}", dir.display()));
+        for entry in entries {
+            let path = entry
+                .unwrap_or_else(|e| panic!("{} cannot be read: {e}", dir.display()))
+                .path();
+            if path.is_dir() {
+                walk(root, &path, out);
+            } else if path.extension().is_some_and(|ext| ext == "rs") {
+                let source = std::fs::read_to_string(&path)
+                    .unwrap_or_else(|e| panic!("{} cannot be read: {e}", path.display()));
+                let relative = path.strip_prefix(root).unwrap_or(&path);
+                let name = relative
+                    .components()
+                    .map(|c| c.as_os_str().to_string_lossy())
+                    .collect::<Vec<_>>()
+                    .join("/");
+                out.push((name, source));
+            }
+        }
+    }
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/showcase-gpui");
+    let mut sources = Vec::new();
+    walk(&root, &root, &mut sources);
+    sources.sort();
+    sources
+}
 
 /// `source` with its line comments and the insides of its string and char
 /// literals blanked, its line breaks kept, so a bracket in a text is not
@@ -10402,7 +10418,9 @@ fn code_only(source: &str) -> String {
                 while let Some(inner) = chars.next() {
                     match inner {
                         '\\' => {
-                            chars.next();
+                            if chars.next() == Some('\n') {
+                                out.push('\n');
+                            }
                         }
                         '"' => break,
                         '\n' => out.push('\n'),
@@ -10440,8 +10458,9 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
             .find(|c: char| !ident(c) && c != '.')
             .unwrap_or(rest.len());
         let after = rest[path_len..].trim_start();
-        let after = after
-            .strip_prefix(['+', '-', '*', '/', '%', '|', '&', '^'])
+        let after = ["<<", ">>", "+", "-", "*", "/", "%", "|", "&", "^"]
+            .iter()
+            .find_map(|op| after.strip_prefix(op))
             .unwrap_or(after);
         if path_len > 0 && after.starts_with('=') && !after.starts_with("==") {
             written.push((at, &rest[..path_len]));
@@ -10450,8 +10469,8 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
     written
 }
 
-/// Every `cx.listener(` closure in `demo.rs` and the pages that writes a
-/// field of the showcase calls `cx.notify()` (M9-017).
+/// Every `cx.listener(` closure in the showcase example that writes a field
+/// of its view calls `cx.notify()` (M9-017).
 ///
 /// `cx.listener` only updates the entity (gpui-pre 0.3.9
 /// `src/app/context.rs:246-256`). A mouse click is followed by a refresh of
@@ -10463,24 +10482,17 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 /// `cx.notify()` (gpui-component 0.7.3 `src/checkbox.rs:104-108`).
 #[test]
 fn every_listener_that_writes_state_notifies() {
-    let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/showcase-gpui/pages");
-    let mut on_disk: Vec<String> = std::fs::read_dir(&dir)
-        .unwrap_or_else(|e| panic!("{} cannot be read: {e}", dir.display()))
-        .filter_map(|entry| entry.ok()?.file_name().into_string().ok())
-        .filter(|name| name.ends_with(".rs"))
-        .map(|name| format!("pages/{name}"))
-        .collect();
-    on_disk.sort();
-    let listed: Vec<String> = LISTENER_FILES
-        .iter()
-        .map(|(path, _)| (*path).to_string())
-        .filter(|path| path.starts_with("pages/"))
-        .collect();
-    assert_eq!(listed, on_disk, "LISTENER_FILES and pages/ disagree");
+    let sources = showcase_sources();
+    assert!(
+        sources.iter().any(|(path, _)| path == "main.rs")
+            && sources.iter().any(|(path, _)| path.starts_with("pages/")),
+        "the showcase's files were not found: {:?}",
+        sources.iter().map(|(path, _)| path).collect::<Vec<_>>()
+    );
 
     let mut listeners = 0;
     let mut offenders = Vec::new();
-    for (path, source) in LISTENER_FILES {
+    for (path, source) in &sources {
         let code = code_only(source);
         for (at, call) in code.match_indices("cx.listener(") {
             let open = at + call.len() - 1;
