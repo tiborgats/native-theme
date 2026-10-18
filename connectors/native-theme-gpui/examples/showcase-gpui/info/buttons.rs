@@ -467,7 +467,7 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
 }
 
 /// The name `size` has in the `Size` enum.
-fn size_name(size: Size) -> &'static str {
+pub(crate) fn size_name(size: Size) -> &'static str {
     match size {
         Size::XSmall => "XSmall",
         Size::Small => "Small",

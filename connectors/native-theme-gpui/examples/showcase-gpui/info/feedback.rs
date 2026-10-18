@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use gpui::{Pixels, px, transparent_white};
 use gpui_base::TooltipDefaults;
-use gpui_component::{Colorize as _, theme::Theme};
+use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
 use super::{ColorClaim, WidgetInfo, as_rgba, claim, edge_claim, percent_text, px_text, stated};
@@ -502,16 +502,16 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
     info.instance("text", text.to_string())
 }
 
-/// The `Empty` state, its media `icon` of the chosen icon theme `large`
-/// across where a native theme is installed -- `geometry::icon_size_large`,
-/// whose line is recorded where `demo::empty` applies it -- and at upstream's
-/// size where none is (`large` is `None`).
+/// The `Empty` state, its media `icon` of the chosen icon theme at `large`
+/// where a native theme is installed -- `geometry::icon_size_large`, whose
+/// line is recorded where `demo::empty` applies it -- and at upstream's size
+/// where none is (`large` is `None`).
 pub fn empty(
     t: &Theme,
     title: &str,
     description: &str,
     icon: &SampleIcon,
-    large: Option<f32>,
+    large: Option<Size>,
 ) -> WidgetInfo {
     let media_frame = match (icon.shown(), large) {
         (true, Some(_)) => {
@@ -561,9 +561,13 @@ pub fn empty(
         .instance("description", description.to_string())
         .instance("action", "the Refresh Button, which reports itself");
     match (icon.shown(), large) {
-        (true, Some(large)) => info.config(
+        (true, Some(Size::Size(large))) => info.config(
             "icon size",
-            format!("defaults.icon_sizes.large, {}px, through geometry::icon_size_large", px_text(large)),
+            format!("defaults.icon_sizes.large, {}px, through geometry::icon_size_large", px_text(large.as_f32())),
+        ),
+        (true, Some(size)) => info.config(
+            "icon size",
+            format!("defaults.icon_sizes.large through geometry::icon_size_large, which gives gpui-component's {} size", super::buttons::size_name(size)),
         ),
         (true, None) => info.config(
             "icon size",
