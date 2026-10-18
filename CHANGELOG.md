@@ -450,6 +450,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (gpui)**: the Typography page's Kbd samples and the Feedback page's shortcut tooltip take the showcase's own modifier, Ctrl off macOS and Cmd on it, as its menus' shortcuts do: off macOS the Kbds drew Copy, Paste and the palette's Shift+P on the Win key, on macOS Undo on Control, and the tooltip said *Cmd+S* on every platform; it now names the keystroke as a Kbd draws it there (*Ctrl+S* off macOS).
 - **Showcases (gpui)**: a Typography Label's Widget Info ends its font-weight note at what sets the weight, gpui's default; the note went on with the panel's own history.
 - **Showcases (gpui)**: a column of the Data page's table dragged to another place takes its cells with it: the header moved alone, over the cells of the column it took the place of. The Role column's sort button sorts the rows by the roles wherever the column stands.
+- **Showcases (gpui)**: under a native theme the chrome menus' Widget Info says that an item's top or bottom the theme leaves unstated is padded by nothing, its height being the item-height line's, and an unstated left or right by upstream's 8 px; it gave the 8 px for every unstated side.
 
 ## [0.6.1] - 2026-10-09
 

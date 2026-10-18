@@ -8972,6 +8972,30 @@ fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
     }
 }
 
+/// The chrome menus' padding line says what pads a popup row's unstated
+/// sides as `MenuLook::row` pads them: `MENU_ROW_PADDING_X` at the left and
+/// right, and nothing above or below, the row's height being the item-height
+/// line's, under every bundled preset in both modes.
+#[test]
+fn the_menus_padding_line_names_what_pads_a_rows_unstated_sides() {
+    let sides = format!(
+        "an item's {}px at the sides (MENU_ROW_PADDING_X) and nothing above or below",
+        crate::info::px_text(crate::demo::MENU_ROW_PADDING_X.as_f32())
+    );
+    for (name, r, t) in every_bundled_variant() {
+        let info = crate::info::app_menus(&t, crate::info::MenuHost::Row, Some(&r));
+        let line = info
+            .config
+            .iter()
+            .find(|n| n.what == "padding")
+            .map(|n| n.text.clone());
+        assert!(
+            line.as_deref().is_some_and(|l| l.contains(&sides)),
+            "{name}: the menus' padding line does not say {sides:?}: {line:?}"
+        );
+    }
+}
+
 /// Where the theme states neither `menu.row_height` nor a vertical padding
 /// side (catppuccin-mocha), a chrome popup row is `MENU_ROW_HEIGHT` by the
 /// connector's control-height rule (`geometry.rs`, `with_height_rule`): that
