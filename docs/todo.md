@@ -3595,6 +3595,13 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       M8 T21 (2026-10-17): each half is its showcase's milestone: iced's
       Widget Info M9b's, gpui's inspector M9a's, egui's two Theme panel
       sections M9c's.
+      M9a T4 (2026-10-18): gpui's status bar font item and its inspector's
+      Theme tab `font_family` and `mono_font_family` rows name the drawn
+      family through the shared crate's `status::family_label` (f3e058ee),
+      e.g. on one Linux system windows-11's "Segoe UI (not on this system;
+      drawn in the platform's substitute, Adwaita Sans)". gpui's listed Widget Info font
+      rows still print the stated family: they wait for M9c T10's
+      drawn-family argument to `values::leaf_value`. The entry stays open.
 
 ### gpui: the base-palette repair writes colours without their tokens
 - [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
