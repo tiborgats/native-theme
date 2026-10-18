@@ -171,23 +171,6 @@ apply_system_theme(&system, cx);
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// A font size in the unit its source stated, never converted.
-///
-/// A platform that reports points (KDE, GNOME, Windows) and a preset written
-/// in pixels both resolve to logical pixels, and 10.5pt at 96 DPI is exactly
-/// 14px -- so dividing the resolved size by the DPI would print "10.5pt" for
-/// a preset whose author wrote `size_px = 14`. `ResolvedFontSpec::defined_size`
-/// carries what the source actually said, so this converts nothing.
-pub(crate) fn defined_size(font: &native_theme::theme::ResolvedFontSpec) -> String {
-    match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        // Validation records a missing size rather than inventing one; say so
-        // instead of presenting the resolved fallback as a definition.
-        None => "(size not stated)".to_string(),
-    }
-}
-
 /// The geometry refinement a builder produces for the installed native theme,
 /// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
 /// borrow of `cx` ends at once.

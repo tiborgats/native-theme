@@ -8286,6 +8286,64 @@ fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext)
     }
 }
 
+/// The status bar's font item and the Theme tab's `font_family` and
+/// `mono_font_family` rows name the family gpui draws, `Theme::font_family`
+/// and `mono_font_family` (the connector's `font_family`): the stated name
+/// alone where it is drawn, else the stated name and the platform's
+/// substitute. windows-11 and kde-breeze, each in the form this host gives:
+/// on a system without Segoe UI the first names its substitute.
+#[gpui::test]
+fn the_status_bar_and_the_theme_tab_name_the_drawn_family(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let label = |stated: &str, drawn: &str| {
+        if stated == drawn {
+            stated.to_string()
+        } else {
+            format!("{stated} (not on this system; drawn in the platform's substitute, {drawn})")
+        }
+    };
+    for preset in ["windows-11", "kde-breeze"] {
+        use_preset(&mut cx, &showcase, preset);
+        let (status, rows, font, mono, drawn) = read(&mut cx, &showcase, |this, cx| {
+            let theme = Theme::global(cx);
+            (
+                crate::chrome::status_environment(this, cx),
+                crate::inspector::font_rows(this, cx),
+                this.original_font.clone(),
+                this.original_mono_font.clone(),
+                (
+                    theme.font_family.to_string(),
+                    theme.mono_font_family.to_string(),
+                ),
+            )
+        });
+        let family = label(&font.family, &drawn.0);
+        let mono_family = label(&mono.family, &drawn.1);
+        println!("{preset}: {family}; {mono_family}");
+        let size = native_theme_showcase_support::status::defined_size(&font);
+        assert_eq!(
+            status.get(2),
+            Some(&format!("{family} {size}")),
+            "{preset}: the status bar's font item does not name the drawn family: {status:?}"
+        );
+        let row = |what: &str| {
+            rows.iter()
+                .find(|(name, _)| *name == what)
+                .map(|(_, value)| value.clone())
+        };
+        assert_eq!(
+            row("font_family"),
+            Some(family),
+            "{preset}: the Theme tab's font_family row"
+        );
+        assert_eq!(
+            row("mono_font_family"),
+            Some(mono_family),
+            "{preset}: the Theme tab's mono_font_family row"
+        );
+    }
+}
+
 /// Press `keys` and draw the frames that follow: an overlay pushed onto
 /// `Root` mounts in the first and settles in the second.
 fn press(cx: &mut VisualTestContext, keys: &str) {

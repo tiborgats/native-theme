@@ -18,13 +18,14 @@ use gpui_component::{
 };
 use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
 use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::status::{defined_size, family_label};
 use native_theme_showcase_support::values;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
-use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
+use crate::support::{NativeStyled, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
     probe,
@@ -198,41 +199,17 @@ impl Inspector {
         cx: &mut Context<Self>,
     ) -> gpui::Div {
         let theme = cx.theme().clone();
-        let fonts = self.showcase.upgrade().map(|showcase| {
-            let showcase = showcase.read(cx);
-            (
-                showcase.original_font.clone(),
-                showcase.original_mono_font.clone(),
-            )
-        });
         let rows = vec![
             ("radius", format!("{}px", theme.radius.as_f32())),
             ("radius_lg", format!("{}px", theme.radius_lg.as_f32())),
             ("shadow", theme.shadow.to_string()),
             ("scrollbar_mode", format!("{:?}", theme.scrollbar_mode)),
         ];
-        // In the unit the platform stated, like the Widget Info: these rows
-        // report the theme's own definition, not the pixel value gpui lays
-        // out with.
-        let font_rows = match &fonts {
-            Some((font, mono)) => vec![
-                (
-                    "font_family",
-                    if theme.font_family.as_ref() == ".SystemUIFont" {
-                        format!(
-                            "{} (drawn as the system UI font, .SystemUIFont)",
-                            font.family
-                        )
-                    } else {
-                        font.family.to_string()
-                    },
-                ),
-                ("font_size", defined_size(font)),
-                ("mono_font_family", mono.family.to_string()),
-                ("mono_font_size", defined_size(mono)),
-            ],
-            None => Vec::new(),
-        };
+        let font_rows = self
+            .showcase
+            .upgrade()
+            .map(|showcase| font_rows(showcase.read(cx), cx))
+            .unwrap_or_default();
 
         // The decorations the chrome was drawn for (`Showcase::frame`), so the
         // section and the chrome never disagree.
@@ -258,6 +235,29 @@ impl Inspector {
                     .map(|(what, value)| row(what, value, cx)),
             )
     }
+}
+
+/// The Theme tab's Fonts section: the installed theme's `defaults.font` and
+/// `defaults.mono_font` of `app`, each family by the family gpui draws
+/// (`status::family_label` of `Theme::font_family` and `mono_font_family`,
+/// the connector's `font_family` of the stated ones, once a native theme is
+/// installed; the placeholder alone before that), each size in the unit the
+/// platform stated, like the Widget Info: these rows report the theme's own
+/// definition, not the pixel value gpui lays out with.
+pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, String)> {
+    let (font, mono) = (&app.original_font, &app.original_mono_font);
+    let theme = cx.theme();
+    let native = cx.native_theme().is_some();
+    let (drawn, drawn_mono) = (
+        native.then_some(theme.font_family.as_ref()),
+        native.then_some(theme.mono_font_family.as_ref()),
+    );
+    vec![
+        ("font_family", family_label(&font.family, drawn)),
+        ("font_size", defined_size(font)),
+        ("mono_font_family", family_label(&mono.family, drawn_mono)),
+        ("mono_font_size", defined_size(mono)),
+    ]
 }
 
 /// The Theme tab's Window section (spec S8): what draws the window's frame

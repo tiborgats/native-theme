@@ -4,8 +4,9 @@ use gpui::{
     Action, AnyElement, App, Decorations, InteractiveElement as _, IntoElement, Menu, MenuItem,
     Pixels, SharedString, Window, px,
 };
-use gpui_component::{IconName, WindowExt as _};
+use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
 use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_showcase_support::status;
 
 use crate::Page;
 use crate::app::{
@@ -13,7 +14,7 @@ use crate::app::{
     SetPreset, ShowPage, Showcase, ToggleSidePanel,
 };
 use crate::demo::{SeparatorKind, TabBarKind};
-use crate::support::{defined_size, preset_items};
+use crate::support::preset_items;
 use crate::{
     CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
     CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
@@ -284,52 +285,26 @@ pub(crate) fn status_bar(
     .debug_selector(|| CHROME_STATUS_BAR.into())
 }
 
-/// The status bar's environment text (spec §2.7), one item each: the desktop, the
-/// preset and colour mode, the installed theme's `defaults.font` in the unit
-/// its source stated (`Showcase::original_font`, a placeholder where no
-/// theme could be read), and, once a native theme is installed, its
-/// text-scale factor and each of its accessibility preferences that is set,
-/// by its field name. Before that no preferences are installed, and none are
-/// named.
+/// The status bar's environment text (spec §2.7), the shared crate's items
+/// (`status::environment`): the desktop, the preset and colour mode, the
+/// installed theme's `defaults.font` (`Showcase::original_font`, a
+/// placeholder where no theme could be read) by the family gpui draws and
+/// the size in the unit its source stated, and, once a native theme is
+/// installed, its text-scale factor and each of its accessibility
+/// preferences that is set, by its field name. The drawn family is
+/// `Theme::font_family`, the connector's `font_family` of the stated one,
+/// once a native theme is installed; before that no preferences are
+/// installed, and the placeholder is named alone.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
-    let font = &app.original_font;
-    let mut items = vec![
-        desktop(),
-        format!("{preset} {mode}"),
-        format!("{} {}", font.family, defined_size(font)),
-    ];
-    if let Some(prefs) = cx.native_theme().map(|nt| nt.accessibility()) {
-        items.push(format!("text ×{}", prefs.text_scaling_factor));
-        let flags = [
-            ("reduce_motion", prefs.reduce_motion),
-            ("high_contrast", prefs.high_contrast),
-            ("reduce_transparency", prefs.reduce_transparency),
-        ];
-        items.extend(
-            flags
-                .into_iter()
-                .filter(|(_, set)| *set)
-                .map(|(name, _)| name.to_string()),
-        );
-    }
-    items
-}
-
-/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, or
-/// `Unknown` where it recognises none. `SystemTheme::from_system` then asks
-/// the portal, then `kdeglobals` (native-theme pipeline.rs, `select_reader`),
-/// and the preset names what it settled on.
-#[cfg(target_os = "linux")]
-fn desktop() -> String {
-    format!("{:?}", native_theme::detect::detect_linux_desktop())
-}
-
-/// The operating system: `native_theme::detect` names a desktop on Linux
-/// only.
-#[cfg(not(target_os = "linux"))]
-fn desktop() -> String {
-    std::env::consts::OS.to_string()
+    let native = cx.native_theme();
+    status::environment(
+        &preset,
+        mode,
+        &app.original_font,
+        native.map(|_| cx.theme().font_family.as_ref()),
+        native.map(|nt| nt.accessibility()),
+    )
 }
 
 // ---------------------------------------------------------------------------
