@@ -486,15 +486,15 @@ pub fn panel_toggle(
     } else {
         info
     };
-    super::buttons::tool_button_size(info, ToolSize::Small, drawn, native)
-        .instance(
-            "icon",
-            chrome_icon_note(
-                icon,
-                set,
-                "the toggle shows the tooltip's text as its label instead",
-            ),
-        )
+    let info = super::buttons::tool_button_size(info, ToolSize::Small, drawn, native);
+    info.instance(
+        "icon",
+        chrome_icon_note(
+            icon,
+            set,
+            "the toggle shows the tooltip's text as its label instead",
+        ),
+    )
     .instance(
         "place",
         "at the end of the status bar on the side of the panel it controls, the pattern Zed's status bar follows; the selection, not a changing icon, shows whether the panel is open",
