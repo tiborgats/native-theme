@@ -10670,6 +10670,76 @@ fn the_about_dialog_links_to_the_compatibility_table(cx: &mut TestAppContext) {
     );
 }
 
+/// The About dialog's Link is refined as every Link is (T15 fix round 1):
+/// under a theme that states `link.underline_enabled = false` (ios-13,
+/// material-3) it paints no underline at rest and its info claims none and
+/// says `geometry::link` removes it, under kde-breeze it paints one, and
+/// its info names `geometry::link`.
+#[gpui::test]
+fn the_about_dialogs_link_takes_the_themes_underline(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    let mut reached = (false, false);
+    for preset in ["ios-13", "kde-breeze"] {
+        use_preset(&mut cx, &showcase, preset);
+        let underlined = resolved_theme(&mut cx, &showcase).link.underline_enabled;
+        if underlined {
+            reached.0 = true;
+        } else {
+            reached.1 = true;
+        }
+        run_menu_item(&mut cx, "Help", "About");
+        draw(&mut cx);
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        let link = bounds_of(&mut cx, OVERLAY_ABOUT_LINK);
+        let painted = cx.update(|window, _| {
+            let link = link.scale(window.scale_factor());
+            window
+                .painted_underlines()
+                .into_iter()
+                .filter(|u| u.bounds.intersects(&link))
+                .count()
+        });
+        // One underline per line the text wraps to.
+        assert_eq!(
+            painted > 0,
+            underlined,
+            "{preset}: link.underline_enabled is {underlined}, and the About dialog's resting Link paints {painted} underlines"
+        );
+        let info = settle_on(&mut cx, &showcase, OVERLAY_ABOUT_LINK);
+        let text = info.as_ref().map(WidgetInfo::to_text).unwrap_or_default();
+        let resting = info.as_ref().is_some_and(|info| {
+            info.colors
+                .iter()
+                .any(|c| c.role.starts_with("resting underline"))
+        });
+        assert_eq!(
+            resting, underlined,
+            "{preset}: link.underline_enabled is {underlined}, and the About Link's info claims a resting underline: {text}"
+        );
+        assert_eq!(
+            text.contains(
+                "geometry::link removes the resting underline; hover and press still underline"
+            ),
+            !underlined,
+            "{preset}: the About Link's info does not say whether geometry::link removes the underline: {text}"
+        );
+        assert!(
+            text.contains("geometry::link: "),
+            "{preset}: the About Link's info names no geometry::link line: {text}"
+        );
+        cx.update(|window, cx| window.close_dialog(cx));
+        cx.run_until_parked();
+        draw(&mut cx);
+    }
+    assert_eq!(
+        reached,
+        (true, true),
+        "the presets no longer leave one Link underlined and one not, so a branch went unread"
+    );
+}
+
 /// The About dialog follows the installed theme while it is open: its lines
 /// are `layout.widget_gap` apart as the theme installed now states it, not
 /// as the one it opened under (fix round 1).

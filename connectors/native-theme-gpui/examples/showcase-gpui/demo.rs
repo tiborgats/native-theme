@@ -2455,14 +2455,26 @@ pub(crate) fn about(
         .debug_selector(|| OVERLAY_ABOUT_TITLE.into());
     let ui = ui.clone();
     dialog.title(title).content(move |content, _window, cx| {
-        let link = Link::new("about-compatibility")
-            .href(compatibility)
-            .child(concat!(
-                "the README's Compatibility table at v",
-                env!("CARGO_PKG_VERSION")
-            ))
-            .info(&ui, "overlay-about-link", info::about_link(cx.theme()))
-            .debug_selector(|| OVERLAY_ABOUT_LINK.into());
+        // Refined as `demo::link` refines every Link: `geometry::link`, and
+        // one line of `link.font` tall.
+        let underline = native_value(cx, |n| n.resolved.link.underline_enabled);
+        let mut link_info = info::about_link(cx.theme(), underline);
+        let line = native_value(cx, |n| line_height_of(&n, &n.resolved.link.font));
+        let link = native_info(
+            Link::new("about-compatibility")
+                .href(compatibility)
+                .child(concat!(
+                    "the README's Compatibility table at v",
+                    env!("CARGO_PKG_VERSION")
+                )),
+            cx,
+            geometry::link,
+            "link",
+            &mut link_info,
+        )
+        .when_some(line, |link, line| link.line_height(line))
+        .info(&ui, "overlay-about-link", link_info)
+        .debug_selector(|| OVERLAY_ABOUT_LINK.into());
         content.child(
             with_gap(v_flex(), gap)
                 .child(
