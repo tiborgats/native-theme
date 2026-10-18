@@ -359,9 +359,9 @@ Runs `cargo clippy` with the type-aware panic-prone lints denied:
 `unwrap_used`, `expect_used`, `indexing_slicing`, `arithmetic_side_effects`
 and the rest of the list the script holds, each category explained in its
 header. The arguments are clippy's, before the `--`. `scripts/check_release.sh`
-runs it on every crate's library (the gpui connector soft) and `ci.yml`'s
-clippy job runs the same calls (the gpui connector's with
-`continue-on-error`), so the lint list lives in this one file.
+runs it on every crate's library and on the gpui showcase example
+(`-p native-theme-gpui --example showcase-gpui`), and `ci.yml`'s clippy job
+runs the same calls, so the lint list lives in this one file.
 
 ```sh
 ./scripts/check_strict_panic.sh -p native-theme-iced --lib

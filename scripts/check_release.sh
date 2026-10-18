@@ -536,21 +536,23 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
     cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Section: strict panic lints (library code only)
+# Section: strict panic lints (library code and the gpui showcase)
 #
 # scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
 # lints promoted to errors; the lint list and what each lint catches are
 # there, and CI's clippy job runs the same script.
 #
-# Scope: library targets only (--lib). Tests and examples are exempt because
-# they legitimately use .unwrap() / asserts for failure clarity and demo brevity.
+# Scope: library targets (--lib), and the gpui showcase example, an
+# application the repo ships, which the no-panic rule covers as it covers the
+# libraries. Tests and the other examples are exempt because they
+# legitimately use .unwrap() / asserts for failure clarity and demo brevity.
 # Bin targets (if any in the future) should be added to this list.
 #
 # `native-theme` is run with the full Linux feature set ($NT_FEATURES) so
 # feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
 # watch) are checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-print_section "Strict panic lints (library code)"
+print_section "Strict panic lints (library code and the gpui showcase)"
 run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
@@ -589,6 +591,11 @@ run_check "strict-panic (native-theme-gpui, native, watch)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
 run_check "strict-panic (native-theme-gpui, gpui-fast, native, watch)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
+# Its showcase, with the connector's features, on each core.
+run_check "strict-panic (showcase-gpui, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch
+run_check "strict-panic (showcase-gpui, gpui-fast, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
 run_check "strict-panic (native-theme-egui)" \
     bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
 run_check "strict-panic (native-theme-egui-widgets)" \
