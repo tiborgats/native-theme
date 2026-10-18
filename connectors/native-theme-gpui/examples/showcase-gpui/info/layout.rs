@@ -688,8 +688,11 @@ fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
 #[cfg(feature = "widgets")]
 pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
     let t = &r.tab;
+    // What widgets::TabBar draws from: None where a length the theme states
+    // is not finite, and the bar is then gpui-component's.
+    let look = TabLook::of(r);
     // The line that marks the selected tab, as widgets::TabBar draws it.
-    let indicator = TabLook::of(r).and_then(|look| look.indicator);
+    let indicator = look.and_then(|look| look.indicator);
     let info = WidgetInfo::new("TabBar")
         .variant(variant)
         .color(claim(
@@ -766,8 +769,8 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         .config("font", format!("tab.font: {}", drawn_font(&t.font)))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
         .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11)", px_text(t.border.line_width), px_text(t.border.corner_radius)))
-        .config("selection mark", match indicator {
-            Some(line) => format!(
+        .config("selection mark", match (look, indicator) {
+            (_, Some(line)) => format!(
                 "a line tab.active_indicator_width, {}px, thick along the selected tab's {} edge, tab.active_indicator_side, in tab.active_indicator_color, over its outline (native-theme-gpui/widgets/tab_bar.rs, TabIndicator)",
                 px_text(f32::from(line.width)),
                 match line.side {
@@ -775,11 +778,13 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
                     TabIndicatorSide::Bottom => "bottom",
                 }
             ),
-            None => "none: the theme states no indicator -- widgets::TabBar draws one only where tab.active_indicator_color, tab.active_indicator_width and tab.active_indicator_side are all stated -- so the selected tab is marked by its fill, label and outline alone".to_string(),
+            (Some(_), None) => "none: the theme states no indicator -- widgets::TabBar draws one only where tab.active_indicator_color, tab.active_indicator_width and tab.active_indicator_side are all stated -- so the selected tab is marked by its fill, label and outline alone".to_string(),
+            (None, None) => "none: a tab length the theme states is not finite, so widgets::TabBar draws gpui-component's TabBar in its place (native-theme-gpui/widgets/tab_bar.rs, TabLook::of)".to_string(),
         })
-        .config("gap", match t.item_gap {
-            Some(gap) => format!("{}px between neighbouring tabs, tab.item_gap", px_text(gap)),
-            None => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
+        .config("gap", match (look, t.item_gap.is_some()) {
+            (Some(look), true) => format!("{}px between neighbouring tabs, tab.item_gap", px_text(f32::from(look.gap))),
+            (Some(_), false) => "none: tab.item_gap is unstated, and widgets::TabBar lays its tabs with none, as gpui-component lays its default variant's (tab/tab_bar.rs, TabBar::render)".to_string(),
+            (None, _) => "not widgets::TabBar's: a tab length the theme states is not finite, so gpui-component's TabBar lays the tabs out".to_string(),
         })
         .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
 }

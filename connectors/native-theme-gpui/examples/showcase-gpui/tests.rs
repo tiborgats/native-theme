@@ -12654,9 +12654,10 @@ fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
 /// `widgets::TabBar` does, from `TabLook::of(..).indicator`: a line
 /// `tab.active_indicator_width` thick along `tab.active_indicator_side` in
 /// `tab.active_indicator_color` where the look has one, claimed then and
-/// only then, and none where it has not; and it gives the gap between the
-/// tabs, `tab.item_gap` (M9-045). Over every bundled preset in both modes,
-/// and one with the indicator's colour taken away.
+/// only then, and none where it has not; and it gives the gap the look lays
+/// the tabs apart by, `tab.item_gap` (M9-045). Over every bundled preset in
+/// both modes, one with the indicator's colour taken away, and one whose
+/// non-finite length leaves no look at all.
 #[cfg(feature = "widgets")]
 #[test]
 fn every_native_tab_rows_selection_mark_is_the_looks() {
@@ -12727,7 +12728,7 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
         let stated = r
             .tab
             .item_gap
-            .map(|g| format!("{}px", crate::info::px_text(g)));
+            .map(|_| format!("{}px", crate::info::px_text(f32::from(look.gap))));
         assert!(
             gap.contains("tab.item_gap")
                 && stated.as_deref().is_none_or(|g| gap.starts_with(g))
@@ -12738,6 +12739,31 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
     assert!(
         seen.0 && seen.1,
         "the presets did not cover both an indicator and none: {seen:?}"
+    );
+    // A length that is not finite: TabLook::of builds no look, the bar is
+    // gpui-component's, and the info gives that reason, not a theme that
+    // states no indicator.
+    let Some((name, mut r)) = variants.first().cloned() else {
+        return;
+    };
+    r.tab.min_width = f32::NAN;
+    assert!(
+        native_theme_gpui::widgets::TabLook::of(&r).is_none(),
+        "{name}: a non-finite tab.min_width still builds a tab look"
+    );
+    let info = crate::info::layout::native_tab_row(&r, "widgets::TabBar");
+    for what in ["selection mark", "gap"] {
+        let text = shown_note(Some(&info), what).unwrap_or_default();
+        assert!(
+            text.contains("not finite") && !text.contains("states no indicator"),
+            "{name}, a non-finite length: the {what} line does not give that reason: {text:?}"
+        );
+    }
+    assert!(
+        info.colors
+            .iter()
+            .all(|c| c.field != "active_indicator_color"),
+        "{name}, a non-finite length: an indicator colour is claimed that no look draws"
     );
 }
 
