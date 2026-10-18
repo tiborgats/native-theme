@@ -438,7 +438,7 @@ pub(crate) struct PanelLook {
 impl PanelLook {
     /// The look under the installed native theme, with the layout, icon set
     /// and icon theme `showcase` installed; `None` before `apply` ran.
-    fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
+    pub(crate) fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
         let n = cx.native()?;
         let r = n.resolved;
         let (layout, icon_set, icon_theme) = showcase
@@ -497,6 +497,33 @@ impl PanelLook {
     }
 }
 
+/// The panel's text for `element` of docs/showcase-elements.toml, whose
+/// widget reported `info`, under `look`: a row per leaf the list names, with
+/// its value and how gpui applies it (`info::leaves`), and the widget's "Not
+/// themeable" notes.
+pub(crate) fn listed(
+    look: &PanelLook,
+    element: &elements::ShowcaseElement,
+    info: &WidgetInfo,
+) -> ListedInfo {
+    ListedInfo::new(
+        element,
+        &look.resolved,
+        &look.layout,
+        look.icon_set,
+        look.icon_theme.as_deref(),
+        |leaf| {
+            leaves::how(&element.id, leaf)
+                .unwrap_or(NO_ROUTE)
+                .to_string()
+        },
+        info.not_themeable
+            .iter()
+            .map(|note| format!("{}: {}", note.what, note.text))
+            .collect(),
+    )
+}
+
 /// Widget Info for `element` of docs/showcase-elements.toml, whose widget
 /// reported `info`, in the list's form (the shared crate's `ListedInfo`): the
 /// title row -- its name and state, Copy at the end -- then the "Theme"
@@ -512,22 +539,7 @@ fn listed_info(
     element: &elements::ShowcaseElement,
     info: &WidgetInfo,
 ) -> (gpui::Div, SharedString) {
-    let listed = ListedInfo::new(
-        element,
-        &look.resolved,
-        &look.layout,
-        look.icon_set,
-        look.icon_theme.as_deref(),
-        |leaf| {
-            leaves::how(&element.id, leaf)
-                .unwrap_or(NO_ROUTE)
-                .to_string()
-        },
-        info.not_themeable
-            .iter()
-            .map(|note| format!("{}: {}", note.what, note.text))
-            .collect(),
-    );
+    let listed = listed(look, element, info);
     let title = SharedString::from(listed.title.clone());
     let rows: Vec<gpui::AnyElement> = listed
         .rows

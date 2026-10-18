@@ -3159,6 +3159,9 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
 /// quad of the scene). kde-breeze light states the same colour for its
 /// sidebar text and its hovered button text, so the hovered one is set to
 /// the theme's accent, a colour of the same theme that differs from both.
+/// The routes are read from the panel's own text for `chrome.info.copy`
+/// (`inspector::listed`, beside the info of the page tab the pointer settled
+/// on), where the panel names each leaf with its value and how it applies.
 #[gpui::test]
 fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAppContext) {
     use crate::info::stated;
@@ -3187,10 +3190,13 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     });
     cx.run_until_parked();
     draw(&mut cx);
-    let tab = bounds_of(&mut cx, Page::Charts.tab());
-    hover(&mut cx, tab.center());
-    settle(&mut cx);
-    draw(&mut cx);
+    // A listed element's info, so the panel shows its title row and Copy.
+    let info = settle_on(&mut cx, &showcase, Page::Charts.tab());
+    assert!(
+        info.as_ref().is_some_and(|info| info.listed.is_some()),
+        "the page tab's info is not an element of the list, so no Copy box is drawn: {info:?}"
+    );
+    let Some(info) = info else { return };
     let ui = read(&mut cx, &showcase, |this, _| this.info_ui.clone());
     let text = |cx: &mut VisualTestContext| {
         cx.update(|_window, cx| ui.read(cx).text_colours.get("chrome.info.copy").copied())
@@ -3218,20 +3224,30 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     );
     cx.simulate_mouse_up(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
-    for (leaf, says) in [
+    let weak = showcase.downgrade();
+    let panel = read(&mut cx, &showcase, |_, cx| {
+        let look = crate::inspector::PanelLook::of(&weak, cx)?;
+        let element = crate::elements::element("chrome.info.copy")?;
+        Some(crate::inspector::listed(&look, element, &info))
+    });
+    assert!(panel.is_some(), "no panel text for chrome.info.copy");
+    let Some(panel) = panel else { return };
+    for (leaf, colour, says) in [
         (
             "button.hover_text_color",
+            r.button.hover_text_color,
             "the Copy box's text under the pointer",
         ),
         (
             "button.active_text_color",
+            r.button.active_text_color,
             "the Copy box's text while pressed",
         ),
     ] {
-        let how = crate::info::leaves::how("chrome.info.copy", leaf);
+        let row = panel.rows.iter().find(|row| row.leaf == leaf);
         assert!(
-            how.is_some_and(|line| line.contains(says)),
-            "chrome.info.copy's {leaf} route does not say {says:?}: {how:?}"
+            row.is_some_and(|row| row.how.contains(says) && row.colour == Some(colour)),
+            "the panel's {leaf} row does not say {says:?} with the colour drawn: {row:?}"
         );
     }
 }
