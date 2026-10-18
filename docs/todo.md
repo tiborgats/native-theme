@@ -2208,6 +2208,16 @@ model, the platform presets and the three connectors
       `list.hover_text_color` under the pointer (`demo::tree_row`). Upstream: the
       closure given `TreeEntryState`, or a public reader on `TreeState`. Found by
       M9a T18's review (2026-10-18).
+      M9a final fix (2026-10-18): the showcase's label cannot know only
+      through gpui-component's `Tree`. gpui-base 0.7.3's own `Tree` hands its
+      `item` closure the whole `TreeEntryState` (`tree.rs:188`, `RenderItem`,
+      built at `:458`), whose `is_right_clicked` is public (`:183`);
+      gpui-component's wrapper forwards `is_selected()` alone (`tree.rs:89`),
+      so the upstream fix is that one argument. The showcase, which names
+      `gpui_base` already (`demo.rs`, `host.rs`), could build its Tree on
+      `gpui_base::Tree` instead, at the cost of re-adding what the wrapper
+      adds: the disabled, selected and right-clicked marks (gpui-component
+      `tree.rs:90-92`), the context menu (`:96`) and the scrollbar (`:119`).
 - [ ] [upstream] element hooks on the surfaces upstream builds itself, so an
       application can attach an id, a hover handler or a debug selector to
       them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
@@ -3694,6 +3704,27 @@ name in [`archive/todo_closed.md`](archive/todo_closed.md).
       `src/container.rs:102`), and over the header's rule, or is clipped where a parent clips.
       M9b grows the iced headers (and the test's expectation) as gpui's do; M8 leaves the
       behaviour as it is.
+
+### Showcases: the strict panic lints do not reach the showcase examples
+
+- [ ] [v0.7.0] `scripts/check_release.sh` and `.github/workflows/ci.yml` run
+      `scripts/check_strict_panic.sh` on each connector with `--lib`
+      (check_release.sh, *strict-panic (native-theme-gpui, native, watch)*),
+      so the three showcase examples get clippy's default lints alone, where
+      the M9 constraints hold them to the strict ones. M9a's final fix
+      (2026-10-18) ran it over the gpui showcase:
+      `bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch`
+      finds 45: 42 `arithmetic_side_effects`, 2 `indexing_slicing` and 1
+      `integer_division`, in demo.rs (17), app.rs (6), info/layout.rs (5),
+      inspector.rs (4), main.rs (3), pages/data.rs and pages/layout.rs (2
+      each), and info/feedback.rs, pages/basic.rs, pages/feedback.rs,
+      pages/mod.rs, speech.rs and support.rs (1 each). Some of the arithmetic
+      is on gpui's `Pixels`, an `f32` whose operators do not panic, the rest
+      on integers and one `Duration` sum (main.rs, `held`). Fix them, then
+      add the example's line to check_release.sh's strict-panic section and
+      to ci.yml's strict-panic step, beside the connector's. M9b's iced
+      showcase (`--example showcase-iced`) and M9c's egui showcase
+      (`--example showcase-egui`) need the same run.
 
 ### M7 close (2026-10-16), its `[v0.7.0]` entries
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
