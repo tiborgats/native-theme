@@ -318,7 +318,7 @@ impl MenuLook {
         padded(
             title,
             &self.padding,
-            MENU_TITLE_PADDING_X,
+            Some(MENU_TITLE_PADDING_X),
             Some(MENU_TITLE_PADDING_Y),
         )
         .rounded(self.radius)
@@ -363,31 +363,33 @@ impl MenuLook {
     }
 }
 
-/// `el` padded by the stated sides of `padding`, and on a side left
-/// unstated by `x` (left and right) or `y` (top and bottom), where given.
-fn padded<E: Styled>(
+/// `el` padded by the stated sides of `padding`, and on a side it leaves
+/// unstated by `x` (left and right) or `y` (top and bottom), where given: a
+/// side neither states is left as it is.
+fn padded<E: Styled, L: Into<DefiniteLength> + Copy>(
     el: E,
     padding: &ResolvedPadding,
-    x: impl Into<DefiniteLength> + Copy,
-    y: Option<Rems>,
+    x: Option<L>,
+    y: Option<L>,
 ) -> E {
-    let el = match padding.left {
-        Some(v) => el.pl(px(v)),
-        None => el.pl(x),
+    let side = |stated: Option<f32>, unstated: Option<L>| -> Option<DefiniteLength> {
+        stated.map(|v| px(v).into()).or(unstated.map(Into::into))
     };
-    let el = match padding.right {
-        Some(v) => el.pr(px(v)),
-        None => el.pr(x),
+    let el = match side(padding.top, y) {
+        Some(v) => el.pt(v),
+        None => el,
     };
-    let el = match (padding.top, y) {
-        (Some(v), _) => el.pt(px(v)),
-        (None, Some(y)) => el.pt(y),
-        (None, None) => el,
+    let el = match side(padding.right, x) {
+        Some(v) => el.pr(v),
+        None => el,
     };
-    match (padding.bottom, y) {
-        (Some(v), _) => el.pb(px(v)),
-        (None, Some(y)) => el.pb(y),
-        (None, None) => el,
+    let el = match side(padding.bottom, y) {
+        Some(v) => el.pb(v),
+        None => el,
+    };
+    match side(padding.left, x) {
+        Some(v) => el.pl(v),
+        None => el,
     }
 }
 
@@ -631,7 +633,7 @@ impl MenuBar {
             Some(look) => padded(
                 v_flex(),
                 &look.popup_padding,
-                MENU_POPUP_PADDING,
+                Some(MENU_POPUP_PADDING),
                 Some(MENU_POPUP_PADDING),
             ),
             None => v_flex().p(MENU_POPUP_PADDING),
@@ -6316,6 +6318,47 @@ fn pad_unstated_sides(
     }
 }
 
+/// [`padded`] with `margin` on both axes pads `geometry::group_box_content`'s
+/// refinement as [`pad_unstated_sides`] does, under every bundled preset in
+/// both modes with its layout's `container_margin`: the builder already set
+/// the stated sides, which `padded` sets to the same values.
+#[cfg(test)]
+#[test]
+fn padded_pads_a_group_box_as_pad_unstated_sides_does() {
+    use native_theme::theme::{ColorMode, Theme};
+    let mut compared = 0;
+    for preset in Theme::list_presets() {
+        let theme = Theme::preset(preset.key);
+        assert!(theme.is_ok(), "{} does not load", preset.key);
+        let Ok(theme) = theme else { continue };
+        let Some(margin) = geometry::container_margin(&theme.layout) else {
+            continue;
+        };
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let resolved = theme.clone().into_variant(mode).ok().and_then(|v| {
+                v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                    .ok()
+            });
+            assert!(
+                resolved.is_some(),
+                "{} {mode:?} does not resolve",
+                preset.key
+            );
+            let Some(r) = resolved else { continue };
+            let content = geometry::group_box_content(Native::unscaled(&r));
+            let p = &r.card.border.padding;
+            assert_eq!(
+                padded(content.clone(), p, Some(margin), Some(margin)),
+                pad_unstated_sides(content, p, margin),
+                "{} {mode:?}: padded and pad_unstated_sides pad the content differently",
+                preset.key
+            );
+            compared += 1;
+        }
+    }
+    assert!(compared > 0, "no bundled preset states a container_margin");
+}
+
 /// A card: a Fill `GroupBox` with no title, `width` wide, around the text
 /// `text`, whose Label reports itself as `text_id`. Its content is refined
 /// by `geometry::group_box_content`, which fills it with
@@ -6656,7 +6699,7 @@ fn native_expander(
                 let header = padded(
                     h_flex().id((id, ix)).w_full().items_center().gap(arrow_gap),
                     &e.border.padding,
-                    EXPANDER_PADDING_X,
+                    Some(EXPANDER_PADDING_X),
                     None,
                 )
                 .refine_style(&title_style)
