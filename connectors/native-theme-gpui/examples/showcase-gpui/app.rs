@@ -72,6 +72,28 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
     }
 }
 
+/// native-theme's colour mode for the showcase's light/dark flag.
+fn color_mode_of(is_dark: bool) -> native_theme_gpui::ColorMode {
+    if is_dark {
+        native_theme_gpui::ColorMode::Dark
+    } else {
+        native_theme_gpui::ColorMode::Light
+    }
+}
+
+/// The font the status bar and the inspector name where the OS theme could
+/// not be read: no source stated a family, a size or a colour.
+fn unread_font() -> native_theme::theme::ResolvedFontSpec {
+    native_theme::theme::ResolvedFontSpec {
+        family: "(default)".into(),
+        size: 0.0,
+        defined_size: None,
+        weight: 400,
+        style: native_theme::theme::FontStyle::Normal,
+        color: native_theme::color::Rgba::TRANSPARENT,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Actions (spec §2.2)
 // ---------------------------------------------------------------------------
@@ -236,7 +258,7 @@ pub(crate) struct Showcase {
     /// The accessibility preferences the self-tests say the OS has, which a
     /// preset install then reads in place of the host's
     /// (`Showcase::os_preferences`): a test cannot change the desktop's.
-    /// `install_system_theme` takes the desktop's theme, preferences and
+    /// `install_system` takes the desktop's theme, preferences and
     /// all, from its caller, so it needs none.
     #[cfg(test)]
     pub(crate) os_preferences_for_test: Option<AccessibilityPreferences>,
@@ -1104,84 +1126,14 @@ impl Showcase {
         let range_slider_state = cx.new(|_cx| SliderState::new().default_value(20.0..80.0));
         let vertical_slider_state = cx.new(|_cx| SliderState::new().default_value(40.0));
 
-        // Apply the initial OS Theme via native-theme pipeline.
+        // The desktop's own theme, which `install_system` installs once the
+        // view is built; where it cannot be read, gpui-component's built-in
+        // theme, so the window still renders.
         let is_dark = color_mode.is_dark();
-        let (
-            original_font,
-            original_mono_font,
-            initial_default_preset,
-            initial_icon_theme,
-            initial_icon_set,
-            initial_has_toml_icon_theme,
-            initial_layout,
-            initial_error,
-        ) = match native_theme::SystemTheme::from_system() {
-            Ok(system) => {
-                let resolved = system.pick(if is_dark {
-                    native_theme_gpui::ColorMode::Dark
-                } else {
-                    native_theme_gpui::ColorMode::Light
-                });
-                let font = resolved.defaults.font.clone();
-                let mono_font = resolved.defaults.mono_font.clone();
-                let icon_theme = system.icon_theme.clone().map(Cow::into_owned);
-                let icon_set = system.icon_set;
-                let layout = system.layout.clone();
-                // Install the OS theme with both variants stored; the showcase's own
-                // light/dark choice then goes through upstream's mode switch, which
-                // reproduces the native palette from the installed configs (D34).
-                native_theme_gpui::apply_system_theme(&system, cx);
-                if is_dark != system.mode.is_dark() {
-                    Theme::change(gpui_theme_mode(is_dark), Some(window), cx);
-                }
-                // Platform presets always specify icon_theme
-                (
-                    font,
-                    mono_font,
-                    system.preset.clone(),
-                    icon_theme,
-                    icon_set,
-                    true,
-                    layout,
-                    None,
-                )
-            }
-            Err(e) => {
-                // Fall back to gpui-component built-in theme so the window still renders
-                Theme::sync_system_appearance(Some(window), cx);
-                let font = native_theme::theme::ResolvedFontSpec {
-                    family: "(default)".into(),
-                    size: 0.0,
-                    // No theme could be read, so no source stated a size.
-                    defined_size: None,
-                    weight: 400,
-                    style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::TRANSPARENT,
-                };
-                let mono_font = native_theme::theme::ResolvedFontSpec {
-                    family: "(default)".into(),
-                    size: 0.0,
-                    // No theme could be read, so no source stated a size.
-                    defined_size: None,
-                    weight: 400,
-                    style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::TRANSPARENT,
-                };
-                let icon_theme = system_icon_theme().ok();
-                let icon_set = system_icon_set();
-                (
-                    font,
-                    mono_font,
-                    platform_preset_name().name.to_string(),
-                    icon_theme,
-                    icon_set,
-                    false,
-                    // Nothing was read, so nothing is claimed: every key stays
-                    // `None` and the layout accessors report it as such.
-                    native_theme::theme::LayoutTheme::default(),
-                    Some(format!("Failed to load OS theme: {e}")),
-                )
-            }
+        let system = native_theme::SystemTheme::from_system();
+        let initial_default_preset = match &system {
+            Ok(system) => system.preset.clone(),
+            Err(_) => platform_preset_name().name.to_string(),
         };
         let preset_combobox = cx.new(|cx| {
             ComboboxState::new(
@@ -1209,45 +1161,11 @@ impl Showcase {
         )
         .detach();
 
-        // Use the library's IconSetChoice to compute the initial icon selection.
-        let icon_theme_opt = initial_icon_theme
-            .as_deref()
-            .filter(|_| initial_has_toml_icon_theme);
-        let initial_icon_set_choice = default_icon_choice(initial_icon_set, icon_theme_opt);
-        let initial_effective_set = initial_icon_set_choice.effective_icon_set(initial_icon_set);
-        let initial_default_theme = initial_icon_set_choice
-            .freedesktop_theme()
-            .map(|s| s.to_string());
-        let initial_resolved_name = initial_effective_set.name().to_string();
+        // Its rows and the row chosen are the installed theme's, which
+        // `show_icon_choice` sets once the theme is installed.
         let installed_themes = list_freedesktop_themes();
-        let fc = original_font.color;
-        let fg = Some(fc);
-        let loaded_icons =
-            load_all_icons(initial_effective_set, initial_default_theme.as_deref(), fg);
-        let gpui_icons = load_gpui_icons(
-            Some(initial_effective_set),
-            initial_default_theme.as_deref(),
-            fg,
-        );
-
-        // Icon theme selector -- build dropdown list using IconSetChoice
-        let initial_icon_label = initial_icon_set_choice.to_string();
-        let icon_theme_names = icon_theme_rows(initial_icon_set, icon_theme_opt, &installed_themes);
-
-        // Find the index of the initial selection label
-        let initial_icon_idx = icon_theme_names
-            .iter()
-            .position(|n| n.as_ref() == initial_icon_label)
-            .unwrap_or(0);
-        let icon_set_delegate = SearchableVec::new(icon_theme_names);
-        let icon_theme_select = cx.new(|cx| {
-            SelectState::new(
-                icon_set_delegate,
-                Some(gpui_component::IndexPath::default().row(initial_icon_idx)),
-                window,
-                cx,
-            )
-        });
+        let icon_theme_select =
+            cx.new(|cx| SelectState::new(SearchableVec::new(Vec::new()), None, window, cx));
 
         cx.subscribe_in(
             &icon_theme_select,
@@ -1458,8 +1376,8 @@ impl Showcase {
             default_preset: initial_default_preset,
             is_dark,
             color_mode,
-            original_font,
-            original_mono_font,
+            original_font: unread_font(),
+            original_mono_font: unread_font(),
             active_page: Page::Basic,
             side_panel_visible: true,
             body_layout,
@@ -1480,7 +1398,9 @@ impl Showcase {
             _refocus,
             overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
-            layout: initial_layout,
+            // Nothing was read yet, so nothing is claimed: every key stays
+            // `None` and the layout accessors report it as such.
+            layout: native_theme::theme::LayoutTheme::default(),
             pointer_shield: false,
             basic_hint_state,
             basic_text_state,
@@ -1540,31 +1460,38 @@ impl Showcase {
             alert_choice: None,
             color_mode_select,
             icon_theme_select,
-            icon_theme_name: initial_resolved_name,
-            icon_set_enum: Some(initial_effective_set),
-            loaded_icons,
-            gpui_icons,
+            icon_theme_name: String::new(),
+            icon_set_enum: None,
+            loaded_icons: Vec::new(),
+            gpui_icons: Vec::new(),
             loaded_icon_sources: Vec::new(),
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
-            icon_set_choice: initial_icon_set_choice,
+            icon_set_choice: IconSetChoice::System,
             icon_choice_follows_preset: true,
             installed_themes,
-            current_icon_theme: initial_icon_theme,
-            current_icon_set: initial_icon_set,
-            has_toml_icon_theme: initial_has_toml_icon_theme,
+            current_icon_theme: None,
+            current_icon_set: system_icon_set(),
+            has_toml_icon_theme: false,
             animated_frame_sources: Vec::new(),
             animated_frame_durations: Vec::new(),
             animated_frame_indices: Vec::new(),
             animated_spin_sources: Vec::new(),
             animation_timer: None,
-            error_message: initial_error,
+            error_message: None,
             #[cfg(feature = "watch")]
             _theme_watcher,
         };
-        showcase.rebuild_icon_caches(fg, window, cx);
-        showcase.rebuild_animation_caches(window, cx);
-        showcase.start_animation_timer(cx);
+        match system {
+            Ok(system) => showcase.install_system(system, window, cx),
+            Err(e) => {
+                Theme::sync_system_appearance(Some(window), cx);
+                showcase.current_icon_theme = system_icon_theme().ok();
+                showcase.error_message = Some(format!("Failed to load OS theme: {e}"));
+            }
+        }
+        showcase.show_icon_choice(window, cx);
+        showcase.reload_icons(window, cx);
         showcase
     }
 
@@ -1617,13 +1544,13 @@ impl Showcase {
     }
 
     /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
-    /// read it: what `default` installs. Its accessibility preferences are
-    /// the OS's it read, with the user's over them.
+    /// read it: what `default` installs, at startup too. Its accessibility
+    /// preferences are the OS's it read, with the user's over them.
     ///
     /// The preset the pipeline settled on is what the preset switch's
     /// `default` row and the status bar name, so a change of it relabels
     /// that row.
-    pub(crate) fn install_system_theme(
+    pub(crate) fn install_system(
         &mut self,
         mut system: native_theme::SystemTheme,
         window: &mut Window,
@@ -1631,11 +1558,7 @@ impl Showcase {
     ) {
         let os = std::mem::take(&mut system.accessibility);
         system.accessibility = Self::install_preferences(cx, os);
-        let resolved = system.pick(if self.is_dark {
-            native_theme_gpui::ColorMode::Dark
-        } else {
-            native_theme_gpui::ColorMode::Light
-        });
+        let resolved = system.pick(color_mode_of(self.is_dark));
         self.original_font = resolved.defaults.font.clone();
         self.original_mono_font = resolved.defaults.mono_font.clone();
         self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
@@ -1643,6 +1566,9 @@ impl Showcase {
         self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
         self.has_toml_icon_theme = true;
+        // Installed with both variants stored, so the showcase's own
+        // light/dark choice goes through upstream's mode switch, which
+        // reproduces the native palette from the installed configs (D34).
         native_theme_gpui::apply_system_theme(&system, cx);
         if self.is_dark != system.mode.is_dark() {
             Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
@@ -1669,12 +1595,7 @@ impl Showcase {
                 return false;
             }
         };
-        let mode = if self.is_dark {
-            native_theme_gpui::ColorMode::Dark
-        } else {
-            native_theme_gpui::ColorMode::Light
-        };
-        let r = match nt.resolve(mode) {
+        let r = match nt.resolve(color_mode_of(self.is_dark)) {
             Ok(r) => r,
             Err(e) => {
                 self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
@@ -1712,7 +1633,7 @@ impl Showcase {
         let installed = if name == "default" {
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
-                    self.install_system_theme(system, window, cx);
+                    self.install_system(system, window, cx);
                     true
                 }
                 Err(e) => {

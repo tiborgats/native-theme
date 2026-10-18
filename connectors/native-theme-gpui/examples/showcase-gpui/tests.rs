@@ -8089,7 +8089,7 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     if let Ok(mut system) = system_theme() {
         system.accessibility = os.clone();
         cx.update(|window, cx| {
-            showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
+            showcase.update(cx, |this, cx| this.install_system(system, window, cx))
         });
         cx.run_until_parked();
         assert_eq!(
@@ -8314,9 +8314,7 @@ fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
     };
     system.preset = settled.to_string();
     set_preset(&mut cx, "default");
-    cx.update(|window, cx| {
-        showcase.update(cx, |this, cx| this.install_system_theme(system, window, cx))
-    });
+    cx.update(|window, cx| showcase.update(cx, |this, cx| this.install_system(system, window, cx)));
     cx.run_until_parked();
     draw(&mut cx);
     let wanted = format!("default ({settled})");
