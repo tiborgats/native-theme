@@ -727,6 +727,36 @@ and many have since drifted, as the archive's [README](README.md) warns.
       (§2.26: macOS `NSBox`, KDE Kirigami's `Card`). The item closes.
   Archived 2026-10-17 (M8 T21): ticked in 7c9fb875.
 
+### Closed items from Presets: values the M8 T15 platform-facts rows disagree with
+
+- [x] [v0.7.0] From the M9a T6 review (2026-10-18,
+      `.superpowers/sdd/todo_code-review-plan/m9a-T6-review.md`, *Controller's
+      questions*): windows-11's menu rows are 23 px (`windows-11.toml`
+      `[light.menu] row_height_px`, `[dark.menu] row_height_px`), from the Windows
+      cell of §2.6's `row_height` row (`docs/platform-facts.md:1260`: "mouse/narrow
+      mode=23 (14 text + 4+5 pad); no explicit MinHeight resource — derived from
+      padding"). That cell counts the 14 px font size as the text's height, where
+      the same document gives Windows's line box as Fluent Body 20 px over 14 px
+      (`docs/platform-facts.md:1034`, `line_height` 1.43), so WinUI's narrow
+      MenuFlyoutItem is about 4 + 20 + 5 = 29 px, and touch mode's 31 (14 + 8 + 9)
+      repeats the error. Since M9a T6 the gpui showcase's chrome menu draws a row
+      at the stated height by `geometry::menu_item`'s control-height rule, as the
+      Overlays page's rows already did, so under windows-11 the 20 px line fills
+      the 23 px row and the stated 4 / 5 px padding is lost. The fix: verify the
+      §2.6 Windows cell independently and correct it, then the preset (the review
+      suggests stating no `row_height`, as a row with no MinHeight sizes to its
+      font, which the model encodes as none); the CHANGELOG line for M9-012 names
+      windows-11 as its example and follows the change.
+      M9a T6 fix round 2 (2026-10-18, 8fbcf9ae): verified independently
+      against microsoft-ui-xaml at 8463f451, neither 23 nor 29 has a source:
+      `MenuFlyoutItem` has no MinHeight and is its padding, 4+5 by mouse, pen
+      or keyboard and 8+9 otherwise, round a TextBlock with no Style and no
+      LineHeight, whose line box is Segoe UI Variable's line spacing at 14 px,
+      which no source states. §2.6's Windows `row_height` cell is ❓ with those
+      sources, windows-11 states no `menu.row_height` (`windows-11.toml`
+      `[light.menu]`, `[dark.menu]`), and the M9-012 CHANGELOG line names no
+      windows-11 example. The item closes.
+
 ---
 
 ## Toolkit Connectors

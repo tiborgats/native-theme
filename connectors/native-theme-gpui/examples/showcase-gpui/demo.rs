@@ -343,8 +343,12 @@ impl MenuLook {
         // (kbd.rs:234-236), which takes the row's font and line box.
         let row = h_flex()
             .refine_style(&self.item)
-            .when(self.padding.left.is_none(), |row| row.pl(MENU_ROW_PADDING_X))
-            .when(self.padding.right.is_none(), |row| row.pr(MENU_ROW_PADDING_X))
+            .when(self.padding.left.is_none(), |row| {
+                row.pl(MENU_ROW_PADDING_X)
+            })
+            .when(self.padding.right.is_none(), |row| {
+                row.pr(MENU_ROW_PADDING_X)
+            })
             .rounded(self.radius);
         let row = match (self.row_height, self.padding.top, self.padding.bottom) {
             (None, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
