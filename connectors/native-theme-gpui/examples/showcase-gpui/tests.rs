@@ -3732,6 +3732,25 @@ fn a_page_change_keeps_the_chromes_info(cx: &mut TestAppContext) {
     );
 }
 
+/// A point in the page's own padding, which no page draws a widget in: half
+/// of `layout.window_margin` in from the page root's top left corner, the
+/// margin every page root is padded by (`pages::page_root`, and the Basic
+/// page's own root). The theme has to state the margin, as every bundled
+/// preset does, or the page has no padding to point at.
+fn in_page_padding(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> Point<Pixels> {
+    let margin = read(cx, showcase, |this, _| {
+        geometry::window_margin(&this.layout)
+    });
+    assert!(
+        margin.is_some_and(|m| m > px(0.)),
+        "the theme states no layout.window_margin ({margin:?}), so a page root has no padding \
+         to point at"
+    );
+    let half = margin.unwrap_or_default() * 0.5;
+    let page = bounds_of(cx, PAGE_ROOT);
+    point(page.left() + half, page.top() + half)
+}
+
 /// A page change clears an info whose target the new frame no longer draws
 /// (spec §4.3.4 as ruled), through every route to a page: here the View
 /// menu. The target is a Buttons page Button, which the Charts page does not
@@ -3758,10 +3777,8 @@ fn a_page_change_clears_what_left_the_screen(cx: &mut TestAppContext) {
         before.as_deref().is_some_and(|t| t.starts_with("Button")),
         "the Buttons page's Primary Button did not report itself: {before:?}"
     );
-    // Every page root pads its content by p_4 (16px), so 4px in from its
-    // corner is empty on every page.
-    let page = bounds_of(&mut cx, PAGE_ROOT);
-    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
+    let padding = in_page_padding(&mut cx, &showcase);
+    hover(&mut cx, padding);
     settle(&mut cx);
     assert_eq!(
         shown(&mut cx),
@@ -10704,10 +10721,8 @@ fn hiding_the_side_panel_clears_what_left_the_screen(cx: &mut TestAppContext) {
         "the inspector's TabBar did not report itself"
     );
     run_menu_item(&mut cx, "View", "Toggle Side Panel");
-    // Every page root pads its content by p_4 (16px), so 4px in from its
-    // corner is empty on every page.
-    let page = bounds_of(&mut cx, PAGE_ROOT);
-    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
+    let padding = in_page_padding(&mut cx, &showcase);
+    hover(&mut cx, padding);
     settle(&mut cx);
     draw(&mut cx);
     assert_eq!(
@@ -11115,8 +11130,8 @@ fn a_theme_switch_clears_what_left_the_screen(cx: &mut TestAppContext) {
         cx.debug_bounds(OVERLAY_PREFERENCES).is_none(),
         "Escape did not close the Preferences sheet"
     );
-    let page = bounds_of(&mut cx, PAGE_ROOT);
-    hover(&mut cx, point(page.left() + px(4.), page.top() + px(4.)));
+    let padding = in_page_padding(&mut cx, &showcase);
+    hover(&mut cx, padding);
     settle(&mut cx);
     let shown = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
