@@ -1153,13 +1153,15 @@ and many have since drifted, as the archive's [README](README.md) warns.
       6 is itself unsourced (platform-facts §2.20 says (none), see the
       follow-up plan above), so the question becomes live when that plan
       removes it.
-      *Closed by M9a T11 (2026-10-18, 73ded48d):* the pages apply `window_margin`,
-      `section_gap` and `widget_gap` as the Basic page does; where the theme states
-      none they draw none (Addendum C), so no page constant is added; the chrome's
-      §3.1 constants stay. The three distances of another role the pages keep (the
-      Icons page's icon grids, the Feedback page's Badges, the room beside the
-      Layout page's Carousel) are named showcase constants at their old rem
-      multiples, each with its comment and its Widget Info line. windows-11's
+      *Closed by M9a T11 (2026-10-18, 73ded48d, bc9ed52c):* the pages apply
+      `window_margin`, `section_gap` and `widget_gap` as the Basic page does;
+      where the theme states none they draw none
+      (`docs/todo_code-review-findings.md`, *Step 6 — fix plan, M9a
+      (2026-10-17)*, "Ruling: the pages (M9-022)"), so no page constant is
+      added; the chrome's §3.1 constants stay. The distances of another role
+      the pages keep (the Icons page's icon grids, the room beside the Layout
+      page's Carousel, the Theme Map's swatch gaps) are named showcase
+      constants, each with its comment and its Widget Info line. windows-11's
       unsourced `widget_gap` stays in the *Follow-up plan* table.
 
 ### Closed items from Follow-ups from the v0.5.9 showcase and contract work
