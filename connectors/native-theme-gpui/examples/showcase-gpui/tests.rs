@@ -6616,6 +6616,61 @@ fn an_animated_icons_info_follows_reduced_motion(cx: &mut TestAppContext) {
     );
 }
 
+/// The Icons page's frame animation steps, and redraws the window, only
+/// while the Icons page is shown (M9-021): it is the one page that draws the
+/// frames. With Material chosen (a frame animation), the executor's clock
+/// is moved on by ten frame durations on the Basic page, then on the Icons
+/// page.
+// The bundled Material set, and its frames drawn on their first draw, which
+// only `svg-rasterize` promises (`icons::animated_frames_to_image_sources`).
+#[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
+#[gpui::test]
+fn the_icon_animation_steps_only_on_the_icons_page(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let steps = || crate::app::ANIMATION_STEPS.with(std::cell::Cell::get);
+    cx.update(|window, cx| {
+        cx.set_reduce_motion(false);
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set("Material (bundled)", window, cx)
+        });
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let frame = read(&mut cx, &showcase, |this, _| {
+        this.animated_frame_durations.iter().copied().min()
+    });
+    assert!(
+        frame.is_some(),
+        "Material's indicator is no frame animation"
+    );
+    let Some(frame) = frame else { return };
+    let frame = Duration::from_millis(u64::from(frame));
+    let ten_frames = |cx: &mut VisualTestContext| {
+        for _ in 0..10 {
+            cx.executor().advance_clock(frame);
+            cx.run_until_parked();
+        }
+    };
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Basic
+    );
+    let before = steps();
+    ten_frames(&mut cx);
+    assert_eq!(
+        steps() - before,
+        0,
+        "the animation stepped and redrew the window on the Basic page, which draws no frame of it"
+    );
+    show(&mut cx, &showcase, Page::Icons);
+    let before = steps();
+    ten_frames(&mut cx);
+    assert!(
+        steps() - before > 0,
+        "the animation did not step on the Icons page"
+    );
+}
+
 /// A role the icon set has no icon for says so and shows the placeholder,
 /// never another set's icon: gpui-component has none for Shield, and the
 /// cell's info claims the placeholder's colour and no icon's.

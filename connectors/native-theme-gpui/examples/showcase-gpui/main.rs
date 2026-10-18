@@ -1000,7 +1000,7 @@ fn apply_cli_args(
         .as_deref()
         .and_then(|name| reported(Page::named(name)))
     {
-        s.active_page = page;
+        s.show_page(page, cx);
     }
 
     // `--icon-set` names a row of the icon-theme Select: `default`, which

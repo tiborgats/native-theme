@@ -519,6 +519,14 @@ pub(crate) fn icon_tint(
     native_installed.then_some(font_colour)
 }
 
+#[cfg(test)]
+thread_local! {
+    /// How often a tick of the animation timer (`start_animation_timer`)
+    /// stepped the frames and asked for a redraw on this thread; a test reads
+    /// how much an action adds to it.
+    pub(crate) static ANIMATION_STEPS: Cell<usize> = const { Cell::new(0) };
+}
+
 /// What the Icons page's icons were loaded as (`Showcase::reload_icons`),
 /// so a theme install loads them again only where this changed.
 #[derive(Clone, Debug, PartialEq)]
@@ -671,14 +679,17 @@ impl Showcase {
     /// Start (or restart) the frame-cycling timer for animated icons.
     ///
     /// Cancels any previous timer. Does nothing when there are no frame-based
-    /// animations cached, and a tick does nothing while gpui's
+    /// animations cached, or while a page other than Icons, the one page that
+    /// draws the frames, is shown: `show_page` starts it as the Icons page
+    /// opens and drops it as the page closes, the page showing a paused
+    /// frame from where it stopped. A tick does nothing while gpui's
     /// `reduce_motion` is on: the page then shows each animation's first
     /// frame, as gpui holds its own animations at their start.
     pub(crate) fn start_animation_timer(&mut self, cx: &mut Context<Self>) {
         // Drop old timer (cancels the task)
         self.animation_timer = None;
 
-        if self.animated_frame_sources.is_empty() {
+        if self.animated_frame_sources.is_empty() || self.active_page != Page::Icons {
             return;
         }
 
@@ -709,6 +720,8 @@ impl Showcase {
                             *idx = (*idx + 1) % frames.len();
                         }
                     }
+                    #[cfg(test)]
+                    ANIMATION_STEPS.with(|steps| steps.set(steps.get().saturating_add(1)));
                     cx.notify();
                 }) else {
                     break;
@@ -1834,14 +1847,16 @@ impl Showcase {
     }
 
     /// Show `page`. Every way to a page -- the page TabBar, the View menu,
-    /// the command palette, the Layout page's Breadcrumb -- goes through
-    /// here, so the info of what
-    /// the page change takes off the screen does not stay on show (spec
-    /// §4.3.4).
+    /// the command palette, the Layout page's Breadcrumb, `--tab` -- goes
+    /// through here, so the info of what the page change takes off the
+    /// screen does not stay on show (spec §4.3.4), and the animation timer
+    /// runs while the Icons page is shown, and only then.
     pub(crate) fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
         if self.active_page != page {
             self.active_page = page;
             self.info_ui.update(cx, |r, _| r.screen_changed());
+            // Running on the Icons page alone, which draws its frames.
+            self.start_animation_timer(cx);
         }
         cx.notify();
     }
