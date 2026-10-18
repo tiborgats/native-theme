@@ -1772,6 +1772,55 @@ fn menu_action(menu: &str, item: &str) -> Box<dyn gpui::Action> {
         .unwrap_or_else(|| panic!("no {menu} > {item} menu item"))
 }
 
+/// The Theme menu's and the command palette's colour modes are
+/// `AppColorMode::ALL`'s, in its order, each setting its mode: the menu,
+/// built once for the platform's menu bar, names a mode by its
+/// `short_label`; the palette, built each time it opens, by its `label`,
+/// which names the mode the OS is in beside System.
+#[gpui::test]
+fn the_theme_menu_and_the_palette_offer_every_colour_mode(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let sets_a_mode = |action: &dyn gpui::Action| {
+        AppColorMode::ALL.map(|mode| action.partial_eq(&SetColorMode(mode)))
+    };
+    let in_menu: Vec<(String, [bool; 3])> = menus()
+        .into_iter()
+        .filter(|m| m.name.as_ref() == "Theme")
+        .flat_map(|m| m.items)
+        .filter_map(|item| match item {
+            gpui::MenuItem::Action { name, action, .. } => {
+                let sets = sets_a_mode(action.as_ref());
+                sets.contains(&true).then(|| (name.to_string(), sets))
+            }
+            _ => None,
+        })
+        .collect();
+    let in_palette: Vec<(String, [bool; 3])> = read(&mut cx, &showcase, |this, _| {
+        crate::chrome::palette_groups(this)
+            .into_iter()
+            .filter(|(group, _)| *group == "Colour mode")
+            .flat_map(|(_, entries)| entries)
+            .map(|entry| (entry.label.to_string(), sets_a_mode(entry.action.as_ref())))
+            .collect()
+    });
+    let each = |ix: usize| std::array::from_fn::<bool, 3, _>(|at| at == ix);
+    let menu_rows: Vec<(String, [bool; 3])> = AppColorMode::ALL
+        .iter()
+        .enumerate()
+        .map(|(ix, mode)| (mode.short_label().to_string(), each(ix)))
+        .collect();
+    let palette_rows: Vec<(String, [bool; 3])> = AppColorMode::ALL
+        .iter()
+        .enumerate()
+        .map(|(ix, mode)| (mode.label(), each(ix)))
+        .collect();
+    assert_eq!(in_menu, menu_rows, "the Theme menu's colour modes");
+    assert_eq!(
+        in_palette, palette_rows,
+        "the command palette's colour modes"
+    );
+}
+
 /// Run a menu item the way a menu does: dispatch its action into the window.
 fn run_menu_item(cx: &mut VisualTestContext, menu: &str, item: &str) {
     let action = menu_action(menu, item);

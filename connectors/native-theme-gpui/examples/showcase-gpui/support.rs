@@ -27,6 +27,7 @@ use native_theme::theme::IconSet;
 use native_theme_gpui::icons::freedesktop_name_candidates;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{ActiveNativeTheme, Native};
+use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
 use crate::info::InfoRegistry;
@@ -1044,33 +1045,19 @@ pub(crate) struct PresetItem {
     pub(crate) display_name: SharedString,
 }
 
-/// The name the preset switch, the command palette and the status bar give
-/// `default`, the desktop's own theme, built on the platform preset
-/// `default_preset`.
-pub(crate) fn default_label(default_preset: &str) -> String {
-    format!("default ({default_preset})")
-}
-
-/// The presets the showcase offers, in the order it offers them: the
-/// desktop's own theme, keyed `default` and labelled with `default_preset`,
-/// the preset it builds on (`Showcase::default_preset`), then the presets
-/// meant for this platform. The theme settings' preset switch and the
-/// command palette both list these, so neither can offer a preset the other
-/// does not.
+/// The presets the showcase offers, in the order it offers them: the shared
+/// crate's rows (`rows::preset_rows`), the desktop's own theme first, keyed
+/// `default` and labelled with `default_preset`, the preset it builds on
+/// (`Showcase::default_preset`), then the presets meant for this platform.
+/// The theme settings' preset switch and the command palette both list
+/// these, so neither can offer a preset the other does not.
 pub(crate) fn preset_items(default_preset: &str) -> Vec<PresetItem> {
-    let default = PresetItem {
-        key: "default".into(),
-        display_name: default_label(default_preset).into(),
-    };
-    std::iter::once(default)
-        .chain(
-            native_theme::theme::Theme::list_presets_for_platform()
-                .iter()
-                .map(|info| PresetItem {
-                    key: info.key.into(),
-                    display_name: info.display_name.into(),
-                }),
-        )
+    rows::preset_rows(default_preset)
+        .into_iter()
+        .map(|row| PresetItem {
+            key: row.key.into(),
+            display_name: row.display_name.into(),
+        })
         .collect()
 }
 

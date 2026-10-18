@@ -38,15 +38,21 @@ pub(crate) fn menus() -> Vec<Menu> {
                     MenuItem::action("Command Palette", OpenCommandPalette),
                 ]),
         ),
-        Menu::new("Theme").items([
-            MenuItem::action("Reload System Theme", ReloadTheme),
-            MenuItem::separator(),
-            MenuItem::action("System", SetColorMode(AppColorMode::System)),
-            MenuItem::action("Light", SetColorMode(AppColorMode::Light)),
-            MenuItem::action("Dark", SetColorMode(AppColorMode::Dark)),
-            MenuItem::separator(),
-            MenuItem::action("Preferences…", OpenPreferences),
-        ]),
+        Menu::new("Theme").items(
+            [
+                MenuItem::action("Reload System Theme", ReloadTheme),
+                MenuItem::separator(),
+            ]
+            .into_iter()
+            .chain(
+                AppColorMode::ALL
+                    .map(|mode| MenuItem::action(mode.short_label(), SetColorMode(mode))),
+            )
+            .chain([
+                MenuItem::separator(),
+                MenuItem::action("Preferences…", OpenPreferences),
+            ]),
+        ),
         Menu::new("Help").items([MenuItem::action("About", OpenAbout)]),
     ]
 }
@@ -381,7 +387,7 @@ fn palette_entry(
 /// page, every preset the preset switch offers, and the three colour modes,
 /// each running the action its menu item or theme setting runs, their icons
 /// of `app`'s chosen icon theme.
-fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
+pub(crate) fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
     let pages = Page::ALL
         .map(|page| {
             palette_entry(
@@ -406,27 +412,23 @@ fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
             )
         })
         .collect();
-    let modes = [
-        AppColorMode::System,
-        AppColorMode::Light,
-        AppColorMode::Dark,
-    ]
-    .map(|mode| {
-        let icon = match mode {
-            AppColorMode::System => IconName::Settings,
-            AppColorMode::Light => IconName::Sun,
-            AppColorMode::Dark => IconName::Moon,
-        };
-        palette_entry(
-            app,
-            mode.label(),
-            Vec::new(),
-            icon,
-            Box::new(SetColorMode(mode)),
-        )
-    })
-    .into_iter()
-    .collect();
+    let modes = AppColorMode::ALL
+        .map(|mode| {
+            let icon = match mode {
+                AppColorMode::System => IconName::Settings,
+                AppColorMode::Light => IconName::Sun,
+                AppColorMode::Dark => IconName::Moon,
+            };
+            palette_entry(
+                app,
+                mode.label(),
+                Vec::new(),
+                icon,
+                Box::new(SetColorMode(mode)),
+            )
+        })
+        .into_iter()
+        .collect();
     vec![
         ("Pages", pages),
         ("Presets", presets),

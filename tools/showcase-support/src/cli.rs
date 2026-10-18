@@ -183,9 +183,9 @@ impl ColorModeChoice {
         }
     }
 
-    /// The mode's label in the command palette and the Theme menu: `System`
-    /// with the mode the OS reports in parentheses (`System (Dark)`),
-    /// `Light`, `Dark`.
+    /// The mode's label in the command palette, built each time it opens:
+    /// `System` with the mode the OS reports in parentheses
+    /// (`System (Dark)`), `Light`, `Dark`.
     #[must_use]
     pub fn label(self) -> String {
         match self {
@@ -201,8 +201,9 @@ impl ColorModeChoice {
         }
     }
 
-    /// The colour-mode picker's row for the mode: the mode alone. The mode
-    /// `System` resolves to is in the status bar while it is chosen.
+    /// The colour-mode picker's row and the Theme menu's item for the mode:
+    /// the mode alone. The mode `System` resolves to is in the status bar
+    /// while it is chosen.
     #[must_use]
     pub fn short_label(self) -> &'static str {
         match self {

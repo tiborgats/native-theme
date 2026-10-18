@@ -45,6 +45,7 @@ use native_theme::theme::IconSet;
 use native_theme_gpui::icons::{animated_frames_to_image_sources_for, to_image_source};
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
+use native_theme_showcase_support::rows;
 
 use crate::chrome;
 use crate::elements;
@@ -54,7 +55,7 @@ use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, IconEntry,
     IconSource, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
-    SharedDialogIcons, default_label, initial_chat_messages, load_all_icons, load_gpui_icons,
+    SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
     parse_icon_set_choice, release_sources,
 };
 use crate::{
@@ -466,32 +467,24 @@ const BASIC_LIST_ROWS: usize = 8;
 const BASIC_LIST_SELECTED: usize = 1;
 
 /// The icon-theme Select's rows for a theme of `icon_set` naming
-/// `icon_theme`: its `default` row, where the theme names an icon theme that
-/// is available (`default_icon_choice`), then `system`, the installed
-/// freedesktop themes, gpui-component's own icons and the bundled sets.
+/// `icon_theme`: the shared crate's (`rows::icon_rows`) -- its `default` row,
+/// where the theme names an icon theme that is available
+/// (`default_icon_choice`), then `system`, the installed freedesktop themes
+/// and the bundled sets -- with gpui-component's own icons after the
+/// installed themes.
 fn icon_theme_rows(
     icon_set: IconSet,
     icon_theme: Option<&str>,
     installed: &[String],
 ) -> Vec<SharedString> {
-    let default = match default_icon_choice(icon_set, icon_theme) {
-        choice @ IconSetChoice::Default(_) => Some(choice),
-        _ => None,
-    };
-    default
+    rows::icon_rows(icon_set, icon_theme, installed)
         .into_iter()
-        .chain([IconSetChoice::System])
-        .chain(
-            installed
-                .iter()
-                .map(|name| IconSetChoice::Freedesktop(name.clone())),
-        )
-        .map(|choice| SharedString::from(choice.to_string()))
-        .chain([SharedString::from(GPUI_BUILTIN_ROW)])
-        .chain(
-            [IconSetChoice::Lucide, IconSetChoice::Material]
-                .map(|choice| SharedString::from(choice.to_string())),
-        )
+        .flat_map(|choice| {
+            let builtin = (choice == IconSetChoice::Lucide).then(|| GPUI_BUILTIN_ROW.into());
+            builtin
+                .into_iter()
+                .chain([SharedString::from(choice.to_string())])
+        })
         .collect()
 }
 
@@ -1759,7 +1752,7 @@ impl Showcase {
     /// The preset switch's and the status bar's name for `default`: the
     /// platform preset it is built on.
     pub(crate) fn default_label(&self) -> String {
-        default_label(&self.default_preset)
+        rows::default_label(&self.default_preset)
     }
 
     /// Install `mode`: the current theme again, in that mode. Where that
