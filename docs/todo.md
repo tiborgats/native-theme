@@ -2189,6 +2189,25 @@ model, the platform presets and the three connectors
       the list's clip, so focus rings can reach past the group's edges
       (`setting/page.rs:239-243`; the scrollbar at `:255`). The 21px groove
       still covers the row's right edge, so the gutter is still needed.
+      M9a T20 (2026-10-18): the showcase's `Tree` rows keep clear of it as
+      its List rows do since ee836dc1: each row's `ListItem` takes a right
+      margin of the groove's width where the theme's scrollbar is no overlay
+      (`demo::list_row_item`, `list_gutter`), a workaround of the
+      showcase's, which the rows' Widget Info names; gpui-component 0.7.3
+      still lays the Tree's bar over its rows (`tree.rs:119`,
+      `vertical_scrollbar`).
+- [ ] [upstream] a right-clicked `Tree` row shows the hover text colour without the
+      hover fill: gpui-component 0.7.3 marks the row right-clicked after the
+      application's `render_item` closure built it
+      (`.secondary_selected(entry_state.is_right_clicked())`, `tree.rs:90-92`),
+      and hands the closure the selection alone (`tree.rs:89`); `TreeState`
+      keeps the right-clicked row in a private field (gpui-base 0.7.3
+      `tree.rs:196`, `right_clicked_ix`) with no public reader. A right-clicked
+      `ListItem` draws no hover fill (`list/list_item.rs:190`, `:227-233`),
+      while the showcase's label, which cannot know, still takes
+      `list.hover_text_color` under the pointer (`demo::tree_row`). Upstream: the
+      closure given `TreeEntryState`, or a public reader on `TreeState`. Found by
+      M9a T18's review (2026-10-18).
 - [ ] [upstream] element hooks on the surfaces upstream builds itself, so an
       application can attach an id, a hover handler or a debug selector to
       them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
@@ -3643,59 +3662,12 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       unstated*; the preset keeps them, as they pad all three showcases'
       chrome.
 
-### gpui showcase: two 1px offsets under adwaita's borderless fields
-
-- [ ] [v0.7.0] For M9a (M8 T16 fix round 2, 2026-10-17): under adwaita, whose
-      button, text input and drop-down have no line at rest
-      (`docs/platform-facts.md` §2.3, §2.4, §2.24 `border.line_width` 0), the
-      parity comparison at rest (M8 T16's last after-run, both variants)
-      finds two gpui positions a pixel off that no exception covers:
-      `basic.text_inputs.focused.text.x` gpui 10, iced 9, egui 9 (the
-      focused field's text); `basic.buttons.primary.x` gpui 86, iced 85
-      (85.18), egui 85 (85.19). gpui-component's focused Input adds
-      `border_1()` in the ring colour (gpui-component 0.7.3
-      `src/input/input.rs:758-762`) over the 0 the theme states, which moves
-      the text a pixel in; the primary button sits after the default one,
-      80 wide in gpui and 79.18 / 79.19 in iced / egui. Find what the gpui
-      showcase or connector must change so the two land where iced and egui
-      put them, or the forced cause with its source.
-      M8 T16 fix round 3 (2026-10-17): the focused text's offset is forced:
-      upstream's focused `border_1()` is a focus-state style no `geometry`
-      refinement reaches, recorded with its ring as the gpui contract's
-      `UPSTREAM_LIMITS` entry (`connectors/native-theme-gpui/src/contract.rs`);
-      the primary button's 86 stays open here.
-      M8 T16 fix round 4 (2026-10-17): "forced" above overstates it. What
-      upstream cannot do is draw the theme's inset ring in a focus state;
-      the 1px edge, and the text offset with it, is the price of keeping
-      upstream's focus display, as `Input::focus_bordered(false)`
-      (gpui-component 0.7.3 `src/input/input.rs:311-314`) would drop both the
-      edge and the ring, leaving a focused field with no focus display. The
-      contract entry and the exception reason now say so; the entry is a
-      documented limit, as no test can observe gpui's painted scene.
-
 ### GPUI Kit 0.7.3 (G1, G2): review minors left for M9a, M9b and M9c
 Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at
 the plan's close.
 M8 T21 (2026-10-17): named for its open items, all the showcases' (it was *GPUI Kit
 0.7.3 (G1, G2): review minors left for M6 and M7*); its closed items are under that
 name in [`archive/todo_closed.md`](archive/todo_closed.md).
-- [ ] [v0.7.0] For M6: no test clicks the DataTable's sort button, so the showcase's
-      `perform_sort` (`examples/showcase-gpui/support.rs`) is untested; upstream gives the
-      button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
-      on the table-level info (`info/data.rs`), not on the header row's own
-      (`data_table_header`).
-      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
-      three showcase minors to M9a, the gpui showcase's milestone.
-- [ ] [v0.7.0] For M6: the showcase's `SampleTableDelegate` does not override `move_column`
-      while its columns are movable, so dragging a header moves the header and not the data,
-      and the sortable Role column then sorts the wrong data (pre-existing).
-      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
-      three showcase minors to M9a, the gpui showcase's milestone.
-- [ ] [v0.7.0] For M6: the gpui showcase evaluates `themed_entrance(cx)` more than once per
-      dialog (`examples/showcase-gpui/demo.rs`); `info/chrome.rs`'s `panel_toggle` carries a
-      `too_many_arguments` allow.
-      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
-      three showcase minors to M9a, the gpui showcase's milestone.
 - [ ] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
       auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
       `catppuccin-mocha`'s header label (19 px) is taller than its stated header height

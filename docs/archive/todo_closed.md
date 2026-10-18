@@ -1426,6 +1426,36 @@ platform (`native-theme/src/watch/`).
       and on GNOME. What stays open here is the gpui function's question for M8.
   *Closed by M8 T5 (2026-10-16, 6c82cf19):* the function is not removed but `#[deprecated(since = "0.7.0")]`, its note pointing at `freedesktop_name_candidates` and `FreedesktopLoader::any`, its own tests under `#[allow(deprecated)]`, a CHANGELOG *Deprecated* line. Its removal is a line of the M8 close-out's maintainer question.
   Archived 2026-10-17 (M8 T21): ticked in c522be20.
+- [x] [v0.7.0] For M6: no test clicks the DataTable's sort button, so the showcase's
+      `perform_sort` (`examples/showcase-gpui/support.rs`) is untested; upstream gives the
+      button `.id(("icon-sort", col_ix))` with `test_support()`. The sort button's claims sit
+      on the table-level info (`info/data.rs`), not on the header row's own
+      (`data_table_header`).
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
+  *Closed by M9a T20 (2026-10-18, be7b6392):* `the_tables_sort_button_sorts_its_rows`
+      clicks upstream's `("icon-sort", col_ix)` (gpui-component 0.7.3
+      `table/state.rs:1643`) through its cycle, descending, ascending and back to the
+      rows as given, and reads the delegate's rows after each click.
+- [x] [v0.7.0] For M6: the showcase's `SampleTableDelegate` does not override `move_column`
+      while its columns are movable, so dragging a header moves the header and not the data,
+      and the sortable Role column then sorts the wrong data (pre-existing).
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
+  *Closed by M9a T20 (2026-10-18, be7b6392):* `SampleTableDelegate::move_column`
+      moves the column with its cells, in `rows` and in `unsorted`, as
+      `table/delegate.rs:120-130` asks; `a_moved_column_keeps_its_data` drags the Role
+      header before Name and sorts the moved column by its sort button.
+- [x] [v0.7.0] For M6: the gpui showcase evaluates `themed_entrance(cx)` more than once per
+      dialog (`examples/showcase-gpui/demo.rs`); `info/chrome.rs`'s `panel_toggle` carries a
+      `too_many_arguments` allow.
+      M8 T21 (2026-10-17): for M9a, not M6: M6's Step 6 ruling deferred the
+      three showcase minors to M9a, the gpui showcase's milestone.
+  *Closed by M9a T20 (2026-10-18, 2f2debef):* each dialog's build evaluates
+      `themed_entrance(cx)` once and hands it to its info and to `dialog_frame`; a
+      `#[cfg(test)]` counter reads one per build of each of the four dialogs
+      (`a_dialog_reads_the_themes_entrance_once`). `info::chrome::panel_toggle` takes
+      the status bar's `demo::PanelToggle`, and its `too_many_arguments` allow is gone.
 
 ### Closed items from M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 
@@ -1482,3 +1512,42 @@ platform (`native-theme/src/watch/`).
 - [x] [v0.7.0] For M7's follow-up in M8: the egui plugin's per-viewport focus entry (connectors/native-theme-egui/src/plugin.rs ~:82-84) stays after its viewport closes, the same leak shape M7 T9 fixed for the widgets' parts store.
   *Closed by M8 T6 (2026-10-16, 66053837):* at each pass's `input_hook` the install plugin drops the focus entry of every viewport whose input it saw and that egui no longer has (`Context::cumulative_pass_nr_for` is 0 for it; egui 0.36.2 has no accessor that lists its viewports), the viewports of the passes in progress excepted, and its `last_sent` window theme (fix round 1); at its first root pass it adds the viewports of the entries written before the install, found through `IdTypeMap::temp_keys`, to those it saw (fix round 1); a test opens an immediate viewport, closes it and holds one `FocusEntry` two passes later, where it held two.
   Archived 2026-10-17 (M8 T21): ticked in b3ca8c31.
+
+### gpui showcase: two 1px offsets under adwaita's borderless fields
+
+- [x] [v0.7.0] For M9a (M8 T16 fix round 2, 2026-10-17): under adwaita, whose
+      button, text input and drop-down have no line at rest
+      (`docs/platform-facts.md` §2.3, §2.4, §2.24 `border.line_width` 0), the
+      parity comparison at rest (M8 T16's last after-run, both variants)
+      finds two gpui positions a pixel off that no exception covers:
+      `basic.text_inputs.focused.text.x` gpui 10, iced 9, egui 9 (the
+      focused field's text); `basic.buttons.primary.x` gpui 86, iced 85
+      (85.18), egui 85 (85.19). gpui-component's focused Input adds
+      `border_1()` in the ring colour (gpui-component 0.7.3
+      `src/input/input.rs:758-762`) over the 0 the theme states, which moves
+      the text a pixel in; the primary button sits after the default one,
+      80 wide in gpui and 79.18 / 79.19 in iced / egui. Find what the gpui
+      showcase or connector must change so the two land where iced and egui
+      put them, or the forced cause with its source.
+      M8 T16 fix round 3 (2026-10-17): the focused text's offset is forced:
+      upstream's focused `border_1()` is a focus-state style no `geometry`
+      refinement reaches, recorded with its ring as the gpui contract's
+      `UPSTREAM_LIMITS` entry (`connectors/native-theme-gpui/src/contract.rs`);
+      the primary button's 86 stays open here.
+      M8 T16 fix round 4 (2026-10-17): "forced" above overstates it. What
+      upstream cannot do is draw the theme's inset ring in a focus state;
+      the 1px edge, and the text offset with it, is the price of keeping
+      upstream's focus display, as `Input::focus_bordered(false)`
+      (gpui-component 0.7.3 `src/input/input.rs:311-314`) would drop both the
+      edge and the ring, leaving a focused field with no focus display. The
+      contract entry and the exception reason now say so; the entry is a
+      documented limit, as no test can observe gpui's painted scene.
+  *Closed by M9a T20 (2026-10-18, ca454def):* the primary button's 86 comes from the
+      default button's width alone: in M8 T16's last after-run's adwaita dumps the
+      primary button sits `layout.widget_gap`, 6px, after the default one in all three,
+      which is 80 wide in gpui (its 46px label, a shaped run rounded up) and 79.18 /
+      79.19 in iced / egui. `adwaita:basic.buttons.primary.x` joins the whole-pixel
+      group of `docs/showcase-exceptions.toml` with `adwaita:basic.buttons.default.w`,
+      and the focused text's `rest@adwaita:basic.text_inputs.focused.text.x` the
+      focused Input's toolkit-limit group, whose reason now names the offset;
+      `scripts/check_showcase_parity.py` over those dumps excepts every difference.
