@@ -8698,6 +8698,12 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
 /// builder's control-height rule on `menu.row_height` -- `h` at text scale
 /// 1, `min_h` above it (M9-012) -- read from a fixture whose font is
 /// italic.
+///
+/// It guards the plumbing: that `MenuLook::row` and `MenuLook::title` apply
+/// the refinement `MenuLook::of` takes from `geometry::menu_item`. Both
+/// sides of the comparison are that builder's, so it does not show that the
+/// builder's font and height are the theme's: the connector's own geometry
+/// tests (`src/geometry.rs`) hold that.
 #[test]
 fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
     use native_theme_gpui::Native;
@@ -10841,6 +10847,13 @@ fn the_status_bar_reports_the_accessibility_preferences(cx: &mut TestAppContext)
 /// alone where it is drawn, else the stated name and the platform's
 /// substitute. windows-11 and kde-breeze, each in the form this host gives:
 /// on a system without Segoe UI the first names its substitute.
+///
+/// It guards the plumbing: that the status bar and the Theme tab print the
+/// family gpui-component's `Theme` holds, and the stated name beside it.
+/// Its expectation reads `Theme::font_family`, the value the code reads, so
+/// it does not show that this family is the one the platform draws: the
+/// connector's `font_family` and native-theme's fontconfig lookup
+/// (`native_theme::fonts`) hold that under their own tests.
 #[gpui::test]
 fn the_status_bar_and_the_theme_tab_name_the_drawn_family(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -11903,6 +11916,11 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
 /// page's Spinner asks for one every frame, so a clone there copied the
 /// whole theme, its configs and colour tables included, each frame. The
 /// gate prints each clone it found.
+///
+/// It reads two spellings, not types: `theme().clone()` and
+/// `Theme::global(cx).clone()`, each on one line. A clone through a binding
+/// (`let t = cx.theme();` and later `t.clone()`) or through `Theme::clone(..)`
+/// passes it.
 #[test]
 fn no_code_clones_the_gpui_theme() {
     let found: Vec<String> = showcase_sources()
