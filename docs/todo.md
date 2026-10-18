@@ -3548,6 +3548,15 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
         which tab is drawn selected.
       - The item above on the resizable group's missing Widget Info names
         three `resizable_panel()`s; there are two now.
+- [ ] [1.0] The gpui showcase's Retina nudge
+      (`native_theme_showcase_support::capture::nudge_content_size`, which
+      `examples/showcase-gpui/main.rs` calls when the window opens and before
+      `--screenshot`'s capture on macOS): two 1 px content-size changes, kept
+      because gpui-pre once set its Metal drawable at the logical size on a
+      Retina display, which only a real resize corrected. Whether gpui-pre
+      0.3.9 still needs it cannot be read from Linux. At the next asset run,
+      take a macOS capture without it (the frame check fails if it is still
+      needed); drop it if the capture passes.
 - [ ] [upstream] PR: Button: let the caller's text size reach the label —
       `button_text_size` on the content element (`button/button.rs:749`)
       shadows a size set on the button; honouring the instance style's text

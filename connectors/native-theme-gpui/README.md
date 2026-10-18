@@ -921,13 +921,15 @@ what it shows.
 Flags: `--theme NAME` (a preset), `--variant light|dark|system`,
 `--tab PAGE` (`basic`, `buttons`, `inputs`, `data`, `feedback`, `typography`,
 `layout`, `overlays`, `charts`, `icons`, `theme-map`),
-`--icon-set material|lucide|gpui-builtin|system|freedesktop|<installed theme>`,
-`--icon-theme NAME`, `--screenshot FILE` (macOS and Windows; on Linux the
+`--icon-set default|material|lucide|gpui-builtin|system|freedesktop|<installed theme>`
+(`default` follows the theme's own icon theme), `--screenshot FILE` (macOS
+and Windows; on Linux it exits with 1 before the window opens, and the
 capture scripts take the window), `--capture` (open at 1280 × 720 for a
 capture taken by another tool), `--pointer X,Y` and `--press` (hold the
 pointer, and the primary button, at a point of the window),
 `--dump-layout FILE` (the rectangles of the elements
-`docs/showcase-elements.toml` lists) and `--open-menu TITLE`.
+`docs/showcase-elements.toml` lists; the showcase then quits, unless
+`--capture` or `--screenshot` keeps the window) and `--open-menu TITLE`.
 
 ## Gallery
 

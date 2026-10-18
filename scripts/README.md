@@ -74,8 +74,7 @@ Requires: spectacle (KDE)
 
 ## generate_screenshots_gpui.sh
 
-Same as `generate_screenshots_iced.sh` but for the gpui showcase. Includes
-`--icon-theme` for freedesktop themes that need an explicit icon theme name.
+Same as `generate_screenshots_iced.sh` but for the gpui showcase.
 
 Requires: spectacle (KDE)
 
@@ -86,9 +85,7 @@ Requires: spectacle (KDE)
 ## generate_screenshots_egui.sh
 
 Same as `generate_screenshots_iced.sh` but for the egui showcase, built with
-`--all-features`. The egui showcase takes no `--icon-theme`: a freedesktop
-icon theme is named through `--icon-set`, as the iced capture names
-kde-breeze's `breeze` and `breeze-dark`.
+`--all-features`.
 
 Requires: spectacle (KDE)
 
@@ -112,8 +109,8 @@ settled frame: the run directory `check_showcase_parity.py` reads; `stop_showcas
 stops the showcase a failed or interrupted run leaves. The features differ by
 showcase, as the screenshot workflow builds them: iced with
 `--features iced_aw`, egui with `--all-features`, gpui with its defaults. The
-gpui showcase takes an entry's icon theme as `--icon-theme`; iced and egui take
-it as their `--icon-set`. `SCREENSHOT_ENTRIES` lists the six captures the three
+three showcases take an entry's icon theme, where it has one, as their
+`--icon-set`, its icon set otherwise. `SCREENSHOT_ENTRIES` lists the six captures the three
 screenshot scripts take (kde-breeze, material-3 and catppuccin-mocha, dark and
 light).
 

@@ -4,9 +4,9 @@ set -euo pipefail
 # Screenshot automation for native-theme gpui showcase
 # Captures Linux-native theme presets on the Basic tab using spectacle on KDE Wayland
 #
-# Both gpui and iced now support built-in --screenshot self-capture on macOS
-# (via screencapture -l). This script uses spectacle for Linux (KDE Wayland)
-# local captures where self-capture is not available.
+# The showcase's own `--screenshot` captures its window with its frame on
+# macOS and Windows (tools/showcase-support's capture); on Linux it exits 1
+# before the window opens, so this script takes the window with spectacle.
 #
 # NOTE: On macOS, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-gpui --example showcase-gpui --release -- \

@@ -33,8 +33,7 @@ use crate::info::{
 };
 use crate::inspector::InspectorTab;
 use crate::support::{
-    CAROUSEL_SLIDES, ChromeIcon, load_all_icons, load_gpui_icons, native_color, native_geometry,
-    native_value,
+    CAROUSEL_SLIDES, ChromeIcon, load_gpui_icons, native_color, native_geometry, native_value,
 };
 use crate::{
     BASIC_INPUT_DISABLED, BUTTONS_DANGER, BUTTONS_DISABLED_SECONDARY, BUTTONS_HEADING_VARIANTS,
@@ -2108,33 +2107,14 @@ fn a_capture_opens_at_the_default_size() {
     assert_eq!(normal.app_id, None);
     assert_eq!(
         capture.app_id,
-        Some(format!("showcase-gpui-capture-{}", std::process::id()))
+        Some(native_theme_showcase_support::capture::app_id(
+            native_theme_showcase_support::Kind::Gpui
+        ))
     );
     assert_eq!(
         format!("{:?}", capture.window_bounds),
         format!("{:?}", normal.window_bounds)
     );
-}
-
-/// An OS capture of the window passes only when the content inside its frame
-/// is `WINDOW_SIZE` at the display's scale factor.
-#[test]
-fn a_frame_capture_of_another_size_fails() {
-    use crate::check_frame_capture;
-    // A frame 2px wider and 32px taller than the content, as the Windows
-    // runner's captures measured at the old default size (1182 x 882 around
-    // a 1180 x 850 content).
-    assert_eq!(check_frame_capture((1282, 752), (1280, 720), 1.), Ok(()));
-    assert_eq!(check_frame_capture((2560, 1496), (2560, 1440), 2.), Ok(()));
-    // A 1024px-wide display clamped the window.
-    let clamped = check_frame_capture((1024, 674), (1024, 646), 1.);
-    assert!(
-        clamped
-            .as_ref()
-            .is_err_and(|e| e.contains("1024x674") && e.contains("1280x748")),
-        "{clamped:?}"
-    );
-    assert!(check_frame_capture((1282, 752), (1280, 720), 2.).is_err());
 }
 
 /// The window is two panels wide (spec S1): the side panel, which opens at
@@ -4679,14 +4659,10 @@ fn a_layout_dump_is_the_same_under_the_pointer(cx: &mut TestAppContext) {
         cx.run_until_parked();
         draw(cx);
     };
-    // The dump's own reading and object, as `serde_json::to_string_pretty`
-    // writes it (`{:#}`).
+    // The dump's own object (`dump::layout_json`), as
+    // `serde_json::to_string_pretty` writes it (`{:#}`).
     let dump = |cx: &mut VisualTestContext| {
-        cx.update(|window, cx| {
-            let (drawn, preset, variant, scale) =
-                crate::layout_reading(showcase.read(cx), window, cx);
-            crate::elements::dump_json(&preset, variant, scale, &drawn)
-        })
+        cx.update(|window, cx| crate::layout_dump(showcase.read(cx), window, cx))
     };
     let dumping = crate::CliArgs {
         dump_layout: Some("dump.json".into()),
@@ -6026,12 +6002,7 @@ fn the_chrome_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose(&mut cx, "Material (bundled)");
-    let material = load_gpui_icons(
-        Some(native_theme::theme::IconSet::Material),
-        None,
-        None,
-        None,
-    );
+    let material = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
     for name in chrome_icon_names() {
         let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
         let path = gpui_component::IconNamed::path(name.clone());
@@ -6307,12 +6278,7 @@ fn the_page_samples_icons_come_from_the_chosen_set(cx: &mut TestAppContext) {
     }
 
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
-    let material = load_gpui_icons(
-        Some(native_theme::theme::IconSet::Material),
-        None,
-        None,
-        None,
-    );
+    let material = load_gpui_icons(Some(native_theme::theme::IconSet::Material), None, None);
     for (page, selector, name) in PAGE_SAMPLE_ICONS {
         show(&mut cx, &showcase, page);
         let icon = read(&mut cx, &showcase, |this, _| this.sample_icon(name.clone()));
@@ -7135,48 +7101,6 @@ fn a_swatchs_painted_fill_is_its_value_claim(cx: &mut TestAppContext) {
     );
 }
 
-/// `--icon-theme` names the freedesktop theme the icons load from, and they
-/// load from it: applying the override reloads them, so the Icons page's
-/// label and the icons it shows agree. A freedesktop set is chosen first
-/// (another theme's, which the override must win over), so the label names
-/// a theme on every platform.
-#[gpui::test]
-fn the_icon_theme_override_reloads_the_icons(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    let theme = "hicolor";
-    cx.update(|window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.select_icon_set("Adwaita", window, cx);
-            this.set_icon_theme_override(theme.to_string(), window, cx);
-        });
-    });
-    cx.run_until_parked();
-    let (loaded, expected) = read(&mut cx, &showcase, |this, _cx| {
-        let effective = this
-            .icon_set_choice
-            .effective_icon_set(this.current_icon_set);
-        let fc = this.original_font.color;
-        (
-            this.loaded_icons.clone(),
-            load_all_icons(
-                effective,
-                this.icon_set_choice.freedesktop_theme(),
-                Some(theme),
-                Some(fc),
-            ),
-        )
-    });
-    assert!(
-        loaded == expected,
-        "the icons on show are not the ones --icon-theme {theme} loads"
-    );
-    assert_eq!(
-        read(&mut cx, &showcase, |this, _cx| this.icon_set_label()),
-        format!("freedesktop ({theme})"),
-        "the Icons page names another theme than the one --icon-theme loads from"
-    );
-}
-
 /// Install the preset of `key` as the theme settings' preset switch and the
 /// command palette do, through `SetPreset`, and draw the frame after.
 fn set_preset(cx: &mut VisualTestContext, key: &str) {
@@ -7461,32 +7385,6 @@ fn a_failed_icon_theme_detection_is_shown_as_a_failure(cx: &mut TestAppContext) 
     );
 }
 
-/// `--icon-theme` applies until the user picks an icon theme in the theme
-/// settings' Select: from then on the icons load from the one picked.
-#[gpui::test]
-fn picking_an_icon_theme_ends_the_icon_theme_override(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    cx.update(|window, cx| {
-        showcase.update(cx, |this, cx| {
-            this.set_icon_theme_override("hicolor".to_string(), window, cx);
-            this.select_icon_set("Adwaita", window, cx);
-        })
-    });
-    cx.run_until_parked();
-    assert_eq!(
-        read(&mut cx, &showcase, |this, _| this
-            .freedesktop_theme()
-            .map(str::to_string)),
-        Some("Adwaita".to_string()),
-        "after the user picked Adwaita the icons still load from --icon-theme's hicolor"
-    );
-    assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.icon_set_label()),
-        "freedesktop (Adwaita)",
-        "the Icons page does not name the icon theme the user picked"
-    );
-}
-
 /// The preset switch's `default` row and the status bar name the same
 /// preset: the one the pipeline settled on (`SystemTheme::preset`), which
 /// on a desktop `native_theme::detect` does not recognise can differ from
@@ -7762,17 +7660,6 @@ fn a_cli_variant_whose_install_fails_keeps_the_colour_mode_shown(cx: &mut TestAp
     );
 }
 
-/// `--pointer X,Y` is two whole logical pixels, and anything else holds no
-/// pointer.
-#[test]
-fn the_pointer_flag_is_a_point() {
-    assert_eq!(crate::parse_point("349,142"), Some((349, 142)));
-    assert_eq!(crate::parse_point(" 349 , 142 "), Some((349, 142)));
-    for bad in ["349", "x,1", "1,-2", ""] {
-        assert_eq!(crate::parse_point(bad), None, "{bad:?}");
-    }
-}
-
 /// `--variant` takes `light`, `dark` or `system` (follow the OS); `--theme`
 /// takes what the preset switch offers, which is only this platform's
 /// presets. Anything else is ignored: the theme and mode stay, and the
@@ -7973,10 +7860,12 @@ fn icon_choice_state(
     })
 }
 
-/// `--icon-set` takes what the icon-theme Select offers -- a bundled set,
-/// `gpui-builtin`, `system` or `freedesktop` (the system icon theme), or a
-/// freedesktop theme the Select lists -- and the Select shows it. Anything
-/// else is ignored: the icon choice stays.
+/// `--icon-set` takes what the icon-theme Select offers -- `default`, a
+/// bundled set, `gpui-builtin`, `system` or `freedesktop` (the system icon
+/// theme), or a freedesktop theme the Select lists -- and the Select shows
+/// it. Anything else is ignored: the icon choice stays. `default` follows
+/// the theme again: the Select's `default` row where the theme's icon theme
+/// is available, `system` where it is not, as the Select's rows are.
 #[gpui::test]
 fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
     use native_theme::theme::IconSet;
@@ -8057,18 +7946,74 @@ fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
             );
         }
     }
+
+    // The choice `default` gives, and whether the choice then follows the
+    // theme, read from the installed theme at test time.
+    let following = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, _| {
+            let theme = this
+                .current_icon_theme
+                .as_deref()
+                .filter(|_| this.has_toml_icon_theme);
+            (
+                native_theme::icons::default_icon_choice(this.current_icon_set, theme),
+                this.icon_choice_follows_preset,
+            )
+        })
+    };
+    // A bundled set's icon theme is always available: its `default` row.
+    set_preset(&mut cx, "catppuccin-mocha");
+    icon_set(&mut cx, "material");
+    let (choice, state) = (following(&mut cx).0, icon_set(&mut cx, "default"));
+    assert!(
+        matches!(choice, IconSetChoice::Default(_)),
+        "catppuccin-mocha's icon theme is not its default row: {choice:?}"
+    );
+    assert_eq!(
+        (state.0, state.3),
+        (choice.clone(), Some(choice.to_string())),
+        "--icon-set default did not choose, and show, the Select's default row"
+    );
+    assert!(
+        following(&mut cx).1,
+        "after --icon-set default the icon choice does not follow the theme"
+    );
+    // A freedesktop theme naming an icon theme that is not installed: the
+    // Select has no `default` row, and `default` is `system`.
+    set_preset(&mut cx, "adwaita");
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            this.current_icon_theme = Some("no-such-icon-theme".to_string())
+        })
+    });
+    icon_set(&mut cx, "material");
+    let state = icon_set(&mut cx, "default");
+    assert_eq!(
+        following(&mut cx),
+        (IconSetChoice::System, true),
+        "under an icon theme that is not installed --icon-set default does not follow the \
+         theme to system"
+    );
+    assert_eq!(
+        (state.0, state.3),
+        (
+            IconSetChoice::System,
+            Some(IconSetChoice::System.to_string())
+        ),
+        "under an icon theme that is not installed --icon-set default does not choose, and \
+         show, system"
+    );
 }
 
-/// `--tab` takes each page's name, and `text-inputs` for the Inputs page;
-/// another name is reported with the pages it could have been.
+/// `--tab` takes each page's name; another name is reported with the pages
+/// it could have been.
 #[test]
 fn the_tab_flag_names_every_page() {
     for page in Page::ALL {
-        assert_eq!(crate::CliArgs::page(page.flag()), Ok(page));
+        assert_eq!(Page::named(page.flag()), Ok(page));
     }
-    assert_eq!(crate::CliArgs::page("text-inputs"), Ok(Page::Inputs));
-    assert_eq!(crate::CliArgs::page("basic"), Ok(Page::Basic));
-    match crate::CliArgs::page("no-such-page") {
+    assert_eq!(Page::named("basic"), Ok(Page::Basic));
+    match Page::named("no-such-page") {
         Ok(page) => panic!("--tab no-such-page opened {page:?}"),
         Err(error) => {
             for page in Page::ALL {
@@ -8076,94 +8021,6 @@ fn the_tab_flag_names_every_page() {
             }
         }
     }
-}
-
-/// Where no freedesktop icon theme is installed -- off Linux, always --
-/// `--icon-set` and `--icon-theme` say so, rather than end their report on
-/// an empty list.
-#[test]
-fn the_icon_flags_say_when_no_icon_theme_is_installed() {
-    let errors = [
-        crate::CliArgs::icon_set_row("no-such-icon-theme", &[]).err(),
-        crate::CliArgs::icon_theme("no-such-icon-theme", &[]).err(),
-    ];
-    for error in errors {
-        let Some(error) = error else {
-            panic!("an icon theme was taken with none installed");
-        };
-        assert!(error.ends_with("; none are installed"), "{error}");
-    }
-}
-
-/// With `--icon-theme` in effect, the icon-theme Select names the theme the
-/// icons load from, across a preset switch too. `--icon-theme` takes a
-/// freedesktop theme the Select lists; another is ignored.
-#[gpui::test]
-fn the_icon_theme_select_shows_the_icon_theme_override(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let listed = ["a-listed-icon-theme", "another-listed-icon-theme"];
-    list_icon_themes(&mut cx, &showcase, &listed);
-    apply_cli(
-        &mut cx,
-        &showcase,
-        &crate::CliArgs {
-            icon_theme: Some("hicolor".to_string()),
-            ..Default::default()
-        },
-    );
-    assert_eq!(
-        read(&mut cx, &showcase, |this, _| this
-            .icon_theme_override
-            .clone()),
-        None,
-        "--icon-theme hicolor, which the Select does not list, was taken"
-    );
-
-    apply_cli(
-        &mut cx,
-        &showcase,
-        &crate::CliArgs {
-            icon_set: Some(listed[0].to_string()),
-            icon_theme: Some(listed[1].to_string()),
-            ..Default::default()
-        },
-    );
-    let shown = |cx: &mut VisualTestContext| {
-        read(cx, &showcase, |this, cx| {
-            (
-                this.icon_theme_select
-                    .read(cx)
-                    .selected_value()
-                    .map(|v| v.to_string()),
-                this.icon_set_label(),
-            )
-        })
-    };
-    let wanted = (
-        Some(listed[1].to_string()),
-        format!("freedesktop ({})", listed[1]),
-    );
-    assert_eq!(
-        shown(&mut cx),
-        wanted,
-        "--icon-set {} --icon-theme {}: the icon-theme Select does not name the theme the \
-         icons load from",
-        listed[0],
-        listed[1]
-    );
-    let Some(preset) = native_theme::theme::Theme::list_presets_for_platform()
-        .first()
-        .map(|info| info.key)
-    else {
-        panic!("no preset is offered on this platform");
-    };
-    set_preset(&mut cx, preset);
-    assert_eq!(
-        shown(&mut cx),
-        wanted,
-        "after a switch to {preset} the icon-theme Select does not name the theme the \
-         icons load from"
-    );
 }
 
 /// The parts of two `drawn_state`s that differ, as `name: before -> after`,
@@ -9615,4 +9472,53 @@ fn the_synthetic_input_feeds_levels_and_stops_with_the_session(cx: &mut TestAppC
         delivered,
         "the synthetic input kept running after stop"
     );
+}
+
+/// The Icons page's role of each gallery icon is the connector's: the
+/// first `IconRole` whose `native_theme_gpui::icons::icon_name` is the icon
+/// (`DialogError`, not `StatusError`, for `CircleX`), and none for an icon
+/// no role names. The roles below are the hand table the showcase kept
+/// until the role was derived, which the derivation matched for every
+/// gallery icon; a change to the connector's mapping shows here.
+#[test]
+fn a_gallery_icons_role_is_the_first_the_connector_names_it_for() {
+    use native_theme::icons::IconRole;
+    let roles = [
+        ("TriangleAlert", IconRole::DialogWarning),
+        ("CircleX", IconRole::DialogError),
+        ("Info", IconRole::DialogInfo),
+        ("CircleCheck", IconRole::DialogSuccess),
+        ("WindowClose", IconRole::WindowClose),
+        ("WindowMinimize", IconRole::WindowMinimize),
+        ("WindowMaximize", IconRole::WindowMaximize),
+        ("WindowRestore", IconRole::WindowRestore),
+        ("Delete", IconRole::ActionDelete),
+        ("Copy", IconRole::ActionCopy),
+        ("Undo2", IconRole::ActionUndo),
+        ("Redo2", IconRole::ActionRedo),
+        ("Search", IconRole::ActionSearch),
+        ("Settings", IconRole::ActionSettings),
+        ("Plus", IconRole::ActionAdd),
+        ("Minus", IconRole::ActionRemove),
+        ("RefreshCw", IconRole::ActionRefresh),
+        ("ChevronLeft", IconRole::NavBack),
+        ("ChevronRight", IconRole::NavForward),
+        ("ChevronUp", IconRole::NavUp),
+        ("ChevronDown", IconRole::NavDown),
+        ("Menu", IconRole::NavMenu),
+        ("File", IconRole::FileGeneric),
+        ("FolderClosed", IconRole::FolderClosed),
+        ("FolderOpen", IconRole::FolderOpen),
+        ("Loader", IconRole::StatusBusy),
+        ("Check", IconRole::StatusCheck),
+        ("User", IconRole::UserAccount),
+        ("Bell", IconRole::Notification),
+    ];
+    for (name, icon) in crate::support::GPUI_ICONS {
+        let wanted = roles
+            .iter()
+            .find(|(named, _)| named == name)
+            .map(|(_, role)| *role);
+        assert_eq!(crate::support::role_for_gpui_icon(icon), wanted, "{name}");
+    }
 }

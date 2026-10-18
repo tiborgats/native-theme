@@ -35,7 +35,6 @@ use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::time::Duration;
 
-use native_theme::detect::system_is_dark;
 use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, TransformAnimation,
@@ -174,58 +173,10 @@ const QUIT_SETTLE: std::time::Duration = std::time::Duration::from_millis(100);
 // Color mode (light / dark / system)
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum AppColorMode {
-    System,
-    Light,
-    Dark,
-}
-
-impl AppColorMode {
-    /// Resolve to a concrete is_dark bool.
-    fn is_dark(self) -> bool {
-        match self {
-            AppColorMode::Light => false,
-            AppColorMode::Dark => true,
-            AppColorMode::System => system_is_dark(),
-        }
-    }
-
-    /// Display label for the command palette, with system preference in
-    /// parentheses.
-    pub(crate) fn label(self) -> String {
-        match self {
-            AppColorMode::System => {
-                let actual = if system_is_dark() { "Dark" } else { "Light" };
-                format!("System ({actual})")
-            }
-            AppColorMode::Light => "Light".into(),
-            AppColorMode::Dark => "Dark".into(),
-        }
-    }
-
-    /// Every mode, in the order the colour-mode Select lists them.
-    pub(crate) const ALL: [AppColorMode; 3] = [
-        AppColorMode::System,
-        AppColorMode::Light,
-        AppColorMode::Dark,
-    ];
-
-    /// The mode whose `short_label` is `label`.
-    fn from_short_label(label: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|m| m.short_label() == label)
-    }
-
-    /// The colour-mode Select's row for this mode: the mode alone. The mode
-    /// System resolves to is in the status bar while System is chosen.
-    pub(crate) fn short_label(self) -> &'static str {
-        match self {
-            AppColorMode::System => "System",
-            AppColorMode::Light => "Light",
-            AppColorMode::Dark => "Dark",
-        }
-    }
-}
+/// The colour-mode Select's rows, the Theme menu's and the command
+/// palette's modes: the shared crate's, which `--variant` names
+/// (`cli::color_mode`).
+pub(crate) use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
 
 // ---------------------------------------------------------------------------
 // Main view
@@ -455,7 +406,8 @@ pub(crate) struct Showcase {
     /// for the installed theme -- its `default`, or `system` where the
     /// preset's own icon theme is not installed -- and is taken again on
     /// every theme install. False once the user picks any other row of the
-    /// icon-theme Select, or `--icon-set` names a set: that choice stays.
+    /// icon-theme Select, or `--icon-set` names a set: that choice stays;
+    /// true again after `--icon-set default`.
     pub(crate) icon_choice_follows_preset: bool,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     pub(crate) installed_themes: Vec<String>,
@@ -466,10 +418,6 @@ pub(crate) struct Showcase {
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
     pub(crate) has_toml_icon_theme: bool,
-    /// The freedesktop icon theme `--icon-theme` names, one the icon-theme
-    /// Select lists (e.g. "breeze", "breeze-dark"), which the icons load
-    /// from until the user picks an icon theme in the icon-theme Select.
-    pub(crate) icon_theme_override: Option<String>,
 
     // Animated Icons state
     /// Cached frame ImageSources for frame-based animations (set name, frames).
@@ -709,12 +657,9 @@ impl Showcase {
     }
 
     /// The freedesktop theme the page's icons load from where the set is
-    /// freedesktop: the `--icon-theme` override while it stands, else the
-    /// theme the choice names; `None` is the system's own.
+    /// freedesktop: the theme the choice names; `None` is the system's own.
     pub(crate) fn freedesktop_theme(&self) -> Option<&str> {
-        self.icon_theme_override
-            .as_deref()
-            .or(self.icon_set_choice.freedesktop_theme())
+        self.icon_set_choice.freedesktop_theme()
     }
 
     /// The content panel's width: the page's scroll area's, as the last frame
@@ -879,34 +824,15 @@ impl Showcase {
         }
     }
 
-    /// Load the freedesktop icons from `theme` until the user picks an icon
-    /// theme in the icon-theme Select: what `--icon-theme` asks for. The
-    /// Select shows `theme` while the override stands and a freedesktop set
-    /// is chosen (`icon_choice_row`).
-    pub(crate) fn set_icon_theme_override(
-        &mut self,
-        theme: String,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.icon_theme_override = Some(theme);
-        self.show_icon_choice(window, cx);
-        // The icons on show were loaded before the override, so the page
-        // would name this theme over another theme's icons.
-        self.reload_icons(window, cx);
-    }
-
     /// Load the icon theme the icon-theme Select names `display`, as the
-    /// Select does when it is confirmed. The user's pick: it ends the
-    /// `--icon-theme` override, and only its `default` row follows the preset
-    /// from now on.
+    /// Select does when it is confirmed. The user's pick: only its `default`
+    /// row follows the preset from now on.
     pub(crate) fn select_icon_set(
         &mut self,
         display: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.icon_theme_override = None;
         self.choose_icon_row(display);
         self.reload_icons(window, cx);
     }
@@ -937,30 +863,19 @@ impl Showcase {
         };
     }
 
-    /// Load the icons of the chosen set -- from the `--icon-theme` override
-    /// while it stands -- and rebuild what the Icons page draws from them.
+    /// Load the icons of the chosen set and rebuild what the Icons page
+    /// draws from them.
     pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let default_theme = self
-            .icon_set_choice
-            .freedesktop_theme()
-            .map(|s| s.to_string());
-        let cli_ref = self.icon_theme_override.as_deref();
-        let fc = self.original_font.color;
-        let fg_color = Some(fc);
+        let theme = self.freedesktop_theme().map(str::to_string);
+        let fg_color = Some(self.original_font.color);
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
-            self.loaded_icons =
-                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_color);
+            self.loaded_icons = load_all_icons(effective, theme.as_deref(), fg_color);
         }
-        self.gpui_icons = load_gpui_icons(
-            self.icon_set_enum,
-            default_theme.as_deref(),
-            cli_ref,
-            fg_color,
-        );
+        self.gpui_icons = load_gpui_icons(self.icon_set_enum, theme.as_deref(), fg_color);
         let fg = cx.theme().foreground;
         self.rebuild_icon_caches(fg, window, cx);
         self.rebuild_animation_caches(window, cx);
@@ -984,18 +899,12 @@ impl Showcase {
             .filter(|_| self.has_toml_icon_theme)
     }
 
-    /// The icon-theme Select's row for the icons drawn: the `--icon-theme`
-    /// override's while it stands and a freedesktop set is chosen, as the
-    /// icons load from it, else the current choice's.
+    /// The icon-theme Select's row for the icons drawn: the current
+    /// choice's, or gpui-component's own icons' row.
     fn icon_choice_row(&self) -> SharedString {
-        match (self.icon_set_enum, self.icon_theme_override.as_deref()) {
-            (None, _) => GPUI_BUILTIN_ROW.into(),
-            (Some(IconSet::Freedesktop), Some(theme)) => {
-                IconSetChoice::Freedesktop(theme.to_string())
-                    .to_string()
-                    .into()
-            }
-            (Some(_), _) => self.icon_set_choice.to_string().into(),
+        match self.icon_set_enum {
+            None => GPUI_BUILTIN_ROW.into(),
+            Some(_) => self.icon_set_choice.to_string().into(),
         }
     }
 
@@ -1047,7 +956,9 @@ impl Showcase {
              window,
              cx| {
                 if let SelectEvent::Confirm(Some(value)) = event
-                    && let Some(mode) = AppColorMode::from_short_label(value)
+                    && let Some(mode) = AppColorMode::ALL
+                        .into_iter()
+                        .find(|mode| mode.short_label() == value.as_ref())
                 {
                     window.dispatch_action(Box::new(SetColorMode(mode)), cx);
                 }
@@ -1318,16 +1229,11 @@ impl Showcase {
         let installed_themes = list_freedesktop_themes();
         let fc = original_font.color;
         let fg = Some(fc);
-        let loaded_icons = load_all_icons(
-            initial_effective_set,
-            initial_default_theme.as_deref(),
-            None,
-            fg,
-        );
+        let loaded_icons =
+            load_all_icons(initial_effective_set, initial_default_theme.as_deref(), fg);
         let gpui_icons = load_gpui_icons(
             Some(initial_effective_set),
             initial_default_theme.as_deref(),
-            None,
             fg,
         );
 
@@ -1528,22 +1434,23 @@ impl Showcase {
         // self-tests below build this view for real. Nothing they assert
         // depends on it.
         #[cfg(feature = "watch")]
-        let _theme_watcher = if cfg!(test) || !crate::CliArgs::parse().follows_os() {
-            None
-        } else {
-            let showcase = cx.weak_entity();
-            // The showcase's one window, so it watches as long as it runs.
-            native_theme_gpui::on_theme_change(window, cx, move |_event, window, cx| {
-                // Gone once the window closed; nothing to follow then.
-                let _ = showcase.update(cx, |this, cx| {
-                    if matches!(this.color_mode, AppColorMode::System) {
-                        this.reload_system_theme(window, cx);
-                        cx.notify();
-                    }
-                });
-            })
-            .ok()
-        };
+        let _theme_watcher =
+            if cfg!(test) || !crate::CliArgs::parse(std::env::args().skip(1)).follows_os() {
+                None
+            } else {
+                let showcase = cx.weak_entity();
+                // The showcase's one window, so it watches as long as it runs.
+                native_theme_gpui::on_theme_change(window, cx, move |_event, window, cx| {
+                    // Gone once the window closed; nothing to follow then.
+                    let _ = showcase.update(cx, |this, cx| {
+                        if matches!(this.color_mode, AppColorMode::System) {
+                            this.reload_system_theme(window, cx);
+                            cx.notify();
+                        }
+                    });
+                })
+                .ok()
+            };
 
         let inspector = {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
@@ -1653,7 +1560,6 @@ impl Showcase {
             current_icon_theme: initial_icon_theme,
             current_icon_set: initial_icon_set,
             has_toml_icon_theme: initial_has_toml_icon_theme,
-            icon_theme_override: None,
             animated_frame_sources: Vec::new(),
             animated_frame_durations: Vec::new(),
             animated_frame_indices: Vec::new(),

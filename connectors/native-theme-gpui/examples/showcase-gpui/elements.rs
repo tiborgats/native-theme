@@ -1,19 +1,15 @@
 //! The elements the three showcases share, read from
-//! `docs/showcase-elements.toml`, and the layout dump that reports where
-//! this showcase drew each of them (`--dump-layout`).
+//! `docs/showcase-elements.toml`, and where this showcase drew each of them,
+//! which the layout dump reports (`--dump-layout`, `layout_dump` in main.rs).
 //!
 //! The list is the one place those elements are named: Widget Info shows an
 //! element's name, state and leaves from it, and
 //! `scripts/check_showcase_parity.py` compares the gpui, iced and egui dumps
 //! and captures element by element against it.
 
-use std::collections::BTreeMap;
 use std::sync::OnceLock;
 
-use gpui::{
-    App, Bounds, Div, Entity, IntoElement, ParentElement as _, Pixels, Styled as _, Window, canvas,
-    div,
-};
+use gpui::{App, Div, Entity, IntoElement, ParentElement as _, Styled as _, Window, canvas, div};
 
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{Part, PartBounds};
@@ -498,36 +494,3 @@ pub trait ListedExt: IntoElement + Sized {
 }
 
 impl<E: IntoElement> ListedExt for E {}
-
-/// The layout dump (`--dump-layout`): the showcase kind, the theme, the
-/// scale and one rectangle per element of the list drawn in the last frame,
-/// in logical pixels of the window's content (docs/showcase-elements.toml,
-/// "The layout dump").
-pub fn dump_json(
-    preset: &str,
-    variant: &str,
-    scale: f32,
-    drawn: &BTreeMap<&'static str, Bounds<Pixels>>,
-) -> serde_json::Value {
-    let rects: serde_json::Map<String, serde_json::Value> = drawn
-        .iter()
-        .map(|(id, b)| {
-            (
-                (*id).to_string(),
-                serde_json::json!({
-                    "x": b.origin.x.as_f32(),
-                    "y": b.origin.y.as_f32(),
-                    "w": b.size.width.as_f32(),
-                    "h": b.size.height.as_f32(),
-                }),
-            )
-        })
-        .collect();
-    serde_json::json!({
-        "kind": "gpui",
-        "preset": preset,
-        "variant": variant,
-        "scale": scale,
-        "elements": rects,
-    })
-}

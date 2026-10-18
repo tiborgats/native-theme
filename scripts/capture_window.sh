@@ -25,10 +25,12 @@
 # Requires: spectacle, kscreen-doctor, qdbus6 (KDE Plasma 6), dbus-monitor and
 # dbus-send (D-Bus), python3 with Pillow.
 
-# The showcases' default window size in logical pixels: `WINDOW_SIZE` in
-# connectors/native-theme-egui/examples/showcase-egui/main.rs and
-# connectors/native-theme-iced/examples/showcase-iced.rs, `WINDOW_SIZE_PX` in
-# connectors/native-theme-gpui/examples/showcase-gpui/main.rs.
+# The showcases' default window size in logical pixels:
+# `native_theme_showcase_support::WINDOW_SIZE_PX` (tools/showcase-support),
+# which the gpui showcase opens at; the iced and egui showcases keep their own
+# copy, `WINDOW_SIZE` in connectors/native-theme-iced/examples/showcase-iced.rs
+# and connectors/native-theme-egui/examples/showcase-egui/main.rs, until M9b
+# T1 and M9c T1.
 SHOWCASE_WINDOW_WIDTH=1280
 SHOWCASE_WINDOW_HEIGHT=720
 
@@ -409,9 +411,8 @@ wait_for_dump() {
 # whatever the desktop remembers for its window, with an app id of its own.
 # It runs cargo from the repository root, so it leaves the caller there.
 #
-# The gpui showcase takes a freedesktop icon theme as `--icon-theme`; the iced
-# and egui showcases have no such flag and take an installed theme's name as
-# their `--icon-set`, so an entry's icon theme, where it has one, is theirs.
+# The three showcases take an installed freedesktop theme's name as their
+# `--icon-set`, so an entry's icon theme, where it has one, is theirs.
 # FEATURES differ by showcase, as the callers and the screenshot workflow build
 # them: iced with `--features iced_aw` (its Extra page), egui with
 # `--all-features`, gpui with its defaults ("").
@@ -456,15 +457,8 @@ capture_showcases() {
         index=$((index + 1))
         echo "[$index/$total] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$file")"
 
-        args=(--theme "$theme" --variant "$variant" --tab basic --capture)
-        if [ "$kind" = gpui ]; then
-            args+=(--icon-set "$icon_set")
-            if [ -n "$icon_theme" ]; then
-                args+=(--icon-theme "$icon_theme")
-            fi
-        else
-            args+=(--icon-set "${icon_theme:-$icon_set}")
-        fi
+        args=(--theme "$theme" --variant "$variant" --tab basic --capture \
+            --icon-set "${icon_theme:-$icon_set}")
         dump=""
         if [ -n "$dumps" ]; then
             name="$kind-$theme-$variant"
