@@ -8337,15 +8337,8 @@ pub(crate) fn icon_button(
     let native = cx.native();
     let native_button = native.as_ref().map(|n| &n.resolved.button);
     let icon = role_icon_of(drawn);
-    let mut button_info = info::buttons::button(
-        cx.theme(),
-        ButtonKind::Ghost,
-        ButtonState::Idle,
-        icon.is_some(),
-        None,
-        native_button,
-    )
-    .instance("icon", format!("{name}, at toolbar.icon_size"));
+    let mut button_info = info::buttons::icon_button(cx.theme(), icon.is_some(), native_button)
+        .instance("icon", format!("{name}, at toolbar.icon_size"));
     let icon = icon.map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");

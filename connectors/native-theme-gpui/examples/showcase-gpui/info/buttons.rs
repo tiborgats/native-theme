@@ -824,6 +824,33 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
         )
 }
 
+/// One of the Basic page's icon buttons (`demo::icon_button`), showing its
+/// icon where `drawn`, else its name: the Ghost the window's toolbar buttons
+/// are, given `native`'s `button.border` radius and stated padding sides by
+/// the showcase (`demo::tool_box_of`) where a native theme is installed --
+/// not `geometry::button`, so the edge stays upstream's, none.
+pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Button").variant(if drawn {
+        "Ghost, icon"
+    } else {
+        "Ghost, labelled"
+    });
+    let info = native_ghost(info, t).not_themeable(
+        "edge",
+        "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
+    );
+    match native {
+        Some(b) => info.config(
+            "radius and padding",
+            format!(
+                "button.border.corner_radius, {}px, and the button.border.padding sides the theme states, which the showcase sets on the Button; an unstated side keeps upstream's h_8 / px_2p5 at the default Size (button/button.rs, RenderOnce for Button)",
+                px_text(b.border.corner_radius.max(0.))
+            ),
+        ),
+        None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
+    }
+}
+
 /// One of the component `Toolbar`'s Ghost Buttons, showing `icon` of the
 /// icon theme named `set`; it runs nothing. Its icon-size line is recorded
 /// where `demo::toolbar_item` applies the builder.

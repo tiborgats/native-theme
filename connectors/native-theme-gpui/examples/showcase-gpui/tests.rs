@@ -10757,3 +10757,33 @@ fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
         "the card's info without a native theme claims a content text its Label paints over: {card:?}"
     );
 }
+
+/// The Basic page's icon buttons claim no edge (review of M9a T7): they are
+/// Ghosts the showcase gives only `button.border`'s radius and padding
+/// (`demo::tool_box_of`), not `geometry::button`, and upstream gives a Ghost
+/// no border width -- under kde-breeze light, whose `button.border.line_width`
+/// is above 0, where a Button `geometry::button` refines is edged.
+#[gpui::test]
+fn the_basic_pages_icon_buttons_claim_no_edge(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.button.border.line_width > 0.0,
+        "kde-breeze no longer edges its buttons, so this test cannot tell an edge claim from none"
+    );
+    let info = settle_on(&mut cx, &showcase, "basic-icon-copy");
+    assert!(info.is_some(), "the Copy icon button shows no info");
+    let Some(info) = info else { return };
+    assert!(
+        info.colors.iter().all(|c| !c.role.starts_with("border")),
+        "an icon button's info claims an edge it does not draw: {info:?}"
+    );
+    assert!(
+        info.config
+            .iter()
+            .all(|n| !n.text.contains("geometry::button")),
+        "an icon button's info names geometry::button, which it does not take: {info:?}"
+    );
+}
