@@ -135,7 +135,7 @@ pub fn separator(t: &Theme, kind: SeparatorKind, native: Option<&ResolvedTheme>)
 /// the side `card.border.padding` states (`geometry::group_box_content`),
 /// else `margin`, the installed layout's `container_margin`, which the
 /// showcase pads an unstated side with where a native theme is installed
-/// (`demo::pad_unstated_sides`), else `own`, the variant's own.
+/// (`demo::padded`), else `own`, the variant's own.
 fn content_padding(native: Option<&ResolvedTheme>, margin: Option<Pixels>, own: &str) -> String {
     let side = |name: &str, stated: Option<f32>| match (native, stated, margin) {
         (Some(_), Some(v), _) => format!("{name} {}px, card.border's", px_text(v)),

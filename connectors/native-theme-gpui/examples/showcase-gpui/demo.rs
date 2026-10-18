@@ -1490,7 +1490,6 @@ pub(crate) fn side_panel(
         panel_info = panel_info.geometry("container_margin");
     }
     let own = sidebar_padding(cx);
-    let side = |stated: Option<f32>| stated.map(px).or(container_margin);
     // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
     // colour, which the connector installs as the `sidebar` and
     // `sidebar_foreground` tokens.
@@ -1499,11 +1498,7 @@ pub(crate) fn side_panel(
         .bg(cx.theme().sidebar)
         .text_color(cx.theme().sidebar_foreground)
         .when_some(own, |panel, p| {
-            panel
-                .when_some(side(p.top), |el, v| el.pt(v))
-                .when_some(side(p.right), |el, v| el.pr(v))
-                .when_some(side(p.bottom), |el, v| el.pb(v))
-                .when_some(side(p.left), |el, v| el.pl(v))
+            padded(panel, &p, container_margin, container_margin)
         })
         .child(
             with_padding(
@@ -2107,15 +2102,10 @@ pub(crate) fn segmented(
     let segments = labels.iter().enumerate().map(|(ix, &label)| {
         let on_click = on_click.clone();
         let active = ix == selected;
-        div()
-            .id((id, ix))
+        padded(div().id((id, ix)), &b.padding, Some(SEGMENT_PADDING), None)
             .flex()
             .items_center()
             .min_h(px(s.segment_height))
-            .pl(b.padding.left.map_or(SEGMENT_PADDING, px))
-            .pr(b.padding.right.map_or(SEGMENT_PADDING, px))
-            .when_some(b.padding.top, |segment, top| segment.pt(px(top)))
-            .when_some(b.padding.bottom, |segment, bottom| segment.pb(px(bottom)))
             .when(ix > 0, |segment| {
                 segment
                     .border_l(px(s.separator_width))
@@ -6237,9 +6227,13 @@ impl GroupBoxKind {
 
 /// A `GroupBox` of `kind` titled `title` around `content`, which `about`
 /// describes in its info; its content refined by
-/// `geometry::group_box_content`, and padded with `container_margin`, the
-/// installed layout's `geometry::container_margin`, on a side
-/// `card.border.padding` leaves unstated ([`pad_unstated_sides`]).
+/// `geometry::group_box_content`, which sets the sides `card.border.padding`
+/// states, and padded with `container_margin`, the installed layout's
+/// `geometry::container_margin`, on a side it leaves unstated ([`padded`]).
+/// A group box is a container, and `layout.container_margin` is the padding
+/// inside containers (platform-facts §2.20): it stands in for a Fill or
+/// Outline GroupBox's own `p_4` and a Normal one's none (group_box.rs,
+/// `GroupBox`), as it does in a card.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn group_box(
     ui: &Entity<InfoRegistry>,
@@ -6272,7 +6266,12 @@ pub(crate) fn group_box(
     let content_style = match (&native, container_margin) {
         (Some(n), Some(margin)) => {
             box_info = box_info.geometry("container_margin");
-            pad_unstated_sides(content_style, &n.resolved.card.border.padding, margin)
+            padded(
+                content_style,
+                &n.resolved.card.border.padding,
+                Some(margin),
+                Some(margin),
+            )
         }
         _ => content_style,
     };
@@ -6283,80 +6282,6 @@ pub(crate) fn group_box(
         .child(content)
         .info(ui, id, box_info)
         .debug_selector(move || id.into())
-}
-
-/// `style` padded with `margin` on each side `padding` leaves unstated. A
-/// card or a group box is a container, and `layout.container_margin` is the
-/// padding inside containers (platform-facts §2.20): it pads a side
-/// `card.border.padding` leaves unstated, in place of a Fill or Outline
-/// GroupBox's own `p_4` and of a Normal one's none (group_box.rs,
-/// `GroupBox`). A stated side is `geometry::group_box_content`'s.
-fn pad_unstated_sides(
-    style: StyleRefinement,
-    padding: &ResolvedPadding,
-    margin: Pixels,
-) -> StyleRefinement {
-    let style = if padding.top.is_none() {
-        style.pt(margin)
-    } else {
-        style
-    };
-    let style = if padding.right.is_none() {
-        style.pr(margin)
-    } else {
-        style
-    };
-    let style = if padding.bottom.is_none() {
-        style.pb(margin)
-    } else {
-        style
-    };
-    if padding.left.is_none() {
-        style.pl(margin)
-    } else {
-        style
-    }
-}
-
-/// [`padded`] with `margin` on both axes pads `geometry::group_box_content`'s
-/// refinement as [`pad_unstated_sides`] does, under every bundled preset in
-/// both modes with its layout's `container_margin`: the builder already set
-/// the stated sides, which `padded` sets to the same values.
-#[cfg(test)]
-#[test]
-fn padded_pads_a_group_box_as_pad_unstated_sides_does() {
-    use native_theme::theme::{ColorMode, Theme};
-    let mut compared = 0;
-    for preset in Theme::list_presets() {
-        let theme = Theme::preset(preset.key);
-        assert!(theme.is_ok(), "{} does not load", preset.key);
-        let Ok(theme) = theme else { continue };
-        let Some(margin) = geometry::container_margin(&theme.layout) else {
-            continue;
-        };
-        for mode in [ColorMode::Light, ColorMode::Dark] {
-            let resolved = theme.clone().into_variant(mode).ok().and_then(|v| {
-                v.into_resolved(&native_theme::ResolutionContext::for_tests())
-                    .ok()
-            });
-            assert!(
-                resolved.is_some(),
-                "{} {mode:?} does not resolve",
-                preset.key
-            );
-            let Some(r) = resolved else { continue };
-            let content = geometry::group_box_content(Native::unscaled(&r));
-            let p = &r.card.border.padding;
-            assert_eq!(
-                padded(content.clone(), p, Some(margin), Some(margin)),
-                pad_unstated_sides(content, p, margin),
-                "{} {mode:?}: padded and pad_unstated_sides pad the content differently",
-                preset.key
-            );
-            compared += 1;
-        }
-    }
-    assert!(compared > 0, "no bundled preset states a container_margin");
 }
 
 /// A card: a Fill `GroupBox` with no title, `width` wide, around the text
@@ -6389,7 +6314,12 @@ pub(crate) fn card(
     let content_style = match (&native, container_margin) {
         (Some(n), Some(margin)) => {
             card_info = card_info.geometry("container_margin");
-            pad_unstated_sides(content_style, &n.resolved.card.border.padding, margin)
+            padded(
+                content_style,
+                &n.resolved.card.border.padding,
+                Some(margin),
+                Some(margin),
+            )
         }
         _ => content_style,
     };
@@ -8393,18 +8323,7 @@ fn tool_box_of(n: Native<'_>) -> StyleRefinement {
     } else {
         style
     };
-    let side = |style: StyleRefinement,
-                v: Option<f32>,
-                f: fn(StyleRefinement, Pixels) -> StyleRefinement| {
-        match v {
-            Some(v) => f(style, px(v)),
-            None => style,
-        }
-    };
-    let style = side(style, p.top, |s, v| s.pt(v));
-    let style = side(style, p.right, |s, v| s.pr(v));
-    let style = side(style, p.bottom, |s, v| s.pb(v));
-    side(style, p.left, |s, v| s.pl(v))
+    padded(style, p, None::<Pixels>, None)
 }
 
 /// A toggle button that is on: a Default Button reading `label`, refined by
