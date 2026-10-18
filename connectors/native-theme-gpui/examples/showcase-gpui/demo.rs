@@ -4667,7 +4667,8 @@ impl RenderOnce for ListRow {
         let state = ListRowState::of(self.selected, self.right_clicked);
         // What `native_info` applies the builder under.
         let styled = cx.native().is_some();
-        let mut row_info = info::data::list_row(cx.theme(), &self.label, state, styled);
+        let mut row_info =
+            info::data::list_row(cx.theme(), &self.label, state, styled, list_gutter(cx));
         // A selected row's text in `list.selection_text_color`, over the
         // list font's colour `geometry::list_item` gives every row: the row
         // refines itself with its style after its own `foreground`
@@ -4758,7 +4759,7 @@ fn tree_row(
     let id = format!("data-tree-row-{ix}");
     // What `native_info` applies the builder under.
     let styled = cx.native().is_some();
-    let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled);
+    let mut row_info = info::data::tree_row(cx.theme(), &label, selected, styled, list_gutter(cx));
     // As a List row's: a selected row's text in `list.selection_text_color`,
     // a hovered one's in `list.hover_text_color`.
     let selected_text = selected

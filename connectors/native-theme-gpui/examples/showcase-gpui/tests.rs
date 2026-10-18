@@ -6383,6 +6383,36 @@ fn a_tree_row_keeps_clear_of_a_scrollbar_that_is_no_overlay(cx: &mut TestAppCont
     }
 }
 
+/// A List's and a Tree's row's Widget Info names the room it keeps for the
+/// scrollbar (`demo::list_gutter`): the groove's width,
+/// `scrollbar.groove_width`, where the theme's scrollbar is no overlay
+/// (kde-breeze), and none where it is one (macos-monterey).
+#[gpui::test]
+fn a_list_or_tree_rows_info_names_the_scrollbar_room_it_keeps(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for preset in ["kde-breeze", "macos-monterey"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Data);
+        let (groove, overlay) = scrollbar_of(&mut cx, &showcase);
+        let says = if overlay {
+            "none: the theme's scrollbar is an overlay".to_string()
+        } else {
+            format!(
+                "{}px, scrollbar.groove_width",
+                crate::info::px_text(groove.as_f32())
+            )
+        };
+        for row in ["data-list-row-0", "data-tree-row-1"] {
+            let info = settle_on(&mut cx, &showcase, row);
+            let note = shown_note(info.as_ref(), "right margin");
+            assert!(
+                note.as_deref().is_some_and(|t| t.starts_with(&says)),
+                "{preset}: {row}'s info does not name the scrollbar room it keeps, {says:?}: {note:?}"
+            );
+        }
+    }
+}
+
 /// Two Tags of different variants show different infos (spec §4.3.2): the
 /// Primary Tag's info names Primary and its colours, and the Danger Tag's
 /// beside it, Danger's -- not one info for the whole gallery.

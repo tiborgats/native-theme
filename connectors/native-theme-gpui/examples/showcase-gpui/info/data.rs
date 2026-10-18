@@ -616,11 +616,32 @@ pub fn list(rows: usize, native: Option<&ResolvedTheme>) -> WidgetInfo {
         .instance("rows", format!("{rows}; a click selects one, and each reports itself"))
 }
 
+/// The room a List's or a Tree's row keeps at its right end for the
+/// scrollbar its view lays over the rows: `gutter`, the groove's width
+/// (`demo::list_gutter`), where a native theme's scrollbar is no overlay.
+fn scrollbar_room(styled: bool, gutter: Option<gpui::Pixels>) -> String {
+    match (styled, gutter) {
+        (_, Some(gutter)) => format!(
+            "{}px, scrollbar.groove_width: the List and the Tree lay their scrollbar over the rows' right end (gpui-component/list/list.rs, List::render; gpui-component/tree.rs, Tree), and the theme's is no overlay (scrollbar.overlay_mode false), so the row ends that groove short of it (demo::list_gutter)",
+            px_text(gutter.as_f32())
+        ),
+        (true, None) => "none: the theme's scrollbar is an overlay (scrollbar.overlay_mode), which the List and the Tree lay over the rows' right end".to_string(),
+        (false, None) => "none: no native theme is installed, and the List and the Tree lay their scrollbar over the rows' right end".to_string(),
+    }
+}
+
 /// What a `ListItem` row reading `label` paints in `state`, for the List and
-/// the Tree. `styled` is whether a native theme is installed, so whether the
-/// row took `geometry::list_item`, whose line is recorded where the row
+/// the Tree, keeping `gutter` clear for the scrollbar where the theme's is
+/// no overlay. `styled` is whether a native theme is installed, so whether
+/// the row took `geometry::list_item`, whose line is recorded where the row
 /// applies it.
-fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> WidgetInfo {
+fn list_item(
+    t: &Theme,
+    label: &str,
+    state: ListRowState,
+    styled: bool,
+    gutter: Option<gpui::Pixels>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("ListItem").variant(match state {
         ListRowState::Idle => label.to_string(),
         ListRowState::Selected => format!("{label}, selected"),
@@ -676,7 +697,9 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
                 "none while selected (list/list_item.rs, ListItem::render)",
             ),
     };
-    let info = info.not_themeable("fill at rest", NO_LIST_FILL);
+    let info = info
+        .not_themeable("fill at rest", NO_LIST_FILL)
+        .instance("right margin", scrollbar_room(styled, gutter));
     // The label is plain text, so it takes the row's own text style: the
     // foreground and text_base ListItem sets (list/list_item.rs:204-205),
     // which geometry::list_item then refines with list.item_font, colour
@@ -701,9 +724,16 @@ fn list_item(t: &Theme, label: &str, state: ListRowState, styled: bool) -> Widge
     }
 }
 
-/// A row of the List reading `label`, in `state`.
-pub fn list_row(t: &Theme, label: &str, state: ListRowState, styled: bool) -> WidgetInfo {
-    list_item(t, label, state, styled).instance("click", "selects the row")
+/// A row of the List reading `label`, in `state`, keeping `gutter` clear
+/// for the scrollbar.
+pub fn list_row(
+    t: &Theme,
+    label: &str,
+    state: ListRowState,
+    styled: bool,
+    gutter: Option<gpui::Pixels>,
+) -> WidgetInfo {
+    list_item(t, label, state, styled, gutter).instance("click", "selects the row")
 }
 
 /// The Tree, with the box around it that is its frame. Its geometry line is
@@ -717,14 +747,21 @@ pub fn tree(native: Option<&ResolvedTheme>) -> WidgetInfo {
         .instance("rows", "a file structure with src open; each row reports itself")
 }
 
-/// A row of the Tree reading `label`, `selected` or not.
-pub fn tree_row(t: &Theme, label: &str, selected: bool, styled: bool) -> WidgetInfo {
+/// A row of the Tree reading `label`, `selected` or not, keeping `gutter`
+/// clear for the scrollbar.
+pub fn tree_row(
+    t: &Theme,
+    label: &str,
+    selected: bool,
+    styled: bool,
+    gutter: Option<gpui::Pixels>,
+) -> WidgetInfo {
     let state = if selected {
         ListRowState::Selected
     } else {
         ListRowState::Idle
     };
-    list_item(t, label, state, styled)
+    list_item(t, label, state, styled, gutter)
         .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (gpui-component/tree.rs, Tree::new), and marks a right-clicked row after it is built (gpui-component/tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
         .instance("click", "selects the row, and opens or closes a folder (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
