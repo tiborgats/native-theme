@@ -2854,6 +2854,118 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     }
 }
 
+/// Whether `info` records `geometry::container_margin`'s line.
+fn names_the_container_margin(info: &WidgetInfo) -> bool {
+    info.config
+        .iter()
+        .any(|n| n.what == "geometry" && n.text.starts_with("geometry::container_margin:"))
+}
+
+/// The card's and the GroupBoxes' infos record `geometry::container_margin`
+/// exactly where it pads a side of their content: where the layout states it
+/// and `card.border.padding` leaves a side unstated, not where the padding
+/// states all four (windows-11 and kde-breeze), which leaves the margin
+/// nothing to pad (the M8 T5 carry-over). Every bundled preset in both
+/// modes, each expectation read from the theme installed.
+#[gpui::test]
+fn the_card_and_the_group_boxes_name_the_container_margin_where_it_pads(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let mut cases = (false, false);
+    for mode in [AppColorMode::Light, AppColorMode::Dark] {
+        switch_mode(&mut cx, mode);
+        for preset in native_theme::theme::Theme::list_presets() {
+            use_preset(&mut cx, &showcase, preset.key);
+            let p = resolved_theme(&mut cx, &showcase).card.border.padding;
+            let margin = read(&mut cx, &showcase, |this, _| {
+                geometry::container_margin(&this.layout)
+            });
+            let pads = margin.is_some()
+                && [p.top, p.right, p.bottom, p.left]
+                    .iter()
+                    .any(Option::is_none);
+            if margin.is_some() {
+                if pads {
+                    cases.0 = true;
+                } else {
+                    cases.1 = true;
+                }
+            }
+            show(&mut cx, &showcase, Page::Basic);
+            // A corner of the card, inside its content's padding, off the
+            // Label that reports itself.
+            let card = bounds_of(&mut cx, "basic-card");
+            let info = settle_at(&mut cx, &showcase, card.origin + point(px(1.), px(1.)));
+            assert_eq!(
+                info.as_ref().map(names_the_container_margin),
+                Some(pads),
+                "{} {mode:?}: the card's info {} geometry::container_margin, and the margin \
+                 pads {} side of card.border.padding {p:?} (container_margin {margin:?}): {info:?}",
+                preset.key,
+                if pads { "does not record" } else { "records" },
+                if pads { "an unstated" } else { "no" },
+            );
+            show(&mut cx, &showcase, Page::Layout);
+            for group_box in [LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE] {
+                let info = settle_on(&mut cx, &showcase, group_box);
+                assert_eq!(
+                    info.as_ref().map(names_the_container_margin),
+                    Some(pads),
+                    "{} {mode:?}: {group_box}'s info {} geometry::container_margin, and the \
+                     margin pads {} side of card.border.padding {p:?} (container_margin \
+                     {margin:?}): {info:?}",
+                    preset.key,
+                    if pads { "does not record" } else { "records" },
+                    if pads { "an unstated" } else { "no" },
+                );
+            }
+        }
+    }
+    assert_eq!(
+        cases,
+        (true, true),
+        "the presets no longer cover a card.border.padding that leaves a side to the margin \
+         and one that states all four"
+    );
+}
+
+/// The card's padding line names each side by where it comes from (the M8
+/// T5 carry-over): `card.border's` for exactly the sides `card.border.padding`
+/// states, and `layout.container_margin` for the rest where the layout states
+/// one, the variant's own `p_4` where it does not; under every bundled preset
+/// in both modes, with the preset's own layout.
+#[test]
+fn the_cards_padding_line_names_where_each_side_comes_from() {
+    use crate::info::px_text;
+    for (name, r, t) in every_bundled_variant() {
+        let key = name.split(' ').next().unwrap_or_default();
+        let layout = native_theme::theme::Theme::preset(key).map(|theme| theme.layout);
+        assert!(layout.is_ok(), "{key} does not load");
+        let Ok(layout) = layout else { continue };
+        let margin = geometry::container_margin(&layout);
+        let card = crate::info::layout::card(&t, Some(&r), margin);
+        let line = note_of(&card.config, "padding").unwrap_or_default();
+        let p = &r.card.border.padding;
+        for (side, stated) in [
+            ("top", p.top),
+            ("right", p.right),
+            ("bottom", p.bottom),
+            ("left", p.left),
+        ] {
+            let want = match (stated, margin) {
+                (Some(v), _) => format!("{side} {}px, card.border's", px_text(v)),
+                (None, Some(m)) => {
+                    format!("{side} {}px, layout.container_margin", px_text(m.as_f32()))
+                }
+                (None, None) => format!("{side} p_4, the Fill variant's own"),
+            };
+            assert!(
+                line.contains(&want),
+                "{name}: the card's padding line {line:?} does not say {want:?}"
+            );
+        }
+    }
+}
+
 /// The theme-drawn expander's Widget Info says what it frames and how it
 /// pads (M9-046): no frame claimed where `expander.frame_enabled` is false
 /// (kde-breeze, KDE's expander draws none); where it is true each item
@@ -11670,6 +11782,170 @@ fn the_side_panel_takes_the_sidebars_padding(cx: &mut TestAppContext) {
         place(&mut cx),
         Some((px(7.), px(3.))),
         "stated sidebar padding: the settings are not that padding in"
+    );
+}
+
+/// The side panel's info says what pads it (M9-011): with no
+/// `sidebar.border.padding` stated, `layout.container_margin` around the
+/// theme settings, its geometry line recorded; with every side stated, each
+/// side by `sidebar.border`'s value and no `container_margin` line, the
+/// margin padding nothing; with some sides stated, those by `sidebar.border`
+/// and the rest by `layout.container_margin`, whose line is then recorded.
+/// The padding is spliced into kde-breeze, which states none.
+#[gpui::test]
+fn the_side_panels_info_names_the_padding_it_draws(cx: &mut TestAppContext) {
+    use crate::info::px_text;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let margin = read(&mut cx, &showcase, |this, _| {
+        geometry::container_margin(&this.layout)
+    });
+    let Some(margin) = margin else {
+        panic!("kde-breeze states no container_margin");
+    };
+    let resolved = native_theme::theme::Theme::preset("kde-breeze")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    let Some(resolved) = resolved else {
+        panic!("kde-breeze light does not resolve");
+    };
+    assert_eq!(
+        resolved.sidebar.border.padding,
+        native_theme::theme::ResolvedPadding::default(),
+        "kde-breeze now states a sidebar padding; the unstated case needs another preset"
+    );
+    let all = native_theme::theme::ResolvedPadding {
+        top: Some(3.0),
+        right: Some(5.0),
+        bottom: Some(4.0),
+        left: Some(7.0),
+    };
+    let some = native_theme::theme::ResolvedPadding {
+        top: Some(3.0),
+        left: Some(7.0),
+        ..Default::default()
+    };
+    for padding in [native_theme::theme::ResolvedPadding::default(), all, some] {
+        let mut theme = resolved.clone();
+        theme.sidebar.border.padding = padding;
+        cx.update(|_window, cx| {
+            let prefs = native_theme::AccessibilityPreferences::default();
+            native_theme_gpui::apply(
+                native_theme_gpui::to_theme(&theme, "kde-breeze", false, &prefs),
+                &theme,
+                &prefs,
+                cx,
+            );
+        });
+        cx.run_until_parked();
+        draw(&mut cx);
+        let info = settle_on(&mut cx, &showcase, CHROME_SIDE_PANEL);
+        let Some(info) = info else {
+            panic!("{padding:?}: the side panel shows no info");
+        };
+        let sides = [
+            ("top", padding.top),
+            ("right", padding.right),
+            ("bottom", padding.bottom),
+            ("left", padding.left),
+        ];
+        let stated = sides.iter().any(|(_, v)| v.is_some());
+        let unstated = sides.iter().any(|(_, v)| v.is_none());
+        assert_eq!(
+            names_the_container_margin(&info),
+            unstated,
+            "{padding:?}: the side panel's info {} geometry::container_margin, which pads {} \
+             side: {info:?}",
+            if unstated {
+                "does not record"
+            } else {
+                "records"
+            },
+            if unstated { "an unstated" } else { "no" },
+        );
+        let line = note_of(&info.instance, "padding").unwrap_or_default();
+        let wants: Vec<String> = if stated {
+            sides
+                .iter()
+                .map(|(side, v)| match v {
+                    Some(v) => format!("{side} {}px, sidebar.border's", px_text(*v)),
+                    None => format!(
+                        "{side} {}px, layout.container_margin",
+                        px_text(margin.as_f32())
+                    ),
+                })
+                .collect()
+        } else {
+            vec![format!(
+                "{}px around the theme settings, layout.container_margin",
+                px_text(margin.as_f32())
+            )]
+        };
+        for want in wants {
+            assert!(
+                line.contains(&want),
+                "{padding:?}: the side panel's padding line {line:?} does not say {want:?}"
+            );
+        }
+    }
+}
+
+/// The segmented control's padding line says what pads each side of a
+/// segment (M9-048): a stated `segmented_control.border.padding` side by its
+/// value, an unstated left or right by `SEGMENT_PADDING`, upstream's 12px,
+/// and an unstated top or bottom by nothing -- under material-3, which states
+/// only the horizontal sides, in both modes, and with its left side taken
+/// out.
+#[test]
+fn the_segmented_controls_padding_line_names_each_side() {
+    use crate::info::px_text;
+    let mut cases = (false, false);
+    for (name, r, t) in every_bundled_variant()
+        .into_iter()
+        .filter(|(name, _, _)| name.starts_with("material-3 "))
+    {
+        let mut spliced = r.clone();
+        spliced.segmented_control.border.padding.left = None;
+        for (case, r) in [("as stated", r), ("left unstated", spliced)] {
+            let info = crate::info::layout::segmented(&t, &["One", "Two"], 0, Some(&r));
+            let line = note_of(&info.config, "padding").unwrap_or_default();
+            let p = &r.segmented_control.border.padding;
+            for (side, value, across) in [
+                ("top", p.top, false),
+                ("right", p.right, true),
+                ("bottom", p.bottom, false),
+                ("left", p.left, true),
+            ] {
+                let want = match (value, across) {
+                    (Some(v), _) => format!("{side} {}px", px_text(v)),
+                    (None, true) => {
+                        cases.0 = true;
+                        format!(
+                            "{side} {}px, unstated",
+                            px_text(crate::demo::SEGMENT_PADDING.as_f32())
+                        )
+                    }
+                    (None, false) => {
+                        cases.1 = true;
+                        format!("{side} none, unstated")
+                    }
+                };
+                assert!(
+                    line.contains(&want),
+                    "{name} ({case}): the segmented control's padding line {line:?} does not \
+                     say {want:?}"
+                );
+            }
+        }
+    }
+    assert_eq!(
+        cases,
+        (true, true),
+        "material-3 no longer covers an unstated left or right and an unstated top or bottom"
     );
 }
 

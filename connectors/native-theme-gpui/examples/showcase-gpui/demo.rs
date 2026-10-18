@@ -393,6 +393,15 @@ fn padded<E: Styled, L: Into<DefiniteLength> + Copy>(
     }
 }
 
+/// Whether `padding` leaves a side unstated: the side a fallback, such as
+/// `layout.container_margin`, pads ([`padded`]). Where it states all four,
+/// the fallback pads nothing, and its info line is not recorded.
+fn leaves_a_side_unstated(padding: &ResolvedPadding) -> bool {
+    [padding.top, padding.right, padding.bottom, padding.left]
+        .iter()
+        .any(Option::is_none)
+}
+
 /// A menu's title in the showcase's menu bar: the Popover's trigger,
 /// selected while its menu is open.
 #[derive(IntoElement)]
@@ -936,10 +945,7 @@ pub(crate) fn toolbar(
             own: TOOLBAR_GAP,
         },
     );
-    let unstated = [stated.top, stated.right, stated.bottom, stated.left]
-        .iter()
-        .any(Option::is_none);
-    if unstated && container_margin.is_some() {
+    if leaves_a_side_unstated(&stated) && container_margin.is_some() {
         row_info = row_info.geometry("container_margin");
     }
     if item_gap.is_none() && widget_gap.is_some() {
@@ -1469,10 +1475,15 @@ fn sidebar_label(
         .debug_selector(move || id.into())
 }
 
-/// The side panel (spec S2): `settings`, padded by `container_margin` where
-/// the installed layout states one, over `separator`, over `inspector`, which
-/// fills the rest of the panel's height and scrolls its own content; filled
-/// with the model's sidebar colour and lettered in its font's colour.
+/// The side panel (spec S2): `settings` over `separator`, over `inspector`,
+/// which fills the rest of the panel's height and scrolls its own content;
+/// filled with the model's sidebar colour and lettered in its font's colour.
+/// Where the theme states any side of `sidebar.border.padding`
+/// ([`sidebar_padding`]), the whole panel is padded by it, a side it leaves
+/// unstated by `container_margin`, and the content adds none; where it
+/// states no side, `container_margin` pads the settings
+/// ([`side_panel_content_margin`]). Its `container_margin` line is recorded
+/// only where the margin pads something.
 ///
 /// Plain elements, not upstream's `Sidebar`: a Sidebar's children must
 /// implement `SidebarItem` (sidebar/mod.rs:211), and neither the settings
@@ -1485,11 +1496,11 @@ pub(crate) fn side_panel(
     separator: impl IntoElement,
     inspector: impl IntoElement,
 ) -> Stateful<Div> {
-    let mut panel_info = info::side_panel(cx.theme(), container_margin);
-    if container_margin.is_some() {
+    let own = sidebar_padding(cx);
+    let mut panel_info = info::side_panel(cx.theme(), container_margin, own);
+    if container_margin.is_some() && own.as_ref().is_none_or(leaves_a_side_unstated) {
         panel_info = panel_info.geometry("container_margin");
     }
-    let own = sidebar_padding(cx);
     // The model's sidebar: `sidebar.background_color` and `sidebar.font`'s
     // colour, which the connector installs as the `sidebar` and
     // `sidebar_foreground` tokens.
@@ -2052,7 +2063,7 @@ pub(crate) fn tab_row(
 /// A segment's side padding where `segmented_control.border` states none:
 /// upstream's own for a segment at the default Size (tab/tab.rs:73-80,
 /// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.
-const SEGMENT_PADDING: Pixels = px(12.);
+pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 
 /// A segmented control over `labels`, `selected` the one shown; a click
 /// hands `on_click` the index of the segment clicked.
@@ -6265,13 +6276,11 @@ pub(crate) fn group_box(
     );
     let content_style = match (&native, container_margin) {
         (Some(n), Some(margin)) => {
-            box_info = box_info.geometry("container_margin");
-            padded(
-                content_style,
-                &n.resolved.card.border.padding,
-                Some(margin),
-                Some(margin),
-            )
+            let padding = &n.resolved.card.border.padding;
+            if leaves_a_side_unstated(padding) {
+                box_info = box_info.geometry("container_margin");
+            }
+            padded(content_style, padding, Some(margin), Some(margin))
         }
         _ => content_style,
     };
@@ -6313,13 +6322,11 @@ pub(crate) fn card(
     );
     let content_style = match (&native, container_margin) {
         (Some(n), Some(margin)) => {
-            card_info = card_info.geometry("container_margin");
-            padded(
-                content_style,
-                &n.resolved.card.border.padding,
-                Some(margin),
-                Some(margin),
-            )
+            let padding = &n.resolved.card.border.padding;
+            if leaves_a_side_unstated(padding) {
+                card_info = card_info.geometry("container_margin");
+            }
+            padded(content_style, padding, Some(margin), Some(margin))
         }
         _ => content_style,
     };

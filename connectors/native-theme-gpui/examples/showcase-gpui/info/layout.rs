@@ -4,7 +4,7 @@ use gpui::Pixels;
 use gpui_component::theme::Theme;
 #[cfg(feature = "widgets")]
 use native_theme::theme::TabIndicatorSide;
-use native_theme::theme::{ArrowSide, ResolvedExpanderTheme};
+use native_theme::theme::{ArrowSide, ResolvedExpanderTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::TabLook;
@@ -15,7 +15,7 @@ use super::{
     claim, drawn_font, edge_claim, px_text, stated, stated_claim,
 };
 use crate::Page;
-use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
+use crate::demo::{GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind};
 use crate::support::{ChromeIcon, SampleIcon, layout_value};
 
 /// One of the Layout page's two spacing boxes, `kind`, padded by `padding`
@@ -789,6 +789,26 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
         .not_themeable("rule under the bar", "separator.*, the line the theme states for parting content: the model states no tab-bar rule of its own")
 }
 
+/// Each side of a segment's padding as `demo::segmented` draws it: a side
+/// `segmented_control.border.padding` states by its value, an unstated left
+/// or right by `SEGMENT_PADDING`, upstream's own, and an unstated top or
+/// bottom by none.
+fn segment_padding(p: &ResolvedPadding) -> String {
+    let side = |name: &str, stated: Option<f32>, across: bool| match (stated, across) {
+        (Some(v), _) => format!("{name} {}px", px_text(v)),
+        (None, true) => format!("{name} {}px, unstated", px_text(SEGMENT_PADDING.as_f32())),
+        (None, false) => format!("{name} none, unstated"),
+    };
+    format!(
+        "segmented_control.border.padding per side: {}; {}; {}; {}. An unstated left or right side takes {}px and an unstated top or bottom none, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)",
+        side("top", p.top, false),
+        side("right", p.right, true),
+        side("bottom", p.bottom, false),
+        side("left", p.left, true),
+        px_text(SEGMENT_PADDING.as_f32()),
+    )
+}
+
 /// The segmented control over `labels`, the one at `selected` shown: drawn
 /// by the showcase from `native`'s `segmented_control` where a native theme
 /// is installed, upstream's segmented `TabBar` where none is
@@ -817,7 +837,8 @@ pub fn segmented(
                 None => info.not_themeable("hover", "none: the theme states no segmented_control.hover_background"),
             };
             info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
-                .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall, padded by the stated border.padding sides and, on a side left unstated, by 12px, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)", px_text(s.segment_height)))
+                .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall", px_text(s.segment_height)))
+                .config("padding", segment_padding(&s.border.padding))
                 .config("font", format!("segmented_control.font: {}", drawn_font(&s.font)))
                 .config("border", if s.border.line_width > 0.0 {
                     format!("segmented_control.border: {}px, radius {}px", px_text(s.border.line_width), px_text(s.border.corner_radius))

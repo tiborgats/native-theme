@@ -504,10 +504,16 @@ pub fn panel_toggle(
 }
 
 /// The side panel (spec S2): the theme settings, a Separator and the
-/// inspector. `container_margin` is the installed layout's, which pads the
-/// settings. Its geometry line is recorded where `demo::side_panel` applies
-/// the margin.
-pub fn side_panel(t: &Theme, container_margin: Option<Pixels>) -> WidgetInfo {
+/// inspector. `sidebar` is `sidebar.border.padding` where the theme states
+/// any side of it, which then pads the whole panel, and `container_margin`
+/// the installed layout's, which pads a side `sidebar` leaves unstated, or
+/// the settings where there is no `sidebar`. Its geometry line is recorded
+/// where `demo::side_panel` pads with the margin.
+pub fn side_panel(
+    t: &Theme,
+    container_margin: Option<Pixels>,
+    sidebar: Option<ResolvedPadding>,
+) -> WidgetInfo {
     WidgetInfo::new("Side panel")
         .not_themeable(
             "widget",
@@ -530,12 +536,28 @@ pub fn side_panel(t: &Theme, container_margin: Option<Pixels>) -> WidgetInfo {
         )
         .instance(
             "padding",
-            match container_margin {
-                Some(margin) => format!(
+            match (sidebar, container_margin) {
+                (Some(p), _) => {
+                    let side = |name: &str, stated: Option<f32>| match (stated, container_margin) {
+                        (Some(v), _) => format!("{name} {}px, sidebar.border's", px_text(v)),
+                        (None, Some(m)) => {
+                            format!("{name} {}px, layout.container_margin", px_text(m.as_f32()))
+                        }
+                        (None, None) => format!("{name} none: sidebar.border.padding and layout.container_margin leave it unstated"),
+                    };
+                    format!(
+                        "the whole panel, by sidebar.border.padding, a side it leaves unstated by layout.container_margin: {}; {}; {}; {}. The theme settings, the inspector's tab row and its content add none",
+                        side("top", p.top),
+                        side("right", p.right),
+                        side("bottom", p.bottom),
+                        side("left", p.left),
+                    )
+                }
+                (None, Some(margin)) => format!(
                     "{}px around the theme settings, layout.container_margin, the padding the inspector's content takes too",
                     px_text(margin.as_f32()),
                 ),
-                None => "none around the theme settings: layout.container_margin, which pads them and the inspector's content, is unstated".to_string(),
+                (None, None) => "none around the theme settings: layout.container_margin, which pads them and the inspector's content, is unstated".to_string(),
             },
         )
         .not_themeable(
