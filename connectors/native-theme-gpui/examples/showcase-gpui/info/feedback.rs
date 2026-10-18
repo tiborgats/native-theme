@@ -725,22 +725,30 @@ pub fn badge(
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
-        .instance("next badge", next_badge(overhang, next))
+        // The overhang's text is written in the call, so the prose gate
+        // holds its citation to upstream's lines.
+        .instance(
+            "next badge",
+            next_badge(
+                overhang,
+                next,
+                if overhang > px(0.) {
+                    format!(
+                        "the {}px its count stands past the Button's right edge, BADGE_COUNT_OVERHANG a character (gpui-component/badge.rs:137-141, Size::Medium)",
+                        px_text(overhang.as_f32())
+                    )
+                } else {
+                    "no overhang: its dot stands inside the Button (badge.rs, Badge::render)".to_string()
+                },
+            ),
+        )
         .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
 }
 
 /// The space a Badge keeps after it: `next` (`layout.widget_gap`) from its
 /// count to the next Badge, where one follows, and the `overhang` the count
-/// stands past the Button's right edge.
-fn next_badge(overhang: Pixels, next: Option<Option<Pixels>>) -> String {
-    let count = if overhang > px(0.) {
-        format!(
-            "the {}px its count stands past the Button's right edge, BADGE_COUNT_OVERHANG a character (gpui-component/badge.rs:137-146)",
-            px_text(overhang.as_f32())
-        )
-    } else {
-        "no overhang: its dot stands inside the Button (badge.rs, Badge::render)".to_string()
-    };
+/// stands past the Button's right edge, which `count` says.
+fn next_badge(overhang: Pixels, next: Option<Option<Pixels>>, count: String) -> String {
     match next {
         Some(Some(gap)) => format!(
             "{}px after the Button: layout.widget_gap, {}px, from the count to the next Badge, as the controls of a row are apart, and {count}",

@@ -27,8 +27,8 @@ pub(crate) const ICON_GRID_GAP: Rems = rems(0.5);
 
 /// How far upstream draws a Badge's count past its Button's right edge, a
 /// character at a time: a Medium count, `Badge::new`'s size, is placed
-/// `-3px * len` from the right (gpui-component 0.7.3 `badge.rs:137-146`;
-/// `Size::Medium` is the default, `sizing.rs:9-10`).
+/// `-3px * len` from the right (gpui-component 0.7.3 `badge.rs:137-141`,
+/// the `Size::Medium` arm; `Size::Medium` is the default, `sizing.rs:9-10`).
 pub(crate) const BADGE_COUNT_OVERHANG: Pixels = px(3.);
 
 /// The highest count a Badge prints as it is: above it, `99+`

@@ -14348,8 +14348,8 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
 /// `layout.widget_gap` from the next Badge, as the controls of every other
 /// row are apart, and touches it where the theme states no gap. Upstream
 /// draws a Medium count 3px per digit past its Button's right edge
-/// (gpui-component 0.7.3 `badge.rs:137-146`), so the Buttons are that much
-/// further apart (M9-022).
+/// (gpui-component 0.7.3 `badge.rs:137-141`, the `Size::Medium` arm), so
+/// the Buttons are that much further apart (M9-022).
 #[gpui::test]
 fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -14413,11 +14413,11 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
 }
 
 /// How far a Badge's count stands past its Button is upstream's 3px a
-/// printed character (gpui-component 0.7.3 `badge.rs:137-146`): one digit
-/// 3px, two 6px, a count above 99 printed `99+`, three characters
-/// (`badge.rs:130-134`); none for a dot, which sits inside the Button
-/// (`badge.rs:129`), nor for a zero count, which upstream does not draw
-/// (`badge.rs:103`).
+/// printed character (gpui-component 0.7.3 `badge.rs:137-141`, the
+/// `Size::Medium` arm): one digit 3px, two 6px, a count above 99 printed
+/// `99+`, three characters (`badge.rs:130-134`); none for a dot, which sits
+/// inside the Button (`badge.rs:129`), nor for a zero count, which upstream
+/// does not draw (`badge.rs:103`).
 #[test]
 fn a_badges_overhang_is_its_printed_counts() {
     let per = crate::pages::BADGE_COUNT_OVERHANG;
