@@ -2654,6 +2654,106 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     }
 }
 
+/// The theme-drawn expander's Widget Info says what it frames and how it
+/// pads (M9-046): no frame claimed where `expander.frame_enabled` is false
+/// (kde-breeze, KDE's expander draws none); where it is true each item
+/// framed on its own by `expander.border.color` at
+/// `expander.border.line_width`, `layout.widget_gap` from the next
+/// (adwaita, windows-11); each title row padded side by side by the
+/// `expander.border.padding` the header takes, upstream's px_3 on an
+/// unstated left or right and none on an unstated top or bottom; and the
+/// body's own padding only where `frame_enabled` is unstated (material-3),
+/// the one case the body takes it. Every expected value is the resolved
+/// theme's, read at test time.
+#[gpui::test]
+fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContext) {
+    use crate::info::{px_text, stated};
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    without_motion(&mut cx);
+    let mut cases = (false, false, false, false);
+    for preset in ["kde-breeze", "adwaita", "windows-11", "material-3"] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let r = resolved_theme(&mut cx, &showcase);
+        let e = &r.expander;
+        let gap = read(&mut cx, &showcase, |this, _| {
+            geometry::widget_gap(&this.layout)
+        });
+        let info = settle_on(&mut cx, &showcase, "basic-expander-header-0")
+            .unwrap_or_else(|| panic!("{preset}: the expander's item shows no info"));
+        let framed = e.frame_enabled != Some(false) && e.border.line_width > 0.0;
+        assert_eq!(
+            claim_of(&info, "border"),
+            framed.then(|| stated(e.border.color)),
+            "{preset}: the expander's info claims a frame colour where none is drawn, or none where one is: {info:?}"
+        );
+        let edge = note_of(&info.config, "edge").unwrap_or_default();
+        match e.frame_enabled {
+            Some(false) => {
+                cases.0 = true;
+                assert!(
+                    edge.starts_with("none: expander.frame_enabled is false"),
+                    "{preset}: the expander draws no frame, and its edge line says {edge:?}"
+                );
+            }
+            Some(true) if framed => {
+                cases.1 = true;
+                let apart = match gap {
+                    Some(gap) => format!("layout.widget_gap, {}px, apart", px_text(gap.as_f32())),
+                    None => "no gap between them: layout.widget_gap is unstated".to_string(),
+                };
+                for want in [
+                    "each item framed on its own".to_string(),
+                    format!(
+                        "expander.border.color at expander.border.line_width, {}px",
+                        px_text(e.border.line_width)
+                    ),
+                    apart,
+                ] {
+                    assert!(
+                        edge.contains(&want),
+                        "{preset}: the expander frames each item on its own, and its edge line {edge:?} does not say {want:?}"
+                    );
+                }
+            }
+            _ => {}
+        }
+        let padding = note_of(&info.config, "padding").unwrap_or_default();
+        let p = &e.border.padding;
+        for (side, value, across) in [
+            ("top", p.top, false),
+            ("right", p.right, true),
+            ("bottom", p.bottom, false),
+            ("left", p.left, true),
+        ] {
+            let want = match (value, across) {
+                (Some(v), _) => format!("{side} {}px", px_text(v)),
+                (None, true) => {
+                    cases.2 = true;
+                    format!("{side} upstream's px_3")
+                }
+                (None, false) => format!("{side} none"),
+            };
+            assert!(
+                padding.contains(&want),
+                "{preset}: the expander's padding line {padding:?} does not say {want:?}"
+            );
+        }
+        let body = padding.contains("pb_2");
+        cases.3 |= e.frame_enabled.is_none() && body;
+        assert_eq!(
+            body,
+            e.frame_enabled.is_none(),
+            "{preset}: the body is padded as upstream's AccordionItem pads it only where expander.frame_enabled is unstated, and the padding line says {padding:?}"
+        );
+    }
+    assert_eq!(
+        cases,
+        (true, true, true, true),
+        "the presets no longer cover an unframed expander, one framed per item, an unstated side, and a frame the theme leaves unstated"
+    );
+}
+
 /// The tab rows draw exactly what `tab.*` states (ISSUES D7), through the
 /// connector's `widgets::TabBar`: the selected page tab is filled with
 /// `tab.active_background` and outlined in `tab.border`, an unselected one

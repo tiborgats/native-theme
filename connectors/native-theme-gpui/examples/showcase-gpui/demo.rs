@@ -6558,9 +6558,14 @@ fn native_expander(
     let glyph = chevron
         .icon()
         .map(|icon| icon.with_size(px(e.arrow_icon_size)).text_color(arrow));
-    let expander_info =
-        info::layout::native_expander(n.resolved, items.map(|(title, _, _)| title), open, chevron)
-            .geometry("accordion_title");
+    let expander_info = info::layout::native_expander(
+        n.resolved,
+        items.map(|(title, _, _)| title),
+        open,
+        chevron,
+        gap,
+    )
+    .geometry("accordion_title");
     // KDE's expander has no frame and no line between items (§2.27); where
     // the theme states nothing the frame stays, as upstream's.
     let framed = e.frame_enabled != Some(false);

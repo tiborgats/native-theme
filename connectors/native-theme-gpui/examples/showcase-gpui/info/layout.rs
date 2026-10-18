@@ -2,7 +2,7 @@
 
 use gpui::Pixels;
 use gpui_component::theme::Theme;
-use native_theme::theme::ArrowSide;
+use native_theme::theme::{ArrowSide, ResolvedExpanderTheme};
 use native_theme_gpui::ResolvedTheme;
 
 use super::{
@@ -543,23 +543,42 @@ pub fn tab_row(
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
 /// (`demo::native_expander`), reading `titles`, each `open` or not, their
-/// arrow `arrow`, of the chosen icon theme.
+/// arrow `arrow`, of the chosen icon theme, and `gap`, the
+/// `layout.widget_gap` that parts the items where the theme states the
+/// frame.
 pub fn native_expander(
     r: &ResolvedTheme,
     titles: [&'static str; 2],
     open: [bool; 2],
     arrow: &SampleIcon,
+    gap: Option<Pixels>,
 ) -> WidgetInfo {
     let e = &r.expander;
-    let info = WidgetInfo::new("Expander")
-        .variant("drawn by the showcase")
-        .colors(edge_claim(
-            "border and the line between items",
+    // The frame is drawn at expander.border.line_width unless
+    // frame_enabled is false: KDE's expander draws none (§2.27).
+    let frame_width = Some(match e.frame_enabled {
+        Some(false) => 0.0,
+        _ => e.border.line_width,
+    });
+    let edge = match e.frame_enabled {
+        Some(true) => edge_claim(
+            "each item's frame",
             "border",
             Some(e.border.color),
-            Some(e.border.line_width),
+            frame_width,
             "showcase",
-        ))
+        ),
+        _ => edge_claim(
+            "frame and the line between items",
+            "border",
+            Some(e.border.color),
+            frame_width,
+            "showcase",
+        ),
+    };
+    let info = WidgetInfo::new("Expander")
+        .variant("drawn by the showcase")
+        .colors(edge)
         .color(claim("title", "font", stated(e.font.color), "showcase"));
     let leading = e.arrow_side == Some(ArrowSide::Leading);
     let glyph = if leading {
@@ -611,20 +630,106 @@ pub fn native_expander(
         .filter(|(_, open)| *open)
         .map(|(title, _)| *title)
         .collect();
-    info.config("title row", format!("expander.header_height, {}px, in expander.font, {}px, weight {}", px_text(e.header_height), px_text(e.font.size), e.font.weight))
-        .config("edge", match e.frame_enabled {
-            Some(false) => "none: expander.frame_enabled is false, no frame and no line between the items".to_string(),
-            _ => format!("expander.border: {}px, radius {}px, round the whole and between the items", px_text(e.border.line_width), px_text(e.border.corner_radius)),
-        })
-        .config("body indent", match e.content_indent {
+    info.config(
+        "title row",
+        format!(
+            "expander.header_height, {}px, in expander.font, {}px, weight {}",
+            px_text(e.header_height),
+            px_text(e.font.size),
+            e.font.weight
+        ),
+    )
+    .config("edge", expander_edge(e, gap))
+    .config(
+        "body indent",
+        match e.content_indent {
             Some(indent) => format!("expander.content_indent, {}px", px_text(indent)),
-            None => "not stated: upstream's AccordionItem's px_3 (accordion.rs, AccordionItem::render)".to_string(),
-        })
-        .not_themeable("padding", "not stated: upstream's AccordionItem's, px_3 across the title and right of the body, pb_2 under the body (accordion.rs, AccordionItem::render)")
-        .not_themeable("fill", "none: the model states no expander fill, so the window's background shows")
-        .instance("items", titles.join(", "))
-        .instance("open", if shown.is_empty() { "none".to_string() } else { shown.join(", ") })
-        .instance("click", "a title opens or closes its item; the showcase keeps the state")
+            None => {
+                "not stated: upstream's AccordionItem's px_3 (accordion.rs, AccordionItem::render)"
+                    .to_string()
+            }
+        },
+    )
+    .config("padding", expander_padding(e))
+    .not_themeable(
+        "fill",
+        "none: the model states no expander fill, so the window's background shows",
+    )
+    .instance("items", titles.join(", "))
+    .instance(
+        "open",
+        if shown.is_empty() {
+            "none".to_string()
+        } else {
+            shown.join(", ")
+        },
+    )
+    .instance(
+        "click",
+        "a title opens or closes its item; the showcase keeps the state",
+    )
+}
+
+/// What frames the theme-drawn expander `e` and parts its items, the
+/// items `gap` (`layout.widget_gap`) apart where each is framed on its own.
+fn expander_edge(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
+    let b = &e.border;
+    match e.frame_enabled {
+        Some(false) => {
+            "none: expander.frame_enabled is false, no frame and no line between the items"
+                .to_string()
+        }
+        _ if b.line_width <= 0.0 => format!(
+            "none: expander.border.line_width is 0; the items are still rounded by its corner_radius, {}px",
+            px_text(b.corner_radius)
+        ),
+        Some(true) => {
+            let apart = match gap {
+                Some(gap) => format!("layout.widget_gap, {}px, apart", px_text(gap.as_f32())),
+                None => "with no gap between them: layout.widget_gap is unstated".to_string(),
+            };
+            format!(
+                "each item framed on its own by expander.border.color at expander.border.line_width, {}px, radius {}px, {apart}",
+                px_text(b.line_width),
+                px_text(b.corner_radius)
+            )
+        }
+        None => format!(
+            "expander.border.color at expander.border.line_width, {}px, radius {}px, round the whole and between the items, as upstream's bordered Accordion frames them: expander.frame_enabled is unstated",
+            px_text(b.line_width),
+            px_text(b.corner_radius)
+        ),
+    }
+}
+
+/// How the theme-drawn expander `e` pads its title rows, side by side, and
+/// its body: a stated `expander.border.padding` side as it states it, an
+/// unstated left or right by upstream's px_3, an unstated top or bottom by
+/// none (`demo::native_expander`, through `demo::padded`); the body right
+/// and below as upstream's AccordionItem pads it only inside the frame
+/// upstream's draws, where `frame_enabled` is unstated.
+fn expander_padding(e: &ResolvedExpanderTheme) -> String {
+    let p = &e.border.padding;
+    let side = |name: &str, value: Option<f32>, across: bool| match (value, across) {
+        (Some(v), _) => format!("{name} {}px", px_text(v)),
+        (None, true) => format!("{name} upstream's px_3 (EXPANDER_PADDING_X)"),
+        (None, false) => format!("{name} none"),
+    };
+    let body = match e.frame_enabled {
+        None => {
+            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), inside the frame upstream's Accordion draws"
+        }
+        Some(_) => {
+            "the body has no padding beyond its indent, a title being layout.widget_gap above its body"
+        }
+    };
+    format!(
+        "expander.border.padding on each title row: {}, {}, {}, {}; {body}",
+        side("top", p.top, false),
+        side("right", p.right, true),
+        side("bottom", p.bottom, false),
+        side("left", p.left, true),
+    )
 }
 
 /// A row of tabs `native_theme_gpui::widgets::TabBar` draws as `r`'s
