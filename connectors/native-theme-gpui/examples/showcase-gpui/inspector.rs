@@ -66,7 +66,8 @@ impl InspectorTab {
 
 pub(crate) struct Inspector {
     ui: Entity<InfoRegistry>,
-    /// Where the Theme tab reads the installed theme's fonts and layout.
+    /// Where the inspector reads the installed theme's fonts and layout, and
+    /// the look the Widget tab is drawn in (`Showcase::panel_look`).
     showcase: WeakEntity<Showcase>,
     pub(crate) tab: InspectorTab,
     /// The title of what the last frame drew under the TabBar; `None` for
@@ -108,21 +109,23 @@ impl Inspector {
     /// ([`listed_info`]). With no native theme installed, a note says the
     /// swatches may not be what is painted.
     fn widget_tab(&mut self, gap: Option<gpui::Pixels>, cx: &mut Context<Self>) -> gpui::Div {
-        let theme = cx.theme().clone();
-        let muted = theme.muted_foreground;
-        let shown = self.ui.read(cx).shown().cloned();
-        let look = PanelLook::of(&self.showcase, cx);
-        let listed = shown.as_ref().and_then(|info| {
+        let showcase = self.showcase.upgrade();
+        let look = showcase
+            .as_ref()
+            .and_then(|showcase| showcase.read(cx).panel_look.as_ref());
+        let shown = self.ui.read(cx).shown();
+        let listed = shown.and_then(|info| {
             let element = elements::element(info.listed?)?;
             Some((element, info))
         });
-        if let (Some(look), Some((element, info))) = (&look, listed) {
+        if let (Some(look), Some((element, info))) = (look, listed) {
             let (panel, title) = listed_info(&self.ui, look, element, info);
             self.title_drawn = Some(title);
             return panel;
         }
+        let muted = cx.theme().muted_foreground;
         let (title, copied, body) = match shown {
-            Some(info) => (info.title(), info.to_text(), info_sections(&info, gap, cx)),
+            Some(info) => (info.title(), info.to_text(), info_sections(info, gap, cx)),
             None => {
                 self.title_drawn = None;
                 // Clipped to the panel's width, as the other rows are.
@@ -132,7 +135,7 @@ impl Inspector {
                     .overflow_hidden()
                     .child(INFO_HINT)
                     .child(elements::record(&self.ui, "chrome.info.hint"));
-                return v_flex().items_start().child(match &look {
+                return v_flex().items_start().child(match look {
                     Some(look) => look.text(hint).text_color(look.muted),
                     None => hint.text_sm().text_color(muted),
                 });
@@ -198,7 +201,7 @@ impl Inspector {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> gpui::Div {
-        let theme = cx.theme().clone();
+        let theme = cx.theme();
         let rows = vec![
             ("radius", format!("{}px", theme.radius.as_f32())),
             ("radius_lg", format!("{}px", theme.radius_lg.as_f32())),
@@ -413,6 +416,7 @@ const SEMIBOLD: gpui::FontWeight = gpui::FontWeight(600.);
 /// With it, what the rows' values are read from: the resolved theme's JSON,
 /// and the layout, icon set and icon theme the showcase installed, which the
 /// JSON does not hold (`values::leaf_value`).
+#[cfg_attr(test, derive(Clone, Debug, PartialEq))]
 pub(crate) struct PanelLook {
     family: SharedString,
     size: gpui::Pixels,
@@ -431,27 +435,19 @@ pub(crate) struct PanelLook {
     copy_active: (Option<gpui::Hsla>, gpui::Hsla),
     resolved: serde_json::Value,
     layout: native_theme::theme::LayoutTheme,
-    icon_set: Option<native_theme::theme::IconSet>,
+    icon_set: native_theme::theme::IconSet,
     icon_theme: Option<String>,
 }
 
 impl PanelLook {
     /// The look under the installed native theme, with the layout, icon set
-    /// and icon theme `showcase` installed; `None` before `apply` ran.
-    pub(crate) fn of(showcase: &WeakEntity<Showcase>, cx: &gpui::App) -> Option<Self> {
+    /// and icon theme `showcase` installed; `None` before `apply` ran. The
+    /// showcase keeps it from one install to the next
+    /// (`Showcase::panel_look`).
+    pub(crate) fn of(showcase: &Showcase, cx: &gpui::App) -> Option<Self> {
         let n = cx.native()?;
         let r = n.resolved;
-        let (layout, icon_set, icon_theme) = showcase
-            .upgrade()
-            .map(|s| {
-                let s = s.read(cx);
-                (
-                    s.layout.clone(),
-                    Some(s.current_icon_set),
-                    s.current_icon_theme.clone(),
-                )
-            })
-            .unwrap_or_default();
+        let layout = showcase.layout.clone();
         let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
         let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
         let p = &r.button.border.padding;
@@ -479,10 +475,10 @@ impl PanelLook {
                 r.button.active_background.map(stated),
                 stated(r.button.active_text_color),
             ),
-            resolved: values::theme_json(r).unwrap_or_default(),
+            resolved: theme_json(r),
             layout,
-            icon_set,
-            icon_theme,
+            icon_set: showcase.current_icon_set,
+            icon_theme: showcase.current_icon_theme.clone(),
         })
     }
 
@@ -495,6 +491,23 @@ impl PanelLook {
             .text_color(self.text)
             .whitespace_nowrap()
     }
+}
+
+/// The resolved theme `r` as JSON (`values::theme_json`), which the panel's
+/// rows read their values from. Counted in the self-tests
+/// (`THEME_SERIALISATIONS`).
+fn theme_json(r: &native_theme::theme::ResolvedTheme) -> serde_json::Value {
+    #[cfg(test)]
+    THEME_SERIALISATIONS.with(|count| count.set(count.get().saturating_add(1)));
+    values::theme_json(r).unwrap_or_default()
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How often the inspector serialised a resolved theme ([`theme_json`])
+    /// on this thread; a test reads how much an action adds to it.
+    pub(crate) static THEME_SERIALISATIONS: std::cell::Cell<usize> =
+        const { std::cell::Cell::new(0) };
 }
 
 /// The panel's text for `element` of docs/showcase-elements.toml, whose
@@ -510,7 +523,7 @@ pub(crate) fn listed(
         element,
         &look.resolved,
         &look.layout,
-        look.icon_set,
+        Some(look.icon_set),
         look.icon_theme.as_deref(),
         |leaf| {
             leaves::how(&element.id, leaf)
@@ -716,13 +729,18 @@ fn info_sections(info: &WidgetInfo, gap: Option<gpui::Pixels>, cx: &gpui::App) -
 
 impl Render for Inspector {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let layout = self
+        let (gap, container_margin) = self
             .showcase
             .upgrade()
-            .map(|showcase| showcase.read(cx).layout.clone())
+            .map(|showcase| {
+                let layout = &showcase.read(cx).layout;
+                (
+                    geometry::widget_gap(layout),
+                    geometry::container_margin(layout),
+                )
+            })
             .unwrap_or_default();
-        let gap = geometry::widget_gap(&layout);
-        let margin = demo::side_panel_content_margin(cx, geometry::container_margin(&layout));
+        let margin = demo::side_panel_content_margin(cx, container_margin);
         let tabs = demo::tab_bar(
             &self.ui,
             cx,

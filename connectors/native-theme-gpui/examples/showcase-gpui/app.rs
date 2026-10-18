@@ -50,7 +50,7 @@ use native_theme_showcase_support::rows;
 use crate::chrome;
 use crate::elements;
 use crate::info::{InfoRegistry, epoch_marker};
-use crate::inspector::Inspector;
+use crate::inspector::{Inspector, PanelLook};
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, IconEntry,
@@ -251,6 +251,16 @@ pub(crate) struct Showcase {
     /// The inspector, in the side panel, which shows the info the registry
     /// settles on.
     pub(crate) inspector: Entity<Inspector>,
+    /// What the inspector's Widget tab is drawn in and reads its rows' values
+    /// from under the installed native theme (`PanelLook`), built once an
+    /// install; `None` where none is installed, and from an install until
+    /// the next frame builds it. Every install --
+    /// `install_system`, `install_preset`, `demo::change_preferences`, the
+    /// connector's own re-apply after a mode switch upstream -- writes the
+    /// connector's `NativeTheme`, whose observer (`_native_theme`) drops it.
+    pub(crate) panel_look: Option<PanelLook>,
+    /// Drops `panel_look` whenever the connector's `NativeTheme` is written.
+    _native_theme: Subscription,
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
@@ -1416,6 +1426,14 @@ impl Showcase {
                 .ok()
             };
 
+        // The install below is made before this observer is active (gpui
+        // activates it at the end of this update), so the first frame builds
+        // the panel's look from `None` too.
+        let _native_theme =
+            cx.observe_global::<native_theme_gpui::NativeTheme>(|this: &mut Self, _cx| {
+                this.panel_look = None
+            });
+
         let inspector = {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
             cx.new(|cx| Inspector::new(ui, showcase, cx))
@@ -1440,6 +1458,8 @@ impl Showcase {
             menus,
             content_scroll: gpui::ScrollHandle::new(),
             inspector,
+            panel_look: None,
+            _native_theme,
             status_title_drawn: None,
             #[cfg(test)]
             frame_for_test: None,
@@ -1945,6 +1965,10 @@ impl Showcase {
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.overlay_gap.set(geometry::widget_gap(&self.layout));
+        // Before the inspector, a child view, renders and borrows it.
+        if self.panel_look.is_none() {
+            self.panel_look = PanelLook::of(self, cx);
+        }
         self.dialog_icons.set(DialogIcons {
             dialog: self.sample_icon(IconName::CircleX),
             alert: self.sample_icon(IconName::TriangleAlert),

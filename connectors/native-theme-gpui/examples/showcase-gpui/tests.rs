@@ -3251,6 +3251,127 @@ fn a_shown_info_follows_its_widgets_state(cx: &mut TestAppContext) {
     );
 }
 
+/// How often the inspector has serialised a resolved theme on this thread
+/// (`inspector::THEME_SERIALISATIONS`).
+fn theme_serialisations() -> usize {
+    crate::inspector::THEME_SERIALISATIONS.with(std::cell::Cell::get)
+}
+
+/// The inspector serialises the installed theme once an install, not once a
+/// frame (M9-020): the Basic page's Spinner asks for a frame every frame, and
+/// gpui renders the inspector, an uncached view, on every draw. A preset is
+/// installed and ten frames are drawn on the Basic page, the inspector
+/// showing its hint.
+#[gpui::test]
+fn the_inspector_serialises_the_theme_once_an_install(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.active_page),
+        Page::Basic
+    );
+    let before = theme_serialisations();
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.apply_theme_by_name("kde-breeze", window, cx);
+        });
+    });
+    cx.run_until_parked();
+    for _ in 0..10 {
+        draw(&mut cx);
+    }
+    assert_eq!(
+        theme_serialisations() - before,
+        1,
+        "an install and ten frames on the Basic page did not serialise the theme once"
+    );
+}
+
+/// The look the inspector is drawn in, as the showcase keeps it
+/// (`Showcase::panel_look`), is the installed theme's after every kind of
+/// install: a preset install, a colour-mode switch under `default`, which
+/// re-picks the other variant of the desktop's theme it kept, a Preferences
+/// change, the theme watcher's re-read, and an `apply` the connector is
+/// called for directly. After each, the look the next frame keeps equals one
+/// built afresh, and it changed where the install changed what it reads: the
+/// two modes under `default`, the text scale, a colour.
+#[gpui::test]
+fn the_kept_panel_look_follows_every_install(cx: &mut TestAppContext) {
+    use crate::inspector::PanelLook;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let kept = |cx: &mut VisualTestContext, what: &str| -> Option<PanelLook> {
+        cx.run_until_parked();
+        draw(cx);
+        let (kept, fresh) = read(cx, &showcase, |this, cx| {
+            (this.panel_look.clone(), PanelLook::of(this, cx))
+        });
+        assert!(kept.is_some(), "{what}: the showcase keeps no panel look");
+        assert_eq!(
+            kept, fresh,
+            "{what}: the panel look kept is not the installed theme's"
+        );
+        kept
+    };
+    set_preset(&mut cx, "kde-breeze");
+    let breeze = kept(&mut cx, "a preset install");
+
+    set_preset(&mut cx, "default");
+    let shown = read(&mut cx, &showcase, |this, _| this.is_dark);
+    let mut looks = Vec::new();
+    for mode in [!shown, shown] {
+        let mode = if mode {
+            AppColorMode::Dark
+        } else {
+            AppColorMode::Light
+        };
+        cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(mode)), cx));
+        looks.push(kept(
+            &mut cx,
+            &format!("a switch to {mode:?} under default"),
+        ));
+    }
+    assert_ne!(
+        looks.first(),
+        looks.last(),
+        "the two modes under default keep one panel look"
+    );
+
+    let before = looks.last().cloned().flatten();
+    cx.update(|_window, cx| {
+        let ui = showcase.read(cx).info_ui.clone();
+        crate::demo::change_preferences(&ui, cx, |overrides| {
+            overrides.text_scaling_factor = Some(1.5);
+        });
+    });
+    let scaled = kept(&mut cx, "a Preferences change");
+    assert_ne!(
+        scaled, before,
+        "a text scale of 1.5 left the panel look as it was"
+    );
+
+    cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
+    kept(&mut cx, "the theme watcher's re-read");
+
+    set_preset(&mut cx, "kde-breeze");
+    let mut r = resolved_theme(&mut cx, &showcase);
+    let is_dark = read(&mut cx, &showcase, |this, _| this.is_dark);
+    assert_ne!(r.sidebar.font.color, r.defaults.accent_color);
+    r.sidebar.font.color = r.defaults.accent_color;
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&r, "kde-breeze", is_dark, &prefs),
+            &r,
+            &prefs,
+            cx,
+        );
+    });
+    let applied = kept(&mut cx, "an apply of the connector's");
+    assert_ne!(
+        applied, breeze,
+        "a changed sidebar.font.color left the panel look as it was"
+    );
+}
+
 /// The inspector's Copy button puts the shown info's text on the clipboard
 /// (spec §2.6).
 #[gpui::test]
@@ -3368,11 +3489,10 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     );
     cx.simulate_mouse_up(copy, MouseButton::Left, Modifiers::default());
     cx.run_until_parked();
-    let weak = showcase.downgrade();
-    let panel = read(&mut cx, &showcase, |_, cx| {
-        let look = crate::inspector::PanelLook::of(&weak, cx)?;
+    let panel = read(&mut cx, &showcase, |this, _| {
+        let look = this.panel_look.as_ref()?;
         let element = crate::elements::element("chrome.info.copy")?;
-        Some(crate::inspector::listed(&look, element, &info))
+        Some(crate::inspector::listed(look, element, &info))
     });
     assert!(panel.is_some(), "no panel text for chrome.info.copy");
     let Some(panel) = panel else { return };
