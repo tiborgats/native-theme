@@ -5883,6 +5883,10 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("splitter", "hover_color") => "the line's background under the pointer and while dragged".into(),
         ("separator", "line_color") if under("chrome.menu.") => "not drawn here".into(),
         ("separator", "line_color") => "styles::rule: rule::Style::color".into(),
+        ("separator", "line_width_px") if under("basic.table.") => {
+            "the grid lines' thickness: the column line's width and the header line's height (basic_table)"
+                .into()
+        }
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
         ("tab", "bar_background") if under("basic.tabs.") => {

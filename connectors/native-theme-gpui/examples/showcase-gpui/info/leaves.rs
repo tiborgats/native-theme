@@ -1717,6 +1717,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the tab strip's bottom border (demo::native_tab_strip)",
     ),
     (
+        "basic.table",
+        "separator.line_width_px",
+        "gpui: the width of the header's bottom line and the column line, both in list.grid_color (demo::files_table)",
+    ),
+    (
         "chrome.page_tabs.rule",
         "separator.line_width_px",
         "gpui: the tab strip's bottom border (demo::native_tab_strip)",
