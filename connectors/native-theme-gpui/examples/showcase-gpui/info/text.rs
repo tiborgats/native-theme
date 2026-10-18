@@ -76,7 +76,7 @@ pub fn label(t: &Theme) -> WidgetInfo {
 fn inherited_font(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.config("font", format!("font_family: {}", t.font_family))
         .not_themeable("highlights", "blue, on the ranges Label::highlights marks, which this demo does not set (gpui-component/label.rs, Label::highlights)")
-        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and gpui-component's WindowState root plugin sets the rem size, the family and the foreground but no weight (gpui-component/root.rs, WindowState::prepare and WindowState::style). The geometry:: builders that carry a font spec do carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button since v0.5.9 -- so a Label outside one, like these, renders at gpui's default instead. The panel used to call that hardcoded, which is the reverse: nothing sets it")
+        .not_themeable("font weight", "ambient, and the ambient weight is not the platform's: label.rs states no weight, no family and no size, gpui-component's Theme has no font-weight field, and gpui-component's WindowState root plugin sets the rem size, the family and the foreground but no weight (gpui-component/root.rs, WindowState::prepare and WindowState::style). The geometry:: builders that carry a font spec carry font.weight with it -- input, list_item, tooltip, status_bar, checkbox and the rest through with_text, and button -- so a Label outside one, like these, renders at gpui's default weight")
 }
 
 /// A Label of the Typography page's Label gallery, of `kind`, reading

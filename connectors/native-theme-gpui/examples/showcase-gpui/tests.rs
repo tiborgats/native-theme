@@ -14540,3 +14540,26 @@ fn the_shortcut_tooltip_names_its_keystroke() {
         assert_eq!(save_tooltip(), "Save file (Ctrl+S)");
     }
 }
+
+/// A Typography Label that inherits its font says what sets its weight
+/// and stops there: the note holds no history of the panel or the crate.
+#[test]
+fn a_labels_weight_note_says_what_sets_the_weight() {
+    let t = Theme::default();
+    for info in [
+        crate::info::text::gallery_label(&t, crate::demo::LabelKind::Plain, "Regular label"),
+        crate::info::text::sized_label(&t, crate::demo::TextSize::Base),
+    ] {
+        let note = shown_note(Some(&info), "font weight").expect("a font weight note");
+        assert!(
+            note.ends_with("renders at gpui's default weight"),
+            "the note does not end at what sets the weight: {note:?}"
+        );
+        for history in ["used to", "since v", "the panel"] {
+            assert!(
+                !note.contains(history),
+                "the note tells history ({history:?}): {note:?}"
+            );
+        }
+    }
+}
