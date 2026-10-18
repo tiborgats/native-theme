@@ -1130,17 +1130,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "layout.container_margin_px",
-        "gpui: the tab bar's side inset where sidebar.border.padding states no side; where it states any, the side panel's padding insets it (demo::native_tab_bar)",
+        "gpui: the tab bar's side inset where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding insets it (demo::native_tab_bar)",
     ),
     (
         "chrome.page_tabs",
         "layout.container_margin_px",
-        "gpui: the tab bar's side inset (demo::native_tab_bar)",
+        "gpui: the tab bar's side inset (none where that is unstated) (demo::native_tab_bar)",
     ),
     (
         "chrome.side_panel.inspector",
         "layout.container_margin_px",
-        "gpui: pads the inspector's content where sidebar.border.padding states no side; where it states any, the side panel's padding pads it (inspector.rs)",
+        "gpui: pads the inspector's content where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding pads it (inspector.rs)",
     ),
     (
         "chrome.status_bar",
@@ -1155,7 +1155,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "layout.container_margin_px",
-        "gpui: pads the theme settings where sidebar.border.padding states no side; where it states any, a side it leaves unstated of the side panel (demo::side_panel)",
+        "gpui: pads the theme settings where sidebar.border.padding states no side, and where it states any, a side of the side panel the padding leaves unstated (none where that is unstated) (demo::side_panel)",
     ),
     (
         "chrome.info",

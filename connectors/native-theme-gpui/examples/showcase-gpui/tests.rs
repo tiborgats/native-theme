@@ -12359,6 +12359,28 @@ fn the_side_panels_padding_routes_name_the_margin_on_an_unstated_side(cx: &mut T
     );
 }
 
+/// The side panel's and the page tabs' `layout.container_margin_px` routes
+/// say that the margin pads nothing where the theme states none, as under
+/// macos-tahoe, whose layout states no `container_margin`: each names a
+/// padding the margin gives only where it is stated.
+#[test]
+fn the_container_margin_routes_say_none_where_it_is_unstated() {
+    for element in [
+        "chrome.side_panel",
+        "chrome.side_panel.settings",
+        "chrome.side_panel.inspector_tabs",
+        "chrome.side_panel.inspector",
+        "chrome.page_tabs",
+    ] {
+        let route = crate::info::leaves::how(element, "layout.container_margin_px");
+        assert!(
+            route.is_some_and(|r| r.contains("(none where that is unstated)")),
+            "{element}: its layout.container_margin_px route {route:?} does not say the margin \
+             pads nothing where the theme states none"
+        );
+    }
+}
+
 /// The segmented control's padding line says what pads each side of a
 /// segment (M9-048): a stated `segmented_control.border.padding` side by its
 /// value, an unstated left or right by `SEGMENT_PADDING`, upstream's 12px,
