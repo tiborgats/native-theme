@@ -8341,6 +8341,74 @@ fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
     );
 }
 
+/// Switch the colour mode to `mode`, as the colour-mode Select does.
+fn switch_mode(cx: &mut VisualTestContext, mode: AppColorMode) {
+    cx.update(|window, cx| window.dispatch_action(Box::new(SetColorMode(mode)), cx));
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// Three colour-mode switches from the mode shown: to the other mode, back,
+/// and to the other again.
+fn three_switches(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [AppColorMode; 3] {
+    let (other, shown) = match read(cx, showcase, |this, _| this.is_dark) {
+        true => (AppColorMode::Light, AppColorMode::Dark),
+        false => (AppColorMode::Dark, AppColorMode::Light),
+    };
+    [other, shown, other]
+}
+
+/// native-theme's colour mode for the showcase's `is_dark`.
+fn native_mode(is_dark: bool) -> native_theme::theme::ColorMode {
+    match is_dark {
+        true => native_theme::theme::ColorMode::Dark,
+        false => native_theme::theme::ColorMode::Light,
+    }
+}
+
+/// Under `default` each colour mode takes its own variant's icon theme
+/// (`SystemTheme::icon_theme_for`), not the one of the mode the OS is in:
+/// on KDE with the OS light and the showcase dark, `breeze-dark`, where
+/// `breeze` was loaded. A test cannot choose the OS's mode, so it shows the
+/// showcase both and compares each with the variant the theme states.
+#[gpui::test]
+fn the_default_theme_takes_each_modes_icon_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let Ok(system) = system_theme() else {
+        return;
+    };
+    set_preset(&mut cx, "default");
+    for mode in three_switches(&mut cx, &showcase) {
+        switch_mode(&mut cx, mode);
+        let (is_dark, icon_theme) = read(&mut cx, &showcase, |this, _| {
+            (this.is_dark, this.current_icon_theme.clone())
+        });
+        assert_eq!(is_dark, mode.is_dark(), "{mode:?} was not the mode shown");
+        assert_eq!(
+            icon_theme.as_deref(),
+            system.icon_theme_for(native_mode(is_dark)),
+            "{mode:?} under `default` took another variant's icon theme"
+        );
+    }
+}
+
+/// The colour a system icon set's loaders are given: the installed native
+/// theme's font colour, and none where no native theme is installed, so a
+/// symbolic icon keeps its own colours. The placeholder font the showcase
+/// shows where the OS theme could not be read is transparent black, and
+/// the loaders keep only its red, green and blue: every recoloured icon
+/// drew black, on a dark window too.
+#[test]
+fn icons_take_no_tint_without_a_native_theme() {
+    let colour = native_theme::Rgba::rgb(0x23, 0x26, 0x29);
+    assert_eq!(
+        crate::app::icon_tint(false, native_theme::Rgba::TRANSPARENT),
+        None
+    );
+    assert_eq!(crate::app::icon_tint(false, colour), None);
+    assert_eq!(crate::app::icon_tint(true, colour), Some(colour));
+}
+
 /// A theme that fails to load leaves the installed one in charge of
 /// everything shown: its name in the status bar and the preset switch, and
 /// its layout. (`--theme` with a name the preset switch does not offer is

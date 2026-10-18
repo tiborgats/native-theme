@@ -488,6 +488,19 @@ const BASIC_TEXTAREA_TEXT: &str = "Line one\nLine two\nLine three";
 const BASIC_LIST_ROWS: usize = 8;
 const BASIC_LIST_SELECTED: usize = 1;
 
+/// The colour the system icon sets' loaders recolour a symbolic icon in
+/// (`load_all_icons`, `load_gpui_icons`): the installed native theme's
+/// `defaults.font.color`, and none without a native theme, so an icon keeps
+/// its own colours. The placeholder font shown where the OS theme could not
+/// be read is transparent black (`unread_font`), which the loaders would
+/// take as black, as they keep only its red, green and blue.
+pub(crate) fn icon_tint(
+    native_installed: bool,
+    font_colour: native_theme::Rgba,
+) -> Option<native_theme::Rgba> {
+    native_installed.then_some(font_colour)
+}
+
 /// The icon-theme Select's rows for a theme of `icon_set` naming
 /// `icon_theme`: the shared crate's (`rows::icon_rows`) -- its `default` row,
 /// where the theme names an icon theme that is available
@@ -885,7 +898,7 @@ impl Showcase {
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
         let theme = self.freedesktop_theme().map(str::to_string);
-        let fg_color = Some(self.original_font.color);
+        let fg_color = icon_tint(cx.native_theme().is_some(), self.original_font.color);
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
             self.loaded_icons = load_all_icons(effective, theme.as_deref(), fg_color);
@@ -1558,10 +1571,13 @@ impl Showcase {
     ) {
         let os = std::mem::take(&mut system.accessibility);
         system.accessibility = Self::install_preferences(cx, os);
-        let resolved = system.pick(color_mode_of(self.is_dark));
+        let mode = color_mode_of(self.is_dark);
+        let resolved = system.pick(mode);
         self.original_font = resolved.defaults.font.clone();
         self.original_mono_font = resolved.defaults.mono_font.clone();
-        self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
+        // The mode shown's own variant's: `system.icon_theme` is the one of
+        // the mode the OS is in.
+        self.current_icon_theme = system.icon_theme_for(mode).map(str::to_owned);
         self.current_icon_set = system.icon_set;
         self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
