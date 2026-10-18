@@ -12565,3 +12565,51 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
         );
     }
 }
+
+/// A TabBar built from gpui-component's -- the chrome tab rows of a build
+/// without `widgets`, and of every build without a native theme -- is a
+/// per-Size height that `tab.min_height` raises where a native theme is
+/// installed (`demo::tab_bar` gives each Tab `min_h`): its info says so
+/// there, and that nothing applies it only where none is (M9-036). The
+/// default build draws the theme's rows with `widgets::TabBar`, so the info
+/// is built here as the build without `widgets` builds it.
+#[test]
+fn an_upstream_tab_bars_height_note_follows_the_native_theme() {
+    let variants = every_bundled_variant();
+    let height = |info: &WidgetInfo| {
+        info.not_themeable
+            .iter()
+            .find(|n| n.what == "height")
+            .map(|n| n.text.clone())
+            .unwrap_or_default()
+    };
+    for (name, r, t) in &variants {
+        for (which, info) in [
+            (
+                "inspector",
+                crate::info::tab_font(crate::info::inspector_tab_bar(t, Some(r)), Some(r)),
+            ),
+            (
+                "page",
+                crate::info::tab_font(crate::info::page_tab_bar(t, Some(r)), Some(r)),
+            ),
+        ] {
+            let note = height(&info);
+            assert!(
+                note.contains("tab.min_height") && !note.contains("Nothing applies it"),
+                "{name}: the {which} tab bar's height note denies tab.min_height, which each Tab takes: {note:?}"
+            );
+        }
+    }
+    let Some((_, _, t)) = variants.first() else {
+        return;
+    };
+    let note = height(&crate::info::tab_font(
+        crate::info::page_tab_bar(t, None),
+        None,
+    ));
+    assert!(
+        note.contains("Nothing applies it"),
+        "with no native theme the page tab bar's height note does not say nothing applies tab.min_height: {note:?}"
+    );
+}

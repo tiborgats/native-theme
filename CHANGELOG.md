@@ -431,6 +431,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases**: the Basic page's table's Widget Info, and its header's, rows `separator.line_width`, the width all three showcases draw its grid lines at, beside `list.grid_color`, their colour; it named the colour alone.
 - **Showcases (gpui)**: under a native theme the status bar's Widget Info no longer says upstream's 1 px `border_t_1` is its top edge; the showcase draws that edge `status_bar.border.line_width` wide, as the panel's row for the leaf says.
 - **Showcases (gpui)**: the Widget Info of the toolbar's buttons, the status bar's side-panel toggle and the Buttons page's toolbar items names, under a theme that states `button.border.padding`, the stated sides and `button.border.corner_radius` the showcase sizes and rounds them by, and upstream's `h_8` with `px_2p5` (the toggle's `h_6` with `px_2`) only for what the theme leaves unstated; it gave upstream's size as the size drawn under every theme.
+- **Showcases (gpui)**: built without the `widgets` feature, the chrome tab bars' Widget Info under a native theme says each tab's height is raised to `tab.min_height`, as the showcase lays it out, where it said nothing applies `tab.min_height`.
 
 ## [0.6.1] - 2026-10-09
 

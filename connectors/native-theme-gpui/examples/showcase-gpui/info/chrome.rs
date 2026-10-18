@@ -614,8 +614,13 @@ pub fn theme_settings(widget_gap: Option<Pixels>, own: Pixels) -> WidgetInfo {
 }
 
 /// What an Underline `TabBar` at `Size::Small` paints and how it is laid
-/// out, under `variant`.
-fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
+/// out, under `variant`: gpui-component's, each Tab given `native`'s
+/// `tab.min_height` where a native theme is installed (`demo::tab_bar`).
+fn underline_tab_bar(
+    t: &Theme,
+    variant: &'static str,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
     WidgetInfo::new("TabBar")
         .variant(variant)
         .color(claim(
@@ -666,14 +671,21 @@ fn underline_tab_bar(t: &Theme, variant: &'static str) -> WidgetInfo {
         )
         .not_themeable(
             "height",
-            "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)",
+            match native {
+                Some(r) => format!(
+                    "a per-Size literal set with .h() over the caller's style, which tab.min_height, {}px, raises: demo::tab_bar gives each Tab it as min_h through the Tab's style, which its own h does not clear (tab/tab.rs, Tab::render)",
+                    px_text(r.tab.min_height)
+                ),
+                None => "a per-Size literal set with .h() over the caller's style, but a Tab never sets min_h, which leaves tab.min_height a receiver. Nothing applies it: there is no geometry::tab -- our gap (tab/tab.rs, Tab::render)".to_string(),
+            },
         )
 }
 
 /// The inspector's TabBar (spec §2.6, §4.4): chrome, so it reports itself,
-/// unlike the content below it.
-pub fn inspector_tab_bar(t: &Theme) -> WidgetInfo {
-    underline_tab_bar(t, "Underline, small").instance(
+/// unlike the content below it. `native` is the installed native theme,
+/// whose `tab.min_height` each Tab takes.
+pub fn inspector_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    underline_tab_bar(t, "Underline, small", native).instance(
         "tabs",
         "Widget, the info the pointer settled on, and Theme, what the theme and the window set that no widget carries",
     )
@@ -704,9 +716,10 @@ pub fn tab_bar_padding(container_margin: Option<Pixels>) -> String {
 }
 
 /// The content panel's page TabBar (spec S3), with upstream's menu of every
-/// tab.
-pub fn page_tab_bar(t: &Theme) -> WidgetInfo {
-    underline_tab_bar(t, "Underline, small, menu")
+/// tab. `native` is the installed native theme, whose `tab.min_height` each
+/// Tab takes.
+pub fn page_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
+    underline_tab_bar(t, "Underline, small, menu", native)
         .instance(
             "tabs",
             "one per page, the shown page's selected; a click dispatches ShowPage, the action the View menu's page items and the command palette's page entries run",

@@ -1721,21 +1721,22 @@ pub(crate) fn tab_bar(
     let menu_icon = menu_icon.and_then(SampleIcon::icon);
     #[cfg(not(feature = "widgets"))]
     let _ = &menu_icon;
+    let native = cx.native();
+    let resolved = native.as_ref().map(|n| n.resolved);
     let (id, info_id, menu, bar_info) = match kind {
         TabBarKind::Inspector => (
             "inspector-tabs",
             "chrome-inspector-tabs",
             false,
-            info::inspector_tab_bar(cx.theme()),
+            info::inspector_tab_bar(cx.theme(), resolved),
         ),
         TabBarKind::Pages => (
             "page-tabs",
             "chrome-page-tabs",
             true,
-            info::page_tab_bar(cx.theme()),
+            info::page_tab_bar(cx.theme(), resolved),
         ),
     };
-    let native = cx.native();
     let tabs: Vec<(&'static str, &'static str)> = tabs.into_iter().collect();
     #[cfg(feature = "widgets")]
     if let Some(n) = &native {
@@ -1751,7 +1752,7 @@ pub(crate) fn tab_bar(
             on_click,
         );
     }
-    let mut bar_info = info::tab_font(bar_info, native.as_ref().map(|n| n.resolved))
+    let mut bar_info = info::tab_font(bar_info, resolved)
         .instance("padding", info::tab_bar_padding(container_margin));
     if container_margin.is_some() {
         bar_info = bar_info.geometry("container_margin");
