@@ -14260,14 +14260,30 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
         show(&mut cx, &showcase, Page::Feedback);
         let gap = read(&mut cx, &showcase, |this, _| this.layout.widget_gap).map_or(px(0.), px);
         assert_eq!(stated, gap > px(0.), "kde-breeze states no widget_gap");
-        // Messages (5) before Notifications (99): one digit.
-        let apart = bounds_of(&mut cx, "feedback-badge-notifications").left()
-            - bounds_of(&mut cx, FEEDBACK_BADGE_COUNT).right();
-        assert!(
-            (apart - (gap + px(3.))).abs() <= px(0.01),
-            "widget_gap {gap:?}: the Badges are {apart:?} apart, not the gap and the one-digit \
-             count's 3px"
-        );
+        // Messages (5) before Notifications (99): one digit; Notifications
+        // before Updates (a dot): two.
+        for (before, after, digits, count) in [
+            (
+                FEEDBACK_BADGE_COUNT,
+                "feedback-badge-notifications",
+                "one-digit",
+                5,
+            ),
+            (
+                "feedback-badge-notifications",
+                FEEDBACK_BADGE_DOT,
+                "two-digit",
+                99,
+            ),
+        ] {
+            let overhang = crate::pages::badge_count_overhang(Some(count));
+            let apart = bounds_of(&mut cx, after).left() - bounds_of(&mut cx, before).right();
+            assert!(
+                (apart - (gap + overhang)).abs() <= px(0.01),
+                "widget_gap {gap:?}: {before} and {after} are {apart:?} apart, not the gap and \
+                 the {digits} count's {overhang:?}"
+            );
+        }
         let info = settle_on(&mut cx, &showcase, FEEDBACK_BADGE_COUNT);
         let note = shown_note(info.as_ref(), "next badge");
         let says = if stated {
@@ -14284,6 +14300,31 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
                 && t.contains("BADGE_COUNT_OVERHANG")
                 && (stated || t.contains("layout.widget_gap is unstated"))),
             "widget_gap {gap:?}: the Badge's info does not say what follows it: {note:?}"
+        );
+    }
+}
+
+/// How far a Badge's count stands past its Button is upstream's 3px a
+/// printed character (gpui-component 0.7.3 `badge.rs:137-146`): one digit
+/// 3px, two 6px, a count above 99 printed `99+`, three characters
+/// (`badge.rs:130-134`); none for a dot, which sits inside the Button
+/// (`badge.rs:129`), nor for a zero count, which upstream does not draw
+/// (`badge.rs:103`).
+#[test]
+fn a_badges_overhang_is_its_printed_counts() {
+    let per = crate::pages::BADGE_COUNT_OVERHANG;
+    for (count, printed) in [
+        (None, 0),
+        (Some(0), 0),
+        (Some(5), 1),
+        (Some(99), 2),
+        (Some(100), 3),
+        (Some(12_345), 3),
+    ] {
+        assert_eq!(
+            crate::pages::badge_count_overhang(count),
+            per * printed as f32,
+            "a Badge of {count:?} overhangs its Button by other than {printed} characters"
         );
     }
 }
