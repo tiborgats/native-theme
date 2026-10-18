@@ -8819,6 +8819,12 @@ fn text_ins_style_is_the_connectors_on_every_font_style() {
 /// system lacks as `info::drawn_font` does, with the substitute gpui is
 /// asked for, where the chrome menus' line named no family and the
 /// theme-drawn Checkbox's and TabBar's named the stated family alone.
+///
+/// Its premise is the host's: the family is absent from the font database
+/// and the platform names a substitute for it (`font_family`), which only
+/// fontconfig does, with feature `system-fonts`. Where either does not
+/// hold, the test says so and checks nothing, as the two forms it tells
+/// apart are then one.
 #[test]
 fn a_substituted_family_is_named_in_every_own_font_line() {
     let resolved = native_theme::theme::Theme::preset("kde-breeze")
@@ -8831,12 +8837,24 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
     assert!(resolved.is_some(), "kde-breeze light does not resolve");
     let Some(mut resolved) = resolved else { return };
     let absent: std::sync::Arc<str> = "Native Theme Absent Sans".into();
+    #[cfg(feature = "system-fonts")]
+    let installed =
+        native_theme::fonts::system_face(&absent, 400, native_theme::theme::FontStyle::Normal)
+            .is_some();
+    #[cfg(not(feature = "system-fonts"))]
+    let installed = false;
+    if installed {
+        println!("skipped: this host has a family named {absent:?}, so it is drawn as stated");
+        return;
+    }
     let drawn = native_theme_gpui::font_family(&absent);
-    assert_ne!(
-        drawn.as_ref(),
-        absent.as_ref(),
-        "the platform names no substitute for a family it lacks, so this test cannot tell the two forms apart"
-    );
+    if drawn.as_ref() == absent.as_ref() {
+        println!(
+            "skipped: this host names no substitute for {absent:?} (fontconfig, feature \
+             system-fonts), so a substituted family's form is the stated one"
+        );
+        return;
+    }
     let label = native_theme_showcase_support::status::family_label(&absent, Some(drawn.as_ref()));
     resolved.menu.font.family = absent.clone();
     resolved.checkbox.font.family = absent.clone();
