@@ -2889,10 +2889,17 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         icon,
     } = spec;
     // What `native_info` applies the builder under.
-    let styled = cx.native().is_some();
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let drawn = icon.as_ref().and_then(SampleIcon::icon);
-    let mut button_info =
-        info::buttons::button(cx.theme(), kind, state, drawn.is_some(), None, styled);
+    let mut button_info = info::buttons::button(
+        cx.theme(),
+        kind,
+        state,
+        drawn.is_some(),
+        None,
+        native_button,
+    );
     if let Some(icon) = &icon {
         button_info = match state {
             ButtonState::Loading => button_info.instance(
@@ -2987,7 +2994,7 @@ pub(crate) fn sized_button(
             ButtonState::Idle,
             false,
             Some(size),
-            false,
+            None,
         ),
     )
 }
@@ -3194,7 +3201,7 @@ fn text_field(
             }
             let resolved = cx.native_theme().and_then(|nt| nt.resolved(cx));
             if let (true, Some(r), Some(fill)) = (disabled, resolved, &fill) {
-                input_info = info::inputs::disabled_input_surface(input_info);
+                input_info = info::inputs::disabled_input_surface(input_info, r);
                 let none = cx.theme().transparent;
                 // The fill goes under the field; the disabled text colour
                 // stays on it, where the editor reads it.
@@ -4800,14 +4807,15 @@ pub(crate) fn action_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native().is_some();
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
         ButtonState::Idle,
         false,
         None,
-        styled,
+        native_button,
     )
     .instance("click", about);
     let button = labelled(
@@ -7072,8 +7080,9 @@ pub(crate) fn overlay_button(
     on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
-    let styled = cx.native().is_some();
-    let mut button_info = info::overlays::trigger(cx.theme(), overlay, styled);
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
+    let mut button_info = info::overlays::trigger(cx.theme(), overlay, native_button);
     let button = labelled(
         ui,
         cx,
@@ -7138,7 +7147,9 @@ pub(crate) fn confirm_dialog(
         "dialog_footer",
         &mut dialog_info,
     );
-    let mut close_info = info::overlays::dialog_close(cx.theme(), styled);
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
+    let mut close_info = info::overlays::dialog_close(cx.theme(), native_button);
     // DialogClose builds the Button and hands it over
     // (dialog/footer.rs:83-88), so the refinement is made here and applied
     // there.
@@ -8283,14 +8294,15 @@ pub(crate) fn toggle_button(
     id: &'static str,
     label: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native().is_some();
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let mut button_info = info::buttons::button(
         cx.theme(),
         ButtonKind::Default,
         ButtonState::Idle,
         false,
         None,
-        styled,
+        native_button,
     )
     .instance(
         "state",
@@ -8328,7 +8340,8 @@ pub(crate) fn icon_button(
     drawn: &(ChromeIcon, Option<IconName>),
     listed: &'static str,
 ) -> Stateful<Div> {
-    let styled = cx.native().is_some();
+    let native = cx.native();
+    let native_button = native.as_ref().map(|n| &n.resolved.button);
     let icon = role_icon_of(drawn);
     let mut button_info = info::buttons::button(
         cx.theme(),
@@ -8336,7 +8349,7 @@ pub(crate) fn icon_button(
         ButtonState::Idle,
         icon.is_some(),
         None,
-        styled,
+        native_button,
     )
     .instance("icon", format!("{name}, at toolbar.icon_size"));
     let icon = icon.map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));

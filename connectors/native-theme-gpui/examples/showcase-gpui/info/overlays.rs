@@ -1,27 +1,28 @@
 //! What the Overlays page's widgets report about themselves (spec §3.4).
 
 use gpui_component::theme::Theme;
+use native_theme::theme::ResolvedButtonTheme;
 use native_theme_gpui::ResolvedTheme;
 
 use super::{
     WidgetInfo, buttons,
     chrome::{dialog_surface, popup_menu, sheet_surface},
-    claim, px_text, stated,
+    claim, edge_claim, px_text, stated,
 };
 use crate::demo::{ButtonKind, ButtonState, Overlay, SAMPLE_MENU, SheetSide};
 use crate::support::SampleIcon;
 
-/// The page's Button that opens `overlay`. `styled` is whether
-/// `geometry::button` refined it; its geometry line is recorded by
+/// The page's Button that opens `overlay`, refined by `geometry::button`
+/// from `native` where given; its geometry line is recorded by
 /// `native_info` where `demo::overlay_button` applies the builder.
-pub fn trigger(t: &Theme, overlay: Overlay, styled: bool) -> WidgetInfo {
+pub fn trigger(t: &Theme, overlay: Overlay, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
     buttons::button(
         t,
         overlay.button_kind(),
         ButtonState::Idle,
         false,
         None,
-        styled,
+        native,
     )
     .instance(
         "opens",
@@ -115,17 +116,17 @@ pub fn dialog(
         )
 }
 
-/// The Button in the footer of the page's Dialog, which closes it. `styled`
-/// is whether `geometry::button` refined it; its geometry line is recorded
-/// where `demo::confirm_dialog` makes the refinement.
-pub fn dialog_close(t: &Theme, styled: bool) -> WidgetInfo {
+/// The Button in the footer of the page's Dialog, which closes it, refined by
+/// `geometry::button` from `native` where given; its geometry line is
+/// recorded where `demo::confirm_dialog` makes the refinement.
+pub fn dialog_close(t: &Theme, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
     buttons::button(
         t,
         ButtonKind::Default,
         ButtonState::Idle,
         false,
         None,
-        styled,
+        native,
     )
     .instance(
         "closes",
@@ -266,15 +267,15 @@ fn popover_surface(info: WidgetInfo, t: &Theme, native: Option<&ResolvedTheme>) 
             let info = info.not_themeable(
                 "corner radius",
                 "popover.border.corner_radius, through geometry::popover: popover_style sets the theme radius, and the refinement, applied after it, replaces it (gpui-component styled.rs, popover_style)",
-            );
+            ).colors(edge_claim(
+                "edge",
+                "border",
+                Some(r.popover.border.color),
+                Some(r.popover.border.line_width),
+                "showcase",
+            ));
             if r.popover.border.line_width > 0.0 {
-                info.color(claim(
-                    "edge",
-                    "color",
-                    stated(r.popover.border.color),
-                    "showcase",
-                ))
-                .config(
+                info.config(
                     "edge",
                     format!(
                         "popover.border.color at popover.border.line_width, {}px, through geometry::popover: popover_style draws no border, so the refinement's lies inside its edge ring, which stays (gpui-component styled.rs, popover_style)",
@@ -463,15 +464,16 @@ pub fn menu_row(
                     "hover_text_color",
                     stated(m.hover_text_color),
                     "showcase",
-                ));
-            let info = if r.popover.border.line_width > 0.0 {
-                info.color(claim(
-                    "frame edge",
-                    "color",
-                    stated(r.popover.border.color),
-                    "showcase",
                 ))
-                .config(
+                .colors(edge_claim(
+                "frame edge",
+                "border",
+                Some(r.popover.border.color),
+                Some(r.popover.border.line_width),
+                "showcase",
+            ));
+            let info = if r.popover.border.line_width > 0.0 {
+                info.config(
                     "frame edge",
                     format!(
                         "popover.border: {}px, radius {}px, as the showcase's menus frame their popup (platform-facts §2.6: a menu's popup border is §2.16's)",

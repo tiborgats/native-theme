@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours},
-    claim, px_text, stated,
+    claim, edge_claim, px_text, stated, stated_claim,
 };
 use crate::Page;
 use crate::demo::{GroupBoxKind, SeparatorKind, SpacingBox, StepperKind};
@@ -149,6 +149,25 @@ fn content_padding(native: Option<&ResolvedTheme>, margin: Option<Pixels>, own: 
     )
 }
 
+/// `info` with the edge `geometry::group_box_content` draws on a GroupBox's
+/// content, `card.border.color` at `card.border.line_width`, and its line:
+/// none where that is 0, which an `outline` box's own edge gives way to.
+fn card_edge(info: WidgetInfo, r: &ResolvedTheme, outline: bool) -> WidgetInfo {
+    let width = r.card.border.line_width;
+    info.colors(edge_claim(
+        "edge",
+        "border",
+        Some(r.card.border.color),
+        Some(width),
+        "native-theme-gpui/geometry.rs:732",
+    ))
+    .config("edge", match (width > 0.0, outline) {
+        (true, _) => format!("card.border.color at card.border.line_width, {}px, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own", px_text(width)),
+        (false, true) => "none: card.border.line_width is 0, and geometry::group_box_content sets that width on the content, which the GroupBox refines last, so the Outline box's own border_1 gives way to it (group_box.rs, GroupBox)".to_string(),
+        (false, false) => "none: card.border.line_width is 0, so geometry::group_box_content draws no edge on the content, and a Normal or Fill box draws none of its own (group_box.rs, GroupBox)".to_string(),
+    })
+}
+
 /// A `GroupBox` of `kind` titled `title`. `native` is the theme
 /// `geometry::group_box_content` refined its content from, where a native
 /// theme is installed, whose line is recorded where `demo::group_box`
@@ -182,12 +201,16 @@ pub fn group_box(
     // (fill, edge) per variant (group_box.rs:143-147), under the card's
     // fill and edge where the builder refined the content.
     let info = match (kind, native) {
-        (_, Some(r)) => info.color(claim(
-            "fill",
-            "background_color",
-            stated(r.card.background_color),
-            "showcase",
-        )),
+        (_, Some(r)) => card_edge(
+            info.color(claim(
+                "fill",
+                "background_color",
+                stated(r.card.background_color),
+                "showcase",
+            )),
+            r,
+            kind == GroupBoxKind::Outline,
+        ),
         (GroupBoxKind::Normal, None) => info,
         (GroupBoxKind::Fill, None) => info.color(claim(
             "bg",
@@ -203,12 +226,10 @@ pub fn group_box(
         )),
     };
     let info = match (kind, styled) {
-        (_, true) => info.config(
-            "edge",
-            "card.border.color at card.border.line_width, on every variant: geometry::group_box_content sets both on the content, which the GroupBox refines last (group_box.rs, GroupBox) -- over an Outline's own border colour, and on a Normal or Fill box, which draws no edge of its own",
-        ),
-        (GroupBoxKind::Outline, false) => info
-            .config("border-radius", format!("radius: {}px", t.radius.as_f32())),
+        (_, true) => info,
+        (GroupBoxKind::Outline, false) => {
+            info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
+        }
         (GroupBoxKind::Normal | GroupBoxKind::Fill, false) => info
             .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
             .not_themeable(
@@ -357,16 +378,17 @@ pub fn expander(
         ))
         .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver")
         .not_themeable("fill", "the accordion token, which the connector gives the window's background: the model states no expander fill");
-    let info = match native {
-        Some(r) if r.expander.hover_background.is_some() => info.color(claim(
+    let hover = native.map(|r| {
+        stated_claim(
             "hovered title",
             "hover_background",
-            r.expander
-                .hover_background
-                .map_or(gpui::transparent_black(), stated),
+            r.expander.hover_background,
             "showcase",
-        )),
-        Some(_) => info.not_themeable(
+        )
+    });
+    let info = match hover {
+        Some(Some(hover)) => info.color(hover),
+        Some(None) => info.not_themeable(
             "hover",
             "none: the theme states no expander.hover_background, so the showcase gives the items no hover style (accordion.rs, AccordionItem::hover)",
         ),
@@ -374,10 +396,11 @@ pub fn expander(
     };
     let info = match native {
         Some(r) => info
-            .color(claim(
+            .colors(edge_claim(
                 "border and the line between items",
-                "color",
-                stated(r.expander.border.color),
+                "border",
+                Some(r.expander.border.color),
+                Some(r.expander.border.line_width),
                 "showcase",
             ))
             .config("border", format!("expander.border: {}px, radius {}px, which the showcase refines the Accordion with over its bordered card (accordion.rs, RenderOnce for Accordion)", px_text(r.expander.border.line_width), px_text(r.expander.border.corner_radius)))
@@ -425,23 +448,21 @@ pub fn card(
     native: Option<&ResolvedTheme>,
     container_margin: Option<Pixels>,
 ) -> WidgetInfo {
-    let info = WidgetInfo::new("GroupBox")
-        .variant("Fill, a card")
-        .color(claim(
-            "content text",
-            "group_box_foreground",
-            t.group_box_foreground,
-            "gpui-component/group_box.rs:173",
-        ));
+    // No content text: the content is a Label, which paints foreground on
+    // its own element over the group box's colour (label.rs:211) and
+    // reports itself.
+    let info = WidgetInfo::new("GroupBox").variant("Fill, a card");
     let info = match native {
-        Some(r) => info
-            .color(claim(
+        Some(r) => card_edge(
+            info.color(claim(
                 "fill",
                 "background_color",
                 stated(r.card.background_color),
                 "showcase",
-            ))
-            .config("edge", "card.border.color at card.border.line_width, with card.border's radius, stated padding sides and card.background_color as the fill: geometry::group_box_content sets them on the content, which the GroupBox refines last (group_box.rs, GroupBox)"),
+            )),
+            r,
+            false,
+        ),
         None => info.color(claim(
             "fill",
             "group_box",
@@ -529,10 +550,11 @@ pub fn native_expander(
     let e = &r.expander;
     let info = WidgetInfo::new("Expander")
         .variant("drawn by the showcase")
-        .color(claim(
+        .colors(edge_claim(
             "border and the line between items",
             "border",
-            stated(e.border.color),
+            Some(e.border.color),
+            Some(e.border.line_width),
             "showcase",
         ))
         .color(claim("title", "font", stated(e.font.color), "showcase"))
@@ -542,18 +564,17 @@ pub fn native_expander(
             stated(e.arrow_color.unwrap_or(e.font.color)),
             "showcase",
         ));
-    let info = if e.hover_background.is_some() {
-        info.color(claim(
-            "hovered title",
-            "hover_background",
-            stated(e.hover_background.unwrap_or(e.font.color)),
-            "showcase",
-        ))
-    } else {
-        info.not_themeable(
+    let info = match stated_claim(
+        "hovered title",
+        "hover_background",
+        e.hover_background,
+        "showcase",
+    ) {
+        Some(hover) => info.color(hover),
+        None => info.not_themeable(
             "hover",
             "none: the theme states no expander.hover_background",
-        )
+        ),
     };
     let shown: Vec<&str> = titles
         .iter()
@@ -627,10 +648,11 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             stated(t.active_text_color),
             "native-theme-gpui/widgets/tab_bar.rs:114",
         ))
-        .color(claim(
+        .colors(edge_claim(
             "selected tab's outline",
             "border",
-            stated(t.border.color),
+            Some(t.border.color),
+            Some(t.border.line_width),
             "native-theme-gpui/widgets/tab_bar.rs:115",
         ))
         .color(claim(
@@ -639,33 +661,26 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             stated(r.separator.line_color),
             "showcase",
         ));
-    let info = if t.hover_background.is_some() {
-        info.color(claim(
+    let info = info
+        .colors(stated_claim(
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
-            stated(t.hover_background.unwrap_or(t.background_color)),
+            t.hover_background,
             "native-theme-gpui/widgets/tab_bar.rs:111",
         ))
-    } else {
-        info
-    };
-    let info = info.color(claim(
-        "hovered label",
-        "hover_text_color",
-        stated(t.hover_text_color),
-        "native-theme-gpui/widgets/tab_bar.rs:112",
-    ));
-    // Only where the theme states the line: TabBar draws none otherwise.
-    let info = if t.active_indicator_color.is_some() {
-        info.color(claim(
+        .color(claim(
+            "hovered label",
+            "hover_text_color",
+            stated(t.hover_text_color),
+            "native-theme-gpui/widgets/tab_bar.rs:112",
+        ))
+        // Only where the theme states the line: TabBar draws none otherwise.
+        .colors(stated_claim(
             "selected tab's line",
             "active_indicator_color",
-            stated(t.active_indicator_color.unwrap_or(t.active_background)),
+            t.active_indicator_color,
             "native-theme-gpui/widgets/tab_bar.rs:126",
-        ))
-    } else {
-        info
-    };
+        ));
     let padding = t.border.padding;
     let side = |v: Option<f32>| {
         v.map_or(
@@ -701,21 +716,26 @@ pub fn segmented(
                 .color(claim("label", "color", stated(s.font.color), "showcase"))
                 .color(claim("selected segment", "active_background", stated(s.active_background), "showcase"))
                 .color(claim("selected label", "active_text_color", stated(s.active_text_color), "showcase"))
-                .color(claim("border and separators", "color", stated(s.border.color), "showcase"));
-            let info = if s.hover_background.is_some() {
-                info.color(claim(
-                    "hovered segment",
-                    "hover_background",
-                    s.hover_background.map_or(gpui::transparent_black(), stated),
-                    "showcase",
-                ))
-            } else {
-                info.not_themeable("hover", "none: the theme states no segmented_control.hover_background")
+                .colors(edge_claim("border", "border", Some(s.border.color), Some(s.border.line_width), "showcase"))
+                // The line left of every segment but the first.
+                .colors(edge_claim("separators", "border", Some(s.border.color), (labels.len() > 1).then_some(s.separator_width), "showcase"));
+            let info = match stated_claim("hovered segment", "hover_background", s.hover_background, "showcase") {
+                Some(hover) => info.color(hover),
+                None => info.not_themeable("hover", "none: the theme states no segmented_control.hover_background"),
             };
             info.config("why drawn", "upstream's segmented TabBar fills its selected segment with the window's background through a sliding indicator and its hovered one inside render, and labels its segments from the tab tokens (tab/tab_bar.rs, TabBar::render_indicator; tab/tab.rs, TabVariant::hovered), so segmented_control.active_background, hover_background, font.color and active_text_color would have no receiver there")
                 .config("size", format!("each segment at least segmented_control.segment_height, {}px, tall, padded by the stated border.padding sides and, on a side left unstated, by 12px, upstream's own for a segment at the default Size (tab/tab.rs, TabVariant::inner_paddings)", px_text(s.segment_height)))
                 .config("font", format!("segmented_control.font, {}px", px_text(s.font.size)))
-                .config("border", format!("segmented_control.border: {}px, radius {}px; {}px separators between segments (separator_width)", px_text(s.border.line_width), px_text(s.border.corner_radius), px_text(s.separator_width)))
+                .config("border", if s.border.line_width > 0.0 {
+                    format!("segmented_control.border: {}px, radius {}px", px_text(s.border.line_width), px_text(s.border.corner_radius))
+                } else {
+                    format!("none: segmented_control.border.line_width is 0; the track is still rounded by its corner_radius, {}px", px_text(s.border.corner_radius))
+                })
+                .config("separators", if s.separator_width > 0.0 {
+                    format!("segmented_control.separator_width, {}px, in border.color between segments", px_text(s.separator_width))
+                } else {
+                    "none: segmented_control.separator_width is 0".to_string()
+                })
         }
         None => WidgetInfo::new("TabBar")
             .variant("Segmented")

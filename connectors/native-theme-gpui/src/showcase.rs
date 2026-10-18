@@ -1608,7 +1608,10 @@ fn token_rows<'a>(source: &'a str, open: &str) -> Vec<(&'a str, &'a str)> {
                 .is_some_and(|t| t.trim_start().starts_with("=>"))
         })
         .collect();
-    let claims = code_calls(source, "claim");
+    let claims: Vec<usize> = claim_opens(source)
+        .into_iter()
+        .map(|(open, _)| open)
+        .collect();
     arms.iter()
         .enumerate()
         .map(|(ix, &at)| {
@@ -1916,45 +1919,119 @@ struct Claim<'a> {
     file: &'a str,
     line: usize,
     widget: &'a str,
+    /// The call it is written with.
+    call: ClaimCall,
     role: &'a str,
     field: &'a str,
-    /// The value expression, as written.
+    /// The value expression, as written: the colour, or an `Option` of it
+    /// for a `stated_claim` or an `edge_claim`.
     value: &'a str,
+    /// An `edge_claim`'s width, as written.
+    width: Option<&'a str>,
     /// The file's text before the claim, where a binding its value reads
     /// is bound.
     before: &'a str,
     cited_at: &'a str,
 }
 
-/// Every `claim(` call in `raw` that is code: the line it is on and its
-/// arguments.
-fn claim_calls(raw: &str) -> Vec<(usize, Vec<&str>)> {
+/// The calls a colour claim is written with (`info/mod.rs`): `claim` with
+/// its colour, `stated_claim` with a colour the theme may leave unstated,
+/// and `edge_claim` with the colour of a line and the width it is drawn at,
+/// each of which claims nothing where there is nothing to show.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ClaimCall {
+    Claim,
+    Stated,
+    Edge,
+}
+
+impl ClaimCall {
+    const ALL: [Self; 3] = [Self::Claim, Self::Stated, Self::Edge];
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Claim => "claim",
+            Self::Stated => "stated_claim",
+            Self::Edge => "edge_claim",
+        }
+    }
+
+    /// The one shape a gate can read (spec §3.2): the role, the field and
+    /// the citation string literals.
+    fn shape(self) -> &'static str {
+        match self {
+            Self::Claim => r#"claim("role", "field", value, "cite")"#,
+            Self::Stated => r#"stated_claim("role", "field", colour, "cite")"#,
+            Self::Edge => r#"edge_claim("role", "field", colour, width, "cite")"#,
+        }
+    }
+}
+
+/// The `(` of every claim call in `raw` that is code, in the order they are
+/// written, with the call it opens. The call in the body of each helper is
+/// the helper's own, passing its arguments on, not a claim of a panel, and
+/// is left out.
+fn claim_opens(raw: &str) -> Vec<(usize, ClaimCall)> {
+    let helpers = [ClaimCall::Stated, ClaimCall::Edge].map(ClaimCall::name);
+    let mut out: Vec<(usize, ClaimCall)> = ClaimCall::ALL
+        .iter()
+        .flat_map(|&call| {
+            code_calls(raw, call.name())
+                .into_iter()
+                .map(move |open| (open, call))
+        })
+        .filter(|&(open, _)| !helpers.contains(&enclosing_fn(raw, open)))
+        .collect();
+    out.sort_by_key(|(open, _)| *open);
+    out
+}
+
+/// Every claim call in `raw` that is code: the line it is on, the call, and
+/// its arguments.
+fn claim_calls(raw: &str) -> Vec<(usize, ClaimCall, Vec<&str>)> {
     let starts = line_offsets(raw);
-    code_calls(raw, "claim")
+    claim_opens(raw)
         .into_iter()
-        .map(|open| {
+        .map(|(open, call)| {
             (
                 line_at(&starts, open),
+                call,
                 call_args(raw, open).unwrap_or_default(),
             )
         })
         .collect()
 }
 
-/// A `claim(` call's role, field, value and citation, or `None` unless it
-/// has four arguments and the three besides the value are string literals --
-/// the one shape spec §3.2 allows, and the only one a gate can read. The
-/// value is returned as written, for `value_reads_field`.
-fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str, &'a str)> {
-    let &[role, field, value, cited] = args else {
-        return None;
+/// A claim call's arguments as a gate reads them.
+struct ClaimArgs<'a> {
+    role: &'a str,
+    field: &'a str,
+    value: &'a str,
+    width: Option<&'a str>,
+    cited: &'a str,
+}
+
+/// A claim call's role, field, value, width and citation, or `None` unless
+/// it is in `call`'s shape (`ClaimCall::shape`): the arguments it takes, the
+/// role, the field and the citation string literals. The value and the
+/// width are returned as written, for `value_reads_field`.
+fn claim_literals<'a>(call: ClaimCall, args: &[&'a str]) -> Option<ClaimArgs<'a>> {
+    let (role, field, value, width, cited) = match (call, args) {
+        (ClaimCall::Claim | ClaimCall::Stated, &[role, field, value, cited]) => {
+            (role, field, value, None, cited)
+        }
+        (ClaimCall::Edge, &[role, field, value, width, cited]) => {
+            (role, field, value, Some(width.trim()), cited)
+        }
+        _ => return None,
     };
-    Some((
-        unquote(role)?,
-        unquote(field)?,
-        value.trim(),
-        unquote(cited)?,
-    ))
+    Some(ClaimArgs {
+        role: unquote(role)?,
+        field: unquote(field)?,
+        value: value.trim(),
+        width,
+        cited: unquote(cited)?,
+    })
 }
 
 /// The helpers a claim's value may be built with in place of naming its
@@ -2138,8 +2215,15 @@ fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
 fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
-    for (line, args) in claim_calls(raw) {
-        let Some((role, field, value, cited_at)) = claim_literals(&args) else {
+    for (line, call, args) in claim_calls(raw) {
+        let Some(ClaimArgs {
+            role,
+            field,
+            value,
+            width,
+            cited,
+        }) = claim_literals(call, &args)
+        else {
             continue;
         };
         let widget = args
@@ -2152,11 +2236,13 @@ fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>
             file,
             line,
             widget,
+            call,
             role,
             field,
             value,
+            width,
             before,
-            cited_at,
+            cited_at: cited,
         });
     }
     for (line, _, text) in note_calls(raw).0 {
@@ -2301,6 +2387,109 @@ fn cited_source_dirs() -> Result<Vec<(String, PathBuf)>, String> {
     Ok(roots)
 }
 
+/// What is wrong with `claim`, if anything: its value reads another field
+/// than the one it names, or the line it cites does not read that field.
+/// `roots` are the crates a citation may name, `code` the showcase's files
+/// with comments and strings removed. A claim with no citation is counted
+/// by the caller, not judged here.
+fn claim_finding(
+    claim: &Claim<'_>,
+    roots: &[(String, PathBuf)],
+    code: &[String],
+) -> Option<String> {
+    // The value is what the swatch paints, and it has to be the field the
+    // claim names, or the line cited vouches for a colour nobody shows.
+    if !value_reads_field(claim.value, claim.field)
+        && !value_reads_bound_field(claim.before, claim.value, claim.field)
+    {
+        return Some(format!(
+            "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
+             uses none of VALUE_HELPERS",
+            claim.widget, claim.role, claim.file, claim.line, claim.field, claim.value, claim.field
+        ));
+    }
+    // `showcase` with no line: the *application* chooses this colour, so
+    // there is no upstream read to point at. A line would be worse than
+    // useless -- the showcase is what is being edited, so every edit
+    // above a self-citation silently invalidates it, which is exactly
+    // what happened when this was first tried.
+    if claim.cited_at == "showcase" {
+        if code.iter().any(|text| mentions(text, claim.field)) {
+            return None;
+        }
+        return Some(format!(
+            "{} [{}] {}:{}: cited as the application's own, but the \
+             showcase never sets `{}`",
+            claim.widget, claim.role, claim.file, claim.line, claim.field
+        ));
+    }
+    let Some((path, first, last)) = parse_citation(claim.cited_at) else {
+        return Some(format!(
+            "{} [{}] {}:{}: `{}` is not <file>.rs:<line>",
+            claim.widget, claim.role, claim.file, claim.line, claim.cited_at
+        ));
+    };
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {path}, which does not exist",
+            claim.widget, claim.role, claim.file, claim.line
+        ));
+    }
+    // A line number against the wrong file means nothing, and a bare
+    // name can match several crates -- `toggle.rs` is gpui-component's
+    // `button/toggle.rs` and gpui-base's `toggle.rs`. The author knows
+    // which one they read, so the citation has to say.
+    if files.len() > 1 {
+        return Some(format!(
+            "{} [{}] {}:{}: `{path}` is ambiguous; name the directory too. \
+             It matches: {}",
+            claim.widget,
+            claim.role,
+            claim.file,
+            claim.line,
+            files
+                .iter()
+                .map(|f| shorten(f))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    let file = files.first()?;
+    let Ok(text) = std::fs::read_to_string(file) else {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {path}, which could not be read",
+            claim.widget, claim.role, claim.file, claim.line
+        ));
+    };
+    let lines: Vec<&str> = text.lines().collect();
+    let span = if first == 0 || first > last || last > lines.len() {
+        None
+    } else {
+        lines.get(first - 1..last)
+    };
+    let Some(span) = span else {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {}, but {} has {} lines",
+            claim.widget,
+            claim.role,
+            claim.file,
+            claim.line,
+            claim.cited_at,
+            shorten(file),
+            lines.len()
+        ));
+    };
+    if mentions(&span.join("\n"), claim.field) {
+        return None;
+    }
+    let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
+    Some(format!(
+        "{} [{}] {}:{}: claims `{}` at {}\n      that line now reads: {}",
+        claim.widget, claim.role, claim.file, claim.line, claim.field, claim.cited_at, shown
+    ))
+}
+
 /// Spec section 4.2: every colour claim's cited line reads the field it names.
 ///
 /// A claim with no citation is counted, not failed: the citation pass runs
@@ -2334,32 +2523,13 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
     // A `claim(` call in any other shape is one this gate cannot read, and a
     // claim nothing reads is a claim nothing checks.
     for (file, raw) in SHOWCASE_FILES {
-        for (line, args) in claim_calls(raw) {
-            if claim_literals(&args).is_none() {
+        for (line, call, args) in claim_calls(raw) {
+            if claim_literals(call, &args).is_none() {
                 wrong.push(format!(
-                    "{file}:{line}: not claim(\"role\", \"field\", value, \"cite\"), so \
-                     nothing can check it"
+                    "{file}:{line}: not {}, so nothing can check it",
+                    call.shape()
                 ));
             }
-        }
-    }
-    // The value is what the swatch paints, and it has to be the field the
-    // claim names, or the line cited vouches for a colour nobody shows.
-    for claim in &claims {
-        if !value_reads_field(claim.value, claim.field)
-            && !value_reads_bound_field(claim.before, claim.value, claim.field)
-        {
-            wrong.push(format!(
-                "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
-                 uses none of VALUE_HELPERS",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.field,
-                claim.value,
-                claim.field
-            ));
         }
     }
     let mut uncited = 0usize;
@@ -2368,99 +2538,7 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
             uncited += 1;
             continue;
         }
-        // `showcase` with no line: the *application* chooses this colour, so
-        // there is no upstream read to point at. A line would be worse than
-        // useless -- the showcase is what is being edited, so every edit
-        // above a self-citation silently invalidates it, which is exactly
-        // what happened when this was first tried.
-        if claim.cited_at == "showcase" {
-            if code.iter().any(|text| mentions(text, claim.field)) {
-                continue;
-            }
-            wrong.push(format!(
-                "{} [{}] {}:{}: cited as the application's own, but the \
-                 showcase never sets `{}`",
-                claim.widget, claim.role, claim.file, claim.line, claim.field
-            ));
-            continue;
-        }
-        let Some((path, first, last)) = parse_citation(claim.cited_at) else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: `{}` is not <file>.rs:<line>",
-                claim.widget, claim.role, claim.file, claim.line, claim.cited_at
-            ));
-            continue;
-        };
-        let files = candidates(path, &roots);
-        if files.is_empty() {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {path}, which does not exist",
-                claim.widget, claim.role, claim.file, claim.line
-            ));
-            continue;
-        }
-        // A line number against the wrong file means nothing, and a bare
-        // name can match several crates -- `toggle.rs` is gpui-component's
-        // `button/toggle.rs` and gpui-base's `toggle.rs`. The author knows
-        // which one they read, so the citation has to say.
-        if files.len() > 1 {
-            wrong.push(format!(
-                "{} [{}] {}:{}: `{path}` is ambiguous; name the directory too. \
-                 It matches: {}",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                files
-                    .iter()
-                    .map(|f| shorten(f))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ));
-            continue;
-        }
-        let Some(file) = files.first() else {
-            continue;
-        };
-        let Ok(text) = std::fs::read_to_string(file) else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {path}, which could not be read",
-                claim.widget, claim.role, claim.file, claim.line
-            ));
-            continue;
-        };
-        let lines: Vec<&str> = text.lines().collect();
-        let span = if first == 0 || first > last || last > lines.len() {
-            None
-        } else {
-            lines.get(first - 1..last)
-        };
-        let Some(span) = span else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {}, but {} has {} lines",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.cited_at,
-                shorten(file),
-                lines.len()
-            ));
-            continue;
-        };
-        if !mentions(&span.join("\n"), claim.field) {
-            let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
-            wrong.push(format!(
-                "{} [{}] {}:{}: claims `{}` at {}\n      that line now reads: {}",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.field,
-                claim.cited_at,
-                shown
-            ));
-        }
+        wrong.extend(claim_finding(claim, &roots, &code));
     }
 
     assert!(
@@ -2482,6 +2560,127 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
             claims.len()
         );
     }
+}
+
+/// The claims of an edge's colour that are no edge, by the panel function
+/// and the role, each with its reason: a colour the theme gives a line,
+/// painted where no line is drawn, so no line width can hide it.
+const EDGE_COLOURS_NOT_EDGES: &[(&str, &str, &str)] = &[
+    (
+        "native_number_input",
+        "step button hovered, the edge colour at 40%",
+        "a fill: upstream tints a hovered step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+    ),
+    (
+        "native_number_input",
+        "step button pressed, the edge colour at 60%",
+        "a fill: upstream tints a pressed step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+    ),
+];
+
+/// Whether a claim's `value` reads a colour the resolved theme gives a
+/// line: a `<widget>.border.color`, or a `<widget>.<part>_border_color`,
+/// through a path or a binding named after it. An upstream token --
+/// `t.border`, `t.input`, `t.ring` -- is neither.
+fn reads_edge_colour(value: &str) -> bool {
+    let code = without_comments_or_strings(value);
+    let border_colour = code.match_indices("border.color").any(|(at, m)| {
+        let before = code.get(..at).and_then(|t| t.chars().next_back());
+        let after = code.get(at + m.len()..).and_then(|t| t.chars().next());
+        before.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+    });
+    border_colour
+        || code
+            .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .any(|ident| ident.ends_with("_border_color"))
+}
+
+/// The edge class (the M9 rulings): a claim whose value reads a colour the
+/// resolved theme gives a line goes through `edge_claim`, with the width the
+/// drawing strokes that colour at, so it claims no edge where the line is
+/// drawn at no width -- material-3's buttons and popups, a card where the
+/// theme states no card edge. A `claim` or a `stated_claim` of such a
+/// colour is the unconditional edge M8 T5 and M9 found by hand, one panel
+/// at a time.
+///
+/// Keyed on the value, not the role: a role says what the reader is told,
+/// and "line" or "ring" names a focus ring, a tab's indicator or a chart's
+/// axis as well. A claim of such a colour that is not a line takes its
+/// reason in `EDGE_COLOURS_NOT_EDGES`. Every claim it classes, every
+/// exemption and every width an `edge_claim` pairs its colour with is
+/// printed, for the reviewer who reads that the width is the drawing's.
+///
+/// Run it with `cargo test -p native-theme-gpui --lib
+/// every_edge_colour_is_claimed_through_edge_claim -- --nocapture`.
+#[test]
+fn every_edge_colour_is_claimed_through_edge_claim() {
+    let (claims, _) = showcase_claims();
+    let mut wrong = Vec::new();
+    let mut classed = Vec::new();
+    let mut exempted = Vec::new();
+    let mut edges = 0usize;
+    for claim in claims.iter().filter(|c| reads_edge_colour(c.value)) {
+        let at = format!(
+            "{}:{} {} [{}]",
+            claim.file, claim.line, claim.widget, claim.role
+        );
+        if claim.call == ClaimCall::Edge {
+            edges += 1;
+            let flat = |text: &str| text.split_whitespace().collect::<Vec<_>>().join(" ");
+            classed.push(format!(
+                "{at}: {} at {}",
+                flat(claim.value),
+                flat(claim.width.unwrap_or("?"))
+            ));
+            continue;
+        }
+        match EDGE_COLOURS_NOT_EDGES
+            .iter()
+            .find(|(widget, role, _)| *widget == claim.widget && *role == claim.role)
+        {
+            Some((_, _, why)) => exempted.push(format!("{at}: {why}")),
+            None => wrong.push(format!(
+                "{at}: {} of an edge colour, `{}`; claim it through edge_claim with the \
+                 width it is drawn at, or give EDGE_COLOURS_NOT_EDGES the reason it is no line",
+                claim.call.name(),
+                claim.value
+            )),
+        }
+    }
+    let unused: Vec<String> = EDGE_COLOURS_NOT_EDGES
+        .iter()
+        .filter(|(widget, role, _)| {
+            !claims.iter().any(|c| {
+                c.widget == *widget
+                    && c.role == *role
+                    && c.call != ClaimCall::Edge
+                    && reads_edge_colour(c.value)
+            })
+        })
+        .map(|(widget, role, _)| format!("{widget} [{role}]"))
+        .collect();
+    println!(
+        "\nEdge claims: {edges} through edge_claim, {} exempt\n  {}\n  Exempt:\n  {}",
+        exempted.len(),
+        classed.join("\n  "),
+        exempted.join("\n  ")
+    );
+    assert!(
+        wrong.is_empty(),
+        "{} claims of an edge colour do not go through edge_claim:\n  {}",
+        wrong.len(),
+        wrong.join("\n  ")
+    );
+    assert!(
+        unused.is_empty(),
+        "EDGE_COLOURS_NOT_EDGES names claims of an edge colour that are gone: {}",
+        unused.join(", ")
+    );
+    assert!(
+        edges > 0,
+        "no edge_claim was found, so this test would pass vacuously for every edge the showcase claims"
+    );
 }
 
 /// Every `theme().<field>` and `theme().tokens.<field>` read in `text`.
@@ -2596,7 +2795,7 @@ fn the_omission_report() {
     // lines' texts.
     let mut said: Vec<&str> = Vec::new();
     for (_, raw) in demo_files().filter(|(file, _)| is_widget_panel(file)) {
-        said.extend(claim_calls(raw).into_iter().flat_map(|(_, args)| args));
+        said.extend(claim_calls(raw).into_iter().flat_map(|(_, _, args)| args));
         said.extend(
             note_calls(raw)
                 .0
@@ -2903,11 +3102,14 @@ pub fn tag(t: &Theme) -> WidgetInfo {
 fn config(self, what: &'static str, text: String) {}
 config("free", "fn, not a method");
 "#;
-    let calls: Vec<usize> = claim_calls(source).iter().map(|(line, _)| *line).collect();
+    let calls: Vec<usize> = claim_calls(source)
+        .iter()
+        .map(|(line, _, _)| *line)
+        .collect();
     assert_eq!(calls, vec![7, 8, 14]);
     let readable: Vec<bool> = claim_calls(source)
         .iter()
-        .map(|(_, args)| claim_literals(args).is_some())
+        .map(|(_, call, args)| claim_literals(*call, args).is_some())
         .collect();
     assert_eq!(readable, vec![true, true, false]);
 
@@ -2967,6 +3169,115 @@ config("free", "fn, not a method");
         ]
     );
     assert!(unreadable.is_empty(), "{unreadable:?}");
+
+    // The helpers' calls are claims too, each in its own shape, and the call
+    // in each helper's body is the helper's own, not a panel's.
+    let helpers = r#"pub fn edge_claim(role: &'static str, colour: Option<Rgba>) -> Option<ColorClaim> {
+    stated_claim(role, field, colour.filter(|_| drawn), cited_at)
+}
+pub fn stated_claim(role: &'static str, colour: Option<Rgba>) -> Option<ColorClaim> {
+    colour.map(|c| claim(role, field, stated(c), cited_at))
+}
+pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Frame")
+        .colors(edge_claim("edge", "border", Some(r.frame.border.color), Some(r.frame.border.line_width), "showcase"))
+        .colors(stated_claim("hover", "hover_background", r.frame.hover_background, "showcase"))
+        .color(claim("edge", "border", stated(r.frame.border.color), "showcase"))
+        .colors(edge_claim("edge", "border", Some(r.frame.border.color), "showcase"))
+        .colors(stated_claim("bg", "danger", Some(t.danger), "gpui-component/tag.rs:1"))
+        .colors(edge_claim("hovered edge", "hover_border_color", Some(r.frame.border.color), Some(1.), "showcase"))
+}
+"#;
+    let calls: Vec<(usize, ClaimCall, bool)> = claim_calls(helpers)
+        .iter()
+        .map(|(line, call, args)| (*line, *call, claim_literals(*call, args).is_some()))
+        .collect();
+    assert_eq!(
+        calls,
+        vec![
+            (9, ClaimCall::Edge, true),
+            (10, ClaimCall::Stated, true),
+            (11, ClaimCall::Claim, true),
+            (12, ClaimCall::Edge, false),
+            (13, ClaimCall::Stated, true),
+            (14, ClaimCall::Edge, true),
+        ]
+    );
+    let (claims, _) = claims_in("h.rs", helpers);
+    let read: Vec<_> = claims
+        .iter()
+        .map(|c| {
+            (
+                c.line,
+                c.call,
+                c.role,
+                c.field,
+                c.width,
+                reads_edge_colour(c.value),
+            )
+        })
+        .collect();
+    assert_eq!(
+        read,
+        vec![
+            (
+                9,
+                ClaimCall::Edge,
+                "edge",
+                "border",
+                Some("Some(r.frame.border.line_width)"),
+                true
+            ),
+            (
+                10,
+                ClaimCall::Stated,
+                "hover",
+                "hover_background",
+                None,
+                false
+            ),
+            (11, ClaimCall::Claim, "edge", "border", None, true),
+            (13, ClaimCall::Stated, "bg", "danger", None, false),
+            (
+                14,
+                ClaimCall::Edge,
+                "hovered edge",
+                "hover_border_color",
+                Some("Some(1.)"),
+                true
+            ),
+        ]
+    );
+    // A helper's claim is held to its field and its citation as any claim
+    // is: the swatch of line 14 reads another field than the one it names,
+    // and the line line 13 cites reads no `danger`.
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let code = vec![without_comments_or_strings(helpers)];
+    let found: Vec<(usize, bool)> = claims
+        .iter()
+        .map(|c| (c.line, claim_finding(c, &roots, &code).is_some()))
+        .collect();
+    assert_eq!(
+        found,
+        vec![(9, false), (10, false), (11, false), (13, true), (14, true)]
+    );
+    // An edge colour is a `border.color` or a `_border_color`, through a path
+    // or a binding; an upstream token, or a longer name, is not.
+    assert!(reads_edge_colour(
+        "Some(k.unchecked_border_color.unwrap_or(k.border.color))"
+    ));
+    assert!(reads_edge_colour("stated(hover_border_color)"));
+    assert!(reads_edge_colour("stated(border.color)"));
+    assert!(!reads_edge_colour("t.border"));
+    assert!(!reads_edge_colour("stated(r.card.background_color)"));
+    assert!(!reads_edge_colour("stated(r.frame.border.colorful)"));
+    assert!(!reads_edge_colour("stated(r.frame.sideborder.color)"));
 
     // A value reads the field its claim names, as a whole identifier, by any
     // path; another field, or a longer one that starts with it, does not.

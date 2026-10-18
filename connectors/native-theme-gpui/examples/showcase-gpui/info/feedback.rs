@@ -7,7 +7,7 @@ use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, stated};
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, edge_claim, percent_text, px_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 
@@ -204,10 +204,14 @@ pub fn native_progress(
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
         .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
         .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:77"))
+        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:77"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
-        .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
+        .config("frame", if p.border.line_width > 0.0 {
+            format!("progress_bar.border: {}px, radius {}px, drawn over the track and the fill (native-theme-gpui widgets/progress.rs, ProgressBarLook)", px_text(p.border.line_width), px_text(p.border.corner_radius))
+        } else {
+            format!("none: progress_bar.border.line_width is 0; the track and the fill are still rounded by its corner_radius, {}px", px_text(p.border.corner_radius))
+        })
         .not_themeable("animation", "gpui-component's eased transition to a new value, and a loading bar's sweep (progress/progress.rs, Progress): native-theme models no motion");
     let info = match value {
         Some(value) => info.instance("value", format!("{value}%")),

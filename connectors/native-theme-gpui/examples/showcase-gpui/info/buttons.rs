@@ -1,12 +1,13 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
+use native_theme::theme::ResolvedButtonTheme;
 use native_theme_gpui::ResolvedTheme;
 
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, px_text,
+    claim, edge_claim, px_text,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -331,12 +332,24 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     }
 }
 
-/// The edge of a Button of `kind` that upstream draws: only Default and an
-/// outlined Button have one (button/button.rs:710-715). `styled` is whether
-/// `geometry::button` refined it, which paints the edge at rest with the
-/// platform's colour and leaves upstream's to hover and press.
-fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
-    match (kind, styled) {
+/// The edge of a Button of `kind`: upstream's, which only Default and an
+/// outlined Button have (button/button.rs:710-715), or, refined from
+/// `native`, `button.border` at rest and upstream's colour under the pointer
+/// at `button.border`'s width, which replaces upstream's: none at 0.
+fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Vec<ColorClaim> {
+    if native.is_some_and(|b| b.border.line_width <= 0.0) {
+        return Vec::new();
+    }
+    let rest = native.and_then(|b| {
+        edge_claim(
+            "border at rest",
+            "border",
+            Some(b.border.color),
+            Some(b.border.line_width),
+            "native-theme-gpui/geometry.rs:230",
+        )
+    });
+    let hovered = match (kind, native.is_some()) {
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
             "border, hovered or pressed",
             "input",
@@ -362,16 +375,20 @@ fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
             "gpui-component/button/button.rs:1063",
         )),
         _ => None,
-    }
+    };
+    rest.into_iter().chain(hovered).collect()
 }
 
-/// `info` with what a Button of `kind` paints at rest, its edge, and what it
-/// paints under the pointer.
-fn colours(info: WidgetInfo, t: &Theme, kind: ButtonKind, styled: bool) -> WidgetInfo {
+/// `info` with what a Button of `kind` paints at rest, its [`edge`], and
+/// what it paints under the pointer.
+fn colours(
+    info: WidgetInfo,
+    t: &Theme,
+    kind: ButtonKind,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
     let info = at_rest(t, kind).into_iter().fold(info, WidgetInfo::color);
-    let info = edge(t, kind, styled)
-        .into_iter()
-        .fold(info, WidgetInfo::color);
+    let info = info.colors(edge(t, kind, native));
     under_the_pointer(t, kind)
         .into_iter()
         .fold(info, WidgetInfo::color)
@@ -465,8 +482,8 @@ fn size_name(size: Size) -> &'static str {
 ///
 /// `size` is `Some` only in the row that shows upstream's size scale, which
 /// is built without `geometry::button`; every other Button is built at the
-/// default size and refined by it where a native theme is installed, which
-/// is what `styled` says. Its geometry line is recorded by `native_info`
+/// default size and refined by it from `native`, the `button.*`, where a
+/// native theme is installed. Its geometry line is recorded by `native_info`
 /// where `demo::button` applies the builder.
 pub fn button(
     t: &Theme,
@@ -474,8 +491,9 @@ pub fn button(
     state: ButtonState,
     icon: bool,
     size: Option<Size>,
-    styled: bool,
+    native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
+    let styled = native.is_some();
     let name = kind.name();
     let variant = match (size, state) {
         (Some(size), _) => format!("{name}, {}", size_name(size)),
@@ -486,7 +504,7 @@ pub fn button(
     };
     let info = WidgetInfo::new("Button").variant(variant);
     let info = match state {
-        ButtonState::Idle => colours(info, t, kind, styled),
+        ButtonState::Idle => colours(info, t, kind, native),
         ButtonState::Loading => loading(t, kind).into_iter().fold(info, WidgetInfo::color),
         // geometry::button_disabled's line is recorded where demo::button
         // applies it, over the fill and label upstream paints first.
@@ -511,8 +529,9 @@ pub fn button(
     };
     let info = if styled {
         info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-            .not_themeable("edge", match state {
-                ButtonState::Idle => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
+            .not_themeable("edge", match (state, native) {
+                (_, Some(b)) if b.border.line_width <= 0.0 => "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Idle, _) => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
                     ButtonKind::Default | ButtonKind::DefaultOutline => "input",
                     ButtonKind::Primary | ButtonKind::PrimaryOutline => "primary",
                     ButtonKind::Secondary => "border",
@@ -522,8 +541,8 @@ pub fn button(
                     ButtonKind::Info => "button_info",
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
                 }),
-                ButtonState::Disabled => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :824)".to_string(),
+                (ButtonState::Disabled, _) => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :824)".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -600,7 +619,7 @@ fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
 /// side-panel toggle are that Ghost too, and take it from here so they
 /// cannot drift apart.
 pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
-    ghost_variant(colours(info, t, ButtonKind::Ghost, false))
+    ghost_variant(colours(info, t, ButtonKind::Ghost, None))
 }
 
 /// `info` with what a selected Button built with
@@ -629,7 +648,7 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 
 /// A `ButtonGroup` of Default Buttons, which report through the group.
 pub fn button_group(t: &Theme) -> WidgetInfo {
-    colours(WidgetInfo::new("ButtonGroup"), t, ButtonKind::Default, false)
+    colours(WidgetInfo::new("ButtonGroup"), t, ButtonKind::Default, None)
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("gap", "no gap to set: a ButtonGroup joins its buttons by turning edges off rather than by spacing them (button/button_group.rs, ButtonGroup)")
         .instance("variant", "no variant given, so Default: its edge is input, not border")
@@ -642,9 +661,7 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
         WidgetInfo::new("DropdownButton").variant(kind.name()),
         WidgetInfo::color,
     );
-    edge(t, kind, false)
-        .into_iter()
-        .fold(info, WidgetInfo::color)
+    info.colors(edge(t, kind, None))
         .color(claim(
             "menu bg",
             "popover",

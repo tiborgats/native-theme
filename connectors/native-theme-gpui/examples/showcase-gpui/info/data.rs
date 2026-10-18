@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, ghost_colours, input_background},
-    claim, px_text, stated,
+    claim, edge_claim, px_text, stated,
 };
 use crate::demo::{BubbleKind, DataTableRow, ListRowState};
 use crate::support::SampleIcon;
@@ -357,16 +357,22 @@ pub fn native_table_frame(r: &ResolvedTheme, rows: usize) -> WidgetInfo {
             "background_color",
             stated(l.background_color),
             "showcase",
+        ))
+        .colors(edge_claim(
+            "edge",
+            "border",
+            Some(l.border.color),
+            Some(l.border.line_width),
+            "showcase",
         ));
     let info = if l.border.line_width > 0.0 {
-        info.color(claim("edge", "border", stated(l.border.color), "showcase"))
-            .config(
-                "edge",
-                format!(
-                    "list.border at {}px, round the header and the rows",
-                    px_text(l.border.line_width)
-                ),
-            )
+        info.config(
+            "edge",
+            format!(
+                "list.border at {}px, round the header and the rows",
+                px_text(l.border.line_width)
+            ),
+        )
     } else {
         info.config("edge", "none: list.border.line_width is 0")
     };

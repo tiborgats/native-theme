@@ -3,7 +3,9 @@
 use gpui_component::theme::Theme;
 use native_theme_gpui::ResolvedTheme;
 
-use super::{WidgetInfo, chrome::input_background, claim, px_text, stated};
+use super::{
+    WidgetInfo, chrome::input_background, claim, edge_claim, px_text, stated, stated_claim,
+};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
 
 /// A refined, enabled field's surface, which the showcase draws under the
@@ -11,36 +13,30 @@ use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
 /// `input.border.color`, and by `input.hover_border_color` under the
 /// pointer, at `input.border.line_width`.
 pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let line_width = r.input.border.line_width;
-    let info = if line_width > 0.0 {
-        info.color(claim(
-            "edge",
-            "border",
-            stated(r.input.border.color),
-            "showcase",
-        ))
-    } else {
-        info
-    };
-    surface(info, r, line_width, "input.border")
+    let b = &r.input.border;
+    let edge = edge_claim(
+        "edge",
+        "border",
+        Some(r.input.border.color),
+        Some(b.line_width),
+        "showcase",
+    );
+    surface(info.colors(edge), r, b.line_width, "input.border")
 }
 
 /// A text area's surface, which the showcase draws under it
 /// (`demo::textarea`, `demo::rows_textarea`): [`input_surface`]'s, framed
 /// by `text_area.border.color` at `text_area.border.line_width`.
 pub fn text_area_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let line_width = r.text_area.border.line_width;
-    let info = if line_width > 0.0 {
-        info.color(claim(
-            "edge",
-            "border",
-            stated(r.text_area.border.color),
-            "showcase",
-        ))
-    } else {
-        info
-    };
-    surface(info, r, line_width, "text_area.border")
+    let b = &r.text_area.border;
+    let edge = edge_claim(
+        "edge",
+        "border",
+        Some(r.text_area.border.color),
+        Some(b.line_width),
+        "showcase",
+    );
+    surface(info.colors(edge), r, b.line_width, "text_area.border")
 }
 
 /// What an input surface framed by `frame` (`input.border` or
@@ -49,15 +45,15 @@ pub fn text_area_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
 /// the surface line. A 0 width draws no edge in either state, and the
 /// surface line then names none.
 fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) -> WidgetInfo {
+    let info = info.colors(edge_claim(
+        "hovered edge",
+        "hover_border_color",
+        r.input.hover_border_color,
+        Some(line_width),
+        "showcase",
+    ));
     let info = if line_width > 0.0 {
-        info.colors(r.input.hover_border_color.map(|hover_border_color| {
-            claim(
-                "hovered edge",
-                "hover_border_color",
-                stated(hover_border_color),
-                "showcase",
-            )
-        }))
+        info
     } else {
         info.config("edge", format!("none: {frame}.line_width is 0"))
     };
@@ -72,10 +68,18 @@ fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) ->
     info.config("surface", format!("{fill}, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
 }
 
-/// `info` of a disabled field over its surface (`demo::disabled_input_surface`).
-pub fn disabled_input_surface(info: WidgetInfo) -> WidgetInfo {
-    info.instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
-        .config("surface", "geometry::input_fill's fill inside input.border.color's line, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
+/// `info` of a disabled field over its surface (`demo::faded_surface`),
+/// edged by `r`'s `input.border` under the field's fade.
+pub fn disabled_input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
+    info.colors(edge_claim(
+        "edge, under the field's fade",
+        "border",
+        Some(r.input.border.color),
+        Some(r.input.border.line_width),
+        "showcase",
+    ))
+    .instance("disabled text", "input.disabled_text_color, which geometry::input_fill gives a disabled field's root in place of geometry::input's input.font colour, at half its alpha: the editor halves the alpha of a disabled field's text whatever its colour (gpui-base/input/base/element.rs, prepaint)")
+        .config("surface", "geometry::input_fill's fill inside input.border.color's line, none where input.border.line_width is 0, drawn by the showcase under the field, which it leaves without a fill or an edge of its own, the whole faded by input.disabled_opacity: gpui fades each quad on its own (gpui-pre window.rs, paint_quad) and draws a quad's border over its own fill (gpui-pre-wgpu shaders.wgsl, fs_quad), so a fill under the line would show through the faded line")
 }
 
 /// A single-line `Input` taking the refinement `field` names. `styled` is
@@ -313,47 +317,52 @@ pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
         ));
     // The frame takes geometry::input's line width; a 0 width draws no edge
     // in any state.
+    let width = Some(i.border.line_width);
     let info = if i.border.line_width <= 0.0 {
         info.config("edge", "none: input.border.line_width is 0")
     } else if focused {
-        match i.focus_border_color.map(|focus_border_color| {
-            claim(
+        info.colors(
+            edge_claim(
                 "edge, focused",
                 "focus_border_color",
-                stated(focus_border_color),
+                i.focus_border_color,
+                width,
                 "showcase",
             )
-        }) {
-            Some(focus) => info.color(focus),
-            None => info.color(claim(
+            .or(edge_claim(
                 "edge, focused: no focused edge stated, so the edge at rest",
                 "border",
-                stated(i.border.color),
+                Some(i.border.color),
+                width,
                 "showcase",
             )),
-        }
+        )
         .config(
             "hover",
             "none while focused: the frame keeps its focused edge under the pointer",
         )
     } else {
-        info.color(claim("edge", "border", stated(i.border.color), "showcase"))
-            .colors(i.hover_border_color.map(|hover_border_color| {
-                claim(
-                    "hovered edge",
-                    "hover_border_color",
-                    stated(hover_border_color),
-                    "showcase",
-                )
-            }))
-            .colors(i.focus_border_color.map(|focus_border_color| {
-                claim(
-                    "focused edge",
-                    "focus_border_color",
-                    stated(focus_border_color),
-                    "showcase",
-                )
-            }))
+        info.colors(edge_claim(
+            "edge",
+            "border",
+            Some(i.border.color),
+            width,
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "hovered edge",
+            "hover_border_color",
+            i.hover_border_color,
+            width,
+            "showcase",
+        ))
+        .colors(edge_claim(
+            "focused edge",
+            "focus_border_color",
+            i.focus_border_color,
+            width,
+            "showcase",
+        ))
     };
     // The step buttons take upstream's colours, through the fields its
     // tokens carry under a native theme: secondary_foreground is
@@ -761,21 +770,22 @@ fn native_indicator(
     // A stated disabled fill replaces the box; with none the platform dims by
     // `disabled_opacity` alone, which fades the whole control either way
     // (docs/platform-facts.md §2.1.6), and the box is its enabled self.
-    let stated_disabled = disabled && k.disabled_background.is_some();
-    let info = match (checked, stated_disabled) {
-        (_, true) => info.color(claim(
-            "fill",
-            "disabled_background",
-            stated(k.disabled_background.unwrap_or(k.background_color)),
-            "native-theme-gpui/widgets/checkbox.rs:129",
-        )),
-        (true, false) => info.color(claim(
+    let disabled_fill = stated_claim(
+        "fill",
+        "disabled_background",
+        k.disabled_background.filter(|_| disabled),
+        "native-theme-gpui/widgets/checkbox.rs:129",
+    );
+    let stated_disabled = disabled_fill.is_some();
+    let info = match (checked, disabled_fill) {
+        (_, Some(fill)) => info.color(fill),
+        (true, None) => info.color(claim(
             "fill",
             "checked_background",
             stated(k.checked_background),
             "native-theme-gpui/widgets/checkbox.rs:125",
         )),
-        (false, false) => {
+        (false, None) => {
             let info = info.color(claim(
                 "fill",
                 "unchecked_background",
@@ -787,37 +797,41 @@ fn native_indicator(
             } else {
                 // An unset hover is the box at rest (CheckboxLook::of), so
                 // the swatch is the fill, not a layer of it.
-                info.color(if k.hover_background.is_some() {
-                    claim(
+                info.color(
+                    stated_claim(
                         "hover layer, over the fill",
                         "hover_background",
-                        k.hover_background
-                            .map_or(stated(k.background_color), stated),
+                        k.hover_background,
                         "native-theme-gpui/widgets/checkbox.rs:134",
                     )
-                } else {
-                    claim(
-                        "hover, none stated: the fill at rest",
-                        "unchecked_background",
-                        stated(k.unchecked_background.unwrap_or(k.background_color)),
-                        "native-theme-gpui/widgets/checkbox.rs:123",
-                    )
-                })
+                    .unwrap_or_else(|| {
+                        claim(
+                            "hover, none stated: the fill at rest",
+                            "unchecked_background",
+                            stated(k.unchecked_background.unwrap_or(k.background_color)),
+                            "native-theme-gpui/widgets/checkbox.rs:123",
+                        )
+                    }),
+                )
             }
         }
     };
+    // Drawn at checkbox.border.line_width (CheckboxLook::border_width).
+    let width = Some(k.border.line_width);
     let info = if checked {
-        info.color(claim(
+        info.colors(edge_claim(
             "border",
             "border",
-            stated(k.border.color),
+            Some(k.border.color),
+            width,
             "native-theme-gpui/widgets/checkbox.rs:138",
         ))
     } else {
-        info.color(claim(
+        info.colors(edge_claim(
             "border",
             "unchecked_border_color",
-            stated(k.unchecked_border_color.unwrap_or(k.border.color)),
+            Some(k.unchecked_border_color.unwrap_or(k.border.color)),
+            width,
             "native-theme-gpui/widgets/checkbox.rs:140",
         ))
     };
@@ -881,28 +895,29 @@ pub fn native_radio_column(
             stated(k.unchecked_background.unwrap_or(k.background_color)),
             "native-theme-gpui/widgets/checkbox.rs:123",
         ))
-        .color(claim(
+        .colors(edge_claim(
             "unselected border",
             "unchecked_border_color",
-            stated(k.unchecked_border_color.unwrap_or(k.border.color)),
+            Some(k.unchecked_border_color.unwrap_or(k.border.color)),
+            Some(k.border.line_width),
             "native-theme-gpui/widgets/checkbox.rs:140",
         ))
-        .color(if k.hover_background.is_some() {
-            claim(
+        .color(
+            stated_claim(
                 "hover layer, over an unselected fill",
                 "hover_background",
-                k.hover_background
-                    .map_or(stated(k.background_color), stated),
+                k.hover_background,
                 "native-theme-gpui/widgets/checkbox.rs:134",
             )
-        } else {
-            claim(
-                "hover, none stated: an unselected fill at rest",
-                "unchecked_background",
-                stated(k.unchecked_background.unwrap_or(k.background_color)),
-                "native-theme-gpui/widgets/checkbox.rs:123",
-            )
-        })
+            .unwrap_or_else(|| {
+                claim(
+                    "hover, none stated: an unselected fill at rest",
+                    "unchecked_background",
+                    stated(k.unchecked_background.unwrap_or(k.background_color)),
+                    "native-theme-gpui/widgets/checkbox.rs:123",
+                )
+            }),
+        )
         .config("indicator", format!("checkbox.indicator_width: a circle {}px across (platform-facts §2.5: radio buttons are circular)", k.indicator_width))
         .config("label gap", format!("checkbox.label_gap: {}px", k.label_gap));
     let info = match k.radio_dot_diameter {
@@ -947,22 +962,22 @@ pub fn native_switch(
                 stated(s.checked_background),
                 "native-theme-gpui/widgets/switch.rs:96",
             ))
-            .color(if s.hover_checked_background.is_some() {
-                claim(
+            .color(
+                stated_claim(
                     "hover layer, over the track",
                     "hover_checked_background",
-                    s.hover_checked_background
-                        .map_or(stated(s.checked_background), stated),
+                    s.hover_checked_background,
                     "native-theme-gpui/widgets/switch.rs:106",
                 )
-            } else {
-                claim(
-                    "hover, none stated: the track at rest",
-                    "checked_background",
-                    stated(s.checked_background),
-                    "native-theme-gpui/widgets/switch.rs:96",
-                )
-            }),
+                .unwrap_or_else(|| {
+                    claim(
+                        "hover, none stated: the track at rest",
+                        "checked_background",
+                        stated(s.checked_background),
+                        "native-theme-gpui/widgets/switch.rs:96",
+                    )
+                }),
+            ),
         (false, false) => info
             .color(claim(
                 "track",
@@ -970,22 +985,22 @@ pub fn native_switch(
                 stated(s.unchecked_background),
                 "native-theme-gpui/widgets/switch.rs:98",
             ))
-            .color(if s.hover_unchecked_background.is_some() {
-                claim(
+            .color(
+                stated_claim(
                     "hover layer, over the track",
                     "hover_unchecked_background",
-                    s.hover_unchecked_background
-                        .map_or(stated(s.unchecked_background), stated),
+                    s.hover_unchecked_background,
                     "native-theme-gpui/widgets/switch.rs:108",
                 )
-            } else {
-                claim(
-                    "hover, none stated: the track at rest",
-                    "unchecked_background",
-                    stated(s.unchecked_background),
-                    "native-theme-gpui/widgets/switch.rs:98",
-                )
-            }),
+                .unwrap_or_else(|| {
+                    claim(
+                        "hover, none stated: the track at rest",
+                        "unchecked_background",
+                        stated(s.unchecked_background),
+                        "native-theme-gpui/widgets/switch.rs:98",
+                    )
+                }),
+            ),
         (true, true) => info.color(claim(
             "track",
             "disabled_checked_background",
@@ -1008,66 +1023,46 @@ pub fn native_switch(
     // The track's outline and the thumb's, where the theme states the colour
     // and the width (SwitchLook::of); a disabled outline unset is the
     // enabled one.
+    let track = s.track_border_line_width;
     let track_edge = match (checked, disabled) {
-        (true, false) => s
-            .checked_track_border_color
-            .map(|checked_track_border_color| {
-                claim(
-                    "track outline",
-                    "checked_track_border_color",
-                    stated(checked_track_border_color),
-                    "native-theme-gpui/widgets/switch.rs:123",
-                )
-            }),
-        (false, false) => s
-            .unchecked_track_border_color
-            .map(|unchecked_track_border_color| {
-                claim(
-                    "track outline",
-                    "unchecked_track_border_color",
-                    stated(unchecked_track_border_color),
-                    "native-theme-gpui/widgets/switch.rs:125",
-                )
-            }),
-        (true, true) => s
-            .disabled_checked_track_border_color
-            .or(s.checked_track_border_color)
-            .map(|disabled_checked_track_border_color| {
-                claim(
-                    "track outline",
-                    "disabled_checked_track_border_color",
-                    stated(disabled_checked_track_border_color),
-                    "native-theme-gpui/widgets/switch.rs:128",
-                )
-            }),
-        (false, true) => s
-            .disabled_unchecked_track_border_color
-            .or(s.unchecked_track_border_color)
-            .map(|disabled_unchecked_track_border_color| {
-                claim(
-                    "track outline",
-                    "disabled_unchecked_track_border_color",
-                    stated(disabled_unchecked_track_border_color),
-                    "native-theme-gpui/widgets/switch.rs:130",
-                )
-            }),
+        (true, false) => edge_claim(
+            "track outline",
+            "checked_track_border_color",
+            s.checked_track_border_color,
+            track,
+            "native-theme-gpui/widgets/switch.rs:123",
+        ),
+        (false, false) => edge_claim(
+            "track outline",
+            "unchecked_track_border_color",
+            s.unchecked_track_border_color,
+            track,
+            "native-theme-gpui/widgets/switch.rs:125",
+        ),
+        (true, true) => edge_claim(
+            "track outline",
+            "disabled_checked_track_border_color",
+            s.disabled_checked_track_border_color
+                .or(s.checked_track_border_color),
+            track,
+            "native-theme-gpui/widgets/switch.rs:128",
+        ),
+        (false, true) => edge_claim(
+            "track outline",
+            "disabled_unchecked_track_border_color",
+            s.disabled_unchecked_track_border_color
+                .or(s.unchecked_track_border_color),
+            track,
+            "native-theme-gpui/widgets/switch.rs:130",
+        ),
     };
-    let info = match track_edge.filter(|_| s.track_border_line_width.is_some()) {
-        Some(edge) => info.color(edge),
-        None => info,
-    };
-    let info = if let (Some(thumb_border_color), Some(_)) =
-        (s.thumb_border_color, s.thumb_border_line_width)
-    {
-        info.color(claim(
-            "thumb outline",
-            "thumb_border_color",
-            stated(thumb_border_color),
-            "native-theme-gpui/widgets/switch.rs:142",
-        ))
-    } else {
-        info
-    };
+    let info = info.colors(track_edge).colors(edge_claim(
+        "thumb outline",
+        "thumb_border_color",
+        s.thumb_border_color,
+        s.thumb_border_line_width,
+        "native-theme-gpui/widgets/switch.rs:142",
+    ));
     // While focused the track draws the focus ring in `ring` at 50% alpha
     // (gpui-component styled.rs:261), `ring` being the connector's
     // `defaults.focus_ring_color`; a disabled switch takes no focus.
@@ -1182,11 +1177,10 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
         .color(claim("filled part", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/slider.rs:77"))
         .color(claim("thumb", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:77"))
         // An unset hover is the thumb at rest (SliderLook::of).
-        .color(if s.thumb_hover_color.is_some() {
-            claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color.map_or(stated(s.thumb_color), stated), "native-theme-gpui/widgets/slider.rs:80")
-        } else {
-            claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:80")
-        })
+        .color(
+            stated_claim("hover layer, over the thumb", "thumb_hover_color", s.thumb_hover_color, "native-theme-gpui/widgets/slider.rs:80")
+                .unwrap_or_else(|| claim("hover, none stated: the thumb at rest", "thumb_color", stated(s.thumb_color), "native-theme-gpui/widgets/slider.rs:80")),
+        )
         .config("rail", format!("slider.track_height: {}px", s.track_height))
         .config("thumb", format!("slider.thumb_diameter: {}px; its centre travels the width less a radius at each end", s.thumb_diameter))
         .not_themeable("thumb outline", "gpui-component's own: a 1px ring of the fill colour at half alpha (slider.rs, Slider::render); the model states no thumb outline")
@@ -1338,25 +1332,21 @@ pub fn combo_fill(
                     stated(r.combo_box.background_color),
                     "showcase",
                 ))
-                .color(claim(
+                .colors(edge_claim(
                     "trigger border",
-                    "color",
-                    stated(r.combo_box.border.color),
+                    "border",
+                    Some(r.combo_box.border.color),
+                    Some(r.combo_box.border.line_width),
+                    "showcase",
+                ))
+                .colors(stated_claim(
+                    "hover layer, over the fill",
+                    "hover_background",
+                    r.combo_box.hover_background,
                     "showcase",
                 ))
                 .geometry("combo_box_fill");
-            let c = &r.combo_box;
-            let info = if c.hover_background.is_some() {
-                info.color(claim(
-                    "hover layer, over the fill",
-                    "hover_background",
-                    stated(c.hover_background.unwrap_or(c.background_color)),
-                    "showcase",
-                ))
-            } else {
-                info
-            };
-            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (select.rs, Select::render; combobox.rs, Combobox::render)")
+            info.config("fill", "geometry::combo_box_fill's combo_box.background_color, and combo_box.hover_background over it under the pointer, which the showcase paints on the element under the trigger and leaves the trigger without a fill: upstream's trigger sets no hover and is not an InteractiveElement (select.rs, Select::render; combobox.rs, Combobox::render); the trigger's edge is combo_box.border.color at combo_box.border.line_width, none where that is 0, over the input edge it paints first, which the showcase sets: geometry::select and geometry::combobox carry no edge colour, since the trigger of a Select or Combobox built with appearance(false) keeps a transparent edge the refinement would colour (select.rs, Select::render; combobox.rs, Combobox::render)")
         }
         None => info
             .color(input_background(t))

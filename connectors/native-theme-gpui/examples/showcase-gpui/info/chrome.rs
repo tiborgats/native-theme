@@ -7,7 +7,7 @@ use gpui_component::{Colorize as _, theme::Theme};
 use native_theme::theme::ResolvedPadding;
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, px_text, stated};
+use super::{ColorClaim, WidgetInfo, claim, edge_claim, px_text, stated};
 use crate::demo::{Severity, SheetSide};
 use crate::support::ChromeIcon;
 
@@ -246,7 +246,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 .color(claim("its text", "hover_text_color", stated(m.hover_text_color), "showcase"))
                 .color(claim("menu bg", "background_color", stated(m.background_color), "showcase"))
                 .color(claim("menu separator", "separator_color", stated(m.separator_color), "showcase"))
-                .color(claim("menu edge", "color", stated(r.popover.border.color), "showcase"))
+                .colors(edge_claim("menu edge", "border", Some(r.popover.border.color), Some(r.popover.border.line_width), "showcase"))
                 .config("font", format!("menu.font, {}px, on the titles and the items: its family, size, weight and style as geometry::menu_item sets them", px_text(m.font.size)))
                 .config("highlight", format!("rectangular where menu.border.corner_radius is 0 (platform-facts §2.6: the items are rectangular), here {}px", px_text(m.border.corner_radius)))
                 .config("padding", "menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5 and an item's 8px (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)")
@@ -255,7 +255,11 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                     None if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => "26px, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding".to_string(),
                     None => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
                 })
-                .config("menu edge", format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius)))
+                .config("menu edge", if r.popover.border.line_width > 0.0 {
+                    format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius))
+                } else {
+                    format!("none: popover.border.line_width is 0; the popup is still rounded by popover.border.corner_radius, {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.corner_radius))
+                })
                 .config("menu separator", format!("separator.line_width, {}px", px_text(r.separator.line_width)))
         }
         None => info

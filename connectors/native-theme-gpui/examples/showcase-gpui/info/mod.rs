@@ -48,6 +48,32 @@ pub fn claim(
     }
 }
 
+/// The claim of a colour the theme may leave unstated, `None` where it does.
+pub fn stated_claim(
+    role: &'static str,
+    field: &'static str,
+    colour: Option<native_theme::color::Rgba>,
+    cited_at: &'static str,
+) -> Option<ColorClaim> {
+    colour.map(|colour| claim(role, field, stated(colour), cited_at))
+}
+
+/// The claim of a line in `colour` drawn `width` wide, `None` where either
+/// is unstated or the width is 0: no line is drawn. `width` is the drawing's
+/// (a text area's hovered edge is `input.hover_border_color` at
+/// `text_area.border.line_width`); the caller's config line names it, or
+/// says `none: <table>.border.line_width is 0`.
+pub fn edge_claim(
+    role: &'static str,
+    field: &'static str,
+    colour: Option<native_theme::color::Rgba>,
+    width: Option<f32>,
+    cited_at: &'static str,
+) -> Option<ColorClaim> {
+    let drawn = width.is_some_and(|width| width > 0.0);
+    stated_claim(role, field, colour.filter(|_| drawn), cited_at)
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Note {
     pub what: &'static str,

@@ -7316,7 +7316,7 @@ fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
             branches.0 = true;
             assert_eq!(
                 by_role("frame edge"),
-                Some(("color", stated(r.popover.border.color))),
+                Some(("border", stated(r.popover.border.color))),
                 "{preset}: the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
             );
         } else {
@@ -10291,5 +10291,291 @@ fn a_layout_that_never_settles_fails_the_dump() {
         failure.starts_with("--dump-layout f.json: the layout did not settle")
             && failure.ends_with(" 20 s"),
         "{failure}"
+    );
+}
+
+/// Every bundled preset in both modes, resolved as the tests resolve a
+/// preset, named `<preset> <mode>`, with the gpui theme the connector
+/// builds from it: what an info built under each one reads.
+fn every_bundled_variant() -> Vec<(String, native_theme_gpui::ResolvedTheme, Theme)> {
+    use native_theme::theme::ColorMode;
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    let mut out = Vec::new();
+    for preset in native_theme::theme::Theme::list_presets() {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let resolved = native_theme::theme::Theme::preset(preset.key)
+                .ok()
+                .and_then(|t| t.into_variant(mode).ok())
+                .and_then(|v| {
+                    v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                        .ok()
+                });
+            assert!(
+                resolved.is_some(),
+                "{} {mode:?} does not resolve",
+                preset.key
+            );
+            let Some(r) = resolved else { continue };
+            let dark = mode == ColorMode::Dark;
+            let t = native_theme_gpui::to_theme(&r, preset.key, dark, &prefs);
+            let name = format!("{} {}", preset.key, if dark { "dark" } else { "light" });
+            out.push((name, r, t));
+        }
+    }
+    out
+}
+
+/// The colour `info` claims as `role`, with the field it names.
+fn claim_as<'a>(info: &'a WidgetInfo, role: &str) -> Option<(&'a str, gpui::Hsla)> {
+    info.colors
+        .iter()
+        .find(|c| c.role == role)
+        .map(|c| (c.field, c.value))
+}
+
+/// The text of `info`'s note `what` in `notes`.
+fn note_of<'a>(notes: &'a [crate::info::Note], what: &str) -> Option<&'a str> {
+    notes
+        .iter()
+        .find(|n| n.what == what)
+        .map(|n| n.text.as_str())
+}
+
+/// A refined Button's info claims an edge only where `geometry::button`
+/// draws one (M9-059): `button.border.color` at rest, and upstream's colour
+/// under the pointer, where `button.border.line_width` is above 0, and no
+/// edge in any state where it is 0 (material-3, both modes), whose width
+/// replaces upstream's `border_1` -- over every bundled preset in both
+/// modes.
+#[test]
+fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
+    use crate::demo::{ButtonKind, ButtonState};
+    use crate::info::stated;
+    let mut branches = (false, false);
+    for (name, r, t) in every_bundled_variant() {
+        for kind in [
+            ButtonKind::Default,
+            ButtonKind::DefaultOutline,
+            ButtonKind::PrimaryOutline,
+            ButtonKind::Primary,
+        ] {
+            let info = crate::info::buttons::button(
+                &t,
+                kind,
+                ButtonState::Idle,
+                false,
+                None,
+                Some(&r.button),
+            );
+            let hovered = claim_as(&info, "border, hovered or pressed");
+            if r.button.border.line_width > 0.0 {
+                branches.0 = true;
+                assert_eq!(
+                    claim_as(&info, "border at rest"),
+                    Some(("border", stated(r.button.border.color))),
+                    "{name}: a {} Button's info does not claim the button.border.color it is edged with: {info:?}",
+                    kind.name()
+                );
+                assert_eq!(
+                    hovered.is_some(),
+                    kind != ButtonKind::Primary,
+                    "{name}: a {} Button's info misstates upstream's edge under the pointer: {info:?}",
+                    kind.name()
+                );
+            } else {
+                branches.1 = true;
+                assert!(
+                    info.colors.iter().all(|c| !c.role.starts_with("border")),
+                    "{name}: a {} Button's info claims an edge button.border.line_width 0 does not draw: {info:?}",
+                    kind.name()
+                );
+                assert!(
+                    note_of(&info.not_themeable, "edge")
+                        .is_some_and(|text| text.starts_with("none in any state")),
+                    "{name}: a {} Button's info does not say no edge is drawn: {info:?}",
+                    kind.name()
+                );
+            }
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true),
+        "no bundled preset left a Button edged, or none left one unedged, so a branch went unread"
+    );
+}
+
+/// The application's menus claim a `menu edge` only where the popup draws
+/// one (M9-034): `popover.border.color` where `popover.border.line_width`
+/// is above 0, and none where it is 0 (material-3, both modes), its config
+/// line then saying so -- over every bundled preset in both modes.
+#[test]
+fn the_app_menus_claim_a_menu_edge_only_where_one_is_drawn() {
+    use crate::info::{MenuHost, stated};
+    let mut branches = (false, false);
+    for (name, r, t) in every_bundled_variant() {
+        let info = crate::info::app_menus(&t, MenuHost::Row, Some(&r));
+        let line = note_of(&info.config, "menu edge");
+        if r.popover.border.line_width > 0.0 {
+            branches.0 = true;
+            assert_eq!(
+                claim_as(&info, "menu edge"),
+                Some(("border", stated(r.popover.border.color))),
+                "{name}: the menus' info does not claim the popover.border.color the popup is edged with: {info:?}"
+            );
+            assert!(
+                line.is_some_and(|text| text.starts_with("popover.border: ")),
+                "{name}: the menus' edge line does not name popover.border: {line:?}"
+            );
+        } else {
+            branches.1 = true;
+            assert_eq!(
+                claim_as(&info, "menu edge"),
+                None,
+                "{name}: the menus' info claims an edge popover.border.line_width 0 does not draw: {info:?}"
+            );
+            assert!(
+                line.is_some_and(|text| text.starts_with("none: popover.border.line_width is 0")),
+                "{name}: the menus' edge line does not say no edge is drawn: {line:?}"
+            );
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true),
+        "no bundled preset edged the popover, or none left it unedged, so a branch went unread"
+    );
+}
+
+/// A theme-drawn ProgressBar claims its frame only where it draws one
+/// (M9-057): `progress_bar.border.color` where `progress_bar.border.line_width`
+/// is above 0, none where it is 0 (adwaita, windows-11, material-3), and
+/// its frame line names no question only the archived spec holds -- over
+/// every bundled preset in both modes.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_theme_drawn_progress_bar_claims_a_frame_only_where_one_is_drawn() {
+    use crate::info::stated;
+    let mut branches = (false, false);
+    for (name, r, _) in every_bundled_variant() {
+        let p = &r.progress_bar;
+        let info = crate::info::feedback::native_progress(&r, "Progress", Some(40.), false);
+        let line = note_of(&info.config, "frame");
+        assert!(
+            info.to_text().find("OPEN O4").is_none(),
+            "{name}: the ProgressBar's info cites OPEN O4, which no open entry holds: {info:?}"
+        );
+        if p.border.line_width > 0.0 {
+            branches.0 = true;
+            assert_eq!(
+                claim_as(&info, "frame"),
+                Some(("border", stated(p.border.color))),
+                "{name}: the ProgressBar's info does not claim the progress_bar.border.color it is framed in: {info:?}"
+            );
+        } else {
+            branches.1 = true;
+            assert_eq!(
+                claim_as(&info, "frame"),
+                None,
+                "{name}: the ProgressBar's info claims a frame progress_bar.border.line_width 0 does not draw: {info:?}"
+            );
+            assert!(
+                line.is_some_and(
+                    |text| text.starts_with("none: progress_bar.border.line_width is 0")
+                ),
+                "{name}: the ProgressBar's frame line does not say none is drawn: {line:?}"
+            );
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true),
+        "no bundled preset framed the progress bar, or none left it unframed, so a branch went unread"
+    );
+}
+
+/// A GroupBox's and a card's info claim the card edge
+/// `geometry::group_box_content` draws on the content -- `card.border.color`
+/// at `card.border.line_width` -- only where that width is above 0
+/// (windows-11 and kde-breeze at the time of writing), and elsewhere say
+/// none is drawn, an Outline box's note that its own `border_1` gives way to
+/// the 0 width (M9-044); and a card claims no content text, its content
+/// being a Label that paints foreground on its own element (M9-049) --
+/// over every bundled preset in both modes, and with no native theme.
+#[test]
+fn a_group_box_and_a_card_claim_the_card_edge_only_where_one_is_drawn() {
+    use crate::demo::GroupBoxKind;
+    use crate::info::{px_text, stated};
+    let mut branches = (false, false);
+    for (name, r, t) in every_bundled_variant() {
+        let width = r.card.border.line_width;
+        let infos = [
+            GroupBoxKind::Normal,
+            GroupBoxKind::Fill,
+            GroupBoxKind::Outline,
+        ]
+        .map(|kind| {
+            (
+                kind,
+                crate::info::layout::group_box(&t, kind, Some(&r), None, "Title"),
+            )
+        });
+        let card = crate::info::layout::card(&t, Some(&r), None);
+        assert!(
+            card.colors
+                .iter()
+                .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
+            "{name}: the card's info claims a content text its Label paints over: {card:?}"
+        );
+        let all = infos
+            .iter()
+            .map(|(kind, info)| (Some(*kind), info))
+            .chain([(None, &card)]);
+        for (kind, info) in all {
+            let what = kind.map_or("the card", GroupBoxKind::name);
+            let line = note_of(&info.config, "edge");
+            if width > 0.0 {
+                branches.0 = true;
+                assert_eq!(
+                    claim_as(info, "edge"),
+                    Some(("border", stated(r.card.border.color))),
+                    "{name}: {what}'s info does not claim the card.border.color its content is edged with: {info:?}"
+                );
+                assert!(
+                    line.is_some_and(|text| text.contains(&format!("{}px", px_text(width)))),
+                    "{name}: {what}'s edge line does not print card.border.line_width: {line:?}"
+                );
+            } else {
+                branches.1 = true;
+                assert_eq!(
+                    claim_as(info, "edge"),
+                    None,
+                    "{name}: {what}'s info claims an edge card.border.line_width 0 does not draw: {info:?}"
+                );
+                assert!(
+                    line.is_some_and(|text| text.starts_with("none: card.border.line_width is 0")),
+                    "{name}: {what}'s edge line does not say no edge is drawn: {line:?}"
+                );
+                if kind == Some(GroupBoxKind::Outline) {
+                    assert!(
+                        line.is_some_and(|text| text.contains("border_1 gives way")),
+                        "{name}: the Outline box's edge line does not say its own border_1 gives way to the 0 width: {line:?}"
+                    );
+                }
+            }
+        }
+    }
+    assert_eq!(
+        branches,
+        (true, true),
+        "no bundled preset edged the card, or none left it unedged, so a branch went unread"
+    );
+    let t = Theme::default();
+    let card = crate::info::layout::card(&t, None, None);
+    assert!(
+        card.colors
+            .iter()
+            .all(|c| c.role != "content text" && c.field != "group_box_foreground"),
+        "the card's info without a native theme claims a content text its Label paints over: {card:?}"
     );
 }
