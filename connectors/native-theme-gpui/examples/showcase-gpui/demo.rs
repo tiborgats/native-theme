@@ -5315,8 +5315,14 @@ pub(crate) fn empty(
     description: &'static str,
     icon: &SampleIcon,
 ) -> Stateful<Div> {
-    let empty_info = info::feedback::empty(cx.theme(), title, description, icon);
-    let empty_info = if icon.shown() && native_value(cx, geometry::icon_size_large).is_some() {
+    // The size `icon.sized` draws the icon at where a native theme is
+    // installed.
+    let large = match native_value(cx, geometry::icon_size_large) {
+        Some(Size::Size(size)) => Some(size.as_f32()),
+        _ => None,
+    };
+    let empty_info = info::feedback::empty(cx.theme(), title, description, icon, large);
+    let empty_info = if icon.shown() && large.is_some() {
         empty_info.geometry("icon_size_large")
     } else {
         empty_info

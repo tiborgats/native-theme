@@ -502,16 +502,29 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
     info.instance("text", text.to_string())
 }
 
-/// The `Empty` state, its media `icon` of the chosen icon theme at
-/// `geometry::icon_size_large` where a native theme is installed, whose line
-/// is recorded where `demo::empty` applies it.
-pub fn empty(t: &Theme, title: &str, description: &str, icon: &SampleIcon) -> WidgetInfo {
-    let media_frame = if icon.shown() {
-        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, which is defaults.icon_sizes.large: 32px, or 48px on KDE, so the icon outgrows the frame wherever 2rem is smaller"
-    } else {
-        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). It is empty: the chosen icon theme has no icon for it"
+/// The `Empty` state, its media `icon` of the chosen icon theme `large`
+/// across where a native theme is installed -- `geometry::icon_size_large`,
+/// whose line is recorded where `demo::empty` applies it -- and at upstream's
+/// size where none is (`large` is `None`).
+pub fn empty(
+    t: &Theme,
+    title: &str,
+    description: &str,
+    icon: &SampleIcon,
+    large: Option<f32>,
+) -> WidgetInfo {
+    let media_frame = match (icon.shown(), large) {
+        (true, Some(_)) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, so the icon outgrows the frame wherever 2rem is less than defaults.icon_sizes.large"
+        }
+        (true, None) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia)"
+        }
+        (false, _) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). It is empty: the chosen icon theme has no icon for it"
+        }
     };
-    WidgetInfo::new("Empty")
+    let info = WidgetInfo::new("Empty")
         .color(claim(
             "media bg",
             "muted",
@@ -546,7 +559,18 @@ pub fn empty(t: &Theme, title: &str, description: &str, icon: &SampleIcon) -> Wi
         .instance("media icon", icon.note("the media frame is empty"))
         .instance("title", title.to_string())
         .instance("description", description.to_string())
-        .instance("action", "the Refresh Button, which reports itself")
+        .instance("action", "the Refresh Button, which reports itself");
+    match (icon.shown(), large) {
+        (true, Some(large)) => info.config(
+            "icon size",
+            format!("defaults.icon_sizes.large, {}px, through geometry::icon_size_large", px_text(large)),
+        ),
+        (true, None) => info.config(
+            "icon size",
+            format!("upstream's size, one rem: the media frame's text_base, {}px at this font_size, which the icon takes where it is given no size of its own (empty.rs, EmptyMedia), as no native theme is installed", px_text(t.font_size.as_f32())),
+        ),
+        (false, _) => info,
+    }
 }
 
 /// A `Tag` of `kind`, `outline` or not, reading `label`.

@@ -2696,6 +2696,53 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
     );
 }
 
+/// The Empty state's info prints the size its icon is drawn at (M9-058):
+/// the installed theme's `defaults.icon_sizes.large` where a native theme is
+/// installed (kde-breeze), and upstream's size where none is, in place of
+/// the literals "32px, or 48px on KDE".
+#[gpui::test]
+fn the_empty_states_info_prints_its_icons_size(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
+    show(&mut cx, &showcase, Page::Feedback);
+    let large = resolved_theme(&mut cx, &showcase).defaults.icon_sizes.large;
+    let line = |info: &Option<WidgetInfo>| {
+        info.as_ref()
+            .and_then(|info| note_of(&info.config, "icon size").map(str::to_string))
+    };
+    let info = settle_on(&mut cx, &showcase, "feedback-empty");
+    let want = format!(
+        "defaults.icon_sizes.large, {}px",
+        crate::info::px_text(large)
+    );
+    assert!(
+        line(&info).is_some_and(|text| text.starts_with(&want)),
+        "under kde-breeze the Empty state's icon size line does not print {want:?}: {info:?}"
+    );
+    assert!(
+        info.as_ref()
+            .is_some_and(|info| !info.to_text().contains("48px on KDE")),
+        "the Empty state's info still names the literal sizes: {info:?}"
+    );
+    cx.update(|_window, cx| {
+        if cx.has_global::<native_theme_gpui::NativeTheme>() {
+            cx.remove_global::<native_theme_gpui::NativeTheme>();
+        }
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert!(
+        cx.update(|_window, cx| cx.native_theme().is_none()),
+        "the native theme is still installed, so this proves nothing"
+    );
+    let info = settle_on(&mut cx, &showcase, "feedback-empty");
+    assert!(
+        line(&info).is_some_and(|text| text.starts_with("upstream's size")),
+        "with no native theme the Empty state's icon size line does not say upstream's size: {info:?}"
+    );
+}
+
 /// Both tables draw their header row `list.header_height` tall where the
 /// theme states it (adwaita, 30), and as tall as a body row is drawn where it
 /// does not (kde-breeze, which states no header height): the Data page's

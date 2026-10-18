@@ -2960,6 +2960,11 @@ the gap — closing it is a change, and each wants its own decision.
       font (24px for KDE's 48). `EmptyMedia` applies the caller's refinement
       last, so the frame can be sized to its icon; decide whether the
       showcase should, or use a smaller icon role. Not checked visually.
+      M9a T15 (2026-10-18): the gpui showcase's Empty state info prints the
+      icon's size from the installed theme's `defaults.icon_sizes.large`
+      (`geometry::icon_size_large`), and upstream's one rem where no native
+      theme is installed, where it printed "32px, or 48px on KDE"; the frame
+      is still 2rem, so the question stays open.
 - [ ] [1.0] **The colour gate cannot tell whose line it is.**
       `every_colour_claim_is_read_at_the_line_it_cites` checks that the cited
       line reads the named token -- not that the line runs for *this* widget,
