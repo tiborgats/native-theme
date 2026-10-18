@@ -2,6 +2,7 @@
 
 use gpui::Pixels;
 use gpui_component::theme::Theme;
+use native_theme::theme::ArrowSide;
 use native_theme_gpui::ResolvedTheme;
 
 use super::{
@@ -541,11 +542,13 @@ pub fn tab_row(
 }
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
-/// (`demo::native_expander`), reading `titles`, each `open` or not.
+/// (`demo::native_expander`), reading `titles`, each `open` or not, their
+/// arrow `arrow`, of the chosen icon theme.
 pub fn native_expander(
     r: &ResolvedTheme,
     titles: [&'static str; 2],
     open: [bool; 2],
+    arrow: &SampleIcon,
 ) -> WidgetInfo {
     let e = &r.expander;
     let info = WidgetInfo::new("Expander")
@@ -557,13 +560,39 @@ pub fn native_expander(
             Some(e.border.line_width),
             "showcase",
         ))
-        .color(claim("title", "font", stated(e.font.color), "showcase"))
-        .color(claim(
+        .color(claim("title", "font", stated(e.font.color), "showcase"));
+    let leading = e.arrow_side == Some(ArrowSide::Leading);
+    let glyph = if leading {
+        "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
+    } else {
+        "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (accordion.rs, AccordionItem::render)"
+    };
+    let info = info.instance(
+        "arrow glyph",
+        format!(
+            "{glyph}: {}",
+            arrow.note("the title row shows its title alone")
+        ),
+    );
+    let info = if arrow.shown() {
+        info.color(claim(
             "arrow",
             "arrow_color",
             stated(e.arrow_color.unwrap_or(e.font.color)),
             "showcase",
-        ));
+        ))
+        .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
+        .config("arrow side", match e.arrow_side {
+            Some(side) => format!("expander.arrow_side, {side:?}"),
+            None => "not stated: upstream's Accordion's, after the title (accordion.rs, AccordionItem::render)".to_string(),
+        })
+        .config("arrow gap", match e.arrow_gap {
+            Some(gap) => format!("expander.arrow_gap, {}px", px_text(gap)),
+            None => "not stated: upstream's AccordionItem's gap_3 (accordion.rs, AccordionItem::render)".to_string(),
+        })
+    } else {
+        info
+    };
     let info = match stated_claim(
         "hovered title",
         "hover_background",
@@ -583,25 +612,14 @@ pub fn native_expander(
         .map(|(title, _)| *title)
         .collect();
     info.config("title row", format!("expander.header_height, {}px, in expander.font, {}px, weight {}", px_text(e.header_height), px_text(e.font.size), e.font.weight))
-        .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
         .config("edge", match e.frame_enabled {
             Some(false) => "none: expander.frame_enabled is false, no frame and no line between the items".to_string(),
             _ => format!("expander.border: {}px, radius {}px, round the whole and between the items", px_text(e.border.line_width), px_text(e.border.corner_radius)),
-        })
-        .config("arrow side", match e.arrow_side {
-            Some(side) => format!("expander.arrow_side, {side:?}"),
-            None => "not stated: upstream's Accordion's, after the title (accordion.rs, AccordionItem::render)".to_string(),
-        })
-        .config("arrow gap", match e.arrow_gap {
-            Some(gap) => format!("expander.arrow_gap, {}px", px_text(gap)),
-            None => "not stated: upstream's AccordionItem's gap_3 (accordion.rs, AccordionItem::render)".to_string(),
         })
         .config("body indent", match e.content_indent {
             Some(indent) => format!("expander.content_indent, {}px", px_text(indent)),
             None => "not stated: upstream's AccordionItem's px_3 (accordion.rs, AccordionItem::render)".to_string(),
         })
-        .not_themeable("arrow glyph", "not stated: a chevron, ChevronRight turned down while open before the title, upstream's ChevronDown turned while open after it (accordion.rs, AccordionItem::render)")
-        .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight, the arrow (accordion.rs, AccordionItem::render)"))
         .not_themeable("padding", "not stated: upstream's AccordionItem's, px_3 across the title and right of the body, pb_2 under the body (accordion.rs, AccordionItem::render)")
         .not_themeable("fill", "none: the model states no expander fill, so the window's background shows")
         .instance("items", titles.join(", "))

@@ -405,18 +405,20 @@ pub fn native_info<W: Styled>(
     refined(w, style.as_ref())
 }
 
-/// What a Widget Info says of the icons gpui-component draws inside a
-/// widget on its own, `icons` naming them and where upstream draws them.
-/// They stay gpui-component's whichever icon theme is chosen: upstream
-/// loads them by asset path (icon.rs, `Icon::into_svg`), and gpui draws a
-/// path at a size once and keeps the result in the window's sprite atlas,
-/// which it never asks the asset source about again and which nothing
-/// outside gpui can clear (gpui-pre window.rs, `Window::paint_svg`; the
-/// atlas field is private), so an asset source answering those paths from
-/// the chosen theme could not show a switch. `docs/todo.md` records it.
+/// What a Widget Info says of the icons gpui-component builds and draws
+/// inside a widget on its own, `icons` naming them and where upstream draws
+/// them. An icon the showcase builds itself is the chosen icon theme's
+/// (`SampleIcon`), so this is for upstream's alone. They stay
+/// gpui-component's whichever icon theme is chosen: upstream loads them by
+/// asset path (icon.rs, `Icon::into_svg`), and gpui draws a path at a size
+/// once and keeps the result in the window's sprite atlas, which it never
+/// asks the asset source about again and which nothing outside gpui can
+/// clear (gpui-pre window.rs, `Window::paint_svg`; the atlas field is
+/// private), so an asset source answering those paths from the chosen
+/// theme could not show a switch. `docs/todo.md` records it.
 pub fn own_icons(icons: &str) -> String {
     format!(
-        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream loads them by asset path (icon.rs, Icon::into_svg), and gpui draws a path at a size once and keeps it for the window, never asking the application's asset source again, with no call to drop it (gpui-pre/window.rs, Window::paint_svg), so the showcase cannot hand them the chosen theme's icons and have a theme switch show"
+        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream builds them inside the widget and loads them by asset path (icon.rs, Icon::into_svg), and gpui draws a path at a size once and keeps it for the window, never asking the application's asset source again, with no call to drop it (gpui-pre/window.rs, Window::paint_svg), so the showcase cannot hand an icon upstream builds the chosen theme's and have a theme switch show"
     )
 }
 

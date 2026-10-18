@@ -8,7 +8,7 @@ use gpui_component::{IconName, h_flex, v_flex};
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::demo::{self, InputField, InputGroupStates};
+use crate::demo::{self, InputField, InputGroupStates, StepIcons};
 use crate::support::with_gap;
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
@@ -141,6 +141,10 @@ impl Showcase {
                     "inputs-number-input",
                     &self.number_input_state,
                     px(200.0),
+                    &StepIcons {
+                        up: self.sample_icon(IconName::ChevronUp),
+                        down: self.sample_icon(IconName::ChevronDown),
+                    },
                 )
                 .self_start(),
             )

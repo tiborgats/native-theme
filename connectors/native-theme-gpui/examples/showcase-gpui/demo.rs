@@ -3524,6 +3524,14 @@ pub(crate) fn input_groups(
         .debug_selector(move || id.into())
 }
 
+/// The chevrons a theme-drawn number field's step buttons show, of the
+/// chosen icon theme: ChevronUp on the increment, ChevronDown on the
+/// decrement.
+pub(crate) struct StepIcons {
+    pub up: SampleIcon,
+    pub down: SampleIcon,
+}
+
 /// A number field over `state`, `width` wide.
 ///
 /// Under a native theme, gpui-component's `NumberInput` rebuilt over the
@@ -3540,7 +3548,10 @@ pub(crate) fn input_groups(
 /// end (gpui-base's `controls_right`), as the desktops' spin boxes lay them
 /// out (Qt's QSpinBox, GTK's GtkSpinButton), where upstream's centres the
 /// value between − and + (:158-165); the buttons are upstream's otherwise
-/// (:116-156). Without a native theme, upstream's `NumberInput`.
+/// (:116-156), each showing its chevron of `steps`, the chosen icon theme's
+/// at `geometry::icon_size_small`, or none where that theme has none.
+/// Without a native theme, upstream's `NumberInput`, which draws its own
+/// Minus and Plus.
 pub(crate) fn number_input(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3548,6 +3559,7 @@ pub(crate) fn number_input(
     id: &'static str,
     state: &Entity<InputState>,
     width: Pixels,
+    steps: &StepIcons,
 ) -> Stateful<Div> {
     let native = cx.native();
     let Some(n) = native else {
@@ -3559,7 +3571,12 @@ pub(crate) fn number_input(
     };
     let i = &n.resolved.input;
     let focused = gpui::Focusable::focus_handle(state.read(cx), cx).is_focused(window);
-    let number_info = info::inputs::native_number_input(n.resolved, focused).geometry("input");
+    let mut number_info =
+        info::inputs::native_number_input(n.resolved, focused, &steps.up, &steps.down)
+            .geometry("input");
+    if steps.up.shown() || steps.down.shown() {
+        number_info = number_info.geometry("icon_size_small");
+    }
     // A soft option the theme leaves unstated keeps the edge it would cover.
     let edge = info::stated(match (focused, i.focus_border_color) {
         (true, Some(focus)) => focus,
@@ -3581,15 +3598,19 @@ pub(crate) fn number_input(
     // :172-189): transparent, tinted with the frame's edge colour under the
     // pointer and while pressed, a pixel tighter at the outer corners, as
     // wide as upstream's at the field's Size (:147-151, `min_w_8`); stacked,
-    // each half the field's height, with its chevron at the Size upstream
-    // gives a Small field's icons. Their colours are the fields upstream's
-    // tokens carry under a native theme: secondary_foreground is
+    // each half the field's height, with its chevron of the chosen icon
+    // theme at `defaults.icon_sizes.small`. Their colours are the fields
+    // upstream's tokens carry under a native theme: secondary_foreground is
     // `button.font`'s colour, input the field's edge colour (native-theme-gpui
     // colors.rs).
     let foreground = info::stated(n.resolved.button.font.color);
     let tint = info::stated(i.border.color);
     let radius = (px(i.border.corner_radius.max(0.0)) - px(i.border.line_width)).max(px(0.));
-    let step = move |button: gpui_base::Button, label: &'static str, icon: IconName| {
+    let (up, down) = (
+        steps.up.sized(cx, geometry::icon_size_small),
+        steps.down.sized(cx, geometry::icon_size_small),
+    );
+    let step = move |button: gpui_base::Button, label: &'static str, icon: Option<Icon>| {
         button
             .accessibility_label(label)
             .flex()
@@ -3599,12 +3620,12 @@ pub(crate) fn number_input(
             .hover(move |this| this.bg(tint.opacity(NUMBER_STEP_HOVER)))
             .active(move |this| this.bg(tint.opacity(NUMBER_STEP_ACTIVE)))
             .min_w_8()
-            .child(Icon::new(icon).with_size(Size::Small))
+            .children(icon)
     };
     let spin = gpui_base::NumberInput::new(state)
         .size_full()
         .controls_right()
-        .increment_button(move |b| step(b, "Increment", IconName::ChevronUp).rounded_tr(radius))
+        .increment_button(move |b| step(b, "Increment", up).rounded_tr(radius))
         .input(
             Input::new(state)
                 .appearance(false)
@@ -3614,7 +3635,7 @@ pub(crate) fn number_input(
                 .rounded_none()
                 .refine_style(&value),
         )
-        .decrement_button(move |b| step(b, "Decrement", IconName::ChevronDown).rounded_br(radius));
+        .decrement_button(move |b| step(b, "Decrement", down).rounded_br(radius));
     div()
         .id("number-frame")
         .w(width)
@@ -6350,10 +6371,10 @@ pub(crate) fn accordion(
         .debug_selector(move || id.into())
 }
 
-/// An Accordion of two expanders, `width` wide: an item per `(title, body
-/// id, body)`, open as `open` says; a click on a title hands `on_toggle`
-/// which are open after it. Each body is a body-text Label that reports
-/// itself.
+/// An Accordion of two expanders, as `spec` describes them: an item per
+/// `(title, body id, body)`, open as `open` says; a click on a title hands
+/// `on_toggle` which are open after it. Each body is a body-text Label that
+/// reports itself. Under a native theme, [`native_expander`].
 ///
 /// What the theme states reaches it per call: each title row is
 /// `expander.header_height` tall (`geometry::accordion_title`), and fills
@@ -6364,28 +6385,23 @@ pub(crate) fn accordion(
 /// and so do the lines between items their colour; the Accordion takes
 /// `expander.border`, which it refines its bordered card with last
 /// (accordion.rs, `RenderOnce for Accordion`).
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn expander(
     ui: &Entity<InfoRegistry>,
     cx: &App,
-    id: &'static str,
-    items: [(&'static str, &'static str, &'static str); 2],
-    open: [bool; 2],
-    width: Pixels,
-    gap: Option<Pixels>,
+    spec: ExpanderSpec,
     on_toggle: impl Fn(&[bool; 2], &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let native = cx.native();
     if let Some(n) = &native {
-        let spec = ExpanderSpec {
-            id,
-            items,
-            open,
-            width,
-            gap,
-        };
         return native_expander(ui, cx, n, spec, Rc::new(on_toggle));
     }
+    let ExpanderSpec {
+        id,
+        items,
+        open,
+        width,
+        ..
+    } = spec;
     let mut expander_info = info::layout::expander(
         cx.theme(),
         cx.reduce_motion(),
@@ -6453,16 +6469,26 @@ pub(crate) fn expander(
         .debug_selector(move || id.into())
 }
 
-/// What [`native_expander`] draws: the expander `id`, its two items as
-/// (title, body id, body), whether each is open, its width, and
-/// `layout.widget_gap`, which parts an unframed expander's items and a
-/// title from its body.
-struct ExpanderSpec {
-    id: &'static str,
-    items: [(&'static str, &'static str, &'static str); 2],
-    open: [bool; 2],
-    width: Pixels,
-    gap: Option<Pixels>,
+/// What [`expander`] draws: the expander `id`, its two items as (title,
+/// body id, body), whether each is open, its width, `layout.widget_gap`,
+/// which parts a theme-drawn expander's items and a title from its body
+/// where the theme states its frame, and the chevrons of the chosen icon
+/// theme its arrows are drawn with.
+pub(crate) struct ExpanderSpec {
+    pub id: &'static str,
+    pub items: [(&'static str, &'static str, &'static str); 2],
+    pub open: [bool; 2],
+    pub width: Pixels,
+    pub gap: Option<Pixels>,
+    pub arrows: ExpanderArrows,
+}
+
+/// The chevrons a theme-drawn expander's arrow is drawn with, of the chosen
+/// icon theme: ChevronRight for an arrow before the title, ChevronDown for
+/// one after it.
+pub(crate) struct ExpanderArrows {
+    pub leading: SampleIcon,
+    pub trailing: SampleIcon,
 }
 
 /// An expander row's side padding where `expander.border.padding` states no
@@ -6486,11 +6512,12 @@ const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
 /// `arrow_icon_size` in `arrow_color` (the title's colour where that is
 /// unstated), on the `arrow_side` the theme states, `arrow_gap` from the
 /// title; the body `content_indent` in from the leading edge. Where the
-/// theme states no side the arrow is upstream's, after the title; a
-/// trailing arrow is upstream's ChevronDown, turned while the item is open,
+/// theme states no side the arrow is upstream's, after the title. The arrow
+/// is a chevron of the chosen icon theme, none where that theme has none: a
+/// trailing arrow ChevronDown, turned while the item is open, as upstream's,
 /// and a leading one ChevronRight turned down while it is open, as Breeze
-/// and the HIG draw a leading arrow (§2.27). Upstream builds its arrow's
-/// size and colour inline, where no caller reaches them
+/// and the HIG draw a leading arrow (§2.27). Upstream builds its arrow, its
+/// glyph, size and colour, inline, where no caller reaches them
 /// (accordion.rs, `RenderOnce for AccordionItem`).
 fn native_expander(
     ui: &Entity<InfoRegistry>,
@@ -6505,6 +6532,7 @@ fn native_expander(
         open,
         width,
         gap,
+        arrows,
     } = spec;
     let e = &n.resolved.expander;
     let colour = info::stated;
@@ -6518,13 +6546,24 @@ fn native_expander(
         e.font.size,
         n.accessibility,
     ));
+    let leading = e.arrow_side == Some(ArrowSide::Leading);
+    // A leading arrow points at the title while closed and down while open;
+    // a trailing one down while closed and up while open (§2.27,
+    // `arrow_side`).
+    let (chevron, open_turn) = if leading {
+        (&arrows.leading, 0.25)
+    } else {
+        (&arrows.trailing, 0.5)
+    };
+    let glyph = chevron
+        .icon()
+        .map(|icon| icon.with_size(px(e.arrow_icon_size)).text_color(arrow));
     let expander_info =
-        info::layout::native_expander(n.resolved, items.map(|(title, _, _)| title), open)
+        info::layout::native_expander(n.resolved, items.map(|(title, _, _)| title), open, chevron)
             .geometry("accordion_title");
     // KDE's expander has no frame and no line between items (§2.27); where
     // the theme states nothing the frame stays, as upstream's.
     let framed = e.frame_enabled != Some(false);
-    let leading = e.arrow_side == Some(ArrowSide::Leading);
     let arrow_gap: DefiniteLength = match e.arrow_gap {
         Some(gap) => px(gap).into(),
         None => EXPANDER_ARROW_GAP.into(),
@@ -6552,26 +6591,16 @@ fn native_expander(
         .children(items.into_iter().zip(open).enumerate().map(
             |(ix, ((title, body_id, body), is_open))| {
                 let on_toggle = on_toggle.clone();
-                // A leading arrow points at the title while closed and down
-                // while open; a trailing one down while closed and up while
-                // open (§2.27, `arrow_side`).
-                let (glyph, turn) = if leading {
-                    (IconName::ChevronRight, if is_open { 0.25 } else { 0. })
-                } else {
-                    (IconName::ChevronDown, if is_open { 0.5 } else { 0. })
-                };
+                let turn = if is_open { open_turn } else { 0. };
                 let listed = elements::expander_item(id, ix);
-                let arrow = div()
-                    .relative()
-                    .flex_none()
-                    .debug_selector(move || format!("{id}-arrow-{ix}"))
-                    .child(
-                        Icon::new(glyph)
-                            .with_size(px(e.arrow_icon_size))
-                            .text_color(arrow)
-                            .rotate(gpui::percentage(turn)),
-                    )
-                    .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)));
+                let arrow = glyph.clone().map(|glyph| {
+                    div()
+                        .relative()
+                        .flex_none()
+                        .debug_selector(move || format!("{id}-arrow-{ix}"))
+                        .child(glyph.rotate(gpui::percentage(turn)))
+                        .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)))
+                });
                 let title = div()
                     .relative()
                     .child(title)
@@ -6594,9 +6623,9 @@ fn native_expander(
                 .children(listed.map(|[_, header, _, _]| elements::record(ui, header)))
                 .map(|header| {
                     if leading {
-                        header.child(arrow).child(title)
+                        header.children(arrow).child(title)
                     } else {
-                        header.justify_between().child(title).child(arrow)
+                        header.justify_between().child(title).children(arrow)
                     }
                 })
                 .on_click(move |_, window, cx| {

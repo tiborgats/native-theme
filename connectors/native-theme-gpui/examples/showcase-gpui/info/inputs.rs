@@ -7,6 +7,7 @@ use super::{
     WidgetInfo, chrome::input_background, claim, edge_claim, px_text, stated, stated_claim,
 };
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
+use crate::support::SampleIcon;
 
 /// A refined, enabled field's surface, which the showcase draws under the
 /// field (`demo::text_field`): `r`'s `input.background_color` framed by
@@ -299,9 +300,15 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
 
 /// The number field the showcase draws as `r`'s `input.*` states a text
 /// field (`demo::number_input` under a native theme): its own frame round
-/// gpui-base's NumberInput, `focused` or not. Its geometry line is recorded
-/// where `demo::number_input` applies the builder.
-pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
+/// gpui-base's NumberInput, `focused` or not, its step buttons showing `up`
+/// and `down`, of the chosen icon theme. Its geometry lines are recorded
+/// where `demo::number_input` applies the builders.
+pub fn native_number_input(
+    r: &ResolvedTheme,
+    focused: bool,
+    up: &SampleIcon,
+    down: &SampleIcon,
+) -> WidgetInfo {
     let i = &r.input;
     let info = WidgetInfo::new("NumberInput")
         .variant(if focused {
@@ -368,14 +375,18 @@ pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
     // tokens carry under a native theme: secondary_foreground is
     // button.font's colour, and input the field's edge colour
     // (input/number_input.rs, NumberInput::render; native-theme-gpui
-    // colors.rs).
-    let info = info
-        .color(claim(
+    // colors.rs). A step whose chevron the icon theme lacks shows none.
+    let info = if up.shown() || down.shown() {
+        info.color(claim(
             "step arrows",
             "font",
             stated(r.button.font.color),
             "showcase",
         ))
+    } else {
+        info
+    };
+    let info = info
         .color(claim(
             "step button hovered, the edge colour at 40%",
             "border",
@@ -406,7 +417,8 @@ pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
         .instance("text", "input.font's colour, which geometry::input refines the value with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
         .instance("focus ring", "none: the value is an Input without its appearance, which carries upstream's ring (input/input.rs, Input::render), and the frame marks focus by its edge alone")
         .not_themeable("step buttons", "upstream's: transparent at rest, as wide as upstream's at the field's Size (input/number_input.rs, NumberInput::render: min_w_8), each half the field's height, stacked at its right end (gpui-base/number_input.rs, controls_right): the theme states no spin-box layout")
-        .not_themeable("own icons", super::own_icons("ChevronUp and ChevronDown on its step buttons, at Size::Small (demo::number_input)"))
+        .instance("increment step", format!("ChevronUp: {}", up.note("the button shows no glyph")))
+        .instance("decrement step", format!("ChevronDown: {}", down.note("the button shows no glyph")))
 }
 
 /// A two-state control's states, on and off, and what a click on it does

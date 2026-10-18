@@ -2601,6 +2601,9 @@ fn the_tables_headers_take_the_themes_header_height(cx: &mut TestAppContext) {
 #[gpui::test]
 fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    // A set every machine has, so the arrow is drawn: kde-breeze's own,
+    // Breeze, need not be installed (a missing icon is drawn as nothing).
+    choose_icon_theme(&mut cx, &showcase, "gpui-component built-in (Lucide)");
     for preset in ["kde-breeze", "material-3"] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
@@ -6461,6 +6464,78 @@ fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
     );
 }
 
+/// The chevrons the Basic page builds itself -- the theme-drawn expander's
+/// arrows and the number field's steps -- are the chosen icon theme's, as
+/// the page samples' are (M9-002): under kde-breeze with Material chosen,
+/// the expander's info names Material's icon for its arrow (ChevronRight
+/// before the title, ChevronDown after it, as `expander.arrow_side` says)
+/// and the number field's its ChevronUp and ChevronDown steps; with those
+/// icons taken out of Material's loaded gallery, each info says none and
+/// the expander draws no arrow, never gpui-component's own.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
+#[gpui::test]
+fn the_basic_pages_own_chevrons_come_from_the_chosen_set(cx: &mut TestAppContext) {
+    use native_theme::theme::ArrowSide;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    show(&mut cx, &showcase, Page::Basic);
+    let arrow = match read(&mut cx, &showcase, |_, cx| {
+        native_value(cx, |n| n.resolved.expander.arrow_side)
+    })
+    .flatten()
+    {
+        Some(ArrowSide::Leading) => (IconName::ChevronRight, "ChevronRight"),
+        _ => (IconName::ChevronDown, "ChevronDown"),
+    };
+    let cases = [
+        ("basic-expander-header-0", arrow),
+        ("basic-number", (IconName::ChevronUp, "ChevronUp")),
+        ("basic-number", (IconName::ChevronDown, "ChevronDown")),
+    ];
+    let mut names = Vec::new();
+    for (selector, (name, label)) in cases.clone() {
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+        let ChromeIcon::Loaded(n, _) = drawn else {
+            panic!("Material has no {label} in its gallery, so this proves nothing: {drawn:?}");
+        };
+        names.push(n);
+        let info = settle_on(&mut cx, &showcase, selector);
+        let start = icon_note_start(&drawn, "material");
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "with Material chosen, {selector} does not say its {label} is {start:?}: {info:?}"
+        );
+    }
+    assert!(
+        cx.debug_bounds("basic-expander-arrow-0").is_some(),
+        "the expander draws no arrow with Material's chevron in its gallery"
+    );
+
+    remove_icons(&mut cx, &showcase, &names);
+    show(&mut cx, &showcase, Page::Basic);
+    for (selector, (name, label)) in cases {
+        let drawn = read(&mut cx, &showcase, |this, _| this.chrome_icon(&name));
+        assert!(
+            matches!(drawn, ChromeIcon::Missing(_)),
+            "{label} was taken out of the gallery, and it is still {drawn:?}"
+        );
+        let info = settle_on(&mut cx, &showcase, selector);
+        let start = icon_note_start(&drawn, "material");
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "{selector} does not say it has no {label}, {start:?}: {info:?}"
+        );
+    }
+    for arrow in ["basic-expander-arrow-0", "basic-expander-arrow-1"] {
+        assert!(
+            cx.debug_bounds(arrow).is_none(),
+            "{arrow} is drawn with Material's chevron gone from its gallery, so it is another icon theme's"
+        );
+    }
+}
+
 /// The Overlays page's dialogs show the chosen icon theme's icon, or none:
 /// the Dialog's CircleX beside its description and the AlertDialog's
 /// TriangleAlert, each reported by the dialog's info, with Material chosen
@@ -7510,13 +7585,16 @@ fn the_native_number_field_reports_what_it_draws(cx: &mut TestAppContext) {
             .is_some_and(|n| n.text.contains("geometry::input") && !n.text.contains("none from")),
         "the number field's info does not say its value takes geometry::input's padding: {padding:?}"
     );
-    let icons = info.not_themeable.iter().find(|n| n.what == "own icons");
-    assert!(
-        icons.is_some_and(|n| n.text.contains("ChevronUp")
-            && n.text.contains("ChevronDown")
-            && !n.text.contains("Minus")),
-        "the number field's info does not name its ChevronUp and ChevronDown steps: {icons:?}"
-    );
+    for (step, chevron) in [
+        ("increment step", "ChevronUp"),
+        ("decrement step", "ChevronDown"),
+    ] {
+        let note = note_of(&info.instance, step);
+        assert!(
+            note.is_some_and(|text| text.starts_with(chevron)),
+            "the number field's info does not name its {step}'s {chevron}: {note:?}"
+        );
+    }
     hover(&mut cx, point(px(4.), px(4.)));
     draw(&mut cx);
     assert_eq!(

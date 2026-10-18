@@ -15,14 +15,15 @@ use gpui::{
     AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
     div, prelude::*, px, size,
 };
-use gpui_component::{h_flex, v_flex};
+use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme::icons::IconRole;
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{
-    self, ButtonKind, ButtonState, DemoButton, InputField, SeparatorKind, SpinnerKind, TypeRole,
+    self, ButtonKind, ButtonState, DemoButton, ExpanderArrows, ExpanderSpec, InputField,
+    SeparatorKind, SpinnerKind, StepIcons, TypeRole,
 };
 use crate::elements;
 use crate::support::{native_value, with_gap, with_padding};
@@ -534,6 +535,10 @@ impl Showcase {
                     "basic-number",
                     &self.basic_number_state,
                     width,
+                    &StepIcons {
+                        up: self.sample_icon(IconName::ChevronUp),
+                        down: self.sample_icon(IconName::ChevronDown),
+                    },
                 )
                 .into_any_element(),
             ],
@@ -686,14 +691,20 @@ impl Showcase {
                 demo::expander(
                     ui,
                     cx,
-                    "basic-expander",
-                    [
-                        ("Details", "basic-expander-body", "Expanded content"),
-                        ("More", "basic-expander-more-body", "More content"),
-                    ],
-                    self.basic_expanded,
-                    wide,
-                    widget_gap,
+                    ExpanderSpec {
+                        id: "basic-expander",
+                        items: [
+                            ("Details", "basic-expander-body", "Expanded content"),
+                            ("More", "basic-expander-more-body", "More content"),
+                        ],
+                        open: self.basic_expanded,
+                        width: wide,
+                        gap: widget_gap,
+                        arrows: ExpanderArrows {
+                            leading: self.sample_icon(IconName::ChevronRight),
+                            trailing: self.sample_icon(IconName::ChevronDown),
+                        },
+                    },
                     on_expander,
                 )
                 .into_any_element(),
