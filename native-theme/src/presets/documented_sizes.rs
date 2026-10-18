@@ -309,7 +309,7 @@ const ROWS: &[Row] = &[
     row(Windows11, "text_area", trbl(5.0, 6.0, 6.0, 10.0), &[1714, 1715], "the same TextBox: TextControlThemePadding=10,5,6,6"),
     row(Windows11, "checkbox", NONE, &[1237, 1238], "(none)"),
     row(Windows11, "menu", trbl(4.0, 11.0, 5.0, 11.0), &[1261, 1262], "11; mouse context 4 top / 5 bottom")
-        .with(&[("row_height", Some(23.0), 1260)]),
+        .with(&[("row_height", None, 1260)]),
     row(Windows11, "tooltip", trbl(6.0, 9.0, 8.0, 9.0), &[1283, 1284], "ToolTipBorderPadding=9,6,9,8"),
     row(Windows11, "progress_bar", all(0.0), &[1341, 1342], "Control.Padding's default 0; 0"),
     row(Windows11, "tab", axes(3.0, 8.0), &[1352, 1353], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")

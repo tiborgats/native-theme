@@ -1538,14 +1538,15 @@ mod tests {
     }
 
     /// The catppuccin pair states no padding, `row_height` or `item_gap`;
-    /// windows-11 and kde-breeze state padding sides, and windows-11 both row
-    /// heights, so each builder is compared with stated values as well as
-    /// with unstated ones.
+    /// windows-11 and kde-breeze state padding sides, windows-11 the list's
+    /// row height and adwaita the menu's, so each builder is compared with
+    /// stated values as well as with unstated ones.
     const CASES: &[(&str, ColorMode)] = &[
         ("catppuccin-mocha", ColorMode::Dark),
         ("catppuccin-latte", ColorMode::Light),
         ("windows-11", ColorMode::Light),
         ("kde-breeze", ColorMode::Dark),
+        ("adwaita", ColorMode::Light),
     ];
     const FACTORS: &[f32] = &[1.0, 1.5, 0.8];
 

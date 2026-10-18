@@ -556,12 +556,15 @@ fn row_heights_and_arrow_area_width_are_none_where_absent() {
         .unwrap()
         .into_variant(ColorMode::Light)
         .unwrap();
+    // windows-11 states no menu row height (platform-facts §2.6: ❓), so the
+    // test states one, which must then resolve as stated.
+    v.menu.row_height = Some(28.0);
     let stated = resolve_mode(v.clone()).unwrap();
     assert!(
-        stated.menu.row_height.is_some()
+        stated.menu.row_height == Some(28.0)
             && stated.list.row_height.is_some()
             && stated.combo_box.arrow_area_width.is_some(),
-        "precondition: windows-11 states both row heights and the arrow area width"
+        "precondition: the menu row height resolves as stated, and windows-11 states the list's row height and the arrow area width"
     );
     v.menu.row_height = None;
     v.list.row_height = None;

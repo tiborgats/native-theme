@@ -322,8 +322,7 @@ padding_vertical_px = 3.0
 # DesktopAcrylicBackdrop, AcrylicBackgroundFillColorDefaultBackdrop; the brush of that name falls back
 # to #F9F9F9; the backdrop's own fallback colour is not published ❓
 background_color = "#f9f9f9"
-# platform-facts.md:1260 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
-row_height_px = 23.0
+# row_height not stated: platform-facts.md:1260 (§2.6), ❓ — the padding plus Segoe UI Variable's line box at 14 px, which no source states
 icon_text_gap_px = 12.0
 # platform-facts.md:1268 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
@@ -915,8 +914,7 @@ padding_vertical_px = 3.0
 # DesktopAcrylicBackdrop, AcrylicBackgroundFillColorDefaultBackdrop; the brush of that name falls back
 # to #2C2C2C; the backdrop's own fallback colour is not published ❓
 background_color = "#2c2c2c"
-# platform-facts.md:1260 (§2.6): WinUI3 mouse (Narrow) context, 14 text + 4 + 5
-row_height_px = 23.0
+# row_height not stated: platform-facts.md:1260 (§2.6), ❓ — the padding plus Segoe UI Variable's line box at 14 px, which no source states
 icon_text_gap_px = 12.0
 # platform-facts.md:1268 (§2.6): SM_CXSMICON 16
 icon_size_px = 16.0
