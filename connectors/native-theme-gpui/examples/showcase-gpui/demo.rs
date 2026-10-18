@@ -105,7 +105,7 @@ use native_theme_gpui::{
 
 use crate::app::{Quit, ShowPage};
 use crate::elements::{self, ListedExt as _};
-use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, hsla_to_hex, native_info};
+use crate::info::{self, InfoExt, InfoRegistry, WidgetInfo, as_rgba, native_info};
 use crate::support::{
     CAROUSEL_SLIDES, ChatMessage, ChromeIcon, NativeStyled as _, PresetDelegate, STEPPER_STEPS,
     SampleIcon, SampleListDelegate, SampleTableDelegate, native_color, native_geometry,
@@ -8109,7 +8109,7 @@ pub(crate) fn swatch(
     let native = cx.native();
     let value = info::theme_map::row(t, token).value;
     let id = SharedString::from(format!("theme-map-swatch-{}", value.field));
-    let label = SharedString::from(format!("{} {}", value.field, hsla_to_hex(value.value)));
+    let label = SharedString::from(format!("{} {}", value.field, as_rgba(value.value)));
     // The fill is the datum this swatch exists to show; everything around it
     // is `frame`, the box every other demonstration sits in.
     h_flex()

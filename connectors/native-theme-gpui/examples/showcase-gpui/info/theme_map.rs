@@ -10,7 +10,7 @@
 use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
 
-use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text};
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text};
 use crate::demo::ThemeToken;
 
 /// `hover_color`, which makes the field from the model's colour.
@@ -1486,7 +1486,7 @@ fn reads_secondary_active(token: ThemeToken) -> bool {
 pub fn swatch(t: &Theme, token: ThemeToken, native: Option<Native<'_>>) -> WidgetInfo {
     let Row { value, notes } = row(t, token);
     let field = value.field;
-    let hex = hsla_to_hex(value.value);
+    let hex = as_rgba(value.value);
     let alpha = value.value.a;
     let info = WidgetInfo::new("ThemeColor").variant(field);
     let info = if let Some(n) = native {

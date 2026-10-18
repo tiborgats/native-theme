@@ -7,7 +7,7 @@ use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, stated};
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 
@@ -649,13 +649,7 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
     // :4880 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
-        .map(|c| {
-            format!(
-                "{} {}",
-                c.role,
-                hsla_to_hex(c.value.opacity(TAG_HOVER_OPACITY))
-            )
-        })
+        .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
         .collect();
     painted
         .into_iter()

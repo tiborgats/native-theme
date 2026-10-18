@@ -139,7 +139,7 @@ impl WidgetInfo {
                     "  {}: {} {} ({})\n",
                     c.role,
                     c.field,
-                    hsla_to_hex(c.value),
+                    as_rgba(c.value),
                     c.cited_at
                 ));
             }
@@ -416,17 +416,11 @@ pub fn percent_text(opacity: f32) -> String {
     format!("{}%", px_text(opacity * 100.))
 }
 
-/// `c` as `#rrggbb`, or as `#rrggbbaa` where it is not opaque: a colour
-/// painted at 80% printed without its alpha would claim a fill the widget
-/// never paints.
-pub fn hsla_to_hex(c: Hsla) -> String {
-    // Convert HSL to RGB through gpui's Rgba
-    let rgba: gpui::Rgba = c.into();
-    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let (r, g, b) = (byte(rgba.r), byte(rgba.g), byte(rgba.b));
-    if rgba.a < 1.0 {
-        format!("#{r:02x}{g:02x}{b:02x}{:02x}", byte(rgba.a))
-    } else {
-        format!("#{r:02x}{g:02x}{b:02x}")
-    }
+/// `c` as native-theme's `Rgba`, whose `Display` is the colour text the
+/// showcase prints, as a theme colour prints: `#rrggbb`, or `#rrggbbaa` where
+/// the alpha's byte is not 255 -- a colour painted at 80% printed without
+/// its alpha would claim a fill the widget never paints.
+pub fn as_rgba(c: Hsla) -> native_theme::color::Rgba {
+    let c = gpui::Rgba::from(c);
+    native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a)
 }

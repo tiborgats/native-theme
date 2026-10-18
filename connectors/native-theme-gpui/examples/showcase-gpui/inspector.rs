@@ -23,7 +23,7 @@ use native_theme_showcase_support::values;
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
-use crate::info::{InfoRegistry, Note, WidgetInfo, hsla_to_hex, leaves, stated};
+use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
 use crate::support::{NativeStyled, defined_size, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
@@ -369,7 +369,7 @@ const SWATCH_GAP: gpui::Rems = gpui::rems(0.5);
 /// A colour swatch labelled `name` and the colour's hex value, its square
 /// in `frame`, the showcase's frame, built once by the caller.
 fn swatch(name: &str, color: gpui::Hsla, frame: &gpui::StyleRefinement) -> gpui::Div {
-    let label = SharedString::from(format!("{name} {}", hsla_to_hex(color)));
+    let label = SharedString::from(format!("{name} {}", as_rgba(color)));
     h_flex()
         .gap(SWATCH_GAP)
         .items_center()

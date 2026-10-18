@@ -28,8 +28,8 @@ use crate::app::{
 use crate::chrome::menus;
 use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
 use crate::info::{
-    GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, claim, epoch_marker,
-    hsla_to_hex, native_info, percent_text,
+    GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, as_rgba, claim,
+    epoch_marker, native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
 use crate::support::{
@@ -7072,9 +7072,9 @@ fn a_hovered_tags_info_names_its_painted_fill(cx: &mut TestAppContext) {
     assert!(
         painted.is_some_and(|fill| hover
             .as_deref()
-            .is_some_and(|text| text.contains(&hsla_to_hex(fill)))),
+            .is_some_and(|text| text.contains(&as_rgba(fill).to_string()))),
         "the hovered Primary Tag paints {:?}, which its hover note does not name: {hover:?}",
-        painted.map(hsla_to_hex)
+        painted.map(as_rgba)
     );
 }
 
@@ -8880,13 +8880,20 @@ fn to_text_prints_the_four_sections_in_order() {
 
 /// An opaque colour prints as `#rrggbb`, and a translucent one carries its
 /// alpha as `#rrggbbaa`: a swatch whose alpha was dropped would claim an
-/// opaque colour the widget never paints.
+/// opaque colour the widget never paints. Opaque is decided on the alpha's
+/// byte, as native-theme's `Rgba` prints a theme colour: an alpha from
+/// 254.5/255 (about 0.998) up rounds to 255 and prints as `#rrggbb`.
 #[test]
 fn a_translucent_colour_prints_its_alpha() {
+    let hex = |c: gpui::Hsla| as_rgba(c).to_string();
     let red = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-    assert_eq!(hsla_to_hex(red), "#ff0000");
-    assert_eq!(hsla_to_hex(red.opacity(0.8)), "#ff0000cc");
-    assert_eq!(hsla_to_hex(gpui::hsla(0.0, 0.0, 0.0, 0.0)), "#00000000");
+    assert_eq!(hex(red), "#ff0000");
+    assert_eq!(hex(red.opacity(0.8)), "#ff0000cc");
+    assert_eq!(hex(gpui::hsla(0.0, 0.0, 0.0, 0.0)), "#00000000");
+    assert_eq!(hex(red.opacity(0.998)), "#ff0000fe");
+    for alpha in [0.9981, 0.999, 0.9999] {
+        assert_eq!(hex(red.opacity(alpha)), "#ff0000", "alpha {alpha}");
+    }
 }
 
 #[test]
