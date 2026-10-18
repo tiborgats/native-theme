@@ -11292,6 +11292,20 @@ fn the_line_height_and_status_gap_routes_name_what_applies_them() {
     );
 }
 
+/// The page row's rule is drawn by demo::native_tab_bar, a box under the
+/// strip in `separator.line_color`, `separator.line_width` tall; the strip
+/// itself, demo::native_tab_strip, is a bare widgets::TabBar.
+#[test]
+fn the_page_rows_rule_routes_name_what_draws_it() {
+    for leaf in ["separator.line_color", "separator.line_width_px"] {
+        let how = crate::info::leaves::how("chrome.page_tabs.rule", leaf).unwrap_or_default();
+        assert!(
+            how.contains("demo::native_tab_bar") && !how.contains("native_tab_strip"),
+            "chrome.page_tabs.rule's {leaf} route: {how:?}"
+        );
+    }
+}
+
 /// The number field pads its value's Input left of the step buttons, which
 /// stack at its right (demo::number_input), and a disabled text field's edge
 /// is `input.border.color` itself, on the faded surface the showcase draws
