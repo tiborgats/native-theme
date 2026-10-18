@@ -5868,6 +5868,7 @@ dependencies = [
  "gpui-pre",
  "image",
  "native-theme",
+ "native-theme-showcase-support",
  "native-theme-test-fixtures",
  "objc2 0.6.4",
  "serde_json",
@@ -5904,6 +5905,19 @@ dependencies = [
  "objc2-foundation 0.3.2",
  "toml 1.1.5+spec-1.1.0",
  "windows 0.62.2",
+]
+
+[[package]]
+name = "native-theme-showcase-support"
+version = "0.0.0"
+dependencies = [
+ "image",
+ "native-theme",
+ "objc2 0.6.4",
+ "objc2-app-kit 0.3.2",
+ "serde_json",
+ "toml 1.1.5+spec-1.1.0",
+ "xcap",
 ]
 
 [[package]]

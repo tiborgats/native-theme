@@ -481,7 +481,7 @@ done
 # clippy on the platform code: a Linux clippy run never sees the macOS and
 # Windows branches, so lints in them (8 on macOS, 11 on Windows, found
 # 2026-10-11) went unnoticed. Clippy builds no binary, so windows-msvc needs
-# only its standard library, no linker. CI's clippy job runs the same three
+# only its standard library, no linker. CI's clippy job runs the same four
 # for both targets.
 for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
@@ -496,6 +496,11 @@ for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
     # its crate root denies the strict panic lints, so this run holds them.
     run_check "clippy, os-probe ($target)" \
         cargo clippy --target "$target" -p native-theme-os-probe --all-targets -- -D warnings
+    # The showcases' shared crate (tools/showcase-support, never published):
+    # its window capture and the Retina nudge are macOS and Windows code,
+    # which no showcase's own cross-target build can lint from Linux.
+    run_check "clippy, showcase-support ($target)" \
+        cargo clippy --target "$target" -p native-theme-showcase-support --all-targets -- -D warnings
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -550,8 +555,9 @@ run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
-# The macOS and Windows code, with each platform's features; CI's clippy job
-# runs the same four. The targets are the cross-target clippy section's.
+# The macOS and Windows code, with each platform's features, and the
+# showcases' shared crate's capture code; CI's clippy job runs the same six.
+# The targets are the cross-target clippy section's.
 NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
@@ -567,6 +573,8 @@ for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
         bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --features "$platform_feature,$NT_PLATFORM_FEATURES"
     run_check "strict-panic (native-theme, no features, $target)" \
         bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --no-default-features
+    run_check "strict-panic (native-theme-showcase-support, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-showcase-support --lib
 done
 run_check "strict-panic (native-theme-derive)" \
     bash scripts/check_strict_panic.sh -p native-theme-derive --lib
@@ -593,6 +601,10 @@ run_check "strict-panic (native-theme-os-probe)" \
 # failure as an error, so a test fails on its own `?`.
 run_check "strict-panic (native-theme-test-fixtures)" \
     bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
+# The showcases' shared crate (tools/showcase-support, never published) is
+# held to the library rule too: a showcase reports each error it returns.
+run_check "strict-panic (native-theme-showcase-support)" \
+    bash scripts/check_strict_panic.sh -p native-theme-showcase-support --lib
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests

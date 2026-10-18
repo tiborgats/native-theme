@@ -1,0 +1,42 @@
+[package]
+name = "native-theme-showcase-support"
+version = "0.0.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+description = "Dev-only code the gpui, iced and egui showcases share: the command line, the window capture and its check, the layout dump, the element list, the Widget Info values and rows, the side panel's picker rows and the status bar's text"
+
+[dependencies]
+# No feature: every item the crate uses is feature-free, which
+# `cargo check -p native-theme-showcase-support` proves; the connectors'
+# dev-dependencies turn on the OS readers.
+native-theme = { workspace = true }
+# The resolved theme's JSON, which the Widget Info values walk, and the layout
+# dump. The version Cargo.lock holds for the connectors' dev-dependencies.
+serde_json = "1.0.151"
+# docs/showcase-elements.toml. Already in Cargo.lock as native-theme's
+# dependency.
+toml = { workspace = true }
+
+# The Retina nudge's AppKit calls (`capture::nudge_content_size`), at the
+# versions native-theme requires; only the classes it calls.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.4"
+objc2-app-kit = { version = "0.3.2", default-features = false, features = [
+    "std",
+    "NSApplication",
+    "NSResponder",
+    "NSView",
+    "NSWindow",
+] }
+
+# `--screenshot`: the window with its frame, through xcap's safe API (the
+# `capture` module's doc). No default features: `image` is `image/default`,
+# `wgc` Windows.Graphics.Capture. `image` reads the size of the PNG
+# `screencapture` wrote and writes the Windows capture as a PNG. The egui
+# showcase's capture dependencies, at Cargo.lock's versions.
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+xcap = { version = "0.9.8", default-features = false }
+image = { version = "0.25.10", default-features = false, features = ["png"] }

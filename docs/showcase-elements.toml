@@ -79,68 +79,22 @@
 # How a showcase reads the list
 # ---------------------------------------------------------------------------------------------
 #
-# With `include_str!` and the `toml` crate, parsed into an untyped `toml::Table` and walked by
-# hand, as the egui showcase also reads its mapping.toml (showcase-egui/info.rs). All three
-# connectors have `toml = { workspace = true }` in their [dev-dependencies]. That adds no crate to Cargo.lock: `toml` 1.1.5 is already
-# there as a dependency of native-theme (native-theme/Cargo.toml, `toml.workspace = true`),
-# which re-exports none of it, so the examples cannot reach it without naming it. The path is
-# relative to the file holding the `include_str!`:
-#   gpui: examples/showcase-gpui/<file>.rs -> "../../../../docs/showcase-elements.toml"
-#   iced: examples/showcase-iced.rs        -> "../../../docs/showcase-elements.toml"
-#   egui: examples/showcase-egui/<file>.rs -> "../../../../docs/showcase-elements.toml"
+# Through native-theme-showcase-support (tools/showcase-support, never published), the crate
+# the three showcases share, which is the list's reader: `elements::showcase_elements()` parses
+# it into `ShowcaseElement`s (every field above but `clip` and `sample`), `elements::elements()`
+# parses it once for a running showcase, and `values::leaf_value` gives a leaf's value in the
+# Widget Info format above. The crate holds the list through
+# `include_str!("../../../docs/showcase-elements.toml")` (in tools/showcase-support/src/) and reads
+# it with the `toml` crate into an untyped `toml::Table`, walked by hand, as the egui showcase
+# also reads its mapping.toml (showcase-egui/info.rs). That adds no crate to Cargo.lock: `toml`
+# 1.1.5 is already there as a dependency of native-theme (native-theme/Cargo.toml,
+# `toml.workspace = true`), which re-exports none of it.
 #
-#   /// One element of `docs/showcase-elements.toml`.
-#   #[derive(Debug, Clone)]
-#   pub struct ShowcaseElement {
-#       pub id: String,
-#       pub name: String,
-#       pub parent: String,
-#       pub leaves: Vec<String>,
-#       pub states: Vec<String>,
-#       pub part: bool,
-#       pub when: Option<String>,
-#   }
-#
-#   const SHOWCASE_ELEMENTS: &str = include_str!("../../../../docs/showcase-elements.toml");
-#
-#   pub fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
-#       let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
-#       let rows = table
-#           .get("element")
-#           .and_then(toml::Value::as_array)
-#           .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
-#       rows.iter()
-#           .map(|row| {
-#               let text = |key: &str| {
-#                   row.get(key)
-#                       .and_then(toml::Value::as_str)
-#                       .map(str::to_owned)
-#                       .ok_or_else(|| format!("an element has no `{key}`"))
-#               };
-#               let list = |key: &str| {
-#                   row.get(key)
-#                       .and_then(toml::Value::as_array)
-#                       .ok_or_else(|| format!("an element has no `{key}`"))?
-#                       .iter()
-#                       .map(|v| {
-#                           v.as_str()
-#                               .map(str::to_owned)
-#                               .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
-#                       })
-#                       .collect::<Result<Vec<_>, _>>()
-#               };
-#               Ok(ShowcaseElement {
-#                   id: text("id")?,
-#                   name: text("name")?,
-#                   parent: text("parent")?,
-#                   leaves: list("leaves")?,
-#                   states: list("states")?,
-#                   part: row.get("part").and_then(toml::Value::as_bool).unwrap_or(false),
-#                   when: row.get("when").and_then(toml::Value::as_str).map(str::to_owned),
-#               })
-#           })
-#           .collect()
-#   }
+# A showcase not yet on the crate reads the list with a copy of that reader and an
+# `include_str!` of its own, the path relative to the file that holds it:
+#   gpui: examples/showcase-gpui/elements.rs -> "../../../../docs/showcase-elements.toml" (until M9a T4)
+#   iced: examples/showcase-iced.rs          -> "../../../docs/showcase-elements.toml"    (until M9b T1)
+#   egui: examples/showcase-egui/elements.rs -> "../../../../docs/showcase-elements.toml" (until M9c T1)
 #
 # The sample points are the comparator's alone; a showcase ignores them. A showcase's own test
 # checks that every id it records is in this list and that it records every element it draws.

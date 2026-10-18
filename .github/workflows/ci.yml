@@ -67,8 +67,9 @@ jobs:
       # expect_used in their crate roots, and scripts/check_strict_panic.sh
       # holds the rest of the list (indexing_slicing, arithmetic_side_effects,
       # panic, ...). native-theme with check_release.sh's NT_FEATURES and with
-      # none; native-theme-derive and the test fixtures (tools/test-fixtures),
-      # which have no leg of their own, here too.
+      # none; native-theme-derive, the test fixtures (tools/test-fixtures) and
+      # the showcases' shared crate (tools/showcase-support), which have no leg
+      # of their own, here too.
       - name: Strict panic lints (native-theme)
         if: matrix.package == 'native-theme'
         run: |
@@ -76,10 +77,12 @@ jobs:
           bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
           bash scripts/check_strict_panic.sh -p native-theme-derive --lib
           bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
+          bash scripts/check_strict_panic.sh -p native-theme-showcase-support --lib
       # The same lints on the macOS and Windows code, which a Linux run never
-      # compiles. Clippy builds no binary, so each target needs only its
-      # standard library, no linker or SDK.
-      - name: Strict panic lints (native-theme, macOS and Windows targets)
+      # compiles, the showcases' shared crate's window capture with it. Clippy
+      # builds no binary, so each target needs only its standard library, no
+      # linker or SDK.
+      - name: Strict panic lints (native-theme and the showcase support, macOS and Windows targets)
         if: matrix.package == 'native-theme'
         run: |
           rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
@@ -87,16 +90,21 @@ jobs:
           bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme --lib --no-default-features
           bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --features windows,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
           bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --no-default-features
+          bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme-showcase-support --lib
+          bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme-showcase-support --lib
       # Every lint on that code, its tests and examples included, as
       # scripts/check_release.sh runs it; the OS probe (tools/os-probe, never
-      # published) is all platform code. The targets are the step's above.
-      - name: Clippy (native-theme and the OS probe, macOS and Windows targets)
+      # published) is all platform code, and the showcases' shared crate
+      # (tools/showcase-support, never published) holds their macOS and
+      # Windows capture. The targets are the step's above.
+      - name: Clippy (native-theme, the OS probe and the showcase support, macOS and Windows targets)
         if: matrix.package == 'native-theme'
         run: |
           for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
             cargo clippy --target "$target" -p native-theme --all-targets --all-features
             cargo clippy --target "$target" -p native-theme --all-targets --no-default-features
             cargo clippy --target "$target" -p native-theme-os-probe --all-targets
+            cargo clippy --target "$target" -p native-theme-showcase-support --all-targets
           done
       - name: Strict panic lints (native-theme-build)
         if: matrix.package == 'native-theme-build'
@@ -212,6 +220,7 @@ jobs:
       - run: cargo test -p native-theme-build
       - run: cargo test -p native-theme-derive
       - run: cargo test -p native-theme-test-fixtures
+      - run: cargo test -p native-theme-showcase-support
 
   test-connectors:
     name: Test ${{ matrix.name }}
