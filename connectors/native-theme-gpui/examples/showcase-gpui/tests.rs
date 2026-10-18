@@ -8358,40 +8358,6 @@ fn three_switches(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [A
     [other, shown, other]
 }
 
-/// native-theme's colour mode for the showcase's `is_dark`.
-fn native_mode(is_dark: bool) -> native_theme::theme::ColorMode {
-    match is_dark {
-        true => native_theme::theme::ColorMode::Dark,
-        false => native_theme::theme::ColorMode::Light,
-    }
-}
-
-/// Under `default` each colour mode takes its own variant's icon theme
-/// (`SystemTheme::icon_theme_for`), not the one of the mode the OS is in:
-/// on KDE with the OS light and the showcase dark, `breeze-dark`, where
-/// `breeze` was loaded. A test cannot choose the OS's mode, so it shows the
-/// showcase both and compares each with the variant the theme states.
-#[gpui::test]
-fn the_default_theme_takes_each_modes_icon_theme(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    let Ok(system) = system_theme() else {
-        return;
-    };
-    set_preset(&mut cx, "default");
-    for mode in three_switches(&mut cx, &showcase) {
-        switch_mode(&mut cx, mode);
-        let (is_dark, icon_theme) = read(&mut cx, &showcase, |this, _| {
-            (this.is_dark, this.current_icon_theme.clone())
-        });
-        assert_eq!(is_dark, mode.is_dark(), "{mode:?} was not the mode shown");
-        assert_eq!(
-            icon_theme.as_deref(),
-            system.icon_theme_for(native_mode(is_dark)),
-            "{mode:?} under `default` took another variant's icon theme"
-        );
-    }
-}
-
 /// The OS-theme reads and the icon loads the showcase has made on this
 /// thread (`support::SYSTEM_READS`, `support::ICON_LOADS`).
 fn reads_and_loads() -> (usize, usize) {
@@ -8414,28 +8380,30 @@ fn kept_system(
 
 /// A colour-mode switch under `default` installs the other variant of the
 /// desktop's theme it installed, without reading the OS again: three
-/// switches read it no more, each showing its mode with that mode's icon
-/// theme, and Reload System Theme reads it once.
+/// switches read it no more, and Reload System Theme reads it once.
+///
+/// Each switch shows its mode with that mode's own variant's icon theme
+/// (`SystemTheme::icon_theme_for`), not the one of the mode the OS is in:
+/// on KDE with the OS light and the showcase dark, `breeze-dark`, where
+/// `breeze` was loaded. A test cannot choose the OS's mode, so it shows the
+/// showcase both and compares each with what a read of its own states.
 #[gpui::test]
 fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    if system_theme().is_err() {
+    let Ok(system) = system_theme() else {
         return;
-    }
+    };
     set_preset(&mut cx, "default");
     let (reads, _) = reads_and_loads();
     for mode in three_switches(&mut cx, &showcase) {
         switch_mode(&mut cx, mode);
-        let system = kept_system(&mut cx, &showcase);
         let (is_dark, icon_theme) = read(&mut cx, &showcase, |this, _| {
             (this.is_dark, this.current_icon_theme.clone())
         });
         assert_eq!(is_dark, mode.is_dark(), "{mode:?} was not the mode shown");
         assert_eq!(
             icon_theme.as_deref(),
-            system
-                .as_ref()
-                .and_then(|s| s.icon_theme_for(native_mode(is_dark))),
+            system.icon_theme_for(crate::app::color_mode_of(is_dark)),
             "{mode:?} under `default` took another variant's icon theme"
         );
     }
@@ -8451,6 +8419,58 @@ fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppConte
         reads_and_loads().0 - reads,
         1,
         "Reload System Theme did not read the OS theme once"
+    );
+}
+
+/// An OS theme change the watcher reports is read in every colour mode: a
+/// chosen Light or Dark picks only the variant, while the OS still owns the
+/// accent, the fonts and the icon theme `default` shows. So under Dark it
+/// reads the OS once, and a switch to System afterwards shows that read,
+/// not the one from before the change, and reads nothing more.
+#[gpui::test]
+fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    if system_theme().is_err() {
+        return;
+    }
+    set_preset(&mut cx, "default");
+    switch_mode(&mut cx, AppColorMode::Dark);
+    let stale = "the read before the OS theme changed";
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, _| {
+            if let Some(system) = this.system.as_mut() {
+                system.name = stale.into();
+            }
+        })
+    });
+    assert_eq!(
+        kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+        Some(stale.to_string()),
+        "the kept read was not marked, so its replacement proves nothing"
+    );
+    let (reads, _) = reads_and_loads();
+    cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
+    cx.run_until_parked();
+    draw(&mut cx);
+    assert_eq!(
+        reads_and_loads().0 - reads,
+        1,
+        "under Dark an OS theme change was not read"
+    );
+    assert!(
+        read(&mut cx, &showcase, |this, _| this.is_dark),
+        "an OS theme change under Dark left Dark"
+    );
+    switch_mode(&mut cx, AppColorMode::System);
+    assert_eq!(
+        reads_and_loads().0 - reads,
+        1,
+        "switching to System read the OS theme again"
+    );
+    assert_ne!(
+        kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+        Some(stale.to_string()),
+        "switching to System showed the read from before the OS theme changed"
     );
 }
 
@@ -8477,9 +8497,30 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
         })
     });
     let (_, loads) = reads_and_loads();
+    let mut recoloured = false;
     for mode in three_switches(&mut cx, &showcase) {
-        switch_mode(&mut cx, mode);
+        // Read in the switch's own update, before a frame is drawn, which
+        // would rebuild the caches for a new foreground itself (`render`).
+        let (before, after, cached) = cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| {
+                let before = Theme::global(cx).foreground;
+                this.on_set_color_mode(&SetColorMode(mode), window, cx);
+                (before, Theme::global(cx).foreground, this.icon_cache_fg)
+            })
+        });
+        cx.run_until_parked();
+        draw(&mut cx);
+        assert_eq!(
+            cached, after,
+            "with Material chosen, {mode:?} under `default` left the icons in the foreground \
+             before it"
+        );
+        recoloured |= before != after;
     }
+    assert!(
+        recoloured,
+        "no switch changed the foreground, so the icons' recolouring was not tested"
+    );
     assert_eq!(
         reads_and_loads().1 - loads,
         0,

@@ -12,8 +12,9 @@
 //! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
 //!
-//! To have it follow the OS theme's changes while its colour mode is System,
-//! add the `watch` feature, which `native_theme_gpui::on_theme_change` needs:
+//! To have it follow the OS theme's changes (its accent, fonts and icon
+//! theme in every colour mode, and its light or dark under System), add the
+//! `watch` feature, which `native_theme_gpui::on_theme_change` needs:
 //!
 //! ```sh
 //! cargo run -p native-theme-gpui --example showcase-gpui --features watch

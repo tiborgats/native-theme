@@ -73,7 +73,7 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
 }
 
 /// native-theme's colour mode for the showcase's light/dark flag.
-fn color_mode_of(is_dark: bool) -> native_theme_gpui::ColorMode {
+pub(crate) fn color_mode_of(is_dark: bool) -> native_theme_gpui::ColorMode {
     if is_dark {
         native_theme_gpui::ColorMode::Dark
     } else {
@@ -1393,8 +1393,8 @@ impl Showcase {
             this.focus_handle.focus(window, cx)
         });
 
-        // Follow the OS theme while the colour mode is System (feature
-        // `watch`), in an interactive run only (`CliArgs::follows_os`): a
+        // Follow the OS theme's changes (feature `watch`, `on_os_theme_change`),
+        // in an interactive run only (`CliArgs::follows_os`): a
         // capture and a layout dump show the theme the run started with, and
         // under `--screenshot` the watcher's background thread cleanup races
         // with the Cocoa runtime on macOS CI, causing SIGTRAP on exit, so it
@@ -1411,12 +1411,7 @@ impl Showcase {
                 // The showcase's one window, so it watches as long as it runs.
                 native_theme_gpui::on_theme_change(window, cx, move |_event, window, cx| {
                     // Gone once the window closed; nothing to follow then.
-                    let _ = showcase.update(cx, |this, cx| {
-                        if matches!(this.color_mode, AppColorMode::System) {
-                            this.reload_system_theme(window, cx);
-                            cx.notify();
-                        }
-                    });
+                    let _ = showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx));
                 })
                 .ok()
             };
@@ -1793,9 +1788,20 @@ impl Showcase {
         });
     }
 
+    /// What the theme watcher does when the OS theme changes, in every colour
+    /// mode: read the desktop's settings again and re-install the current
+    /// theme in the mode chosen (`reload_system_theme`). A chosen Light or
+    /// Dark picks only the variant; the OS still owns the accent, the fonts
+    /// and the icon theme `default` shows.
+    #[cfg(any(test, feature = "watch"))]
+    pub(crate) fn on_os_theme_change(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.reload_system_theme(window, cx);
+        cx.notify();
+    }
+
     /// Read the desktop's settings again and re-install the current theme
-    /// from them: what the theme watcher does when the OS theme changes, and
-    /// what `ReloadTheme` asks for.
+    /// from them, in the mode chosen: what the theme watcher does when the
+    /// OS theme changes, and what `ReloadTheme` asks for.
     fn reload_system_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         native_theme::detect::invalidate_caches();
         // The desktop's theme is read again, and the icons loaded again:
