@@ -367,7 +367,11 @@ fn upstream_accordion(
             "border-radius",
             format!("radius_lg: {}px", t.radius_lg.as_f32()),
         )
-        .not_themeable("padding", "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour")
+        .not_themeable("padding", if styled {
+            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable. geometry::accordion_title sets only the title row's height and colour"
+        } else {
+            "per-Size literals, py_2 / px_3 on the title row and pb_2 / px_3 under the content at the default Size -- rems -- each followed by the caller's title_style or content_style (accordion.rs, AccordionItem::render), so both are reachable"
+        })
         .not_themeable("chevron", "a ChevronDown built inline at XSmall in muted_foreground, with no setter (accordion.rs, AccordionItem::render), so expander.arrow_icon_size and expander.arrow_color have no receiver -- Tier U")
         .not_themeable("animation", "reads the theme's spring_control (accordion.rs, AccordionItem). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's")
         .instance("animation", if reduce_motion {
@@ -587,7 +591,7 @@ pub fn native_expander(
             }
         },
     )
-    .config("padding", expander_padding(e))
+    .config("padding", expander_padding(e, gap))
     .not_themeable(
         "fill",
         "none: the model states no expander fill, so the window's background shows",
@@ -643,21 +647,26 @@ fn expander_edge(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
 /// its body: a stated `expander.border.padding` side as it states it, an
 /// unstated left or right by upstream's px_3, an unstated top or bottom by
 /// none (`demo::native_expander`, through `demo::padded`); the body right
-/// and below as upstream's AccordionItem pads it only inside the frame
-/// upstream's draws, where `frame_enabled` is unstated.
-fn expander_padding(e: &ResolvedExpanderTheme) -> String {
+/// and below as upstream's AccordionItem pads it wherever no `gap`
+/// (`layout.widget_gap`) parts it from its title: inside the frame
+/// upstream's draws, where `frame_enabled` is unstated, and where the
+/// layout states no gap.
+fn expander_padding(e: &ResolvedExpanderTheme, gap: Option<Pixels>) -> String {
     let p = &e.border.padding;
     let side = |name: &str, value: Option<f32>, across: bool| match (value, across) {
         (Some(v), _) => format!("{name} {}px", px_text(v)),
         (None, true) => format!("{name} upstream's px_3 (EXPANDER_PADDING_X)"),
         (None, false) => format!("{name} none"),
     };
-    let body = match e.frame_enabled {
-        None => {
-            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), inside the frame upstream's Accordion draws"
-        }
-        Some(_) => {
+    let body = match (e.frame_enabled, gap) {
+        (Some(_), Some(_)) => {
             "the body has no padding beyond its indent, a title being layout.widget_gap above its body"
+        }
+        (Some(_), None) => {
+            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), as no layout.widget_gap is stated to part it from its title"
+        }
+        (None, _) => {
+            "the body padded right by px_3 and below by pb_2, upstream's AccordionItem's (accordion.rs, AccordionItem::render), inside the frame upstream's Accordion draws"
         }
     };
     format!(

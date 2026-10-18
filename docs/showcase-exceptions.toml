@@ -1099,7 +1099,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence: expander.* states the arrow's size, colour and side, not its shape; docs/platform-facts.md section 2.27 (arrow_side row) gives KDE Breeze's renderArrow chevron (stroked 1.001 px) and Adwaita's adw-expander-arrow-symbolic, a chevron (Windows a chevron, macOS a triangle): gpui draws the chosen icon theme's chevron (its ChevronRight / ChevronDown, demo::native_expander) as a mask in expander.arrow_color, a thin glyph whose darkest pixel can be an antialiased edge, lighter than the colour; iced and egui fill a triangle"
+reason = "theme silence: expander.* states the arrow's size, colour and side, not its shape; docs/platform-facts.md section 2.27 (arrow_side row) gives KDE Breeze's renderArrow chevron (stroked 1.001 px) and Adwaita's adw-expander-arrow-symbolic, a chevron (Windows a chevron, macOS a triangle): gpui draws the chosen icon theme's icon for ChevronRight / ChevronDown (demo::native_expander) as a mask in expander.arrow_color, whose darkest pixel can be an antialiased edge, lighter than the colour; iced and egui fill a triangle"
 keys = [
     "catppuccin-mocha:basic.expander.details.arrow.mark",
     "kde-breeze:basic.expander.details.arrow.mark",

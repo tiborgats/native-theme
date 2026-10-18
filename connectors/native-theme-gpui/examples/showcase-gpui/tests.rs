@@ -2662,17 +2662,34 @@ fn the_expander_and_the_card_take_the_themes_sizes(cx: &mut TestAppContext) {
 /// (adwaita, windows-11); each title row padded side by side by the
 /// `expander.border.padding` the header takes, upstream's px_3 on an
 /// unstated left or right and none on an unstated top or bottom; and the
-/// body's own padding only where `frame_enabled` is unstated (material-3),
-/// the one case the body takes it. Every expected value is the resolved
-/// theme's, read at test time.
+/// body's own padding where no `layout.widget_gap` parts it from its title:
+/// where `frame_enabled` is unstated (material-3), and where it is stated
+/// but the layout states no `widget_gap` (adwaita with the gap taken out).
+/// Every expected value is the resolved theme's, read at test time.
 #[gpui::test]
 fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContext) {
     use crate::info::{px_text, stated};
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     without_motion(&mut cx);
-    let mut cases = (false, false, false, false);
-    for preset in ["kde-breeze", "adwaita", "windows-11", "material-3"] {
+    let mut cases = (false, false, false, false, false);
+    for (preset, no_gap) in [
+        ("kde-breeze", false),
+        ("adwaita", false),
+        ("windows-11", false),
+        ("material-3", false),
+        ("adwaita", true),
+    ] {
         use_preset(&mut cx, &showcase, preset);
+        if no_gap {
+            cx.update(|_window, cx| {
+                showcase.update(cx, |this, cx| {
+                    this.layout.widget_gap = None;
+                    cx.notify();
+                });
+            });
+            cx.run_until_parked();
+            draw(&mut cx);
+        }
         show(&mut cx, &showcase, Page::Basic);
         let r = resolved_theme(&mut cx, &showcase);
         let e = &r.expander;
@@ -2741,16 +2758,17 @@ fn the_native_expanders_info_says_what_it_frames_and_pads(cx: &mut TestAppContex
         }
         let body = padding.contains("pb_2");
         cases.3 |= e.frame_enabled.is_none() && body;
+        cases.4 |= e.frame_enabled.is_some() && gap.is_none() && body;
         assert_eq!(
             body,
-            e.frame_enabled.is_none(),
-            "{preset}: the body is padded as upstream's AccordionItem pads it only where expander.frame_enabled is unstated, and the padding line says {padding:?}"
+            e.frame_enabled.is_none() || gap.is_none(),
+            "{preset}: the body is padded as upstream's AccordionItem pads it exactly where no layout.widget_gap parts it from its title (frame_enabled unstated, or widget_gap unstated), and the padding line says {padding:?}"
         );
     }
     assert_eq!(
         cases,
-        (true, true, true, true),
-        "the presets no longer cover an unframed expander, one framed per item, an unstated side, and a frame the theme leaves unstated"
+        (true, true, true, true, true),
+        "the presets no longer cover an unframed expander, one framed per item, an unstated side, a frame the theme leaves unstated, and a stated frame with no widget_gap"
     );
 }
 
@@ -6567,27 +6585,49 @@ fn a_page_sample_icon_the_set_lacks_is_absent(cx: &mut TestAppContext) {
 /// The chevrons the Basic page builds itself -- the theme-drawn expander's
 /// arrows and the number field's steps -- are the chosen icon theme's, as
 /// the page samples' are (M9-002): under kde-breeze with Material chosen,
-/// the expander's info names Material's icon for its arrow (ChevronRight
-/// before the title, ChevronDown after it, as `expander.arrow_side` says)
-/// and the number field's its ChevronUp and ChevronDown steps; with those
-/// icons taken out of Material's loaded gallery, each info says none and
-/// the expander draws no arrow, never gpui-component's own.
+/// the expander's info names Material's icon for its arrow (ChevronRight,
+/// before the title, as kde-breeze's `expander.arrow_side` says) and the
+/// number field's its ChevronUp and ChevronDown steps; with those icons
+/// taken out of Material's loaded gallery, each info says none and the
+/// expander draws no arrow, never gpui-component's own.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
 fn the_basic_pages_own_chevrons_come_from_the_chosen_set(cx: &mut TestAppContext) {
+    own_chevrons_come_from_the_chosen_set(cx, "kde-breeze", true);
+}
+
+/// [`the_basic_pages_own_chevrons_come_from_the_chosen_set`] for a
+/// trailing arrow, ChevronDown after the title: adwaita's.
+#[cfg(feature = "material-icons")] // the bundled Material set it chooses
+#[gpui::test]
+fn a_trailing_expander_arrow_comes_from_the_chosen_set(cx: &mut TestAppContext) {
+    own_chevrons_come_from_the_chosen_set(cx, "adwaita", false);
+}
+
+/// The Basic page's own chevrons under `preset`, whose expander arrow is
+/// `leading` or trailing, with Material chosen and then with them taken
+/// out of its gallery.
+#[cfg(feature = "material-icons")]
+fn own_chevrons_come_from_the_chosen_set(cx: &mut TestAppContext, preset: &str, leading: bool) {
     use native_theme::theme::ArrowSide;
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     without_motion(&mut cx);
-    use_preset(&mut cx, &showcase, "kde-breeze");
+    use_preset(&mut cx, &showcase, preset);
     choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
     show(&mut cx, &showcase, Page::Basic);
-    let arrow = match read(&mut cx, &showcase, |_, cx| {
+    let side = read(&mut cx, &showcase, |_, cx| {
         native_value(cx, |n| n.resolved.expander.arrow_side)
     })
-    .flatten()
-    {
-        Some(ArrowSide::Leading) => (IconName::ChevronRight, "ChevronRight"),
-        _ => (IconName::ChevronDown, "ChevronDown"),
+    .flatten();
+    assert_eq!(
+        side == Some(ArrowSide::Leading),
+        leading,
+        "{preset}'s expander.arrow_side is {side:?}, not the side this case tests"
+    );
+    let arrow = if leading {
+        (IconName::ChevronRight, "ChevronRight")
+    } else {
+        (IconName::ChevronDown, "ChevronDown")
     };
     let cases = [
         ("basic-expander-header-0", arrow),
