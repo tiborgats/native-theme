@@ -759,54 +759,41 @@ fn bubble_surface(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     .not_themeable("surface padding", "px_3 / py_2 -- rems, so the platform's font -- and settable: Bubble::content takes a BubbleContent, which applies the caller's refinement last (bubble.rs, BubbleContent). native-theme states no bubble")
 }
 
-/// A `Bubble` of `kind`, `outgoing` or incoming.
-pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
-    let side = if outgoing { "outgoing" } else { "incoming" };
-    let info = WidgetInfo::new("Bubble").variant(format!("{}, {side}", kind.name()));
-    let info = match kind {
-        BubbleKind::Filled => bubble_surface(info, t)
-            .color(claim(
-                "bg",
-                "primary",
-                t.primary,
-                "gpui-component/bubble.rs:215",
-            ))
-            .color(claim(
+/// What a `Bubble` of `kind` paints: its arm of upstream's content surface
+/// (bubble.rs, BubbleContent), the fill and the text, and an Outline's edge.
+fn bubble_colours(t: &Theme, kind: BubbleKind) -> Vec<ColorClaim> {
+    match kind {
+        BubbleKind::Filled => vec![
+            claim("bg", "primary", t.primary, "gpui-component/bubble.rs:215"),
+            claim(
                 "text",
                 "primary_foreground",
                 t.primary_foreground,
                 "gpui-component/bubble.rs:216",
-            )),
-        BubbleKind::Secondary => bubble_surface(info, t)
-            .color(claim(
-                "bg",
-                "muted",
-                t.muted,
-                "gpui-component/bubble.rs:222",
-            ))
-            .color(claim(
+            ),
+        ],
+        BubbleKind::Secondary => vec![
+            claim("bg", "muted", t.muted, "gpui-component/bubble.rs:222"),
+            claim(
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
                 "gpui-component/bubble.rs:223",
-            )),
-        BubbleKind::Muted => bubble_surface(info, t)
-            .color(claim(
-                "bg",
-                "muted",
-                t.muted,
-                "gpui-component/bubble.rs:225",
-            ))
-            .color(claim(
+            ),
+        ],
+        BubbleKind::Muted => vec![
+            claim("bg", "muted", t.muted, "gpui-component/bubble.rs:225"),
+            claim(
                 "text",
                 "foreground",
                 t.foreground,
                 "gpui-component/bubble.rs:226",
-            )),
+            ),
+        ],
         // `mix_oklab`'s factor is the first colour's share (theme/color.rs:
         // 44-49), and the arm picks it by the mode (bubble.rs:230).
-        BubbleKind::Tinted => {
-            let fill = if t.is_dark() {
+        BubbleKind::Tinted => vec![
+            if t.is_dark() {
                 claim(
                     "bg, 24% primary mixed with 76% background",
                     "primary",
@@ -820,55 +807,48 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                     t.primary.mix_oklab(t.background, 0.12),
                     "gpui-component/bubble.rs:228-231",
                 )
-            };
-            bubble_surface(info, t)
-                .color(fill)
-                .color(claim(
-                    "text",
-                    "foreground",
-                    t.foreground,
-                    "gpui-component/bubble.rs:232",
-                ))
-                .not_themeable("tint", "a mix of primary into background by a literal share, 12% in light mode and 24% in dark (bubble.rs, BubbleContent)")
-        }
-        BubbleKind::Outline => bubble_surface(info, t)
-            .color(claim(
-                "border",
-                "border",
-                t.border,
-                "gpui-component/bubble.rs:234",
-            ))
-            .color(claim(
-                "bg",
-                "background",
-                t.background,
-                "gpui-component/bubble.rs:235",
-            ))
-            .color(claim(
+            },
+            claim(
                 "text",
                 "foreground",
                 t.foreground,
                 "gpui-component/bubble.rs:232",
-            )),
-        BubbleKind::Ghost => info
-            .color(claim(
+            ),
+        ],
+        BubbleKind::Outline => vec![
+            claim("border", "border", t.border, "gpui-component/bubble.rs:234"),
+            claim(
+                "bg",
+                "background",
+                t.background,
+                "gpui-component/bubble.rs:235",
+            ),
+            claim(
+                "text",
+                "foreground",
+                t.foreground,
+                "gpui-component/bubble.rs:232",
+            ),
+        ],
+        BubbleKind::Ghost => vec![
+            claim(
                 "bg",
                 "transparent",
                 t.transparent,
                 "gpui-component/bubble.rs:240",
-            ))
-            .color(claim(
+            ),
+            claim(
                 "text",
                 "foreground",
                 t.foreground,
                 "gpui-component/bubble.rs:241",
-            ))
-            .not_themeable("surface", "none: the Ghost arm drops the border, the corner radius and the padding -- border_0, the radius tokens' none, p_0 (bubble.rs, BubbleContent)"),
+            ),
+        ],
         // The semantic tokens name danger destructive (theme/mod.rs:534); the
         // Destructive arm reads it at a share picked by the mode
         // (bubble.rs:244-249).
-        BubbleKind::Destructive => {
-            let fill = if t.is_dark() {
+        BubbleKind::Destructive => vec![
+            if t.is_dark() {
                 claim(
                     "bg, destructive at 20% (bubble.rs:244)",
                     "danger",
@@ -882,55 +862,46 @@ pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
                     t.danger.opacity(0.1),
                     "gpui-component/theme/mod.rs:534",
                 )
-            };
-            bubble_surface(info, t)
-                .color(fill)
-                .color(claim(
-                    "text, destructive (bubble.rs:249)",
-                    "danger",
-                    t.danger,
-                    "gpui-component/theme/mod.rs:534",
-                ))
-        }
+            },
+            claim(
+                "text, destructive (bubble.rs:249)",
+                "danger",
+                t.danger,
+                "gpui-component/theme/mod.rs:534",
+            ),
+        ],
+    }
+}
+
+/// A `Bubble` of `kind`, `outgoing` or incoming.
+pub fn bubble(t: &Theme, kind: BubbleKind, outgoing: bool) -> WidgetInfo {
+    let side = if outgoing { "outgoing" } else { "incoming" };
+    let info = WidgetInfo::new("Bubble")
+        .variant(format!("{}, {side}", kind.name()))
+        .colors(bubble_colours(t, kind));
+    let info = match kind {
+        BubbleKind::Ghost => info.not_themeable("surface", "none: the Ghost arm drops the border, the corner radius and the padding -- border_0, the radius tokens' none, p_0 (bubble.rs, BubbleContent)"),
+        BubbleKind::Tinted => bubble_surface(info, t).not_themeable("tint", "a mix of primary into background by a literal share, 12% in light mode and 24% in dark (bubble.rs, BubbleContent)"),
+        _ => bubble_surface(info, t),
     };
     info.not_themeable("token path", "a Bubble reads cx.theme().semantic_tokens().colors, not the ThemeColor fields directly (bubble.rs, the content surface). The values are the same; the access path is a third one, beside cx.theme().field and the Theme impl's own self.tokens.field")
         .not_themeable("max width", "80% of the row unless the Bubble's own refinement, applied last, sets another (bubble.rs, Bubble::render)")
 }
 
 /// A `Message` row, `outgoing` or incoming, from `sender`, reading `text`.
-/// Its Avatar reports itself; its Bubble reports through it.
+/// Its Avatar reports itself; its Bubble -- Filled for an outgoing message,
+/// Muted for an incoming one -- reports through it.
 pub fn message(t: &Theme, outgoing: bool, sender: &str, text: &str) -> WidgetInfo {
-    let info = WidgetInfo::new("Message").variant(if outgoing { "outgoing" } else { "incoming" });
-    let info = if outgoing {
-        info.color(claim(
-            "bubble bg",
-            "primary",
-            t.primary,
-            "gpui-component/bubble.rs:215",
-        ))
-        .color(claim(
-            "bubble text",
-            "primary_foreground",
-            t.primary_foreground,
-            "gpui-component/bubble.rs:216",
-        ))
-        .instance("bubble", "Filled, at the end of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)")
+    let (side, kind, place) = if outgoing {
+        ("outgoing", BubbleKind::Filled, "end")
     } else {
-        info.color(claim(
-            "bubble bg",
-            "muted",
-            t.muted,
-            "gpui-component/bubble.rs:225",
-        ))
-        .color(claim(
-            "bubble text",
-            "foreground",
-            t.foreground,
-            "gpui-component/bubble.rs:226",
-        ))
-        .instance("bubble", "Muted, at the start of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)")
+        ("incoming", BubbleKind::Muted, "start")
     };
-    info.not_themeable("bubbles", "a Message delegates its bubble to Bubble, so the fill is Bubble's and the citations point there")
+    WidgetInfo::new("Message")
+        .variant(side)
+        .colors(bubble_colours(t, kind))
+        .instance("bubble", format!("{}, at the {place} of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)", kind.name()))
+        .not_themeable("bubbles", "a Message delegates its bubble to Bubble, so the fill is Bubble's and the citations point there")
         .not_themeable("slot gap", "rems(0.625) -- the platform's font, not a literal -- and settable: Message applies the caller's refinement last, and the stack takes Message::with_stack_style. Only the 0.5rem between avatar and content is out of reach (message.rs, Message::render)")
         .not_themeable("avatar", "a shared size-8 minimum, kept flush with the bubble's bottom edge (message.rs, the avatar slot's RenderOnce: min_w_8, self_end), coloured like the Avatar panel's: OKLCH literals hashed from the sender's initials, not theme colours. The Avatar reports itself")
         .instance("sender", sender.to_string())

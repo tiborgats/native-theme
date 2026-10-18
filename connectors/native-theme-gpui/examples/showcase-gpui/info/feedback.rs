@@ -126,18 +126,11 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
 pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
     alert(t, severity, false).not_themeable(
         "own icons",
-        match severity {
-            Severity::Info => super::own_icons("its severity's icon, Info (alert.rs, Alert::info)"),
-            Severity::Success => {
-                super::own_icons("its severity's icon, CircleCheck (alert.rs, Alert::success)")
-            }
-            Severity::Warning => {
-                super::own_icons("its severity's icon, TriangleAlert (alert.rs, Alert::warning)")
-            }
-            Severity::Error => {
-                super::own_icons("its severity's icon, CircleX (alert.rs, Alert::error)")
-            }
-        },
+        super::own_icons(&format!(
+            "its severity's icon, {} (alert.rs, Alert::{})",
+            severity.upstream_icon(),
+            severity.name().to_lowercase()
+        )),
     )
 }
 
@@ -890,20 +883,10 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
             "gpui-component/notification.rs:52",
         ),
     };
-    let own = match severity {
-        Severity::Info => super::own_icons(
-            "its kind's icon, Info (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Success => super::own_icons(
-            "its kind's icon, CircleCheck (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Warning => super::own_icons(
-            "its kind's icon, TriangleAlert (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Error => super::own_icons(
-            "its kind's icon, CircleX (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-    };
+    let own = super::own_icons(&format!(
+        "its kind's icon, {} (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        severity.upstream_icon()
+    ));
     WidgetInfo::new("Notification")
         .variant(severity.name())
         .not_themeable("own icons", own)

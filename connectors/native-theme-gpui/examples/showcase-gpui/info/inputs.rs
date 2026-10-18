@@ -409,20 +409,48 @@ pub fn native_number_input(r: &ResolvedTheme, focused: bool) -> WidgetInfo {
         .not_themeable("own icons", super::own_icons("ChevronUp and ChevronDown on its step buttons, at Size::Small (demo::number_input)"))
 }
 
+/// A two-state control's states, on and off, and what a click on it does
+/// while it is enabled.
+type Toggled = (&'static str, &'static str, &'static str);
+
+/// A Checkbox's, upstream's and the theme-drawn one's alike.
+const CHECKBOX: Toggled = (
+    "checked",
+    "unchecked",
+    "checks or unchecks it; the showcase keeps the state",
+);
+
+/// A Switch's, upstream's and the theme-drawn one's alike.
+const SWITCH: Toggled = (
+    "on",
+    "off",
+    "turns it on or off; the showcase keeps the state",
+);
+
+/// `info` named by the state of a `control` -- `checked` or not, `disabled`
+/// or not -- and given what a click does.
+fn toggled(info: WidgetInfo, control: Toggled, checked: bool, disabled: bool) -> WidgetInfo {
+    let (on, off, click) = control;
+    let state = if checked { on } else { off };
+    if disabled {
+        info.variant(format!("{state}, disabled")).instance(
+            "click",
+            "none: it is disabled, and the showcase gives it no handler",
+        )
+    } else {
+        info.variant(state).instance("click", click)
+    }
+}
+
 /// A `Checkbox` reading `label`, `checked` or not, `disabled` or not. Its
 /// geometry line is recorded where `demo::checkbox` applies the builder.
 pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -> WidgetInfo {
-    let info = WidgetInfo::new("Checkbox")
-        .variant(match (checked, disabled) {
-            (true, false) => "checked",
-            (false, false) => "unchecked",
-            (true, true) => "checked, disabled",
-            (false, true) => "unchecked, disabled",
-        })
-        .not_themeable(
-            "own icons",
-            super::own_icons("the check mark, Check, drawn while it is checked (checkbox.rs, checkbox_check_icon)"),
-        );
+    let info = WidgetInfo::new("Checkbox").not_themeable(
+        "own icons",
+        super::own_icons(
+            "the check mark, Check, drawn while it is checked (checkbox.rs, checkbox_check_icon)",
+        ),
+    );
     // The disabled style is resolved after the checked one, so it wins
     // (gpui-base checkbox.rs:302-316).
     let info = match (checked, disabled) {
@@ -492,17 +520,7 @@ pub fn checkbox(t: &Theme, label: &'static str, checked: bool, disabled: bool) -
         .not_themeable("unchecked fill", "input_background(), as an Input's: the window background in light mode, input faded toward transparent in dark (checkbox.rs, Checkbox::render)")
         .not_themeable("indicator size", "rems(0.75 / 0.875 / 1 / 1.125) per Size (checkbox.rs, Checkbox::render indicator_size), so the box already scales with the platform font -- the rem is Theme::font_size. What has no route is checkbox.indicator_width, which the model states in absolute px: Size::Size falls into the same catch-all arm as Medium. Tier U for the px, not for the scaling")
         .instance("label", label);
-    if disabled {
-        info.instance(
-            "click",
-            "none: it is disabled, and the showcase gives it no handler",
-        )
-    } else {
-        info.instance(
-            "click",
-            "checks or unchecks it; the showcase keeps the state",
-        )
-    }
+    toggled(info, CHECKBOX, checked, disabled)
 }
 
 /// A horizontal `RadioGroup` of Radios reading `labels`, the one at
@@ -562,12 +580,7 @@ pub fn switch(
     disabled: bool,
     native: Option<&ResolvedTheme>,
 ) -> WidgetInfo {
-    let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
-        (true, false) => "on",
-        (false, false) => "off",
-        (true, true) => "on, disabled",
-        (false, true) => "off, disabled",
-    });
+    let info = WidgetInfo::new("Switch");
     // A disabled Switch fades its track alone, to half alpha (switch.rs:189);
     // the disabled style is resolved after the checked one (gpui-base
     // switch.rs:117-127). The checked track is the colour `Switch::color`
@@ -659,14 +672,7 @@ pub fn switch(
         .not_themeable("corner radius", "fully round unless the theme's radius is under 4px, in which case the theme's is used (gpui-component switch.rs, Switch::render radius). switch.track_radius is modelled and has no receiver")
         .not_themeable("animation timing", "reads the theme's spring_move (switch.rs, Switch), the same writable Theme::motion the Accordion and Collapsible use; the connector leaves it at its default because native-theme models no motion")
         .instance("label", label);
-    if disabled {
-        info.instance(
-            "click",
-            "none: it is disabled, and the showcase gives it no handler",
-        )
-    } else {
-        info.instance("click", "turns it on or off; the showcase keeps the state")
-    }
+    toggled(info, SWITCH, checked, disabled)
 }
 
 /// A `Slider`.
@@ -729,14 +735,7 @@ pub fn native_checkbox(
     disabled: bool,
 ) -> WidgetInfo {
     let k = &r.checkbox;
-    let info = WidgetInfo::new("Checkbox")
-        .variant(match (checked, disabled) {
-            (true, false) => "checked",
-            (false, false) => "unchecked",
-            (true, true) => "checked, disabled",
-            (false, true) => "unchecked, disabled",
-        })
-        .config("drawn by", DRAWN_BY);
+    let info = WidgetInfo::new("Checkbox").config("drawn by", DRAWN_BY);
     let info = native_indicator(info, k, checked, disabled);
     let info = info
         .config("indicator", format!("checkbox.indicator_width: {}px square", k.indicator_width))
@@ -745,17 +744,7 @@ pub fn native_checkbox(
         .config("label font", format!("checkbox.font: {}, {}px, weight {}, {:?}", k.font.family, k.font.size, k.font.weight, k.font.style))
         .not_themeable("check mark", super::own_icons("Check, the mark gpui-component's own checkbox draws (checkbox.rs, checkbox_check_icon), filling the box inside its border"))
         .instance("label", label);
-    if disabled {
-        info.instance(
-            "click",
-            "none: it is disabled, and the showcase gives it no handler",
-        )
-    } else {
-        info.instance(
-            "click",
-            "checks or unchecks it; the showcase keeps the state",
-        )
-    }
+    toggled(info, CHECKBOX, checked, disabled)
 }
 
 /// The indicator's colours for a checkbox or radio in this state, as
@@ -944,14 +933,7 @@ pub fn native_switch(
     disabled: bool,
 ) -> WidgetInfo {
     let s = &r.switch;
-    let info = WidgetInfo::new("Switch")
-        .variant(match (checked, disabled) {
-            (true, false) => "on",
-            (false, false) => "off",
-            (true, true) => "on, disabled",
-            (false, true) => "off, disabled",
-        })
-        .config("drawn by", DRAWN_BY);
+    let info = WidgetInfo::new("Switch").config("drawn by", DRAWN_BY);
     let info = match (checked, disabled) {
         // An unset hover is the track at rest (SwitchLook::of), so the swatch
         // is the track's colour, not a layer of it.
@@ -1157,14 +1139,7 @@ pub fn native_switch(
             "gpui-component's gap_2 (switch.rs, Switch::render): SwitchTheme states no label gap",
         )
         .instance("label", label);
-    if disabled {
-        info.instance(
-            "click",
-            "none: it is disabled, and the showcase gives it no handler",
-        )
-    } else {
-        info.instance("click", "turns it on or off; the showcase keeps the state")
-    }
+    toggled(info, SWITCH, checked, disabled)
 }
 
 /// A theme-drawn `widgets::Slider` (spec §2.4).

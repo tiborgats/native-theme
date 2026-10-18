@@ -4909,6 +4909,17 @@ impl Severity {
             Self::Error => "Error",
         }
     }
+    /// The icon upstream gives the severity, an Alert's and a
+    /// Notification's alike (alert.rs, Alert::info and the other three;
+    /// notification.rs, NotificationType::icon).
+    pub(crate) fn upstream_icon(self) -> &'static str {
+        match self {
+            Self::Info => "Info",
+            Self::Success => "CircleCheck",
+            Self::Warning => "TriangleAlert",
+            Self::Error => "CircleX",
+        }
+    }
 }
 
 /// An `Alert` of `severity` reading `message`, titled with the severity's
