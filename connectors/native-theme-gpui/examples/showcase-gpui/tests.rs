@@ -11692,6 +11692,41 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
     );
 }
 
+/// A disabled refined Button's info prints the fade `geometry::button_disabled`
+/// lays over the stated pair, `button.disabled_opacity`, where it said the
+/// pair is painted "with no further fade" (M9-060) -- over every bundled
+/// preset in both modes.
+#[test]
+fn a_disabled_buttons_info_prints_its_fade() {
+    use crate::demo::{ButtonKind, ButtonState};
+    for (name, r, t) in every_bundled_variant() {
+        for kind in [ButtonKind::Default, ButtonKind::Primary] {
+            let info = crate::info::buttons::button(
+                &t,
+                kind,
+                ButtonState::Disabled,
+                false,
+                None,
+                Some(&r.button),
+            );
+            assert!(
+                !info.to_text().contains("no further fade"),
+                "{name}: a disabled {} Button's info says it is painted with no further fade: {info:?}",
+                kind.name()
+            );
+            let fade = format!(
+                "button.disabled_opacity {}",
+                percent_text(r.button.disabled_opacity)
+            );
+            assert!(
+                note_of(&info.config, "opacity").is_some_and(|text| text.starts_with(&fade)),
+                "{name}: a disabled {} Button's opacity line does not print {fade:?}: {info:?}",
+                kind.name()
+            );
+        }
+    }
+}
+
 /// The claim of `role` in `info`: that role, or a role that goes on from it
 /// after a comma (a hover's, which says whether the theme states one).
 #[cfg(feature = "widgets")]

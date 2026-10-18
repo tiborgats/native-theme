@@ -7,7 +7,7 @@ use native_theme_gpui::ResolvedTheme;
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, edge_claim, px_text,
+    claim, edge_claim, percent_text, px_text,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -576,20 +576,24 @@ pub fn button(
         | ButtonKind::Warning
         | ButtonKind::Info => info,
     };
-    let info = match state {
-        ButtonState::Idle => info,
-        ButtonState::Disabled if styled => info
+    let info = match (state, native) {
+        (ButtonState::Idle, _) => info,
+        (ButtonState::Disabled, Some(b)) => info
             .instance("fill and text", "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color, through geometry::button_disabled: upstream paints its own literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- and then replays the caller's refinement over them (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)")
-            .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; the stated disabled colours are painted as they are, as the iced and egui connectors paint them, with no further fade")
+            .config("opacity", if b.disabled_opacity < 1. {
+                format!("button.disabled_opacity {}: geometry::button_disabled fades the whole Button by it, over the stated pair", percent_text(b.disabled_opacity))
+            } else {
+                format!("button.disabled_opacity {}: no fade, the stated pair painted as it is", percent_text(b.disabled_opacity))
+            })
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
-        ButtonState::Disabled => info
+        (ButtonState::Disabled, None) => info
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
-        ButtonState::Loading if icon => info
+        (ButtonState::Loading, _) if icon => info
             .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
-        ButtonState::Loading => info
+        (ButtonState::Loading, _) => info
             .not_themeable("spinner", "none: a Button shows its spinner in place of its icon, so only a button with one shows it (button/button_icon.rs, ButtonIcon), and the chosen icon theme has no loading icon to give this one; upstream's own Loader would be another icon theme's")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
