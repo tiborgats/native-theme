@@ -7210,8 +7210,9 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
 /// `menu.background_color` inherits `defaults.background_color`, which is
 /// not the popover's fill, so the two can be told apart. The connector
 /// fills the `accent` token the rows hovered in before from
-/// `menu.hover_background` (src/colors.rs, `tc.accent`), so the hovered
-/// row's colour is the same either way; the test holds it.
+/// `menu.hover_background` (src/colors.rs, `tc.accent`), so the test
+/// overwrites the installed `accent` with a colour of its own: a row hovered
+/// in the token would then show that colour, not the leaf's.
 #[gpui::test]
 fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) {
     use crate::demo::MENU_ROWS_FRAME;
@@ -7238,13 +7239,24 @@ fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) 
         (r.popover.border.line_width > 0.0).then(|| stated(r.popover.border.color)),
         "the menu rows' frame is not edged as popover.border strokes it"
     );
+    let hovered_fill = stated(r.menu.hover_background);
+    let token = gpui::red();
+    assert_ne!(
+        token, hovered_fill,
+        "adwaita light's menu.hover_background is the test's own accent colour"
+    );
+    cx.update(|window, cx| {
+        Theme::global_mut(cx).accent = token;
+        window.refresh();
+    });
+    cx.run_until_parked();
     let row = "overlays-menu-row-copy";
     let at = bounds_of(&mut cx, row).center();
     hover(&mut cx, at);
     draw(&mut cx);
     assert_eq!(
         painted_fill(&mut cx, row),
-        Some(stated(r.menu.hover_background)),
+        Some(hovered_fill),
         "the hovered menu row is not filled with menu.hover_background"
     );
 }
