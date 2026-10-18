@@ -6997,7 +6997,106 @@ fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
             Some("none: text_area.border.line_width is 0"),
             "{field}'s info does not say it strokes no edge: {info:?}"
         );
+        let surface = info.config.iter().find(|n| n.what == "surface");
+        assert!(
+            surface.is_some_and(|n| !n.text.contains("framed by")),
+            "{field}'s surface line names a frame adwaita does not stroke: {surface:?}"
+        );
     }
+}
+
+/// A text area's surface is framed by `text_area.border.color`, not by the
+/// `input.border.color` it inherits in every bundled preset: under
+/// kde-breeze light with its text area's edge colour set to
+/// `defaults.text_color`, a colour of the same theme that differs from
+/// `input.border.color`, both text areas are edged in it at rest, and
+/// their infos claim it.
+#[gpui::test]
+fn a_text_area_is_framed_by_its_own_edge_colour(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    let mut r = resolved_theme(&mut cx, &showcase);
+    r.text_area.border.color = r.defaults.text_color;
+    assert_ne!(
+        r.text_area.border.color, r.input.border.color,
+        "kde-breeze light's text colour is its field's edge colour, so the test could not tell the two apart"
+    );
+    assert!(
+        r.text_area.border.line_width > 0.0,
+        "kde-breeze no longer strokes its text area, which this test reads"
+    );
+    cx.update(|_window, cx| {
+        let prefs = native_theme::AccessibilityPreferences::default();
+        native_theme_gpui::apply(
+            native_theme_gpui::to_theme(&r, "kde-breeze", false, &prefs),
+            &r,
+            &prefs,
+            cx,
+        );
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let edge = Some(stated(r.text_area.border.color));
+    for (page, field) in [
+        (Page::Inputs, INPUTS_TEXTAREA),
+        (Page::Basic, "basic-textarea"),
+    ] {
+        show(&mut cx, &showcase, page);
+        let info = settle_on(&mut cx, &showcase, field);
+        assert!(info.is_some(), "{field} shows no info");
+        let Some(info) = info else { return };
+        assert_eq!(
+            claim_of(&info, "border"),
+            edge,
+            "{field}'s info does not claim text_area.border.color: {info:?}"
+        );
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        assert_eq!(
+            painted_edge(&mut cx, field),
+            edge,
+            "{field} at rest is not framed by text_area.border.color"
+        );
+    }
+}
+
+/// Where the theme strokes no field line, a refined, enabled Input's info
+/// claims no edge and says so (M9-055): under adwaita light
+/// `input.border.line_width` is 0, so the surface strokes nothing, at rest
+/// or under the pointer, and its surface line names no frame.
+#[gpui::test]
+fn an_unstroked_inputs_info_claims_no_edge(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Inputs);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.input.border.line_width <= 0.0,
+        "adwaita now strokes its field, so this test no longer runs the no-edge case"
+    );
+    let info = settle_on(&mut cx, &showcase, INPUTS_FIELD);
+    assert!(info.is_some(), "the field shows no info");
+    let Some(info) = info else { return };
+    assert!(
+        ["border", "hover_border_color", "input"]
+            .iter()
+            .all(|edge| claim_of(&info, edge).is_none()),
+        "the field's info claims an edge adwaita does not stroke: {info:?}"
+    );
+    assert_eq!(
+        info.config
+            .iter()
+            .find(|n| n.what == "edge")
+            .map(|n| n.text.as_str()),
+        Some("none: input.border.line_width is 0"),
+        "the field's info does not say it strokes no edge: {info:?}"
+    );
+    let surface = info.config.iter().find(|n| n.what == "surface");
+    assert!(
+        surface.is_some_and(|n| !n.text.contains("framed by")),
+        "the field's surface line names a frame adwaita does not stroke: {surface:?}"
+    );
 }
 
 /// The Layout page's Form fields are refined as the Inputs page's are
@@ -7079,6 +7178,28 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
         info.as_ref().and_then(|info| claim_of(info, "foreground")),
         None,
         "the Select's info claims upstream's foreground trigger text under a native theme: {info:?}"
+    );
+    let trigger = info
+        .as_ref()
+        .and_then(|info| info.instance.iter().find(|n| n.what == "trigger text"));
+    assert!(
+        trigger.is_some_and(
+            |n| n.text.contains("combo_box.font") && n.text.contains("geometry::select")
+        ),
+        "the Select's info does not say geometry::select letters its trigger in combo_box.font's colour: {info:?}"
+    );
+    // Without a native theme no refinement letters it, and upstream's
+    // foreground stands.
+    let theme = cx.update(|_w, cx| Theme::global(cx).clone());
+    let plain = crate::info::inputs::select(&theme, None);
+    assert_eq!(
+        claim_of(&plain, "foreground"),
+        Some(theme.foreground),
+        "the Select's info without a native theme does not claim upstream's foreground trigger text: {plain:?}"
+    );
+    assert!(
+        plain.instance.iter().all(|n| n.what != "trigger text"),
+        "the Select's info without a native theme names a refinement it does not take: {plain:?}"
     );
 }
 

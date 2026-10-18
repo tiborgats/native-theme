@@ -46,7 +46,8 @@ pub fn text_area_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
 /// What an input surface framed by `frame` (`input.border` or
 /// `text_area.border`), stroked `line_width` wide, draws beside its edge at
 /// rest: `input.hover_border_color` under the pointer, where stated, and
-/// the surface line. A 0 width draws no edge in either state.
+/// the surface line. A 0 width draws no edge in either state, and the
+/// surface line then names none.
 fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) -> WidgetInfo {
     let info = if line_width > 0.0 {
         info.colors(r.input.hover_border_color.map(|hover_border_color| {
@@ -60,7 +61,15 @@ fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) ->
     } else {
         info.config("edge", format!("none: {frame}.line_width is 0"))
     };
-    info.config("surface", format!("input.background_color framed by {frame}.color at {frame}.line_width, and by input.hover_border_color (where stated) under the pointer, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
+    // The frame is named only where one is stroked.
+    let fill = if line_width > 0.0 {
+        format!(
+            "input.background_color framed by {frame}.color at {frame}.line_width, and by input.hover_border_color (where stated) under the pointer"
+        )
+    } else {
+        format!("input.background_color, unframed in every state ({frame}.line_width is 0)")
+    };
+    info.config("surface", format!("{fill}, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
 }
 
 /// `info` of a disabled field over its surface (`demo::disabled_input_surface`).
