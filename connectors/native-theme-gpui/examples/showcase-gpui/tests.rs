@@ -6851,6 +6851,236 @@ fn resolved_theme(
     .expect("a native theme is installed")
 }
 
+/// The Basic page's text area lists the routes its surface takes (M9-005):
+/// its edge `text_area.border.color`, its hovered edge
+/// `input.hover_border_color` and its fill `input.background_color` are
+/// drawn by `demo::input_surface`, not left to upstream's `input` token or
+/// the field's own fill.
+#[test]
+fn the_text_areas_routes_name_its_surface() {
+    let field = "basic.text_area.field";
+    for leaf in [
+        "text_area.border.color",
+        "input.hover_border_color",
+        "input.background_color",
+    ] {
+        let how = crate::info::leaves::how(field, leaf);
+        assert!(
+            how.is_some_and(
+                |line| line.contains("demo::input_surface") && !line.contains("not applied")
+            ),
+            "{field}'s route for {leaf} does not name the surface that draws it: {how:?}"
+        );
+    }
+}
+
+/// The Inputs page's fixed-height Textarea is drawn over the input surface
+/// the Basic page's takes (M9-004): framed by `text_area.border.color`, and
+/// by `input.hover_border_color` under the pointer, under a preset that
+/// strokes the text area's line and states the hover edge.
+#[gpui::test]
+fn the_inputs_pages_textarea_takes_the_hover_edge(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Inputs);
+    let r = resolved_theme(&mut cx, &showcase);
+    let hovered_edge = r.input.hover_border_color.map(stated);
+    assert!(
+        r.text_area.border.line_width > 0.0 && hovered_edge.is_some(),
+        "kde-breeze no longer strokes its text area or states input.hover_border_color, which this test reads"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, INPUTS_TEXTAREA),
+        Some(stated(r.text_area.border.color)),
+        "the Textarea at rest is not framed by text_area.border.color"
+    );
+    let at = bounds_of(&mut cx, INPUTS_TEXTAREA).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, INPUTS_TEXTAREA),
+        hovered_edge,
+        "the hovered Textarea is not framed by input.hover_border_color"
+    );
+}
+
+/// Where the theme strokes no text-area line, the Inputs page's Textarea
+/// has no edge, at rest or hovered: adwaita's `text_area.border.line_width`
+/// is 0 (it inherits `input.border`'s).
+#[gpui::test]
+fn an_unstroked_textarea_draws_no_edge(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Inputs);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.text_area.border.line_width <= 0.0,
+        "adwaita now strokes its text area, so this test no longer runs the no-edge case"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, INPUTS_TEXTAREA),
+        None,
+        "an edge is painted round the Textarea at rest, whose line width is 0"
+    );
+    let at = bounds_of(&mut cx, INPUTS_TEXTAREA).center();
+    hover(&mut cx, at);
+    draw(&mut cx);
+    assert_eq!(
+        painted_edge(&mut cx, INPUTS_TEXTAREA),
+        None,
+        "an edge is painted round the hovered Textarea, whose line width is 0"
+    );
+}
+
+/// Both text areas' infos say what their surface draws (M9-004, M9-005,
+/// M9-054): the edge `text_area.border.color`, the hovered edge
+/// `input.hover_border_color`, and the surface line, with no claim of
+/// upstream's `input` token, which the field's own edge no longer shows.
+/// Under adwaita, whose line width is 0, they claim neither edge and say
+/// so.
+#[gpui::test]
+fn a_textareas_info_claims_its_surfaces_edges(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    for (page, field) in [
+        (Page::Inputs, INPUTS_TEXTAREA),
+        (Page::Basic, "basic-textarea"),
+    ] {
+        use_preset(&mut cx, &showcase, "kde-breeze");
+        show(&mut cx, &showcase, page);
+        let r = resolved_theme(&mut cx, &showcase);
+        let info = settle_on(&mut cx, &showcase, field);
+        assert!(info.is_some(), "{field} shows no info");
+        let Some(info) = info else { return };
+        assert_eq!(
+            claim_of(&info, "border"),
+            Some(stated(r.text_area.border.color)),
+            "{field}'s info does not claim the text_area.border.color its surface is edged with: {info:?}"
+        );
+        assert_eq!(
+            claim_of(&info, "hover_border_color"),
+            r.input.hover_border_color.map(stated),
+            "{field}'s info does not claim the input.hover_border_color its surface takes under the pointer: {info:?}"
+        );
+        assert!(
+            info.config
+                .iter()
+                .any(|n| n.what == "surface" && n.text.contains("text_area.border")),
+            "{field}'s info carries no surface line naming text_area.border: {info:?}"
+        );
+        assert_eq!(
+            claim_of(&info, "input"),
+            None,
+            "{field}'s info claims upstream's input token, which its own edge no longer shows: {info:?}"
+        );
+        use_preset(&mut cx, &showcase, "adwaita");
+        show(&mut cx, &showcase, page);
+        let info = settle_on(&mut cx, &showcase, field);
+        assert!(info.is_some(), "{field} shows no info under adwaita");
+        let Some(info) = info else { return };
+        assert!(
+            ["border", "hover_border_color", "input"]
+                .iter()
+                .all(|edge| claim_of(&info, edge).is_none()),
+            "{field}'s info claims an edge adwaita does not stroke: {info:?}"
+        );
+        assert_eq!(
+            info.config
+                .iter()
+                .find(|n| n.what == "edge")
+                .map(|n| n.text.as_str()),
+            Some("none: text_area.border.line_width is 0"),
+            "{field}'s info does not say it strokes no edge: {info:?}"
+        );
+    }
+}
+
+/// The Layout page's Form fields are refined as the Inputs page's are
+/// (M9-006): under kde-breeze light they are filled with
+/// `input.background_color`, the view colour, not upstream's
+/// `input_background()`, the window's.
+#[gpui::test]
+fn the_form_fields_take_the_input_fill(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_light_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Layout);
+    let r = resolved_theme(&mut cx, &showcase);
+    let fill = stated(r.input.background_color);
+    assert_ne!(
+        fill,
+        stated(r.defaults.background_color),
+        "kde-breeze light's field fill is the window's colour, so the fill could not be told from upstream's"
+    );
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    for field in ["layout-form-name", "layout-form-email"] {
+        assert_eq!(
+            painted_fill(&mut cx, field),
+            Some(fill),
+            "the Form's {field} is not filled with input.background_color"
+        );
+    }
+}
+
+/// A refined, enabled Input's info claims the edge its surface draws,
+/// `input.border.color`, as the showcase's own, and not upstream's `input`
+/// token, which the field's own edge no longer shows (M9-055); the Inputs
+/// page's field and the Layout page's Form field alike.
+#[gpui::test]
+fn a_refined_inputs_info_claims_its_surfaces_edge(cx: &mut TestAppContext) {
+    use crate::info::stated;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    for (page, field) in [
+        (Page::Inputs, INPUTS_FIELD),
+        (Page::Layout, "layout-form-name"),
+    ] {
+        show(&mut cx, &showcase, page);
+        let r = resolved_theme(&mut cx, &showcase);
+        assert!(
+            r.input.border.line_width > 0.0,
+            "kde-breeze no longer strokes its field, which this test reads"
+        );
+        let info = settle_on(&mut cx, &showcase, field);
+        assert!(info.is_some(), "{field} shows no info");
+        let Some(info) = info else { return };
+        let edge = info.colors.iter().find(|c| c.field == "border");
+        assert!(
+            edge.is_some_and(
+                |c| c.value == stated(r.input.border.color) && c.cited_at == "showcase"
+            ),
+            "{field}'s info does not claim the input.border.color its surface is edged with: {info:?}"
+        );
+        assert_eq!(
+            claim_of(&info, "input"),
+            None,
+            "{field}'s info claims upstream's input token, which its own edge no longer shows: {info:?}"
+        );
+    }
+}
+
+/// Under a native theme `geometry::select` letters a Select's trigger in
+/// `combo_box.font`'s colour, so its info claims no upstream `foreground`
+/// trigger text (M9-055).
+#[gpui::test]
+fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    show(&mut cx, &showcase, Page::Basic);
+    let info = settle_on(&mut cx, &showcase, "basic-select");
+    assert!(info.is_some(), "the Select shows no info");
+    assert_eq!(
+        info.as_ref().and_then(|info| claim_of(info, "foreground")),
+        None,
+        "the Select's info claims upstream's foreground trigger text under a native theme: {info:?}"
+    );
+}
 /// The number field a native theme draws -- the showcase's own frame round
 /// gpui-base's NumberInput -- reports what it paints (M9-001): under
 /// kde-breeze light its fill is `input.background_color`, the view colour

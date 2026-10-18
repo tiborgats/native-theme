@@ -1002,11 +1002,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the frame's fill (demo::number_input)",
     ),
     (
-        "basic.text_area",
-        "input.background_color",
-        "gpui: geometry::input_fill on the Textarea (demo::rows_textarea)",
-    ),
-    (
         "",
         "input.background_color",
         "gpui: the field's fill (demo::input_surface, geometry::input_fill)",
@@ -1120,11 +1115,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "basic.number_input",
         "input.hover_border_color",
         "gpui: the frame's edge under the pointer (demo::number_input)",
-    ),
-    (
-        "basic.text_area",
-        "input.hover_border_color",
-        "gpui: not applied — the Textarea keeps its edge under the pointer",
     ),
     (
         "",
@@ -2119,7 +2109,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:798)",
+        "gpui: the surface's edge (demo::input_surface)",
     ),
     (
         "",

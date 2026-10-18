@@ -7,21 +7,60 @@ use super::{WidgetInfo, chrome::input_background, claim, px_text, stated};
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
 
 /// A refined, enabled field's surface, which the showcase draws under the
-/// field (`demo::text_input`): `r`'s `input.background_color` and
-/// `input.border.color`, and `input.hover_border_color` under the pointer.
+/// field (`demo::text_field`): `r`'s `input.background_color` framed by
+/// `input.border.color`, and by `input.hover_border_color` under the
+/// pointer, at `input.border.line_width`.
 pub fn input_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
-    let i = &r.input;
-    let info = if i.hover_border_color.is_some() {
+    let line_width = r.input.border.line_width;
+    let info = if line_width > 0.0 {
         info.color(claim(
-            "hovered border",
-            "hover_border_color",
-            stated(i.hover_border_color.unwrap_or(i.border.color)),
+            "edge",
+            "border",
+            stated(r.input.border.color),
             "showcase",
         ))
     } else {
         info
     };
-    info.config("surface", "input.background_color framed by input.border.color, and by input.hover_border_color (where stated) under the pointer, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface")
+    surface(info, r, line_width, "input.border")
+}
+
+/// A text area's surface, which the showcase draws under it
+/// (`demo::textarea`, `demo::rows_textarea`): [`input_surface`]'s, framed
+/// by `text_area.border.color` at `text_area.border.line_width`.
+pub fn text_area_surface(info: WidgetInfo, r: &ResolvedTheme) -> WidgetInfo {
+    let line_width = r.text_area.border.line_width;
+    let info = if line_width > 0.0 {
+        info.color(claim(
+            "edge",
+            "border",
+            stated(r.text_area.border.color),
+            "showcase",
+        ))
+    } else {
+        info
+    };
+    surface(info, r, line_width, "text_area.border")
+}
+
+/// What an input surface framed by `frame` (`input.border` or
+/// `text_area.border`), stroked `line_width` wide, draws beside its edge at
+/// rest: `input.hover_border_color` under the pointer, where stated, and
+/// the surface line. A 0 width draws no edge in either state.
+fn surface(info: WidgetInfo, r: &ResolvedTheme, line_width: f32, frame: &str) -> WidgetInfo {
+    let info = if line_width > 0.0 {
+        info.colors(r.input.hover_border_color.map(|hover_border_color| {
+            claim(
+                "hovered edge",
+                "hover_border_color",
+                stated(hover_border_color),
+                "showcase",
+            )
+        }))
+    } else {
+        info.config("edge", format!("none: {frame}.line_width is 0"))
+    };
+    info.config("surface", format!("input.background_color framed by {frame}.color at {frame}.line_width, and by input.hover_border_color (where stated) under the pointer, drawn by the showcase under the field, which it leaves without a fill or an edge of its own: Input is Styled only and its root's one state is focused (input/input.rs, Input::render), where its own border in ring still shows over the surface"))
 }
 
 /// `info` of a disabled field over its surface (`demo::disabled_input_surface`).
@@ -33,7 +72,7 @@ pub fn disabled_input_surface(info: WidgetInfo) -> WidgetInfo {
 /// A single-line `Input` taking the refinement `field` names. `styled` is
 /// whether a native theme is installed, so whether `geometry::input` refined
 /// a `Refined` field and `geometry::input_height` sized a `HeightOnly` one.
-/// Its geometry line is recorded where `demo::text_input` applies the
+/// Its geometry line is recorded where `demo::text_field` applies the
 /// builder.
 pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Input");
@@ -43,18 +82,20 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
     };
     // geometry::input_fill gives a refined field the platform's fill, in
     // place of upstream's (input/input.rs:795, then :803); its geometry line
-    // names the fields.
+    // names the fields. The showcase then leaves the field without a fill or
+    // an edge colour of its own over a surface of its own (demo::text_field),
+    // whose info claims the edge.
     let filled = field == InputField::Refined && styled;
-    let info = info.color(claim(
-        "border",
-        "input",
-        t.input,
-        "gpui-component/input/input.rs:798",
-    ));
     let info = if filled {
         info
     } else {
-        info.color(input_background(t))
+        info.color(claim(
+            "border",
+            "input",
+            t.input,
+            "gpui-component/input/input.rs:798",
+        ))
+        .color(input_background(t))
     };
     // Input takes only the fill from input_style and drops its foreground
     // (input/input.rs:707), so the text is the colour of the root: the one
@@ -131,30 +172,34 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
 }
 
 /// A `Textarea`, `filled` by `geometry::input_fill` or not. Its geometry
-/// lines are recorded where `demo::textarea` applies the builders.
+/// lines are recorded where `demo::surfaced_textarea` applies the builders,
+/// and a filled one's surface where it draws the surface.
 pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Textarea");
     // geometry::text_area letters the field in input.font's colour, over
     // the window's it inherits (a Textarea renders as an Input,
     // input/textarea.rs:221, which drops input_style's foreground,
-    // input/input.rs:707): its geometry line names it.
+    // input/input.rs:707): its geometry line names it. A filled field has
+    // no fill or edge colour of its own over the showcase's surface, whose
+    // info claims the edge.
     let info = if filled {
         info
     } else {
-        info.color(input_background(t)).color(claim(
-            "text, inherited",
-            "foreground",
-            t.foreground,
-            "showcase",
-        ))
+        info.color(input_background(t))
+            .color(claim(
+                "text, inherited",
+                "foreground",
+                t.foreground,
+                "showcase",
+            ))
+            .color(claim(
+                "border",
+                "input",
+                t.input,
+                "gpui-component/input/input.rs:798",
+            ))
     };
     info.color(claim(
-        "border",
-        "input",
-        t.input,
-        "gpui-component/input/input.rs:798",
-    ))
-    .color(claim(
             "focused border",
             "ring",
             t.ring,
@@ -1232,14 +1277,20 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
 /// A `Select`. Its geometry line is recorded where `demo::select` applies
 /// the builder.
 pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
-    combo_fill(WidgetInfo::new("Select"), t, native, false)
-        .color(claim(
+    let info = combo_fill(WidgetInfo::new("Select"), t, native, false);
+    // The trigger sets text_color(foreground) and then refines its style
+    // (select.rs, SelectState::render), so geometry::select's combo_box.font
+    // colour wins where a native theme is installed.
+    let info = match native {
+        Some(_) => info.instance("trigger text", "combo_box.font's colour, which geometry::select letters the trigger in over upstream's foreground: the trigger sets its text colour and then refines its style (select.rs, SelectState::render)"),
+        None => info.color(claim(
             "upstream trigger text",
             "foreground",
             t.foreground,
             "gpui-component/input/input.rs:105",
-        ))
-        .color(claim(
+        )),
+    };
+    info.color(claim(
             "focused border",
             "ring",
             t.ring,

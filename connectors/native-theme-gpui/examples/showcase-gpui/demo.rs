@@ -5,8 +5,8 @@ use std::{cell::Cell, num::NonZeroU32, rc::Rc, time::Duration};
 use gpui::DefiniteLength;
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
-    FontWeight, Global, Hsla, ImageSource, KeyDownEvent, Keystroke, MouseButton, Pixels, Rems,
-    RenderOnce, SharedString, Stateful, StyleRefinement, Window, anchored, deferred, div,
+    FontWeight, Global, Hsla, ImageSource, KeyDownEvent, Keystroke, Length, MouseButton, Pixels,
+    Rems, RenderOnce, SharedString, Stateful, StyleRefinement, Window, anchored, deferred, div,
     prelude::*, px, relative, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
@@ -3124,7 +3124,7 @@ pub(crate) fn text_input(
     disabled: bool,
     width: Pixels,
 ) -> Stateful<Div> {
-    text_field(ui, cx, id, state, field, disabled, width, false)
+    text_field(ui, cx, id, state, field, disabled, width.into(), false)
 }
 
 /// The Inputs page's `Input` holding an inline token (spec §8.3):
@@ -3137,11 +3137,20 @@ pub(crate) fn token_input(
     state: &Entity<InputState>,
     width: Pixels,
 ) -> Stateful<Div> {
-    text_field(ui, cx, id, state, InputField::Refined, false, width, true)
+    text_field(
+        ui,
+        cx,
+        id,
+        state,
+        InputField::Refined,
+        false,
+        width.into(),
+        true,
+    )
 }
 
-/// [`text_input`], drawing the state's inline tokens as `InputToken` chips
-/// where `tokens`.
+/// [`text_input`], `width` wide, drawing the state's inline tokens as
+/// `InputToken` chips where `tokens`.
 #[allow(clippy::too_many_arguments)]
 fn text_field(
     ui: &Entity<InfoRegistry>,
@@ -3150,7 +3159,7 @@ fn text_field(
     state: &Entity<InputState>,
     field: InputField,
     disabled: bool,
-    width: Pixels,
+    width: Length,
     tokens: bool,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
@@ -3307,7 +3316,8 @@ fn faded_surface(
 /// `geometry::text_area`: it renders as an `Input` (input/textarea.rs:221),
 /// padded by the sides `text_area.border.padding` states, the multi-line
 /// field's own (docs/platform-facts.md §2.29); its `height` goes on after
-/// the builder.
+/// the builder, and under a native theme on the surface it is drawn over
+/// ([`surfaced_textarea`]).
 pub(crate) fn textarea(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3316,22 +3326,9 @@ pub(crate) fn textarea(
     width: Pixels,
     height: Pixels,
 ) -> Stateful<Div> {
-    let fill = native_geometry(cx, |n| geometry::input_fill(n, false));
-    let mut textarea_info = info::inputs::textarea(cx.theme(), fill.is_some());
-    let textarea = native_info(
-        Textarea::new(state).w(width),
-        cx,
-        geometry::text_area,
-        "text_area",
-        &mut textarea_info,
-    );
-    if fill.is_some() {
-        textarea_info = textarea_info.geometry("input_fill");
-    }
-    let textarea = refined(textarea, fill.as_ref());
-    Styled::h(textarea, height)
-        .info(ui, id, textarea_info)
-        .debug_selector(move || id.into())
+    let filled = cx.native().is_some();
+    let info = info::inputs::textarea(cx.theme(), filled);
+    surfaced_textarea(ui, cx, id, state, width, Some(height), info)
 }
 
 /// A `Textarea` over `state`, `width` wide and as tall as the rows `state`
@@ -3346,8 +3343,27 @@ pub(crate) fn rows_textarea(
     state: &Entity<TextareaState>,
     width: Pixels,
 ) -> Stateful<Div> {
+    let filled = cx.native().is_some();
+    let info = info::inputs::rows_textarea(cx.theme(), filled);
+    surfaced_textarea(ui, cx, id, state, width, None, info)
+}
+
+/// A `Textarea` over `state`, `width` wide and `height` tall, or as tall as
+/// its rows where `height` is `None`, refined by `geometry::text_area` and
+/// `geometry::input_fill`, reporting `textarea_info`. Under a native theme
+/// it is drawn as an enabled text input is ([`input_surface`]): over the
+/// frame the theme states for a text area, `text_area.border`, with the
+/// text field's hover edge, its own fill and edge colour left transparent.
+fn surfaced_textarea(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    state: &Entity<TextareaState>,
+    width: Pixels,
+    height: Option<Pixels>,
+    mut textarea_info: WidgetInfo,
+) -> Stateful<Div> {
     let fill = native_geometry(cx, |n| geometry::input_fill(n, false));
-    let mut textarea_info = info::inputs::rows_textarea(cx.theme(), fill.is_some());
     let textarea = native_info(
         Textarea::new(state).w(width),
         cx,
@@ -3359,16 +3375,20 @@ pub(crate) fn rows_textarea(
         textarea_info = textarea_info.geometry("input_fill");
     }
     let mut textarea = refined(textarea, fill.as_ref());
-    let style = Styled::style(&mut textarea);
-    style.size.height = None;
-    style.min_size.height = None;
-    // The frame the theme states for a text area, `text_area.border`, with
-    // the text field's hover edge, over a surface as an enabled text input
-    // takes it ([`input_surface`]).
+    match height {
+        Some(height) => textarea = Styled::h(textarea, height),
+        None => {
+            let style = Styled::style(&mut textarea);
+            style.size.height = None;
+            style.min_size.height = None;
+        }
+    }
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
+        textarea_info = info::inputs::text_area_surface(textarea_info, r);
         let none = cx.theme().transparent;
         return input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none))
             .w(width)
+            .when_some(height, |surface, height| surface.h(height))
             .info(ui, id, textarea_info)
             .debug_selector(move || id.into());
     }
@@ -6855,25 +6875,24 @@ pub(crate) fn breadcrumb(
 /// states no form.
 const FORM_LABEL_WIDTH: Pixels = px(100.);
 
-/// An `Input` over `state` in a Form's field, refined by `geometry::input`.
+/// An `Input` over `state` in a Form's field, as wide as the field: the
+/// Inputs page's refined, enabled field ([`text_field`]).
 fn field_input(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     state: &Entity<InputState>,
 ) -> Stateful<Div> {
-    // What `native_info` applies the builder under.
-    let styled = cx.native().is_some();
-    let mut input_info = info::inputs::input(cx.theme(), InputField::Refined, styled);
-    native_info(
-        Input::new(state),
+    text_field(
+        ui,
         cx,
-        geometry::input,
-        "input",
-        &mut input_info,
+        id,
+        state,
+        InputField::Refined,
+        false,
+        relative(1.).into(),
+        false,
     )
-    .info(ui, id, input_info)
-    .debug_selector(move || id.into())
 }
 
 /// The horizontal `Form` of the Layout page: a required Name field over
