@@ -11194,6 +11194,38 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
     assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
 }
 
+/// No code of the showcase but its tests clones gpui-component's `Theme`:
+/// a frame reads the fields it needs by reference (M9-020). The Showcase and
+/// the inspector render on every frame the window draws, and the Basic
+/// page's Spinner asks for one every frame, so a clone there copied the
+/// whole theme, its configs and colour tables included, each frame. The
+/// gate prints each clone it found.
+#[test]
+fn no_code_clones_the_gpui_theme() {
+    let found: Vec<String> = showcase_sources()
+        .into_iter()
+        .filter(|(name, _)| name != "tests.rs")
+        .flat_map(|(name, source)| {
+            code_only(&source)
+                .lines()
+                .enumerate()
+                .filter(|(_, line)| {
+                    let line: String = line.split_whitespace().collect();
+                    line.contains("theme().clone()") || line.contains("Theme::global(cx).clone()")
+                })
+                .map(|(ix, line)| format!("{name}:{}: {}", ix + 1, line.trim()))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+    for clone in &found {
+        println!("clones the gpui Theme: {clone}");
+    }
+    assert!(
+        found.is_empty(),
+        "the showcase clones gpui-component's Theme where it can read its fields by reference: {found:?}"
+    );
+}
+
 // ---------------------------------------------------------------------------
 // The listeners: a state a listener writes is drawn on the next frame
 // ---------------------------------------------------------------------------

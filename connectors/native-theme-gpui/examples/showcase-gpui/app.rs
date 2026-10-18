@@ -1988,10 +1988,10 @@ impl Render for Showcase {
             dialog: self.sample_icon(IconName::CircleX),
             alert: self.sample_icon(IconName::TriangleAlert),
         });
-        let theme = cx.theme().clone();
+        let (foreground, background) = (cx.theme().foreground, cx.theme().background);
         // Ensure icon image caches match the current foreground color
-        if theme.foreground != self.icon_cache_fg {
-            self.rebuild_icon_caches(theme.foreground, window, cx);
+        if foreground != self.icon_cache_fg {
+            self.rebuild_icon_caches(foreground, window, cx);
         }
 
         let active_page = self.active_page;
@@ -2153,8 +2153,8 @@ impl Render for Showcase {
         div()
             .relative()
             .size_full()
-            .bg(theme.background)
-            .text_color(theme.foreground)
+            .bg(background)
+            .text_color(foreground)
             .track_focus(&self.focus_handle)
             // First, so its prepaint opens the frame for every target
             // (info/registry.rs, epoch_marker).
