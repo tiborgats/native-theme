@@ -252,7 +252,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 .config("padding", "menu.border.padding's stated sides on each title and item, an item's through geometry::menu_item; on a side left unstated, upstream's own: a title's px_1p5 / py_0p5 and an item's 8px (menu/app_menu_bar.rs, AppMenu::render; menu/popup_menu.rs, PopupMenu::render_item)")
                 .config("item height", match m.row_height {
                     Some(h) => format!("menu.row_height, {}px, by geometry::menu_item's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1", px_text(h)),
-                    None if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => "26px, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item): the theme states neither menu.row_height nor a vertical padding".to_string(),
+                    None if m.border.padding.top.is_none() && m.border.padding.bottom.is_none() => "26px, upstream's PopupMenu row (menu/popup_menu.rs, PopupMenu::render_item), by the connector's control-height rule: the height at a text scale of 1 or less, a minimum with an automatic height above 1; the theme states neither menu.row_height nor a vertical padding".to_string(),
                     None => "the font's line and menu.border.padding: the theme states no menu.row_height, the item sizes to its font (platform-facts §2.6)".to_string(),
                 })
                 .config("menu edge", format!("popover.border: {}px, radius {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.line_width), px_text(r.popover.border.corner_radius)))

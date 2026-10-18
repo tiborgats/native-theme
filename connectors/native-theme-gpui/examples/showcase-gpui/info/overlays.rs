@@ -480,7 +480,13 @@ pub fn menu_row(
                     ),
                 )
             } else {
-                info.config("frame edge", "none: popover.border.line_width is 0")
+                info.config(
+                    "frame edge",
+                    format!(
+                        "none: popover.border.line_width is 0; the frame is still rounded by popover.border.corner_radius, {}px",
+                        px_text(r.popover.border.corner_radius)
+                    ),
+                )
             };
             info.config(
                 "highlight",

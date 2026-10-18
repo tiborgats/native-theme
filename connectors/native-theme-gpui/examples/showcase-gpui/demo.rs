@@ -212,9 +212,12 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// A menu row's side padding where `menu.border.padding` states no side,
 /// and its height where neither `menu.row_height` nor a vertical padding
 /// side is stated: upstream's `PopupMenu` row at the default Size
-/// (menu/popup_menu.rs:1226, `INNER_PADDING`; :1231, the item height).
+/// (menu/popup_menu.rs:1226, `INNER_PADDING`; :1231, the item height). The
+/// height takes the connector's control-height rule (geometry.rs,
+/// `with_height_rule`): it is the row's height at a text scale of 1 or less
+/// and its minimum above.
 const MENU_ROW_PADDING_X: Pixels = px(8.);
-const MENU_ROW_HEIGHT: Pixels = px(26.);
+pub(crate) const MENU_ROW_HEIGHT: Pixels = px(26.);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
 /// between a row's label and its shortcut (menu/popup_menu.rs:1506-1508,
@@ -255,6 +258,9 @@ pub(crate) struct MenuLook {
     radius: Pixels,
     padding: ResolvedPadding,
     row_height: Option<Pixels>,
+    /// Whether the text scale is above 1, where a fixed height becomes a
+    /// minimum (geometry.rs, `with_height_rule`).
+    text_scaled_up: bool,
     background: Hsla,
     separator: Hsla,
     separator_width: Pixels,
@@ -280,6 +286,7 @@ impl MenuLook {
             radius: px(m.border.corner_radius.max(0.0)),
             padding: m.border.padding,
             row_height: m.row_height.map(px),
+            text_scaled_up: n.accessibility.text_scale_factor() > 1.0,
             background: info::stated(m.background_color),
             separator: info::stated(m.separator_color),
             separator_width: px(n.resolved.separator.line_width),
@@ -328,18 +335,19 @@ impl MenuLook {
 
     /// A popup row, refined by `geometry::menu_item` before the caller's own
     /// style (its label-to-shortcut gap replaces the builder's icon gap),
-    /// with the fallbacks on what the theme leaves unstated.
+    /// with the fallbacks on what the theme leaves unstated: the builder sets
+    /// the stated padding sides, so only an unstated left or right is padded
+    /// here.
     pub(crate) fn row(&self, lit: bool) -> Div {
         // The shortcut is the plain text of a Kbd without its appearance
         // (kbd.rs:234-236), which takes the row's font and line box.
-        let row = padded(
-            h_flex().refine_style(&self.item),
-            &self.padding,
-            MENU_ROW_PADDING_X,
-            None,
-        )
-        .rounded(self.radius);
+        let row = h_flex()
+            .refine_style(&self.item)
+            .when(self.padding.left.is_none(), |row| row.pl(MENU_ROW_PADDING_X))
+            .when(self.padding.right.is_none(), |row| row.pr(MENU_ROW_PADDING_X))
+            .rounded(self.radius);
         let row = match (self.row_height, self.padding.top, self.padding.bottom) {
+            (None, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
             (None, None, None) => row.h(MENU_ROW_HEIGHT),
             _ => row,
         };

@@ -7262,72 +7262,89 @@ fn the_application_drawn_menu_rows_take_the_menu_theme(cx: &mut TestAppContext) 
 }
 
 /// The Overlays page's menu rows' info claims the menu leaves the rows are
-/// painted with (M9-007), and no popover or accent token.
+/// painted with (M9-007), and no popover or accent token; its frame's edge
+/// where `popover.border` strokes one (adwaita), and where it strokes none
+/// (material-3) a line saying so that names the radius still rounding the
+/// frame.
 #[gpui::test]
 fn the_menu_rows_info_claims_the_menu_leaves(cx: &mut TestAppContext) {
-    use crate::info::stated;
+    use crate::info::{px_text, stated};
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
-    use_light_preset(&mut cx, &showcase, "adwaita");
-    show(&mut cx, &showcase, Page::Overlays);
-    let r = resolved_theme(&mut cx, &showcase);
-    let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
-    assert!(info.is_some(), "the menu row shows no info");
-    let Some(info) = info else { return };
-    let by_role = |role: &str| {
-        info.colors
-            .iter()
-            .find(|c| c.role == role)
-            .map(|c| (c.field, c.value))
-    };
-    for (role, field, value) in [
-        (
-            "bg (the frame's)",
-            "background_color",
-            r.menu.background_color,
-        ),
-        ("text", "color", r.menu.font.color),
-        ("hover", "hover_background", r.menu.hover_background),
-        ("hover text", "hover_text_color", r.menu.hover_text_color),
-    ] {
-        assert_eq!(
-            by_role(role),
-            Some((field, stated(value))),
-            "the menu row's info does not claim menu.{field} as its {role}: {info:?}"
-        );
-    }
-    for token in [
-        "popover",
-        "popover_foreground",
-        "accent",
-        "accent_foreground",
-    ] {
-        assert_eq!(
-            claim_of(&info, token),
-            None,
-            "the menu row's info claims the {token} token, which no longer paints it: {info:?}"
-        );
-    }
-    if r.popover.border.line_width > 0.0 {
-        assert_eq!(
-            by_role("frame edge"),
-            Some(("color", stated(r.popover.border.color))),
-            "the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
-        );
-    } else {
-        assert_eq!(
-            by_role("frame edge"),
-            None,
-            "the menu row's info claims an edge popover.border does not stroke: {info:?}"
-        );
-        assert_eq!(
-            info.config
+    let mut branches = (false, false);
+    for preset in ["adwaita", "material-3"] {
+        use_light_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Overlays);
+        let r = resolved_theme(&mut cx, &showcase);
+        let info = settle_on(&mut cx, &showcase, "overlays-menu-row-copy");
+        assert!(info.is_some(), "{preset}: the menu row shows no info");
+        let Some(info) = info else { return };
+        let by_role = |role: &str| {
+            info.colors
                 .iter()
-                .find(|n| n.what == "frame edge")
-                .map(|n| n.text.as_str()),
-            Some("none: popover.border.line_width is 0"),
-            "the menu row's info does not say its frame strokes no edge: {info:?}"
-        );
+                .find(|c| c.role == role)
+                .map(|c| (c.field, c.value))
+        };
+        for (role, field, value) in [
+            (
+                "bg (the frame's)",
+                "background_color",
+                r.menu.background_color,
+            ),
+            ("text", "color", r.menu.font.color),
+            ("hover", "hover_background", r.menu.hover_background),
+            ("hover text", "hover_text_color", r.menu.hover_text_color),
+        ] {
+            assert_eq!(
+                by_role(role),
+                Some((field, stated(value))),
+                "{preset}: the menu row's info does not claim menu.{field} as its {role}: {info:?}"
+            );
+        }
+        for token in [
+            "popover",
+            "popover_foreground",
+            "accent",
+            "accent_foreground",
+        ] {
+            assert_eq!(
+                claim_of(&info, token),
+                None,
+                "{preset}: the menu row's info claims the {token} token, which no longer paints it: {info:?}"
+            );
+        }
+        if r.popover.border.line_width > 0.0 {
+            branches.0 = true;
+            assert_eq!(
+                by_role("frame edge"),
+                Some(("color", stated(r.popover.border.color))),
+                "{preset}: the menu row's info does not claim the popover.border.color its frame is edged with: {info:?}"
+            );
+        } else {
+            branches.1 = true;
+            assert_eq!(
+                by_role("frame edge"),
+                None,
+                "{preset}: the menu row's info claims an edge popover.border does not stroke: {info:?}"
+            );
+            let expected = format!(
+                "none: popover.border.line_width is 0; the frame is still rounded by popover.border.corner_radius, {}px",
+                px_text(r.popover.border.corner_radius)
+            );
+            assert_eq!(
+                info.config
+                    .iter()
+                    .find(|n| n.what == "frame edge")
+                    .map(|n| n.text.as_str()),
+                Some(expected.as_str()),
+                "{preset}: the menu row's info does not say its frame strokes no edge and what rounds it: {info:?}"
+            );
+        }
     }
+    assert_eq!(
+        branches,
+        (true, true),
+        "adwaita no longer strokes popover.border or material-3 now does, so a branch of the frame-edge info went unread"
+    );
 }
 
 /// The chrome popup's rows and titles take `menu.font` as
@@ -7391,6 +7408,49 @@ fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
             font(title.style()),
             expected.text,
             "a menu title at text scale {scale} does not take menu.font as geometry::menu_item sets it"
+        );
+    }
+}
+
+/// Where the theme states neither `menu.row_height` nor a vertical padding
+/// side (catppuccin-mocha), a chrome popup row is `MENU_ROW_HEIGHT` by the
+/// connector's control-height rule (`geometry.rs`, `with_height_rule`): that
+/// height at text scale 1, a minimum with an automatic height above it, so a
+/// scaled font grows the row.
+#[test]
+fn a_menu_popup_rows_fallback_height_follows_the_control_height_rule() {
+    use native_theme_gpui::Native;
+    let resolved = native_theme::theme::Theme::preset("catppuccin-mocha")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Dark).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "catppuccin-mocha dark does not resolve");
+    let Some(resolved) = resolved else { return };
+    let p = resolved.menu.border.padding;
+    assert!(
+        resolved.menu.row_height.is_none() && p.top.is_none() && p.bottom.is_none(),
+        "catppuccin-mocha now states a menu row height or a vertical padding, which this test needs unstated"
+    );
+    let height = gpui::Length::from(crate::demo::MENU_ROW_HEIGHT);
+    for (scale, expected) in [
+        (1.0, (Some(height), None)),
+        (2.0, (Some(gpui::Length::Auto), Some(height))),
+    ] {
+        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+        prefs.text_scaling_factor = scale;
+        let n = Native {
+            resolved: &resolved,
+            accessibility: &prefs,
+        };
+        let mut row = crate::demo::MenuLook::of(&n).row(false);
+        let style = row.style();
+        assert_eq!(
+            (style.size.height, style.min_size.height),
+            expected,
+            "a popup row at text scale {scale} is not MENU_ROW_HEIGHT by the control-height rule"
         );
     }
 }
