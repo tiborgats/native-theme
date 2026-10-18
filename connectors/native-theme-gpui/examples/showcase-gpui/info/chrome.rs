@@ -1083,19 +1083,27 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
             "gpui-component/status_bar.rs:95",
         ))
     };
-    info.not_themeable(
-        "region gap",
-        "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and geometry::status_bar sets none",
-    )
-    .not_themeable(
-        "item gap",
-        "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the left region holds one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
-    )
-    .not_themeable(
-        "edge",
-        "border_t_1, a 1px rule along the top, which geometry::status_bar leaves as it is (status_bar.rs, StatusBar::render)",
-    )
-    .instance(
+    let info = info
+        .not_themeable(
+            "region gap",
+            "gap_2, 0.5rem, between the regions: upstream sets it on the bar before refine_style (status_bar.rs:88, :96), so a refinement could replace it, but the model states no status-bar item gap and geometry::status_bar sets none",
+        )
+        .not_themeable(
+            "item gap",
+            "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the left region holds one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
+        );
+    // Under a native theme demo::status_bar draws the top edge
+    // status_bar.border.line_width thick, over upstream's border_t_1, and
+    // says so in its "top edge" line.
+    let info = if styled {
+        info
+    } else {
+        info.not_themeable(
+            "edge",
+            "border_t_1, upstream's 1px rule along the top: with no native theme installed, demo::status_bar sets no status_bar.border.line_width over it (status_bar.rs, StatusBar::render)",
+        )
+    };
+    info.instance(
         "left",
         if cfg!(target_os = "linux") {
             "the side-panel toggle at the bar's left end, then the desktop native_theme::detect recognises in XDG_CURRENT_DESKTOP, or Unknown where it recognises none -- SystemTheme::from_system then asks the portal, then kdeglobals, and the preset names what it settled on; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"

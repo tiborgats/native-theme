@@ -12390,3 +12390,42 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// Under a native theme the status bar's top edge is
+/// `status_bar.border.line_width` thick (`demo::status_bar`), as the listed
+/// panel's leaf row states it: no note says upstream's `border_t_1` stands
+/// there (M9-033). Without a native theme it does stand, and the info says so.
+#[gpui::test]
+fn the_status_bars_info_names_upstreams_edge_only_without_a_theme(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "adwaita");
+    let info = settle_on(&mut cx, &showcase, CHROME_STATUS_BAR);
+    assert!(info.is_some(), "the status bar shows no info");
+    let upstream: Vec<&crate::info::Note> = info
+        .iter()
+        .flat_map(|info| &info.not_themeable)
+        .filter(|n| n.text.contains("border_t_1"))
+        .collect();
+    assert!(
+        upstream.is_empty(),
+        "under adwaita the status bar's info says upstream's 1px edge stands, which demo::status_bar draws status_bar.border.line_width wide: {upstream:?}"
+    );
+    let width =
+        cx.update(|_window, cx| native_value(cx, |n| n.resolved.status_bar.border.line_width));
+    let edge = shown_note(info.as_ref(), "top edge");
+    assert!(
+        width.is_some_and(|w| edge
+            .as_deref()
+            .is_some_and(|t| t.contains("status_bar.border.line_width")
+                && t.contains(&format!("{}px", crate::info::px_text(w))))),
+        "the status bar's info does not give its top edge as status_bar.border.line_width, {width:?}: {edge:?}"
+    );
+    let bare = cx.update(|_window, cx| crate::info::status_bar(Theme::global(cx), false));
+    assert!(
+        bare.not_themeable
+            .iter()
+            .any(|n| n.what == "edge" && n.text.contains("border_t_1")),
+        "without a native theme the status bar's info does not name upstream's border_t_1: {:?}",
+        bare.not_themeable
+    );
+}
