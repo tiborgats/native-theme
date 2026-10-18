@@ -445,6 +445,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (gpui)**: under a native theme the Data page's List and Tree rows under the pointer letter their label in `list.hover_text_color`, as their Widget Info says: the List's label kept `list.item_font`'s colour, since a text takes its colour as it is laid out, before its row's hover is known in that frame, and the Tree's rows had no hovered text at all. A Tree row ends short of the Tree's scrollbar where the theme's is no overlay (kde-breeze), as a List row does, where the bar was laid over the row's end.
 - **Showcases (gpui)**: under a native theme a selected List or Tree row's Widget Info says its text is `list.selection_text_color`, which `geometry::list_item_selected` sets over the list font's colour, as it is drawn; it said `list.item_font`'s colour in every state.
 - **Showcases (gpui)**: the Layout page's Accordion answers *Supported toolkits* with the three connectors, gpui, iced and egui, each with its crate, counted and named from one list that a test holds to the workspace's members; it said gpui-component and iced, with an egui connector planned for v0.6.0, which shipped it.
+- **Showcases (gpui)**: the Feedback page's Tags heading counts its colours from the Tags it shows, six (*Tags (6 colors + outline)*); it said seven.
 
 ## [0.6.1] - 2026-10-09
 

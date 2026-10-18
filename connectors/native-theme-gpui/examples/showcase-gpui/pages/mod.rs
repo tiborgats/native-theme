@@ -11,7 +11,7 @@ pub(crate) mod basic;
 mod buttons;
 mod charts;
 mod data;
-mod feedback;
+pub(crate) mod feedback;
 mod icons;
 mod inputs;
 pub(crate) mod layout;

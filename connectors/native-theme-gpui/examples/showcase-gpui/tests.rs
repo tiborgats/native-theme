@@ -14473,3 +14473,30 @@ fn the_supported_toolkits_answer_counts_the_connectors() {
         );
     }
 }
+
+/// The Feedback page's Tags heading counts the colours of `TAGS`' filled
+/// Tags, one colour each, beside the outlined ones.
+#[test]
+fn the_tags_heading_counts_the_tags_colours() {
+    use crate::demo::TagKind;
+    use crate::pages::feedback::{TAGS, tags_heading};
+    let filled: Vec<TagKind> = TAGS
+        .iter()
+        .filter(|&&(_, _, outlined, _)| !outlined)
+        .map(|&(_, kind, _, _)| kind)
+        .collect();
+    for (ix, kind) in filled.iter().enumerate() {
+        assert!(
+            !filled.iter().take(ix).any(|k| k == kind),
+            "two filled Tags of one colour, which the heading would count twice"
+        );
+    }
+    assert!(
+        TAGS.iter().any(|&(_, _, outlined, _)| outlined),
+        "the heading names outlined Tags, and TAGS holds none"
+    );
+    assert_eq!(
+        tags_heading(),
+        format!("Tags ({} colors + outline)", filled.len())
+    );
+}

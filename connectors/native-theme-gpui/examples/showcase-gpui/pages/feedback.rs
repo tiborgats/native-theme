@@ -83,7 +83,7 @@ const SPINNERS: [(&str, &str, SpinnerKind); 3] = [
 ];
 
 /// The Tags, as `(id, variant, outlined, label)`.
-const TAGS: [(&str, TagKind, bool, &str); 8] = [
+pub(crate) const TAGS: [(&str, TagKind, bool, &str); 8] = [
     (FEEDBACK_TAG_PRIMARY, TagKind::Primary, false, "Primary"),
     (
         "feedback-tag-secondary",
@@ -108,6 +108,16 @@ const TAGS: [(&str, TagKind, bool, &str); 8] = [
         "Danger Outline",
     ),
 ];
+
+/// The Tags section's heading, counting the colours from [`TAGS`]: one
+/// filled Tag per colour, then the outlined ones.
+pub(crate) fn tags_heading() -> String {
+    let colours = TAGS
+        .iter()
+        .filter(|&&(_, _, outlined, _)| !outlined)
+        .count();
+    format!("Tags ({colours} colors + outline)")
+}
 
 /// The Badges, as `(id, count or a dot, the badged Button's label)`.
 const BADGES: [(&str, Option<usize>, &str); 3] = [
@@ -380,7 +390,7 @@ impl Showcase {
                 ui,
                 cx,
                 "feedback-heading-tags",
-                "Tags (7 colors + outline)",
+                tags_heading(),
             ))
             .child(with_gap(h_flex(), widget_gap).flex_wrap().children(
                 TAGS.map(|(id, kind, outline, label)| demo::tag(ui, cx, id, kind, outline, label)),
