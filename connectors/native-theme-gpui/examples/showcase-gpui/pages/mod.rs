@@ -17,7 +17,7 @@ mod inputs;
 pub(crate) mod layout;
 mod overlays;
 mod theme_map;
-mod typography;
+pub(crate) mod typography;
 
 /// The space between two cells of the Icons page's two icon grids: the
 /// showcase's own, gpui's `gap_2`, as the theme states no icon grid, and

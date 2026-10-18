@@ -1,7 +1,7 @@
 //! The Feedback page.
 
-use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*, px};
-use gpui_component::{IconName, h_flex, v_flex};
+use gpui::{Context, IntoElement, Keystroke, ParentElement, Styled, Window, prelude::*, px};
+use gpui_component::{IconName, h_flex, kbd::Kbd, v_flex};
 
 use native_theme_gpui::geometry;
 
@@ -117,6 +117,20 @@ pub(crate) fn tags_heading() -> String {
         .filter(|&&(_, _, outlined, _)| !outlined)
         .count();
     format!("Tags ({colours} colors + outline)")
+}
+
+/// The keystroke the shortcut tooltip names, on gpui's `secondary`
+/// modifier as the showcase's own bindings are (`app::init`): Ctrl off
+/// macOS, Cmd on it.
+pub(crate) const SAVE_KEYS: &str = "secondary-s";
+
+/// The shortcut tooltip's text: [`SAVE_KEYS`] as a `Kbd` draws it on this
+/// platform (gpui-component kbd.rs, Kbd::format), "Ctrl+S" off macOS. The
+/// keys as written where gpui cannot parse them.
+pub(crate) fn save_tooltip() -> String {
+    let keys = Keystroke::parse(SAVE_KEYS)
+        .map_or_else(|_| SAVE_KEYS.to_string(), |stroke| Kbd::format(&stroke));
+    format!("Save file ({keys})")
 }
 
 /// The Badges, as `(id, count or a dot, the badged Button's label)`.
@@ -426,7 +440,7 @@ impl Showcase {
                         cx,
                         "feedback-tooltip-shortcut",
                         "With tooltip",
-                        "Save file (Cmd+S)",
+                        save_tooltip(),
                     ))
                     .child(demo::built_tooltip_button(
                         ui,

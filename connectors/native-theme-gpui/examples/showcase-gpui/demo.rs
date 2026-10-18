@@ -5574,8 +5574,9 @@ pub(crate) fn tooltip_button(
     cx: &App,
     id: &'static str,
     label: &'static str,
-    text: &'static str,
+    text: impl Into<SharedString>,
 ) -> Stateful<Div> {
+    let text = text.into();
     let mut tooltip_info = info::feedback::tooltip(
         cx.theme(),
         false,
@@ -5583,7 +5584,7 @@ pub(crate) fn tooltip_button(
         tooltip_delay(cx),
         gpui_base::TooltipDefaults::global(cx),
         label,
-        text,
+        &text,
     );
     let button = labelled(
         ui,

@@ -1261,7 +1261,11 @@ const DRAWN_TRAITS: &[&str] = &["RenderOnce", "Render", "Element", "IntoElement"
 
 /// Calls of a widget type's associated functions outside the helpers that put
 /// no widget on screen, as (file, `Type::function`, why).
-const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[];
+const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[(
+    "pages/feedback.rs",
+    "Kbd::format",
+    "the shortcut tooltip's text: a String, the keystroke as a Kbd draws it (kbd.rs, Kbd::format)",
+)];
 
 /// Whether `file` is one the first rule of `every_widget_reports_itself`
 /// leaves out: a helper file, the inspector, the test module, or an info file.

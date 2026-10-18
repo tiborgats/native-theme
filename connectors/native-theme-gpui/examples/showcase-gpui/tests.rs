@@ -14500,3 +14500,43 @@ fn the_tags_heading_counts_the_tags_colours() {
         format!("Tags ({} colors + outline)", filled.len())
     );
 }
+
+/// The Typography page's Kbds take gpui's `secondary` modifier, as the
+/// showcase's own bindings do (`app::init`): Ctrl off macOS and Cmd on it.
+/// A `cmd-` keystroke is the platform key everywhere, which gpui-component
+/// draws as Win off macOS (kbd.rs, Kbd::format).
+#[test]
+fn the_kbds_take_the_showcases_modifier() {
+    for &(id, keys) in &crate::pages::typography::KBDS {
+        let stroke = gpui::Keystroke::parse(keys)
+            .unwrap_or_else(|e| panic!("{id}: {keys:?} is no keystroke: {e}"));
+        assert!(
+            keys.starts_with("secondary-"),
+            "{id}: {keys:?} is not on the showcase's modifier, secondary"
+        );
+        let drawn = gpui_component::kbd::Kbd::format(&stroke);
+        if !cfg!(target_os = "macos") {
+            assert!(
+                drawn.starts_with("Ctrl+") && !drawn.contains("Win"),
+                "{id}: {keys:?} is drawn as {drawn:?}, not on Ctrl"
+            );
+        }
+    }
+}
+
+/// The Feedback page's shortcut tooltip names its keystroke as a Kbd draws
+/// it on this platform, on the showcase's modifier: "Ctrl+S" off macOS.
+#[test]
+fn the_shortcut_tooltip_names_its_keystroke() {
+    use crate::pages::feedback::{SAVE_KEYS, save_tooltip};
+    let stroke = gpui::Keystroke::parse(SAVE_KEYS).expect("SAVE_KEYS is a keystroke");
+    assert!(
+        SAVE_KEYS.starts_with("secondary-"),
+        "{SAVE_KEYS:?} is not on the showcase's modifier, secondary"
+    );
+    let drawn = gpui_component::kbd::Kbd::format(&stroke);
+    assert_eq!(save_tooltip(), format!("Save file ({drawn})"));
+    if !cfg!(target_os = "macos") {
+        assert_eq!(save_tooltip(), "Save file (Ctrl+S)");
+    }
+}

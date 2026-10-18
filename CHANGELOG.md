@@ -446,6 +446,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (gpui)**: under a native theme a selected List or Tree row's Widget Info says its text is `list.selection_text_color`, which `geometry::list_item_selected` sets over the list font's colour, as it is drawn; it said `list.item_font`'s colour in every state.
 - **Showcases (gpui)**: the Layout page's Accordion answers *Supported toolkits* with the three connectors, gpui, iced and egui, each with its crate, counted and named from one list that a test holds to the workspace's members; it said gpui-component and iced, with an egui connector planned for v0.6.0, which shipped it.
 - **Showcases (gpui)**: the Feedback page's Tags heading counts its colours from the Tags it shows, six (*Tags (6 colors + outline)*); it said seven.
+- **Showcases (gpui)**: the Typography page's Kbd samples and the Feedback page's shortcut tooltip take the showcase's own modifier, Ctrl off macOS and Cmd on it, as its menus' shortcuts do: off macOS the Kbds drew Copy, Paste and the palette's Shift+P on the Win key, on macOS Undo on Control, and the tooltip said *Cmd+S* on every platform; it now names the keystroke as a Kbd draws it there (*Ctrl+S* off macOS).
 
 ## [0.6.1] - 2026-10-09
 
