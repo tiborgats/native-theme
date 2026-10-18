@@ -12018,35 +12018,246 @@ fn a_disabled_buttons_info_prints_its_fade() {
 /// The claim of `role` in `info`: that role, or a role that goes on from it
 /// after a comma (a hover's, which says whether the theme states one).
 #[cfg(feature = "widgets")]
-fn claimed_as(info: &WidgetInfo, role: &str) -> Option<gpui::Hsla> {
+fn claim_by_role<'a>(info: &'a WidgetInfo, role: &str) -> Option<&'a crate::info::ColorClaim> {
     let more = format!("{role},");
     info.colors
         .iter()
         .find(|c| c.role == role || c.role.starts_with(&more))
-        .map(|c| c.value)
 }
 
-/// What is wrong with `info`'s colours against `want`, the (role, colour)
-/// pairs of the Look its widget draws from, `None` where the widget paints
-/// none: a role claimed in another colour, one claimed where nothing is
-/// painted, or one claim more than the Look has -- the roles in `ignored`
-/// aside, which no Look holds.
+/// A Look colour's source in one state: the leaf the connector reads it from
+/// and the line it reads it at, as a claim of it names and cites them.
+#[cfg(feature = "widgets")]
+type Leaf = (&'static str, &'static str);
+
+/// The leaf each colour of a checkbox's or radio's look is read from,
+/// `checked` or not, `disabled` or not, as `CheckboxLook::sized` reads them
+/// (widgets/checkbox.rs:123-146): the fill `disabled_background` where a
+/// disabled box states one (:129), else `checked_background` (:125), else
+/// `unchecked_background`, `background_color` where that is unstated (:123);
+/// the hover `hover_background` over that fill (:134), or the fill at rest;
+/// the border `border.color` checked (:138), else `unchecked_border_color`,
+/// `border.color` where that is unstated (:140); the mark and the label
+/// `disabled_text_color` over a stated disabled fill (:143), the mark
+/// `indicator_color` and the label `disabled_text_color` disabled over none
+/// (:144), and enabled `indicator_color` and `font.color` (:145) -- as
+/// (fill, hover, border, mark, label).
+#[cfg(feature = "widgets")]
+fn checkbox_leaves(
+    c: &native_theme::theme::ResolvedCheckboxTheme,
+    checked: bool,
+    disabled: bool,
+) -> [Leaf; 5] {
+    const AT_123: &str = "native-theme-gpui/widgets/checkbox.rs:123";
+    let stated_disabled = disabled && c.disabled_background.is_some();
+    let unchecked = if c.unchecked_background.is_some() {
+        ("unchecked_background", AT_123)
+    } else {
+        ("background_color", AT_123)
+    };
+    let fill = match (stated_disabled, checked) {
+        (true, _) => (
+            "disabled_background",
+            "native-theme-gpui/widgets/checkbox.rs:129",
+        ),
+        (false, true) => (
+            "checked_background",
+            "native-theme-gpui/widgets/checkbox.rs:125",
+        ),
+        (false, false) => unchecked,
+    };
+    let hover = if c.hover_background.is_some() {
+        (
+            "hover_background",
+            "native-theme-gpui/widgets/checkbox.rs:134",
+        )
+    } else {
+        unchecked
+    };
+    let border = match (checked, c.unchecked_border_color.is_some()) {
+        (true, _) => ("border", "native-theme-gpui/widgets/checkbox.rs:138"),
+        (false, true) => (
+            "unchecked_border_color",
+            "native-theme-gpui/widgets/checkbox.rs:140",
+        ),
+        (false, false) => ("border", "native-theme-gpui/widgets/checkbox.rs:140"),
+    };
+    let (mark, label) = match (disabled, stated_disabled) {
+        (true, true) => (
+            (
+                "disabled_text_color",
+                "native-theme-gpui/widgets/checkbox.rs:143",
+            ),
+            (
+                "disabled_text_color",
+                "native-theme-gpui/widgets/checkbox.rs:143",
+            ),
+        ),
+        (true, false) => (
+            (
+                "indicator_color",
+                "native-theme-gpui/widgets/checkbox.rs:144",
+            ),
+            (
+                "disabled_text_color",
+                "native-theme-gpui/widgets/checkbox.rs:144",
+            ),
+        ),
+        (false, _) => (
+            (
+                "indicator_color",
+                "native-theme-gpui/widgets/checkbox.rs:145",
+            ),
+            ("font", "native-theme-gpui/widgets/checkbox.rs:145"),
+        ),
+    };
+    [fill, hover, border, mark, label]
+}
+
+/// The leaf each colour of a switch's look is read from, `checked` or not,
+/// `disabled` or not, as `SwitchLook::of` reads them
+/// (widgets/switch.rs:95-146): the track `checked_background` (:96) or
+/// `unchecked_background` (:98), disabled `disabled_checked_background`
+/// (:101) or `disabled_unchecked_background` (:102) where stated; the hover
+/// `hover_checked_background` (:106) or `hover_unchecked_background` (:108)
+/// over the track, or the track at rest; the track's outline
+/// `checked_track_border_color` (:123) or `unchecked_track_border_color`
+/// (:125), disabled their `disabled_*` forms (:128, :130) where stated; the
+/// thumb's outline `thumb_border_color` (:142); the thumb `thumb_background`
+/// (:113), off `unchecked_thumb_background` where stated (:115), disabled
+/// `disabled_thumb_color` where stated (:118); the label
+/// `defaults.disabled_text_color` disabled (:144), else `text_color` (:146)
+/// -- as (track, hover, track outline, thumb outline, thumb, label).
+#[cfg(feature = "widgets")]
+fn switch_leaves(
+    s: &native_theme::theme::ResolvedSwitchTheme,
+    checked: bool,
+    disabled: bool,
+) -> [Leaf; 6] {
+    let base = if checked {
+        (
+            "checked_background",
+            "native-theme-gpui/widgets/switch.rs:96",
+        )
+    } else {
+        (
+            "unchecked_background",
+            "native-theme-gpui/widgets/switch.rs:98",
+        )
+    };
+    let track = match (checked, disabled) {
+        (true, true) if s.disabled_checked_background.is_some() => (
+            "disabled_checked_background",
+            "native-theme-gpui/widgets/switch.rs:101",
+        ),
+        (false, true) if s.disabled_unchecked_background.is_some() => (
+            "disabled_unchecked_background",
+            "native-theme-gpui/widgets/switch.rs:102",
+        ),
+        _ => base,
+    };
+    let hover = match checked {
+        true if s.hover_checked_background.is_some() => (
+            "hover_checked_background",
+            "native-theme-gpui/widgets/switch.rs:106",
+        ),
+        false if s.hover_unchecked_background.is_some() => (
+            "hover_unchecked_background",
+            "native-theme-gpui/widgets/switch.rs:108",
+        ),
+        _ => base,
+    };
+    let rest_edge = if checked {
+        (
+            "checked_track_border_color",
+            "native-theme-gpui/widgets/switch.rs:123",
+        )
+    } else {
+        (
+            "unchecked_track_border_color",
+            "native-theme-gpui/widgets/switch.rs:125",
+        )
+    };
+    let track_outline = match (checked, disabled) {
+        (true, true) if s.disabled_checked_track_border_color.is_some() => (
+            "disabled_checked_track_border_color",
+            "native-theme-gpui/widgets/switch.rs:128",
+        ),
+        (false, true) if s.disabled_unchecked_track_border_color.is_some() => (
+            "disabled_unchecked_track_border_color",
+            "native-theme-gpui/widgets/switch.rs:130",
+        ),
+        _ => rest_edge,
+    };
+    let rest_thumb = match (checked, s.unchecked_thumb_background.is_some()) {
+        (true, _) => (
+            "thumb_background",
+            "native-theme-gpui/widgets/switch.rs:113",
+        ),
+        (false, true) => (
+            "unchecked_thumb_background",
+            "native-theme-gpui/widgets/switch.rs:115",
+        ),
+        (false, false) => (
+            "thumb_background",
+            "native-theme-gpui/widgets/switch.rs:115",
+        ),
+    };
+    let thumb = if disabled && s.disabled_thumb_color.is_some() {
+        (
+            "disabled_thumb_color",
+            "native-theme-gpui/widgets/switch.rs:118",
+        )
+    } else {
+        rest_thumb
+    };
+    let label = if disabled {
+        (
+            "disabled_text_color",
+            "native-theme-gpui/widgets/switch.rs:144",
+        )
+    } else {
+        ("text_color", "native-theme-gpui/widgets/switch.rs:146")
+    };
+    [
+        track,
+        hover,
+        track_outline,
+        (
+            "thumb_border_color",
+            "native-theme-gpui/widgets/switch.rs:142",
+        ),
+        thumb,
+        label,
+    ]
+}
+
+/// What is wrong with `info`'s colours against `want`, the (role, colour,
+/// leaf) of each colour of the Look its widget draws from, the colour `None`
+/// where the widget paints none: a role claimed in another colour, under
+/// another leaf or at another line than the Look reads it from, one claimed
+/// where nothing is painted, or one claim more than the Look has -- the
+/// roles in `ignored` aside, which no Look holds.
 #[cfg(feature = "widgets")]
 fn look_findings(
     whose: &str,
     info: &WidgetInfo,
-    want: &[(&str, Option<gpui::Hsla>)],
+    want: &[(&str, Option<gpui::Hsla>, Leaf)],
     ignored: &[&str],
 ) -> Vec<String> {
     let mut wrong: Vec<String> = want
         .iter()
-        .filter(|(role, colour)| claimed_as(info, role) != *colour)
-        .map(|(role, colour)| {
-            format!(
-                "{whose}: {role} claims {:?}, the Look has {:?}",
-                claimed_as(info, role).map(as_rgba),
-                colour.map(as_rgba)
-            )
+        .filter_map(|&(role, colour, (field, cited))| {
+            let claimed = claim_by_role(info, role);
+            let found = claimed.map(|c| (c.value, c.field, c.cited_at));
+            let expected = colour.map(|colour| (colour, field, cited));
+            (found != expected).then(|| {
+                format!(
+                    "{whose}: {role} claims {:?}, the Look has {:?}",
+                    found.map(|(v, f, c)| (as_rgba(v), f, c)),
+                    expected.map(|(v, f, c)| (as_rgba(v), f, c))
+                )
+            })
         })
         .collect();
     let claims = info
@@ -12054,7 +12265,10 @@ fn look_findings(
         .iter()
         .filter(|c| !ignored.iter().any(|role| c.role.starts_with(role)))
         .count();
-    let drawn = want.iter().filter(|(_, colour)| colour.is_some()).count();
+    let drawn = want
+        .iter()
+        .filter(|(_, colour, _)| colour.is_some())
+        .count();
     if claims != drawn {
         wrong.push(format!(
             "{whose}: {claims} claims for the Look's {drawn} colours: {:?}",
@@ -12067,7 +12281,9 @@ fn look_findings(
 /// A theme-drawn Checkbox's, Radio's and Switch's info prints what the
 /// widget draws (M9-050, M9-051, M9-052, M9-053): each size it prints and
 /// each colour it claims is the field of the connector's Look the widget
-/// draws from -- `CheckboxLook::of`, `CheckboxLook::radio`, `SwitchLook::of`,
+/// draws from, each colour under the leaf and the line the Look reads it
+/// from in that state (`checkbox_leaves`, `switch_leaves`), the mark only
+/// where it is painted, checked -- `CheckboxLook::of`, `CheckboxLook::radio`, `SwitchLook::of`,
 /// faded over the window's `defaults.background_color` as the widget fades a
 /// disabled control (`faded_over`), the switch's two outlines included --
 /// the radio's circle `checkbox.radio_indicator_width` where the theme
@@ -12103,24 +12319,33 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 continue;
             };
             let look = rest.faded_over(ground);
+            let [fill, hover, border, mark, label] =
+                checkbox_leaves(&r.checkbox, checked, disabled);
+            // The mark fades out while unchecked, so it is painted checked only.
             wrong.extend(look_findings(
                 &format!("{whose}: the Checkbox"),
                 &info,
                 &[
-                    ("fill", Some(look.fill)),
-                    ("hover", look.hover_fill),
-                    ("border", edge(Some(look.border), look.border_width)),
-                    ("mark", Some(look.mark)),
-                    ("label", Some(look.label)),
+                    ("fill", Some(look.fill), fill),
+                    ("hover", look.hover_fill, hover),
+                    ("border", edge(Some(look.border), look.border_width), border),
+                    ("mark", checked.then_some(look.mark), mark),
+                    ("label", Some(look.label), label),
                 ],
                 &[],
             ));
-            if !says(note_of(&info.config, "indicator"), &len(look.indicator)) {
-                wrong.push(format!(
-                    "{whose}: the Checkbox's indicator line does not print the Look's {}: {:?}",
-                    len(look.indicator),
-                    note_of(&info.config, "indicator")
-                ));
+            for (what, length) in [
+                ("indicator", look.indicator),
+                ("corner radius", look.radius),
+                ("label gap", look.label_gap),
+            ] {
+                if !says(note_of(&info.config, what), &len(length)) {
+                    wrong.push(format!(
+                        "{whose}: the Checkbox's {what} line does not print the Look's {}: {:?}",
+                        len(length),
+                        note_of(&info.config, what)
+                    ));
+                }
             }
             let stroke = note_of(&info.config, "check mark");
             match look.mark_stroke {
@@ -12160,22 +12385,26 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 continue;
             };
             let look = rest.faded_over(ground);
+            let [track, hover, track_outline, thumb_outline, thumb, label] =
+                switch_leaves(&r.switch, checked, disabled);
             wrong.extend(look_findings(
                 &format!("{whose}: the Switch"),
                 &info,
                 &[
-                    ("track", Some(look.track)),
-                    ("hover", look.hover_track),
+                    ("track", Some(look.track), track),
+                    ("hover", look.hover_track, hover),
                     (
                         "track outline",
                         edge(look.track_border, look.track_border_width),
+                        track_outline,
                     ),
                     (
                         "thumb outline",
                         edge(look.thumb_border, look.thumb_border_width),
+                        thumb_outline,
                     ),
-                    ("thumb", Some(look.thumb_color)),
-                    ("label", Some(look.label)),
+                    ("thumb", Some(look.thumb_color), thumb),
+                    ("label", Some(look.label), label),
                 ],
                 &["focus ring"],
             ));
@@ -12238,23 +12467,37 @@ fn a_theme_drawn_controls_info_prints_its_look() {
             ));
             continue;
         };
+        let [fill, _, border, mark, label] = checkbox_leaves(&r.checkbox, true, false);
+        let [off_fill, off_hover, off_border, _, _] = checkbox_leaves(&r.checkbox, false, false);
         wrong.extend(look_findings(
             &format!("{name}: the radios"),
             &info,
             &[
-                ("fill", Some(selected.fill)),
-                ("border", edge(Some(selected.border), selected.border_width)),
-                ("mark", Some(selected.mark)),
-                ("label", Some(selected.label)),
-                ("unselected fill", Some(unselected.fill)),
+                ("fill", Some(selected.fill), fill),
+                (
+                    "border",
+                    edge(Some(selected.border), selected.border_width),
+                    border,
+                ),
+                ("mark", Some(selected.mark), mark),
+                ("label", Some(selected.label), label),
+                ("unselected fill", Some(unselected.fill), off_fill),
                 (
                     "unselected border",
                     edge(Some(unselected.border), unselected.border_width),
+                    off_border,
                 ),
-                ("hover", unselected.hover_fill),
+                ("hover", unselected.hover_fill, off_hover),
             ],
             &[],
         ));
+        if !says(note_of(&info.config, "label gap"), &len(selected.label_gap)) {
+            wrong.push(format!(
+                "{name}: the radio's label gap line does not print the Look's {}: {:?}",
+                len(selected.label_gap),
+                note_of(&info.config, "label gap")
+            ));
+        }
         let circle = note_of(&info.config, "indicator");
         let stated_width = r.checkbox.radio_indicator_width.is_some();
         if !says(circle, &len(selected.indicator))
