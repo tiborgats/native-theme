@@ -3127,10 +3127,18 @@ fn prose_citations(text: &str) -> Vec<(&str, &str)> {
     out
 }
 
+/// One cited range of lines, `(first, last)`, and the symbol the citation
+/// names for it, which the range has to hold.
+type CitedRange<'a> = ((usize, usize), Option<&'a str>);
+
 /// Every `file.rs:N` and `file.rs:N-M` in a panel's prose, as the path and
-/// its line ranges: a `, A`, `, A-B` or `, :A-B` straight after one is
-/// another range of the same file (`button.rs:102-141, 1185`).
-fn line_citations(text: &str) -> Vec<(&str, Vec<(usize, usize)>)> {
+/// its line ranges. A `, A`, `, A-B` or `, :A-B` straight after one is
+/// another range of the same file (`button.rs:102-141, 1185`); a `, Symbol`
+/// after the ranges names what they hold, as a colour claim names its field
+/// (`button.rs:1110-1115, shadow`); a `; :A-B` after that opens another group
+/// of the same file's ranges, with a symbol of its own
+/// (`styled.rs:179-184, focus_ring_style; :250-298, focus_style`).
+fn line_citations(text: &str) -> Vec<(&str, Vec<CitedRange<'_>>)> {
     /// A line number at the start of `s` and what follows it, where the
     /// number ends a word: `3px` is no line.
     fn number(s: &str) -> Option<(usize, &str)> {
@@ -3148,6 +3156,18 @@ fn line_citations(text: &str) -> Vec<(&str, Vec<(usize, usize)>)> {
             Some((last, rest)) => Some(((first, last), rest)),
             None => Some(((first, first), rest)),
         }
+    }
+    /// A symbol at the start of `s` -- an identifier or a `::` path -- and
+    /// what follows it.
+    fn symbol(s: &str) -> Option<(&str, &str)> {
+        if !s.starts_with(char::is_alphabetic) {
+            return None;
+        }
+        let end = s
+            .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+            .unwrap_or(s.len());
+        let name = s.get(..end)?.trim_end_matches(':');
+        Some((name, s.get(name.len()..)?))
     }
     let mut out = Vec::new();
     let mut from = 0usize;
@@ -3169,17 +3189,33 @@ fn line_citations(text: &str) -> Vec<(&str, Vec<(usize, usize)>)> {
         let Some((first, mut rest)) = range(after) else {
             continue;
         };
-        let mut spans = vec![first];
-        while let Some((next, tail)) = rest
-            .strip_prefix(", ")
-            .map(|t| t.strip_prefix(':').unwrap_or(t))
-            .and_then(range)
-        {
-            spans.push(next);
-            rest = tail;
+        let mut ranges: Vec<CitedRange<'_>> = vec![(first, None)];
+        let mut group = 0usize;
+        loop {
+            if let Some((next, tail)) = rest
+                .strip_prefix(", ")
+                .map(|t| t.strip_prefix(':').unwrap_or(t))
+                .and_then(range)
+            {
+                ranges.push((next, None));
+                rest = tail;
+            } else if let Some((name, tail)) = rest.strip_prefix(", ").and_then(symbol) {
+                for cited in ranges.iter_mut().skip(group) {
+                    cited.1 = Some(name);
+                }
+                rest = tail;
+                let Some((next, tail)) = rest.strip_prefix("; :").and_then(range) else {
+                    break;
+                };
+                group = ranges.len();
+                ranges.push((next, None));
+                rest = tail;
+            } else {
+                break;
+            }
         }
         from = text.len() - rest.len();
-        out.push((path, spans));
+        out.push((path, ranges));
     }
     out
 }
@@ -3214,25 +3250,29 @@ fn symbol_citation_finding(
     }
 }
 
-/// What is wrong with the citation of `spans` in `path`, if anything: no
-/// file of that name holds every range, or more than one does and the
-/// citation does not say which.
+/// What is wrong with the citation of `ranges` in `path`, if anything: no
+/// file of that name holds every range with the symbol the citation names for
+/// it, or more than one does and the citation does not say which. A range
+/// that moved inside its file passes an existence check; the symbol it no
+/// longer holds is what shows it moved.
 fn line_citation_finding(
     path: &str,
-    spans: &[(usize, usize)],
+    ranges: &[CitedRange<'_>],
     roots: &[(String, PathBuf)],
 ) -> Option<String> {
     let files = candidates(path, roots);
     if files.is_empty() {
         return Some(format!("cites {path}, which does not exist"));
     }
-    let held = |file: &&PathBuf| {
-        std::fs::read_to_string(file).is_ok_and(|text| {
-            let lines = text.lines().count();
-            spans
-                .iter()
-                .all(|&(first, last)| first > 0 && first <= last && last <= lines)
-        })
+    let lines_of = |file: &PathBuf| -> Option<Vec<String>> {
+        let text = std::fs::read_to_string(file).ok()?;
+        Some(text.lines().map(str::to_string).collect())
+    };
+    let span = |lines: &[String], (first, last): (usize, usize)| -> Option<String> {
+        (first > 0 && first <= last)
+            .then(|| lines.get(first - 1..last))
+            .flatten()
+            .map(|span| span.join("\n"))
     };
     let named = |files: &[&PathBuf]| {
         files
@@ -3241,24 +3281,75 @@ fn line_citation_finding(
             .collect::<Vec<_>>()
             .join(", ")
     };
-    let cited = spans
+    let cited = ranges
         .iter()
-        .map(|&(a, b)| {
-            if a == b {
+        .map(|&((a, b), symbol)| {
+            let lines = if a == b {
                 a.to_string()
             } else {
                 format!("{a}-{b}")
+            };
+            match symbol {
+                Some(symbol) => format!("{lines} ({symbol})"),
+                None => lines,
             }
         })
         .collect::<Vec<_>>()
         .join(", ");
     let all: Vec<&PathBuf> = files.iter().collect();
-    let holding: Vec<&PathBuf> = all.iter().copied().filter(held).collect();
-    match holding.as_slice() {
-        [] => Some(format!(
+    let in_range: Vec<(&PathBuf, Vec<String>)> = all
+        .iter()
+        .filter_map(|file| {
+            let lines = lines_of(file)?;
+            ranges
+                .iter()
+                .all(|&(range, _)| span(&lines, range).is_some())
+                .then_some((*file, lines))
+        })
+        .collect();
+    if in_range.is_empty() {
+        return Some(format!(
             "cites {path}:{cited}, past the end of {}",
             named(&all)
-        )),
+        ));
+    }
+    let holds = |lines: &[String]| {
+        ranges.iter().all(|&(range, symbol)| match symbol {
+            Some(symbol) => span(lines, range)
+                .is_some_and(|text| mentions(&text, symbol.rsplit("::").next().unwrap_or(symbol))),
+            None => true,
+        })
+    };
+    let holding: Vec<&PathBuf> = in_range
+        .iter()
+        .filter(|(_, lines)| holds(lines))
+        .map(|(file, _)| *file)
+        .collect();
+    match holding.as_slice() {
+        [] => {
+            let now: Vec<String> = in_range
+                .iter()
+                .flat_map(|(file, lines)| {
+                    ranges.iter().filter_map(move |&(range, symbol)| {
+                        let symbol = symbol?;
+                        let text = span(lines, range)?;
+                        let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
+                        (!mentions(&text, leaf)).then(|| {
+                            format!(
+                                "{}:{} holds no `{leaf}`; it now reads: {}",
+                                shorten(file),
+                                range.0,
+                                text.lines().next().unwrap_or("").trim()
+                            )
+                        })
+                    })
+                })
+                .collect();
+            Some(format!(
+                "cites {path}:{cited}, but the range has moved: {}",
+                now.join("; ")
+            ))
+        }
         [_] => None,
         many => Some(format!(
             "cites {path}:{cited}, which is ambiguous; name the crate. It matches: {}",
@@ -3270,21 +3361,32 @@ fn line_citation_finding(
 /// The prose readers read both citation forms, and the resolver asks for the
 /// crate where a bare name could be several files: a bare `button.rs` whose
 /// lines gpui-base's `src/button.rs` and gpui-component's `button/button.rs`
-/// both hold is ambiguous, where today's first-match rule would read
-/// gpui-base's alone and say nothing; a range only one holds picks it; a
-/// crate the bare-name sweep leaves out is reached by naming it.
+/// both hold is ambiguous, where the first-match rule read gpui-base's alone
+/// and said nothing; a range only one holds picks it; a range that has moved
+/// off the symbol it names fails though its lines exist; a crate the
+/// bare-name sweep leaves out is reached by naming it.
 #[test]
 fn the_prose_citation_readers_do_their_jobs() {
     assert_eq!(
         line_citations(
             "x (button.rs:102-141, 1185) y (status_bar.rs:88, :96) z (a/b.rs:7, 3px) \
-             (styled.rs:179-184, focus_ring_style) (c.rs:9.5) (d.rs:)"
+             (c.rs:9.5) (d.rs:) (e.rs:1110-1115, shadow) \
+             (styled.rs:179-184, focus_ring_style; :250-298, focus_style) \
+             (f.rs:3, 5, a::B; g)"
         ),
         [
-            ("button.rs", vec![(102, 141), (1185, 1185)]),
-            ("status_bar.rs", vec![(88, 88), (96, 96)]),
-            ("a/b.rs", vec![(7, 7)]),
-            ("styled.rs", vec![(179, 184)]),
+            ("button.rs", vec![((102, 141), None), ((1185, 1185), None)]),
+            ("status_bar.rs", vec![((88, 88), None), ((96, 96), None)]),
+            ("a/b.rs", vec![((7, 7), None)]),
+            ("e.rs", vec![((1110, 1115), Some("shadow"))]),
+            (
+                "styled.rs",
+                vec![
+                    ((179, 184), Some("focus_ring_style")),
+                    ((250, 298), Some("focus_style"))
+                ]
+            ),
+            ("f.rs", vec![((3, 3), Some("a::B")), ((5, 5), Some("a::B"))]),
         ]
     );
     let located = cited_source_dirs();
@@ -3294,23 +3396,63 @@ fn the_prose_citation_readers_do_their_jobs() {
         located.as_ref().err().cloned().unwrap_or_default()
     );
     let Ok(roots) = located else { return };
-    let planted = line_citation_finding("button.rs", &[(10, 20)], &roots);
+    let finding =
+        |path: &str, ranges: &[CitedRange<'_>]| line_citation_finding(path, ranges, &roots);
+    let planted = finding("button.rs", &[((10, 20), None)]);
     assert!(
         planted.as_deref().is_some_and(|f| f.contains("ambiguous")
-            && f.contains("gpui-base-0.7.3/src/button.rs")
-            && f.contains("gpui-component-0.7.3/src/button/button.rs")),
+            && f.contains("gpui-base-")
+            && f.contains("/src/button.rs")
+            && f.contains("/src/button/button.rs")),
         "a bare button.rs both crates' files hold is not reported ambiguous: {planted:?}"
     );
-    assert_eq!(
-        line_citation_finding("gpui-component/button/button.rs", &[(10, 20)], &roots),
-        None
-    );
-    assert_eq!(
-        line_citation_finding("button.rs", &[(1185, 1185)], &roots),
-        None
-    );
+    let custom = "gpui-component/button/button.rs";
+    assert_eq!(finding(custom, &[((10, 20), None)]), None);
+    // Where `ButtonCustomVariant`'s setters start, and the same range moved
+    // past its `impl` line: the lines exist, the symbol is gone.
+    let at = std::fs::read_to_string(
+        roots
+            .iter()
+            .find(|(n, _)| n == "gpui-component")
+            .map(|(_, r)| r.join("button/button.rs"))
+            .unwrap_or_default(),
+    )
+    .unwrap_or_default()
+    .lines()
+    .position(|l| l.trim_start().starts_with("impl ButtonCustomVariant"))
+    .map(|ix| ix + 1);
     assert!(
-        line_citation_finding("gpui-base/button.rs", &[(1185, 1185)], &roots)
+        at.is_some(),
+        "gpui-component's button/button.rs has no `impl ButtonCustomVariant`"
+    );
+    let at = at.unwrap_or_default();
+    assert_eq!(
+        finding(custom, &[((at, at + 40), Some("ButtonCustomVariant"))]),
+        None
+    );
+    let drifted = finding(custom, &[((at + 4, at + 44), Some("ButtonCustomVariant"))]);
+    assert!(
+        drifted
+            .as_deref()
+            .is_some_and(|f| f.contains("has moved") && f.contains("ButtonCustomVariant")),
+        "a range moved off the symbol it names is not reported: {drifted:?}"
+    );
+    let base_lines = std::fs::read_to_string(
+        roots
+            .iter()
+            .find(|(n, _)| n == "gpui-base")
+            .map(|(_, r)| r.join("button.rs"))
+            .unwrap_or_default(),
+    )
+    .map(|t| t.lines().count())
+    .unwrap_or_default();
+    assert!(base_lines > 0, "gpui-base has no src/button.rs");
+    let past = base_lines + 1;
+    // A line past gpui-base's file, which gpui-component's longer one holds:
+    // the one file with the line is the citation's.
+    assert_eq!(finding("button.rs", &[((past, past), None)]), None);
+    assert!(
+        finding("gpui-base/button.rs", &[((past, past), None)])
             .is_some_and(|f| f.contains("past the end"))
     );
     assert!(
@@ -3335,8 +3477,10 @@ fn the_prose_citation_readers_do_their_jobs() {
 /// so is every `GEOMETRY_NOTES` text, which reaches the inspector as a config
 /// line, and every `HOW` line, which Widget Info shows under a listed leaf.
 /// Both forms are read: `file.rs, Symbol` holds where exactly one file of
-/// that name has the symbol, `file.rs:N-M` where exactly one has the lines;
-/// where several do, the citation has to name its crate.
+/// that name has the symbol, `file.rs:N-M, Symbol` where exactly one has the
+/// lines and the symbol inside them; where several do, the citation has to
+/// name its crate. A note's line citation may leave the symbol out; a `HOW`
+/// line's may not, so a range that drifts inside its file is caught there.
 ///
 /// Existence, never semantics. What a note *says* about upstream is a human's
 /// to keep true; a note pointing at something upstream has **deleted** is one
@@ -3418,9 +3562,17 @@ fn every_prose_citation_still_exists() {
                 missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
         }
-        for (path, spans) in line_citations(text) {
+        for (path, ranges) in line_citations(text) {
             checked += 1;
-            if let Some(finding) = line_citation_finding(path, &spans, &roots) {
+            // A route line names what each range holds, so a range that
+            // moves inside its file is caught too.
+            if *file == HOW_FILE && ranges.iter().any(|(_, symbol)| symbol.is_none()) {
+                missing.push(format!(
+                    "{widget} {file}:{line}: cites {path}:… without the symbol its lines \
+                     hold; write `{path}:N-M, Symbol`"
+                ));
+            }
+            if let Some(finding) = line_citation_finding(path, &ranges, &roots) {
                 missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
         }

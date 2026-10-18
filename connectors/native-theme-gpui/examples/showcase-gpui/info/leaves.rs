@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1312)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1312, active)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, 1184, 1198-1203)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1274-1278)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1274-1278, text_color)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1110-1115)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1110-1115, shadow)",
     ),
     (
         "",
@@ -351,7 +351,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.font",
-        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
+        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (gpui-component/sizing.rs:337-343, button_text_size)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1198-1203)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1198-1203, text_color)",
     ),
     (
         "",
@@ -555,7 +555,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font.color",
-        "not reachable: the Combobox's disabled colour lands before the caller's style (combobox.rs:998)",
+        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:991-998, refine_style)",
     ),
     // --- combo_box: a Select, and the Combobox's metrics ------------------------
     (
@@ -566,7 +566,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.arrow_icon_size_px",
-        "not reachable: the caret is the trigger's own, sized inside it (select.rs:599-600)",
+        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:599-600, Caret)",
     ),
     (
         "",
@@ -662,7 +662,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (gpui-component/styled.rs:179-184, 250-298: focus_ring_style hands it to focus_style)",
+        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style)",
     ),
     (
         "",
@@ -672,7 +672,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_width_px",
-        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11); a width > 0 turns it on",
+        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH); a width > 0 turns it on",
     ),
     (
         "basic.typography.body",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:440, 448)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:440, font_size; :448, font_family)",
     ),
     (
         "basic.typography",
@@ -702,7 +702,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.color",
-        "gpui: the Label paints `foreground`, defaults.text_color (label.rs:211)",
+        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:211, foreground)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:448)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:448, font_family)",
     ),
     (
         "basic.icons.large",
@@ -862,7 +862,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "defaults.line_height",
-        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; kbd.rs:234-236)",
+        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
     ),
     (
         "chrome.menu.",
@@ -1079,12 +1079,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (input/base/element.rs:2541)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:2541, opacity)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:758-761)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:758-761, ring)",
     ),
     (
         "basic.text_area",
@@ -1099,7 +1099,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (input/input.rs:707)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:707, input_style)",
     ),
     (
         "basic.number_input",
@@ -1119,7 +1119,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (input/input.rs:559)",
+        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:559, muted_foreground)",
     ),
     // --- layout -------------------------------------------------------------------
     (
@@ -1145,7 +1145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "layout.container_margin_px",
-        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (status_bar.rs:89-90), the padding's",
+        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (gpui-component/status_bar.rs:89-90, px_2), the padding's",
     ),
     (
         "basic.card",
@@ -1211,12 +1211,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.active_text_color",
-        "not reachable: a pressed Link is `link` at 0.6 opacity (gpui-component/link.rs:84-85)",
+        "not reachable: a pressed Link is `link` at 0.6 opacity (gpui-component/link.rs:84-85, active)",
     ),
     (
         "",
         "link.background_color",
-        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90)",
+        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
@@ -1226,17 +1226,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.font.color",
-        "gpui: ThemeColor link (colors.rs): the Link's text (gpui-component/link.rs:76)",
+        "gpui: ThemeColor link (colors.rs): the Link's text (gpui-component/link.rs:76, link)",
     ),
     (
         "",
         "link.hover_background",
-        "not reachable: the Link's hover style is upstream's, no fill (gpui-component/link.rs:79-83)",
+        "not reachable: the Link's hover style is upstream's, no fill (gpui-component/link.rs:79-83, hover)",
     ),
     (
         "",
         "link.hover_text_color",
-        "not reachable: a hovered Link is `link` at 0.8 opacity (gpui-component/link.rs:79-80)",
+        "not reachable: a hovered Link is `link` at 0.8 opacity (gpui-component/link.rs:79-80, hover)",
     ),
     (
         "",
@@ -1429,7 +1429,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "menu.font",
-        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; kbd.rs:234-236)",
+        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
     ),
     (
         "chrome.menu_bar.",
@@ -1859,12 +1859,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.background_color",
-        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (status_bar.rs:93)",
+        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (gpui-component/status_bar.rs:93, status_bar)",
     ),
     (
         "",
         "status_bar.border.color",
-        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (status_bar.rs:92)",
+        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (gpui-component/status_bar.rs:92, status_bar_border)",
     ),
     (
         "",
