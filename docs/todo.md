@@ -1604,6 +1604,25 @@ model, the platform presets and the three connectors
       15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
       the window).
 
+- [ ] [v0.7.0] From the M9a T6 review (2026-10-18,
+      `.superpowers/sdd/todo_code-review-plan/m9a-T6-review.md`, *Controller's
+      questions*): windows-11's menu rows are 23 px (`windows-11.toml`
+      `[light.menu] row_height_px`, `[dark.menu] row_height_px`), from the Windows
+      cell of §2.6's `row_height` row (`docs/platform-facts.md:1260`: "mouse/narrow
+      mode=23 (14 text + 4+5 pad); no explicit MinHeight resource — derived from
+      padding"). That cell counts the 14 px font size as the text's height, where
+      the same document gives Windows's line box as Fluent Body 20 px over 14 px
+      (`docs/platform-facts.md:1034`, `line_height` 1.43), so WinUI's narrow
+      MenuFlyoutItem is about 4 + 20 + 5 = 29 px, and touch mode's 31 (14 + 8 + 9)
+      repeats the error. Since M9a T6 the gpui showcase's chrome menu draws a row
+      at the stated height by `geometry::menu_item`'s control-height rule, as the
+      Overlays page's rows already did, so under windows-11 the 20 px line fills
+      the 23 px row and the stated 4 / 5 px padding is lost. The fix: verify the
+      §2.6 Windows cell independently and correct it, then the preset (the review
+      suggests stating no `row_height`, as a row with no MinHeight sizes to its
+      font, which the model encodes as none); the CHANGELOG line for M9-012 names
+      windows-11 as its example and follows the change.
+
 ### KDE reader: the toolbar's Header fill and the window border size
 
 - [ ] [1.0] From M8 T16b (2026-10-17): Breeze fills a main window's tools
