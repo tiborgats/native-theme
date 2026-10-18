@@ -899,7 +899,15 @@ pub fn message(t: &Theme, outgoing: bool, sender: &str, text: &str) -> WidgetInf
     };
     WidgetInfo::new("Message")
         .variant(side)
-        .colors(bubble_colours(t, kind))
+        // The Message panel names its colours as the bubble's.
+        .colors(bubble_colours(t, kind).into_iter().map(|c| ColorClaim {
+            role: match c.role {
+                "bg" => "bubble bg",
+                "text" => "bubble text",
+                role => role,
+            },
+            ..c
+        }))
         .instance("bubble", format!("{}, at the {place} of the row. MessageContent::bubble takes the Bubble itself, so it reports through the Message (message.rs, MessageContent::bubble)", kind.name()))
         .not_themeable("bubbles", "a Message delegates its bubble to Bubble, so the fill is Bubble's and the citations point there")
         .not_themeable("slot gap", "rems(0.625) -- the platform's font, not a literal -- and settable: Message applies the caller's refinement last, and the stack takes Message::with_stack_style. Only the 0.5rem between avatar and content is out of reach (message.rs, Message::render)")

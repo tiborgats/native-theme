@@ -423,34 +423,37 @@ pub fn native_number_input(
 
 /// A two-state control's states, on and off, and what a click on it does
 /// while it is enabled.
-type Toggled = (&'static str, &'static str, &'static str);
+struct Toggled {
+    on: &'static str,
+    off: &'static str,
+    click: &'static str,
+}
 
 /// A Checkbox's, upstream's and the theme-drawn one's alike.
-const CHECKBOX: Toggled = (
-    "checked",
-    "unchecked",
-    "checks or unchecks it; the showcase keeps the state",
-);
+const CHECKBOX: Toggled = Toggled {
+    on: "checked",
+    off: "unchecked",
+    click: "checks or unchecks it; the showcase keeps the state",
+};
 
 /// A Switch's, upstream's and the theme-drawn one's alike.
-const SWITCH: Toggled = (
-    "on",
-    "off",
-    "turns it on or off; the showcase keeps the state",
-);
+const SWITCH: Toggled = Toggled {
+    on: "on",
+    off: "off",
+    click: "turns it on or off; the showcase keeps the state",
+};
 
 /// `info` named by the state of a `control` -- `checked` or not, `disabled`
 /// or not -- and given what a click does.
 fn toggled(info: WidgetInfo, control: Toggled, checked: bool, disabled: bool) -> WidgetInfo {
-    let (on, off, click) = control;
-    let state = if checked { on } else { off };
+    let state = if checked { control.on } else { control.off };
     if disabled {
         info.variant(format!("{state}, disabled")).instance(
             "click",
             "none: it is disabled, and the showcase gives it no handler",
         )
     } else {
-        info.variant(state).instance("click", click)
+        info.variant(state).instance("click", control.click)
     }
 }
 

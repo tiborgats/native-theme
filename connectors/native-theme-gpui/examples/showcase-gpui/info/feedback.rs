@@ -127,9 +127,14 @@ pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
     alert(t, severity, false).not_themeable(
         "own icons",
         super::own_icons(&format!(
-            "its severity's icon, {} (alert.rs, Alert::{})",
+            "its severity's icon, {} ({})",
             severity.upstream_icon(),
-            severity.name().to_lowercase()
+            match severity {
+                Severity::Info => "alert.rs, Alert::info",
+                Severity::Success => "alert.rs, Alert::success",
+                Severity::Warning => "alert.rs, Alert::warning",
+                Severity::Error => "alert.rs, Alert::error",
+            }
         )),
     )
 }
