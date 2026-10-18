@@ -6876,6 +6876,58 @@ fn the_dialog_entrance_and_the_tooltip_delay_follow_the_theme(cx: &mut TestAppCo
     }
 }
 
+/// Each dialog the showcase builds reads the theme's entrance once
+/// (`demo::themed_entrance`), and its info and its drawing take that one
+/// value: the command palette, the About dialog, the Overlays page's Dialog
+/// and its AlertDialog, each built once.
+#[gpui::test]
+fn a_dialog_reads_the_themes_entrance_once(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let reads = || crate::demo::THEMED_ENTRANCES.with(std::cell::Cell::get);
+    type Parts = (
+        Entity<InfoRegistry>,
+        Entity<gpui_component::command::CommandState>,
+        crate::support::SampleIcon,
+        crate::support::SampleIcon,
+    );
+    let parts: Parts = read(&mut cx, &showcase, |this, _| {
+        (
+            this.info_ui.clone(),
+            this.palette_state.clone(),
+            this.sample_icon(IconName::CircleX),
+            this.sample_icon(IconName::TriangleAlert),
+        )
+    });
+    type Build = fn(&Parts, &mut App);
+    let builds: [(&str, Build); 4] = [
+        ("the command palette", |(ui, state, ..), cx| {
+            let dialog = gpui_component::dialog::Dialog::new(cx);
+            let _ = crate::demo::command_palette(ui, cx, dialog, state, Vec::new(), "set".into());
+        }),
+        ("the About dialog", |(ui, ..), cx| {
+            let dialog = gpui_component::dialog::Dialog::new(cx);
+            let _ = crate::demo::about(ui, cx, dialog, "name", "url", None);
+        }),
+        ("the Overlays page's Dialog", |(ui, _, icon, _), cx| {
+            let dialog = gpui_component::dialog::Dialog::new(cx);
+            let _ = crate::demo::confirm_dialog(ui, cx, dialog, None, icon);
+        }),
+        ("the Overlays page's AlertDialog", |(ui, _, _, icon), cx| {
+            let alert = gpui_component::dialog::AlertDialog::new(cx);
+            let _ = crate::demo::alert_dialog(ui, cx, alert, icon);
+        }),
+    ];
+    for (dialog, build) in builds {
+        let before = reads();
+        cx.update(|_window, cx| build(&parts, cx));
+        assert_eq!(
+            reads() - before,
+            1,
+            "{dialog}'s build read the theme's entrance more than once"
+        );
+    }
+}
+
 /// The Overlays page's two Sheets show different infos (spec §4.3.2): the
 /// one at the right edge and the one at the bottom edge are edged on
 /// different sides, and only the right one clears the title bar.
@@ -14218,7 +14270,23 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                 "panel toggle",
                 "h_6",
                 "px_2",
-                crate::info::panel_toggle(t, "a", &icon, "set", true, "s", false, None, native),
+                crate::info::panel_toggle(
+                    t,
+                    &crate::demo::PanelToggle {
+                        button_id: "toggle",
+                        icon: IconName::PanelLeft,
+                        drawn: icon.clone(),
+                        set: "set",
+                        tooltip: "Toggle",
+                        action: &ToggleSidePanel,
+                        open: true,
+                        about: "a",
+                        state: "s",
+                    },
+                    false,
+                    None,
+                    native,
+                ),
             ),
             (
                 "toolbar item",

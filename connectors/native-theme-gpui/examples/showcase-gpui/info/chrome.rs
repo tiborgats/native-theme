@@ -8,7 +8,7 @@ use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
 
 use super::{ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated};
-use crate::demo::{Severity, SheetSide};
+use crate::demo::{PanelToggle, Severity, SheetSide};
 use crate::support::ChromeIcon;
 
 /// The window's `TitleBar` (spec §2.1, §3.4, S8), reading `label`: the
@@ -441,24 +441,21 @@ pub fn toolbar(
         )
 }
 
-/// The status bar's panel toggle (spec §3.2, S4), running `action` and
-/// showing `icon` of the icon theme named `set`, selected while its panel is
-/// `open`, which `state` describes. Its icon-size line is recorded where
-/// `demo::panel_toggle` applies the builder; `tooltip_delay` is the delay its
-/// tooltip is given, the theme's `tooltip.show_delay_ms`; it is sized as
+/// The status bar's panel toggle (spec §3.2, S4) `spec`, its info's
+/// "action" line `spec.about`, showing `spec.drawn` of the icon theme named
+/// `spec.set`, selected while its panel is `spec.open`, which `spec.state`
+/// describes. Its icon-size line is recorded where `demo::panel_toggle`
+/// applies the builder; `tooltip_delay` is the delay its tooltip is given,
+/// the theme's `tooltip.show_delay_ms`; it is sized as
 /// `buttons::tool_button_size` says under `native`'s `button`.
-#[allow(clippy::too_many_arguments)]
 pub fn panel_toggle(
     t: &Theme,
-    action: &'static str,
-    icon: &ChromeIcon,
-    set: &str,
-    open: bool,
-    state: &'static str,
+    spec: &PanelToggle<'_>,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
     native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
+    let (icon, set, open) = (&spec.drawn, spec.set, spec.open);
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(match (drawn, open) {
         (true, true) => "Ghost, icon, selected",
@@ -499,8 +496,8 @@ pub fn panel_toggle(
         "place",
         "at the end of the status bar on the side of the panel it controls, the pattern Zed's status bar follows; the selection, not a changing icon, shows whether the panel is open",
     )
-    .instance("action", action)
-    .instance("state", state)
+    .instance("action", spec.about)
+    .instance("state", spec.state)
 }
 
 /// The side panel (spec S2): the theme settings, a Separator and the

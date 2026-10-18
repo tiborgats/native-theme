@@ -1353,31 +1353,25 @@ pub(crate) fn panel_toggle(
     cx: &App,
     spec: PanelToggle<'_>,
 ) -> Stateful<Div> {
-    let PanelToggle {
-        button_id: id,
-        icon,
-        drawn,
-        set,
-        tooltip,
-        action,
-        open,
-        about,
-        state,
-    } = spec;
-    let (tip, styled) = action_tooltip(cx, tooltip, action);
+    let (tip, styled) = action_tooltip(cx, spec.tooltip, spec.action);
     let delay = tooltip_delay(cx);
     let native = cx.native();
     let mut button_info = info::panel_toggle(
         cx.theme(),
-        about,
-        &drawn,
-        set,
-        open,
-        state,
+        &spec,
         styled,
         delay,
         native.as_ref().map(|n| &n.resolved.button),
     );
+    let PanelToggle {
+        button_id: id,
+        icon,
+        drawn,
+        tooltip,
+        action,
+        open,
+        ..
+    } = spec;
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -2293,16 +2287,33 @@ pub(crate) fn resize_handles(
 /// The entrance `geometry::dialog_entrance` gives the installed theme's
 /// `dialog.entrance`, for every Dialog and AlertDialog the showcase opens;
 /// `None` where the theme states none, and the dialog keeps upstream's.
+/// Counted in the self-tests (`THEMED_ENTRANCES`).
 fn themed_entrance(cx: &App) -> Option<DialogEntrance> {
+    #[cfg(test)]
+    THEMED_ENTRANCES.with(|reads| reads.set(reads.get().saturating_add(1)));
     native_value(cx, geometry::dialog_entrance).flatten()
 }
 
+#[cfg(test)]
+thread_local! {
+    /// How often a dialog's build read the theme's entrance
+    /// ([`themed_entrance`]) on this thread; a test reads how much a build
+    /// adds to it.
+    pub(crate) static THEMED_ENTRANCES: std::cell::Cell<usize> =
+        const { std::cell::Cell::new(0) };
+}
+
 /// `dialog` refined by `geometry::dialog`, capped at
-/// `geometry::dialog_max_width` and entering as `geometry::dialog_entrance`
-/// gives, each recorded in `info` where it applies.
-fn dialog_frame(dialog: Dialog, cx: &App, info: &mut WidgetInfo) -> Dialog {
+/// `geometry::dialog_max_width` and entering as `entrance`, the theme's
+/// ([`themed_entrance`]), each recorded in `info` where it applies.
+fn dialog_frame(
+    dialog: Dialog,
+    entrance: Option<DialogEntrance>,
+    cx: &App,
+    info: &mut WidgetInfo,
+) -> Dialog {
     let dialog = native_info(dialog, cx, geometry::dialog, "dialog", info);
-    let dialog = match themed_entrance(cx) {
+    let dialog = match entrance {
         Some(entrance) => {
             *info = std::mem::take(info).geometry("dialog_entrance");
             dialog.entrance(entrance)
@@ -2392,13 +2403,14 @@ pub(crate) fn command_palette(
     set: SharedString,
 ) -> Dialog {
     let groups = palette_groups(groups);
+    let entrance = themed_entrance(cx);
     let mut dialog_info = info::palette_dialog(
         cx.theme(),
         cx.reduce_motion(),
-        themed_entrance(cx).is_some(),
+        entrance.is_some(),
         cx.native().is_some(),
     );
-    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
     let title = dialog_title(cx, "Command Palette", &mut dialog_info)
         .info(ui, "overlay-palette-dialog", dialog_info)
         .debug_selector(|| OVERLAY_PALETTE_TITLE.into());
@@ -2432,14 +2444,15 @@ pub(crate) fn about(
     compatibility: &'static str,
     gap: Option<Pixels>,
 ) -> Dialog {
+    let entrance = themed_entrance(cx);
     let mut dialog_info = info::about_dialog(
         cx.theme(),
         gap.is_some(),
         cx.reduce_motion(),
-        themed_entrance(cx).is_some(),
+        entrance.is_some(),
         cx.native().is_some(),
     );
-    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
     let title = dialog_title(cx, "About", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
@@ -7227,14 +7240,15 @@ pub(crate) fn confirm_dialog(
     icon: &SampleIcon,
 ) -> Dialog {
     let styled = cx.native().is_some();
+    let entrance = themed_entrance(cx);
     let mut dialog_info = info::overlays::dialog(
         cx.theme(),
         cx.reduce_motion(),
-        themed_entrance(cx).is_some(),
+        entrance.is_some(),
         styled,
         icon,
     );
-    let dialog = dialog_frame(dialog, cx, &mut dialog_info);
+    let dialog = dialog_frame(dialog, entrance, cx, &mut dialog_info);
     let title = dialog_title(cx, "Confirm Action", &mut dialog_info);
     // A `DialogDescription` is built anew for every frame, so what the
     // refinement records is recorded once, here, and applied there.
