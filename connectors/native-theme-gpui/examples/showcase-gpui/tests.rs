@@ -7081,6 +7081,71 @@ fn a_native_selects_info_claims_no_upstream_trigger_text(cx: &mut TestAppContext
         "the Select's info claims upstream's foreground trigger text under a native theme: {info:?}"
     );
 }
+
+/// The chrome popup's rows and titles take `menu.font` as
+/// `geometry::menu_item` sets it, its style included, and the rows the
+/// builder's control-height rule on `menu.row_height` -- `h` at text scale
+/// 1, `min_h` above it (M9-012) -- read from a fixture whose font is
+/// italic.
+#[test]
+fn the_menu_popups_rows_are_refined_as_geometry_menu_item() {
+    use native_theme_gpui::Native;
+    let resolved = native_theme::theme::Theme::preset("adwaita")
+        .ok()
+        .and_then(|t| t.into_variant(native_theme::theme::ColorMode::Light).ok())
+        .and_then(|v| {
+            v.into_resolved(&native_theme::ResolutionContext::for_tests())
+                .ok()
+        });
+    assert!(resolved.is_some(), "adwaita light does not resolve");
+    let Some(mut resolved) = resolved else { return };
+    assert!(
+        resolved.menu.row_height.is_some(),
+        "adwaita no longer states menu.row_height, which this test reads"
+    );
+    resolved.menu.font.style = native_theme::theme::FontStyle::Italic;
+    for scale in [1.0, 2.0] {
+        let mut prefs = native_theme_gpui::AccessibilityPreferences::default();
+        prefs.text_scaling_factor = scale;
+        let n = Native {
+            resolved: &resolved,
+            accessibility: &prefs,
+        };
+        let expected = geometry::menu_item(n);
+        assert_eq!(
+            expected.text.font_style,
+            Some(gpui::FontStyle::Italic),
+            "geometry::menu_item no longer sets the italic fixture's style"
+        );
+        // The font as the builder sets it; the colour is the showcase's own,
+        // which the builder leaves unset.
+        let font = |style: &gpui::StyleRefinement| gpui::TextStyleRefinement {
+            color: None,
+            ..style.text.clone()
+        };
+        let look = crate::demo::MenuLook::of(&n);
+        for lit in [false, true] {
+            let mut row = look.row(lit);
+            let style = row.style();
+            assert_eq!(
+                font(style),
+                expected.text,
+                "a popup row at text scale {scale} does not take menu.font as geometry::menu_item sets it"
+            );
+            assert_eq!(
+                (style.size.height, style.min_size.height),
+                (expected.size.height, expected.min_size.height),
+                "a popup row at text scale {scale} is not sized by geometry::menu_item's height rule"
+            );
+        }
+        let mut title = look.title(gpui::div().id("title"), false);
+        assert_eq!(
+            font(title.style()),
+            expected.text,
+            "a menu title at text scale {scale} does not take menu.font as geometry::menu_item sets it"
+        );
+    }
+}
 /// The number field a native theme draws -- the showcase's own frame round
 /// gpui-base's NumberInput -- reports what it paints (M9-001): under
 /// kde-breeze light its fill is `input.background_color`, the view colour

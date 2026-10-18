@@ -1479,27 +1479,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "menu.border.padding_top_px",
-        "gpui: pads the row by the stated side (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_right_px",
-        "gpui: pads the row by the stated side, else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_bottom_px",
-        "gpui: pads the row by the stated side (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_left_px",
-        "gpui: pads the row by the stated side, else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
     ),
     (
         "",
         "menu.font",
-        "gpui: family, size and weight from MenuLook (demo::MenuTitle, MenuBar::popup)",
+        "gpui: family, size, weight and style as geometry::menu_item sets them (demo::MenuTitle, MenuBar::popup)",
     ),
     (
         "",
@@ -1519,7 +1519,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "menu.row_height_px",
-        "gpui: the row's min_h where stated (MenuBar::popup)",
+        "gpui: the row's height by geometry::menu_item's control-height rule where stated: the height at a text scale of 1 or less, a minimum above (MenuBar::popup)",
     ),
     (
         "",

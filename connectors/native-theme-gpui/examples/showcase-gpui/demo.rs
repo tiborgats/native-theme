@@ -240,19 +240,15 @@ const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
 
 /// The model's menu, as the showcase draws a menu title and a menu row:
-/// `menu.font`, `menu.hover_background` and `hover_text_color`,
-/// `menu.border`'s padding sides and corner radius (platform-facts §2.6: the
-/// items are rectangular where it is 0), `menu.row_height`, and the popup
-/// `menu.background_color` framed by the popover's border (§2.6: the popup
-/// border is §2.16's).
+/// `menu.font` and a row's size as `geometry::menu_item` refines a menu item,
+/// `menu.hover_background` and `hover_text_color`, `menu.border`'s padding
+/// sides and corner radius (platform-facts §2.6: the items are rectangular
+/// where it is 0), and the popup `menu.background_color` framed by the
+/// popover's border (§2.6: the popup border is §2.16's).
 #[derive(Clone)]
-struct MenuLook {
-    family: SharedString,
-    font_size: Pixels,
-    weight: FontWeight,
-    /// `defaults.line_height`, the platform's line box, as the connector's
-    /// control-height rule lays text out (geometry.rs, `with_height_rule`).
-    line_height: DefiniteLength,
+pub(crate) struct MenuLook {
+    /// `geometry::menu_item`: a row's font, stated padding sides and height.
+    item: StyleRefinement,
     text: Hsla,
     hover: Hsla,
     hover_text: Hsla,
@@ -273,17 +269,11 @@ struct MenuLook {
 }
 
 impl MenuLook {
-    fn of(n: &Native<'_>) -> Self {
+    pub(crate) fn of(n: &Native<'_>) -> Self {
         let m = &n.resolved.menu;
         let p = &n.resolved.popover.border;
         Self {
-            family: native_theme_gpui::font_family(&m.font.family),
-            font_size: px(native_theme_gpui::scaled_text_size(
-                m.font.size,
-                n.accessibility,
-            )),
-            weight: FontWeight(f32::from(m.font.weight)),
-            line_height: relative(n.resolved.defaults.line_height),
+            item: geometry::menu_item(*n),
             text: info::stated(m.font.color),
             hover: info::stated(m.hover_background),
             hover_text: info::stated(m.hover_text_color),
@@ -310,6 +300,53 @@ impl MenuLook {
             } else {
                 Vec::new()
             },
+        }
+    }
+
+    /// `title` as a menu title, in the font `geometry::menu_item` sets, and
+    /// in `hover` and `hover_text` where `selected` or under the pointer.
+    pub(crate) fn title(&self, mut title: Stateful<Div>, selected: bool) -> Stateful<Div> {
+        let (hover, hover_text) = (self.hover, self.hover_text);
+        title.text_style().refine(&self.item.text);
+        padded(
+            title,
+            &self.padding,
+            MENU_TITLE_PADDING_X,
+            Some(MENU_TITLE_PADDING_Y),
+        )
+        .rounded(self.radius)
+        .map(|title| {
+            if selected {
+                title.bg(hover).text_color(hover_text)
+            } else {
+                title
+                    .text_color(self.text)
+                    .hover(move |style| style.bg(hover).text_color(hover_text))
+            }
+        })
+    }
+
+    /// A popup row, refined by `geometry::menu_item` before the caller's own
+    /// style (its label-to-shortcut gap replaces the builder's icon gap),
+    /// with the fallbacks on what the theme leaves unstated.
+    pub(crate) fn row(&self, lit: bool) -> Div {
+        // The shortcut is the plain text of a Kbd without its appearance
+        // (kbd.rs:234-236), which takes the row's font and line box.
+        let row = padded(
+            h_flex().refine_style(&self.item),
+            &self.padding,
+            MENU_ROW_PADDING_X,
+            None,
+        )
+        .rounded(self.radius);
+        let row = match (self.row_height, self.padding.top, self.padding.bottom) {
+            (None, None, None) => row.h(MENU_ROW_HEIGHT),
+            _ => row,
+        };
+        if lit {
+            row.bg(self.hover).text_color(self.hover_text)
+        } else {
+            row.text_color(self.text)
         }
     }
 }
@@ -375,29 +412,7 @@ impl RenderOnce for MenuTitle {
             })
             .child(self.name);
         match self.look {
-            Some(look) => {
-                let (hover, hover_text) = (look.hover, look.hover_text);
-                padded(
-                    title,
-                    &look.padding,
-                    MENU_TITLE_PADDING_X,
-                    Some(MENU_TITLE_PADDING_Y),
-                )
-                .font_family(look.family.clone())
-                .text_size(look.font_size)
-                .line_height(look.line_height)
-                .font_weight(look.weight)
-                .rounded(look.radius)
-                .map(|title| {
-                    if self.selected {
-                        title.bg(hover).text_color(hover_text)
-                    } else {
-                        title
-                            .text_color(look.text)
-                            .hover(move |style| style.bg(hover).text_color(hover_text))
-                    }
-                })
-            }
+            Some(look) => look.title(title, self.selected),
             None => title
                 .px(MENU_TITLE_PADDING_X)
                 .py(MENU_TITLE_PADDING_Y)
@@ -631,7 +646,18 @@ impl MenuBar {
                             });
                         let dispatched = action.boxed_clone();
                         let lit = highlighted == Some(ix);
-                        let row = h_flex()
+                        let row = match look {
+                            Some(look) => look.row(lit),
+                            None => h_flex()
+                                .px(MENU_ROW_PADDING_X)
+                                .h(MENU_ROW_HEIGHT)
+                                .text_sm()
+                                .when(lit, |row| {
+                                    row.bg(cx.theme().accent)
+                                        .text_color(cx.theme().accent_foreground)
+                                }),
+                        };
+                        let row = row
                             .id(("menu-row", ix))
                             .w_full()
                             .gap(MENU_SHORTCUT_GAP)
@@ -654,39 +680,6 @@ impl MenuBar {
                             .on_click(cx.listener(move |this, _, window, cx| {
                                 this.run(dispatched.as_ref(), window, cx);
                             }));
-                        let row = match look {
-                            Some(look) => {
-                                // The shortcut is the plain text of a Kbd
-                                // without its appearance (kbd.rs:234-236),
-                                // which takes the row's font and line box.
-                                let row = padded(row, &look.padding, MENU_ROW_PADDING_X, None)
-                                    .font_family(look.family.clone())
-                                    .text_size(look.font_size)
-                                    .line_height(look.line_height)
-                                    .font_weight(look.weight)
-                                    .rounded(look.radius)
-                                    .map(|row| {
-                                        if lit {
-                                            row.bg(look.hover).text_color(look.hover_text)
-                                        } else {
-                                            row.text_color(look.text)
-                                        }
-                                    });
-                                match (look.row_height, look.padding.top, look.padding.bottom) {
-                                    (Some(height), _, _) => row.min_h(height),
-                                    (None, None, None) => row.h(MENU_ROW_HEIGHT),
-                                    (None, _, _) => row,
-                                }
-                            }
-                            None => row
-                                .px(MENU_ROW_PADDING_X)
-                                .h(MENU_ROW_HEIGHT)
-                                .text_sm()
-                                .when(lit, |row| {
-                                    row.bg(cx.theme().accent)
-                                        .text_color(cx.theme().accent_foreground)
-                                }),
-                        };
                         row.into_any_element()
                     }
                 }
