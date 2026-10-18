@@ -4,10 +4,10 @@ use std::time::Duration;
 
 use gpui::Pixels;
 use gpui_component::{Colorize as _, theme::Theme};
-use native_theme::theme::ResolvedPadding;
+use native_theme::theme::{ResolvedButtonTheme, ResolvedPadding};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, edge_claim, px_text, stated};
+use super::{ColorClaim, WidgetInfo, buttons::ToolSize, claim, edge_claim, px_text, stated};
 use crate::demo::{Severity, SheetSide};
 use crate::support::ChromeIcon;
 
@@ -445,7 +445,8 @@ pub fn toolbar(
 /// showing `icon` of the icon theme named `set`, selected while its panel is
 /// `open`, which `state` describes. Its icon-size line is recorded where
 /// `demo::panel_toggle` applies the builder; `tooltip_delay` is the delay its
-/// tooltip is given, the theme's `tooltip.show_delay_ms`.
+/// tooltip is given, the theme's `tooltip.show_delay_ms`; it is sized as
+/// `buttons::tool_button_size` says under `native`'s `button`.
 #[allow(clippy::too_many_arguments)]
 pub fn panel_toggle(
     t: &Theme,
@@ -456,6 +457,7 @@ pub fn panel_toggle(
     state: &'static str,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
+    native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(match (drawn, open) {
@@ -484,18 +486,15 @@ pub fn panel_toggle(
     } else {
         info
     };
-    info.not_themeable(
-        "size",
-        "h_6 with px_2 at Size::Small -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
-    )
-    .instance(
-        "icon",
-        chrome_icon_note(
-            icon,
-            set,
-            "the toggle shows the tooltip's text as its label instead",
-        ),
-    )
+    super::buttons::tool_button_size(info, ToolSize::Small, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(
+                icon,
+                set,
+                "the toggle shows the tooltip's text as its label instead",
+            ),
+        )
     .instance(
         "place",
         "at the end of the status bar on the side of the panel it controls, the pattern Zed's status bar follows; the selection, not a changing icon, shows whether the panel is open",
@@ -946,9 +945,11 @@ pub fn icon_set_select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
 }
 
 /// One of the toolbar's icon Buttons (spec §2.3), running `action` and
-/// showing `icon` of the icon theme named `set`. Its icon-size line is
-/// recorded where `demo::toolbar_button` applies the builder; `tooltip_delay`
-/// is the delay its tooltip is given, the theme's `tooltip.show_delay_ms`.
+/// showing `icon` of the icon theme named `set`, sized as
+/// `buttons::tool_button_size` says under `native`'s `button`. Its
+/// icon-size line is recorded where `demo::toolbar_button` applies the
+/// builder; `tooltip_delay` is the delay its tooltip is given, the theme's
+/// `tooltip.show_delay_ms`.
 pub fn toolbar_button(
     t: &Theme,
     action: &'static str,
@@ -956,6 +957,7 @@ pub fn toolbar_button(
     set: &str,
     tooltip_styled: bool,
     tooltip_delay: Option<Duration>,
+    native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
@@ -978,25 +980,19 @@ pub fn toolbar_button(
             "icon",
             "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
         )
-        .not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
-        )
     } else {
-        info.not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font (button/button.rs, RenderOnce for Button)",
-        )
+        info
     };
-    info.instance(
-        "icon",
-        chrome_icon_note(
-            icon,
-            set,
-            "the button shows the tooltip's text as its label instead",
-        ),
-    )
-    .instance("action", action)
+    super::buttons::tool_button_size(info, ToolSize::Medium, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(
+                icon,
+                set,
+                "the button shows the tooltip's text as its label instead",
+            ),
+        )
+        .instance("action", action)
 }
 
 /// What a chrome Button's tooltip paints: built by the application on the

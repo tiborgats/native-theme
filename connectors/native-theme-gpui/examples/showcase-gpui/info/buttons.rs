@@ -646,6 +646,112 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// The Size a tool button is built at: what upstream lays a labelled Button
+/// of it out at (button/button.rs, RenderOnce for Button).
+#[derive(Clone, Copy)]
+pub(crate) enum ToolSize {
+    /// The default Size, `Size::Medium`: `h_8` with `px_2p5`.
+    Medium,
+    /// `Size::Small`: `h_6` with `px_2`.
+    Small,
+}
+
+impl ToolSize {
+    /// Upstream's height, its side padding, and the Size's name.
+    fn upstream(self) -> (&'static str, &'static str, &'static str) {
+        match self {
+            Self::Medium => ("h_8", "px_2p5", "the default Size"),
+            Self::Small => ("h_6", "px_2", "Size::Small"),
+        }
+    }
+}
+
+/// `info` given a tool button's size and corners, a Ghost at `size` refined
+/// by `demo::tool_box_of` where `native` is installed: rounded by
+/// `button.border.corner_radius` and padded by the `button.border.padding`
+/// sides it states, with no fixed height where a top or bottom side is
+/// stated, upstream's height and side padding standing only for what it
+/// leaves unstated; with no native theme, upstream's whole. `icon_child` is
+/// whether the icon is the Button's child, which has upstream lay it out as
+/// a labelled Button.
+pub(crate) fn tool_button_size(
+    info: WidgetInfo,
+    size: ToolSize,
+    icon_child: bool,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
+    let (height, across, at) = size.upstream();
+    let labelled = if icon_child {
+        "; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button"
+    } else {
+        ""
+    };
+    let Some(b) = native else {
+        return info.not_themeable(
+            "size",
+            format!(
+                "{height} with {across} at {at} -- rems, so the platform's font{labelled} (button/button.rs, RenderOnce for Button)"
+            ),
+        );
+    };
+    let p = &b.border.padding;
+    let stated: Vec<String> = [
+        ("top", p.top),
+        ("right", p.right),
+        ("bottom", p.bottom),
+        ("left", p.left),
+    ]
+    .into_iter()
+    .filter_map(|(side, v)| v.map(|v| format!("{side} {}px", px_text(v))))
+    .collect();
+    let vertical = p.top.is_some() || p.bottom.is_some();
+    let radius = format!(
+        "button.border.corner_radius, {}px",
+        px_text(b.border.corner_radius.max(0.))
+    );
+    let sets = "which the showcase sets on the Button (demo::tool_box_of)";
+    let text = match (stated.is_empty(), vertical) {
+        (true, _) => {
+            format!("{radius}, {sets}; the theme states no button.border.padding side")
+        }
+        (false, false) => format!(
+            "{radius}, and button.border.padding: {}, {sets}",
+            stated.join(", ")
+        ),
+        (false, true) => format!(
+            "{radius}, and button.border.padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
+            stated.join(", "),
+            if p.top.is_none() || p.bottom.is_none() {
+                ", an unstated one none, as upstream pads a Button only across"
+            } else {
+                ""
+            }
+        ),
+    };
+    let info = info.config("radius and padding", text);
+    let unstated_across = match (p.left.is_none(), p.right.is_none()) {
+        (true, true) => Some(across.to_string()),
+        (true, false) => Some(format!("{across} on the left")),
+        (false, true) => Some(format!("{across} on the right")),
+        (false, false) => None,
+    };
+    let upstream = match (vertical, unstated_across) {
+        (true, None) => None,
+        (true, Some(across)) => Some(across),
+        (false, None) => Some(height.to_string()),
+        (false, Some(across)) => Some(format!("{height} with {across}")),
+    };
+    match upstream {
+        Some(what) => info.not_themeable(
+            "size",
+            format!(
+                "{what} at {at}, upstream's for what button.border.padding leaves unstated -- rems, so the platform's font{labelled} (button/button.rs, RenderOnce for Button)"
+            ),
+        ),
+        None => info,
+    }
+}
+
 /// A `ButtonGroup` of Default Buttons, which report through the group.
 pub fn button_group(t: &Theme) -> WidgetInfo {
     colours(WidgetInfo::new("ButtonGroup"), t, ButtonKind::Default, None)
@@ -852,9 +958,15 @@ pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedButtonTheme>)
 }
 
 /// One of the component `Toolbar`'s Ghost Buttons, showing `icon` of the
-/// icon theme named `set`; it runs nothing. Its icon-size line is recorded
+/// icon theme named `set`, sized as [`tool_button_size`] says under
+/// `native`'s `button`; it runs nothing. Its icon-size line is recorded
 /// where `demo::toolbar_item` applies the builder.
-pub fn toolbar_item(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+pub fn toolbar_item(
+    t: &Theme,
+    icon: &ChromeIcon,
+    set: &str,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
         "Ghost, icon"
@@ -870,22 +982,16 @@ pub fn toolbar_item(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
             "icon",
             "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
         )
-        .not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
-        )
     } else {
-        info.not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font (button/button.rs, RenderOnce for Button)",
-        )
+        info
     };
-    info.instance(
-        "icon",
-        chrome_icon_note(icon, set, "the button shows its name as its label instead"),
-    )
-    .instance(
-        "action",
-        "none: the section shows the Toolbar, so its Buttons run nothing",
-    )
+    tool_button_size(info, ToolSize::Medium, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the button shows its name as its label instead"),
+        )
+        .instance(
+            "action",
+            "none: the section shows the Toolbar, so its Buttons run nothing",
+        )
 }

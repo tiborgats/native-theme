@@ -12429,3 +12429,139 @@ fn the_status_bars_info_names_upstreams_edge_only_without_a_theme(cx: &mut TestA
         bare.not_themeable
     );
 }
+
+/// The words of `text`: its runs of letters, digits and underscores, so
+/// `px_2` is told from `px_2p5`.
+fn words(text: &str) -> std::collections::BTreeSet<&str> {
+    text.split(|c: char| !(c.is_alphanumeric() || c == '_'))
+        .filter(|w| !w.is_empty())
+        .collect()
+}
+
+/// Under a theme that states `button.border.padding`, the toolbar's buttons
+/// and the status bar's toggle are that padding round their icon, with no
+/// fixed height where a top or bottom side is stated, and rounded by
+/// `button.border.corner_radius` (`demo::tool_box_of`): their info names
+/// upstream's height (`h_8`, `h_6`) and side padding (`px_2p5`, `px_2`) only
+/// for what the theme leaves unstated (M9-035).
+#[gpui::test]
+fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "adwaita");
+    let padding = cx.update(|_window, cx| native_value(cx, |n| n.resolved.button.border.padding));
+    assert!(
+        padding.is_some_and(|p| p.top.is_some() || p.bottom.is_some()),
+        "adwaita states no vertical button.border.padding side, which this test needs: {padding:?}"
+    );
+    let Some(p) = padding else { return };
+    for (selector, height, across) in [
+        (CHROME_TOOLBAR_PALETTE, "h_8", "px_2p5"),
+        (CHROME_SIDE_PANEL_TOGGLE, "h_6", "px_2"),
+    ] {
+        let info = settle_on(&mut cx, &showcase, selector);
+        let text = info.as_ref().map(WidgetInfo::to_text).unwrap_or_default();
+        let said = words(&text);
+        assert!(
+            text.starts_with("Button"),
+            "{selector} shows another widget's info: {text}"
+        );
+        assert_eq!(
+            said.contains(height),
+            p.top.is_none() && p.bottom.is_none(),
+            "{selector}: upstream's {height} is named against the stated padding {p:?}:\n{text}"
+        );
+        assert_eq!(
+            said.contains(across),
+            p.left.is_none() || p.right.is_none(),
+            "{selector}: upstream's {across} is named against the stated padding {p:?}:\n{text}"
+        );
+        assert!(
+            text.contains("button.border.padding") && text.contains("button.border.corner_radius"),
+            "{selector}: the info does not name button.border.padding and corner_radius:\n{text}"
+        );
+    }
+}
+
+/// The tool buttons' size notes under every bundled preset in both modes,
+/// and with no native theme: upstream's height where no top or bottom side
+/// of `button.border.padding` is stated, its side padding where a left or
+/// right one is not, `button.border.corner_radius` and the stated sides
+/// named wherever a native theme is installed (M9-035) -- for the toolbar's
+/// buttons, the status bar's toggle and the Buttons page's toolbar items,
+/// which `demo::tool_box_of` sizes alike.
+#[test]
+fn every_tool_buttons_size_note_follows_the_stated_padding() {
+    let icon = ChromeIcon::Builtin("Search".into());
+    let infos = |t: &Theme, native: Option<&native_theme::theme::ResolvedButtonTheme>| {
+        [
+            (
+                "toolbar button",
+                "h_8",
+                "px_2p5",
+                crate::info::toolbar_button(t, "a", &icon, "set", false, None, native),
+            ),
+            (
+                "panel toggle",
+                "h_6",
+                "px_2",
+                crate::info::panel_toggle(t, "a", &icon, "set", true, "s", false, None, native),
+            ),
+            (
+                "toolbar item",
+                "h_8",
+                "px_2p5",
+                crate::info::buttons::toolbar_item(t, &icon, "set", native),
+            ),
+        ]
+    };
+    let variants = every_bundled_variant();
+    for (name, r, t) in &variants {
+        let p = r.button.border.padding;
+        for (which, height, across, info) in infos(t, Some(&r.button)) {
+            let text = info.to_text();
+            let said = words(&text);
+            assert_eq!(
+                said.contains(height),
+                p.top.is_none() && p.bottom.is_none(),
+                "{name}: the {which}'s info names {height} against {p:?}:\n{text}"
+            );
+            assert_eq!(
+                said.contains(across),
+                p.left.is_none() || p.right.is_none(),
+                "{name}: the {which}'s info names {across} against {p:?}:\n{text}"
+            );
+            let corners = format!(
+                "button.border.corner_radius, {}px",
+                crate::info::px_text(r.button.border.corner_radius.max(0.))
+            );
+            assert!(
+                text.contains(&corners),
+                "{name}: the {which}'s info does not round it by {corners}:\n{text}"
+            );
+            for (side, v) in [
+                ("top", p.top),
+                ("right", p.right),
+                ("bottom", p.bottom),
+                ("left", p.left),
+            ] {
+                if let Some(v) = v {
+                    let stated = format!("{side} {}px", crate::info::px_text(v));
+                    assert!(
+                        text.contains("button.border.padding") && text.contains(&stated),
+                        "{name}: the {which}'s info does not name the stated {stated}:\n{text}"
+                    );
+                }
+            }
+        }
+    }
+    let Some((_, _, t)) = variants.first() else {
+        return;
+    };
+    for (which, height, across, info) in infos(t, None) {
+        let note = shown_note(Some(&info), "size").unwrap_or_default();
+        assert!(
+            note.starts_with(&format!("{height} with {across} at ")),
+            "with no native theme the {which}'s size note is not upstream's {height} with {across}: {note:?}"
+        );
+    }
+}

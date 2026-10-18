@@ -1132,7 +1132,16 @@ pub(crate) fn toolbar_button(
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
     let delay = tooltip_delay(cx);
-    let mut button_info = info::toolbar_button(cx.theme(), about, &drawn, set, styled, delay);
+    let native = cx.native();
+    let mut button_info = info::toolbar_button(
+        cx.theme(),
+        about,
+        &drawn,
+        set,
+        styled,
+        delay,
+        native.as_ref().map(|n| &n.resolved.button),
+    );
     if styled {
         button_info = button_info.geometry("tooltip");
     }
@@ -1237,7 +1246,13 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         drawn,
         label,
     } = item;
-    let mut button_info = info::buttons::toolbar_item(cx.theme(), &drawn, set);
+    let native = cx.native();
+    let mut button_info = info::buttons::toolbar_item(
+        cx.theme(),
+        &drawn,
+        set,
+        native.as_ref().map(|n| &n.resolved.button),
+    );
     let icon =
         chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
@@ -1343,8 +1358,18 @@ pub(crate) fn panel_toggle(
     } = spec;
     let (tip, styled) = action_tooltip(cx, tooltip, action);
     let delay = tooltip_delay(cx);
-    let mut button_info =
-        info::panel_toggle(cx.theme(), about, &drawn, set, open, state, styled, delay);
+    let native = cx.native();
+    let mut button_info = info::panel_toggle(
+        cx.theme(),
+        about,
+        &drawn,
+        set,
+        open,
+        state,
+        styled,
+        delay,
+        native.as_ref().map(|n| &n.resolved.button),
+    );
     if styled {
         button_info = button_info.geometry("tooltip");
     }
