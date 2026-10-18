@@ -724,6 +724,62 @@ const DUMP_POLL: Duration = Duration::from_millis(250);
 /// and fonts loaded after the first frame to have taken their place.
 const DUMP_SETTLED_READINGS: usize = 4;
 
+/// How many readings `dump_layout` takes at most before it gives the dump
+/// up as failed, so a layout that never settles fails the run (exit 1)
+/// rather than hold it open: 80 readings `DUMP_POLL` apart, 20 s, the time
+/// `scripts/capture_window.sh` waits for a dump before it fails the capture
+/// (`wait_for_dump`, `SHOWCASE_WINDOW_TIMEOUT=20`). The showcase's own
+/// bound; the model states none.
+const DUMP_MAX_READINGS: usize = 80;
+
+/// What `dump_layout` does after a reading ([`DumpSettle::read`]).
+#[derive(Debug, PartialEq)]
+pub(crate) enum DumpStep {
+    /// The layout has not settled yet: read again after `DUMP_POLL`.
+    Wait,
+    /// `DUMP_SETTLED_READINGS` readings in a row found this layout: write it.
+    Write(serde_json::Value),
+    /// `DUMP_MAX_READINGS` readings found no settled layout: the dump fails.
+    GiveUp,
+}
+
+/// The readings `dump_layout` has taken: the last one, how many in a row
+/// found it, and how many there were.
+#[derive(Default)]
+pub(crate) struct DumpSettle {
+    last: Option<serde_json::Value>,
+    same: usize,
+    readings: usize,
+}
+
+impl DumpSettle {
+    /// Takes `reading`, one more of the last frame's layout dumps: a dump
+    /// with no element, or one unlike the last, starts the count again.
+    pub(crate) fn read(&mut self, reading: serde_json::Value) -> DumpStep {
+        self.readings = self.readings.saturating_add(1);
+        let empty = reading["elements"]
+            .as_object()
+            .is_none_or(serde_json::Map::is_empty);
+        if empty || self.last.as_ref() != Some(&reading) {
+            self.last = Some(reading);
+            self.same = 1;
+        } else {
+            self.same = self.same.saturating_add(1);
+        }
+        if !empty
+            && self.same >= DUMP_SETTLED_READINGS
+            && let Some(settled) = self.last.take()
+        {
+            return DumpStep::Write(settled);
+        }
+        if self.readings >= DUMP_MAX_READINGS {
+            DumpStep::GiveUp
+        } else {
+            DumpStep::Wait
+        }
+    }
+}
+
 /// The layout dump of the last frame `window` drew (`dump::layout_json`):
 /// where each element of docs/showcase-elements.toml was drawn, the theme,
 /// its variant and the scale factor.
@@ -773,9 +829,10 @@ fn output_written(outputs: &RunOutputs, output: Output, cx: &mut App) {
 /// `--dump-layout`: once `DUMP_SETTLED_READINGS` readings in a row find the
 /// last frame's layout of the list's elements unchanged, writes it to
 /// `path` as docs/showcase-elements.toml's "The layout dump" describes, then
-/// records it in `outputs` (`output_written`). A write that fails is
-/// reported and exits with 1 (`cli::refuse`), as a failed `--screenshot`
-/// does.
+/// records it in `outputs` (`output_written`). A write that fails, or a
+/// layout that has not settled after `DUMP_MAX_READINGS` readings, is
+/// reported naming `--dump-layout` and the path (`cli::Output::failure`)
+/// and exits with 1 (`cli::refuse`), as a failed `--screenshot` does.
 pub(crate) fn dump_layout(
     cx: &mut App,
     window: AnyWindowHandle,
@@ -784,34 +841,40 @@ pub(crate) fn dump_layout(
     outputs: RunOutputs,
 ) {
     cx.spawn(async move |cx| {
-        let mut last = None;
-        let mut same = 0;
+        let mut settle = DumpSettle::default();
         loop {
             cx.background_executor().timer(DUMP_POLL).await;
             let reading = cx.update_window(window, |_view, window, cx| {
                 layout_dump(showcase.read(cx), window, cx)
             });
             let Ok(reading) = reading else { break };
-            let empty = reading["elements"]
-                .as_object()
-                .is_none_or(serde_json::Map::is_empty);
-            if empty || last.as_ref() != Some(&reading) {
-                last = Some(reading);
-                same = 0;
-                continue;
+            match settle.read(reading) {
+                DumpStep::Wait => {}
+                DumpStep::Write(settled) => {
+                    if let Err(error) = dump::write_layout(&path, &settled) {
+                        cli::refuse(&error);
+                    }
+                    cx.update(|cx| output_written(&outputs, Output::Dump, cx));
+                    break;
+                }
+                DumpStep::GiveUp => cli::refuse(&dump_unsettled(&path)),
             }
-            same += 1;
-            if same + 1 < DUMP_SETTLED_READINGS {
-                continue;
-            }
-            if let Err(error) = dump::write_layout(&path, &reading) {
-                cli::refuse(&error);
-            }
-            cx.update(|cx| output_written(&outputs, Output::Dump, cx));
-            break;
         }
     })
     .detach();
+}
+
+/// Why `--dump-layout` to `path` failed when its layout never settled.
+pub(crate) fn dump_unsettled(path: &str) -> String {
+    let waited = DUMP_POLL.saturating_mul(u32::try_from(DUMP_MAX_READINGS).unwrap_or(u32::MAX));
+    Output::Dump.failure(
+        path,
+        &format!(
+            "the layout did not settle: no {DUMP_SETTLED_READINGS} readings in a row agreed \
+             within {} s",
+            waited.as_secs()
+        ),
+    )
 }
 
 /// How often `screenshot` asks whether the capture is done: on Windows the

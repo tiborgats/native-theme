@@ -9653,3 +9653,40 @@ fn the_layout_dump_quits_only_once_every_file_is_written(cx: &mut TestAppContext
         }
     }
 }
+
+/// The layout dump waits for `DUMP_SETTLED_READINGS` equal readings, and
+/// gives up after `DUMP_MAX_READINGS`, naming `--dump-layout` and the path,
+/// so a layout that never settles fails the run rather than hold it open.
+#[test]
+fn a_layout_that_never_settles_fails_the_dump() {
+    use crate::{DUMP_MAX_READINGS, DUMP_SETTLED_READINGS, DumpSettle, DumpStep};
+    let dump = |x: usize| serde_json::json!({"elements": {"a": {"x": x}}});
+
+    let mut settle = DumpSettle::default();
+    for reading in 1..DUMP_SETTLED_READINGS {
+        assert_eq!(settle.read(dump(0)), DumpStep::Wait, "reading {reading}");
+    }
+    assert_eq!(settle.read(dump(0)), DumpStep::Write(dump(0)));
+
+    let mut empty = DumpSettle::default();
+    for reading in 1..DUMP_MAX_READINGS {
+        let step = empty.read(serde_json::json!({"elements": {}}));
+        assert_eq!(step, DumpStep::Wait, "empty reading {reading}");
+    }
+
+    let mut moving = DumpSettle::default();
+    for reading in 1..DUMP_MAX_READINGS {
+        assert_eq!(
+            moving.read(dump(reading)),
+            DumpStep::Wait,
+            "reading {reading}"
+        );
+    }
+    assert_eq!(moving.read(dump(DUMP_MAX_READINGS)), DumpStep::GiveUp);
+    let failure = crate::dump_unsettled("f.json");
+    assert!(
+        failure.starts_with("--dump-layout f.json: the layout did not settle")
+            && failure.ends_with(" 20 s"),
+        "{failure}"
+    );
+}
