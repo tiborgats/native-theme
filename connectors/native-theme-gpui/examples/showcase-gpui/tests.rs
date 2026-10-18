@@ -9683,9 +9683,10 @@ fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppConte
 
 /// An OS theme change the watcher reports is read in every colour mode: a
 /// chosen Light or Dark picks only the variant, while the OS still owns the
-/// accent, the fonts and the icon theme `default` shows. So under Dark it
-/// reads the OS once, and a switch to System afterwards shows that read,
-/// not the one from before the change, and reads nothing more.
+/// accent, the fonts and the icon theme `default` shows. So under Dark, and
+/// under Light, it reads the OS once and keeps the mode, and a switch to
+/// System afterwards shows that read, not the one from before the change,
+/// and reads nothing more.
 #[gpui::test]
 fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -9693,43 +9694,80 @@ fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
         return;
     }
     set_preset(&mut cx, "default");
-    switch_mode(&mut cx, AppColorMode::Dark);
-    let stale = "the read before the OS theme changed";
-    cx.update(|_window, cx| {
-        showcase.update(cx, |this, _| {
-            if let Some(system) = this.system.as_mut() {
-                system.name = stale.into();
-            }
-        })
+    for (mode, dark) in [(AppColorMode::Dark, true), (AppColorMode::Light, false)] {
+        switch_mode(&mut cx, mode);
+        let stale = "the read before the OS theme changed";
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, _| {
+                if let Some(system) = this.system.as_mut() {
+                    system.name = stale.into();
+                }
+            })
+        });
+        assert_eq!(
+            kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+            Some(stale.to_string()),
+            "the kept read was not marked, so its replacement proves nothing"
+        );
+        let (reads, _) = reads_and_loads();
+        cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
+        cx.run_until_parked();
+        draw(&mut cx);
+        assert_eq!(
+            reads_and_loads().0 - reads,
+            1,
+            "under {mode:?} an OS theme change was not read"
+        );
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.is_dark),
+            dark,
+            "an OS theme change under {mode:?} left {mode:?}"
+        );
+        switch_mode(&mut cx, AppColorMode::System);
+        assert_eq!(
+            reads_and_loads().0 - reads,
+            1,
+            "switching from {mode:?} to System read the OS theme again"
+        );
+        assert_ne!(
+            kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
+            Some(stale.to_string()),
+            "switching from {mode:?} to System showed the read from before the OS theme changed"
+        );
+    }
+}
+
+/// Under a bundled preset an OS theme change keeps that preset installed,
+/// and where its icons are a bundled set's, which no OS change reaches,
+/// loads none of them again (`Showcase::reload_system_theme`).
+#[gpui::test]
+fn a_bundled_preset_stays_installed_through_an_os_theme_change(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let preset = "material-3";
+    set_preset(&mut cx, preset);
+    let set = read(&mut cx, &showcase, |this, _| {
+        this.icon_set_choice
+            .effective_icon_set(this.current_icon_set)
     });
-    assert_eq!(
-        kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
-        Some(stale.to_string()),
-        "the kept read was not marked, so its replacement proves nothing"
+    assert!(
+        !crate::support::is_system_set(set),
+        "{preset}'s icons are {set:?}, a system set, so this test proves nothing"
     );
-    let (reads, _) = reads_and_loads();
+    let (_, loads) = reads_and_loads();
     cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
     cx.run_until_parked();
     draw(&mut cx);
     assert_eq!(
-        reads_and_loads().0 - reads,
-        1,
-        "under Dark an OS theme change was not read"
+        read(&mut cx, &showcase, |this, _| this
+            .current_theme_name
+            .clone()),
+        preset,
+        "an OS theme change did not keep {preset} installed"
     );
-    assert!(
-        read(&mut cx, &showcase, |this, _| this.is_dark),
-        "an OS theme change under Dark left Dark"
-    );
-    switch_mode(&mut cx, AppColorMode::System);
     assert_eq!(
-        reads_and_loads().0 - reads,
-        1,
-        "switching to System read the OS theme again"
-    );
-    assert_ne!(
-        kept_system(&mut cx, &showcase).map(|s| s.name.to_string()),
-        Some(stale.to_string()),
-        "switching to System showed the read from before the OS theme changed"
+        reads_and_loads().1 - loads,
+        0,
+        "an OS theme change loaded {preset}'s bundled {set:?} icons again"
     );
 }
 

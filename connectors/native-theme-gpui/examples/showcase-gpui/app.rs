@@ -439,7 +439,8 @@ pub(crate) struct Showcase {
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
     /// What the loaded icons were loaded as; `None` before the first load
-    /// and after a reload of the desktop's settings, so the next loads.
+    /// and, for a system set's, after a reload of the desktop's settings, so
+    /// the next loads.
     pub(crate) icon_load: Option<IconLoad>,
     /// The icon-theme choice (library type).
     pub(crate) icon_set_choice: IconSetChoice,
@@ -1837,10 +1838,14 @@ impl Showcase {
     /// OS theme changes, and what `ReloadTheme` asks for.
     fn reload_system_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         native_theme::detect::invalidate_caches();
-        // The desktop's theme is read again, and the icons loaded again:
-        // the system icon theme may have changed with it.
+        // The desktop's theme is read again, and a system set's icons
+        // loaded again: the system icon theme may have changed with it. A
+        // bundled set's cannot, and stay.
         self.system = None;
-        self.icon_load = None;
+        self.icon_load = self
+            .icon_load
+            .take()
+            .filter(|load| !load.set.is_some_and(crate::support::is_system_set));
         self.is_dark = self.color_mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
