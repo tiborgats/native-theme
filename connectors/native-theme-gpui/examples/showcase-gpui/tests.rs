@@ -8904,6 +8904,44 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
     );
 }
 
+/// A chrome popup row is padded on each side the theme states by
+/// `menu.border.padding` (`geometry::menu_item`), on an unstated left or
+/// right by `MENU_ROW_PADDING_X`, upstream's row padding, and on an
+/// unstated top or bottom by nothing, under every bundled preset in both
+/// modes, lit or not.
+#[test]
+fn a_menu_popup_row_pads_each_side_as_the_theme_states_it() {
+    use gpui::DefiniteLength;
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    for (name, r, _) in every_bundled_variant() {
+        let n = native_theme_gpui::Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        let p = r.menu.border.padding;
+        let side = |stated: Option<f32>, unstated: Option<Pixels>| {
+            stated.map(px).or(unstated).map(DefiniteLength::from)
+        };
+        let x = Some(crate::demo::MENU_ROW_PADDING_X);
+        let expected = (
+            side(p.top, None),
+            side(p.right, x),
+            side(p.bottom, None),
+            side(p.left, x),
+        );
+        let look = crate::demo::MenuLook::of(&n);
+        for lit in [false, true] {
+            let mut row = look.row(lit);
+            let padding = &row.style().padding;
+            assert_eq!(
+                (padding.top, padding.right, padding.bottom, padding.left),
+                expected,
+                "{name}: a popup row (lit {lit}) is not padded as menu.border.padding {p:?} states"
+            );
+        }
+    }
+}
+
 /// Where the theme states neither `menu.row_height` nor a vertical padding
 /// side (catppuccin-mocha), a chrome popup row is `MENU_ROW_HEIGHT` by the
 /// connector's control-height rule (`geometry.rs`, `with_height_rule`): that

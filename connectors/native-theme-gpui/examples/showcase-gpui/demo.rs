@@ -216,7 +216,7 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// height takes the connector's control-height rule (geometry.rs,
 /// `with_height_rule`): it is the row's height at a text scale of 1 or less
 /// and its minimum above.
-const MENU_ROW_PADDING_X: Pixels = px(8.);
+pub(crate) const MENU_ROW_PADDING_X: Pixels = px(8.);
 pub(crate) const MENU_ROW_HEIGHT: Pixels = px(26.);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
@@ -335,21 +335,20 @@ impl MenuLook {
 
     /// A popup row, refined by `geometry::menu_item` before the caller's own
     /// style (its label-to-shortcut gap replaces the builder's icon gap),
-    /// with the fallbacks on what the theme leaves unstated: the builder sets
-    /// the stated padding sides, so only an unstated left or right is padded
-    /// here.
+    /// with the fallbacks on what the theme leaves unstated: an unstated left
+    /// or right is padded by `MENU_ROW_PADDING_X` ([`padded`], over the
+    /// stated sides the builder set already), an unstated top or bottom by
+    /// nothing.
     pub(crate) fn row(&self, lit: bool) -> Div {
         // The shortcut is the plain text of a Kbd without its appearance
         // (kbd.rs:234-236), which takes the row's font and line box.
-        let row = h_flex()
-            .refine_style(&self.item)
-            .when(self.padding.left.is_none(), |row| {
-                row.pl(MENU_ROW_PADDING_X)
-            })
-            .when(self.padding.right.is_none(), |row| {
-                row.pr(MENU_ROW_PADDING_X)
-            })
-            .rounded(self.radius);
+        let row = padded(
+            h_flex().refine_style(&self.item),
+            &self.padding,
+            Some(MENU_ROW_PADDING_X),
+            None,
+        )
+        .rounded(self.radius);
         let row = match (self.row_height, self.padding.top, self.padding.bottom) {
             (None, None, None) if self.text_scaled_up => row.min_h(MENU_ROW_HEIGHT).h_auto(),
             (None, None, None) => row.h(MENU_ROW_HEIGHT),
