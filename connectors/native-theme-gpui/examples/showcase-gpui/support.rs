@@ -409,6 +409,36 @@ pub(crate) fn parse_icon_set_choice(display: &str) -> IconSetChoice {
     }
 }
 
+/// Whether `set` is one of the platforms' own icon sets -- freedesktop, SF
+/// Symbols, Segoe Fluent -- whose loaders colour a symbolic icon as they
+/// load it (`color_opt`), where a bundled set's SVGs are coloured as they
+/// are drawn (`Showcase::rebuild_icon_caches`).
+pub(crate) fn is_system_set(set: IconSet) -> bool {
+    matches!(
+        set,
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
+    )
+}
+
+/// The desktop's own theme, read: `SystemTheme::from_system`, which
+/// `default` installs. Counted in the self-tests (`SYSTEM_READS`).
+pub(crate) fn read_system_theme() -> native_theme::Result<native_theme::SystemTheme> {
+    #[cfg(test)]
+    SYSTEM_READS.with(|reads| reads.set(reads.get().saturating_add(1)));
+    native_theme::SystemTheme::from_system()
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How often the showcase read the desktop's theme
+    /// (`read_system_theme`) on this thread; a test reads how much an action
+    /// adds to it.
+    pub(crate) static SYSTEM_READS: Cell<usize> = const { Cell::new(0) };
+    /// How often the showcase loaded a set's icons (`load_all_icons`) on
+    /// this thread; a test reads how much an action adds to it.
+    pub(crate) static ICON_LOADS: Cell<usize> = const { Cell::new(0) };
+}
+
 /// Pre-load the icon of each of the 42 `IconRole`s from the given icon set,
 /// tracking its source.
 ///
@@ -421,10 +451,9 @@ pub(crate) fn load_all_icons(
     theme: Option<&str>,
     fg_color: Option<native_theme::Rgba>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
-    let is_system_set = matches!(
-        icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
-    );
+    #[cfg(test)]
+    ICON_LOADS.with(|loads| loads.set(loads.get().saturating_add(1)));
+    let is_system_set = is_system_set(icon_set);
 
     IconRole::ALL
         .iter()
@@ -622,10 +651,7 @@ pub(crate) fn load_gpui_icons(
         }
     };
 
-    let is_system_set = matches!(
-        icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
-    );
+    let is_system_set = is_system_set(icon_set);
 
     // On Linux with freedesktop, pick the theme once for the whole batch:
     // `theme`, else the system's. No theme where the system's cannot be

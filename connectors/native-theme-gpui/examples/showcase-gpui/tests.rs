@@ -8392,6 +8392,205 @@ fn the_default_theme_takes_each_modes_icon_theme(cx: &mut TestAppContext) {
     }
 }
 
+/// The OS-theme reads and the icon loads the showcase has made on this
+/// thread (`support::SYSTEM_READS`, `support::ICON_LOADS`).
+fn reads_and_loads() -> (usize, usize) {
+    (
+        crate::support::SYSTEM_READS.with(std::cell::Cell::get),
+        crate::support::ICON_LOADS.with(std::cell::Cell::get),
+    )
+}
+
+/// The desktop's theme `default` was last installed from
+/// (`Showcase::system`), asserted kept.
+fn kept_system(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+) -> Option<native_theme::SystemTheme> {
+    let system = read(cx, showcase, |this, _| this.system.clone());
+    assert!(system.is_some(), "`default` kept no desktop theme");
+    system
+}
+
+/// A colour-mode switch under `default` installs the other variant of the
+/// desktop's theme it installed, without reading the OS again: three
+/// switches read it no more, each showing its mode with that mode's icon
+/// theme, and Reload System Theme reads it once.
+#[gpui::test]
+fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    if system_theme().is_err() {
+        return;
+    }
+    set_preset(&mut cx, "default");
+    let (reads, _) = reads_and_loads();
+    for mode in three_switches(&mut cx, &showcase) {
+        switch_mode(&mut cx, mode);
+        let system = kept_system(&mut cx, &showcase);
+        let (is_dark, icon_theme) = read(&mut cx, &showcase, |this, _| {
+            (this.is_dark, this.current_icon_theme.clone())
+        });
+        assert_eq!(is_dark, mode.is_dark(), "{mode:?} was not the mode shown");
+        assert_eq!(
+            icon_theme.as_deref(),
+            system
+                .as_ref()
+                .and_then(|s| s.icon_theme_for(native_mode(is_dark))),
+            "{mode:?} under `default` took another variant's icon theme"
+        );
+    }
+    assert_eq!(
+        reads_and_loads().0 - reads,
+        0,
+        "three colour-mode switches under `default` read the OS theme again"
+    );
+    let (reads, _) = reads_and_loads();
+    cx.update(|window, cx| window.dispatch_action(Box::new(ReloadTheme), cx));
+    cx.run_until_parked();
+    assert_eq!(
+        reads_and_loads().0 - reads,
+        1,
+        "Reload System Theme did not read the OS theme once"
+    );
+}
+
+/// The icons load where what they are loaded as changed -- the set, its
+/// icon theme, or, for a system set (freedesktop, SF Symbols, Segoe
+/// Fluent), whose loaders colour a symbolic icon once, the colour they
+/// colour it in, `defaults.font.color` -- and are recoloured otherwise. So
+/// under `default` with Material chosen three colour-mode switches load
+/// nothing; with the theme's own set each loads once where that set is a
+/// system set and the two variants differ in icon theme or font colour
+/// (computed from the desktop's theme kept, so it holds on every host),
+/// else not at all; and a preset switch from a bundled set to a system one
+/// loads once.
+#[gpui::test]
+fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    if system_theme().is_err() {
+        return;
+    }
+    set_preset(&mut cx, "default");
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.select_icon_set(&IconSetChoice::Material.to_string(), window, cx)
+        })
+    });
+    let (_, loads) = reads_and_loads();
+    for mode in three_switches(&mut cx, &showcase) {
+        switch_mode(&mut cx, mode);
+    }
+    assert_eq!(
+        reads_and_loads().1 - loads,
+        0,
+        "with Material chosen, colour-mode switches under `default` loaded its icons again"
+    );
+
+    // The theme's own set again, as `--icon-set default` chooses it.
+    apply_cli(
+        &mut cx,
+        &showcase,
+        &crate::CliArgs {
+            icon_set: Some("default".into()),
+            ..Default::default()
+        },
+    );
+    let [light, dark] = [
+        native_theme::theme::ColorMode::Light,
+        native_theme::theme::ColorMode::Dark,
+    ];
+    for mode in three_switches(&mut cx, &showcase) {
+        let (_, loads) = reads_and_loads();
+        switch_mode(&mut cx, mode);
+        let system_set = read(&mut cx, &showcase, |this, _| {
+            this.icon_set_enum
+                .is_some_and(crate::support::is_system_set)
+        });
+        let variants_differ = kept_system(&mut cx, &showcase).is_some_and(|s| {
+            s.icon_theme_for(light) != s.icon_theme_for(dark)
+                || s.pick(light).defaults.font.color != s.pick(dark).defaults.font.color
+        });
+        assert_eq!(
+            reads_and_loads().1 - loads,
+            usize::from(system_set && variants_differ),
+            "{mode:?} under `default` with the theme's own set (a system set: {system_set}; \
+             the variants' icon theme or font colour differ: {variants_differ})"
+        );
+    }
+
+    set_preset(&mut cx, "material-3");
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.icon_set_enum),
+        Some(native_theme::theme::IconSet::Material),
+        "material-3 did not take its bundled Material icons, so the switch below does not \
+         start from a bundled set"
+    );
+    let (_, loads) = reads_and_loads();
+    set_preset(&mut cx, "kde-breeze");
+    assert!(
+        read(&mut cx, &showcase, |this, _| this
+            .icon_set_enum
+            .is_some_and(crate::support::is_system_set)),
+        "kde-breeze did not take a system icon set"
+    );
+    assert_eq!(
+        reads_and_loads().1 - loads,
+        1,
+        "a preset switch from a bundled set to a system one did not load its icons once"
+    );
+}
+
+/// How long a colour-mode switch under `default` takes, with the theme's
+/// own icon set and with Material chosen: the median of 21, each switch to
+/// the mode not shown. A timing probe, ignored by default; run it on the
+/// release profile, before and after a perf fix:
+///
+/// `cargo test -p native-theme-gpui --release --example showcase-gpui -- --ignored --nocapture --test-threads=1 timing_`
+#[gpui::test]
+#[ignore = "timing probe; run with --ignored --nocapture"]
+fn timing_a_mode_switch_under_default(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    set_preset(&mut cx, "default");
+    for (label, icons) in [
+        ("the theme's own icon set", None),
+        ("Material chosen", Some(IconSetChoice::Material)),
+    ] {
+        if let Some(choice) = icons {
+            cx.update(|window, cx| {
+                showcase.update(cx, |this, cx| {
+                    this.select_icon_set(&choice.to_string(), window, cx)
+                })
+            });
+        }
+        let mut times: Vec<Duration> = (0..21)
+            .map(|_| {
+                let other = match read(&mut cx, &showcase, |this, _| this.is_dark) {
+                    true => AppColorMode::Light,
+                    false => AppColorMode::Dark,
+                };
+                let took = cx.update(|window, cx| {
+                    showcase.update(cx, |this, cx| {
+                        let start = std::time::Instant::now();
+                        this.on_set_color_mode(&SetColorMode(other), window, cx);
+                        start.elapsed()
+                    })
+                });
+                cx.run_until_parked();
+                draw(&mut cx);
+                took
+            })
+            .collect();
+        times.sort();
+        let at = |i: usize| times.get(i).copied().unwrap_or_default();
+        println!(
+            "timing a mode switch under default, {label}: median {:?}, min {:?}, max {:?}",
+            at(10),
+            at(0),
+            at(20)
+        );
+    }
+}
+
 /// The colour a system icon set's loaders are given: the installed native
 /// theme's font colour, and none where no native theme is installed, so a
 /// symbolic icon keeps its own colours. The placeholder font the showcase

@@ -218,6 +218,11 @@ pub(crate) struct Showcase {
     /// pipeline settled on, or `platform_preset_name` where the OS theme
     /// could not be read.
     pub(crate) default_preset: String,
+    /// The desktop's own theme as `default` last installed it, both variants
+    /// and the OS's preferences as read: a colour-mode switch under
+    /// `default` installs its other variant without reading the OS again,
+    /// which only a reload (Reload System Theme, the theme watcher) does.
+    pub(crate) system: Option<native_theme::SystemTheme>,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
     /// Original native-theme font spec, for display purposes.
@@ -423,6 +428,9 @@ pub(crate) struct Showcase {
     pub(crate) gpui_icon_sources: Vec<Option<ImageSource>>,
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
+    /// What the loaded icons were loaded as; `None` before the first load
+    /// and after a reload of the desktop's settings, so the next loads.
+    pub(crate) icon_load: Option<IconLoad>,
     /// The icon-theme choice (library type).
     pub(crate) icon_set_choice: IconSetChoice,
     /// Whether the choice follows the preset: it is `default_icon_choice`'s
@@ -499,6 +507,23 @@ pub(crate) fn icon_tint(
     font_colour: native_theme::Rgba,
 ) -> Option<native_theme::Rgba> {
     native_installed.then_some(font_colour)
+}
+
+/// What the Icons page's icons were loaded as (`Showcase::reload_icons`),
+/// so a theme install loads them again only where this changed.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct IconLoad {
+    /// The set chosen; `None` for gpui-component's own icons.
+    set: Option<IconSet>,
+    /// The set the choice loads from.
+    effective: IconSet,
+    /// The freedesktop theme a freedesktop set loads from; `None` is the
+    /// system's own.
+    theme: Option<String>,
+    /// The colour a system set's loaders recoloured a symbolic icon in
+    /// (`icon_tint`); `None` for a bundled set, whose icons are coloured
+    /// where they are drawn.
+    tint: Option<native_theme::Rgba>,
 }
 
 /// The icon-theme Select's rows for a theme of `icon_set` naming
@@ -892,19 +917,39 @@ impl Showcase {
     }
 
     /// Load the icons of the chosen set and rebuild what the Icons page
-    /// draws from them.
+    /// draws from them, where what they are loaded as (`IconLoad`) changed
+    /// since the last load: the set, its icon theme, or a system set's
+    /// colour. Otherwise the loaded icons stay, and what is drawn from them
+    /// is recoloured with the theme's foreground, as a bundled set's icons
+    /// are coloured where they are drawn.
     pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
         let theme = self.freedesktop_theme().map(str::to_string);
         let fg_color = icon_tint(cx.native_theme().is_some(), self.original_font.color);
+        let load = IconLoad {
+            set: self.icon_set_enum,
+            effective,
+            theme,
+            tint: fg_color.filter(|_| crate::support::is_system_set(effective)),
+        };
+        let fg = cx.theme().foreground;
+        if self.icon_load.as_ref() == Some(&load) {
+            if fg != self.icon_cache_fg {
+                self.rebuild_icon_caches(fg, window, cx);
+                self.rebuild_animation_caches(window, cx);
+                self.start_animation_timer(cx);
+                cx.notify();
+            }
+            return;
+        }
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
-            self.loaded_icons = load_all_icons(effective, theme.as_deref(), fg_color);
+            self.loaded_icons = load_all_icons(effective, load.theme.as_deref(), fg_color);
         }
-        self.gpui_icons = load_gpui_icons(self.icon_set_enum, theme.as_deref(), fg_color);
-        let fg = cx.theme().foreground;
+        self.gpui_icons = load_gpui_icons(self.icon_set_enum, load.theme.as_deref(), fg_color);
+        self.icon_load = Some(load);
         self.rebuild_icon_caches(fg, window, cx);
         self.rebuild_animation_caches(window, cx);
         self.start_animation_timer(cx);
@@ -1143,7 +1188,7 @@ impl Showcase {
         // view is built; where it cannot be read, gpui-component's built-in
         // theme, so the window still renders.
         let is_dark = color_mode.is_dark();
-        let system = native_theme::SystemTheme::from_system();
+        let system = crate::support::read_system_theme();
         let initial_default_preset = match &system {
             Ok(system) => system.preset.clone(),
             Err(_) => platform_preset_name().name.to_string(),
@@ -1387,6 +1432,7 @@ impl Showcase {
             preset_combobox,
             current_theme_name: "default".into(),
             default_preset: initial_default_preset,
+            system: None,
             is_dark,
             color_mode,
             original_font: unread_font(),
@@ -1480,6 +1526,7 @@ impl Showcase {
             loaded_icon_sources: Vec::new(),
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
+            icon_load: None,
             icon_set_choice: IconSetChoice::System,
             icon_choice_follows_preset: true,
             installed_themes,
@@ -1557,8 +1604,9 @@ impl Showcase {
     }
 
     /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
-    /// read it: what `default` installs, at startup too. Its accessibility
-    /// preferences are the OS's it read, with the user's over them.
+    /// read it, in the mode shown, and keep it (`Showcase::system`): what
+    /// `default` installs, at startup too. Its accessibility preferences are
+    /// the OS's it read, with the user's over them.
     ///
     /// The preset the pipeline settled on is what the preset switch's
     /// `default` row and the status bar name, so a change of it relabels
@@ -1569,8 +1617,6 @@ impl Showcase {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let os = std::mem::take(&mut system.accessibility);
-        system.accessibility = Self::install_preferences(cx, os);
         let mode = color_mode_of(self.is_dark);
         let resolved = system.pick(mode);
         self.original_font = resolved.defaults.font.clone();
@@ -1585,12 +1631,16 @@ impl Showcase {
         // Installed with both variants stored, so the showcase's own
         // light/dark choice goes through upstream's mode switch, which
         // reproduces the native palette from the installed configs (D34).
+        // Kept with the OS's preferences as read.
+        let prefs = Self::install_preferences(cx, system.accessibility.clone());
+        let os = std::mem::replace(&mut system.accessibility, prefs);
         native_theme_gpui::apply_system_theme(&system, cx);
+        system.accessibility = os;
         if self.is_dark != system.mode.is_dark() {
             Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
         }
         if self.default_preset != system.preset {
-            self.default_preset = system.preset;
+            self.default_preset = system.preset.clone();
             let rows = PresetDelegate::new(&self.default_preset);
             self.preset_combobox.update(cx, |combobox, cx| {
                 let chosen = combobox.selected_values();
@@ -1599,6 +1649,7 @@ impl Showcase {
             });
         }
         self.error_message = None;
+        self.system = Some(system);
     }
 
     /// Install the preset of `name`. False, with the error reported and the
@@ -1639,6 +1690,11 @@ impl Showcase {
     /// installs through here. A theme that fails to load leaves the
     /// installed one -- its name, layout, mode and every colour
     /// (`Showcase::keep_installed_theme`) -- and false is returned.
+    ///
+    /// `default` installs the desktop's theme kept from its last install
+    /// (`Showcase::system`), in the mode now shown, and reads the OS only
+    /// where none is kept: at the first install, where the last read
+    /// failed, and after a reload (`reload_system_theme`).
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,
@@ -1647,7 +1703,8 @@ impl Showcase {
     ) -> bool {
         self.info_ui.update(cx, |r, _| r.screen_changed());
         let installed = if name == "default" {
-            match native_theme::SystemTheme::from_system() {
+            let kept = self.system.take();
+            match kept.map_or_else(crate::support::read_system_theme, Ok) {
                 Ok(system) => {
                     self.install_system(system, window, cx);
                     true
@@ -1667,8 +1724,6 @@ impl Showcase {
         }
         self.show_installed_theme(window, cx);
         self.show_icon_choice(window, cx);
-        // Always, whichever set is chosen: a recoloured icon takes the new
-        // theme's text colour.
         self.reload_icons(window, cx);
         installed
     }
@@ -1743,6 +1798,10 @@ impl Showcase {
     /// what `ReloadTheme` asks for.
     fn reload_system_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         native_theme::detect::invalidate_caches();
+        // The desktop's theme is read again, and the icons loaded again:
+        // the system icon theme may have changed with it.
+        self.system = None;
+        self.icon_load = None;
         self.is_dark = self.color_mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
