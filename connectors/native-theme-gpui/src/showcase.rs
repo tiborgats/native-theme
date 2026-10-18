@@ -2397,17 +2397,32 @@ fn claim_finding(
     roots: &[(String, PathBuf)],
     code: &[String],
 ) -> Option<String> {
-    // The value is what the swatch paints, and it has to be the field the
-    // claim names, or the line cited vouches for a colour nobody shows.
-    if !value_reads_field(claim.value, claim.field)
-        && !value_reads_bound_field(claim.before, claim.value, claim.field)
+    value_finding(claim).or_else(|| citation_finding(claim, roots, code))
+}
+
+/// What is wrong with `claim`'s value, if anything: the value is what the
+/// swatch paints, and it has to be the field the claim names, or the line
+/// cited vouches for a colour nobody shows.
+fn value_finding(claim: &Claim<'_>) -> Option<String> {
+    if value_reads_field(claim.value, claim.field)
+        || value_reads_bound_field(claim.before, claim.value, claim.field)
     {
-        return Some(format!(
-            "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
-             uses none of VALUE_HELPERS",
-            claim.widget, claim.role, claim.file, claim.line, claim.field, claim.value, claim.field
-        ));
+        return None;
     }
+    Some(format!(
+        "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
+         uses none of VALUE_HELPERS",
+        claim.widget, claim.role, claim.file, claim.line, claim.field, claim.value, claim.field
+    ))
+}
+
+/// What is wrong with the line `claim` cites, if anything: it does not read
+/// the field the claim names, or it cannot be found.
+fn citation_finding(
+    claim: &Claim<'_>,
+    roots: &[(String, PathBuf)],
+    code: &[String],
+) -> Option<String> {
     // `showcase` with no line: the *application* chooses this colour, so
     // there is no upstream read to point at. A line would be worse than
     // useless -- the showcase is what is being edited, so every edit
@@ -2534,11 +2549,13 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
     }
     let mut uncited = 0usize;
     for claim in &claims {
+        // A swatch reads its field whether or not its line is cited yet.
+        wrong.extend(value_finding(claim));
         if claim.cited_at.is_empty() {
             uncited += 1;
             continue;
         }
-        wrong.extend(claim_finding(claim, &roots, &code));
+        wrong.extend(citation_finding(claim, &roots, &code));
     }
 
     assert!(
@@ -2596,6 +2613,51 @@ fn reads_edge_colour(value: &str) -> bool {
             .any(|ident| ident.ends_with("_border_color"))
 }
 
+/// Whether a claim's `value` reads the `color` of a binding the code
+/// `before` it binds to a resolved border, `let <b> = &<path>.border;`, as
+/// `info/` binds one: `stated(b.color)` is `<path>.border.color` by another
+/// name. The last binding of the name in the function the claim is in is
+/// the one read.
+fn reads_bound_border_colour(before: &str, value: &str) -> bool {
+    let code = without_comments_or_strings(before);
+    let code = code
+        .rfind("fn ")
+        .and_then(|at| code.get(at..))
+        .unwrap_or(&code);
+    let value = without_comments_or_strings(value);
+    value.match_indices(".color").any(|(at, m)| {
+        let after = value.get(at + m.len()..).and_then(|t| t.chars().next());
+        if after.is_some_and(|c| c.is_alphanumeric() || c == '_') {
+            return false;
+        }
+        let name = trailing_ident(value.get(..at).unwrap_or(""));
+        let starts_a_path = value
+            .get(..at.saturating_sub(name.len()))
+            .and_then(|t| t.chars().next_back())
+            .is_none_or(|c| c != '.');
+        if name.is_empty() || !starts_a_path {
+            return false;
+        }
+        let binder = format!("let {name} =");
+        let Some(bound) = code.rfind(&binder) else {
+            return false;
+        };
+        let expr = code.get(bound + binder.len()..).unwrap_or("");
+        let expr = expr
+            .get(..expr.find(';').unwrap_or(expr.len()))
+            .unwrap_or("");
+        let expr = expr.trim();
+        expr.ends_with(".border")
+    })
+}
+
+/// Whether `claim` is of an edge colour: its value reads one by path
+/// ([`reads_edge_colour`]) or through a bound border
+/// ([`reads_bound_border_colour`]).
+fn is_edge_claim(claim: &Claim<'_>) -> bool {
+    reads_edge_colour(claim.value) || reads_bound_border_colour(claim.before, claim.value)
+}
+
 /// The edge class (the M9 rulings): a claim whose value reads a colour the
 /// resolved theme gives a line goes through `edge_claim`, with the width the
 /// drawing strokes that colour at, so it claims no edge where the line is
@@ -2620,7 +2682,7 @@ fn every_edge_colour_is_claimed_through_edge_claim() {
     let mut classed = Vec::new();
     let mut exempted = Vec::new();
     let mut edges = 0usize;
-    for claim in claims.iter().filter(|c| reads_edge_colour(c.value)) {
+    for claim in claims.iter().filter(|c| is_edge_claim(c)) {
         let at = format!(
             "{}:{} {} [{}]",
             claim.file, claim.line, claim.widget, claim.role
@@ -2655,7 +2717,7 @@ fn every_edge_colour_is_claimed_through_edge_claim() {
                 c.widget == *widget
                     && c.role == *role
                     && c.call != ClaimCall::Edge
-                    && reads_edge_colour(c.value)
+                    && is_edge_claim(c)
             })
         })
         .map(|(widget, role, _)| format!("{widget} [{role}]"))
@@ -3278,6 +3340,32 @@ pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
     assert!(!reads_edge_colour("stated(r.card.background_color)"));
     assert!(!reads_edge_colour("stated(r.frame.border.colorful)"));
     assert!(!reads_edge_colour("stated(r.frame.sideborder.color)"));
+    // A border bound to a name is read through it: the claim of
+    // `stated(b.color)` with `let b = &r.popover.border;` before it is an
+    // edge, as `stated(r.popover.border.color)` is; a font's, a binding of
+    // another name or a path through another struct is not.
+    let planted = "pub fn menus(r: &ResolvedTheme) -> WidgetInfo {\n    let b = &r.popover.border;\n    let f = &r.menu.font;\n    WidgetInfo::new(\"Menus\")\n        .color(claim(\"menu edge\", \"color\", stated(b.color), \"showcase\"))\n        .color(claim(\"text\", \"color\", stated(f.color), \"showcase\"))\n}\n";
+    let (planted, _) = claims_in("p.rs", planted);
+    let classed: Vec<(&str, bool)> = planted.iter().map(|c| (c.role, is_edge_claim(c))).collect();
+    assert_eq!(classed, vec![("menu edge", true), ("text", false)]);
+    let bound = "let b = &r.popover.border;\n    info.color(claim(";
+    assert!(!reads_edge_colour("stated(b.color)"));
+    assert!(reads_bound_border_colour(bound, "stated(b.color)"));
+    assert!(reads_bound_border_colour(bound, "Some(b.color)"));
+    assert!(!reads_bound_border_colour(bound, "stated(m.b.color)"));
+    assert!(!reads_bound_border_colour(bound, "stated(c.color)"));
+    assert!(!reads_bound_border_colour(
+        "let b = &r.popover.border;\nlet b = &r.menu.font;\n",
+        "stated(b.color)"
+    ));
+    assert!(!reads_bound_border_colour(
+        "let b = &r.slider.thumb_border;\n",
+        "stated(b.color)"
+    ));
+    assert!(!reads_bound_border_colour(
+        "fn one() {\n    let b = &r.popover.border;\n}\nfn two() {\n    info.color(claim(",
+        "stated(b.color)"
+    ));
 
     // A value reads the field its claim names, as a whole identifier, by any
     // path; another field, or a longer one that starts with it, does not.
