@@ -3265,14 +3265,22 @@ type CitedRange<'a> = ((usize, usize), Option<&'a str>);
 /// after the ranges names what they hold, as a colour claim names its field
 /// (`button.rs:1110-1115, shadow`); a `; :A-B` after that opens another group
 /// of the same file's ranges, with a symbol of its own
-/// (`styled.rs:179-184, focus_ring_style; :250-298, focus_style`).
+/// (`styled.rs:179-184, focus_ring_style; :250-298, focus_style`). A
+/// symbol's citation followed by the lines inside it, `file.rs, Symbol,
+/// lines N-M` (or `: line N`, and `lines A and B`), cites those lines of the
+/// file too; the symbol names what they are inside, not what they say, so
+/// those ranges carry none.
 fn line_citations(text: &str) -> Vec<(&str, Vec<CitedRange<'_>>)> {
     /// A line number at the start of `s` and what follows it, where the
-    /// number ends a word: `3px` is no line.
+    /// number ends a word: `3px` and `9.5` are no line, the `42` that ends a
+    /// sentence at `42.` is.
     fn number(s: &str) -> Option<(usize, &str)> {
         let end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
         let rest = s.get(end..)?;
-        if end == 0 || rest.starts_with(|c: char| c.is_alphanumeric() || c == '.' || c == '_') {
+        let decimal = rest
+            .strip_prefix('.')
+            .is_some_and(|after| after.starts_with(|c: char| c.is_alphanumeric() || c == '_'));
+        if end == 0 || decimal || rest.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
             return None;
         }
         Some((s.get(..end)?.parse().ok()?, rest))
@@ -3297,21 +3305,23 @@ fn line_citations(text: &str) -> Vec<(&str, Vec<CitedRange<'_>>)> {
         let name = s.get(..end)?.trim_end_matches(':');
         Some((name, s.get(name.len()..)?))
     }
-    let mut out = Vec::new();
-    let mut from = 0usize;
-    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs:")) {
-        let dot = from + ix;
-        from = dot + ".rs:".len();
-        let Some(head) = text.get(..dot) else {
-            continue;
-        };
+    /// The path that ends in the `.rs` at `dot`.
+    fn path_at(text: &str, dot: usize) -> Option<&str> {
+        let head = text.get(..dot)?;
         let start = match head
             .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
         {
             Some(i) => i + 1,
             None => 0,
         };
-        let (Some(path), Some(after)) = (text.get(start..dot + 3), text.get(from..)) else {
+        text.get(start..dot + 3)
+    }
+    let mut out = Vec::new();
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs:")) {
+        let dot = from + ix;
+        from = dot + ".rs:".len();
+        let (Some(path), Some(after)) = (path_at(text, dot), text.get(from..)) else {
             continue;
         };
         let Some((first, mut rest)) = range(after) else {
@@ -3341,6 +3351,34 @@ fn line_citations(text: &str) -> Vec<(&str, Vec<CitedRange<'_>>)> {
             } else {
                 break;
             }
+        }
+        from = text.len() - rest.len();
+        out.push((path, ranges));
+    }
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs, ")) {
+        let dot = from + ix;
+        from = dot + ".rs, ".len();
+        let (Some(path), Some(after)) = (path_at(text, dot), text.get(from..)) else {
+            continue;
+        };
+        let Some(rest) = symbol(after)
+            .map(|(_, rest)| rest)
+            .and_then(|rest| rest.strip_prefix(", ").or_else(|| rest.strip_prefix(": ")))
+            .and_then(|rest| {
+                rest.strip_prefix("lines ")
+                    .or_else(|| rest.strip_prefix("line "))
+            })
+        else {
+            continue;
+        };
+        let Some((first, mut rest)) = range(rest) else {
+            continue;
+        };
+        let mut ranges: Vec<CitedRange<'_>> = vec![(first, None)];
+        while let Some((next, tail)) = rest.strip_prefix(" and ").and_then(range) {
+            ranges.push((next, None));
+            rest = tail;
         }
         from = text.len() - rest.len();
         out.push((path, ranges));
@@ -3517,6 +3555,20 @@ fn the_prose_citation_readers_do_their_jobs() {
             ("f.rs", vec![((3, 3), Some("a::B")), ((5, 5), Some("a::B"))]),
         ]
     );
+    // A citation that ends a sentence, and the lines a symbol's citation
+    // names inside it, in each form the notes write them.
+    assert_eq!(
+        line_citations(
+            "ends at h.rs:42. Then (i.rs, Sym, lines 3-5) (j.rs, a::B: line 7) \
+             (k.rs, c, lines 8 and 10) (l.rs, Sym) (m.rs, Sym, lineage 4)"
+        ),
+        [
+            ("h.rs", vec![((42, 42), None)]),
+            ("i.rs", vec![((3, 5), None)]),
+            ("j.rs", vec![((7, 7), None)]),
+            ("k.rs", vec![((8, 8), None), ((10, 10), None)]),
+        ]
+    );
     let located = cited_source_dirs();
     assert!(
         located.is_ok(),
@@ -3583,6 +3635,20 @@ fn the_prose_citation_readers_do_their_jobs() {
         finding("gpui-base/button.rs", &[((past, past), None)])
             .is_some_and(|f| f.contains("past the end"))
     );
+    // Both forms reach the finding: a line past the file's end is caught at
+    // a sentence's end and inside a symbol's citation.
+    for text in [
+        format!("ends at gpui-base/button.rs:{past}."),
+        format!("(gpui-base/button.rs, Button, lines {past}-{})", past + 1),
+    ] {
+        let cited = line_citations(&text);
+        assert!(
+            cited.len() == 1
+                && cited.iter().all(|(path, ranges)| finding(path, ranges)
+                    .is_some_and(|f| f.contains("past the end"))),
+            "a line past gpui-base's button.rs in {text:?} is not caught: {cited:?}"
+        );
+    }
     assert!(
         symbol_citation_finding("link.rs", "Link", &roots).is_some_and(|f| f.contains("ambiguous"))
     );
@@ -3607,7 +3673,9 @@ fn the_prose_citation_readers_do_their_jobs() {
 /// Both forms are read: `file.rs, Symbol` holds where exactly one file of
 /// that name has the symbol, `file.rs:N-M, Symbol` where exactly one has the
 /// lines and the symbol inside them; where several do, the citation has to
-/// name its crate. A note's line citation may leave the symbol out; a `HOW`
+/// name its crate. The lines a symbol's citation names inside it
+/// (`file.rs, Symbol, lines N-M`) have to exist in its file, and a citation
+/// that ends a sentence (`file.rs:N.`) is read as any other. A note's line citation may leave the symbol out; a `HOW`
 /// line's may not, so a range that drifts inside its file is caught there.
 ///
 /// Existence, never semantics. What a note *says* about upstream is a human's
