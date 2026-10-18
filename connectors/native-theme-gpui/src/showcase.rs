@@ -660,13 +660,41 @@ fn text_builders() -> Vec<&'static str> {
         .collect()
 }
 
+/// The words that list a font's parts. `size` is not among them: a note
+/// uses it as a verb too (`text_area`'s "the rows its state holds size it").
+const FONT_PART_WORDS: &[&str] = &["family", "weight", "style"];
+
+/// What `with_text` sets of a font, as a note names it whole.
+const WHOLE_FONT: &str = "family, size, weight and style";
+
+/// A line for each `entries` note of a builder in `builders` that lists its
+/// font's parts -- names one of [`FONT_PART_WORDS`] -- without naming all of
+/// them as [`WHOLE_FONT`] does.
+fn understated_font_notes(entries: &[(usize, &str, &str)], builders: &[&str]) -> Vec<String> {
+    entries
+        .iter()
+        .filter(|(_, name, text)| {
+            builders.contains(name)
+                && FONT_PART_WORDS.iter().any(|word| mentions(text, word))
+                && !text.contains(WHOLE_FONT)
+        })
+        .map(|(line, name, _)| {
+            format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's {WHOLE_FONT} \
+                 (geometry.rs, with_text), but its note names only some of them"
+            )
+        })
+        .collect()
+}
+
 /// A builder that sets a font's text sets all of it -- `with_text` gives the
 /// family, size, weight and style (and `with_coloured_text` the colour) --
 /// so its `GEOMETRY_NOTES` entry, where it lists the font's parts at all (it
-/// names the weight), lists every one: a note that names a size and a
-/// weight alone hides the family the KDE reader states for the menu,
-/// toolbar and title-bar fonts (M9-039). A note naming the font spec alone
-/// (`input.font`) names all of it.
+/// names the family, the weight or the style), lists every one: a note that
+/// names a size and a weight alone hides the family the KDE reader states
+/// for the menu, toolbar and title-bar fonts (M9-039). A note naming the
+/// font spec alone (`input.font`) names all of it. A note naming the size
+/// alone is not caught: `size` is a verb in a note too.
 #[test]
 fn every_text_builders_note_names_the_whole_font() {
     let builders = text_builders();
@@ -680,24 +708,41 @@ fn every_text_builders_note_names_the_whole_font() {
         "GEOMETRY_NOTES could not be read:\n  {}",
         unreadable.join("\n  ")
     );
-    let findings: Vec<String> = entries
-        .iter()
-        .filter(|(_, name, text)| {
-            builders.contains(name)
-                && mentions(text, "weight")
-                && !text.contains("family, size, weight and style")
-        })
-        .map(|(line, name, _)| {
-            format!(
-                "{GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's family, size, \
-                 weight and style (geometry.rs, with_text), but its note names only some of them"
-            )
-        })
-        .collect();
+    let findings = understated_font_notes(&entries, &builders);
     assert!(
         findings.is_empty(),
         "a text builder's note understates the font it carries:\n  {}",
         findings.join("\n  ")
+    );
+}
+
+/// The rule behind `every_text_builders_note_names_the_whole_font`, on
+/// planted notes: one naming the family alone, the weight alone or the
+/// style alone is caught; one naming all four, one naming the font spec
+/// alone, and one of a builder that sets no text are not.
+#[test]
+fn the_font_note_rule_does_its_job() {
+    let builders = ["toggle", "link"];
+    let planted = [
+        (1, "toggle", "\"button.font's family on the Toggle\""),
+        (2, "toggle", "\"button.font's weight on the Toggle\""),
+        (3, "link", "\"link.font's style, and no underline\""),
+        (4, "link", "\"link.font's family, size, weight and style\""),
+        (5, "link", "\"link.font, including its colour\""),
+        (6, "button", "\"button.font.weight but not its size\""),
+    ];
+    let caught: Vec<usize> = understated_font_notes(&planted, &builders)
+        .iter()
+        .filter_map(|line| {
+            line.strip_prefix(&format!("{GEOMETRY_NOTES_FILE}:"))
+                .and_then(|rest| rest.split(':').next())
+                .and_then(|n| n.parse().ok())
+        })
+        .collect();
+    assert_eq!(
+        caught,
+        [1, 2, 3],
+        "the font-note rule caught the wrong notes"
     );
 }
 
