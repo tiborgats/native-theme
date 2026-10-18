@@ -12517,8 +12517,8 @@ fn the_tool_buttons_info_names_upstreams_size_only_where_unstated(cx: &mut TestA
 /// of `button.border.padding` is stated, its side padding where a left or
 /// right one is not, `button.border.corner_radius` and the stated sides
 /// named wherever a native theme is installed (M9-035) -- for the toolbar's
-/// buttons, the status bar's toggle and the Buttons page's toolbar items,
-/// which `demo::tool_box_of` sizes alike.
+/// buttons, the status bar's toggle, the Buttons page's toolbar items and
+/// the Basic page's icon buttons, which `demo::tool_box_of` sizes alike.
 #[test]
 fn every_tool_buttons_size_note_follows_the_stated_padding() {
     let icon = ChromeIcon::Builtin("Search".into());
@@ -12541,6 +12541,12 @@ fn every_tool_buttons_size_note_follows_the_stated_padding() {
                 "h_8",
                 "px_2p5",
                 crate::info::buttons::toolbar_item(t, &icon, "set", native),
+            ),
+            (
+                "Basic icon button",
+                "h_8",
+                "px_2p5",
+                crate::info::buttons::icon_button(t, true, native),
             ),
         ]
     };
@@ -12733,4 +12739,92 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
         seen.0 && seen.1,
         "the presets did not cover both an indicator and none: {seen:?}"
     );
+}
+
+/// The shapes of `button.border.padding` no bundled preset states, spliced
+/// into one: across only (upstream's height stays), up and down only (its
+/// side padding stays), one vertical side (the other none, under no fixed
+/// height), and one horizontal side (upstream's side padding on the other).
+/// Each tool button's size note says what `demo::tool_box_of` leaves of
+/// upstream's, and no more (M9-035).
+#[test]
+fn a_partly_stated_tool_button_padding_leaves_upstream_the_rest() {
+    let variants = every_bundled_variant();
+    let Some((name, r, t)) = variants.first() else {
+        return;
+    };
+    let shapes: [(&str, [Option<f32>; 4], &[&str], &[&str], &[&str]); 5] = [
+        // (shape, [top, right, bottom, left], in the note, not in it, in the config)
+        (
+            "across only",
+            [None, Some(9.), None, Some(9.)],
+            &["h_8"],
+            &["px_2p5"],
+            &[],
+        ),
+        (
+            "up and down only",
+            [Some(3.), None, Some(3.), None],
+            &["px_2p5"],
+            &["h_8"],
+            &["h_auto"],
+        ),
+        (
+            "the top alone, and across",
+            [Some(3.), Some(9.), None, Some(9.)],
+            &[],
+            &["h_8", "px_2p5"],
+            &["h_auto", "an unstated one none"],
+        ),
+        (
+            "the left alone",
+            [None, None, None, Some(9.)],
+            &["h_8", "px_2p5", "right"],
+            &[],
+            &[],
+        ),
+        (
+            "the right alone",
+            [None, Some(9.), None, None],
+            &["h_8", "px_2p5", "left"],
+            &[],
+            &[],
+        ),
+    ];
+    for (shape, [top, right, bottom, left], said, unsaid, config) in shapes {
+        let mut button = r.button.clone();
+        button.border.padding.top = top;
+        button.border.padding.right = right;
+        button.border.padding.bottom = bottom;
+        button.border.padding.left = left;
+        let info = crate::info::buttons::icon_button(t, true, Some(&button));
+        let note = shown_note(Some(&info), "size");
+        let note_words = note.as_deref().map(words).unwrap_or_default();
+        assert_eq!(
+            note.is_some(),
+            !said.is_empty(),
+            "{name}, {shape}: a size note where upstream keeps nothing, or none where it keeps something: {note:?}"
+        );
+        for word in said {
+            assert!(
+                note_words.contains(word),
+                "{name}, {shape}: the size note does not name {word}: {note:?}"
+            );
+        }
+        let text = info.to_text();
+        let text_words = words(&text);
+        for word in unsaid {
+            assert!(
+                !text_words.contains(word),
+                "{name}, {shape}: the info names upstream's {word}, which the stated padding replaces:\n{text}"
+            );
+        }
+        let radius = shown_note(Some(&info), "radius and padding").unwrap_or_default();
+        for part in config {
+            assert!(
+                radius.contains(part),
+                "{name}, {shape}: the radius and padding line does not say {part:?}: {radius:?}"
+            );
+        }
+    }
 }
