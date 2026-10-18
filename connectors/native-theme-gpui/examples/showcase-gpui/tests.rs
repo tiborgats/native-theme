@@ -2599,6 +2599,37 @@ fn the_basic_controls_paint_the_themes_colours(cx: &mut TestAppContext) {
     }
 }
 
+/// The disabled Basic checkbox under adwaita, which fades a disabled control
+/// by `checkbox.disabled_opacity`, paints the fill its info claims
+/// (M9-053): the swatch is the faded fill `CheckboxLook::faded_over` gives,
+/// not the stated colour.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_disabled_basic_checkbox_paints_the_fill_it_claims(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "adwaita");
+    show(&mut cx, &showcase, Page::Basic);
+    let r = resolved_theme(&mut cx, &showcase);
+    assert!(
+        r.checkbox.disabled_opacity < 1.0,
+        "adwaita no longer fades a disabled checkbox, so this proves nothing"
+    );
+    let info = settle_on(&mut cx, &showcase, "basic-checkbox-disabled");
+    let claimed = info
+        .as_ref()
+        .and_then(|info| claim_as(info, "fill"))
+        .map(|(_, colour)| colour);
+    assert!(
+        claimed.is_some(),
+        "the disabled checkbox's info claims no fill: {info:?}"
+    );
+    assert_eq!(
+        painted_fill(&mut cx, "basic-checkbox-disabled"),
+        claimed,
+        "the disabled checkbox does not paint the fill its info claims: {info:?}"
+    );
+}
+
 /// Both tables draw their header row `list.header_height` tall where the
 /// theme states it (adwaita, 30), and as tall as a body row is drawn where it
 /// does not (kde-breeze, which states no header height): the Data page's
@@ -11658,6 +11689,293 @@ fn a_refined_buttons_info_claims_an_edge_only_where_one_is_drawn() {
         branches,
         (true, true),
         "no bundled preset left a Button edged, or none left one unedged, so a branch went unread"
+    );
+}
+
+/// The claim of `role` in `info`: that role, or a role that goes on from it
+/// after a comma (a hover's, which says whether the theme states one).
+#[cfg(feature = "widgets")]
+fn claimed_as(info: &WidgetInfo, role: &str) -> Option<gpui::Hsla> {
+    let more = format!("{role},");
+    info.colors
+        .iter()
+        .find(|c| c.role == role || c.role.starts_with(&more))
+        .map(|c| c.value)
+}
+
+/// What is wrong with `info`'s colours against `want`, the (role, colour)
+/// pairs of the Look its widget draws from, `None` where the widget paints
+/// none: a role claimed in another colour, one claimed where nothing is
+/// painted, or one claim more than the Look has -- the roles in `ignored`
+/// aside, which no Look holds.
+#[cfg(feature = "widgets")]
+fn look_findings(
+    whose: &str,
+    info: &WidgetInfo,
+    want: &[(&str, Option<gpui::Hsla>)],
+    ignored: &[&str],
+) -> Vec<String> {
+    let mut wrong: Vec<String> = want
+        .iter()
+        .filter(|(role, colour)| claimed_as(info, role) != *colour)
+        .map(|(role, colour)| {
+            format!(
+                "{whose}: {role} claims {:?}, the Look has {:?}",
+                claimed_as(info, role).map(as_rgba),
+                colour.map(as_rgba)
+            )
+        })
+        .collect();
+    let claims = info
+        .colors
+        .iter()
+        .filter(|c| !ignored.iter().any(|role| c.role.starts_with(role)))
+        .count();
+    let drawn = want.iter().filter(|(_, colour)| colour.is_some()).count();
+    if claims != drawn {
+        wrong.push(format!(
+            "{whose}: {claims} claims for the Look's {drawn} colours: {:?}",
+            info.colors.iter().map(|c| c.role).collect::<Vec<_>>()
+        ));
+    }
+    wrong
+}
+
+/// A theme-drawn Checkbox's, Radio's and Switch's info prints what the
+/// widget draws (M9-050, M9-051, M9-052, M9-053): each size it prints and
+/// each colour it claims is the field of the connector's Look the widget
+/// draws from -- `CheckboxLook::of`, `CheckboxLook::radio`, `SwitchLook::of`,
+/// faded over the window's `defaults.background_color` as the widget fades a
+/// disabled control (`faded_over`), the switch's two outlines included --
+/// the radio's circle `checkbox.radio_indicator_width` where the theme
+/// states it (material-3: 20px, where its checkbox is 18), an off switch's
+/// thumb `switch.unchecked_thumb_diameter` (material-3: 16px, where an on one
+/// is 24), the check mark the connector's stroke at
+/// `checkbox.check_mark_stroke_width` where it is stated and gpui-component's
+/// own icon where not, and a disabled control's fade a line of its own --
+/// over every bundled preset in both modes and every checked and disabled
+/// state.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_theme_drawn_controls_info_prints_its_look() {
+    use crate::info::{inputs, px_text, stated};
+    use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
+    let len = |length: Pixels| format!("{}px", px_text(f32::from(length)));
+    let says = |text: Option<&str>, part: &str| text.is_some_and(|text| text.contains(part));
+    // A line the widget draws at no width paints nothing.
+    let edge = |colour: Option<gpui::Hsla>, width: Pixels| colour.filter(|_| width > px(0.));
+    // Which branches the bundled presets reached: a stated radio width that
+    // is not the box's, a stated off thumb that is not the on one's, a
+    // stated stroke, and a disabled control faded by an opacity below 1.
+    let mut reached = [false; 4];
+    let mut wrong = Vec::new();
+    for (name, r, _) in every_bundled_variant() {
+        let ground = stated(r.defaults.background_color);
+        for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)] {
+            let whose = format!("{name}, checked {checked}, disabled {disabled}");
+
+            let info = inputs::native_checkbox(&r, "label", checked, disabled);
+            let Some(rest) = CheckboxLook::of(&r, checked, disabled) else {
+                wrong.push(format!("{whose}: a bundled preset gives no CheckboxLook"));
+                continue;
+            };
+            let look = rest.faded_over(ground);
+            wrong.extend(look_findings(
+                &format!("{whose}: the Checkbox"),
+                &info,
+                &[
+                    ("fill", Some(look.fill)),
+                    ("hover", look.hover_fill),
+                    ("border", edge(Some(look.border), look.border_width)),
+                    ("mark", Some(look.mark)),
+                    ("label", Some(look.label)),
+                ],
+                &[],
+            ));
+            if !says(note_of(&info.config, "indicator"), &len(look.indicator)) {
+                wrong.push(format!(
+                    "{whose}: the Checkbox's indicator line does not print the Look's {}: {:?}",
+                    len(look.indicator),
+                    note_of(&info.config, "indicator")
+                ));
+            }
+            let stroke = note_of(&info.config, "check mark");
+            match look.mark_stroke {
+                Some(width) => {
+                    reached[2] = true;
+                    if !says(stroke, "checkbox.check_mark_stroke_width")
+                        || !says(stroke, &len(width))
+                        || note_of(&info.not_themeable, "check mark").is_some()
+                    {
+                        wrong.push(format!(
+                            "{whose}: the Checkbox's check mark is stroked at checkbox.check_mark_stroke_width, {}, and its info says {stroke:?} / {:?}",
+                            len(width),
+                            note_of(&info.not_themeable, "check mark")
+                        ));
+                    }
+                }
+                None => {
+                    if stroke.is_some() || note_of(&info.not_themeable, "check mark").is_none() {
+                        wrong.push(format!(
+                            "{whose}: the Checkbox's check mark is gpui-component's own icon, and its info says {stroke:?}"
+                        ));
+                    }
+                }
+            }
+            let fade = format!("checkbox.disabled_opacity {}", percent_text(rest.opacity));
+            let line = note_of(&info.config, "disabled");
+            if disabled != line.is_some_and(|text| text.starts_with(&fade)) {
+                wrong.push(format!(
+                    "{whose}: the Checkbox's fade line is {line:?}, where it is {fade:?} disabled only"
+                ));
+            }
+            reached[3] |= disabled && rest.opacity < 1. && look.fill != rest.fill;
+
+            let info = inputs::native_switch(&r, "label", checked, disabled);
+            let Some(rest) = SwitchLook::of(&r, checked, disabled) else {
+                wrong.push(format!("{whose}: a bundled preset gives no SwitchLook"));
+                continue;
+            };
+            let look = rest.faded_over(ground);
+            wrong.extend(look_findings(
+                &format!("{whose}: the Switch"),
+                &info,
+                &[
+                    ("track", Some(look.track)),
+                    ("hover", look.hover_track),
+                    (
+                        "track outline",
+                        edge(look.track_border, look.track_border_width),
+                    ),
+                    (
+                        "thumb outline",
+                        edge(look.thumb_border, look.thumb_border_width),
+                    ),
+                    ("thumb", Some(look.thumb_color)),
+                    ("label", Some(look.label)),
+                ],
+                &["focus ring"],
+            ));
+            let thumb = note_of(&info.config, "thumb");
+            let off_thumb = !checked && r.switch.unchecked_thumb_diameter.is_some();
+            if !says(thumb, &len(look.thumb))
+                || off_thumb
+                    != thumb.is_some_and(|text| text.starts_with("switch.unchecked_thumb_diameter"))
+            {
+                wrong.push(format!(
+                    "{whose}: the Switch's thumb is {} across{}, and its info says {thumb:?}",
+                    len(look.thumb),
+                    if off_thumb {
+                        ", switch.unchecked_thumb_diameter"
+                    } else {
+                        ""
+                    }
+                ));
+            }
+            reached[1] |=
+                off_thumb && r.switch.unchecked_thumb_diameter != Some(r.switch.thumb_diameter);
+            let track = note_of(&info.config, "track");
+            if [look.track_width, look.track_height, look.track_radius]
+                .iter()
+                .any(|length| !says(track, &len(*length)))
+            {
+                wrong.push(format!(
+                    "{whose}: the Switch's track line does not print the Look's sizes: {track:?}"
+                ));
+            }
+            let outlines = note_of(&info.config, "outlines");
+            for (colour, width) in [
+                (look.track_border, look.track_border_width),
+                (look.thumb_border, look.thumb_border_width),
+            ] {
+                if colour.is_some() && !says(outlines, &len(width)) {
+                    wrong.push(format!(
+                        "{whose}: the Switch's outlines line does not print the Look's {}: {outlines:?}",
+                        len(width)
+                    ));
+                }
+            }
+            let fade = format!("switch.disabled_opacity {}", percent_text(rest.opacity));
+            let line = note_of(&info.config, "disabled");
+            if disabled != line.is_some_and(|text| text.starts_with(&fade)) {
+                wrong.push(format!(
+                    "{whose}: the Switch's fade line is {line:?}, where it is {fade:?} disabled only"
+                ));
+            }
+        }
+
+        // The page's radios are never disabled.
+        let info = inputs::native_radio_column(&r, &["A", "B"], Some(0));
+        let (Some(selected), Some(unselected)) = (
+            CheckboxLook::radio(&r, true, false),
+            CheckboxLook::radio(&r, false, false),
+        ) else {
+            wrong.push(format!(
+                "{name}: a bundled preset gives no radio CheckboxLook"
+            ));
+            continue;
+        };
+        wrong.extend(look_findings(
+            &format!("{name}: the radios"),
+            &info,
+            &[
+                ("fill", Some(selected.fill)),
+                ("border", edge(Some(selected.border), selected.border_width)),
+                ("mark", Some(selected.mark)),
+                ("label", Some(selected.label)),
+                ("unselected fill", Some(unselected.fill)),
+                (
+                    "unselected border",
+                    edge(Some(unselected.border), unselected.border_width),
+                ),
+                ("hover", unselected.hover_fill),
+            ],
+            &[],
+        ));
+        let circle = note_of(&info.config, "indicator");
+        let stated_width = r.checkbox.radio_indicator_width.is_some();
+        if !says(circle, &len(selected.indicator))
+            || stated_width
+                != circle.is_some_and(|text| text.starts_with("checkbox.radio_indicator_width"))
+        {
+            wrong.push(format!(
+                "{name}: the radio's circle is {} across{}, and its info says {circle:?}",
+                len(selected.indicator),
+                if stated_width {
+                    ", checkbox.radio_indicator_width"
+                } else {
+                    ""
+                }
+            ));
+        }
+        reached[0] |= r
+            .checkbox
+            .radio_indicator_width
+            .is_some_and(|w| w != r.checkbox.indicator_width);
+        let mark = match (selected.dot, selected.mark_stroke) {
+            (Some(dot), _) => says(note_of(&info.config, "dot"), &len(dot)),
+            (None, Some(width)) => {
+                let line = note_of(&info.config, "mark");
+                says(line, "checkbox.check_mark_stroke_width") && says(line, &len(width))
+            }
+            (None, None) => note_of(&info.not_themeable, "mark").is_some(),
+        };
+        if !mark {
+            wrong.push(format!(
+                "{name}: the radio's mark line is not the Look's mark: {info:?}"
+            ));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "{} of the theme-drawn controls' infos print another value than the Look the widget draws from:\n  {}",
+        wrong.len(),
+        wrong.join("\n  ")
+    );
+    assert_eq!(
+        reached, [true; 4],
+        "no bundled preset stated a radio width of its own, an off thumb of its own, a check \
+         mark stroke, or a fade below 1 (in that order), so a branch went unread"
     );
 }
 

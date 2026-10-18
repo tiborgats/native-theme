@@ -49,14 +49,34 @@ pub fn claim(
     }
 }
 
+/// A colour a claim shows: one of the theme's, which gpui paints as
+/// [`stated`] converts it, or one gpui already holds -- a field of a
+/// connector Look (`native_theme_gpui::widgets`), the colour a theme-drawn
+/// widget paints.
+pub trait Swatch {
+    fn hsla(self) -> Hsla;
+}
+
+impl Swatch for native_theme::color::Rgba {
+    fn hsla(self) -> Hsla {
+        stated(self)
+    }
+}
+
+impl Swatch for Hsla {
+    fn hsla(self) -> Hsla {
+        self
+    }
+}
+
 /// The claim of a colour the theme may leave unstated, `None` where it does.
 pub fn stated_claim(
     role: &'static str,
     field: &'static str,
-    colour: Option<native_theme::color::Rgba>,
+    colour: Option<impl Swatch>,
     cited_at: &'static str,
 ) -> Option<ColorClaim> {
-    colour.map(|colour| claim(role, field, stated(colour), cited_at))
+    colour.map(|colour| claim(role, field, colour.hsla(), cited_at))
 }
 
 /// The claim of a line in `colour` drawn `width` wide, `None` where either
@@ -67,7 +87,7 @@ pub fn stated_claim(
 pub fn edge_claim(
     role: &'static str,
     field: &'static str,
-    colour: Option<native_theme::color::Rgba>,
+    colour: Option<impl Swatch>,
     width: Option<f32>,
     cited_at: &'static str,
 ) -> Option<ColorClaim> {

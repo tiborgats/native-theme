@@ -2336,6 +2336,79 @@ fn value_reads_bound_field(before: &str, value: &str, field: &str) -> bool {
     }
 }
 
+/// The connector's public Looks, from the `pub use` lines of
+/// `widgets/mod.rs`: what a theme-drawn control paints, per state, which the
+/// widget draws from and its Widget Info prints from.
+fn connector_looks() -> Vec<&'static str> {
+    include_str!("widgets/mod.rs")
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("pub use "))
+        .flat_map(|names| names.split(|c: char| !(c.is_alphanumeric() || c == '_')))
+        .filter(|name| name.ends_with("Look"))
+        .collect()
+}
+
+/// The fields a claim's `value` reads off a connector Look bound in the
+/// function the claim is in, the code `before` it: `<name>.<field>`, where
+/// `<name>` is bound by `let <name> =` or `let Some(<name>) =` to an
+/// expression that builds a Look (`CheckboxLook::radio(..)`) or fades one
+/// (`.faded_over(..)`, a Look's), or, bound by no `let`, is a parameter
+/// typed as one (`look: &CheckboxLook`). The last binding of the name is
+/// the one read.
+///
+/// A theme-drawn control's info claims its colours from the Look the widget
+/// draws from, never from the leaf by hand (the M9 rulings' drawn-value
+/// class): the swatch is then the colour painted -- a disabled control's
+/// faded -- and no `.<field>` names the leaf. The claim still names the leaf
+/// the Look reads, and cites the line it reads it at; the showcase's
+/// `a_theme_drawn_controls_info_prints_its_look` holds each swatch to the
+/// Look's field.
+fn look_fields_read(before: &str, value: &str) -> Vec<String> {
+    let looks = connector_looks();
+    let code = without_comments_or_strings(before);
+    let code = code
+        .rfind("fn ")
+        .and_then(|at| code.get(at..))
+        .unwrap_or(&code);
+    let builds_a_look = |expr: &str| {
+        expr.contains(".faded_over(")
+            || looks.iter().any(|look| expr.contains(&format!("{look}::")))
+    };
+    let is_look = |name: &str| {
+        let bound = [format!("let {name} ="), format!("let Some({name}) =")]
+            .iter()
+            .filter_map(|binder| code.rfind(binder.as_str()).map(|at| at + binder.len()))
+            .max();
+        match bound {
+            Some(from) => {
+                let expr = code.get(from..).unwrap_or("");
+                builds_a_look(
+                    expr.get(..expr.find(';').unwrap_or(expr.len()))
+                        .unwrap_or(""),
+                )
+            }
+            None => looks.iter().any(|look| {
+                code.contains(&format!("{name}: &{look}"))
+                    || code.contains(&format!("{name}: {look}"))
+            }),
+        }
+    };
+    let value = without_comments_or_strings(value);
+    value
+        .match_indices('.')
+        .filter_map(|(at, _)| {
+            let name = trailing_ident(value.get(..at).unwrap_or(""));
+            let starts_a_path = value
+                .get(..at.saturating_sub(name.len()))
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| c != '.');
+            let field = leading_ident(value.get(at + 1..).unwrap_or(""));
+            (!name.is_empty() && !field.is_empty() && starts_a_path && is_look(name))
+                .then(|| field.to_string())
+        })
+        .collect()
+}
+
 /// The methods a note is written with (spec §3.2).
 const NOTE_METHODS: &[&str] = &["config", "not_themeable", "instance"];
 
@@ -2634,12 +2707,13 @@ fn claim_finding(
 fn value_finding(claim: &Claim<'_>) -> Option<String> {
     if value_reads_field(claim.value, claim.field)
         || value_reads_bound_field(claim.before, claim.value, claim.field)
+        || !look_fields_read(claim.before, claim.value).is_empty()
     {
         return None;
     }
     Some(format!(
-        "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
-         uses none of VALUE_HELPERS",
+        "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}`, \
+         uses none of VALUE_HELPERS and reads no connector Look",
         claim.widget, claim.role, claim.file, claim.line, claim.field, claim.value, claim.field
     ))
 }
@@ -2880,10 +2954,15 @@ fn reads_bound_border_colour(before: &str, value: &str) -> bool {
 }
 
 /// Whether `claim` is of an edge colour: its value reads one by path
-/// ([`reads_edge_colour`]) or through a bound border
-/// ([`reads_bound_border_colour`]).
+/// ([`reads_edge_colour`]), through a bound border
+/// ([`reads_bound_border_colour`]), or off a connector Look, whose edge
+/// colours are its `border` and its `<part>_border` ([`look_fields_read`]).
 fn is_edge_claim(claim: &Claim<'_>) -> bool {
-    reads_edge_colour(claim.value) || reads_bound_border_colour(claim.before, claim.value)
+    reads_edge_colour(claim.value)
+        || reads_bound_border_colour(claim.before, claim.value)
+        || look_fields_read(claim.before, claim.value)
+            .iter()
+            .any(|field| field == "border" || field.ends_with("_border"))
 }
 
 /// The edge class (the M9 rulings): a claim whose value reads a colour the
@@ -4358,6 +4437,48 @@ pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
         value,
         field
     ));
+
+    // A value read off a connector Look stands for the leaf its claim names
+    // (the drawn-value class): a parameter typed as a Look, a binding that
+    // builds one or fades one. A binding of anything else does not, and a
+    // Look's `border` or `<part>_border` is an edge colour.
+    let looks = connector_looks();
+    assert!(
+        ["CheckboxLook", "SwitchLook", "TabLook"]
+            .iter()
+            .all(|look| looks.contains(look)),
+        "widgets/mod.rs's `pub use` lines no longer name the Looks: {looks:?}"
+    );
+    let planted = "pub fn check(r: &ResolvedTheme, look: &CheckboxLook) -> WidgetInfo {\n    let rest = SwitchLook::of(r, true, false);\n    let faded = other.faded_over(ground);\n    let k = &r.checkbox;\n    WidgetInfo::new(\"Check\")\n        .color(claim(\"fill\", \"checked_background\", look.fill, \"showcase\"))\n        .color(claim(\"track\", \"checked_background\", faded.track, \"showcase\"))\n        .color(claim(\"mark\", \"indicator_color\", k.fill, \"showcase\"))\n        .colors(stated_claim(\"edge\", \"border\", rest.track_border, \"showcase\"))\n}\nfn other(k: &ResolvedCheckboxTheme) -> WidgetInfo {\n    WidgetInfo::new(\"Other\").color(claim(\"fill\", \"checked_background\", look.fill, \"showcase\"))\n}\n";
+    let (planted, _) = claims_in("l.rs", planted);
+    let read: Vec<(&str, &str, Vec<String>, bool, bool)> = planted
+        .iter()
+        .map(|c| {
+            (
+                c.widget,
+                c.role,
+                look_fields_read(c.before, c.value),
+                value_finding(c).is_some(),
+                is_edge_claim(c),
+            )
+        })
+        .collect();
+    assert_eq!(
+        read,
+        vec![
+            ("check", "fill", vec!["fill".to_string()], false, false),
+            ("check", "track", vec!["track".to_string()], false, false),
+            ("check", "mark", Vec::new(), true, false),
+            (
+                "check",
+                "edge",
+                vec!["track_border".to_string()],
+                false,
+                true
+            ),
+            ("other", "fill", Vec::new(), true, false),
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------
