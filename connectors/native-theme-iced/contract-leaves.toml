@@ -1,0 +1,1506 @@
+# connectors/native-theme-iced/contract-leaves.toml -- generated; do not edit.
+# Written by `cargo test -p native-theme-iced --all-features --lib -- --ignored regenerate_contract_leaves`
+# from the contract's colour-leaf walk (src/contract.rs, `reach`), and held to it by
+# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ.
+# The iced showcase reads it for the colour rows of its Widget Info.
+#
+# Every colour leaf of the serialised ResolvedTheme, spliced in each of the 34 bundled
+# preset/mode combinations, is a [leaves."<leaf>"] table:
+#   moves: each contract row the splice moves, as { row, statuses, except }:
+#     row       a palette slot (`palette.*`, `extended.*`), a crate-root accessor or the
+#               connector's Spinner (`crate::*`), or a field of a style function's output
+#               (`styles::<fn>.<field>`; `styles::<fn>.border` is the whole border);
+#     statuses  the widget statuses, as `{:?}` writes them, it moves the row under;
+#               absent for a row that takes no status;
+#     except    the combinations (`<preset>/<mode>`) in which it does not move the row
+#               under those statuses; absent where it moves it in all 34.
+#   A leaf that moves no row in any combination has instead the entry that names it:
+#     named     UNREAD_COLOURS or UNREACHABLE (src/contract/derived.rs);
+#     entry     the entry's name, the leaf or a widget that is a prefix of it;
+#     kind      why: no receiver, inherited, no widget, ruled, or fallback of <option>;
+#     why       the entry's evidence.
+# Every row a leaf moves is a [rows."<row>"] table: leaves, the leaves that move it,
+# and cfg, the feature it exists under where a build can lack it.
+
+[leaves."button.active_background"]
+moves = [
+  { row = "styles::button.background", statuses = ["Pressed"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Pressed)"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.active_text_color"]
+moves = [
+  { row = "styles::button.text_color", statuses = ["Pressed"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(false, Pressed)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.background_color"]
+moves = [
+  { row = "styles::button.background", statuses = ["Active"] },
+  { row = "styles::button.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Active)"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.border.color"]
+moves = [
+  { row = "styles::button.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::button_danger.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::button_primary.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::button_success.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::button_toggle.border", statuses = ["(false, Active)", "(false, Disabled)", "(false, Hovered)", "(false, Pressed)", "(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::button_warning.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+]
+
+[leaves."button.checked_background"]
+moves = [
+  { row = "styles::button_toggle.background", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::button_toggle.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.checked_text_color"]
+moves = [
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Active)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.disabled_background"]
+moves = [
+  { row = "styles::button.background", statuses = ["Disabled"] },
+  { row = "styles::button_danger.background", statuses = ["Disabled"] },
+  { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_primary.background", statuses = ["Disabled"] },
+  { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_success.background", statuses = ["Disabled"] },
+  { row = "styles::button_success.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Disabled)", "(true, Disabled)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_warning.background", statuses = ["Disabled"] },
+  { row = "styles::button_warning.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.disabled_text_color"]
+moves = [
+  { row = "styles::button.text_color", statuses = ["Disabled"] },
+  { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::button_success.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(false, Disabled)"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(true, Disabled)"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::button_warning.text_color", statuses = ["Disabled"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+]
+
+[leaves."button.font.color"]
+moves = [
+  { row = "styles::button.text_color", statuses = ["Active"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(false, Active)"] },
+]
+
+[leaves."button.hover_background"]
+moves = [
+  { row = "styles::button.background", statuses = ["Hovered"] },
+  { row = "styles::button.background", statuses = ["Pressed"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Hovered)"] },
+  { row = "styles::button_toggle.background", statuses = ["(false, Pressed)", "(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.hover_text_color"]
+moves = [
+  { row = "styles::button.text_color", statuses = ["Hovered"] },
+  { row = "styles::button_toggle.text_color", statuses = ["(false, Hovered)"] },
+]
+
+[leaves."button.primary_background"]
+moves = [
+  { row = "styles::button_primary.background", statuses = ["Active"] },
+  { row = "styles::button_primary.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."button.primary_text_color"]
+moves = [
+  { row = "styles::button_primary.text_color", statuses = ["Active"] },
+  { row = "styles::button_primary.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."card.background_color"]
+moves = [
+  { row = "styles::aw::card.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::card.body_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::card.foot_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::card.head_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::container_card.background" },
+]
+
+[leaves."card.border.color"]
+moves = [
+  { row = "styles::aw::card.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::container_card.border" },
+]
+
+[leaves."checkbox.background_color"]
+named = "UNREAD_COLOURS"
+entry = "checkbox.background_color"
+kind = "fallback of checkbox.unchecked_background"
+why = "`styles::checkbox` fills an unchecked box with it where `checkbox.unchecked_background` is unset (`styles.rs:705`), and every bundled preset states that"
+
+[leaves."checkbox.border.color"]
+moves = [
+  { row = "styles::checkbox.border", statuses = ["Active { is_checked: true }", "Disabled { is_checked: true }", "Hovered { is_checked: true }"] },
+  { row = "styles::radio.border_color", statuses = ["Active { is_selected: true }", "Hovered { is_selected: true }"] },
+]
+
+[leaves."checkbox.checked_background"]
+moves = [
+  { row = "styles::checkbox.background", statuses = ["Active { is_checked: true }", "Hovered { is_checked: true }"] },
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::radio.background", statuses = ["Active { is_selected: true }", "Hovered { is_selected: true }"] },
+]
+
+[leaves."checkbox.disabled_background"]
+moves = [
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."checkbox.disabled_text_color"]
+moves = [
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["adwaita/light", "adwaita/dark", "macos-tahoe/light", "macos-tahoe/dark"] },
+  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"] },
+]
+
+[leaves."checkbox.font.color"]
+moves = [
+  { row = "styles::checkbox.text_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
+  { row = "styles::radio.text_color", statuses = ["Active { is_selected: false }", "Active { is_selected: true }", "Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
+]
+
+[leaves."checkbox.hover_background"]
+moves = [
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }"] },
+]
+
+[leaves."checkbox.indicator_color"]
+moves = [
+  { row = "styles::checkbox.icon_color", statuses = ["Active { is_checked: false }", "Active { is_checked: true }", "Hovered { is_checked: false }", "Hovered { is_checked: true }"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::radio.dot_color", statuses = ["Active { is_selected: false }", "Active { is_selected: true }", "Hovered { is_selected: false }", "Hovered { is_selected: true }"] },
+]
+
+[leaves."checkbox.unchecked_background"]
+moves = [
+  { row = "styles::checkbox.background", statuses = ["Active { is_checked: false }"] },
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::checkbox.background", statuses = ["Hovered { is_checked: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::radio.background", statuses = ["Active { is_selected: false }"] },
+  { row = "styles::radio.background", statuses = ["Hovered { is_selected: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."checkbox.unchecked_border_color"]
+moves = [
+  { row = "styles::checkbox.border", statuses = ["Active { is_checked: false }", "Disabled { is_checked: false }", "Hovered { is_checked: false }"] },
+  { row = "styles::radio.border_color", statuses = ["Active { is_selected: false }", "Hovered { is_selected: false }"] },
+]
+
+[leaves."combo_box.background_color"]
+moves = [
+  { row = "styles::pick_list.background", statuses = ["Active", "Opened { is_hovered: false }"] },
+  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."combo_box.border.color"]
+moves = [
+  { row = "styles::pick_list.border", statuses = ["Active", "Hovered", "Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+]
+
+[leaves."combo_box.disabled_background"]
+named = "UNREAD_COLOURS"
+entry = "combo_box.disabled_background"
+kind = "no receiver"
+why = "`pick_list::Status` is Active, Hovered and Opened, with no disabled state (`iced_widget-0.14.2/src/pick_list.rs:838-848`)"
+
+[leaves."combo_box.disabled_text_color"]
+named = "UNREAD_COLOURS"
+entry = "combo_box.disabled_text_color"
+kind = "no receiver"
+why = "the same: no disabled pick list (`iced_widget-0.14.2/src/pick_list.rs:838-848`)"
+
+[leaves."combo_box.font.color"]
+moves = [
+  { row = "styles::pick_list.text_color", statuses = ["Active", "Hovered", "Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+]
+
+[leaves."combo_box.hover_background"]
+moves = [
+  { row = "styles::pick_list.background", statuses = ["Hovered", "Opened { is_hovered: true }"] },
+]
+
+[leaves."defaults.accent_color"]
+moves = [
+  { row = "palette.primary" },
+]
+
+[leaves."defaults.accent_text_color"]
+moves = [
+  { row = "extended.primary.base.text" },
+]
+
+[leaves."defaults.background_color"]
+moves = [
+  { row = "palette.background" },
+  { row = "styles::checkbox.background", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+]
+
+[leaves."defaults.border.color"]
+moves = [
+  { row = "crate::border_color" },
+]
+
+[leaves."defaults.danger_color"]
+moves = [
+  { row = "palette.danger" },
+  { row = "styles::button_danger.background", statuses = ["Active"] },
+  { row = "styles::button_danger.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."defaults.danger_text_color"]
+moves = [
+  { row = "extended.danger.base.text" },
+  { row = "styles::button_danger.text_color", statuses = ["Active"] },
+  { row = "styles::button_danger.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."defaults.disabled_text_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.disabled_text_color"
+kind = "inherited"
+why = "iced has no application-wide disabled colour. The disabled text colours of the button, the input, the check box, the list and the link inherit this one, and rows read each of them (`docs/inheritance-rules.toml:169`, `:178`, `:191`, `:282`, `:300`); the menu's and the combo box's inherit it too (`:199`, `:291`) and have no receiver, as their entries here say"
+
+[leaves."defaults.focus_ring_color"]
+moves = [
+  { row = "crate::focus_ring_color" },
+]
+
+[leaves."defaults.font.color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.font.color"
+kind = "no receiver"
+why = "an iced `Font` is a family, a weight, a stretch and a style (`iced_core-0.14.0/src/font.rs:6-15`), with no colour: a text is drawn in its widget's style colour or the window's `palette.text`, which is `defaults.text_color`, and each widget's own `font.color` reaches its row"
+
+[leaves."defaults.info_color"]
+moves = [
+  { row = "crate::info_color" },
+]
+
+[leaves."defaults.info_text_color"]
+moves = [
+  { row = "crate::info_text_color" },
+]
+
+[leaves."defaults.link_color"]
+moves = [
+  { row = "crate::link_color" },
+]
+
+[leaves."defaults.mono_font.color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.mono_font.color"
+kind = "no receiver"
+why = "the same: an iced `Font` has no colour (`iced_core-0.14.0/src/font.rs:6-15`), and iced has no monospace text class to colour apart"
+
+[leaves."defaults.muted_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.muted_color"
+kind = "ruled"
+why = "iced's secondary text, `text::secondary`, paints `extended.secondary.base.color` (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector fills that slot from `input.placeholder_color` (`src/extended.rs:99-100`) on purpose: the slot is also `button::secondary`'s fill, and the contract counts the labels `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). The muted colour reaches iced through the leaves that inherit it, `input.placeholder_color` among them (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, `:216`). Ruling T12a C3"
+
+[leaves."defaults.selection_background"]
+moves = [
+  { row = "crate::selection_background" },
+]
+
+[leaves."defaults.selection_inactive_background"]
+named = "UNREAD_COLOURS"
+entry = "defaults.selection_inactive_background"
+kind = "no receiver"
+why = "iced draws a text field's selection only while the field is focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, `text_editor.rs:1021`), so an unfocused selection has no look to give"
+
+[leaves."defaults.selection_text_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.selection_text_color"
+kind = "inherited"
+why = "the selected-item labels that rows read inherit it: `menu.hover_text_color`, `sidebar.selection_text_color` and `list.selection_text_color` (`docs/inheritance-rules.toml:198`, `:227`, `:243`)"
+
+[leaves."defaults.shadow_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.shadow_color"
+kind = "no receiver"
+why = "an iced `Shadow` is a colour, an offset and a blur radius (`iced_core-0.14.0/src/shadow.rs:5-14`), and the model states the colour alone, so every `shadow` field stays iced's default (the `.shadow` entries of `DERIVED`)"
+
+[leaves."defaults.success_color"]
+moves = [
+  { row = "palette.success" },
+  { row = "styles::button_success.background", statuses = ["Active"] },
+  { row = "styles::button_success.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."defaults.success_text_color"]
+moves = [
+  { row = "extended.success.base.text" },
+  { row = "styles::button_success.text_color", statuses = ["Active"] },
+  { row = "styles::button_success.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."defaults.surface_color"]
+moves = [
+  { row = "extended.background.weak.color" },
+]
+
+[leaves."defaults.text_color"]
+moves = [
+  { row = "crate::Spinner (freedesktop currentColor)" },
+  { row = "extended.background.base.text" },
+  { row = "extended.background.weak.text" },
+  { row = "palette.text" },
+  { row = "styles::aw::card.body_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::card.foot_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::card.head_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+]
+
+[leaves."defaults.text_selection_background"]
+named = "UNREAD_COLOURS"
+entry = "defaults.text_selection_background"
+kind = "inherited"
+why = "`input.selection_background` inherits it (`docs/inheritance-rules.toml:175`), and `styles::text_input` and `styles::text_editor` emit that as their `selection`"
+
+[leaves."defaults.text_selection_color"]
+named = "UNREAD_COLOURS"
+entry = "defaults.text_selection_color"
+kind = "no receiver"
+why = "`text_input::Style.selection` and `text_editor::Style.selection` are the fill of a quad drawn behind the text (`iced_widget-0.14.2/src/text_input.rs:561-571`, `text_editor.rs:1049-1059`), and the text over it is drawn whole in `value` (`text_input.rs:615-627`, `text_editor.rs:1010-1015`): no colour for the selected run"
+
+[leaves."defaults.warning_color"]
+moves = [
+  { row = "palette.warning" },
+  { row = "styles::button_warning.background", statuses = ["Active"] },
+  { row = "styles::button_warning.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."defaults.warning_text_color"]
+moves = [
+  { row = "crate::warning_text_color" },
+  { row = "extended.warning.base.text" },
+  { row = "styles::button_warning.text_color", statuses = ["Active"] },
+  { row = "styles::button_warning.text_color", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."dialog.background_color"]
+named = "UNREAD_COLOURS"
+entry = "dialog"
+kind = "no widget"
+why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+
+[leaves."dialog.body_font.color"]
+named = "UNREAD_COLOURS"
+entry = "dialog"
+kind = "no widget"
+why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+
+[leaves."dialog.border.color"]
+named = "UNREAD_COLOURS"
+entry = "dialog"
+kind = "no widget"
+why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+
+[leaves."dialog.title_font.color"]
+named = "UNREAD_COLOURS"
+entry = "dialog"
+kind = "no widget"
+why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+
+[leaves."expander.arrow_color"]
+moves = [
+  { row = "crate::expander_arrow_color" },
+]
+
+[leaves."expander.border.color"]
+moves = [
+  { row = "styles::expander.border", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+  { row = "styles::expander_frame.border" },
+]
+
+[leaves."expander.font.color"]
+moves = [
+  { row = "crate::expander_arrow_color", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::expander.text_color", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+]
+
+[leaves."expander.hover_background"]
+moves = [
+  { row = "styles::expander.background", statuses = ["Hovered", "Pressed"] },
+]
+
+[leaves."input.background_color"]
+moves = [
+  { row = "styles::text_editor.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+  { row = "styles::text_editor.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::text_input.background", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+  { row = "styles::text_input.background", statuses = ["Disabled"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."input.border.color"]
+moves = [
+  { row = "styles::text_input.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::text_input.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."input.caret_color"]
+named = "UNREAD_COLOURS"
+entry = "input.caret_color"
+kind = "no receiver"
+why = "iced draws the caret in the value colour: a 1 px quad filled with `style.value` (`iced_widget-0.14.2/src/text_input.rs:520-533`, `text_editor.rs:1040-1046`), and neither `Style` has a caret field"
+
+[leaves."input.disabled_background"]
+moves = [
+  { row = "styles::text_editor.background", statuses = ["Disabled"] },
+  { row = "styles::text_input.background", statuses = ["Disabled"] },
+]
+
+[leaves."input.disabled_text_color"]
+moves = [
+  { row = "styles::text_editor.value", statuses = ["Disabled"] },
+  { row = "styles::text_input.value", statuses = ["Disabled"] },
+]
+
+[leaves."input.focus_border_color"]
+moves = [
+  { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"] },
+  { row = "styles::text_input.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"] },
+]
+
+[leaves."input.font.color"]
+moves = [
+  { row = "styles::text_editor.value", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+  { row = "styles::text_input.value", statuses = ["Active", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+]
+
+[leaves."input.hover_border_color"]
+moves = [
+  { row = "styles::text_editor.border", statuses = ["Hovered"] },
+  { row = "styles::text_input.border", statuses = ["Hovered"] },
+]
+
+[leaves."input.placeholder_color"]
+moves = [
+  { row = "extended.secondary.base.color" },
+  { row = "extended.secondary.strong.color" },
+  { row = "styles::pick_list.placeholder_color", statuses = ["Active", "Hovered", "Opened { is_hovered: false }", "Opened { is_hovered: true }"] },
+  { row = "styles::text_editor.placeholder", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+  { row = "styles::text_input.placeholder", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+]
+
+[leaves."input.selection_background"]
+moves = [
+  { row = "styles::text_editor.selection", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+  { row = "styles::text_input.selection", statuses = ["Active", "Disabled", "Focused { is_hovered: false }", "Focused { is_hovered: true }", "Hovered"] },
+]
+
+[leaves."input.selection_text_color"]
+named = "UNREAD_COLOURS"
+entry = "input.selection_text_color"
+kind = "no receiver"
+why = "`text_input::Style.selection` and `text_editor::Style.selection` are the fill of a quad drawn behind the text (`iced_widget-0.14.2/src/text_input.rs:561-571`, `text_editor.rs:1049-1059`), and the text over it is drawn whole in `value` (`text_input.rs:615-627`, `text_editor.rs:1010-1015`): no colour for the selected run"
+
+[leaves."link.active_text_color"]
+moves = [
+  { row = "styles::button_link.text_color", statuses = ["Pressed"] },
+]
+
+[leaves."link.background_color"]
+moves = [
+  { row = "styles::button_link.background", statuses = ["Active", "Disabled", "Hovered", "Pressed"] },
+]
+
+[leaves."link.disabled_text_color"]
+moves = [
+  { row = "styles::button_link.text_color", statuses = ["Disabled"] },
+]
+
+[leaves."link.font.color"]
+moves = [
+  { row = "styles::button_link.text_color", statuses = ["Active"] },
+]
+
+[leaves."link.hover_background"]
+moves = [
+  { row = "styles::button_link.background", statuses = ["Hovered"] },
+]
+
+[leaves."link.hover_text_color"]
+moves = [
+  { row = "styles::button_link.text_color", statuses = ["Hovered"] },
+]
+
+[leaves."link.visited_text_color"]
+named = "UNREAD_COLOURS"
+entry = "link.visited_text_color"
+kind = "no receiver"
+why = "`button::Status` is Active, Hovered, Pressed and Disabled, with no visited state (`iced_widget-0.14.2/src/button.rs:471-480`)"
+
+[leaves."list.alternate_row_background"]
+named = "UNREACHABLE"
+entry = "list.alternate_row_background"
+kind = "no receiver"
+why = "`selection_list::Style` is four fields -- text_color, background, border_width, border_color (`style/selection_list.rs:10-19`) -- and a row is filled only while selected or hovered (`selection_list/list.rs:226-248`); every other row shows the list's one background (`selection_list.rs:302-315`), so there is no striping"
+
+[leaves."list.background_color"]
+moves = [
+  { row = "styles::aw::selection_list.background", statuses = ["Active", "Disabled"] },
+]
+
+[leaves."list.border.color"]
+moves = [
+  { row = "styles::aw::selection_list.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+]
+
+[leaves."list.disabled_text_color"]
+moves = [
+  { row = "styles::aw::selection_list.text_color", statuses = ["Disabled"] },
+]
+
+[leaves."list.grid_color"]
+named = "UNREACHABLE"
+entry = "list.grid_color"
+kind = "no receiver"
+why = "a `SelectionList` draws no line between its rows or columns (`selection_list/list.rs:215-275`), and its `Style` has no color for one (`style/selection_list.rs:10-19`)"
+
+[leaves."list.header_background"]
+named = "UNREACHABLE"
+entry = "list.header_background"
+kind = "no receiver"
+why = "a `SelectionList` draws rows and nothing above them (`selection_list/list.rs:215-275`): it has no column header, and its `Style` no field for one (`style/selection_list.rs:10-19`)"
+
+[leaves."list.header_font.color"]
+named = "UNREACHABLE"
+entry = "list.header_font"
+kind = "no receiver"
+why = "the same: a `SelectionList` has no column header to set in it (`selection_list/list.rs:215-275`)"
+
+[leaves."list.hover_background"]
+moves = [
+  { row = "styles::aw::selection_list.background", statuses = ["Hovered"] },
+]
+
+[leaves."list.hover_text_color"]
+moves = [
+  { row = "styles::aw::selection_list.text_color", statuses = ["Hovered"] },
+]
+
+[leaves."list.item_font.color"]
+moves = [
+  { row = "styles::aw::selection_list.text_color", statuses = ["Active"] },
+]
+
+[leaves."list.selection_background"]
+moves = [
+  { row = "styles::aw::selection_list.background", statuses = ["Selected"] },
+]
+
+[leaves."list.selection_text_color"]
+moves = [
+  { row = "styles::aw::selection_list.text_color", statuses = ["Selected"] },
+]
+
+[leaves."menu.background_color"]
+moves = [
+  { row = "styles::aw::menu.bar_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::menu.menu_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::menu.background" },
+]
+
+[leaves."menu.border.color"]
+moves = [
+  { row = "styles::aw::menu.bar.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::menu.menu.border", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::menu.border" },
+]
+
+[leaves."menu.disabled_text_color"]
+named = "UNREAD_COLOURS"
+entry = "menu.disabled_text_color"
+kind = "no receiver"
+why = "iced's menu `Style` has a text colour and a selected one and no disabled one (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`), and an `iced_aw` menu's items are the consumer's own widgets (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`), its `menu_bar::Style` backgrounds, borders and shadows only (`style/menu_bar.rs:7-26`)"
+
+[leaves."menu.font.color"]
+moves = [
+  { row = "styles::menu.text_color" },
+]
+
+[leaves."menu.hover_background"]
+moves = [
+  { row = "styles::aw::menu.path", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::menu.selected_background" },
+]
+
+[leaves."menu.hover_text_color"]
+moves = [
+  { row = "styles::menu.selected_text_color" },
+]
+
+[leaves."menu.separator_color"]
+named = "UNREAD_COLOURS"
+entry = "menu.separator_color"
+kind = "no receiver"
+why = "neither menu style has a separator: iced's menu `Style` (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`) nor `iced_aw`'s `menu_bar::Style` (`iced_aw-0.14.1/src/style/menu_bar.rs:7-26`); a separator in an `iced_aw` menu is an item the consumer builds"
+
+[leaves."popover.background_color"]
+named = "UNREAD_COLOURS"
+entry = "popover"
+kind = "no widget"
+why = "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its `context_menu::Style.background` is the backdrop of a modal (`style/context_menu.rs:8-14`), not a surface"
+
+[leaves."popover.border.color"]
+named = "UNREAD_COLOURS"
+entry = "popover"
+kind = "no widget"
+why = "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its `context_menu::Style.background` is the backdrop of a modal (`style/context_menu.rs:8-14`), not a surface"
+
+[leaves."popover.font.color"]
+named = "UNREAD_COLOURS"
+entry = "popover"
+kind = "no widget"
+why = "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its `context_menu::Style.background` is the backdrop of a modal (`style/context_menu.rs:8-14`), not a surface"
+
+[leaves."progress_bar.border.color"]
+moves = [
+  { row = "styles::progress_bar.border" },
+]
+
+[leaves."progress_bar.fill_color"]
+moves = [
+  { row = "styles::progress_bar.bar" },
+]
+
+[leaves."progress_bar.track_color"]
+moves = [
+  { row = "styles::progress_bar.background" },
+]
+
+[leaves."scrollbar.thumb_active_color"]
+moves = [
+  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+]
+
+[leaves."scrollbar.thumb_color"]
+moves = [
+  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+]
+
+[leaves."scrollbar.thumb_hover_color"]
+moves = [
+  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::scrollable.horizontal_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::scrollable.vertical_rail.scroller.background", statuses = ["Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+]
+
+[leaves."scrollbar.track_color"]
+moves = [
+  { row = "styles::scrollable.horizontal_rail.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+  { row = "styles::scrollable.vertical_rail.background", statuses = ["Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Active { is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: false, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Dragged { is_horizontal_scrollbar_dragged: true, is_vertical_scrollbar_dragged: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: false, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: false, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: false, is_vertical_scrollbar_disabled: true }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: false }", "Hovered { is_horizontal_scrollbar_hovered: true, is_vertical_scrollbar_hovered: true, is_horizontal_scrollbar_disabled: true, is_vertical_scrollbar_disabled: true }"] },
+]
+
+[leaves."segmented_control.active_background"]
+moves = [
+  { row = "styles::segment.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+]
+
+[leaves."segmented_control.active_text_color"]
+moves = [
+  { row = "styles::segment.text_color", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+]
+
+[leaves."segmented_control.background_color"]
+moves = [
+  { row = "styles::segment.background", statuses = ["(false, Active)", "(false, Disabled)"] },
+  { row = "styles::segment.background", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+]
+
+[leaves."segmented_control.border.color"]
+moves = [
+  { row = "styles::segmented_control.background" },
+  { row = "styles::segmented_control.border" },
+]
+
+[leaves."segmented_control.font.color"]
+moves = [
+  { row = "styles::segment.text_color", statuses = ["(false, Active)", "(false, Disabled)", "(false, Hovered)", "(false, Pressed)"] },
+  { row = "styles::segmented_control.text_color" },
+]
+
+[leaves."segmented_control.hover_background"]
+moves = [
+  { row = "styles::segment.background", statuses = ["(false, Hovered)", "(false, Pressed)"] },
+]
+
+[leaves."separator.line_color"]
+moves = [
+  { row = "styles::rule.color" },
+]
+
+[leaves."sidebar.background_color"]
+moves = [
+  { row = "styles::aw::sidebar.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+  { row = "styles::aw::sidebar.tab_label_background", statuses = ["Disabled"] },
+]
+
+[leaves."sidebar.border.color"]
+moves = [
+  { row = "styles::aw::sidebar.border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+]
+
+[leaves."sidebar.font.color"]
+moves = [
+  { row = "styles::aw::sidebar.icon_color", statuses = ["Disabled", "Hovered"] },
+  { row = "styles::aw::sidebar.text_color", statuses = ["Disabled", "Hovered"] },
+]
+
+[leaves."sidebar.hover_background"]
+moves = [
+  { row = "styles::aw::sidebar.tab_label_background", statuses = ["Hovered"] },
+]
+
+[leaves."sidebar.selection_background"]
+moves = [
+  { row = "styles::aw::sidebar.tab_label_background", statuses = ["Active"] },
+]
+
+[leaves."sidebar.selection_text_color"]
+moves = [
+  { row = "styles::aw::sidebar.icon_color", statuses = ["Active"] },
+  { row = "styles::aw::sidebar.text_color", statuses = ["Active"] },
+]
+
+[leaves."slider.disabled_fill_color"]
+named = "UNREAD_COLOURS"
+entry = "slider.disabled_fill_color"
+kind = "no receiver"
+why = "`slider::Status` is Active, Hovered and Dragged, with no disabled state (`iced_widget-0.14.2/src/slider.rs:578-585`)"
+
+[leaves."slider.disabled_thumb_color"]
+named = "UNREAD_COLOURS"
+entry = "slider.disabled_thumb_color"
+kind = "no receiver"
+why = "the same: no disabled slider (`iced_widget-0.14.2/src/slider.rs:578-585`)"
+
+[leaves."slider.disabled_track_color"]
+named = "UNREAD_COLOURS"
+entry = "slider.disabled_track_color"
+kind = "no receiver"
+why = "the same: no disabled slider (`iced_widget-0.14.2/src/slider.rs:578-585`)"
+
+[leaves."slider.fill_color"]
+moves = [
+  { row = "styles::slider.rail.backgrounds.0", statuses = ["Active", "Dragged", "Hovered"] },
+]
+
+[leaves."slider.thumb_color"]
+moves = [
+  { row = "styles::slider.handle.background", statuses = ["Active"] },
+  { row = "styles::slider.handle.background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."slider.thumb_hover_color"]
+moves = [
+  { row = "styles::slider.handle.background", statuses = ["Hovered"] },
+]
+
+[leaves."slider.track_color"]
+moves = [
+  { row = "styles::slider.rail.backgrounds.1", statuses = ["Active", "Dragged", "Hovered"] },
+]
+
+[leaves."spinner.fill_color"]
+moves = [
+  { row = "crate::Spinner (arc, bundled tint)" },
+  { row = "styles::aw::spinner.text_color" },
+]
+
+[leaves."splitter.divider_color"]
+named = "UNREAD_COLOURS"
+entry = "splitter.divider_color"
+kind = "no receiver"
+why = "iced draws a split line only while it is hovered or picked (`iced_widget-0.14.2/src/pane_grid.rs:949-956`), never at rest, so a resting divider has no colour to take; `styles::pane_grid` draws the hovered and the picked line in `splitter.hover_color`"
+
+[leaves."splitter.hover_color"]
+moves = [
+  { row = "styles::pane_grid.hovered_split.color" },
+  { row = "styles::pane_grid.picked_split.color" },
+]
+
+[leaves."status_bar.background_color"]
+named = "UNREAD_COLOURS"
+entry = "status_bar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
+
+[leaves."status_bar.border.color"]
+named = "UNREAD_COLOURS"
+entry = "status_bar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
+
+[leaves."status_bar.font.color"]
+named = "UNREAD_COLOURS"
+entry = "status_bar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no status bar"
+
+[leaves."switch.checked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Active { is_toggled: true }"] },
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.checked_track_border_color"]
+moves = [
+  { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: true }", "Hovered { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background_border_width", statuses = ["Active { is_toggled: true }", "Disabled { is_toggled: true }", "Hovered { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.disabled_checked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: true }"] },
+]
+
+[leaves."switch.disabled_checked_track_border_color"]
+moves = [
+  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background_border_width", statuses = ["Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.disabled_thumb_color"]
+moves = [
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"] },
+]
+
+[leaves."switch.disabled_unchecked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }"] },
+  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.disabled_unchecked_track_border_color"]
+moves = [
+  { row = "styles::toggler.background_border_color", statuses = ["Disabled { is_toggled: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.hover_checked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: true }"] },
+]
+
+[leaves."switch.hover_unchecked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: false }"] },
+  { row = "styles::toggler.background_border_color", statuses = ["Hovered { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.thumb_background"]
+moves = [
+  { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: false }", "Hovered { is_toggled: false }"], except = ["adwaita/dark", "windows-11/light", "windows-11/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: true }", "Hovered { is_toggled: true }"] },
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.thumb_border_color"]
+moves = [
+  { row = "styles::toggler.foreground_border_color", statuses = ["Active { is_toggled: false }", "Active { is_toggled: true }", "Disabled { is_toggled: false }", "Disabled { is_toggled: true }", "Hovered { is_toggled: false }", "Hovered { is_toggled: true }"], except = ["adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.unchecked_background"]
+moves = [
+  { row = "styles::toggler.background", statuses = ["Active { is_toggled: false }"] },
+  { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background", statuses = ["Hovered { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.unchecked_thumb_background"]
+moves = [
+  { row = "styles::toggler.foreground", statuses = ["Active { is_toggled: false }", "Hovered { is_toggled: false }"] },
+  { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."switch.unchecked_track_border_color"]
+moves = [
+  { row = "styles::toggler.background_border_color", statuses = ["Active { is_toggled: false }", "Hovered { is_toggled: false }"], except = ["adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."tab.active_background"]
+moves = [
+  { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Active"] },
+]
+
+[leaves."tab.active_indicator_color"]
+moves = [
+  { row = "crate::tab_indicator_line", except = ["windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."tab.active_text_color"]
+moves = [
+  { row = "styles::aw::tab_bar.icon_color", statuses = ["Active"] },
+  { row = "styles::aw::tab_bar.text_color", statuses = ["Active"] },
+]
+
+[leaves."tab.background_color"]
+moves = [
+  { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Disabled"] },
+  { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."tab.bar_background"]
+moves = [
+  { row = "styles::aw::tab_bar.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+]
+
+[leaves."tab.border.color"]
+moves = [
+  { row = "styles::aw::tab_bar.tab_label_border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
+]
+
+[leaves."tab.font.color"]
+moves = [
+  { row = "styles::aw::tab_bar.icon_color", statuses = ["Disabled"] },
+  { row = "styles::aw::tab_bar.text_color", statuses = ["Disabled"] },
+]
+
+[leaves."tab.hover_background"]
+moves = [
+  { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Hovered"] },
+]
+
+[leaves."tab.hover_text_color"]
+moves = [
+  { row = "styles::aw::tab_bar.icon_color", statuses = ["Hovered"] },
+  { row = "styles::aw::tab_bar.text_color", statuses = ["Hovered"] },
+]
+
+[leaves."text_area.border.color"]
+moves = [
+  { row = "styles::text_editor.border", statuses = ["Active", "Disabled"] },
+  { row = "styles::text_editor.border", statuses = ["Focused { is_hovered: false }", "Focused { is_hovered: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::text_editor.border", statuses = ["Hovered"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+]
+
+[leaves."toolbar.background_color"]
+named = "UNREAD_COLOURS"
+entry = "toolbar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+
+[leaves."toolbar.border.color"]
+named = "UNREAD_COLOURS"
+entry = "toolbar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+
+[leaves."toolbar.font.color"]
+named = "UNREAD_COLOURS"
+entry = "toolbar"
+kind = "no widget"
+why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+
+[leaves."tooltip.background_color"]
+moves = [
+  { row = "styles::tooltip.background" },
+]
+
+[leaves."tooltip.border.color"]
+moves = [
+  { row = "styles::tooltip.border" },
+]
+
+[leaves."tooltip.font.color"]
+moves = [
+  { row = "styles::tooltip.text_color" },
+]
+
+[leaves."window.background_color"]
+named = "UNREAD_COLOURS"
+entry = "window.background_color"
+kind = "ruled"
+why = "iced paints the application's background from `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), `defaults.background_color`; this leaf inherits that one (`docs/inheritance-rules.toml:157`) and equals it in all 34 bundled combinations. A style for `application(..).style(..)` that reads it is a docs/todo.md item. Ruling T12a C4"
+
+[leaves."window.border.color"]
+named = "UNREAD_COLOURS"
+entry = "window.border.color"
+kind = "no receiver"
+why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
+
+[leaves."window.inactive_title_bar_background"]
+named = "UNREAD_COLOURS"
+entry = "window.inactive_title_bar_background"
+kind = "no receiver"
+why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
+
+[leaves."window.inactive_title_bar_text_color"]
+named = "UNREAD_COLOURS"
+entry = "window.inactive_title_bar_text_color"
+kind = "no receiver"
+why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
+
+[leaves."window.title_bar_background"]
+named = "UNREAD_COLOURS"
+entry = "window.title_bar_background"
+kind = "no receiver"
+why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
+
+[leaves."window.title_bar_font.color"]
+named = "UNREAD_COLOURS"
+entry = "window.title_bar_font.color"
+kind = "no receiver"
+why = "iced's window takes `decorations: bool` -- whether the OS draws a border and a title bar at all -- and nothing to colour them with (`iced_core-0.14.0/src/window/settings.rs:65-66`)"
+
+[rows."crate::Spinner (arc, bundled tint)"]
+cfg = "spinner"
+leaves = ["spinner.fill_color"]
+
+[rows."crate::Spinner (freedesktop currentColor)"]
+cfg = "spinner"
+leaves = ["defaults.text_color"]
+
+[rows."crate::border_color"]
+leaves = ["defaults.border.color"]
+
+[rows."crate::expander_arrow_color"]
+leaves = ["expander.arrow_color", "expander.font.color"]
+
+[rows."crate::focus_ring_color"]
+leaves = ["defaults.focus_ring_color"]
+
+[rows."crate::info_color"]
+leaves = ["defaults.info_color"]
+
+[rows."crate::info_text_color"]
+leaves = ["defaults.info_text_color"]
+
+[rows."crate::link_color"]
+leaves = ["defaults.link_color"]
+
+[rows."crate::selection_background"]
+leaves = ["defaults.selection_background"]
+
+[rows."crate::tab_indicator_line"]
+leaves = ["tab.active_indicator_color"]
+
+[rows."crate::warning_text_color"]
+leaves = ["defaults.warning_text_color"]
+
+[rows."extended.background.base.text"]
+leaves = ["defaults.text_color"]
+
+[rows."extended.background.weak.color"]
+leaves = ["defaults.surface_color"]
+
+[rows."extended.background.weak.text"]
+leaves = ["defaults.text_color"]
+
+[rows."extended.danger.base.text"]
+leaves = ["defaults.danger_text_color"]
+
+[rows."extended.primary.base.text"]
+leaves = ["defaults.accent_text_color"]
+
+[rows."extended.secondary.base.color"]
+leaves = ["input.placeholder_color"]
+
+[rows."extended.secondary.strong.color"]
+leaves = ["input.placeholder_color"]
+
+[rows."extended.success.base.text"]
+leaves = ["defaults.success_text_color"]
+
+[rows."extended.warning.base.text"]
+leaves = ["defaults.warning_text_color"]
+
+[rows."palette.background"]
+leaves = ["defaults.background_color"]
+
+[rows."palette.danger"]
+leaves = ["defaults.danger_color"]
+
+[rows."palette.primary"]
+leaves = ["defaults.accent_color"]
+
+[rows."palette.success"]
+leaves = ["defaults.success_color"]
+
+[rows."palette.text"]
+leaves = ["defaults.text_color"]
+
+[rows."palette.warning"]
+leaves = ["defaults.warning_color"]
+
+[rows."styles::aw::card.background"]
+cfg = "iced_aw"
+leaves = ["card.background_color"]
+
+[rows."styles::aw::card.body_background"]
+cfg = "iced_aw"
+leaves = ["card.background_color"]
+
+[rows."styles::aw::card.body_text_color"]
+cfg = "iced_aw"
+leaves = ["defaults.text_color"]
+
+[rows."styles::aw::card.border_color"]
+cfg = "iced_aw"
+leaves = ["card.border.color"]
+
+[rows."styles::aw::card.foot_background"]
+cfg = "iced_aw"
+leaves = ["card.background_color"]
+
+[rows."styles::aw::card.foot_text_color"]
+cfg = "iced_aw"
+leaves = ["defaults.text_color"]
+
+[rows."styles::aw::card.head_background"]
+cfg = "iced_aw"
+leaves = ["card.background_color"]
+
+[rows."styles::aw::card.head_text_color"]
+cfg = "iced_aw"
+leaves = ["defaults.text_color"]
+
+[rows."styles::aw::menu.bar.border"]
+cfg = "iced_aw"
+leaves = ["menu.border.color"]
+
+[rows."styles::aw::menu.bar_background"]
+cfg = "iced_aw"
+leaves = ["menu.background_color"]
+
+[rows."styles::aw::menu.menu.border"]
+cfg = "iced_aw"
+leaves = ["menu.border.color"]
+
+[rows."styles::aw::menu.menu_background"]
+cfg = "iced_aw"
+leaves = ["menu.background_color"]
+
+[rows."styles::aw::menu.path"]
+cfg = "iced_aw"
+leaves = ["menu.hover_background"]
+
+[rows."styles::aw::selection_list.background"]
+cfg = "iced_aw"
+leaves = ["list.background_color", "list.hover_background", "list.selection_background"]
+
+[rows."styles::aw::selection_list.border_color"]
+cfg = "iced_aw"
+leaves = ["list.border.color"]
+
+[rows."styles::aw::selection_list.text_color"]
+cfg = "iced_aw"
+leaves = ["list.disabled_text_color", "list.hover_text_color", "list.item_font.color", "list.selection_text_color"]
+
+[rows."styles::aw::sidebar.background"]
+cfg = "iced_aw"
+leaves = ["sidebar.background_color"]
+
+[rows."styles::aw::sidebar.border_color"]
+cfg = "iced_aw"
+leaves = ["sidebar.border.color"]
+
+[rows."styles::aw::sidebar.icon_color"]
+cfg = "iced_aw"
+leaves = ["sidebar.font.color", "sidebar.selection_text_color"]
+
+[rows."styles::aw::sidebar.tab_label_background"]
+cfg = "iced_aw"
+leaves = ["sidebar.background_color", "sidebar.hover_background", "sidebar.selection_background"]
+
+[rows."styles::aw::sidebar.text_color"]
+cfg = "iced_aw"
+leaves = ["sidebar.font.color", "sidebar.selection_text_color"]
+
+[rows."styles::aw::spinner.text_color"]
+cfg = "iced_aw"
+leaves = ["spinner.fill_color"]
+
+[rows."styles::aw::tab_bar.background"]
+cfg = "iced_aw"
+leaves = ["tab.bar_background"]
+
+[rows."styles::aw::tab_bar.icon_color"]
+cfg = "iced_aw"
+leaves = ["tab.active_text_color", "tab.font.color", "tab.hover_text_color"]
+
+[rows."styles::aw::tab_bar.tab_label_background"]
+cfg = "iced_aw"
+leaves = ["tab.active_background", "tab.background_color", "tab.hover_background"]
+
+[rows."styles::aw::tab_bar.tab_label_border_color"]
+cfg = "iced_aw"
+leaves = ["tab.border.color"]
+
+[rows."styles::aw::tab_bar.text_color"]
+cfg = "iced_aw"
+leaves = ["tab.active_text_color", "tab.font.color", "tab.hover_text_color"]
+
+[rows."styles::button.background"]
+leaves = ["button.active_background", "button.background_color", "button.disabled_background", "button.hover_background"]
+
+[rows."styles::button.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button.text_color"]
+leaves = ["button.active_text_color", "button.disabled_text_color", "button.font.color", "button.hover_text_color"]
+
+[rows."styles::button_danger.background"]
+leaves = ["button.disabled_background", "defaults.danger_color"]
+
+[rows."styles::button_danger.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button_danger.text_color"]
+leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.danger_text_color"]
+
+[rows."styles::button_link.background"]
+leaves = ["link.background_color", "link.hover_background"]
+
+[rows."styles::button_link.text_color"]
+leaves = ["link.active_text_color", "link.disabled_text_color", "link.font.color", "link.hover_text_color"]
+
+[rows."styles::button_primary.background"]
+leaves = ["button.disabled_background", "button.primary_background"]
+
+[rows."styles::button_primary.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button_primary.text_color"]
+leaves = ["button.disabled_background", "button.disabled_text_color", "button.primary_text_color"]
+
+[rows."styles::button_success.background"]
+leaves = ["button.disabled_background", "defaults.success_color"]
+
+[rows."styles::button_success.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button_success.text_color"]
+leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.success_text_color"]
+
+[rows."styles::button_toggle.background"]
+leaves = ["button.active_background", "button.background_color", "button.checked_background", "button.disabled_background", "button.hover_background"]
+
+[rows."styles::button_toggle.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button_toggle.text_color"]
+leaves = ["button.active_text_color", "button.checked_text_color", "button.disabled_background", "button.disabled_text_color", "button.font.color", "button.hover_text_color"]
+
+[rows."styles::button_warning.background"]
+leaves = ["button.disabled_background", "defaults.warning_color"]
+
+[rows."styles::button_warning.border"]
+leaves = ["button.border.color"]
+
+[rows."styles::button_warning.text_color"]
+leaves = ["button.disabled_background", "button.disabled_text_color", "defaults.warning_text_color"]
+
+[rows."styles::checkbox.background"]
+leaves = ["checkbox.checked_background", "checkbox.disabled_background", "checkbox.hover_background", "checkbox.unchecked_background", "defaults.background_color"]
+
+[rows."styles::checkbox.border"]
+leaves = ["checkbox.border.color", "checkbox.unchecked_border_color", "defaults.background_color"]
+
+[rows."styles::checkbox.icon_color"]
+leaves = ["checkbox.disabled_background", "checkbox.disabled_text_color", "checkbox.indicator_color", "defaults.background_color"]
+
+[rows."styles::checkbox.text_color"]
+leaves = ["checkbox.disabled_text_color", "checkbox.font.color", "defaults.background_color"]
+
+[rows."styles::container_card.background"]
+leaves = ["card.background_color"]
+
+[rows."styles::container_card.border"]
+leaves = ["card.border.color"]
+
+[rows."styles::expander.background"]
+leaves = ["expander.hover_background"]
+
+[rows."styles::expander.border"]
+leaves = ["expander.border.color"]
+
+[rows."styles::expander.text_color"]
+leaves = ["expander.font.color"]
+
+[rows."styles::expander_frame.border"]
+leaves = ["expander.border.color"]
+
+[rows."styles::menu.background"]
+leaves = ["menu.background_color"]
+
+[rows."styles::menu.border"]
+leaves = ["menu.border.color"]
+
+[rows."styles::menu.selected_background"]
+leaves = ["menu.hover_background"]
+
+[rows."styles::menu.selected_text_color"]
+leaves = ["menu.hover_text_color"]
+
+[rows."styles::menu.text_color"]
+leaves = ["menu.font.color"]
+
+[rows."styles::pane_grid.hovered_split.color"]
+leaves = ["splitter.hover_color"]
+
+[rows."styles::pane_grid.picked_split.color"]
+leaves = ["splitter.hover_color"]
+
+[rows."styles::pick_list.background"]
+leaves = ["combo_box.background_color", "combo_box.hover_background"]
+
+[rows."styles::pick_list.border"]
+leaves = ["combo_box.border.color"]
+
+[rows."styles::pick_list.placeholder_color"]
+leaves = ["input.placeholder_color"]
+
+[rows."styles::pick_list.text_color"]
+leaves = ["combo_box.font.color"]
+
+[rows."styles::progress_bar.background"]
+leaves = ["progress_bar.track_color"]
+
+[rows."styles::progress_bar.bar"]
+leaves = ["progress_bar.fill_color"]
+
+[rows."styles::progress_bar.border"]
+leaves = ["progress_bar.border.color"]
+
+[rows."styles::radio.background"]
+leaves = ["checkbox.checked_background", "checkbox.hover_background", "checkbox.unchecked_background"]
+
+[rows."styles::radio.border_color"]
+leaves = ["checkbox.border.color", "checkbox.unchecked_border_color"]
+
+[rows."styles::radio.dot_color"]
+leaves = ["checkbox.indicator_color"]
+
+[rows."styles::radio.text_color"]
+leaves = ["checkbox.font.color"]
+
+[rows."styles::rule.color"]
+leaves = ["separator.line_color"]
+
+[rows."styles::scrollable.horizontal_rail.background"]
+leaves = ["scrollbar.track_color"]
+
+[rows."styles::scrollable.horizontal_rail.scroller.background"]
+leaves = ["scrollbar.thumb_active_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color"]
+
+[rows."styles::scrollable.vertical_rail.background"]
+leaves = ["scrollbar.track_color"]
+
+[rows."styles::scrollable.vertical_rail.scroller.background"]
+leaves = ["scrollbar.thumb_active_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color"]
+
+[rows."styles::segment.background"]
+leaves = ["segmented_control.active_background", "segmented_control.background_color", "segmented_control.hover_background"]
+
+[rows."styles::segment.text_color"]
+leaves = ["segmented_control.active_text_color", "segmented_control.font.color"]
+
+[rows."styles::segmented_control.background"]
+leaves = ["segmented_control.border.color"]
+
+[rows."styles::segmented_control.border"]
+leaves = ["segmented_control.border.color"]
+
+[rows."styles::segmented_control.text_color"]
+leaves = ["segmented_control.font.color"]
+
+[rows."styles::slider.handle.background"]
+leaves = ["slider.thumb_color", "slider.thumb_hover_color"]
+
+[rows."styles::slider.rail.backgrounds.0"]
+leaves = ["slider.fill_color"]
+
+[rows."styles::slider.rail.backgrounds.1"]
+leaves = ["slider.track_color"]
+
+[rows."styles::text_editor.background"]
+leaves = ["input.background_color", "input.disabled_background"]
+
+[rows."styles::text_editor.border"]
+leaves = ["input.background_color", "input.focus_border_color", "input.hover_border_color", "text_area.border.color"]
+
+[rows."styles::text_editor.placeholder"]
+leaves = ["input.placeholder_color"]
+
+[rows."styles::text_editor.selection"]
+leaves = ["input.selection_background"]
+
+[rows."styles::text_editor.value"]
+leaves = ["input.disabled_text_color", "input.font.color"]
+
+[rows."styles::text_input.background"]
+leaves = ["input.background_color", "input.disabled_background"]
+
+[rows."styles::text_input.border"]
+leaves = ["input.background_color", "input.border.color", "input.focus_border_color", "input.hover_border_color"]
+
+[rows."styles::text_input.placeholder"]
+leaves = ["input.placeholder_color"]
+
+[rows."styles::text_input.selection"]
+leaves = ["input.selection_background"]
+
+[rows."styles::text_input.value"]
+leaves = ["input.disabled_text_color", "input.font.color"]
+
+[rows."styles::toggler.background"]
+leaves = ["defaults.background_color", "switch.checked_background", "switch.disabled_checked_background", "switch.disabled_unchecked_background", "switch.hover_checked_background", "switch.hover_unchecked_background", "switch.unchecked_background"]
+
+[rows."styles::toggler.background_border_color"]
+leaves = ["switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.disabled_unchecked_background", "switch.disabled_unchecked_track_border_color", "switch.hover_unchecked_background", "switch.unchecked_background", "switch.unchecked_track_border_color"]
+
+[rows."styles::toggler.background_border_width"]
+leaves = ["switch.checked_track_border_color", "switch.disabled_checked_track_border_color"]
+
+[rows."styles::toggler.foreground"]
+leaves = ["defaults.background_color", "switch.disabled_thumb_color", "switch.thumb_background", "switch.unchecked_thumb_background"]
+
+[rows."styles::toggler.foreground_border_color"]
+leaves = ["switch.thumb_border_color"]
+
+[rows."styles::tooltip.background"]
+leaves = ["tooltip.background_color"]
+
+[rows."styles::tooltip.border"]
+leaves = ["tooltip.border.color"]
+
+[rows."styles::tooltip.text_color"]
+leaves = ["tooltip.font.color"]

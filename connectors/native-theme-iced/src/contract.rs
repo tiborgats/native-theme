@@ -14,7 +14,10 @@
 //! `UNREACHABLE`. Its converse walks the model rather than the output:
 //! `every_colour_leaf_reaches_a_row_or_is_named` splices every colour leaf of
 //! `ResolvedTheme` and requires each to move a row's native side, or to be
-//! named by `UNREAD_COLOURS` or `UNREACHABLE`.
+//! named by `UNREAD_COLOURS` or `UNREACHABLE`. What it finds -- per leaf, the
+//! rows it moves under which statuses and in which combinations -- is
+//! exported as `contract-leaves.toml` at the crate root, which the iced
+//! showcase reads for its Widget Info and the test holds to the walk.
 
 use crate::extended::contrast_ratio;
 use crate::palette::to_color;
@@ -4646,10 +4649,50 @@ fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
         .collect()
 }
 
-/// Every row of the contract on one theme, as text keyed by the row's name:
-/// each palette row, each style row over all of its statuses, and each
-/// accessor row. A colour spliced into the theme reaches a row when that
-/// row's native text changes.
+/// A row of the contract under one of its statuses, or a row that has none (a
+/// palette slot, an accessor, a style function that takes no status): what a
+/// spliced colour moves.
+#[cfg(feature = "iced_aw")]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+struct Reached {
+    row: String,
+    /// The status as `{:?}` writes it; `None` for a row with no status, a
+    /// style row whose one status is `()` among them.
+    status: Option<String>,
+}
+
+#[cfg(feature = "iced_aw")]
+impl Reached {
+    fn of<S: std::fmt::Debug>(row: &str, status: S) -> Self {
+        let status = format!("{status:?}");
+        Self {
+            row: row.to_owned(),
+            status: (status != "()").then_some(status),
+        }
+    }
+
+    fn row(row: &str) -> Self {
+        Self {
+            row: row.to_owned(),
+            status: None,
+        }
+    }
+}
+
+#[cfg(feature = "iced_aw")]
+impl std::fmt::Display for Reached {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.status {
+            Some(status) => write!(f, "{} ({status})", self.row),
+            None => f.write_str(&self.row),
+        }
+    }
+}
+
+/// Every row of the contract on one theme, as text keyed by the row's name
+/// and status: each palette row, each style row under each of its statuses,
+/// and each accessor row. A colour spliced into the theme reaches a row in a
+/// status when that text changes.
 ///
 /// The emitted side, what the connector builds, is read only where the theme
 /// is the one `to_theme` built from `r` -- once per leaf, on the splice that
@@ -4658,95 +4701,98 @@ fn colour_leaves(json: &serde_json::Value) -> Vec<String> {
 #[cfg(feature = "iced_aw")]
 #[derive(Default)]
 struct Reading {
-    native: BTreeMap<String, String>,
-    emitted: Option<BTreeMap<String, String>>,
+    native: BTreeMap<Reached, String>,
+    emitted: Option<BTreeMap<Reached, String>>,
 }
 
 #[cfg(feature = "iced_aw")]
 impl Reading {
-    fn put(&mut self, name: String, native: String, emitted: impl FnOnce() -> String) {
+    fn put(&mut self, key: Reached, native: String, emitted: impl FnOnce() -> String) {
         if let Some(map) = &mut self.emitted {
-            map.insert(name.clone(), emitted());
+            map.insert(key.clone(), emitted());
         }
-        self.native.insert(name, native);
+        self.native.insert(key, native);
     }
 
-    fn style<S: Copy>(&mut self, rows: &[StyleRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn style<S: Copy + std::fmt::Debug>(
+        &mut self,
+        rows: &[StyleRow<S>],
+        t: &Theme,
+        r: &ResolvedTheme,
+    ) {
         for row in rows {
-            let native = row
-                .statuses
-                .iter()
-                .map(|&s| format!("{:?};", (row.native)(r, s)))
-                .collect();
-            self.put(row.field.to_owned(), native, || {
-                row.statuses
-                    .iter()
-                    .map(|&s| match (row.get)(t, r, s) {
-                        Ok(color) => format!("{color:?};"),
-                        Err(why) => format!("{why};"),
-                    })
-                    .collect()
-            });
+            for &s in row.statuses {
+                self.put(
+                    Reached::of(row.field, s),
+                    format!("{:?}", (row.native)(r, s)),
+                    || match (row.get)(t, r, s) {
+                        Ok(color) => format!("{color:?}"),
+                        Err(why) => why,
+                    },
+                );
+            }
         }
     }
 
-    fn border<S: Copy>(&mut self, rows: &[BorderRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn border<S: Copy + std::fmt::Debug>(
+        &mut self,
+        rows: &[BorderRow<S>],
+        t: &Theme,
+        r: &ResolvedTheme,
+    ) {
         for row in rows {
-            let native = row
-                .statuses
-                .iter()
-                .map(|&s| {
-                    let b = (row.native)(r, s);
-                    format!("{:?} {:?} {:?};", b.color, b.width, Radius::new(b.radius))
-                })
-                .collect();
-            self.put(format!("{}.border", row.field), native, || {
-                row.statuses
-                    .iter()
-                    .map(|&s| {
+            let name = format!("{}.border", row.field);
+            for &s in row.statuses {
+                let b = (row.native)(r, s);
+                self.put(
+                    Reached::of(&name, s),
+                    format!("{:?} {:?} {:?}", b.color, b.width, Radius::new(b.radius)),
+                    || {
                         let b = (row.get)(t, r, s);
-                        format!("{:?} {:?} {:?};", b.color, b.width, b.radius)
-                    })
-                    .collect()
-            });
+                        format!("{:?} {:?} {:?}", b.color, b.width, b.radius)
+                    },
+                );
+            }
         }
     }
 
-    fn radius<S: Copy>(&mut self, rows: &[RadiusRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn radius<S: Copy + std::fmt::Debug>(
+        &mut self,
+        rows: &[RadiusRow<S>],
+        t: &Theme,
+        r: &ResolvedTheme,
+    ) {
         for row in rows {
-            let native = row
-                .statuses
-                .iter()
-                .map(|&s| format!("{:?};", (row.native)(r, s)))
-                .collect();
-            self.put(row.field.to_owned(), native, || {
-                row.statuses
-                    .iter()
-                    .map(|&s| match (row.get)(t, r, s) {
-                        Ok(radius) => format!("{radius:?};"),
-                        Err(why) => format!("{why};"),
-                    })
-                    .collect()
-            });
+            for &s in row.statuses {
+                self.put(
+                    Reached::of(row.field, s),
+                    format!("{:?}", (row.native)(r, s)),
+                    || match (row.get)(t, r, s) {
+                        Ok(radius) => format!("{radius:?}"),
+                        Err(why) => why,
+                    },
+                );
+            }
         }
     }
 
-    fn scalar<S: Copy>(&mut self, rows: &[ScalarRow<S>], t: &Theme, r: &ResolvedTheme) {
+    fn scalar<S: Copy + std::fmt::Debug>(
+        &mut self,
+        rows: &[ScalarRow<S>],
+        t: &Theme,
+        r: &ResolvedTheme,
+    ) {
         for row in rows {
-            let native = row
-                .statuses
-                .iter()
-                .map(|&s| format!("{:?};", (row.native)(t, r, s)))
-                .collect();
-            self.put(row.field.to_owned(), native, || {
-                row.statuses
-                    .iter()
-                    .map(|&s| match (row.get)(t, r, s) {
-                        Ok(length) => format!("{length:?};"),
-                        Err(why) => format!("{why};"),
-                    })
-                    .collect()
-            });
+            for &s in row.statuses {
+                self.put(
+                    Reached::of(row.field, s),
+                    format!("{:?}", (row.native)(t, r, s)),
+                    || match (row.get)(t, r, s) {
+                        Ok(length) => format!("{length:?}"),
+                        Err(why) => why,
+                    },
+                );
+            }
         }
     }
 
@@ -4778,11 +4824,11 @@ impl Reading {
             } else {
                 format!("{:?}", (row.get)(t, r))
             };
-            x.put(row.slot.to_owned(), native, || emitted);
+            x.put(Reached::row(row.slot), native, || emitted);
         }
         for row in ACCESSOR_ROWS {
             x.put(
-                row.accessor.to_owned(),
+                Reached::row(row.accessor),
                 format!("{:?}", (row.native)(r)),
                 || format!("{:?}", (row.get)(r)),
             );
@@ -4849,18 +4895,19 @@ impl Reading {
         x
     }
 
-    /// The rows whose native side differs between two readings.
-    fn moved(&self, after: &Self) -> Vec<String> {
+    /// The rows, under each status, whose native side differs between two
+    /// readings.
+    fn moved(&self, after: &Self) -> Vec<Reached> {
         self.native
             .iter()
-            .filter(|(name, value)| after.native.get(*name) != Some(*value))
-            .map(|(name, _)| name.clone())
+            .filter(|(key, value)| after.native.get(*key) != Some(*value))
+            .map(|(key, _)| key.clone())
             .collect()
     }
 
     /// The rows of `names` whose emitted side is not their native side, each
     /// with both texts.
-    fn drifted(&self, names: &[String]) -> Vec<String> {
+    fn drifted(&self, names: &[Reached]) -> Vec<String> {
         names
             .iter()
             .filter_map(|name| {
@@ -4917,23 +4964,332 @@ fn names(entry: &str, leaf: &str) -> bool {
             .is_some_and(|rest| rest.starts_with('.'))
 }
 
+/// The command that rewrites `contract-leaves.toml`, which
+/// `every_colour_leaf_reaches_a_row_or_is_named` names when the file is stale.
+#[cfg(feature = "iced_aw")]
+const REGENERATE: &str =
+    "cargo test -p native-theme-iced --all-features --lib -- --ignored regenerate_contract_leaves";
+
+/// The exported leaf-to-row map as committed: the iced showcase reads it to
+/// name the rows a colour leaf moves in its Widget Info.
+#[cfg(feature = "iced_aw")]
+const CONTRACT_LEAVES: &str = include_str!("../contract-leaves.toml");
+
+/// What the colour-leaf walk finds over the 34 bundled combinations.
+#[cfg(feature = "iced_aw")]
+struct Reach {
+    combinations: Vec<Combination>,
+    jsons: Vec<serde_json::Value>,
+    /// Every colour leaf of any combination.
+    leaves: BTreeSet<String>,
+    /// Per leaf, each row and status a splice of it moves, with the bases
+    /// (indices into `combinations`) it moves it in.
+    moves: BTreeMap<String, BTreeMap<Reached, BTreeSet<usize>>>,
+    /// Per leaf, the first splice that moves a row: the base and the colour.
+    first: BTreeMap<String, (usize, String)>,
+}
+
+/// Splice every colour leaf into every base with every colour, and record what
+/// moves.
+///
+/// Each of the 34 preset/mode combinations is a base, and every colour leaf of
+/// the serialised theme -- a colour, or an unstated `Option<Rgba>` a colour
+/// splices into -- is spliced in turn with the leaf's value in another preset
+/// of the same mode (egui's T2 method) and with an opaque and a
+/// half-transparent sentinel no colour of the base shares its channels with,
+/// so neither a passthrough of another leaf nor a composite under an opaque
+/// layer hides the change. Every leaf is spliced in every base: a soft
+/// option's fallback moves its row only where the option is unstated, and a
+/// row reached in one base is not reached in every base, which the export
+/// records. The bases are independent, so each is walked on a thread of its
+/// own.
+#[cfg(feature = "iced_aw")]
+fn reach() -> native_theme::Result<Reach> {
+    let combinations = combinations()?;
+    let jsons: Vec<serde_json::Value> = combinations
+        .iter()
+        .filter_map(|c| serde_json::to_value(&c.resolved).ok())
+        .collect();
+    assert_eq!(
+        jsons.len(),
+        combinations.len(),
+        "every ResolvedTheme serialises"
+    );
+    let mut leaves: BTreeSet<String> = BTreeSet::new();
+    for json in &jsons {
+        leaves.extend(colour_leaves(json));
+    }
+
+    // Per base, per leaf: the rows each colour moved, in the order tried.
+    type Moved = Vec<(String, Vec<Reached>)>;
+    let n = combinations.len();
+    let per_base: Vec<BTreeMap<String, Moved>> = std::thread::scope(|scope| {
+        let walks: Vec<_> = combinations
+            .iter()
+            .zip(&jsons)
+            .enumerate()
+            .map(|(i, (c, json))| {
+                let (combinations, jsons, leaves) = (&combinations, &jsons, &leaves);
+                scope.spawn(move || {
+                    let base = Reading::of(&c.theme, &c.resolved);
+                    let donor = (1..n)
+                        .map(|k| (i + 2 * k) % n)
+                        .find(|&j| combinations.get(j).is_some_and(|d| d.is_dark == c.is_dark))
+                        .and_then(|j| jsons.get(j));
+                    let (red, green, blue) = sentinel_rgb(json);
+                    let sentinels = [
+                        format!("#{red:02x}{green:02x}{blue:02x}"),
+                        format!("#{red:02x}{green:02x}{blue:02x}80"),
+                    ];
+                    let mut found: BTreeMap<String, Moved> = BTreeMap::new();
+                    for leaf in leaves {
+                        let pointer = format!("/{}", leaf.replace('.', "/"));
+                        let from_donor = donor
+                            .and_then(|d| d.pointer(&pointer))
+                            .and_then(|v| v.as_str())
+                            .map(str::to_owned);
+                        let mut moved = Vec::new();
+                        for hex in from_donor.iter().chain(&sentinels) {
+                            let Some(r) = spliced_colour(json, leaf, hex) else {
+                                continue;
+                            };
+                            let rows = base.moved(&Reading::of(&c.theme, &r));
+                            if !rows.is_empty() {
+                                moved.push((hex.clone(), rows));
+                            }
+                        }
+                        if !moved.is_empty() {
+                            found.insert(leaf.clone(), moved);
+                        }
+                    }
+                    found
+                })
+            })
+            .collect();
+        walks
+            .into_iter()
+            .map(|walk| walk.join().unwrap_or_default())
+            .collect()
+    });
+    assert_eq!(per_base.len(), n, "every base was walked");
+
+    let mut moves: BTreeMap<String, BTreeMap<Reached, BTreeSet<usize>>> = BTreeMap::new();
+    let mut first: BTreeMap<String, (usize, String)> = BTreeMap::new();
+    for (i, found) in per_base.into_iter().enumerate() {
+        for (leaf, moved) in found {
+            if let Some((hex, _)) = moved.first() {
+                first.entry(leaf.clone()).or_insert((i, hex.clone()));
+            }
+            let rows = moves.entry(leaf).or_default();
+            for (_, reached) in moved {
+                for key in reached {
+                    rows.entry(key).or_default().insert(i);
+                }
+            }
+        }
+    }
+    Ok(Reach {
+        combinations,
+        jsons,
+        leaves,
+        moves,
+        first,
+    })
+}
+
+/// The feature a row exists under, where it is not there in every build that
+/// has the contract: `styles::aw` needs `iced_aw`, the `Spinner` needs
+/// `spinner`.
+#[cfg(feature = "iced_aw")]
+fn row_cfg(row: &str) -> Option<&'static str> {
+    if row.starts_with("styles::aw::") {
+        Some("iced_aw")
+    } else if row.starts_with("crate::Spinner") {
+        Some("spinner")
+    } else {
+        None
+    }
+}
+
+/// `text` as a TOML basic string.
+#[cfg(feature = "iced_aw")]
+fn toml_string(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    out.push('"');
+    for ch in text.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\t' => out.push_str("\\t"),
+            c if c.is_control() => out.push_str(&format!("\\u{:04X}", u32::from(c))),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// A TOML array of strings, on one line.
+#[cfg(feature = "iced_aw")]
+fn toml_strings<'a>(items: impl IntoIterator<Item = &'a str>) -> String {
+    let items: Vec<String> = items.into_iter().map(toml_string).collect();
+    format!("[{}]", items.join(", "))
+}
+
+/// The table and the reason that name a colour leaf no row reads, as the
+/// export records them: the table, the entry's own name (a leaf, or the
+/// widget that is a prefix of it), the kind of reason and the reason.
+#[cfg(feature = "iced_aw")]
+fn naming(leaf: &str) -> Option<(&'static str, &'static str, String, &'static str)> {
+    if let Some(entry) = UNREAD_COLOURS.iter().find(|e| names(e.leaf, leaf)) {
+        let (kind, why) = match entry.why {
+            Unread::NoReceiver(why) => ("no receiver".to_owned(), why),
+            Unread::Inherited(why) => ("inherited".to_owned(), why),
+            Unread::NoWidget(why) => ("no widget".to_owned(), why),
+            Unread::Ruled(why) => ("ruled".to_owned(), why),
+            Unread::Fallback { option, evidence } => (format!("fallback of {option}"), evidence),
+        };
+        return Some(("UNREAD_COLOURS", entry.leaf, kind, why));
+    }
+    UNREACHABLE
+        .iter()
+        .find(|u| names(u.field, leaf))
+        .map(|u| ("UNREACHABLE", u.field, "no receiver".to_owned(), u.evidence))
+}
+
+/// `contract-leaves.toml` as the walk finds it: per colour leaf the rows it
+/// moves, under which statuses, and the combinations in which it does not
+/// move them, or the entry that names it; per row the leaves that move it.
+#[cfg(feature = "iced_aw")]
+fn render_contract_leaves(reach: &Reach) -> String {
+    use std::fmt::Write as _;
+
+    let labels: Vec<String> = reach.combinations.iter().map(Combination::label).collect();
+    let all: BTreeSet<usize> = (0..labels.len()).collect();
+    let mut out = String::new();
+    let _ = write!(
+        out,
+        "\
+# connectors/native-theme-iced/contract-leaves.toml -- generated; do not edit.
+# Written by `{REGENERATE}`
+# from the contract's colour-leaf walk (src/contract.rs, `reach`), and held to it by
+# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ.
+# The iced showcase reads it for the colour rows of its Widget Info.
+#
+# Every colour leaf of the serialised ResolvedTheme, spliced in each of the {} bundled
+# preset/mode combinations, is a [leaves.\"<leaf>\"] table:
+#   moves: each contract row the splice moves, as {{ row, statuses, except }}:
+#     row       a palette slot (`palette.*`, `extended.*`), a crate-root accessor or the
+#               connector's Spinner (`crate::*`), or a field of a style function's output
+#               (`styles::<fn>.<field>`; `styles::<fn>.border` is the whole border);
+#     statuses  the widget statuses, as `{{:?}}` writes them, it moves the row under;
+#               absent for a row that takes no status;
+#     except    the combinations (`<preset>/<mode>`) in which it does not move the row
+#               under those statuses; absent where it moves it in all {}.
+#   A leaf that moves no row in any combination has instead the entry that names it:
+#     named     UNREAD_COLOURS or UNREACHABLE (src/contract/derived.rs);
+#     entry     the entry's name, the leaf or a widget that is a prefix of it;
+#     kind      why: no receiver, inherited, no widget, ruled, or fallback of <option>;
+#     why       the entry's evidence.
+# Every row a leaf moves is a [rows.\"<row>\"] table: leaves, the leaves that move it,
+# and cfg, the feature it exists under where a build can lack it.
+",
+        labels.len(),
+        labels.len()
+    );
+
+    for leaf in &reach.leaves {
+        let _ = write!(out, "\n[leaves.{}]\n", toml_string(leaf));
+        match reach.moves.get(leaf) {
+            Some(rows) => {
+                // Per row, its statuses grouped by the bases they move in.
+                type Groups<'a> = Vec<(BTreeSet<usize>, Vec<&'a str>)>;
+                let mut grouped: BTreeMap<&str, Groups<'_>> = BTreeMap::new();
+                for (key, bases) in rows {
+                    let groups = grouped.entry(key.row.as_str()).or_default();
+                    let status = key.status.as_deref();
+                    match groups.iter_mut().find(|(b, _)| b == bases) {
+                        Some((_, statuses)) => statuses.extend(status),
+                        None => groups.push((bases.clone(), status.into_iter().collect())),
+                    }
+                }
+                out.push_str("moves = [\n");
+                for (row, groups) in &grouped {
+                    for (bases, statuses) in groups {
+                        let mut entry = format!("row = {}", toml_string(row));
+                        if !statuses.is_empty() {
+                            let _ = write!(
+                                entry,
+                                ", statuses = {}",
+                                toml_strings(statuses.iter().copied())
+                            );
+                        }
+                        if bases != &all {
+                            let except = all
+                                .difference(bases)
+                                .filter_map(|&i| labels.get(i))
+                                .map(String::as_str);
+                            let _ = write!(entry, ", except = {}", toml_strings(except));
+                        }
+                        let _ = writeln!(out, "  {{ {entry} }},");
+                    }
+                }
+                out.push_str("]\n");
+            }
+            None => {
+                if let Some((named, entry, kind, why)) = naming(leaf) {
+                    let _ = writeln!(out, "named = {}", toml_string(named));
+                    let _ = writeln!(out, "entry = {}", toml_string(entry));
+                    let _ = writeln!(out, "kind = {}", toml_string(&kind));
+                    let _ = writeln!(out, "why = {}", toml_string(why));
+                }
+            }
+        }
+    }
+
+    let mut converse: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    for (leaf, rows) in &reach.moves {
+        for key in rows.keys() {
+            converse
+                .entry(key.row.as_str())
+                .or_default()
+                .insert(leaf.as_str());
+        }
+    }
+    for (row, leaves) in &converse {
+        let _ = write!(out, "\n[rows.{}]\n", toml_string(row));
+        if let Some(cfg) = row_cfg(row) {
+            let _ = writeln!(out, "cfg = {}", toml_string(cfg));
+        }
+        let _ = writeln!(out, "leaves = {}", toml_strings(leaves.iter().copied()));
+    }
+    out
+}
+
+/// Rewrites `contract-leaves.toml` from the walk; run on purpose, with every
+/// feature, as `REGENERATE` spells it.
+#[cfg(feature = "iced_aw")]
+#[test]
+#[ignore = "rewrites contract-leaves.toml; run on purpose"]
+fn regenerate_contract_leaves() -> native_theme::Result<()> {
+    let reach = reach()?;
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/contract-leaves.toml");
+    let written = std::fs::write(path, render_contract_leaves(&reach));
+    assert!(written.is_ok(), "write {path}: {written:?}");
+    Ok(())
+}
+
 /// M1-T7-03, iced's half: every colour leaf of `ResolvedTheme` reaches a
 /// contract row, or a table says why it does not.
 ///
 /// The tripwire (`every_named_field_has_exactly_one_declared_source`) walks
 /// what the connector emits, so it cannot see a model value nothing reads.
-/// This walks the model instead. Each of the 34 preset/mode combinations is a
-/// base, and every colour leaf of the serialised theme -- a colour, or an
-/// unstated `Option<Rgba>` a colour splices into -- is spliced in turn with
-/// the leaf's value in another preset of the same mode (egui's T2 method) and
-/// with an opaque and a half-transparent sentinel no colour of the base
-/// shares its channels with, so neither a passthrough of another leaf nor a
-/// composite under an opaque layer hides the change. A leaf *reaches* a row
-/// when the row's native side moves, in at least one base: a soft option's
-/// fallback moves its row only where the option is unstated, which is why
-/// every base is read, and one that no base leaves unstated is named by
-/// `UNREAD_COLOURS` as a fallback. A leaf that reaches a row is not spliced in
-/// the bases after.
+/// This walks the model instead ([`reach`]). A leaf *reaches* a row when the
+/// row's native side moves, in at least one base: a soft option's fallback
+/// moves its row only where the option is unstated, which is why every base
+/// is read, and one that no base leaves unstated is named by
+/// `UNREAD_COLOURS` as a fallback.
 ///
 /// A row's native closure could read a leaf the connector does not, where the
 /// two are equal in every bundled combination (`text_area.border` and
@@ -4946,74 +5302,45 @@ fn names(entry: &str, leaf: &str) -> bool {
 /// Every leaf that reaches no row must be named once, by `UNREAD_COLOURS` or
 /// `UNREACHABLE`. An entry of either that names a leaf a row reads is stale,
 /// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
+///
+/// And `contract-leaves.toml`, the walk's export, must be what the walk finds:
+/// a file that differs fails, naming the command that rewrites it.
 #[cfg(feature = "iced_aw")]
 #[test]
 fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
     let started = std::time::Instant::now();
-    let combinations = combinations()?;
-    let jsons: Vec<serde_json::Value> = combinations
-        .iter()
-        .filter_map(|c| serde_json::to_value(&c.resolved).ok())
-        .collect();
-    assert_eq!(
-        jsons.len(),
-        combinations.len(),
-        "every ResolvedTheme serialises"
-    );
-
-    let mut leaves: BTreeSet<String> = BTreeSet::new();
-    for json in &jsons {
-        leaves.extend(colour_leaves(json));
-    }
+    let reach = reach()?;
+    let Reach {
+        combinations,
+        jsons,
+        leaves,
+        moves,
+        first,
+    } = &reach;
 
     let mut failures = Vec::new();
-    // The rows each leaf first moved, in the first base it moved one in.
-    let mut reached: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    let n = combinations.len();
-    for (i, (c, json)) in combinations.iter().zip(&jsons).enumerate() {
-        let base = Reading::of(&c.theme, &c.resolved);
-        let donor = (1..n)
-            .map(|k| (i + 2 * k) % n)
-            .find(|&j| combinations.get(j).is_some_and(|d| d.is_dark == c.is_dark))
-            .and_then(|j| jsons.get(j));
-        let (red, green, blue) = sentinel_rgb(json);
-        let sentinels = [
-            format!("#{red:02x}{green:02x}{blue:02x}"),
-            format!("#{red:02x}{green:02x}{blue:02x}80"),
-        ];
-        for leaf in &leaves {
-            if reached.contains_key(leaf) {
-                continue;
-            }
-            let pointer = format!("/{}", leaf.replace('.', "/"));
-            let from_donor = donor
-                .and_then(|d| d.pointer(&pointer))
-                .and_then(|v| v.as_str())
-                .map(str::to_owned);
-            for hex in from_donor.iter().chain(&sentinels) {
-                let Some(r) = spliced_colour(json, leaf, hex) else {
-                    continue;
-                };
-                let rows = base.moved(&Reading::of(&c.theme, &r));
-                if !rows.is_empty() {
-                    let built = crate::to_theme(&r, c.key);
-                    for drift in Reading::both(&built, c.key, &r).drifted(&rows) {
-                        failures.push(format!(
-                            "{leaf} on {} moves a row the connector does not fill \
-                             from it: {drift}",
-                            c.label()
-                        ));
-                    }
-                    reached.insert(leaf.clone(), rows);
-                    break;
-                }
-            }
+    // The drift check, on each leaf's first moving splice.
+    for (leaf, (i, hex)) in first {
+        let (Some(c), Some(json)) = (combinations.get(*i), jsons.get(*i)) else {
+            continue;
+        };
+        let Some(r) = spliced_colour(json, leaf, hex) else {
+            continue;
+        };
+        let rows = Reading::of(&c.theme, &c.resolved).moved(&Reading::of(&c.theme, &r));
+        let built = crate::to_theme(&r, c.key);
+        for drift in Reading::both(&built, c.key, &r).drifted(&rows) {
+            failures.push(format!(
+                "{leaf} on {} moves a row the connector does not fill \
+                 from it: {drift}",
+                c.label()
+            ));
         }
     }
 
     let (mut by_rows, mut by_accessors, mut by_exact, mut by_prefix, mut by_unreachable) =
         (0, 0, 0, 0, 0);
-    for leaf in &leaves {
+    for leaf in leaves {
         let unread: Vec<&UnreadColour> = UNREAD_COLOURS
             .iter()
             .filter(|e| names(e.leaf, leaf))
@@ -5024,11 +5351,11 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
             .filter(|field| names(field, leaf))
             .collect();
         let named = unread.len() + unreachable.len();
-        match reached.get(leaf) {
+        match moves.get(leaf) {
             Some(rows) => {
                 if rows
-                    .iter()
-                    .all(|row| ACCESSOR_ROWS.iter().any(|a| *row == a.accessor))
+                    .keys()
+                    .all(|key| ACCESSOR_ROWS.iter().any(|a| key.row == a.accessor))
                 {
                     by_accessors += 1;
                 } else {
@@ -5037,7 +5364,10 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
                 if named > 0 {
                     failures.push(format!(
                         "{leaf}: reaches {} yet is named unread ({})",
-                        rows.join(", "),
+                        rows.keys()
+                            .map(Reached::to_string)
+                            .collect::<Vec<_>>()
+                            .join(", "),
                         unread
                             .iter()
                             .map(|e| e.leaf)
@@ -5065,12 +5395,17 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
     // leaf the `Spinner` draws in reaches its row.
     #[cfg(feature = "spinner")]
     for (leaf, row) in SPINNER_READS {
-        let rows = reached.get(*leaf).map(Vec::as_slice).unwrap_or_default();
-        if !rows.iter().any(|r| r == row) {
+        let rows = moves.get(*leaf);
+        if !rows.is_some_and(|rows| rows.keys().any(|key| key.row == *row)) {
             failures.push(format!(
                 "{leaf}: the Spinner draws in it, yet the rows it reaches ({}) \
                  leave out {row}",
-                rows.join(", ")
+                rows.map(|rows| rows
+                    .keys()
+                    .map(Reached::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", "))
+                    .unwrap_or_default()
             ));
         }
     }
@@ -5103,10 +5438,20 @@ fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
             failures.push(format!("UNREAD_COLOURS {}: needs {needs}", entry.leaf));
         }
         if let Unread::Fallback { option, .. } = entry.why
-            && let Some(failure) = fallback_unproved(entry.leaf, option, &combinations, &jsons)
+            && let Some(failure) = fallback_unproved(entry.leaf, option, combinations, jsons)
         {
             failures.push(failure);
         }
+    }
+
+    // The export is the walk's: every row it records exists in this build only
+    // with `spinner` (the `Spinner` rows) and `iced_aw` (this test's own gate).
+    #[cfg(feature = "spinner")]
+    if CONTRACT_LEAVES != render_contract_leaves(&reach) {
+        failures.push(format!(
+            "contract-leaves.toml differs from what the colour-leaf walk finds; \
+             run `{REGENERATE}`"
+        ));
     }
 
     println!(
