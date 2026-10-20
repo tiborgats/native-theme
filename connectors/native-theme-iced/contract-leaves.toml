@@ -1,7 +1,9 @@
 # connectors/native-theme-iced/contract-leaves.toml -- generated; do not edit.
 # Written by `cargo test -p native-theme-iced --all-features --lib -- --ignored regenerate_contract_leaves`
 # from the contract's colour-leaf walk (src/contract.rs, `reach`), and held to it by
-# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ.
+# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ. That
+# test exists only with `--features iced_aw` (check_release's and CI's
+# `iced_aw,watch,native` run); a default `cargo test` does not compare the file.
 # The iced showcase reads it for the colour rows of its Widget Info.
 #
 # Every colour leaf of the serialised ResolvedTheme, spliced in each of the 34 bundled
@@ -21,6 +23,9 @@
 #     why       the entry's evidence.
 # Every row a leaf moves is a [rows."<row>"] table: leaves, the leaves that move it,
 # and cfg, the feature it exists under where a build can lack it.
+# combinations lists the 34 combinations' names, in the walk's order.
+
+combinations = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"]
 
 [leaves."button.active_background"]
 moves = [

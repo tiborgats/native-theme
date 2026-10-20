@@ -5068,10 +5068,12 @@ fn reach() -> native_theme::Result<Reach> {
             .collect();
         walks
             .into_iter()
-            .map(|walk| walk.join().unwrap_or_default())
+            .map(|walk| {
+                walk.join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
+            })
             .collect()
     });
-    assert_eq!(per_base.len(), n, "every base was walked");
 
     let mut moves: BTreeMap<String, BTreeMap<Reached, BTreeSet<usize>>> = BTreeMap::new();
     let mut first: BTreeMap<String, (usize, String)> = BTreeMap::new();
@@ -5174,7 +5176,9 @@ fn render_contract_leaves(reach: &Reach) -> String {
 # connectors/native-theme-iced/contract-leaves.toml -- generated; do not edit.
 # Written by `{REGENERATE}`
 # from the contract's colour-leaf walk (src/contract.rs, `reach`), and held to it by
-# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ.
+# `every_colour_leaf_reaches_a_row_or_is_named`, which fails while the two differ. That
+# test exists only with `--features iced_aw` (check_release's and CI's
+# `iced_aw,watch,native` run); a default `cargo test` does not compare the file.
 # The iced showcase reads it for the colour rows of its Widget Info.
 #
 # Every colour leaf of the serialised ResolvedTheme, spliced in each of the {} bundled
@@ -5194,9 +5198,14 @@ fn render_contract_leaves(reach: &Reach) -> String {
 #     why       the entry's evidence.
 # Every row a leaf moves is a [rows.\"<row>\"] table: leaves, the leaves that move it,
 # and cfg, the feature it exists under where a build can lack it.
+# combinations lists the {} combinations' names, in the walk's order.
+
+combinations = {}
 ",
         labels.len(),
-        labels.len()
+        labels.len(),
+        labels.len(),
+        toml_strings(labels.iter().map(String::as_str))
     );
 
     for leaf in &reach.leaves {
@@ -5304,7 +5313,11 @@ fn regenerate_contract_leaves() -> native_theme::Result<()> {
 /// and so is an `UNREAD_COLOURS` entry that names no colour leaf.
 ///
 /// And `contract-leaves.toml`, the walk's export, must be what the walk finds:
-/// a file that differs fails, naming the command that rewrites it.
+/// a file that differs fails, naming the command that rewrites it. The test
+/// exists only with `--features iced_aw` (check_release's and CI's
+/// `iced_aw,watch,native` run), and compares the file only with `spinner` as
+/// well, the default feature the `Spinner` rows need: a default `cargo test`
+/// does not compare it.
 #[cfg(feature = "iced_aw")]
 #[test]
 fn every_colour_leaf_reaches_a_row_or_is_named() -> native_theme::Result<()> {
