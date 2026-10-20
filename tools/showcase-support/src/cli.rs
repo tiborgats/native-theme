@@ -203,6 +203,17 @@ impl Outputs {
         }
     }
 
+    /// Whether the run asked for `output` and it is not written yet: a
+    /// showcase that gives up waiting for it fails the run
+    /// ([`Output::failure`], [`refuse`]).
+    #[must_use]
+    pub fn pending(&self, output: Output) -> bool {
+        match output {
+            Output::Dump => self.dump,
+            Output::Screenshot => self.screenshot,
+        }
+    }
+
     /// Records `output` as written, and whether the run quits now: every
     /// file it asked for is written and no `--capture` keeps the window.
     pub fn written(&mut self, output: Output) -> bool {
@@ -568,7 +579,8 @@ mod tests {
     }
 
     /// A run quits once every file it asked for is written, in either order,
-    /// and never under `--capture`.
+    /// and never under `--capture`; a file it asked for is pending until it
+    /// is written.
     #[test]
     fn a_run_quits_once_every_file_it_asked_for_is_written() {
         let both = ["--dump-layout", "f", "--screenshot", "p"];
@@ -592,6 +604,12 @@ mod tests {
                 "{argv:?}: no quit after its one file"
             );
         }
+        let mut pending = Outputs::new(&parse(&both));
+        assert!(pending.pending(Output::Dump) && pending.pending(Output::Screenshot));
+        let _ = pending.written(Output::Dump);
+        assert!(!pending.pending(Output::Dump) && pending.pending(Output::Screenshot));
+        let none = Outputs::new(&parse(&[]));
+        assert!(!none.pending(Output::Dump) && !none.pending(Output::Screenshot));
         let mut kept = Outputs::new(&parse(&["--dump-layout", "f", "--capture"]));
         assert!(
             !kept.written(Output::Dump),

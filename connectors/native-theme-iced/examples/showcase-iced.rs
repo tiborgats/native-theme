@@ -514,6 +514,33 @@ fn surveyed_layout() -> ElementRects {
 /// the start (`HELD_PRESS_AFTER`'s note), so the dump is written before.
 const LAYOUT_SETTLES_AFTER: Duration = Duration::from_secs(1);
 
+/// How long a `--dump-layout` run waits for its dump before it gives the
+/// dump up as failed, so a run whose frames record no element of the list,
+/// or whose window's scale factor is never read, fails (exit 1) rather than
+/// stay open, `--screenshot` written or not: 20 s, the gpui showcase's bound
+/// (`DUMP_MAX_READINGS` readings `DUMP_POLL` apart, 80 × 250 ms,
+/// showcase-gpui/main.rs) and the time `scripts/capture_window.sh` waits for
+/// a dump before it fails the capture (`wait_for_dump`,
+/// `SHOWCASE_WINDOW_TIMEOUT`). The showcase's own bound; the model states
+/// none.
+const DUMP_GIVE_UP_AFTER: Duration = Duration::from_secs(20);
+
+/// Why `--dump-layout` to `path` failed, where `outputs` still waits for the
+/// dump once [`DUMP_GIVE_UP_AFTER`] has passed; `None` once it is written,
+/// or where the run asked for none.
+fn dump_given_up(outputs: &Outputs, path: &str) -> Option<String> {
+    outputs.pending(Output::Dump).then(|| {
+        Output::Dump.failure(
+            path,
+            &format!(
+                "no layout was written within {} s: no frame recorded an element of the \
+                 list, or the window's scale factor was not read",
+                DUMP_GIVE_UP_AFTER.as_secs()
+            ),
+        )
+    })
+}
+
 /// The rectangles of the last frame drawn whole.
 fn drawn_layout() -> ElementRects {
     DRAWN.with_borrow(Clone::clone)
@@ -1940,6 +1967,9 @@ enum Message {
     LayoutSettled,
     /// The window's scale factor, read for the layout dump.
     LayoutScaled(f32),
+    /// [`DUMP_GIVE_UP_AFTER`] has passed since the start of a `--dump-layout`
+    /// run whose dump is not written yet.
+    DumpTimedOut,
 
     // Chrome: the menus', the toolbar's and the key bindings' actions
     /// A click on a menu's title: `iced_aw` opens its menu, and nothing else
@@ -2343,6 +2373,13 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                     cli::refuse(&error);
                 }
                 return quit_once_written(state, Output::Dump);
+            }
+        }
+        Message::DumpTimedOut => {
+            if let Some(path) = CLI_ARGS.get().and_then(|cli| cli.dump_layout.as_deref())
+                && let Some(failure) = dump_given_up(&state.outputs, path)
+            {
+                cli::refuse(&failure);
             }
         }
         // The query takes the focus, so typing reaches it at once.
@@ -12343,6 +12380,11 @@ fn subscription(state: &State) -> Subscription<Message> {
         );
     }
 
+    // The layout dump's give-up bound, while the dump is not written.
+    if state.outputs.pending(Output::Dump) {
+        subs.push(iced::time::every(DUMP_GIVE_UP_AFTER).map(|_| Message::DumpTimedOut));
+    }
+
     // Screenshot countdown timer
     if state.screenshot_path.is_some() && state.screenshot_countdown > 0 {
         subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::ScreenshotTick));
@@ -15949,6 +15991,42 @@ mod tests {
             Ok(text) => assert_eq!(text, format!("{json:#}")),
             Err(error) => panic!("{}: {error}", dir.display()),
         }
+    }
+
+    /// A `--dump-layout` run whose dump is not written after
+    /// [`DUMP_GIVE_UP_AFTER`] fails naming the flag and the path, the dump
+    /// written or none asked for gives nothing up, and the bound is the time
+    /// `scripts/capture_window.sh` waits for a dump.
+    #[test]
+    fn a_dump_that_is_never_written_fails_after_its_bound() {
+        let cli = CliArgs {
+            dump_layout: Some("f.json".into()),
+            screenshot: Some("p.png".into()),
+            ..CliArgs::default()
+        };
+        let mut state = State::default();
+        apply_cli_args(&mut state, &cli);
+        let failure = dump_given_up(&state.outputs, "f.json");
+        assert!(
+            failure
+                .as_deref()
+                .is_some_and(|failure| failure.starts_with("--dump-layout f.json: ")),
+            "{failure:?}"
+        );
+        let _ = state.outputs.written(Output::Screenshot);
+        assert!(
+            dump_given_up(&state.outputs, "f.json").is_some(),
+            "the screenshot written gave the dump's wait up"
+        );
+        let _ = state.outputs.written(Output::Dump);
+        assert_eq!(dump_given_up(&state.outputs, "f.json"), None);
+        assert_eq!(dump_given_up(&State::default().outputs, "f.json"), None);
+        let script = include_str!("../../../scripts/capture_window.sh");
+        let timeout = script
+            .lines()
+            .find_map(|line| line.strip_prefix("SHOWCASE_WINDOW_TIMEOUT="))
+            .and_then(|value| value.trim().parse::<u64>().ok());
+        assert_eq!(timeout, Some(DUMP_GIVE_UP_AFTER.as_secs()));
     }
 
     /// A Widget Info line of a page's widget shows a swatch where it ends in
