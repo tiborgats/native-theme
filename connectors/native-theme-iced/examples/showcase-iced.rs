@@ -13765,8 +13765,10 @@ mod tests {
         // A row of each menu of [`MENU_TITLES`], in its order.
         let rows = ["Quit", "Command Palette", "Reload System Theme", "About"];
         let drawn = |held: Option<usize>| -> Vec<String> {
-            let mut state = State::default();
-            state.held_menu = held;
+            let state = State {
+                held_menu: held,
+                ..State::default()
+            };
             let theme = theme(&state);
             let mut ui: Simulator<'_, Message> =
                 Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
