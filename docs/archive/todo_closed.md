@@ -1551,3 +1551,14 @@ platform (`native-theme/src/watch/`).
       and the focused text's `rest@adwaita:basic.text_inputs.focused.text.x` the
       focused Input's toolkit-limit group, whose reason now names the offset;
       `scripts/check_showcase_parity.py` over those dumps excepts every difference.
+
+### iced showcase: the toggle's general button Widget Info lines
+- [x] [1.0] Latent (M5 T5 review, Minor): the iced showcase's Widget Info lines for `button.background_color`, `button.font.color`, `button.hover_background` and `button.hover_text_color` (`connectors/native-theme-iced/examples/showcase-iced.rs:5561-5577`) describe `{class}`'s fill and text colour at rest and Hovered, which under `class = "styles::button_toggle"` (`:5543-5552`) misdescribe the "On" toggle: a checked toggle is its checked pair at rest and under the pointer, with no hover of its own (`connectors/native-theme-iced/src/styles.rs:245-248`). None shows today, since `basic.buttons.toggle_on` lists none of the four leaves (`docs/showcase-elements.toml:845`). A change that adds one gives it a toggle arm, as `checked_background` has (`showcase-iced.rs:5578-5580`).
+  *Closed by M9b T3 (2026-10-21, b3d5a8ca):* the toggle's colour lines are read from the
+      iced contract's export (`connectors/native-theme-iced/contract-leaves.toml`):
+      `basic.buttons.toggle_on` routes through `styles::button_toggle`'s rows
+      (`BUTTON_TOGGLE_ROWS`, which carry the checked pair) under the checked statuses
+      alone, so a leaf of the plain button's pair names a row only where it draws the
+      On toggle on the installed preset (`button.active_background` and
+      `.active_text_color` where the theme states no checked pair), and none of them
+      can describe a hover the checked toggle does not have.

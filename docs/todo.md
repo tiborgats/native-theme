@@ -3241,6 +3241,17 @@ the gap — closing it is a change, and each wants its own decision.
       manifest (`connectors/native-theme-egui/mapping.toml`, its spec's
       §10.4), which is the question this entry leaves to decide: whether an
       iced info can be generated the same way from the iced contract's rows.
+      M9b T3 (2026-10-21, 9f8f89e2, b3d5a8ca): the generation question is
+      answered, yes: the iced contract's colour-leaf walk is exported as
+      `connectors/native-theme-iced/contract-leaves.toml` (per colour leaf the
+      rows it moves, under which statuses and in which bundled combinations),
+      and the showcase's Widget Info reads a listed element's colour routes
+      from it; the colours the showcase draws itself keep routes by hand, each
+      naming the function a test splices. The innermost-instance half stays
+      open: iced's widget tree offers no hover walk (`iced_selector` sees only
+      `operate` implementors), so the half an iced showcase can give is the
+      hovered element's identity (M9b T7), not the innermost instance under
+      the pointer.
 - [ ] [v0.7.0] **The iced connector reads nothing of the model's toolbar.** The gpui
       connector gained `geometry::toolbar` in v0.5.9, which carries
       `toolbar.bar_height`, `item_gap`, the `toolbar.border` padding,
@@ -3789,9 +3800,6 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 
 ### iced showcase: the startup fallback outside Linux
 - [ ] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
-
-### iced showcase: the toggle's general button Widget Info lines
-- [ ] [1.0] Latent (M5 T5 review, Minor): the iced showcase's Widget Info lines for `button.background_color`, `button.font.color`, `button.hover_background` and `button.hover_text_color` (`connectors/native-theme-iced/examples/showcase-iced.rs:5561-5577`) describe `{class}`'s fill and text colour at rest and Hovered, which under `class = "styles::button_toggle"` (`:5543-5552`) misdescribe the "On" toggle: a checked toggle is its checked pair at rest and under the pointer, with no hover of its own (`connectors/native-theme-iced/src/styles.rs:245-248`). None shows today, since `basic.buttons.toggle_on` lists none of the four leaves (`docs/showcase-elements.toml:845`). A change that adds one gives it a toggle arm, as `checked_background` has (`showcase-iced.rs:5578-5580`).
 
 ### `system_icon_set()` decides where it should report
 - [ ] [1.0] `system_icon_set()` returns `IconSet::Material` on platforms other than macOS, iOS, Windows and Linux, documented as a "safe cross-platform fallback" (`system_icon_set` and its doc, `native-theme/src/detect/icon_theme.rs:12`, `:23`): the icon-set counterpart of the icon-theme fallback removed in v0.5.9. By the rule that the library reports and the application decides, it should report there (e.g. `Result<IconSet>` with `Error::PlatformUnsupported`, or `Option<IconSet>`). It decides wrongly where it matters: the BSDs run the same freedesktop desktops as Linux (KDE Plasma, GNOME, XFCE) with freedesktop icon themes, and get the bundled Material set. Ripple: `Resolved::icon_set` and `SystemTheme::icon_set` are required `IconSet` fields filled from it when the theme states none (`Theme::resolve`, `pipeline::run_pipeline`), and `IconSetChoice::effective_icon_set` returns it for `IconSetChoice::System`; each would need a way to carry "none".
