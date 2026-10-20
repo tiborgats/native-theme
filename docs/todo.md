@@ -3734,6 +3734,19 @@ name in [`archive/todo_closed.md`](archive/todo_closed.md).
       `native,watch` and with `gpui-fast,native,watch`, to check_release.sh's
       strict-panic section and ci.yml's two gpui strict-panic steps. The
       iced and egui showcases' runs stay open, for M9b and M9c.
+      M9b T1 (2026-10-20): the iced half is closed. The run found 40 at
+      `c0d6d530` (21 `arithmetic_side_effects`, 17 `indexing_slicing`, 2
+      `exit`); `1d57e42d` moved the showcase onto the shared crate, which
+      took 19 of them with the code it replaced (the command-line parser,
+      the hex parser, the exits through `cli::refuse`), and `f6ed4f75` fixes
+      the other 21 (the `const` `Tab::ALL` check by slice pattern, counters
+      saturating, the animation frames through a zip, `.get()` and
+      `checked_rem`, the grids as slice chunks, the frame check's arithmetic
+      saturating). `1bacf203` adds the example's line,
+      with `iced_aw,watch,native`, to check_release.sh's strict-panic section
+      and ci.yml's iced leg, and splits each connector's step in ci.yml so
+      that the library and the showcase run as steps of their own. The egui
+      showcase's run stays open, for M9c.
 
 ### M7 close (2026-10-16), its `[v0.7.0]` entries
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
