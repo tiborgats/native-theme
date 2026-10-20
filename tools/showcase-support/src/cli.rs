@@ -280,6 +280,14 @@ impl ColorModeChoice {
     }
 }
 
+/// The mode as a picker whose rows are their `Display` text shows it: its
+/// [`ColorModeChoice::short_label`].
+impl std::fmt::Display for ColorModeChoice {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.short_label())
+    }
+}
+
 /// The colour mode `--variant` names: `light`, `dark`, or `system`, which
 /// follows the OS.
 pub fn color_mode(variant: &str) -> Result<ColorModeChoice, String> {
@@ -620,6 +628,9 @@ mod tests {
             .map(|mode| mode.short_label())
             .collect();
         assert_eq!(labels, ["System", "Light", "Dark"]);
+        for mode in ColorModeChoice::ALL {
+            assert_eq!(mode.to_string(), mode.short_label());
+        }
         assert!(ColorModeChoice::Dark.is_dark());
         assert!(!ColorModeChoice::Light.is_dark());
         let system = if native_theme::detect::system_is_dark() {

@@ -72,6 +72,15 @@ use native_theme_iced::styles;
 use native_theme_iced::{
     AccessibilityPreferences, at_least, combo_box_padding, control_line_height, scaled_text_size,
 };
+// The colour-mode picker's rows: its `Display` is the Mode drop-down's and
+// the Theme menu's name of a mode, its `label` the command palette's.
+use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
+use native_theme_showcase_support::cli::{
+    self, CliArgs, IconPick, Output, Outputs, ThemeKey, reported,
+};
+use native_theme_showcase_support::elements::{self, ShowcaseElement};
+use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::{Kind, WINDOW_SIZE_PX, dump, rows, status, values};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
@@ -112,9 +121,9 @@ impl Spacing {
 const SP: Spacing = Spacing::new();
 
 /// The window `main` opens, and the viewport `every_tab_renders` lays out in:
-/// 1280 × 720 logical pixels, the maintainer's default for every showcase, as
-/// the egui and gpui showcases' `WINDOW_SIZE`.
-const WINDOW_SIZE: (f32, f32) = (1280.0, 720.0);
+/// the shared crate's `WINDOW_SIZE_PX`, the maintainer's default for every
+/// showcase, in iced's logical pixels.
+const WINDOW_SIZE: (f32, f32) = (WINDOW_SIZE_PX.0 as f32, WINDOW_SIZE_PX.1 as f32);
 
 /// Tags a widget so the self-tests can find it, and does nothing otherwise.
 ///
@@ -240,94 +249,13 @@ fn layout_value(stated: Option<f32>, fallback: f32) -> String {
 // The shared element list (docs/showcase-elements.toml)
 // ---------------------------------------------------------------------------
 
-/// One element of `docs/showcase-elements.toml`, the list of what the gpui,
-/// iced and egui showcases all draw. Widget Info takes an element's title and
-/// rows from it, and the layout dump (`--dump-layout`) its ids.
-#[derive(Debug, Clone)]
-struct ShowcaseElement {
-    id: String,
-    name: String,
-    /// Read by the self-tests, which check the dump against the list.
-    #[cfg_attr(not(test), allow(dead_code))]
-    parent: String,
-    leaves: Vec<String>,
-    states: Vec<String>,
-    part: bool,
-    /// Read by the self-tests: an element on screen only while this holds.
-    #[cfg_attr(not(test), allow(dead_code))]
-    when: Option<String>,
-}
-
-/// The list, as the three showcases read it: at build time, so the showcase
-/// needs no file beside it when it runs.
-const SHOWCASE_ELEMENTS: &str = include_str!("../../../docs/showcase-elements.toml");
-
-/// `docs/showcase-elements.toml` parsed into its elements, walked by hand as
-/// the list's header shows.
-fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
-    let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
-    let rows = table
-        .get("element")
-        .and_then(toml::Value::as_array)
-        .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
-    rows.iter()
-        .map(|row| {
-            let string = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned)
-                    .ok_or_else(|| format!("an element has no `{key}`"))
-            };
-            let list = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_array)
-                    .ok_or_else(|| format!("an element has no `{key}`"))?
-                    .iter()
-                    .map(|v| {
-                        v.as_str()
-                            .map(str::to_owned)
-                            .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            };
-            Ok(ShowcaseElement {
-                id: string("id")?,
-                name: string("name")?,
-                parent: string("parent")?,
-                leaves: list("leaves")?,
-                states: list("states")?,
-                part: row
-                    .get("part")
-                    .and_then(toml::Value::as_bool)
-                    .unwrap_or(false),
-                when: row
-                    .get("when")
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned),
-            })
-        })
-        .collect()
-}
-
-/// The list, parsed once. `main` stops the showcase where it does not parse,
-/// so an empty list is only ever seen by a test that broke it.
-static ELEMENTS: OnceLock<Result<Vec<ShowcaseElement>, String>> = OnceLock::new();
-
-fn elements() -> &'static [ShowcaseElement] {
-    match ELEMENTS.get_or_init(showcase_elements) {
-        Ok(list) => list,
-        Err(_) => &[],
-    }
-}
-
-/// The element of the list with this id.
-fn listed(id: &str) -> Option<&'static ShowcaseElement> {
-    elements().iter().find(|element| element.id == id)
-}
+// The list is the shared crate's (`elements`): Widget Info takes an
+// element's title and rows from it, and the layout dump (`--dump-layout`)
+// its ids.
 
 /// The id of the list's part `<id>.<part>`, where the list has one.
 fn listed_part(id: &str, part: &str) -> Option<&'static str> {
-    listed(&format!("{id}.{part}")).map(|element| element.id.as_str())
+    elements::element(&format!("{id}.{part}")).map(|element| element.id.as_str())
 }
 
 /// The listed elements that are layout boxes rather than something drawn to
@@ -349,7 +277,7 @@ const LAYOUT_BOXES: [&str; 8] = [
 /// ([`LAYOUT_BOXES`]), and Widget Info itself, whose own lines would replace
 /// what it shows on the way to its Copy button.
 fn hover_target(id: &str) -> bool {
-    listed(id).is_some_and(|element| !element.part)
+    elements::element(id).is_some_and(|element| !element.part)
         && !LAYOUT_BOXES.contains(&id)
         && id != "chrome.side_panel.inspector"
         && !id.starts_with("chrome.info.")
@@ -764,270 +692,61 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
     }
 }
 
-/// The layout dump `--dump-layout` writes: the rectangles the last
-/// [`Survey`] found, every element laid out, the ones scrolled out of view
-/// too, in logical pixels of the window's content, by element id,
-/// with the theme and the scale factor, in the list's schema
-/// (docs/showcase-elements.toml, "The layout dump").
-fn write_layout_dump(state: &State, path: &str, scale: f32) -> Result<(), String> {
-    let text =
-        serde_json::to_string_pretty(&layout_dump(state, scale)).map_err(|e| e.to_string())?;
-    std::fs::write(path, text).map_err(|e| format!("{path}: {e}"))
-}
-
-/// The object [`write_layout_dump`] writes.
+/// The layout dump `--dump-layout` writes (`dump::layout_json`): the
+/// rectangles the last [`Survey`] found, every element laid out, the ones
+/// scrolled out of view too, in logical pixels of the window's content, by
+/// element id, with the theme and the scale factor, in the list's schema
+/// (docs/showcase-elements.toml, "The layout dump"). `dump::write_layout`
+/// writes it.
 fn layout_dump(state: &State, scale: f32) -> serde_json::Value {
-    let elements: serde_json::Map<String, serde_json::Value> = surveyed_layout()
-        .into_iter()
-        .map(|(id, r)| {
-            (
-                id.to_string(),
-                serde_json::json!({"x": r.x, "y": r.y, "w": r.width, "h": r.height}),
-            )
-        })
-        .collect();
-    let preset = match &state.current_choice {
-        ThemeChoice::OsTheme(_) => state.default_label.clone(),
-        ThemeChoice::Preset(key) => key.clone(),
-    };
-    serde_json::json!({
-        "kind": "iced",
-        "preset": preset,
-        "variant": if state.is_dark { "dark" } else { "light" },
-        "scale": scale,
-        "elements": elements,
-    })
+    let rects = surveyed_layout().into_iter().map(|(id, r)| {
+        let rect = dump::Rect {
+            x: r.x,
+            y: r.y,
+            w: r.width,
+            h: r.height,
+        };
+        (id.to_string(), rect)
+    });
+    dump::layout_json(
+        Kind::Iced,
+        &state.preset_label(),
+        if state.is_dark { "dark" } else { "light" },
+        scale,
+        rects,
+    )
 }
 
 // ---------------------------------------------------------------------------
-// CLI argument parsing
+// The command line (`native_theme_showcase_support::cli`)
 // ---------------------------------------------------------------------------
 
-/// Optional CLI arguments for launching the showcase in a specific state.
-///
-/// Parsed from `std::env::args()` -- no external crate dependency.
-/// When no arguments are provided the showcase behaves identically to before.
-#[derive(Default)]
-struct CliArgs {
-    theme: Option<String>,
-    variant: Option<String>,
-    tab: Option<String>,
-    icon_set: Option<String>,
-    screenshot: Option<String>,
-    /// `--capture`: a tool outside the showcase captures its window, which
-    /// opens as a `--screenshot` run's does (`capture_window_settings`).
-    capture: bool,
-    /// `--pointer X,Y`: the pointer is held at that point of the window's
-    /// content, in logical pixels, so a capture shows the control under it
-    /// hovered ([`HeldPointer`]). For captures where no pointer can be
-    /// driven, as in a nested compositor.
-    pointer: Option<(u16, u16)>,
-    /// A `--pointer` value that is not `X,Y`, or its missing value: `main`
-    /// reports it and exits with 1, as a failed `--screenshot` does, rather
-    /// than capture the window at rest.
-    bad_pointer: Option<String>,
-    /// `--press`: with `--pointer`, the primary button is held down there,
-    /// so a capture shows the control pressed.
-    press: bool,
-    /// `--dump-layout FILE`: once the layout has settled, the rectangle of
-    /// every element of docs/showcase-elements.toml the showcase draws is
-    /// written to FILE as JSON ([`write_layout_dump`]), at rest wherever the
-    /// desktop's pointer is ([`CliArgs::shields_pointer`]), and again whenever
-    /// it changes; without `--capture` the showcase then exits.
-    dump_layout: Option<String>,
-    /// `--open-menu NAME`: the menu bar's menu `NAME` is open from the first
-    /// frame and held open ([`HeldMenu`]), so a capture and the layout dump
-    /// show it with its rows. `theme`, the Theme menu, is the one menu the
-    /// three showcases share (docs/showcase-elements.toml).
-    open_menu: Option<String>,
-}
-
-/// `X,Y` as two whole logical pixels, or `None`.
-fn parse_point(value: &str) -> Option<(u16, u16)> {
-    let (x, y) = value.split_once(',')?;
-    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
-}
-
-/// Global CLI args, set once in `main()` before the iced application starts.
+/// The command line, set once in `main()` before the iced application starts
+/// (`cli::CliArgs::parse`).
 static CLI_ARGS: OnceLock<CliArgs> = OnceLock::new();
 
-impl CliArgs {
-    /// Whether the page is shown with no pointer at all ([`held_page`]): in
-    /// a capture (`--capture`, `--screenshot`) and in a layout dump
-    /// (`--dump-layout`) that hold no pointer of their own (`--pointer`).
-    /// Wherever the desktop's pointer happens to be, it then hovers nothing,
-    /// so two captures of one theme draw the same and two dumps of it record
-    /// the chrome at rest alike.
-    fn shields_pointer(&self) -> bool {
-        (self.capture || self.screenshot.is_some() || self.dump_layout.is_some())
-            && self.pointer.is_none()
-    }
+/// The menu bar's titles, in its order: what `--open-menu` takes
+/// (`cli::open_menu`), and the index [`HeldMenu`] opens.
+const MENU_TITLES: [&str; 4] = ["File", "View", "Theme", "Help"];
 
-    /// Whether the showcase follows the OS theme as it changes: not in a
-    /// capture (`--capture`, `--screenshot`) or a layout dump
-    /// (`--dump-layout`), which show the theme the run started with. As the
-    /// egui and gpui showcases' `CliArgs::follows_os`.
-    #[cfg_attr(not(feature = "watch"), allow(dead_code))]
-    fn follows_os(&self) -> bool {
-        !self.capture && self.screenshot.is_none() && self.dump_layout.is_none()
-    }
+/// The index among [`MENU_TITLES`] of the menu `--open-menu` names
+/// (`cli::open_menu`, whose error names the menus).
+fn held_menu(name: &str) -> Result<usize, String> {
+    let name = cli::open_menu(name, &MENU_TITLES)?;
+    MENU_TITLES
+        .iter()
+        .position(|title| title.to_lowercase() == name)
+        .ok_or_else(|| format!("--open-menu {name}: no menu has that title"))
+}
 
-    fn parse() -> Self {
-        let mut args = Self::default();
-        let argv: Vec<String> = std::env::args().collect();
-        let mut i = 1; // skip binary name
-        while i < argv.len() {
-            match argv[i].as_str() {
-                "--theme" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.theme = Some(argv[i].clone());
-                    }
-                }
-                "--variant" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.variant = Some(argv[i].to_lowercase());
-                    }
-                }
-                "--tab" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.tab = Some(argv[i].to_lowercase());
-                    }
-                }
-                "--icon-set" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.icon_set = Some(argv[i].clone());
-                    }
-                }
-                "--screenshot" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.screenshot = Some(argv[i].clone());
-                    }
-                }
-                "--capture" => args.capture = true,
-                "--dump-layout" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.dump_layout = Some(argv[i].clone());
-                    }
-                }
-                "--press" => args.press = true,
-                "--open-menu" => {
-                    i += 1;
-                    args.open_menu = Some(argv.get(i).map_or("", String::as_str).to_lowercase());
-                }
-                "--pointer" => {
-                    i += 1;
-                    let value = argv.get(i).map_or("", String::as_str);
-                    match parse_point(value) {
-                        Some(point) => args.pointer = Some(point),
-                        None => args.bad_pointer = Some(value.to_string()),
-                    }
-                }
-                _ => {} // ignore unknown args
-            }
-            i += 1;
-        }
-        args
-    }
-
-    /// The colour mode `--variant` names: `light`, `dark`, or `system`,
-    /// which follows the OS.
-    fn color_mode(variant: &str) -> Result<AppColorMode, String> {
-        match variant {
-            "light" => Ok(AppColorMode::Light),
-            "dark" => Ok(AppColorMode::Dark),
-            "system" => Ok(AppColorMode::System),
-            other => Err(format!("--variant {other}: not light, dark or system")),
-        }
-    }
-
-    /// The theme `--theme` names: `default`, the OS theme, or a preset the
-    /// theme picker offers on this platform (`theme_choices`), which offers
-    /// only the platform's own presets and the community ones.
-    fn theme_choice(name: &str, default_label: &str) -> Result<ThemeChoice, String> {
-        if name == "default" {
-            return Ok(ThemeChoice::OsTheme(default_label.to_string()));
-        }
-        let offered = theme_choices(default_label);
-        let choice = ThemeChoice::Preset(name.to_string());
-        if offered.contains(&choice) {
-            return Ok(choice);
-        }
-        let names: Vec<String> = offered
-            .iter()
-            .map(|choice| match choice {
-                ThemeChoice::OsTheme(_) => "default".to_string(),
-                ThemeChoice::Preset(key) => key.clone(),
-            })
-            .collect();
-        let names = names.join(", ");
-        if native_theme::theme::Theme::list_presets()
-            .iter()
-            .any(|info| info.key == name)
-        {
-            Err(format!(
-                "--theme {name}: a preset of another platform; only this platform's \
-                 presets run here: {names}"
-            ))
-        } else {
-            Err(format!(
-                "--theme {name}: no such preset; the presets are: {names}"
-            ))
-        }
-    }
-
-    /// The icon set `--icon-set` names, which the icon-theme picker offers
-    /// (`build_icon_choices`): a bundled set, `system` or `freedesktop` (the
-    /// system icon theme), or one of `installed_themes`, the freedesktop
-    /// themes the picker lists.
-    fn icon_set_choice(name: &str, installed_themes: &[String]) -> Result<IconSetChoice, String> {
-        match name {
-            "material" => Ok(IconSetChoice::Material),
-            "lucide" => Ok(IconSetChoice::Lucide),
-            "system" | "freedesktop" => Ok(IconSetChoice::System),
-            theme if installed_themes.iter().any(|installed| installed == theme) => {
-                Ok(IconSetChoice::Freedesktop(theme.to_string()))
-            }
-            other => Err(format!(
-                "--icon-set {other}: not material, lucide, system, freedesktop or an \
-                 installed icon theme; {}",
-                if installed_themes.is_empty() {
-                    "none are installed".to_string()
-                } else {
-                    format!(
-                        "the installed icon themes are: {}",
-                        installed_themes.join(", ")
-                    )
-                }
-            )),
-        }
-    }
-
-    /// The tab `--tab` names: a tab's [`Tab::flag`], or `textinputs` or
-    /// `thememap` for the two tabs whose name has a hyphen.
-    fn parse_tab(name: &str) -> Result<Tab, String> {
-        let flag = match name {
-            "textinputs" => "text-inputs",
-            "thememap" => "theme-map",
-            other => other,
-        };
-        Tab::ALL
-            .iter()
-            .copied()
-            .find(|tab| tab.flag() == flag)
-            .ok_or_else(|| {
-                let tabs: Vec<&str> = Tab::ALL.iter().map(|tab| tab.flag()).collect();
-                format!(
-                    "--tab {name}: no such tab; the tabs are: {}",
-                    tabs.join(", ")
-                )
-            })
-    }
+/// The theme `--theme` names (`cli::theme_key`, whose errors list what the
+/// theme picker offers): `default`, the OS theme, labelled `default_label`,
+/// or a preset of this platform.
+fn theme_choice(name: &str, default_label: &str) -> Result<ThemeChoice, String> {
+    cli::theme_key(name).map(|key| match key {
+        ThemeKey::Default => ThemeChoice::OsTheme(default_label.to_string()),
+        ThemeKey::Preset(key) => ThemeChoice::Preset(key),
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -1078,12 +797,13 @@ impl Tab {
         Tab::ThemeMap,
     ];
 
-    /// The name `--tab` takes for the tab.
+    /// The name `--tab` takes for the tab: the key of the gpui and egui
+    /// showcases' page that corresponds to it, where they have one.
     fn flag(self) -> &'static str {
         match self {
             Tab::Basic => "basic",
             Tab::Buttons => "buttons",
-            Tab::TextInputs => "text-inputs",
+            Tab::TextInputs => "inputs",
             Tab::Selection => "selection",
             Tab::Range => "range",
             Tab::Display => "display",
@@ -1111,6 +831,19 @@ impl Tab {
             Tab::Icons => "Icons",
             Tab::ThemeMap => "Theme Map",
         }
+    }
+
+    /// The tab `--tab` names: the one whose [`Tab::flag`] it is
+    /// (`cli::page_key`, whose error lists every tab's).
+    fn named(name: &str) -> Result<Tab, String> {
+        let flags: Vec<&'static str> = Tab::ALL.iter().map(|tab| tab.flag()).collect();
+        cli::page_key(name, &flags).and_then(|flag| {
+            Tab::ALL
+                .iter()
+                .copied()
+                .find(|tab| tab.flag() == flag)
+                .ok_or_else(|| format!("--tab {flag}: no tab has that key"))
+        })
     }
 }
 
@@ -1203,94 +936,17 @@ fn preset_display_name(key: &str) -> &str {
         .map_or(key, |info| info.display_name)
 }
 
-fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
-    let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
-    choices.extend(
-        native_theme::theme::Theme::list_presets_for_platform()
-            .iter()
-            .map(|info| ThemeChoice::Preset(info.key.to_string())),
-    );
-    choices
-}
-
-// ---------------------------------------------------------------------------
-// Color mode (System / Light / Dark)
-// ---------------------------------------------------------------------------
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AppColorMode {
-    System,
-    Light,
-    Dark,
-}
-
-impl AppColorMode {
-    const ALL: &[AppColorMode] = &[
-        AppColorMode::System,
-        AppColorMode::Light,
-        AppColorMode::Dark,
-    ];
-
-    fn is_dark(self) -> bool {
-        match self {
-            AppColorMode::Light => false,
-            AppColorMode::Dark => true,
-            AppColorMode::System => native_theme::detect::system_is_dark(),
-        }
-    }
-}
-
-impl AppColorMode {
-    /// The mode as the command palette names it: `System` with the mode the
-    /// OS is in.
-    fn palette_label(self) -> String {
-        match self {
-            AppColorMode::System => {
-                let actual = if self.is_dark() { "Dark" } else { "Light" };
-                format!("System ({actual})")
-            }
-            other => other.to_string(),
-        }
-    }
-}
-
-/// The mode as the Mode drop-down and the Theme menu name it, as the gpui
-/// showcase's `AppColorMode::short_label` does.
-impl std::fmt::Display for AppColorMode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AppColorMode::System => write!(f, "System"),
-            AppColorMode::Light => write!(f, "Light"),
-            AppColorMode::Dark => write!(f, "Dark"),
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Icon set choice (uses library type: native_theme::icons::IconSetChoice)
-// ---------------------------------------------------------------------------
-
-/// Build the available icon set choices for the dropdown.
-///
-/// Includes `Default(X)` (if icon_theme is specified), `System`, all installed
-/// freedesktop themes, and the bundled sets, Lucide then Material, in the
-/// gpui showcase's order.
-fn build_icon_choices(
-    icon_set: IconSet,
-    icon_theme: Option<&str>,
-    installed_themes: &[String],
-) -> Vec<IconSetChoice> {
-    let mut items = Vec::new();
-    if let choice @ IconSetChoice::Default(_) = default_icon_choice(icon_set, icon_theme) {
-        items.push(choice);
-    }
-    items.push(IconSetChoice::System);
-    for name in installed_themes {
-        items.push(IconSetChoice::Freedesktop(name.clone()));
-    }
-    items.push(IconSetChoice::Lucide);
-    items.push(IconSetChoice::Material);
-    items
+/// The theme picker's rows (`rows::preset_rows`): the OS theme, labelled with
+/// `default_preset`, the platform preset it builds on, then this platform's
+/// presets.
+fn theme_choices(default_preset: &str) -> Vec<ThemeChoice> {
+    rows::preset_rows(default_preset)
+        .into_iter()
+        .map(|row| match row.key.as_str() {
+            "default" => ThemeChoice::OsTheme(row.display_name),
+            _ => ThemeChoice::Preset(row.key),
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -1561,8 +1217,10 @@ struct State {
     /// Icon theme name for the current theme; `None` where the theme names
     /// none and the system's cannot be detected.
     current_icon_theme: Option<String>,
-    /// Dynamic label for the default theme entry, updated on color mode change.
-    default_label: String,
+    /// The platform preset the OS theme builds on, which the theme picker's
+    /// `default` row names ([`State::default_label`]); updated at each read
+    /// of the OS theme.
+    default_preset: String,
 
     // Navigation
     active_tab: Tab,
@@ -1719,6 +1377,13 @@ struct State {
     // Screenshot mode
     screenshot_path: Option<String>,
     screenshot_countdown: u8,
+    /// The files the run asked for (`--dump-layout`, `--screenshot`) and
+    /// which are written yet: the run quits once every one is written
+    /// (`cli::Outputs`, the showcases' exit rule).
+    outputs: Outputs,
+    /// The menu `--open-menu` holds open from the first frame, by its index
+    /// among [`MENU_TITLES`] ([`HeldMenu`]).
+    held_menu: Option<usize>,
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
@@ -1828,7 +1493,7 @@ impl State {
         let init_icon_theme_opt: Option<&str> = init_icon_theme.as_deref();
         let icon_set_choice = default_icon_choice(init_icon_set, init_icon_theme_opt);
         let icon_set_choices =
-            build_icon_choices(init_icon_set, init_icon_theme_opt, &installed_themes);
+            rows::icon_rows(init_icon_set, init_icon_theme_opt, &installed_themes);
         let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
         let chrome_icons = load_chrome_icons(&icon_set_choice, &resolved, init_icon_set);
 
@@ -1851,8 +1516,6 @@ impl State {
             anim_set,
             icon_set_choice.freedesktop_theme(),
         );
-
-        let default_label = format!("default ({})", system_preset);
 
         // Two panes to start with, so the vertical split between them is
         // there to be dragged before anything is clicked.
@@ -1879,7 +1542,7 @@ impl State {
 
         let mut state = Self {
             current_choice: fallback_choice
-                .unwrap_or_else(|| ThemeChoice::OsTheme(default_label.clone())),
+                .unwrap_or_else(|| ThemeChoice::OsTheme(rows::default_label(&system_preset))),
             current_theme: theme,
             color_mode,
             is_dark,
@@ -1888,7 +1551,7 @@ impl State {
             accessibility,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
-            default_label,
+            default_preset: system_preset,
             active_tab: Tab::Basic,
             widget_info: String::new(),
             hovered_element: None,
@@ -1980,6 +1643,8 @@ impl State {
             basic_spinner,
             screenshot_path: None,
             screenshot_countdown: 0,
+            outputs: Outputs::new(&CliArgs::default()),
+            held_menu: None,
             error_message: initial_error,
             read_system_theme,
             detect_icon_theme: native_theme::detect::system_icon_theme,
@@ -2010,11 +1675,11 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     let mode = cli
         .variant
         .as_deref()
-        .and_then(|variant| reported(CliArgs::color_mode(variant)));
+        .and_then(|variant| reported(cli::color_mode(variant)));
     let choice = cli
         .theme
         .as_deref()
-        .and_then(|name| reported(CliArgs::theme_choice(name, &state.default_label)));
+        .and_then(|name| reported(theme_choice(name, &state.default_label())));
     if mode.is_some() || choice.is_some() {
         let choice = choice.unwrap_or_else(|| state.current_choice.clone());
         let mode = mode.unwrap_or(state.color_mode);
@@ -2025,20 +1690,32 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     if let Some(tab) = cli
         .tab
         .as_deref()
-        .and_then(|name| reported(CliArgs::parse_tab(name)))
+        .and_then(|name| reported(Tab::named(name)))
     {
         state.active_tab = tab;
     }
 
-    // `--icon-set` names a set, which stays chosen across theme switches as
-    // a pick in the icon-theme picker does.
-    if let Some(choice) = cli
+    // `--icon-set` names a row of the icon-theme picker: `default`, whose
+    // icons follow the theme, or a set, which stays chosen across theme
+    // switches as a pick in the picker does.
+    match cli
         .icon_set
         .as_deref()
-        .and_then(|name| reported(CliArgs::icon_set_choice(name, &state.installed_themes)))
+        .and_then(|name| reported(cli::icon_set_choice(name, &state.installed_themes, &[])))
     {
-        state.choose_icon_set(choice);
+        Some(IconPick::FollowTheme) => state.follow_theme_icons(),
+        Some(IconPick::Choice(choice)) => state.choose_icon_set(choice),
+        // No toolkit row is passed, so none is named.
+        Some(IconPick::Toolkit(_)) | None => {}
     }
+
+    // `--open-menu` names a menu of the bar, held open from the first frame.
+    state.held_menu = cli
+        .open_menu
+        .as_deref()
+        .and_then(|name| reported(held_menu(name)));
+
+    state.outputs = Outputs::new(cli);
 
     // Apply screenshot settings
     if let Some(ref path) = cli.screenshot {
@@ -2047,12 +1724,23 @@ fn apply_cli_args(state: &mut State, cli: &CliArgs) {
     }
 }
 
-/// The value of `result`; its error reported on stderr, and `None`.
-fn reported<T>(result: Result<T, String>) -> Option<T> {
-    result.map_err(|error| eprintln!("{error}; ignored")).ok()
-}
-
 impl State {
+    /// The theme picker's name of the OS theme: `default (<preset>)`
+    /// (`rows::default_label`).
+    fn default_label(&self) -> String {
+        rows::default_label(&self.default_preset)
+    }
+
+    /// The installed theme as the status bar and the layout dump name it:
+    /// the theme picker's name of the OS theme ([`State::default_label`]),
+    /// or the preset's key.
+    fn preset_label(&self) -> String {
+        match &self.current_choice {
+            ThemeChoice::OsTheme(_) => self.default_label(),
+            ThemeChoice::Preset(key) => key.clone(),
+        }
+    }
+
     /// Install `choice` in `mode`: every theme and colour-mode switch
     /// installs through here. The pickers then show `choice` and `mode`.
     ///
@@ -2069,7 +1757,7 @@ impl State {
             }
         };
         self.current_choice = match choice {
-            ThemeChoice::OsTheme(_) => ThemeChoice::OsTheme(self.default_label.clone()),
+            ThemeChoice::OsTheme(_) => ThemeChoice::OsTheme(self.default_label()),
             preset @ ThemeChoice::Preset(_) => preset,
         };
         self.color_mode = mode;
@@ -2083,7 +1771,7 @@ impl State {
         }
         // Always rebuild the choices list (theme name in "default (X)" may have changed).
         self.icon_set_choices =
-            build_icon_choices(self.current_icon_set, it_opt, &self.installed_themes);
+            rows::icon_rows(self.current_icon_set, it_opt, &self.installed_themes);
 
         // Always reload icons — the resolved text_color may have changed (light↔dark)
         // even when the icon set choice is the same.
@@ -2121,7 +1809,7 @@ impl State {
                     self.current_resolved = system.pick(mode).clone();
                     self.current_theme =
                         native_theme_iced::to_theme(&self.current_resolved, &system.name);
-                    self.default_label = format!("default ({})", system.preset);
+                    self.default_preset = system.preset.clone();
                     self.error_message = None;
                     Ok(self.current_icon_theme.clone())
                 }
@@ -2201,6 +1889,20 @@ impl State {
     fn choose_icon_set(&mut self, choice: IconSetChoice) {
         self.icon_choice_follows_preset = choice.follows_preset();
         self.icon_set_choice = choice;
+        self.reload_icons();
+    }
+
+    /// `--icon-set default`: the icons follow the theme again, as after a
+    /// pick of the picker's `default` row, and are the icon theme the
+    /// installed theme names (`default_icon_choice`): that row, the first of
+    /// `icon_set_choices` where there is one, else `system`.
+    fn follow_theme_icons(&mut self) {
+        let followed = match self.icon_set_choices.first() {
+            Some(choice @ IconSetChoice::Default(_)) => choice.clone(),
+            _ => IconSetChoice::System,
+        };
+        self.icon_choice_follows_preset = true;
+        self.icon_set_choice = followed;
         self.reload_icons();
     }
 
@@ -2359,8 +2061,7 @@ enum Message {
 /// Capture the iced window including decorations using macOS `screencapture -l`.
 ///
 /// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
-/// shells out to `screencapture -l <id> -o <path>`.  This is the same approach
-/// used by the gpui showcase capture.
+/// shells out to `screencapture -l <id> -o <path>`.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
@@ -2533,6 +2234,18 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
 // Update
 // ---------------------------------------------------------------------------
 
+/// Records `output` as written, and quits once every file the run asked for
+/// is written and no `--capture` keeps the window (`cli::Outputs::written`):
+/// the showcases' exit rule, so the last of `--dump-layout F` and
+/// `--screenshot P` to be written quits.
+fn quit_once_written(state: &mut State, output: Output) -> iced::Task<Message> {
+    if state.outputs.written(output) {
+        iced::exit()
+    } else {
+        iced::Task::none()
+    }
+}
+
 fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     match message {
         Message::ScreenshotTick => {
@@ -2593,9 +2306,9 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                 return match checked {
                     Ok(()) => {
                         eprintln!("Screenshot saved to {path}");
-                        iced::exit()
+                        quit_once_written(state, Output::Screenshot)
                     }
-                    Err(e) => failed_capture(&format!("{path}: {e}")),
+                    Err(e) => cli::refuse(&Output::Screenshot.failure(path, &e)),
                 };
             }
         }
@@ -2608,9 +2321,9 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                 return match saved {
                     Ok(()) => {
                         eprintln!("Screenshot saved to {path}");
-                        iced::exit()
+                        quit_once_written(state, Output::Screenshot)
                     }
-                    Err(e) => failed_capture(&format!("{path}: {e}")),
+                    Err(e) => cli::refuse(&Output::Screenshot.failure(path, &e)),
                 };
             }
             return iced::exit();
@@ -2623,17 +2336,11 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                 .map(Message::LayoutScaled);
         }
         Message::LayoutScaled(scale) => {
-            let Some(cli) = CLI_ARGS.get() else {
-                return iced::Task::none();
-            };
-            if let Some(path) = &cli.dump_layout {
-                if let Err(error) = write_layout_dump(state, path, scale) {
-                    eprintln!("ERROR: --dump-layout: {error}");
-                    std::process::exit(1);
+            if let Some(path) = CLI_ARGS.get().and_then(|cli| cli.dump_layout.as_deref()) {
+                if let Err(error) = dump::write_layout(path, &layout_dump(state, scale)) {
+                    cli::refuse(&error);
                 }
-                if !cli.capture {
-                    return iced::exit();
-                }
+                return quit_once_written(state, Output::Dump);
             }
         }
         // The query takes the focus, so typing reaches it at once.
@@ -3190,10 +2897,6 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
 // Held menu (`--open-menu`)
 // ---------------------------------------------------------------------------
 
-/// The one menu `--open-menu` opens: the Theme menu's name on the command
-/// line.
-const OPEN_MENU_THEME: &str = "theme";
-
 /// A menu bar with one of its menus opened on the first frame and held open,
 /// for `--open-menu`: a capture and the layout dump show the menu with its
 /// rows.
@@ -3211,8 +2914,9 @@ struct HeldMenu<'a> {
     content: Element<'a, Message>,
     /// The index of the menu's title among the bar's.
     root: usize,
-    /// The list's id of the menu's panel.
-    popup: &'static str,
+    /// The list's id of the menu's panel, where the list has one (the Theme
+    /// menu's, the one menu the three showcases share).
+    popup: Option<&'static str>,
     /// The panel's padding round its rows, as the menu is given it.
     padding: Padding,
 }
@@ -3395,7 +3099,8 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldMenu<'_> {
 /// hands the rest of the window no event an overlay captured (iced_runtime
 /// 0.14 `src/user_interface.rs:310-316`), so the page would see no redraw.
 ///
-/// It records the menu's panel under the list's id `popup`: the rows
+/// It records the menu's panel under the list's id `popup`, where it has one:
+/// the rows
 /// `padding` out on each side, where `iced_aw` fills and frames it
 /// (`pad_rectangle(items_bounds, padding)`, iced_aw 0.14.1
 /// `src/widget/menu/menu_tree.rs:764-780`); the open menu's layout is the
@@ -3404,7 +3109,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldMenu<'_> {
 /// `menu_tree.rs:363-372`).
 struct HeldOverlay<'a> {
     inner: iced::advanced::overlay::Element<'a, Message, Theme, iced::Renderer>,
-    popup: &'static str,
+    popup: Option<&'static str>,
     padding: Padding,
 }
 
@@ -3438,8 +3143,8 @@ impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_>
         layout: iced::advanced::Layout<'_>,
         _cursor: iced::mouse::Cursor,
     ) {
-        if let Some(panel) = self.panel(layout) {
-            DRAWING.with_borrow_mut(|drawing| drawing.insert(self.popup, panel));
+        if let (Some(id), Some(panel)) = (self.popup, self.panel(layout)) {
+            DRAWING.with_borrow_mut(|drawing| drawing.insert(id, panel));
         }
         self.inner.as_overlay().draw(
             renderer,
@@ -3456,8 +3161,8 @@ impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_>
         renderer: &iced::Renderer,
         operation: &mut dyn iced::advanced::widget::Operation,
     ) {
-        if let Some(panel) = self.panel(layout) {
-            SURVEYED.with_borrow_mut(|surveyed| surveyed.insert(self.popup, panel));
+        if let (Some(id), Some(panel)) = (self.popup, self.panel(layout)) {
+            SURVEYED.with_borrow_mut(|surveyed| surveyed.insert(id, panel));
         }
         self.inner
             .as_overlay_mut()
@@ -4436,15 +4141,21 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let bar = Element::new(MenuTitles {
         content: bar.into(),
     });
-    // `--open-menu theme`: the Theme menu, the bar's third, held open.
-    let bar: Element<'_, Message> = match CLI_ARGS.get().and_then(|cli| cli.open_menu.as_deref()) {
-        Some(OPEN_MENU_THEME) => Element::new(HeldMenu {
+    // `--open-menu <title>`: that menu held open, its panel recorded under
+    // `chrome.menu.<title>` where the list names one.
+    let bar: Element<'_, Message> = match state.held_menu {
+        Some(root) => Element::new(HeldMenu {
             content: bar,
-            root: 2,
-            popup: "chrome.menu.theme",
+            root,
+            popup: MENU_TITLES
+                .get(root)
+                .and_then(|title| {
+                    elements::element(&format!("chrome.menu.{}", title.to_lowercase()))
+                })
+                .map(|element| element.id.as_str()),
             padding: popup_pad,
         }),
-        _ => bar,
+        None => bar,
     };
     tagged(
         "chrome.menu_bar",
@@ -4636,7 +4347,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
                 Fill,
                 setting_picker(
                     state,
-                    theme_choices(&state.default_label),
+                    theme_choices(&state.default_preset),
                     Some(state.current_choice.clone()),
                     Message::ThemeSelected,
                 ),
@@ -4982,60 +4693,19 @@ fn splitter(state: &State) -> Element<'_, Message> {
     .into()
 }
 
-/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, as
-/// the gpui and egui showcases name it.
-#[cfg(target_os = "linux")]
-fn desktop() -> String {
-    format!("{:?}", native_theme::detect::detect_linux_desktop())
-}
-
-/// The operating system: `native_theme::detect` names a desktop on Linux
-/// only.
-#[cfg(not(target_os = "linux"))]
-fn desktop() -> String {
-    std::env::consts::OS.to_string()
-}
-
-/// A font's size in the unit its source stated, as the gpui showcase's
-/// `defined_size`.
-fn defined_size(font: &ResolvedFontSpec) -> String {
-    match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        None => "(size not stated)".to_string(),
-    }
-}
-
-/// The status bar's environment (spec §2.7), the gpui showcase's items: the
-/// desktop, the preset and colour mode, the theme's `defaults.font` in the
-/// unit its source stated, the text-scaling factor, and each accessibility
-/// preference that is set, by its field name.
+/// The status bar's environment (spec §2.7), the three showcases' items
+/// (`status::environment`): the desktop, the preset and colour mode, the
+/// theme's `defaults.font` in the unit its source stated, the text-scaling
+/// factor, and each accessibility preference that is set, by its field name.
 fn status_environment(state: &State) -> Vec<String> {
-    let preset = match &state.current_choice {
-        ThemeChoice::OsTheme(_) => state.default_label.clone(),
-        ThemeChoice::Preset(key) => key.clone(),
-    };
     let mode = if state.is_dark { "dark" } else { "light" };
-    let font = &state.current_resolved.defaults.font;
-    let prefs = &state.accessibility;
-    let mut items = vec![
-        desktop(),
-        format!("{preset} {mode}"),
-        format!("{} {}", font.family, defined_size(font)),
-        format!("text ×{}", prefs.text_scaling_factor),
-    ];
-    let flags = [
-        ("reduce_motion", prefs.reduce_motion),
-        ("high_contrast", prefs.high_contrast),
-        ("reduce_transparency", prefs.reduce_transparency),
-    ];
-    items.extend(
-        flags
-            .into_iter()
-            .filter(|(_, set)| *set)
-            .map(|(name, _)| name.to_string()),
-    );
-    items
+    status::environment(
+        &state.preset_label(),
+        mode,
+        &state.current_resolved.defaults.font,
+        None,
+        Some(&state.accessibility),
+    )
 }
 
 /// The title Widget Info shows: its text's first line, `None` before any
@@ -5115,8 +4785,8 @@ fn status_bar(state: &State) -> Element<'_, Message> {
 /// element's (`name · state`), or the first line of another page's widget
 /// info; `None` before any hover.
 fn shown_title(state: &State) -> Option<String> {
-    match state.hovered_element.and_then(listed) {
-        Some(element) => Some(element_title(element)),
+    match state.hovered_element.and_then(elements::element) {
+        Some(element) => Some(element.title()),
         None => info_title(&state.widget_info).map(str::to_string),
     }
 }
@@ -5185,211 +4855,39 @@ fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'
     .into()
 }
 
-/// A colour a Widget Info line ends in, as `color_to_hex` writes it:
-/// `#rrggbb` or `#rrggbbaa`.
+/// The colour a Widget Info line ends in: its last word, `#` and the hex
+/// `color_to_hex` writes (`#rrggbb`, `#rrggbbaa`), as native-theme's `Rgba`
+/// parses it. A last word without the `#` is no colour, whatever its
+/// letters.
 fn hex_color(line: &str) -> Option<Color> {
     let hex = line.rsplit(' ').next()?.strip_prefix('#')?;
-    let channel = |at: usize| {
-        hex.get(at..at + 2)
-            .and_then(|pair| u8::from_str_radix(pair, 16).ok())
-    };
-    let (r, g, b) = (channel(0)?, channel(2)?, channel(4)?);
-    let a = match hex.len() {
-        6 => u8::MAX,
-        8 => channel(6)?,
-        _ => return None,
-    };
-    Some(Color::from_rgba8(
-        r,
-        g,
-        b,
-        f32::from(a) / f32::from(u8::MAX),
-    ))
+    hex.parse::<native_theme::color::Rgba>().ok().map(to_color)
 }
 
 // ---------------------------------------------------------------------------
 // Widget Info of a listed element (docs/showcase-elements.toml, section B)
 // ---------------------------------------------------------------------------
 
-/// What a leaf whose value the theme leaves unset reads as.
-const NOT_STATED: &str = "not stated";
-
-/// One "Theme" row of Widget Info: the leaf as the list spells it, its value
-/// as the resolved theme holds it, its colour where it is one, and how iced
-/// applies it.
-struct InfoRow {
-    leaf: &'static str,
-    value: String,
-    colour: Option<Color>,
-    how: String,
-}
-
-/// Widget Info of one element of the list: its title, a row per leaf in the
-/// list's order, and what iced draws for it that the theme states nothing
-/// for.
-struct ElementInfo {
-    title: String,
-    rows: Vec<InfoRow>,
-    not_themeable: Vec<&'static str>,
-}
-
-impl ElementInfo {
-    fn of(state: &State, element: &'static ShowcaseElement) -> Self {
-        let values = toml::Value::try_from(&state.current_resolved)
-            .unwrap_or_else(|_| toml::Value::Table(toml::Table::new()));
-        let rows = element
-            .leaves
-            .iter()
-            .map(|leaf| {
-                let (value, colour) = leaf_value(state, &values, leaf);
-                InfoRow {
-                    leaf: leaf.as_str(),
-                    value,
-                    colour,
-                    how: iced_route(element, leaf),
-                }
-            })
-            .collect();
-        Self {
-            title: element_title(element),
-            rows,
-            not_themeable: iced_not_themeable(element),
-        }
-    }
-
-    /// The panel's text, line for line, as the Copy button copies it.
-    fn copied(&self) -> String {
-        let mut text = format!("{}\n\nTheme\n", self.title);
-        for row in &self.rows {
-            text.push_str(&format!("{} {}\n  {}\n", row.leaf, row.value, row.how));
-        }
-        if !self.not_themeable.is_empty() {
-            text.push_str("\nNot themeable\n");
-            for line in &self.not_themeable {
-                text.push_str(line);
-                text.push('\n');
-            }
-        }
-        text
-    }
-}
-
-/// The title Widget Info and the status bar show for an element: its name
-/// and the state or variant the page shows, " · " between them.
-fn element_title(element: &ShowcaseElement) -> String {
-    match element.states.first() {
-        Some(state) => format!("{} · {state}", element.name),
-        None => element.name.clone(),
-    }
-}
-
-/// A leaf's value as the theme holds it, and its colour where it is one. The
-/// leaf is the registry's path (`button.border.padding_top_px`,
-/// `tooltip.show_delay_ms`); the resolved theme spells the same field
-/// without the unit and with the padding's sides nested
-/// (`button.border.padding.top`). The layout distances, the icon set and the
-/// icon theme are not in `ResolvedTheme`: they are read where the showcase
-/// keeps them.
-fn leaf_value(state: &State, values: &toml::Value, leaf: &str) -> (String, Option<Color>) {
-    let unit = if leaf.ends_with("_px") {
-        Some("px")
-    } else if leaf.ends_with("_ms") {
-        Some("ms")
-    } else {
-        None
-    };
-    if let Some(field) = leaf.strip_prefix("layout.") {
-        let l = &state.layout;
-        let stated = match field {
-            "widget_gap_px" => l.widget_gap,
-            "container_margin_px" => l.container_margin,
-            "window_margin_px" => l.window_margin,
-            "section_gap_px" => l.section_gap,
-            _ => None,
-        };
-        return (
-            stated.map_or(NOT_STATED.to_string(), |v| format!("{v} px")),
-            None,
-        );
-    }
-    match leaf {
-        "theme_variant.icon_set" => return (state.current_icon_set.to_string(), None),
-        "defaults.icon_theme" => {
-            return (
-                state
-                    .current_icon_theme
-                    .clone()
-                    .unwrap_or_else(|| NOT_STATED.to_string()),
-                None,
-            );
-        }
-        _ => {}
-    }
-    let found = leaf.split('.').try_fold(values, |node, segment| {
-        let segment = segment
-            .strip_suffix("_px")
-            .or_else(|| segment.strip_suffix("_ms"))
-            .unwrap_or(segment);
-        match segment.strip_prefix("padding_") {
-            Some(side) => node.get("padding").and_then(|p| p.get(side)),
-            None => node.get(segment),
-        }
-    });
-    match found {
-        None => (NOT_STATED.to_string(), None),
-        Some(value) => value_text(value, unit),
-    }
-}
-
-/// A value of the resolved theme as Widget Info writes it: a colour as its
-/// `#rrggbb[aa]`, a number in `unit` (px for a size, ms for a duration)
-/// where its leaf has one, a font as its family, the size its source stated
-/// and its weight, a text-scale entry as its size and weight.
-fn value_text(value: &toml::Value, unit: Option<&str>) -> (String, Option<Color>) {
-    let number = |v: String| match unit {
-        Some(unit) => format!("{v} {unit}"),
-        None => v,
-    };
-    match value {
-        toml::Value::String(s) => (s.clone(), hex_color(s)),
-        toml::Value::Float(f) => (number(format!("{}", *f as f32)), None),
-        toml::Value::Integer(i) => (number(i.to_string()), None),
-        toml::Value::Boolean(b) => (b.to_string(), None),
-        toml::Value::Table(t) => (compound_text(t), None),
-        other => (other.to_string(), None),
-    }
-}
-
-/// A font (`family`, `defined_size`, `weight`, `style`) or a text-scale entry
-/// (`size`, `weight`) as one line: `Noto Sans 10 pt 400`, `16 px 400`.
-fn compound_text(t: &toml::Table) -> String {
-    let number_at = |table: &toml::Table, key: &str| {
-        table
-            .get(key)
-            .and_then(toml::Value::as_float)
-            .map(|v| v as f32)
-    };
-    let weight = t.get("weight").and_then(toml::Value::as_integer);
-    let size = match t.get("defined_size").and_then(toml::Value::as_table) {
-        Some(defined) => number_at(defined, "Pt")
-            .map(|v| format!("{v} pt"))
-            .or_else(|| number_at(defined, "Px").map(|v| format!("{v} px"))),
-        None => number_at(t, "size").map(|v| format!("{v} px")),
-    };
-    let mut line = Vec::new();
-    if let Some(family) = t.get("family").and_then(toml::Value::as_str) {
-        line.push(family.to_string());
-    }
-    line.push(size.unwrap_or_else(|| NOT_STATED.to_string()));
-    if let Some(weight) = weight {
-        line.push(weight.to_string());
-    }
-    if let Some(style) = t.get("style").and_then(toml::Value::as_str)
-        && style != "normal"
-    {
-        line.push(style.to_string());
-    }
-    line.join(" ")
+/// Widget Info of one element of the list, in the three showcases' form
+/// (`info::ListedInfo`): its title, a row per leaf in the list's order with
+/// its value -- the layout distances, the icon set and the icon theme read
+/// where the showcase keeps them -- and how iced applies it ([`iced_route`]),
+/// then what iced draws for it that the theme states nothing for
+/// ([`iced_not_themeable`]).
+fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
+    let json = values::theme_json(&state.current_resolved).unwrap_or_default();
+    ListedInfo::new(
+        element,
+        &json,
+        &state.layout,
+        Some(state.current_icon_set),
+        state.current_icon_theme.as_deref(),
+        |leaf| iced_route(element, leaf),
+        iced_not_themeable(element)
+            .into_iter()
+            .map(str::to_string)
+            .collect(),
+    )
 }
 
 /// Text in the side panel's font, `sidebar.font` (size, family), at
@@ -5438,7 +4936,7 @@ fn element_info_view<'a>(
     let regular = resolved.sidebar.font.weight;
     let line = scaled_text_size(resolved.sidebar.font.size, &state.accessibility)
         * resolved.defaults.line_height;
-    let info = ElementInfo::of(state, element);
+    let info = element_info(state, element);
     let b = &resolved.button;
     let copy = button(text("Copy").themed(&resolved.sidebar.font, resolved, &state.accessibility))
         .padding(native_theme_iced::padding_or(
@@ -5446,7 +4944,7 @@ fn element_info_view<'a>(
             Padding::ZERO,
         ))
         .style(copy_button(ghost_button(resolved, false), resolved))
-        .on_press(Message::Copy(info.copied()));
+        .on_press(Message::Copy(info.copy_text()));
     let mut body = column![
         row![
             tagged(
@@ -5491,7 +4989,7 @@ fn element_info_view<'a>(
             (leaf.into(), how.into())
         };
         let lines = column![leaf, how].width(Fill);
-        let content: Element<'a, Message> = match row.colour {
+        let content: Element<'a, Message> = match row.colour.map(to_color) {
             Some(colour) => {
                 let swatch = container(space())
                     .width(Length::Fixed(line))
@@ -6182,7 +5680,7 @@ fn iced_not_themeable(element: &ShowcaseElement) -> Vec<&'static str> {
 /// text's sections as `widget_tooltip` writes them -- a heading per section,
 /// a swatch line per colour, a name over its value per other line.
 fn inspector_widget(state: &State) -> Element<'_, Message> {
-    if let Some(element) = state.hovered_element.and_then(listed) {
+    if let Some(element) = state.hovered_element.and_then(elements::element) {
         return element_info_view(state, element);
     }
     let resolved = &state.current_resolved;
@@ -6302,7 +5800,7 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
                 &font_drawn(&d.font),
             ),
         ),
-        ("font_size", defined_size(&d.font)),
+        ("font_size", status::defined_size(&d.font)),
         (
             "mono_font_family",
             family_label(
@@ -6311,7 +5809,7 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
                 &mono_drawn(resolved),
             ),
         ),
-        ("mono_font_size", defined_size(&d.mono_font)),
+        ("mono_font_size", status::defined_size(&d.mono_font)),
     ];
     let window = [
         (
@@ -6373,7 +5871,7 @@ fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
             action: Message::TabSelected(tab),
         })
         .collect::<Vec<_>>();
-    let presets = theme_choices(&state.default_label)
+    let presets = theme_choices(&state.default_preset)
         .into_iter()
         .map(|choice| PaletteEntry {
             label: choice.to_string(),
@@ -6387,7 +5885,7 @@ fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
     let modes = AppColorMode::ALL
         .iter()
         .map(|&mode| PaletteEntry {
-            label: mode.palette_label(),
+            label: mode.label(),
             keywords: Vec::new(),
             action: Message::ColorModeSelected(mode),
         })
@@ -12136,17 +11634,10 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     .into()
 }
 
+/// `c` as native-theme's `Rgba` prints a theme colour: `#rrggbb`, or
+/// `#rrggbbaa` where its alpha, quantised to a byte, is not 255.
 fn color_to_hex(c: Color) -> String {
-    let r = (c.r.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let g = (c.g.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let b = (c.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let a = c.a.clamp(0.0, 1.0);
-    if (a - 1.0).abs() < f32::EPSILON {
-        format!("#{:02x}{:02x}{:02x}", r, g, b)
-    } else {
-        let a8 = (a * 255.0).round() as u8;
-        format!("#{:02x}{:02x}{:02x}{:02x}", r, g, b, a8)
-    }
+    native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a).to_string()
 }
 
 fn color_swatch<'a>(
@@ -12849,27 +12340,16 @@ fn subscription(state: &State) -> Subscription<Message> {
 // ---------------------------------------------------------------------------
 
 fn main() -> iced::Result {
-    // Parse CLI args and store globally before the iced application starts.
-    // State::default() reads from CLI_ARGS to apply overrides.
-    let cli = CliArgs::parse();
+    // The command line, kept globally before the iced application starts:
+    // State::default() applies it from CLI_ARGS (`apply_cli_args`).
+    let cli = CliArgs::parse(std::env::args().skip(1));
     if let Some(value) = &cli.bad_pointer {
-        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
-        std::process::exit(1);
+        cli::refuse(&format!(
+            "--pointer {value:?}: not X,Y in whole logical pixels"
+        ));
     }
-    if let Some(menu) = &cli.open_menu
-        && menu != OPEN_MENU_THEME
-    {
-        eprintln!("ERROR: --open-menu {menu:?}: the menu that opens is {OPEN_MENU_THEME:?}");
-        std::process::exit(1);
-    }
-    if let Err(error) = ELEMENTS.get_or_init(showcase_elements) {
-        eprintln!("ERROR: docs/showcase-elements.toml: {error}");
-        std::process::exit(1);
-    }
+    let capturing = cli.capturing();
     let _ = CLI_ARGS.set(cli);
-    let capturing = CLI_ARGS
-        .get()
-        .is_some_and(|cli| cli.capture || cli.screenshot.is_some());
 
     // iced_aw draws its glyphs (the number input's step arrows) in a font of
     // its own, which the application loads (iced_aw 0.14.1 `src/lib.rs:174`).
@@ -12917,10 +12397,9 @@ fn capture_window_settings() -> iced::window::Settings {
 }
 
 /// A `--screenshot` that failed: reported on stderr, and the process exits
-/// with 1, so a capture step fails.
+/// with 1, so a capture step fails (`cli::refuse`).
 fn failed_capture(error: &str) -> ! {
-    eprintln!("ERROR: screenshot capture failed: {error}");
-    std::process::exit(1)
+    cli::refuse(&format!("screenshot capture failed: {error}"))
 }
 
 /// Whether a frame the showcase captured of its own content, `captured`
@@ -13880,6 +13359,8 @@ mod tests {
                 "--theme" => cli.theme = value,
                 "--variant" => cli.variant = value,
                 "--icon-set" => cli.icon_set = value,
+                "--tab" => cli.tab = value,
+                "--open-menu" => cli.open_menu = value,
                 other => panic!("the tests do not pass {other}"),
             }
         }
@@ -14059,12 +13540,13 @@ mod tests {
         );
     }
 
-    /// `--icon-set` takes exactly what the icon-theme picker offers: a
-    /// bundled set, `system` or `freedesktop` (the system icon theme), or an
-    /// installed theme the picker lists (`installed_themes`). Anything else
-    /// is reported and ignored, also a theme with an `index.theme` the
-    /// picker does not list, such as `hicolor`. The picker's list is set
-    /// here, so the test does not depend on the themes of the host.
+    /// `--icon-set` takes exactly what the icon-theme picker offers: its
+    /// `default` row, whose icons follow the theme, a bundled set, `system`
+    /// or `freedesktop` (the system icon theme), or an installed theme the
+    /// picker lists (`installed_themes`). Anything else is reported and
+    /// ignored, also a theme with an `index.theme` the picker does not list,
+    /// such as `hicolor`. The picker's list is set here, so the test does not
+    /// depend on the themes of the host.
     #[test]
     fn the_icon_set_flag_takes_what_the_picker_offers() {
         let mut state = State::default();
@@ -14095,42 +13577,119 @@ mod tests {
             IconSetChoice::Freedesktop(listed.to_string()),
             "--icon-set {listed}, which the picker offers, is not chosen"
         );
+
+        // `default`: the choice the installed theme derives, which follows
+        // each theme installed after it, as a pick of the picker's row does.
+        let follows = default_icon_choice(
+            state.current_icon_set,
+            match state.icon_set_choices.first() {
+                Some(IconSetChoice::Default(theme)) => Some(theme.as_str()),
+                _ => None,
+            },
+        );
+        apply_cli_args(&mut state, &command_line(&[("--icon-set", "default")]));
+        assert_eq!(
+            state.icon_set_choice, follows,
+            "--icon-set default is not the theme's own icon choice"
+        );
+        assert!(
+            state.icon_choice_follows_preset,
+            "--icon-set default does not follow the theme"
+        );
+        state.rebuild_theme();
+        assert_eq!(
+            state.icon_set_choice, follows,
+            "--icon-set default is not what the theme's install derives"
+        );
     }
 
-    /// `--tab` takes each tab's name, and `textinputs` and `thememap` for
-    /// two of them; another name is reported with the tabs it could have
-    /// been.
+    /// `--tab` takes each tab's name, the Inputs page's `inputs` as in the
+    /// gpui and egui showcases; another name, `text-inputs`, `textinputs`
+    /// and `thememap` among them, is reported with the tabs it could have
+    /// been, and leaves the tab as it was.
     #[test]
     fn the_tab_flag_names_every_tab() {
         for &tab in Tab::ALL {
-            assert_eq!(CliArgs::parse_tab(tab.flag()), Ok(tab));
+            assert_eq!(Tab::named(tab.flag()), Ok(tab));
         }
-        assert_eq!(CliArgs::parse_tab("textinputs"), Ok(Tab::TextInputs));
-        assert_eq!(CliArgs::parse_tab("thememap"), Ok(Tab::ThemeMap));
-        assert_eq!(CliArgs::parse_tab("basic"), Ok(Tab::Basic));
+        assert_eq!(Tab::named("inputs"), Ok(Tab::TextInputs));
+        assert_eq!(Tab::named("basic"), Ok(Tab::Basic));
         assert_eq!(
             Tab::ALL.first(),
             Some(&Tab::Basic),
             "Basic is the first tab"
         );
-        match CliArgs::parse_tab("no-such-tab") {
-            Ok(tab) => panic!("--tab no-such-tab opened {tab:?}"),
-            Err(error) => {
-                for tab in Tab::ALL {
-                    assert!(error.contains(tab.flag()), "{error}");
+        for unknown in ["no-such-tab", "text-inputs", "textinputs", "thememap"] {
+            match Tab::named(unknown) {
+                Ok(tab) => panic!("--tab {unknown} opened {tab:?}"),
+                Err(error) => {
+                    for tab in Tab::ALL {
+                        assert!(error.contains(tab.flag()), "{error}");
+                    }
                 }
             }
+            let mut state = State::default();
+            apply_cli_args(&mut state, &command_line(&[("--tab", unknown)]));
+            assert_eq!(state.active_tab, Tab::Basic, "--tab {unknown}");
         }
+        let mut state = State::default();
+        apply_cli_args(&mut state, &command_line(&[("--tab", "inputs")]));
+        assert_eq!(state.active_tab, Tab::TextInputs, "--tab inputs");
     }
 
-    /// Where no freedesktop icon theme is installed -- off Linux, always --
-    /// `--icon-set` says so, rather than end its report on an empty list.
+    /// `--open-menu` takes a title of the menu bar, in any case, and holds
+    /// that menu open; another name is reported, with the menus, and holds
+    /// none open. The bar draws its titles in [`MENU_TITLES`]' order.
     #[test]
-    fn the_icon_set_flag_says_when_no_icon_theme_is_installed() {
-        match CliArgs::icon_set_choice("no-such-icon-theme", &[]) {
-            Ok(choice) => panic!("--icon-set no-such-icon-theme chose {choice:?}"),
-            Err(error) => assert!(error.ends_with("; none are installed"), "{error}"),
+    fn the_open_menu_flag_takes_a_menu_of_the_bar() {
+        for (index, title) in MENU_TITLES.iter().enumerate() {
+            let mut state = State::default();
+            apply_cli_args(&mut state, &command_line(&[("--open-menu", title)]));
+            assert_eq!(state.held_menu, Some(index), "--open-menu {title}");
+            assert_eq!(held_menu(&title.to_uppercase()), Ok(index));
         }
+        assert_eq!(
+            held_menu("no-such-menu"),
+            Err(
+                "--open-menu no-such-menu: the menu bar has no such menu; the menus are: \
+                 file, view, theme, help"
+                    .to_string()
+            )
+        );
+        let mut state = State::default();
+        apply_cli_args(
+            &mut state,
+            &command_line(&[("--open-menu", "no-such-menu")]),
+        );
+        assert_eq!(state.held_menu, None, "an unknown menu is held open");
+
+        let theme = theme(&state);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+        for _ in 0..2 {
+            if let Err(error) = ui.snapshot(&theme) {
+                panic!("the interface did not draw: {error}");
+            }
+        }
+        let drawn = drawn_layout();
+        assert!(
+            !drawn.contains_key("chrome.menu.theme"),
+            "a menu is open with no --open-menu"
+        );
+        let titles: Vec<f32> = MENU_TITLES
+            .iter()
+            .map(|title| {
+                let id = format!("chrome.menu_bar.{}", title.to_lowercase());
+                match drawn.iter().find(|(drawn, _)| **drawn == id) {
+                    Some((_, rect)) => rect.x,
+                    None => panic!("{id} is not drawn"),
+                }
+            })
+            .collect();
+        assert!(
+            titles.is_sorted(),
+            "the bar's titles are not in MENU_TITLES' order: {titles:?}"
+        );
     }
 
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
@@ -14271,10 +13830,10 @@ mod tests {
     /// no pointer.
     #[test]
     fn the_pointer_flag_is_a_point() {
-        assert_eq!(parse_point("259,96"), Some((259, 96)));
-        assert_eq!(parse_point(" 259 , 96 "), Some((259, 96)));
+        assert_eq!(cli::parse_point("259,96"), Some((259, 96)));
+        assert_eq!(cli::parse_point(" 259 , 96 "), Some((259, 96)));
         for bad in ["259", "x,1", "1,-2", ""] {
-            assert_eq!(parse_point(bad), None, "{bad:?}");
+            assert_eq!(cli::parse_point(bad), None, "{bad:?}");
         }
     }
 
@@ -15749,7 +15308,7 @@ mod tests {
     /// it cannot.
     #[test]
     fn the_element_list_parses_and_every_leaf_has_a_route() {
-        let list = match showcase_elements() {
+        let list = match elements::showcase_elements() {
             Ok(list) => list,
             Err(error) => panic!("docs/showcase-elements.toml: {error}"),
         };
@@ -15862,7 +15421,10 @@ mod tests {
             }
         }
         let on_screen = drawn_layout();
-        let unknown: Vec<_> = on_screen.keys().filter(|id| listed(id).is_none()).collect();
+        let unknown: Vec<_> = on_screen
+            .keys()
+            .filter(|id| elements::element(id).is_none())
+            .collect();
         assert!(
             unknown.is_empty(),
             "drawn ids the list has not: {unknown:?}"
@@ -15870,12 +15432,15 @@ mod tests {
         // A selector goes through the whole tree, as the dump's `Survey` does.
         let _ = texts(&mut ui);
         let drawn = surveyed_layout();
-        let unknown: Vec<_> = drawn.keys().filter(|id| listed(id).is_none()).collect();
+        let unknown: Vec<_> = drawn
+            .keys()
+            .filter(|id| elements::element(id).is_none())
+            .collect();
         assert!(
             unknown.is_empty(),
             "recorded ids the list has not: {unknown:?}"
         );
-        let missing: Vec<_> = elements()
+        let missing: Vec<_> = elements::elements()
             .iter()
             .filter(|e| e.when.is_none())
             .filter(|e| {
@@ -15895,9 +15460,9 @@ mod tests {
             "listed elements not recorded: {missing:?}"
         );
         for (id, rect) in &drawn {
-            let parent = listed(id).map(|e| e.parent.as_str());
+            let parent = elements::element(id).map(|e| e.parent.as_str());
             assert!(
-                parent == Some("window") || parent.is_some_and(|p| listed(p).is_some()),
+                parent == Some("window") || parent.is_some_and(|p| elements::element(p).is_some()),
                 "{id}: its parent is not in the list"
             );
             assert!(
@@ -15944,14 +15509,14 @@ mod tests {
                 let _ = update(&mut state, message);
             }
             assert_eq!(state.hovered_element, Some(id), "the pointer at {at:?}");
-            let element = match listed(id) {
+            let element = match elements::element(id) {
                 Some(element) => element,
                 None => panic!("{id} is not in the list"),
             };
-            let info = ElementInfo::of(&state, element);
+            let info = element_info(&state, element);
             assert_eq!(info.title, title);
             assert_eq!(shown_title(&state).as_deref(), Some(title));
-            let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf).collect();
+            let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
             let listed_leaves: Vec<&str> = element.leaves.iter().map(String::as_str).collect();
             assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
             assert!(
@@ -15983,11 +15548,10 @@ mod tests {
             layout: layout.clone(),
             ..State::default()
         };
-        let values = match toml::Value::try_from(&state.current_resolved) {
-            Ok(values) => values,
-            Err(error) => panic!("the resolved theme as TOML: {error}"),
+        let value = |leaf: &str| {
+            let shown = listed_value(&state, leaf);
+            (shown.text, shown.colour.map(to_color))
         };
-        let value = |leaf: &str| leaf_value(&state, &values, leaf);
         let side = r.button.border.padding.top.map(|v| format!("{v} px"));
         assert_eq!(Some(value("button.border.padding_top_px").0), side);
         let (colour, swatch) = value("button.background_color");
@@ -16007,7 +15571,7 @@ mod tests {
             value("layout.widget_gap_px").0,
             layout
                 .widget_gap
-                .map_or(NOT_STATED.to_string(), |v| format!("{v} px"))
+                .map_or(values::NOT_STATED.to_string(), |v| format!("{v} px"))
         );
         let heading = &r.text_scale.section_heading;
         assert_eq!(
@@ -16018,6 +15582,23 @@ mod tests {
             value("defaults.line_height").0,
             format!("{}", r.defaults.line_height)
         );
+    }
+
+    /// The value Widget Info shows for `leaf` (`values::leaf_value`), read as
+    /// [`element_info`] reads it: from the resolved theme's JSON, and the
+    /// layout, icon set and icon theme `state` keeps.
+    fn listed_value(state: &State, leaf: &str) -> values::LeafValue {
+        let json = match values::theme_json(&state.current_resolved) {
+            Ok(json) => json,
+            Err(error) => panic!("{error}"),
+        };
+        values::leaf_value(
+            leaf,
+            &json,
+            &state.layout,
+            Some(state.current_icon_set),
+            state.current_icon_theme.as_deref(),
+        )
     }
 
     /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is
@@ -16035,12 +15616,8 @@ mod tests {
             current_resolved: resolved,
             ..State::default()
         };
-        let values = match toml::Value::try_from(&state.current_resolved) {
-            Ok(values) => values,
-            Err(error) => panic!("the resolved theme as TOML: {error}"),
-        };
         assert_eq!(
-            Some(leaf_value(&state, &values, "tooltip.show_delay_ms").0),
+            Some(listed_value(&state, "tooltip.show_delay_ms").text),
             delay.map(|ms| format!("{ms} ms"))
         );
     }
@@ -16233,7 +15810,7 @@ mod tests {
             let mut ui = interface(&state);
             probe_bounds(&mut ui, probes::BASIC_BUTTON).center()
         };
-        // The dump, as `write_layout_dump` writes it (`{:#}` is
+        // The dump, as `dump::write_layout` writes it (`{:#}` is
         // `serde_json::to_string_pretty`), of the page `held_page` wraps as
         // `shielded` asks, once the pointer's messages went through `update`.
         let dump = |shielded: bool, pointer: bool| -> String {
@@ -16279,6 +15856,70 @@ mod tests {
             "without the shield the pointer does not change the dump either, so \
              the dump half of this test proves nothing"
         );
+    }
+
+    /// `--dump-layout` writes the layout dump through `dump::write_layout`:
+    /// for the showcase as it starts, the file is exactly `{:#}` of
+    /// [`layout_dump`]'s object (`serde_json::to_string_pretty`), the text
+    /// `scripts/check_showcase_parity.py` reads.
+    #[test]
+    fn the_layout_dump_is_written_as_the_comparator_reads_it() {
+        let state = State::default();
+        let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, view(&state));
+        // A selector goes through the whole tree, as the dump's `Survey` does.
+        let _ = texts(&mut ui);
+        let json = layout_dump(&state, 1.0);
+        assert!(
+            json.get("elements")
+                .and_then(serde_json::Value::as_object)
+                .is_some_and(|elements| !elements.is_empty()),
+            "the dump records no element"
+        );
+        let dir = std::env::temp_dir().join(format!("showcase-iced-dump-{}", std::process::id()));
+        let written = std::fs::create_dir_all(&dir)
+            .map_err(|e| e.to_string())
+            .and_then(|()| {
+                let path = dir.join("dump.json");
+                let path = path.to_string_lossy();
+                dump::write_layout(&path, &json)?;
+                std::fs::read_to_string(&*path).map_err(|e| e.to_string())
+            });
+        let _ = std::fs::remove_dir_all(&dir);
+        match written {
+            Ok(text) => assert_eq!(text, format!("{json:#}")),
+            Err(error) => panic!("{}: {error}", dir.display()),
+        }
+    }
+
+    /// A Widget Info line of a page's widget shows a swatch where it ends in
+    /// a colour as `color_to_hex` writes it, `#` and the hex, and none where
+    /// its last word is hex-like without the `#`; a listed element's colour
+    /// row has its colour, a word that is no colour none.
+    #[test]
+    fn a_swatch_needs_the_hash_of_a_colour() {
+        let colour = Color::from_rgba8(0x3d, 0xae, 0xe9, 0.5);
+        let line = format!(
+            "background: button.background_color {}",
+            color_to_hex(colour)
+        );
+        assert_eq!(
+            hex_color(&line).map(color_to_hex),
+            Some(color_to_hex(colour)),
+            "{line}: no swatch of its colour"
+        );
+        for bare in [
+            "background: button.background_color 3daee9",
+            "id: deadbeef",
+            "label: Cafe",
+            "count: 123",
+        ] {
+            assert_eq!(hex_color(bare), None, "{bare}: a swatch without a #");
+        }
+        let state = State::default();
+        let r = &state.current_resolved;
+        let shown = listed_value(&state, "button.background_color");
+        assert_eq!(shown.colour, Some(r.button.background_color));
+        assert_eq!(listed_value(&state, "theme_variant.icon_set").colour, None);
     }
 
     /// The user's text-scaling factor reaches every text alike: at 1.5, a
