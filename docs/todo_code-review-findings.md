@@ -11229,7 +11229,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Give the native path an info of its own (e.g. info::inputs::native_number_input(r)) that claims input.background_color, input.border.color, hover_border_color and focus_border_color as drawn, says the value takes geometry::input's padding, and names the ChevronUp/ChevronDown step buttons. Keep the current info for the no-theme path.
 **Verdict:** CONFIRMED — Under a native theme demo.rs:3529-3586 draws the rebuilt field: input.background_color fill, the value padded by geometry::input's input.border.padding, and ChevronUp/ChevronDown step icons. The info is still info::inputs::number_input (info/inputs.rs:220-240), which claims input_background, 'none from geometry::input ... Input keeps upstream's own padding', and 'hardcoded +/- icons' / 'Minus and Plus'. The test a_widgets_own_icons_are_named_gpui_components (tests.rs:6441) checks only that upstream text.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T1 (b712da16..33f5a09d)
 *Source:* A1#0.
 
 #### M9-002 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6531
@@ -11238,7 +11238,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pass SampleIcons for ChevronRight/ChevronDown (expander) and ChevronUp/ChevronDown (number field) from the page, the way collapsible gets its icons. Draw them with SampleIcon::icon()/sized(cx, geometry::icon_size_small), and draw no glyph where the set has none. Update the infos to match.
 **Verdict:** CONFIRMED — native_expander (demo.rs:6531-6541) and number_input's step closure (demo.rs:3560, :3565-3577) build Icon::new(IconName::ChevronRight/ChevronDown/ChevronUp) themselves, so they always draw gpui-component's Lucide asset. Elsewhere the showcase draws chosen-set icons it builds itself (SampleIcon, e.g. the Collapsible toggle's chevron, info/layout.rs:762). The native expander's info (info/layout.rs:583) cites AccordionItem::render for icons the showcase builds, so decision D1 and docs/todo.md:3172 do not cover them.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T8 (bb4fd01d..8605a6c9)
 *Source:* A1#1.
 
 #### M9-003 · M9a · info-truth · S1 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:8582
@@ -11247,7 +11247,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Give files_table's native rows, header and frame infos of their own (e.g. info::data::native_table_row(r, selected, …)) that claim list.selection_background/selection_text_color on the selected row, list.item_font.color and list.hover_* on the others, list.grid_color for the two lines, and list.border/background_color for the frame, with no top-border claim. Keep table_row for the declarative Table fallback.
 **Verdict:** CONFIRMED — files_table (demo.rs:8582-8605) fills row TABLE_SELECTED (pages/basic.rs:133) with list.selection_background and letters it in selection_text_color. Body rows draw no top edge: only the first cell's vertical grid line, and the bottom line on the header alone. Every row still gets info::data::table_row (info/data.rs:318-346), which claims the table fill (list_bg, colors.rs:428), foreground text, and a table_row_border top edge on rows after the first.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T1 (b712da16..33f5a09d)
 *Source:* A1#2.
 
 #### M9-004 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:3320
@@ -11256,7 +11256,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Draw textarea's native path as rows_textarea does: input_surface(r, &r.text_area.border, textarea.bg(none).border_color(none)), with the fixed height on the surface, and add info::inputs::input_surface to its info.
 **Verdict:** CONFIRMED — demo::textarea (demo.rs:3306-3330, called from pages/inputs.rs:98) applies geometry::text_area plus input_fill with no input_surface, so there is no hover edge. geometry::text_area (src/geometry.rs:372-393) sets no border colour, so upstream's input token shows. rows_textarea (demo.rs:3359-3366) and text_input (:3205-3211) wrap in input_surface. The hover half is live (adwaita input.hover_border_color #3584e4). (verifier: The edge-colour half is latent: text_area.border.color inherits input.border.color (docs/inheritance-rules.toml:173; resolve/inheritance.rs:736), and no preset or reader states it, so the drawn value is the same today.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T5 (7762fbfc..3a46ac57)
 *Source:* A1#3.
 
 #### M9-005 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:3359
@@ -11265,7 +11265,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In rows_textarea's native branch, add `textarea_info = info::inputs::input_surface(textarea_info, r)` (or a text-area variant naming text_area.border.color) and drop the upstream `input` border claim there.
 **Verdict:** CONFIRMED — rows_textarea (demo.rs:3359-3366) sets the field's own fill and edge transparent and draws input_surface (text_area.border, input.background_color, input.hover_border_color). Its info, info::inputs::rows_textarea -> textarea (info/inputs.rs:151-156, :171-175), still claims the border as the input token at input/input.rs:798. It has no hover claim or surface line, unlike text_input, which adds info::inputs::input_surface (info/inputs.rs:12-24).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T5 (7762fbfc..3a46ac57)
 *Source:* A1#4.
 
 #### M9-006 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6874
@@ -11274,7 +11274,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Build the Form's fields through text_field (or refine them with geometry::input_fill and wrap them in input_surface, recording the geometry and surface lines), so they match the Inputs page's refined fields.
 **Verdict:** CONFIRMED — field_input (demo.rs:6864-6881) applies geometry::input only: no input_fill and no surface. The Input therefore keeps upstream's input_background(), the window background in light (gpui-component theme/mod.rs:485-491), and has no hover edge. Its info is built with styled=true, so filled=true and the input_background claim is dropped (info/inputs.rs:47-57), with no input_fill line in its place. kde-breeze light: input.background_color #ffffff vs window #eff0f1 (kde-breeze.toml:152, :20).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T5 (7762fbfc..3a46ac57)
 *Source:* A1#5.
 
 #### M9-007 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:7463
@@ -11283,7 +11283,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Draw menu_rows from MenuLook::of(n): look.background, look.text, look.hover/hover_text, the look.frame* edge and look.radius on each row, keeping the token fallback only without a native theme. Update info::overlays::menu_row to claim those leaves.
 **Verdict:** CONFIRMED — menu_rows (demo.rs:7463-7469) paints the frame t.popover / popover_foreground (popover.background_color, popover.font.color; colors.rs:228-229, :523-524) inside demo_frame, and hovers rows with accent / accent_foreground. The chrome menus use MenuLook (demo.rs:275-305): menu.background_color, menu.font.color, menu.hover_*, and the popover border. Adwaita: menu.background_color inherits defaults #fafafb vs popover #ffffff (adwaita.toml:20, :287; dark #36363a at :669).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T6 (a81b27a9..c72bd244)
 *Source:* A1#6.
 
 #### M9-008 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:4576
@@ -11292,7 +11292,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In tree_row, do what ListRow does: group the item, set list.hover_text_color on the label's group hover while not selected (with the 'hovered text' config line), and apply list_gutter where Tree's scrollbar is laid over its rows.
 **Verdict:** CONFIRMED — tree_row (demo.rs:4576-4612) applies list_item and list_item_selected only. It has neither ListRow's group-hover list.hover_text_color (demo.rs:4490-4497, :4513-4518) nor its list_gutter margin (:4507-4511), while tree() frames the Tree as the list (demo.rs:4529-4561). (verifier: The gutter half's upstream cause (Tree's scrollbar layered over its rows, tree.rs:111) is the known docs/todo.md:1940 entry. The showcase-side workaround the List has is what is missing here.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T18 (ee836dc1..5ed3acd0); a right-clicked Tree row keeps the hover text colour without the fill, upstream's limit (an [upstream] docs/todo.md entry), and the List's own hover text, which the entry's evidence called right, was broken too and is fixed in the same commits
 *Source:* A1#7.
 
 #### M9-009 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6351
@@ -11301,7 +11301,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Reduce expander's fallback to upstream's Accordion with title/open/body and no native arms. Drop the `native` parameter and its Some arms from info::layout::expander.
 **Verdict:** CONFIRMED — expander returns native_expander whenever cx.native() is Some (demo.rs:6340-6349), so the later match &native Some arm (:6370-6378), the native.as_ref().map(..) tuple and its Some arm (:6383-6406) cannot run. info::layout::expander's only caller (demo.rs:6351, no test calls it) passes native.as_ref().map(..), always None there, so its Some arms (info/layout.rs:360-384) are dead.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T8 (bb4fd01d..8605a6c9)
 *Source:* A1#8.
 
 #### M9-010 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:6134
@@ -11310,7 +11310,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Keep one helper, `padded` with `y: Option<impl Into<DefiniteLength>>`, and call it from card, group_box (padded(content_style, &card.border.padding, margin, Some(margin))), segmented, tool_box_of and side_panel. Delete pad_unstated_sides.
 **Verdict:** CONFIRMED — The five exist: padded (demo.rs:319-340), pad_unstated_sides (:6134-6160), segmented's inline pl/pr/pt/pb (in segmented, from :2041; exactly padded(.., SEGMENT_PADDING, None)), side_panel's side closure (:1470-1478) and tool_box_of's side closure (:8208-8219). (verifier: Two details are overstated. tool_box_of's closure has no fallback: it is the stated-sides-only shape, as with_padding is. pad_unstated_sides leaves the stated sides alone rather than re-setting them, so padded replaces it only because group_box_content already set those sides, and padded's y is Option<Rems>, not Pixels.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T17 (f4912398..6aa0dc93)
 *Source:* A1#9.
 
 #### M9-011 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1466
@@ -11319,7 +11319,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Record the line only when container_margin is Some and either sidebar_padding is None or it leaves a side unstated, as toolbar does.
 **Verdict:** CONFIRMED — side_panel records geometry("container_margin") whenever container_margin is Some (demo.rs:1466-1468). Where sidebar.border.padding states all four sides, side() never falls back to it (:1470) and side_panel_content_margin returns None (:1514-1522), so the margin pads nothing. It is latent: no preset states sidebar.border. (verifier: Wider than claimed: the panel's 'padding' instance line (info/chrome.rs, side_panel: 'Npx around the theme settings, layout.container_margin') is already wrong once any sidebar.border.padding side is stated, since the content margin is then None.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T17 (f4912398..6aa0dc93)
 *Source:* A1#10.
 
 #### M9-012 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:671
@@ -11328,7 +11328,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Refine MenuBar's rows (and titles, for the font) with geometry::menu_item(n), layering only the colours and the unstated-side fallbacks MENU_ROW_PADDING_X / MENU_ROW_HEIGHT on top, so both menus come from one builder.
 **Verdict:** CONFIRMED — The chrome popup rows (demo.rs:668-686) hand-apply MenuLook's family, size, line height, weight, padding (with a MENU_ROW_PADDING_X fallback) and min_h(row_height). geometry::menu_item (src/geometry.rs:406-412, with_text :138-144) also sets font_style and uses with_height_rule (:204-212: h at text scale 1, min_h plus h_auto above). So the chrome rows lack the font style and grow past row_height where the builder fixes the height.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T6 (a81b27a9..c72bd244)
 *Source:* A1#11.
 
 #### M9-013 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1932
@@ -11337,7 +11337,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Give font_text (and the table/expander/heading paths) the family through native_theme_gpui::font_family(&font.family) and the style as with_text does. Better, one showcase helper mirroring with_text that every showcase-drawn label uses.
 **Verdict:** CONFIRMED — font_text (demo.rs:1932-1938), native_expander's header (:6545-6549) and files_table's font closure (:8475-8483) set size, weight and line height, but not font_family or font_style. geometry's with_text sets both (src/geometry.rs:138-144). (verifier: Latent. The stated trigger does not reach these elements: KDE's reader states only menuFont, toolBarFont and the WM activeFont (native-theme/src/kde/fonts.rs:190-208), Windows menu, tooltip, status bar and caption, GNOME the title bar. No preset states a family for the sidebar, tab, segmented_control, expander or list fonts. All inherit defaults.font, the window's family, so only a user theme file would show it.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T12 (a5b2c067..0fec2fff)
 *Source:* A1#12.
 
 #### M9-014 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:5820
@@ -11346,7 +11346,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Add .text_size(cx.theme().mono_font_size) and defaults.mono_font.weight (native_theme_gpui::mono_font_weight) under a native theme, and change the info's size line to claim them.
 **Verdict:** CONFIRMED — mono_text (demo.rs:5813-5825) sets only cx.theme().mono_font_family. Its info admits that mono_font_size does not reach it (info/typography.rs:133-139). type_line's Mono role applies defaults.mono_font's size, line height, weight and family (demo.rs:8335-8366). No recorded decision makes the omission intended (git 775de7a8 only added the info line).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T12 (a5b2c067..0fec2fff)
 *Source:* A1#13.
 
 #### M9-015 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1871
@@ -11355,7 +11355,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Use native_sized(cx, icon, geometry::icon_size_small) and add bar_info.geometry("icon_size_small") when the icon is shown.
 **Verdict:** CONFIRMED — The page tab row's menu icon is sized with px(n.resolved.defaults.icon_sizes.small) (demo.rs:1871), the only direct icon_sizes read in the showcase's non-test code. Every other small icon uses native_sized(.., geometry::icon_size_small) and records geometry("icon_size_small") (e.g. demo.rs:1356-1358, :1628-1629). bar_info records no such line (:1846-1851).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T12 (a5b2c067..0fec2fff)
 *Source:* A1#14.
 
 #### M9-016 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1255
@@ -11364,7 +11364,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Do not hand the placeholder's colour to the loaders: pass None (or cx.theme().foreground converted to Rgba) where no native theme is installed, e.g. fg_color = cx.native_theme().map(|_| self.original_font.color).
 **Verdict:** CONFIRMED — On the Err arm the placeholder font's colour is Rgba::TRANSPARENT (app.rs:1253, :1262), which becomes fg = Some(fc) (app.rs:1319-1320) for load_all_icons/load_gpui_icons; the freedesktop/SF/Segoe loaders take it through color_opt (support.rs:463-487), and fill_current_color/colorize_monochrome_svg drop alpha and write #000000 (native-theme/src/icons.rs:1050-1056, :947-950). rebuild_icon_caches gives System icons no tint (app.rs:569-575), while bundled ones get theme.foreground (app.rs:2050-2051). Icons whose own stylesheet sets `color` (Breeze) are left alone, which is why the claim says 'recoloured'. (verifier: S2 is fine for a fallback path, though it is reached only when the OS read fails.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T10 (00ca6bfb..210c7269)
 *Source:* A2#0.
 
 #### M9-017 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/pages/inputs.rs:29
@@ -11373,7 +11373,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Add cx.notify() to these seven listeners, as on_tab, on_segment, on_expander and on_rating have.
 **Verdict:** CONFIRMED — The listeners write the state and never notify (pages/inputs.rs:29-40; buttons.rs:88-93 for the Toggles; basic.rs:292-294 for the radio, which the Spinner hides). gpui-component documents the value as controlled: 'the owner must write the requested value and call cx.notify()' (gpui-component-0.7.3 src/checkbox.rs:104-108; the same text in radio.rs:125, switch.rs:89). gpui's keyboard click path calls the listeners with no refresh (gpui-pre-0.3.9 src/elements/div.rs:3040-3071), while the mouse-up path calls window.refresh() (:3086-3089), so clicking works and Space/Enter does not. No showcase test drives these by keyboard: a_checkbox_toggles_on_click_enter_and_space is the connector's own test (src/widgets/tests.rs:1353).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T9 (5888ef0f..10f40cf5)
 *Source:* A2#1.
 
 #### M9-018 · M9a · ux · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1586
@@ -11382,7 +11382,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Before opening the window, report `ERROR: --screenshot captures on macOS and Windows only; use --capture with scripts/capture_window.sh` and std::process::exit(1), as the egui showcase does.
 **Verdict:** CONFIRMED — On Linux the non-macOS/Windows arm only prints a note and keeps running (main.rs:1586-1594, 'Continue running -- let the user capture manually'), so no file is written and the process does not exit. The behaviour is deliberate and documented: the README says `--screenshot FILE` is macOS and Windows only, with the capture scripts taking the window on Linux (connectors/native-theme-gpui/README.md:836-837), and generate_screenshots_gpui.sh uses --capture, never --screenshot (:79). It still goes against the showcase's own rule that a bad flag exits 1 'as a failed --screenshot does' (main.rs:702-705). (verifier: S3 rather than S2: documented as unsupported on Linux and used by no script; the remaining defect is an unsupported flag that hangs instead of exiting 1.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T3 (83b9c27c..275814b0)
 *Source:* A2#2.
 
 #### M9-019 · M9a · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1487
@@ -11391,7 +11391,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Exit with 1 on that path (eprintln, then std::process::exit(1)), as the capture failures do.
 **Verdict:** CONFIRMED — The Err arm prints the message, calls cx.quit() and returns (main.rs:1486-1490). Neither gpui-kit 0.7.3 nor gpui-pre-linux 0.3.9 calls process::exit, so run() returns and main() ends with status 0. The other failure paths exit 1 (main.rs:1455, :1559, :1580).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T3 (83b9c27c..275814b0)
 *Source:* A2#3.
 
 #### M9-020 · M9a · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:461
@@ -11400,7 +11400,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Build PanelLook (with its JSON) once per install and keep it, e.g. on the Showcase, refreshed in apply_theme_by_name and demo::change_preferences, or keyed by an install counter the inspector compares; read theme fields by reference instead of cloning Theme.
 **Verdict:** CONFIRMED — Inspector::render clones the LayoutTheme on every render (inspector.rs:675-680). widget_tab clones cx.theme() and calls PanelLook::of before it checks whether anything is shown (inspector.rs:108-111), and PanelLook::of clones the layout and runs serde_json::to_value over the whole ResolvedTheme (inspector.rs:433-439, :461). The Inspector is a plain child view with no .cached() anywhere in the showcase, and gpui-pre renders an uncached AnyView on every window draw (view.rs:261-302, :470-477).
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
-**Status:** open
+**Status:** fixed — M9a T16 (d320c727..a5fc5801)
 *Source:* A2#4.
 
 #### M9-021 · M9a · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:701
@@ -11409,7 +11409,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Step and notify only while active_page == Page::Icons (return early otherwise; the page shows frames.get(index) so a paused index is harmless), or start the timer in show_page when the Icons page opens and drop it when it closes.
 **Verdict:** CONFIRMED — start_animation_timer is called whenever the icon theme changes and at startup (app.rs:967, :1665). Each tick advances the frame indices and calls cx.notify() on the Showcase, with no check of active_page (app.rs:691-704). Only pages/icons.rs:54 reads animated_frame_indices.
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
-**Status:** open
+**Status:** fixed — M9a T16 (d320c727..a5fc5801)
 *Source:* A2#5.
 
 #### M9-022 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/pages/buttons.rs:95
@@ -11418,7 +11418,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pad each page root with with_padding(.., geometry::window_margin(&self.layout)) and space its sections with with_gap(.., geometry::section_gap(&self.layout)), rows with widget_gap, and where the theme states none use one named showcase constant per role (spec §3.1), as the iced Gaps struct does.
 **Verdict:** CONFIRMED — Every page root but Basic is `.gap_5().p_4()` (buttons.rs:95-96, inputs.rs:53-54, data.rs:52-53, feedback.rs:176-177, typography.rs:109-110, layout.rs:143-144, overlays.rs:107-108, charts.rs:23-24, icons.rs:271-272), and Theme Map is gap_4/p_4 (theme_map.rs:277-278). Basic applies geometry::section_gap and window_margin (basic.rs:285-286, :763, :777), and the Layout page prints both values while padding itself with p_4 (layout.rs:92-99, :143-144). I found no ruling in docs/ that exempts the pages.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T11 (73ded48d..da65af26)
 *Source:* A2#6.
 
 #### M9-023 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:294
@@ -11427,7 +11427,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Name the drawn family where it differs, from native_theme_gpui::font_family(&font.family) (or cx.theme().font_family), in the form docs/todo.md:3499 prescribes, and fold this row into that item's fix.
 **Verdict:** CONFIRMED — status_environment formats app.original_font.family, the stated family (chrome.rs:289-294). This is the defect docs/todo.md:3499 records (M9b, 'Widget Info and the inspector must name the drawn family'), but that entry names only the inspector's Theme tab (inspector.rs:215-229) and Widget Info, not the status bar. The entry is incomplete rather than covering this, so the status bar should be added to it. (verifier: Fold it into the docs/todo.md:3499 entry, not a separate item.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T4 (8ea82d65..0d0add6e)
 *Source:* A2#7.
 
 #### M9-024 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/layout.rs:308
@@ -11436,7 +11436,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** "gpui-component, iced and egui", or count the connectors from one list so the line cannot go stale, as the presets answer beside it does (layout.rs:313-317).
 **Verdict:** CONFIRMED — The answer is the literal 'gpui-component and iced; an egui connector is planned for v0.6.0.' (pages/layout.rs:306-308). native-theme-egui and native-theme-egui-widgets are workspace members (Cargo.toml:8-9) and shipped in v0.6.0 (tag 942302d6).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T19 (0eff362a..dca84a34)
 *Source:* A2#8.
 
 #### M9-025 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/feedback.rs:384
@@ -11445,7 +11445,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** "Tags (6 colors + outline)", or format the count from TAGS.
 **Verdict:** CONFIRMED — TAGS has six filled kinds (Primary, Secondary, Danger, Success, Warning, Info) and two outlined ones (pages/feedback.rs:85-109); TagKind has exactly those six variants (demo.rs:5236-5243). The heading reads 'Tags (7 colors + outline)' (feedback.rs:384).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T19 (0eff362a..dca84a34)
 *Source:* A2#9.
 
 #### M9-026 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/pages/typography.rs:93
@@ -11454,7 +11454,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Use "secondary-c", "secondary-v", "secondary-shift-p", "secondary-z", and word the tooltip as the toolbar's are ("Ctrl+S, Cmd+S on macOS") or build it from the keystroke.
 **Verdict:** CONFIRMED — KBDS holds 'cmd-c', 'cmd-v' and 'cmd-shift-p' (pages/typography.rs:92-96). Off macOS gpui-component's Kbd renders the platform modifier as 'Win' (gpui-component-0.7.3 src/kbd.rs:140-146, :164-166). The tooltip text is the fixed 'Save file (Cmd+S)' (pages/feedback.rs:420). The showcase binds its own shortcuts as secondary-* (app.rs:126-129), which is Ctrl off macOS; its palette is secondary-k, not cmd-shift-p.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T19 (0eff362a..dca84a34)
 *Source:* A2#10.
 
 #### M9-027 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/support.rs:466
@@ -11463,7 +11463,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** One match per loader with only the Freedesktop arm under cfg, loading FreedesktopLoader::new(role).theme(t) for t = cli_override.or(default_theme); pass the one theme Showcase::freedesktop_theme already gives instead of two Options.
 **Verdict:** CONFIRMED — The two cfg arms of load_all_icons are the same match apart from the cli_override branch (support.rs:461-499), and load_gpui_icons has the same split. FreedesktopLoader::new(role) already loads icon_name(role, IconSet::Freedesktop) (native-theme/src/icons.rs:343-350), which is the native_icon_name(role, Freedesktop) the branch calls (support.rs:22, :470-471), so `l.theme(t)` alone would do. The comment at support.rs:467-468 says otherwise.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T3 (83b9c27c..275814b0)
 *Source:* A2#11.
 
 #### M9-028 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1214
@@ -11472,7 +11472,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** One helper that takes a SystemTheme and returns (or sets) the fonts, icon theme, icon set and layout and installs it, used by new and install_system_theme; one const or fn for the placeholder spec.
 **Verdict:** CONFIRMED — The Ok arm of Showcase::new (app.rs:1214-1243) repeats install_system_theme's steps: fonts, icon theme and set, layout, apply_system_theme and the Theme::change mode switch (app.rs:1737-1747). The two '(default)' ResolvedFontSpec blocks are identical (app.rs:1248-1265). The copies have already drifted: install_system_theme lays the user's PreferenceOverrides over the OS preferences (app.rs:1730-1731) and the constructor's copy does not. (verifier: The drift is a reason to share one helper; it is harmless only while no override exists at startup.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T10 (00ca6bfb..210c7269)
 *Source:* A2#12.
 
 #### M9-029 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/support.rs:529
@@ -11481,7 +11481,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Derive it: IconRole::ALL.iter().copied().find(|r| icon_name(*r).is_some_and(|i| i.path() == icon.clone().path())) (first match keeps DialogError for CircleX, as the comment wants).
 **Verdict:** CONFIRMED — role_for_gpui_icon (support.rs:529-563) restates native_theme_gpui::icons::icon_name (src/icons.rs:141-195) by hand; the two agree today. The showcase already calls icon_name (pages/icons.rs:145). The table could be derived by walking IconRole::ALL and matching icon_name(role).path() against GPUI_ICONS, first role winning, and no test checks that the two agree.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T3 (83b9c27c..275814b0)
 *Source:* A2#14.
 
 #### M9-030 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:409
@@ -11490,7 +11490,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** AppColorMode::ALL.map(..).
 **Verdict:** CONFIRMED — The palette lists System, Light and Dark by hand (chrome.rs:409-413); AppColorMode::ALL (app.rs:208-212) is what the colour-mode Select uses (app.rs:1029-1033). One part of the claim is inaccurate: the Theme menu does not follow ALL either. It is hand-listed too, with literal labels (chrome.rs:44-46), so a fix should cover both places.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T4 (8ea82d65..0d0add6e)
 *Source:* A2#15.
 
 #### M9-031 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:770
@@ -11499,7 +11499,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Rewrite the ten lines to name the route actually taken (e.g. 'gpui: the label's line box, its size by defaults.line_height (demo::font_text)', 'widgets::TabBar's label (widgets font_text)', 'widgets::Switch's label', 'geometry::status_bar's line height'), and drop the phi claims.
 **Verdict:** CONFIRMED — All ten apply defaults.line_height while their HOW rows (info/leaves.rs:770, 797-835, 861, 881) say 'not applied': widgets::Switch's label sets line_height(relative(defaults.line_height)) (src/widgets/switch.rs:378-383); sidebar_label, the non-widgets tab bars, the Basic tab row's fallback and the segments go through demo::font_text, which sets line_height_of (demo.rs:1436, 1754, 2005, 2095, 1932-1935); the widgets-build tab bars through widgets::font_text (src/widgets/mod.rs:197-202, tab_bar.rs:404); the expander header sets line_height_of (demo.rs:6549); the status bar sets it twice, geometry::status_bar via with_text (src/geometry.rs:563-569, 138-150) and bar.line_height (demo.rs:994).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T13 (71b71497..10fe5755)
 *Source:* A3#0.
 
 #### M9-032 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:1213
@@ -11508,7 +11508,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Say 'gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's left region (demo::status_bar)'; let info::status_bar's 'item gap' note add that the left region's single item is spaced inside by layout.widget_gap.
 **Verdict:** CONFIRMED — demo::status_bar wraps the toggle and the environment text in with_gap(h_flex(), widget_gap) (demo.rs:1000-1011, support.rs:308-313), widget_gap being geometry::widget_gap(&app.layout) (chrome.rs:276, src/geometry.rs:1387); the HOW row for chrome.status_bar layout.widget_gap_px (info/leaves.rs:1210-1214) says 'not applied'. Upstream's gap_2 (status_bar.rs:84, :88) still spaces the regions, but between the two items it is the theme's gap.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T13 (71b71497..10fe5755)
 *Source:* A3#1.
 
 #### M9-033 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:1084
@@ -11517,7 +11517,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Write the 'edge' note only where styled is false; where a native theme is installed say the edge is status_bar.border.line_width, drawn by demo::status_bar over upstream's border_t_1 (or move it into the HOW line and drop the note).
 **Verdict:** CONFIRMED — info::status_bar adds the not_themeable 'edge: border_t_1 ... geometry::status_bar leaves as it is' unconditionally (info/chrome.rs:1082-1085), while demo::status_bar, under a native theme, adds a 'top edge: status_bar.border.line_width' config and draws border_t(edge) (demo.rs:975-992); the leaf row says the same (info/leaves.rs:1884-1887), so the panel contradicts itself.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A3#2.
 
 #### M9-034 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:249
@@ -11526,7 +11526,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Guard the claim as overlays.rs does: push the 'menu edge' claim only where r.popover.border.line_width > 0.0, and let the 'menu edge' config say 'none: popover.border.line_width is 0' otherwise.
 **Verdict:** CONFIRMED — material-3 states popover.border.line_width_px = 0.0 in both modes (presets/material-3.toml:374, :879); the menu popup's frame is border(look.frame_width) = px(p.line_width) (demo.rs:297, 709-714), so no theme edge is drawn and only popover_style's ring remains, yet app_menus claims a 'menu edge' swatch in popover.border.color unconditionally (info/chrome.rs:249); the popover's info gates the same claim on line_width > 0 (info/overlays.rs:270-288, 40348498).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A3#3.
 
 #### M9-035 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:971
@@ -11535,7 +11535,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pass whether a native theme is installed (or the stated ResolvedPadding) to toolbar_button and panel_toggle and write the upstream-size note only for the sides and height the theme leaves unstated, naming button.border.padding / corner_radius for the rest.
 **Verdict:** CONFIRMED — toolbar_button and panel_toggle refine the Button with tool_button_box (demo.rs:1149-1152, 1361-1364), which replaces the height (h_auto) and each stated padding side and rounds by button.border.corner_radius (demo.rs:8199-8220); adwaita, kde-breeze and material-3 state padding_horizontal/vertical (adwaita.toml:132-133, kde-breeze.toml:145-146, material-3.toml:131-132). The info still lists 'size: h_8 with px_2p5' (info/chrome.rs:969-978) and 'h_6 with px_2' for the toggle (info/chrome.rs:484-485) under Not themeable, with no native-theme branch.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A3#4.
 
 #### M9-036 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/chrome.rs:658
@@ -11544,7 +11544,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Give underline_tab_bar the native theme (or a flag) and, where one is installed, replace the note with 'tab.min_height, through the Tab's style, which its own h does not clear (demo::tab_bar)'.
 **Verdict:** CONFIRMED — In the non-widgets path demo::tab_bar gives each tab min_w(tab.min_width).min_h(tab.min_height) (demo.rs:1749-1757) and info::tab_font adds the 'size: each tab at least tab.min_width by tab.min_height' config (info/chrome.rs:671-676), while underline_tab_bar's not_themeable 'height' says 'Nothing applies it: there is no geometry::tab -- our gap' (info/chrome.rs:656-659) under every theme, so both lines show at once.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A3#5.
 
 #### M9-037 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:46
@@ -11553,7 +11553,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Apply them: put the label's colour on the box and add text_color(stated(r.button.hover_text_color)) to the hover style and text_color(stated(r.button.active_text_color)) to the active style (or a group_hover on the label); the HOW lines then hold.
 **Verdict:** CONFIRMED — PanelLook sets only copy_hover/copy_active backgrounds on the Copy box (inspector.rs:459-460, 594-599); its text is look.text(div()), which sets text_color(sidebar.font.color) on the text element itself (inspector.rs:465-472, 600), so no hover or pressed text colour can reach it. The HOW rows (info/leaves.rs:42-55) claim button.hover_text_color and active_text_color letter the text; the element lists both leaves (docs/showcase-elements.toml:494).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T13 (71b71497..10fe5755)
 *Source:* A3#6.
 
 #### M9-038 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:203
@@ -11562,7 +11562,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Say 'and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1'.
 **Verdict:** CONFIRMED — geometry::tooltip_content subtracts 2.0 * tooltip.border.line_width (src/geometry.rs:526), and geometry::tooltip sets border(px(t.border.line_width)) over upstream's border_1 (src/geometry.rs:477); material-3 states tooltip.border.line_width_px = 0.0 (material-3.toml:221). The GEOMETRY_NOTES text says 'its 1px border (tooltip.rs, Tooltip::render: border_1)' (info/mod.rs:202-204), wrong for any width other than 1.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A3#7.
 
 #### M9-039 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:174
@@ -11571,7 +11571,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Name 'family, size, weight and style' in the five notes, and add 'tooltip.border.line_width, and shadow_md's layers in defaults.shadow_color where tooltip.border.shadow_enabled holds' to the tooltip note.
 **Verdict:** CONFIRMED — Since 35785f1e with_text sets font_family and font_style (src/geometry.rs:138-145), and title_bar, toolbar, button_label, toggle and link go through it (src/geometry.rs:281, 1013, 1369 among them); their notes name only size and weight (and colour) (info/mod.rs:174-179, 282-283, 290-291, 343-344). The tooltip note names border.color but not the border width or the shadow geometry::tooltip sets (src/geometry.rs:460-482 vs info/mod.rs:198-200). every_geometry_builder_has_a_note checks only presence (src/showcase.rs:576).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A3#8.
 
 #### M9-040 · M9a · theme-data · S2 · connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1932
@@ -11580,7 +11580,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Give demo::font_text, files_table and native_expander's header font_family(native_theme_gpui::font_family(&font.family)) and the font's style (as src/widgets/mod.rs:197-203 does), then change the five HOW lines to 'family, size, weight and style'.
 **Verdict:** CONFIRMED — demo::font_text sets size, line height and weight but no font_family or style (demo.rs:1932-1937), and it draws sidebar.font, tab.font (non-widgets), segmented_control.font (demo.rs:1436, 1754, 2005, 2095); the expander header (demo.rs:6546-6550, accordion_title src/geometry.rs:745-750) and files_table's rows/header (demo.rs:8474-8524) set no family either; the HOW rows record 'family: the window's' (info/leaves.rs:976, 1330, 1365, 1711, 1793). M6-21 ruled the same omission a bug in the connector's widgets and fixed it (docs/todo_code-review-findings.md:9464-9469); the showcase's own labels were left. (verifier: Latent: no bundled preset or reader states a distinct family or an italic style for these widgets today (the KDE reader's own families are menu, toolbar, title bar), so no pixel changes on any preset; S3 seems closer than S2.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T12 (a5b2c067..0fec2fff)
 *Source:* A3#9.
 
 #### M9-041 · M9a · bug · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:97
@@ -11589,7 +11589,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Extend every_prose_citation_still_exists (or a sibling) to read info::leaves::HOW's texts and to resolve 'file.rs:N' citations as the colour gate does (unambiguous file, line in range); fix the four 1167-1172 ranges to :1185, :1198-1203 with the gpui-component/button/button.rs prefix, and cite chrome.rs:921 by function (sficons.rs, load_sf_icon_by_name; winicons.rs, hicon_to_rgba) without the 0.5.9 pin.
 **Verdict:** CONFIRMED — No gate parses HOW text: leaves.rs is in SHOWCASE_FILES (src/showcase.rs:74-75) but holds no claim( or note call, every_listed_leaf_has_a_route only checks that how() finds a route (tests.rs:9050-9061), and the prose gate reads only 'file.rs, Symbol' (src/showcase.rs:2586-2620). 'button.rs:102-141, 1167-1172' (info/leaves.rs:97, 183, 188, 193): in upstream button/button.rs, lines 1167-1172 now fall on the Warning variant's hover fill (:1163-1169) and the start of the Success arm; the Custom hover is at :1184. One detail is wrong: a bare 'button.rs' would not be rejected as ambiguous. candidates() returns gpui-base/src/button.rs as the only direct match and skips the basename sweep (src/showcase.rs:2142-2158), so the colour gate would quietly read gpui-base's file. (verifier: Holds as S4. The ambiguity detail is wrong, and what happens is worse: a bare 'button.rs' in a claim would resolve to gpui-base's file without a word. The candidates() doc comment at src/showcase.rs:2123 ('button.rs is gpui-component's button/button.rs') is stale for the same reason.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T13 (71b71497..10fe5755)
 *Source:* A3#10.
 
 #### M9-042 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/leaves.rs:722
@@ -11598,7 +11598,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Delete the three entries, or add a test that every HOW entry is the chosen line for at least one listed (element, leaf).
 **Verdict:** CONFIRMED — Matching every element's leaves (docs/showcase-elements.toml) against HOW in order, as how() does (info/leaves.rs:2297-2300), three entries never come up first: '' defaults.icon_sizes.large_px (info/leaves.rs:722), '' defaults.line_height (:892) and '' toolbar.font (:2207). Earlier, more specific entries take every element that lists them.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T13 (71b71497..10fe5755)
 *Source:* A3#11.
 
 #### M9-043 · M9a · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/text.rs:227
@@ -11607,7 +11607,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Drop the last sentence; the note already states what sets the weight.
 **Verdict:** CONFIRMED — The text is at info/text.rs:79, not :227 (the file has 155 lines). inherited_font's 'font weight' note ends 'The panel used to call that hardcoded, which is the reverse: nothing sets it', history in product text, and gallery_label and sized_label (info/text.rs:116, 144) put it on every Typography Label that inherits its font. (verifier: The cited line is wrong (info/text.rs:79). The same note's 'and button since v0.5.9' is history of the same kind.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T19 (0eff362a..dca84a34)
 *Source:* A3#12.
 
 #### M9-044 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:206
@@ -11616,7 +11616,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Branch on r.card.border.line_width > 0.0 as info::buttons::toolbar does (buttons.rs:786-797): claim stated(r.card.border.color) and print the width when it is drawn; otherwise say no edge is drawn, and that an Outline box's own border is removed by the refinement.
 **Verdict:** CONFIRMED — geometry.rs:727-734 sets .border(px(card.border.line_width)) on the content, and card's BorderKind::None resolves an unstated line_width to 0 (native-theme/src/resolve/validate_helpers.rs:280-289). Only windows-11 states 1px (windows-11.toml card.border). So elsewhere the 0 overrides the Outline's border_1 (gpui-component group_box.rs:173-176), while info/layout.rs:206 and :445 still describe an edge 'on every variant'. Neither group_box nor card makes a colour claim for card.border.color (layout.rs:183-190, :436-441).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#0.
 
 #### M9-045 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:680
@@ -11625,7 +11625,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Replace the :680 note with a config line built from TabLook::of(r).indicator: tab.active_indicator_width and _side where it is Some, 'none: the theme states no indicator' where None; gate the colour claim on the same Option; add a tab.item_gap line.
 **Verdict:** CONFIRMED — info/layout.rs:680 is unconditional. Yet layout.rs:658-667 claims tab.active_indicator_color where it is stated, and widgets/tab_bar.rs:125-136 draws the strip. adwaita, kde-breeze and material-3 state active_indicator_color, width and side (adwaita.toml:227-229, kde-breeze.toml:263-265, material-3.toml:270-272).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T14 (8a66ecb6..66f270ec)
 *Source:* A4#1.
 
 #### M9-046 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:532
@@ -11634,7 +11634,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Claim the border colour only when the frame is drawn (frame_enabled != Some(false) && line_width > 0); give frame_enabled Some(true) its own edge text (each item framed by expander.border, layout.widget_gap apart); build the padding line from e.border.padding per side with EXPANDER_PADDING_X on an unstated left/right, none on unstated top/bottom, and the body's pr/pb only in the unstated-frame case.
 **Verdict:** CONFIRMED — info/layout.rs:532-537 claims the border colour unconditionally, even where frame_enabled is false (kde-breeze.toml:466). The edge text at layout.rs:569-572 says 'round the whole and between the items' when frame_enabled is Some(true), but demo.rs native_expander frames each item on its own (own_frames, the item's .border(line_width)). layout.rs:584 says the padding is unstated, but demo.rs passes &e.border.padding to padded() for the header, and adwaita (14/8) and windows-11 (16/0/0) state it. One sub-claim is wrong: adwaita's expander line is not 0px. It inherits defaults.border.line_width 1.0 (adwaita.toml:72; expander is a Full border widget, inheritance.rs:220), so that frame is drawn.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T8 (bb4fd01d..8605a6c9)
 *Source:* A4#2.
 
 #### M9-047 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:360
@@ -11643,7 +11643,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Drop the native parameter and arms from info::layout::expander and demo::expander's Some(n) match, and build the shared upstream Accordion claims in one helper used by accordion() and expander().
 **Verdict:** CONFIRMED — demo.rs:6340-6350 returns native_expander whenever cx.native() is Some, so info::layout::expander (its only caller is demo.rs:6351) always receives None. Its Some arms (layout.rs:360-384) and demo.rs's `match &native { Some(n) ... }` blocks after it never run. No test calls layout::expander (tests.rs:6457-6477 calls accordion only).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T8 (bb4fd01d..8605a6c9)
 *Source:* A4#3.
 
 #### M9-048 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:716
@@ -11652,7 +11652,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Say 12px on an unstated left or right side and none on an unstated top or bottom, as native_tab_row's padding line does (layout.rs:678).
 **Verdict:** CONFIRMED — demo.rs segmented (around :2076-2080) pads only the left and right sides with SEGMENT_PADDING where they are unstated; an unstated top or bottom gets nothing (when_some). info/layout.rs:716 says every unstated side gets 12px. material-3 states only padding_horizontal (material-3.toml:492), so this shows on a shipped preset.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T17 (f4912398..6aa0dc93)
 *Source:* A4#4.
 
 #### M9-049 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:430
@@ -11661,7 +11661,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Drop the 'content text' claim from info::layout::card (the Label reports its own colour) or claim foreground at gpui-component/label.rs:211.
 **Verdict:** CONFIRMED — demo.rs:6199 makes the card's content body_label, a Label (demo.rs:5557-5579). Its root sets text_color(foreground) (gpui-component 0.7.3 label.rs:211), which overrides the content's group_box_foreground (group_box.rs:173). Yet info/layout.rs:428-433 claims group_box_foreground as the content text. group_box()'s own comment at layout.rs:174-175 states this exact rule.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#5.
 
 #### M9-050 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:745
@@ -11670,7 +11670,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Print k.radio_indicator_width.unwrap_or(k.indicator_width), naming checkbox.radio_indicator_width where it is stated (as leaves.rs:536-537 already describes).
 **Verdict:** CONFIRMED — widgets/checkbox.rs:110-113 sizes a radio by checkbox.radio_indicator_width.unwrap_or(indicator_width), and widgets/tests.rs:158-164 asserts 20px on material-3 (material-3.toml:173). info/inputs.rs:745 prints checkbox.indicator_width, which is 18 there.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#6.
 
 #### M9-051 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:914
@@ -11679,7 +11679,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** For an unchecked switch print s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter), naming switch.unchecked_thumb_diameter where it is stated.
 **Verdict:** CONFIRMED — widgets/switch.rs:108-112 uses unchecked_thumb_diameter for an off switch, which is 16 on material-3 (material-3.toml:401-403). info/inputs.rs:914-919 always prints switch.thumb_diameter (24).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#7.
 
 #### M9-052 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:576
@@ -11688,7 +11688,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Where k.check_mark_stroke_width is Some, say the connector strokes upstream's check polyline at that width (widgets/checkbox.rs, stroked_check) and keep own_icons only for the None case.
 **Verdict:** CONFIRMED — widgets/checkbox.rs:170 and :422-431 stroke the check with stroked_check where checkbox.check_mark_stroke_width is stated (2.0 on adwaita, kde-breeze and material-3), and fall back to IconName::Check only otherwise. info/inputs.rs:576 always names gpui-component's Check icon and never mentions the stroke.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#8.
 
 #### M9-053 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:604
@@ -11697,7 +11697,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** For a disabled control claim the faded_over colours (or the stated value with its alpha set by the opacity and the role naming the fade) and add a config line 'checkbox.disabled_opacity, N%' via percent_text, as the input's disabled surface line does.
 **Verdict:** CONFIRMED — widgets/checkbox.rs:147 and :180-199, and switch.rs:123, fade a disabled control by checkbox.disabled_opacity or switch.disabled_opacity. The native_checkbox, native_radio_column and native_switch info (inputs.rs:556-590, :702-760, :764-940) claim the unfaded colours and never mention the fade; only a code comment does (inputs.rs:599-602). This covers every preset whose opacity is below 1, e.g. adwaita and the community presets at 0.5.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#9.
 
 #### M9-054 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:171
@@ -11706,7 +11706,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In demo::rows_textarea call info::inputs::input_surface on its info (naming text_area.border), drop the upstream border claim in that case, and either give demo::textarea the same surface or say in its info why it has none.
 **Verdict:** CONFIRMED — demo.rs:3374-3382 draws the Basic page's rows_textarea over input_surface: the frame is text_area.border, the hover edge input.hover_border_color, and the field's own border is transparent. info/inputs.rs:166-170 reuses textarea()'s border claim in the input token (inputs.rs:151-156) and adds no surface or hover claim. demo::textarea (demo.rs:3320-3344, used at pages/inputs.rs:98) has no surface.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T5 (7762fbfc..3a46ac57)
 *Source:* A4#10.
 
 #### M9-055 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:48
@@ -11715,7 +11715,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Claim stated(r.input.border.color) as the surface's edge (cited 'showcase') for a refined styled field, and drop the Select's foreground claim where native is Some, as info::inputs::input already does for the text colour (:63-72).
 **Verdict:** CONFIRMED — Input: demo.rs text_field (enabled Refined) draws the field with border_color(transparent) over input_surface, yet info/inputs.rs:48-53 always claims 'border: input'. Select: gpui-component select.rs sets text_color(fg) and then refine_style, so geometry::select's combo_box.font colour (geometry.rs:885-887) wins. inputs.rs:1055-1060 still shows an upstream 'foreground' swatch under a native theme. That claim is labelled 'upstream', which softens it.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T5 (7762fbfc..3a46ac57)
 *Source:* A4#11.
 
 #### M9-056 · M9a · info-truth · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs:525
@@ -11724,7 +11724,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In list_item, for ListRowState::Selected / SelectedRightClicked with styled, say the text is list.selection_text_color through geometry::list_item_selected.
 **Verdict:** CONFIRMED — demo.rs:4480-4483 and :4589-4592 apply geometry::list_item_selected (list.selection_text_color, geometry.rs:1349-1351) to a selected row and record that geometry line. info/data.rs:525-526 still says the text is list.item_font's colour in every state.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T18 (ee836dc1..5ed3acd0)
 *Source:* A4#12.
 
 #### M9-057 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/feedback.rs:207
@@ -11733,7 +11733,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Claim the frame colour only where p.border.line_width > 0 and otherwise say no frame is drawn; drop the O4 reference or point to a live docs/todo.md entry.
 **Verdict:** CONFIRMED — info/feedback.rs:205 claims the frame colour unconditionally, though progress_bar.border.line_width is 0 on adwaita (adwaita.toml:215), windows-11 (windows-11.toml:276) and material-3 (material-3.toml:258), and widgets/progress.rs:259 then draws a 0px border. The 'OPEN O4' at feedback.rs:208 is found only in docs/archive/todo_gpui-widgets-spec.md:191, not in docs/todo.md.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#13.
 
 #### M9-058 · M9a · theme-data · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/feedback.rs:508
@@ -11742,7 +11742,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pass the resolved large icon size (native_value(cx, geometry::icon_size_large)) into info::feedback::empty and print it with px_text, or say upstream's size where there is none.
 **Verdict:** CONFIRMED — info/feedback.rs:506 hardcodes '32px, or 48px on KDE' and prints it whenever the icon is shown, with or without a native theme. With none, native_sized (demo.rs:153-157) leaves the icon at upstream's size. Under a native theme the literals match the presets (kde-breeze.toml:92 is 48, others 32) but not an OS-read theme. The underlying overflow is known (docs/todo.md:2723); the literal text is not.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#14.
 
 #### M9-059 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/buttons.rs:338
@@ -11751,7 +11751,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pass the resolved button.border.line_width (or the ResolvedTheme) into button()/edge() and, at 0, drop the hovered/pressed edge claim and say no edge is drawn.
 **Verdict:** CONFIRMED — geometry::button sets .border(px(button.border.line_width)) (geometry.rs:229), which is 0 on material-3 (material-3.toml:136, :641). It overrides upstream's border_l_1 etc. (button.rs:710-715), and upstream's hover and active styles only recolour. So no edge is drawn, while info/buttons.rs:515 and edge() (buttons.rs:338-366) claim one at rest and when hovered or pressed.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#15.
 
 #### M9-060 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/buttons.rs:564
@@ -11760,7 +11760,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Replace the :564 note with a config line that prints button.disabled_opacity (percent_text) as the fade applied over the stated pair.
 **Verdict:** CONFIRMED — info/buttons.rs:564 says 'with no further fade'. But geometry.rs:1298 fades by .opacity(unit(b.disabled_opacity)), and the same panel's button_disabled geometry line says 'faded by button.disabled_opacity' (info/mod.rs:331-332). The two contradict each other on every preset below 1 (adwaita and the community presets at 0.5).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#16.
 
 #### M9-061 · M9a · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/typography.rs:187
@@ -11769,7 +11769,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Pass the resolved link.underline_enabled into info::typography::link: where it is false, drop the resting-underline claim and say the refinement removes it (hover and press still underline); keep the Tier U text only for no native theme, and close docs/todo.md:1933's underline half.
 **Verdict:** CONFIRMED — geometry::link (geometry.rs:1367-1375) sets text_decoration_0 where link.underline_enabled is false, and its geometry line says so (info/mod.rs:343-344). info/typography.rs:187 still says the underline is always on, cannot be removed, and that underline_enabled has no receiver (Tier U). The 50% resting-underline claim (typography.rs:157-162) is listed unconditionally. (verifier: Wider than ios-13: material-3 also states underline_enabled=false (material-3.toml:440, :945), and the 'no receiver' sentence is false under every native theme. docs/todo.md:1932-1936 repeats the same stale wording.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T15 (c04a9b58..096581d5)
 *Source:* A4#17.
 
 #### M9-062 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/inputs.rs:14
@@ -11778,7 +11778,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Add one helper in info/mod.rs, e.g. `fn stated_claim(role, field, Option<Rgba>, cited) -> Option<ColorClaim>`, and pass its result to WidgetInfo::colors, which takes an IntoIterator.
 **Verdict:** CONFIRMED — The `if x.is_some() { claim(.., stated(x.unwrap_or(<other>))) }` or map_or(<dummy>, stated) pattern recurs in info/: inputs.rs:14-19, layout.rs:366 and :709 (map_or transparent_black), layout.rs:549 (hover unwrap_or(e.font.color)), :646 and :663 (tab hover and indicator fallbacks). Each fallback is unreachable under its is_some guard. arrow_color at :542 is a real, visible fallback, not a dummy.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#18.
 
 #### M9-063 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/data.rs:741
@@ -11787,7 +11787,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Have message() take its claims from the Bubble arm it shows (a shared fn of BubbleKind), give Severity an upstream_icon() name used by both own_icons texts, and factor the state variant and click notes into one helper per control.
 **Verdict:** CONFIRMED — message() (data.rs:741-770) repeats bubble()'s Filled and Muted claims at the same bubble.rs:215/216/225/226 citations. The checkbox and native_checkbox variant match and click notes are duplicated (inputs.rs:249/328/333 vs :566/581/586). The severity icon lists in feedback.rs:126-141 and :898-910 overlap only in the icon names: they cite different upstream functions (alert.rs vs notification.rs), so that pair is weaker duplication.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T7 (f0c47988..a0c890dd)
 *Source:* A4#19.
 
 #### M9-064 · M9a · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/layout.rs:56
@@ -11796,7 +11796,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Move layout.rs:56-57 onto separator() and delete charts.rs:44-45.
 **Verdict:** CONFIRMED — info/layout.rs:56-57 places separator()'s doc ('A Separator of kind ...') above native_separator's own doc, which leaves separator() at layout.rs:77 undocumented. charts.rs:44-46 puts 'A chart the showcase builds without an id...' above the Guide enum's doc.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T19 (0eff362a..dca84a34)
 *Source:* A4#20.
 
 #### M9-065 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2093
@@ -12327,7 +12327,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Have PanelLook carry the installed theme's icon theme (Showcase::current_icon_theme) beside `icon_set`, and answer `defaults.icon_theme` from it in leaf_value, as iced does. Add the leaf to the agreed-format test.
 **Verdict:** CONFIRMED — gpui leaf_value walks the serde_json of ResolvedTheme (inspector.rs:461, values.rs:51-56), and ResolvedDefaults has no icon_theme field (model/resolved.rs:76-137; icon_theme lives on Resolved, :283). So `defaults.icon_theme`, listed for the toolbar buttons, page-tab menu and Basic spinner (showcase-elements.toml:321-361, :594), always prints `not stated`. iced special-cases it from current_icon_theme (showcase-iced.rs:5294-5302). egui injects defaults.icon_theme into its JSON (showcase-egui/info.rs:222-234). No gpui test covers the leaf.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** fixed — M9a T2, T4 (88e2296e..e04bd98c the crate's leaf_value, 8ea82d65..0d0add6e gpui); the iced and egui panels already showed the icon theme
 *Source:* X#0.
 
 #### M9-124 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/values.rs:129
@@ -12336,7 +12336,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** One dev-only crate on the tools/test-fixtures precedent (M8 T2's ruling): ShowcaseElement and its parser, the leaf walk and value text over serde_json::Value, the special leaves (`layout.*`, `theme_variant.icon_set`, `defaults.icon_theme`), and the panel's title, rows and Copy text. Each showcase only draws the panel.
 **Verdict:** CONFIRMED — The duplication is real: three element-list readers (gpui elements.rs:49, egui elements.rs:18, iced's own), three path walks (values.rs:63-75, info.rs:303-321, showcase-iced.rs:5303-5316) and three font formatters (values.rs:129-148, info.rs:353-381, showcase-iced.rs:5342-5370). The icon_theme drift is real. The font drift as worded is not reachable: ResolvedFontSpec's family, size and weight are not optional (native-theme/src/model/font.rs:255-281). Also iced prints `not stated` for a missing size, so it does not drop that part (:5360). (verifier: S4 is right; the font-drift evidence should be dropped or marked latent.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T4 8ea82d65..0d0add6e); iced half M9b T1, egui half M9c T1 (I2: fixed when the last half lands)
 *Source:* X#1.
 
 #### M9-125 · M9x · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/main.rs:213
@@ -12345,7 +12345,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Move the parser, validators, app id, frame check and dump writer into the same dev-only showcase crate. Each showcase passes in only its toolkit hooks (pages, installed themes, menus).
 **Verdict:** CONFIRMED — gpui main.rs:688-1044 and showcase-iced.rs:806-1000 are nearly line for line the same: CliArgs, parse(), parse_point at main.rs:722 and showcase-iced.rs:840, color_mode, theme_key/theme_choice with the same error texts. egui main.rs:176-266 and app.rs:144-178 have the same fields and error texts in a different parser. The capture app id is at main.rs:626 / showcase-iced.rs:12842 / egui main.rs:108, check_frame_capture at main.rs:643 / showcase-iced.rs:12875 / egui main.rs:124.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#2.
 
 #### M9-126 · M9x · simplify · S4 · native-theme/src/icons.rs:1436
@@ -12354,7 +12354,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Add the row list and the name parser to core next to default_icon_choice, e.g. `icons::icon_set_choices(icon_set, icon_theme, installed) -> Vec<IconSetChoice>` and `IconSetChoice::from_name(name, installed)`, accepting `default`. gpui adds its builtin row on top. Put the preset rows in the shared showcase crate.
 **Verdict:** CONFIRMED — Three icon-row builders over core's default_icon_choice: gpui app.rs:524-540, iced build_icon_choices showcase-iced.rs:1252-1268, egui chrome.rs:938. Three name parsers: gpui icon_set_row main.rs:980-996 and iced icon_set_choice showcase-iced.rs:957-975 have no `default` arm, while egui icon_choice app.rs:181-187 accepts `default`. The default row appears in all three only where default_icon_choice returns Default(_), i.e. not under every theme.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** partly fixed (the shared crate's rows and parser and the gpui half: M9a T2 88e2296e..e04bd98c, T4 63570ccb; in the crate, not core, by the Step 6 ruling); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#3.
 
 #### M9-127 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1050
@@ -12363,7 +12363,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Move egui's capture.rs into the shared showcase crate and capture gpui and iced through it. This deletes their capture unsafe blocks and the windows/objc2 dev-dependencies they need only for capture. gpui's Retina nudge (main.rs:1133) is a separate question.
 **Verdict:** CONFIRMED — gpui main.rs:1050-1349 and iced showcase-iced.rs:2337-2470 carry the same objc2 msg_send lookup + `screencapture -l` and FindWindowW/DwmGetWindowAttribute/BitBlt/GetDIBits. egui capture.rs is safe: it finds its window by pid and title in xcap's list (:123-142) and on macOS takes `screencapture -l <id> -o` on it (:148-162). On Windows a second run finds the window because xcap skips the calling process's windows (xcap-0.9.8 windows/impl_window.rs:113-116). It reads the DWMWA_EXTENDED_FRAME_BOUNDS frame (utils.rs:241-254) and copies it with Monitor::capture_region, a desktop BitBlt (gdi.rs:83-122). Both sides then run check_frame_capture. So parity holds on macOS (xcap's list is OnScreenOnly and includes this process's windows, macos/impl_window.rs:161-200) and on Windows (the frame and size check match). Remaining differences: no CAPTUREBLT, a capture limited to one monitor, and the extra finder process. The capture unsafe is avoidable. gpui's non-capture unsafe, nudge_content_size (main.rs:1133-1146: contentView/setContentSize), is avoidable too: objc2-app-kit 0.3.2 exposes NSApplication::mainWindow/keyWindow/windows and NSWindow::windowNumber/contentView/setContentSize as safe fns (generated/NSApplication.rs:521,526,690; NSWindow.rs:761,782,831). (verifier: Given the strict no-unsafe rule, S3 may fit better than S4: every unsafe line in both showcases has a safe route.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** open — gpui half fixed: M9a T3 (83b9c27c, safe capture through the crate); iced half M9b T2, egui half M9c T1
 *Source:* X#4.
 
 #### M9-128 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:422
@@ -12372,7 +12372,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Make each connector's colour-to-Rgba conversion public (or add a `to_hex`), and have the showcases print with `native_theme::Rgba`'s Display. Delete the two showcase formatters.
 **Verdict:** CONFIRMED — The gpui showcase's hsla_to_hex (info/mod.rs:423-432) tests `rgba.a < 1.0` before rounding, so an alpha in [0.998,1) prints `#rrggbbff`. The gpui connector's copy (src/colors.rs:59-73) and core's Rgba Display (color.rs:188-199) decide on the rounded byte and print `#rrggbb`. The third formatter, iced's color_to_hex (showcase-iced.rs:12069-12080), has the same flaw as the gpui showcase's. Only a computed alpha reaches the case: a theme colour's alpha is k/255.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** partly fixed (the gpui half: M9a T4 672b6e05 and 0d0add6e); iced half M9b T1; the plan's table lists no egui half (I2)
 *Source:* X#5.
 
 #### M9-129 · M9x · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8484
@@ -12444,7 +12444,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** One parser (the shared crate) with one flag set and one exit rule. `--screenshot` exits 1 wherever the showcase cannot capture its frame (egui's rule). `--icon-theme` goes in favour of `--icon-set <theme>`, which the scripts then pass for all three. `default` is accepted everywhere. One page-key table, with iced's inputs page keyed `inputs`. An unknown `--open-menu` gets the same handling in all three.
 **Verdict:** CONFIRMED — Each item checks out. Linux --screenshot: gpui prints and keeps running (main.rs:1583-1590); iced takes window::screenshot of the content (showcase-iced.rs:2528-2541); egui exits 1 (main.rs:303-306). --icon-theme is only in gpui (main.rs:897). Only egui accepts `default` (app.rs:181). --tab: gpui takes `inputs` and the `text-inputs` alias (main.rs:1022-1025), iced `text-inputs`/`textinputs` (showcase-iced.rs:978-982), egui `inputs` only (app.rs:46-58). An unknown --open-menu exits 1 in iced (showcase-iced.rs:12789-12794), and gpui and egui report it and go on (main.rs:1434-1439, egui app.rs:444-451).
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** partly fixed (the shared crate's one flag set and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#13.
 
 #### M9-137 · M9x · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1501
@@ -12453,7 +12453,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In gpui and iced, quit after the dump only when neither `--capture` nor `--screenshot` was given, as egui's `capturing()` does.
 **Verdict:** CONFIRMED — gpui passes quit = !capture to dump_layout (main.rs:1495-1502), which writes and quits after 4 equal 250 ms readings, at about 1 s. The screenshot fires after 1.5 s (main.rs:1541-1554 macOS, :1564-1567 Windows). iced writes after LAYOUT_SETTLES_AFTER 1 s and exits unless --capture (showcase-iced.rs:587, :2602-2609), and its screenshot countdown is 3 s (:2019). egui keeps running when capturing(), which includes --screenshot (app.rs:431-435; main.rs:201-203). For iced this holds on Linux as well.
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** open — gpui half fixed: M9a T3 (83b9c27c, b66091f7 cli::Outputs, 275814b0 the bounded dump); iced half M9b T2; egui keeps running until both are written
 *Source:* X#14.
 
 #### M9-138 · M9x · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1859
@@ -12462,7 +12462,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** In gpui and iced, keep the SystemTheme read at install and re-pick its variant on a mode switch. Re-read only on Reload System Theme and watcher events. Reload icons only when the effective set or theme changed, and otherwise recolour the loaded ones.
 **Verdict:** CONFIRMED — gpui's set_color_mode goes to install_in_mode, then apply_theme_by_name, which under `default` calls SystemTheme::from_system() and reload_icons (app.rs:1810-1833, :1859-1880, :942-967). iced's install_in_mode calls load_theme, whose OsTheme branch re-runs read_system_theme, then reload_icons (showcase-iced.rs:2035-2065, :2086-2099). egui's set_mode is only ctx.set_theme (app.rs:546-551), since the atlas holds both variants.
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
-**Status:** open
+**Status:** open — gpui half fixed: M9a T10 (00ca6bfb..210c7269); iced half M9b T6 (the OS read) and T13 (the icon reload)
 *Source:* X#15.
 
 #### M9-139 · M9x · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:5211
@@ -12714,6 +12714,17 @@ The maintainer asked for the documents to be checked again for truth, contradict
 
 - Amendment (2026-10-17, from M8 T16's review): M9a's T17 also states the sourced sidebar padding (adwaita, windows-11; T15's §2.12 rows) and fixes the two gpui showcase layout tests that hard-code the container margin for the side panel (the showcase's own `the_side_panel_takes_the_sidebars_padding` already pads by a stated sidebar padding); M9b gains two entries' worth of work: iced's side panel reads `sidebar.border.padding` as gpui's and egui's do, and the iced_aw Extra-page Card pads inside its border as the Basic and Display cards do since M8 T16 (f6d73eb7).
 - Amendment (2026-10-17, from M8 T21's review): (1) M9c's T12 cites `docs/todo.md:3585` for the egui Theme Map's body rows; M8 T21 moved that entry (it is now in *This cycle (v0.7.0)*, about `:3464` at 21a025f4) — the task finds it by its heading and opening words, and the label is M9c's (M8 T21 relabelled it; the code is the egui showcase's). (2) `connectors/native-theme-egui/showcase-egui/src/info.rs` about `:811` still calls the *Border opacity* entry open, which closed 2026-09-28 (now in `docs/archive/todo_closed.md`): a false claim on the Widget Info page, info-truth S4, taken by M9c's T14 (the last task that edits info.rs; T10 before it), with a failing check that the text names no closed entry as open.
+
+### M9a Step 8 — statuses (2026-10-18)
+
+Set from the plan's task table, the progress ledger's "complete" lines and the task reports; ranges are the task's commit range at `e1db301e..0a9e7dc3` (T1–T21; T20 and T21 and the final fix add no entry of their own).
+
+- **M9a's 64 entries:** 64 fixed (M9-001–M9-064), none deferred, none open.
+- **M9x entries M9a owns:** M9-123 fixed; M9-124, M9-125, M9-126, M9-128, M9-136 partly fixed (the shared crate and the gpui half done; amendment I2 marks an entry with sibling halves fixed only when its last half lands); M9-127, M9-137, M9-138 open with their gpui half fixed.
+- **Totals:** 65 fixed, 5 partly fixed, 3 open for another milestone's half, 0 deferred, 0 open for a ruling.
+- M9-008: fixed, with the right-clicked Tree row's hover text an upstream limit ([upstream] entry in docs/todo.md) and the entry's List evidence corrected (T18).
+- M9-124, M9-125, M9-126, M9-136: iced half M9b T1, egui half M9c T1. M9-128: iced half M9b T1. M9-127: iced M9b T2, egui M9c T1. M9-137: iced M9b T2. M9-138: iced M9b T6 and T13.
+- M9-130 and M9-139 (M9b's entries): their gpui halves are in M9a T4 (f3e058ee) and T16 (d320c727); the entries stay M9b's.
 
 ### Status
 
