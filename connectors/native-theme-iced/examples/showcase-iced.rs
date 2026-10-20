@@ -13714,6 +13714,44 @@ mod tests {
         );
     }
 
+    /// `--open-menu <title>` holds that menu open from the first frame, each
+    /// of the bar's four: with its index held, the menu's own row is drawn,
+    /// one more time than with no menu held, and no other menu's row is.
+    #[test]
+    fn the_open_menu_flag_holds_each_menu_open() {
+        // A row of each menu of [`MENU_TITLES`], in its order.
+        let rows = ["Quit", "Command Palette", "Reload System Theme", "About"];
+        let drawn = |held: Option<usize>| -> Vec<String> {
+            let mut state = State::default();
+            state.held_menu = held;
+            let theme = theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                let _ = ui.simulate([Event::Window(iced::window::Event::RedrawRequested(
+                    std::time::Instant::now(),
+                ))]);
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            texts(&mut ui).into_iter().map(|(text, _)| text).collect()
+        };
+        let count = |texts: &[String], row: &str| texts.iter().filter(|t| *t == row).count();
+        let closed = drawn(None);
+        for (index, title) in MENU_TITLES.iter().enumerate() {
+            let open = drawn(Some(index));
+            for (other, row) in rows.iter().enumerate() {
+                let (with, without) = (count(&open, row), count(&closed, row));
+                if other == index {
+                    assert_eq!(with, without + 1, "--open-menu {title}: {row} is not drawn");
+                } else {
+                    assert_eq!(with, without, "--open-menu {title}: {row} is drawn");
+                }
+            }
+        }
+    }
+
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
     /// that has none shows none: never the system theme's.
     #[test]
