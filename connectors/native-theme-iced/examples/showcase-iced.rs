@@ -1922,16 +1922,14 @@ impl State {
     }
 
     /// `--icon-set default`: the icons follow the theme again, as after a
-    /// pick of the picker's `default` row, and are the icon theme the
-    /// installed theme names (`default_icon_choice`): that row, the first of
-    /// `icon_set_choices` where there is one, else `system`.
+    /// pick of the picker's `default` row, and are the choice the installed
+    /// theme derives (`default_icon_choice` of its icon set and icon theme),
+    /// as `install_in_mode` derives it: the OS theme's icon theme, or the one
+    /// a preset states, which every bundled preset does.
     fn follow_theme_icons(&mut self) {
-        let followed = match self.icon_set_choices.first() {
-            Some(choice @ IconSetChoice::Default(_)) => choice.clone(),
-            _ => IconSetChoice::System,
-        };
         self.icon_choice_follows_preset = true;
-        self.icon_set_choice = followed;
+        self.icon_set_choice =
+            default_icon_choice(self.current_icon_set, self.current_icon_theme.as_deref());
         self.reload_icons();
     }
 
@@ -2284,22 +2282,23 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             if state.screenshot_countdown > 0 {
                 state.screenshot_countdown = state.screenshot_countdown.saturating_sub(1);
                 if state.screenshot_countdown == 0 {
+                    let path = state.screenshot_path.clone().unwrap_or_default();
                     // macOS and Windows: an OS capture of the window with its
                     // decorations, once the content's size is known.
                     #[cfg(any(target_os = "macos", target_os = "windows"))]
                     {
-                        return iced::window::latest().then(|opt_id| match opt_id {
+                        return iced::window::latest().then(move |opt_id| match opt_id {
                             Some(id) => iced::window::size(id).then(move |size| {
                                 iced::window::scale_factor(id)
                                     .map(move |scale| Message::CaptureFrame(size, scale))
                             }),
-                            None => failed_capture("the showcase has no window"),
+                            None => failed_capture(&path, "the showcase has no window"),
                         });
                     }
                     // Linux (and other platforms): iced internal framebuffer
                     #[cfg(not(any(target_os = "macos", target_os = "windows")))]
                     {
-                        return iced::window::latest().then(|opt_id| {
+                        return iced::window::latest().then(move |opt_id| {
                             if let Some(id) = opt_id {
                                 iced::window::screenshot(id).map(|s| {
                                     let bytes = s.rgba.to_vec();
@@ -2308,7 +2307,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                                     Message::ScreenshotCaptured(bytes, w, h, s.scale_factor)
                                 })
                             } else {
-                                failed_capture("the showcase has no window")
+                                failed_capture(&path, "the showcase has no window")
                             }
                         });
                     }
@@ -2340,7 +2339,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                         eprintln!("Screenshot saved to {path}");
                         quit_once_written(state, Output::Screenshot)
                     }
-                    Err(e) => cli::refuse(&Output::Screenshot.failure(path, &e)),
+                    Err(e) => failed_capture(path, &e),
                 };
             }
         }
@@ -2355,7 +2354,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                         eprintln!("Screenshot saved to {path}");
                         quit_once_written(state, Output::Screenshot)
                     }
-                    Err(e) => cli::refuse(&Output::Screenshot.failure(path, &e)),
+                    Err(e) => failed_capture(path, &e),
                 };
             }
             return iced::exit();
@@ -4905,8 +4904,8 @@ fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'
 
 /// The colour a Widget Info line ends in: its last word, `#` and the hex
 /// `color_to_hex` writes (`#rrggbb`, `#rrggbbaa`), as native-theme's `Rgba`
-/// parses it. A last word without the `#` is no colour, whatever its
-/// letters.
+/// parses it, which takes the 3- and 4-digit shorthand `#rgb` and `#rgba`
+/// too. A last word without the `#` is no colour, whatever its letters.
 fn hex_color(line: &str) -> Option<Color> {
     let hex = line.rsplit(' ').next()?.strip_prefix('#')?;
     hex.parse::<native_theme::color::Rgba>().ok().map(to_color)
@@ -12440,24 +12439,26 @@ fn boot() -> (State, iced::Task<Message>) {
 /// stored for the showcase's window. iced itself stores none; a desktop can,
 /// by the window's app id (a KWin script that remembers window geometry,
 /// say), so on Linux the window takes an app id of this process's own, which
-/// nothing stored.
+/// nothing stored: the three showcases' (`capture::app_id`), by which
+/// `scripts/capture_window.sh` finds it.
 fn capture_window_settings() -> iced::window::Settings {
     iced::window::Settings {
         size: WINDOW_SIZE.into(),
         position: iced::window::Position::Centered,
         #[cfg(target_os = "linux")]
         platform_specific: iced::window::settings::PlatformSpecific {
-            application_id: format!("showcase-iced-capture-{}", std::process::id()),
+            application_id: native_theme_showcase_support::capture::app_id(Kind::Iced),
             ..Default::default()
         },
         ..Default::default()
     }
 }
 
-/// A `--screenshot` that failed: reported on stderr, and the process exits
-/// with 1, so a capture step fails (`cli::refuse`).
-fn failed_capture(error: &str) -> ! {
-    cli::refuse(&format!("screenshot capture failed: {error}"))
+/// A `--screenshot` to `path` that failed: one line on stderr naming the
+/// flag, the path and the error (`cli::Output::failure`), and the process
+/// exits with 1, so a capture step fails (`cli::refuse`).
+fn failed_capture(path: &str, error: &str) -> ! {
+    cli::refuse(&Output::Screenshot.failure(path, error))
 }
 
 /// Whether a frame the showcase captured of its own content, `captured`
@@ -16035,15 +16036,22 @@ mod tests {
     /// row has its colour, a word that is no colour none.
     #[test]
     fn a_swatch_needs_the_hash_of_a_colour() {
-        let colour = Color::from_rgba8(0x3d, 0xae, 0xe9, 0.5);
-        let line = format!(
-            "background: button.background_color {}",
-            color_to_hex(colour)
-        );
+        for colour in [
+            Color::from_rgb8(0x3d, 0xae, 0xe9),
+            Color::from_rgba8(0x3d, 0xae, 0xe9, 0.5),
+        ] {
+            let hex = color_to_hex(colour);
+            let line = format!("background: button.background_color {hex}");
+            assert_eq!(
+                hex_color(&line).map(color_to_hex),
+                Some(hex.clone()),
+                "{line}: no swatch of its colour"
+            );
+        }
         assert_eq!(
-            hex_color(&line).map(color_to_hex),
-            Some(color_to_hex(colour)),
-            "{line}: no swatch of its colour"
+            color_to_hex(Color::from_rgb8(0x3d, 0xae, 0xe9)),
+            "#3daee9",
+            "an opaque colour is not written #rrggbb"
         );
         for bare in [
             "background: button.background_color 3daee9",
@@ -16438,7 +16446,7 @@ mod tests {
         #[cfg(target_os = "linux")]
         assert_eq!(
             settings.platform_specific.application_id,
-            format!("showcase-iced-capture-{}", std::process::id())
+            native_theme_showcase_support::capture::app_id(Kind::Iced)
         );
     }
 
