@@ -852,12 +852,14 @@ const _: () = {
         Tab::ALL.len() == Tab::ThemeMap as usize + 1,
         "Tab::ALL is missing a variant"
     );
+    let mut tabs = Tab::ALL;
     let mut i = 0;
-    while i < Tab::ALL.len() {
+    while let [tab, rest @ ..] = tabs {
         assert!(
-            Tab::ALL[i] as usize == i,
+            *tab as usize == i,
             "Tab::ALL must list the variants in declaration order"
         );
+        tabs = rest;
         i += 1;
     }
 };
@@ -2250,7 +2252,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     match message {
         Message::ScreenshotTick => {
             if state.screenshot_countdown > 0 {
-                state.screenshot_countdown -= 1;
+                state.screenshot_countdown = state.screenshot_countdown.saturating_sub(1);
                 if state.screenshot_countdown == 0 {
                     // macOS and Windows: an OS capture of the window with its
                     // decorations, once the content's size is known.
@@ -2502,14 +2504,23 @@ fn update_inner(state: &mut State, message: Message) {
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
-            for (i, (_, anim_handles)) in state.animated_frames.iter().enumerate() {
-                state.animated_frame_elapsed[i] += tick_duration;
+            let frames = state
+                .animated_frames
+                .iter()
+                .zip(&mut state.animated_frame_elapsed)
+                .zip(&mut state.animated_frame_indices);
+            for (((_, anim_handles), elapsed), index) in frames {
+                *elapsed = elapsed.saturating_add(tick_duration);
                 let frame_dur =
                     Duration::from_millis(u64::from(anim_handles.frame_duration_ms.get()));
-                if state.animated_frame_elapsed[i] >= frame_dur {
-                    state.animated_frame_elapsed[i] -= frame_dur;
-                    state.animated_frame_indices[i] =
-                        (state.animated_frame_indices[i] + 1) % anim_handles.handles.len();
+                if *elapsed >= frame_dur {
+                    *elapsed = elapsed.saturating_sub(frame_dur);
+                    if let Some(next) = index
+                        .saturating_add(1)
+                        .checked_rem(anim_handles.handles.len())
+                    {
+                        *index = next;
+                    }
                 }
             }
         }
@@ -7458,7 +7469,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     const LIST_ROW_IDS: [&str; 3] = ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"];
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
         let item = button(
-            text(format!("Item {}", i + 1))
+            text(format!("Item {}", i.saturating_add(1)))
                 .typeset(&list_t.item_font, a11y)
                 .line_height(iced::Pixels(label_line)),
         )
@@ -11183,17 +11194,19 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 
     // Build grid rows of 6 icons each
     let icons_per_row = 6;
-    let mut grid_rows: Vec<Element<'_, Message>> = Vec::new();
-    let mut idx = 0;
-    while idx < state.loaded_icons.len() {
-        let end = (idx + icons_per_row).min(state.loaded_icons.len());
-        let row_icons: Vec<Element<'_, Message>> = state.loaded_icons[idx..end]
-            .iter()
-            .map(|loaded| build_icon_cell(loaded, resolved, fg_color, &ts.caption, a11y, sp.xxs))
-            .collect();
-        grid_rows.push(row(row_icons).spacing(gap.widget).into());
-        idx = end;
-    }
+    let grid_rows: Vec<Element<'_, Message>> = state
+        .loaded_icons
+        .chunks(icons_per_row)
+        .map(|icons| {
+            let row_icons: Vec<Element<'_, Message>> = icons
+                .iter()
+                .map(|loaded| {
+                    build_icon_cell(loaded, resolved, fg_color, &ts.caption, a11y, sp.xxs)
+                })
+                .collect();
+            row(row_icons).spacing(gap.widget).into()
+        })
+        .collect();
 
     let animated_section = view_animated_icons(state, fg_color);
     let mut content = column![
@@ -11255,9 +11268,15 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     } else {
         // Frame-based animations
-        for (i, (set_name, anim_handles)) in state.animated_frames.iter().enumerate() {
-            let frame_idx = state.animated_frame_indices[i];
-            let icon = svg(anim_handles.handles[frame_idx].clone())
+        let frames = state
+            .animated_frames
+            .iter()
+            .zip(&state.animated_frame_indices);
+        for ((set_name, anim_handles), &frame_idx) in frames {
+            let Some(handle) = anim_handles.handles.get(frame_idx) else {
+                continue;
+            };
+            let icon = svg(handle.clone())
                 .width(Length::Fixed(icon_px))
                 .height(Length::Fixed(icon_px))
                 .style(move |_theme, _status| iced::widget::svg::Style { color: tint });
@@ -11577,10 +11596,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
 
         // Wrap into rows of 6
         let mut rows: Vec<Element<'_, Message>> = Vec::new();
-        let mut idx = 0;
-        while idx < pairs.len() {
-            let end = (idx + 6).min(pairs.len());
-            let row_items: Vec<Element<'_, Message>> = pairs[idx..end]
+        for chunk in pairs.chunks(6) {
+            let row_items: Vec<Element<'_, Message>> = chunk
                 .iter()
                 .map(|(name, rgba)| {
                     let [cr, cg, cb, ca] = rgba.to_f32_array();
@@ -11596,7 +11613,6 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                 })
                 .collect();
             rows.push(row(row_items).spacing(sp.m).into());
-            idx = end;
         }
 
         let mut col = column![text("Resolved Theme Colors (defaults + per-widget)").role(
@@ -12430,8 +12446,14 @@ fn check_frame_capture(
         (f64::from(WINDOW_SIZE.0) * scale).round() as i64,
         (f64::from(WINDOW_SIZE.1) * scale).round() as i64,
     );
-    let frame = (captured.0 - content.0, captured.1 - content.1);
-    let expected = (default.0 + frame.0, default.1 + frame.1);
+    let frame = (
+        captured.0.saturating_sub(content.0),
+        captured.1.saturating_sub(content.1),
+    );
+    let expected = (
+        default.0.saturating_add(frame.0),
+        default.1.saturating_add(frame.1),
+    );
     if captured == expected {
         Ok(())
     } else {
