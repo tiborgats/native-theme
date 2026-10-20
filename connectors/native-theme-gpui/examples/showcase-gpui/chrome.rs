@@ -2,7 +2,7 @@
 
 use gpui::{
     Action, AnyElement, App, Decorations, InteractiveElement as _, IntoElement, Menu, MenuItem,
-    Pixels, SharedString, Window, px,
+    Pixels, SharedString, StyledText, Window, px,
 };
 use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
 use native_theme_gpui::{ActiveNativeTheme as _, geometry};
@@ -243,12 +243,15 @@ pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The window's status bar (spec §2.7, §3.2, S4), below the body: at its
-/// left end the side-panel toggle, then the environment; at its right end
+/// left end the side-panel toggle, then `environment_text` drawing
+/// `environment`, the text of `status_environment`; at its right end
 /// `shown`, the title of what the inspector shows. The toggle sits at the
 /// edge of the panel it controls, and is selected while that panel is shown.
 pub(crate) fn status_bar(
     app: &Showcase,
     cx: &App,
+    environment: &str,
+    environment_text: StyledText,
     shown: Option<SharedString>,
 ) -> impl IntoElement {
     let ui = &app.info_ui;
@@ -278,7 +281,8 @@ pub(crate) fn status_bar(
         ui,
         cx,
         toggle,
-        status_environment(app, cx).join(" · "),
+        environment,
+        environment_text,
         shown,
         geometry::widget_gap(&app.layout),
     )

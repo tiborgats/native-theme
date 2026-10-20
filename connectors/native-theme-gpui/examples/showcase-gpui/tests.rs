@@ -3858,8 +3858,8 @@ fn the_inspectors_theme_tab_lays_out(cx: &mut TestAppContext) {
     assert!(panel.size.width > px(0.) && panel.size.height > px(0.));
 }
 
-/// The status bar's "item gap" note names the gap inside its left region's
-/// one item, the toggle and the environment `layout.widget_gap` apart
+/// The status bar's "item gap" note names the gap inside its middle
+/// region's first item, the toggle and the environment `layout.widget_gap` apart
 /// (demo::status_bar), beside upstream's `gap_2` between a region's items
 /// (M9-032).
 #[gpui::test]
@@ -3873,7 +3873,7 @@ fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
         note.is_some_and(|n| n.text.contains("gap_2")
             && n.text.contains("layout.widget_gap")
             && n.text.contains("demo::status_bar")),
-        "the status bar's item gap note does not name the left item's layout.widget_gap: {note:?}"
+        "the status bar's item gap note does not name the toggle item's layout.widget_gap: {note:?}"
     );
 }
 
@@ -4430,82 +4430,90 @@ fn status_text_width(cx: &mut VisualTestContext, text: &str) -> Option<Pixels> {
     })
 }
 
-/// The status bar no longer carries the version (spec §3.2): the title bar
-/// does. What it draws is read off the frame, end to end: the side-panel
+/// The status bar's items, read off the frame, end to end: the side-panel
 /// toggle, the environment text, the empty middle region, and the shown
 /// title where one is shown (spec S4), each next to the one before it by the
-/// bar's `gap_2` (status_bar.rs:84, :88), the last ending the bar's right
-/// padding in. So nothing else is drawn between them. The environment
-/// text is as wide as gpui's text system lays out the environment the
-/// showcase names (`chrome::status_environment`), and the shown title as its
-/// title, so neither carries more. Its info says the same.
-#[gpui::test]
-fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    use_preset(&mut cx, &showcase, "kde-breeze");
-    let right_padding = read(&mut cx, &showcase, |_this, cx| {
+/// bar's `gap_2` (status_bar.rs:84, :88), the toggle and the environment by
+/// `layout.widget_gap`, the last ending the bar's right padding in. So
+/// nothing else is drawn between them, none overlaps the next, and they keep
+/// their order. The environment draws `environment`, the text the showcase
+/// names (`chrome::status_environment`), whole and as wide as gpui's text
+/// system lays it out, or, where the bar leaves it too little room, a prefix
+/// of it ended with an ellipsis, narrower; the shown title is as wide as its
+/// title, so neither carries more. With nothing shown, and then with the
+/// toolbar's Command Palette button's title shown.
+fn the_status_bar_items_abut(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    environment: &str,
+) {
+    let right_padding = read(cx, showcase, |_this, cx| {
         cx.native()
             .and_then(|n| n.resolved.status_bar.border.padding.right)
     });
     assert!(
         right_padding.is_some(),
-        "kde-breeze states no right status-bar padding, so the bar's end is not known"
+        "the preset states no right status-bar padding, so the bar's end is not known"
     );
     let gap = cx.update(|window, _| rems(0.5).to_pixels(window.rem_size()));
     // gpui places elements on the device's pixel grid, so a position may be
     // off by up to one device pixel.
-    let slack = device_pixel(&mut cx);
-    let environment = read(&mut cx, &showcase, |this, cx| {
-        crate::chrome::status_environment(this, cx).join(" · ")
-    });
-    assert!(
-        !environment.contains(env!("CARGO_PKG_VERSION")),
-        "the environment the showcase names carries the version: {environment}"
-    );
-    let expected = status_text_width(&mut cx, &environment);
-    assert!(expected.is_some(), "no status-bar text size is installed");
+    let slack = device_pixel(cx);
+    let whole = status_text_width(cx, environment);
+    assert!(whole.is_some(), "no status-bar text size is installed");
 
-    // Nothing shown, and then the toolbar's Command Palette button.
     for hovered in [None, Some(CHROME_TOOLBAR_PALETTE)] {
         if let Some(selector) = hovered {
-            let at = bounds_of(&mut cx, selector).center();
-            hover(&mut cx, at);
-            settle(&mut cx);
-            draw(&mut cx);
+            let at = bounds_of(cx, selector).center();
+            hover(cx, at);
+            settle(cx);
+            draw(cx);
         }
-        let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
-        let left = bounds_of(&mut cx, CHROME_SIDE_PANEL_TOGGLE);
-        let env = bounds_of(&mut cx, STATUS_ENVIRONMENT);
-        let middle = bounds_of(&mut cx, STATUS_MIDDLE);
-        assert_eq!(
-            Some(env.size.width),
-            expected,
-            "the status bar's environment text is not the environment alone"
-        );
+        let bar = bounds_of(cx, CHROME_STATUS_BAR);
+        let left = bounds_of(cx, CHROME_SIDE_PANEL_TOGGLE);
+        let env = bounds_of(cx, STATUS_ENVIRONMENT);
+        let middle = bounds_of(cx, STATUS_MIDDLE);
+        let text = read(cx, showcase, |this, _| this.status_environment_drawn.text());
+        if text == environment {
+            assert_eq!(
+                Some(env.size.width),
+                whole,
+                "the status bar's environment text is not the environment alone"
+            );
+        } else {
+            assert!(
+                text.strip_suffix('…')
+                    .is_some_and(|kept| environment.starts_with(kept)),
+                "the status bar draws {text:?} for the environment {environment:?}, neither \
+                 the whole nor a prefix of it ended with an ellipsis"
+            );
+            assert!(
+                whole.is_some_and(|whole| env.size.width < whole),
+                "the status bar cuts its environment short at {:?}, no narrower than the \
+                 whole {whole:?}",
+                env.size.width
+            );
+        }
         let mut drawn = vec![
             ("side-panel toggle", left),
             ("environment", env),
             ("middle", middle),
         ];
-        let shown = read(&mut cx, &showcase, |this, _| {
-            this.status_title_drawn.clone()
-        });
+        let shown = read(cx, showcase, |this, _| this.status_title_drawn.clone());
         assert_eq!(shown.is_some(), hovered.is_some());
         if let Some(title) = shown {
-            let label = bounds_of(&mut cx, STATUS_HOVERED);
+            let label = bounds_of(cx, STATUS_HOVERED);
             assert_eq!(
                 Some(label.size.width),
-                status_text_width(&mut cx, &title),
+                status_text_width(cx, &title),
                 "the status bar's shown title is not {title:?} alone"
             );
             drawn.push(("shown title", label));
         }
         // The toggle and the environment are one item, `layout.widget_gap`
         // apart (demo::status_bar); the bar's regions stay `gap_2` apart.
-        let widget_gap = read(&mut cx, &showcase, |this, _| {
-            geometry::widget_gap(&this.layout)
-        })
-        .unwrap_or(px(0.));
+        let widget_gap =
+            read(cx, showcase, |this, _| geometry::widget_gap(&this.layout)).unwrap_or(px(0.));
         for (ix, pair) in drawn.windows(2).enumerate() {
             if let [(a, before), (b, after)] = pair {
                 let expected = if ix == 0 { widget_gap } else { gap };
@@ -4523,6 +4531,24 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
             "the status bar draws something after its {name}"
         );
     }
+}
+
+/// The status bar no longer carries the version (spec §3.2): the title bar
+/// does. Its items abut end to end (`the_status_bar_items_abut`), so it
+/// draws nothing beside the environment the showcase names, which does not
+/// carry it either. Its info says the same.
+#[gpui::test]
+fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let environment = read(&mut cx, &showcase, |this, cx| {
+        crate::chrome::status_environment(this, cx).join(" · ")
+    });
+    assert!(
+        !environment.contains(env!("CARGO_PKG_VERSION")),
+        "the environment the showcase names carries the version: {environment}"
+    );
+    the_status_bar_items_abut(&mut cx, &showcase, &environment);
 
     let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
     hover(&mut cx, bar.center());
@@ -4539,6 +4565,72 @@ fn the_status_bar_carries_no_version(cx: &mut TestAppContext) {
     assert!(
         !text.contains("version") && !text.contains(env!("CARGO_PKG_VERSION")),
         "the status bar's info still names a version:\n{text}"
+    );
+}
+
+/// An environment wider than the status bar, as a host that lacks the
+/// theme's font draws it ("<stated> (not on this system; drawn in the
+/// platform's substitute, <drawn>)", `status::family_label`), is cut short
+/// with an ellipsis in the room the toggle and the shown title leave it: the
+/// items still abut in order and none overlaps the next
+/// (`the_status_bar_items_abut`), and the bar's info carries the whole text.
+/// The stated family here is one no host has, lengthened until the
+/// environment is wider than the bar, whatever this host's fonts.
+#[gpui::test]
+fn an_environment_too_wide_for_the_status_bar_is_cut_short(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let bar = bounds_of(&mut cx, CHROME_STATUS_BAR);
+    let mut family = String::from("Native Theme Absent Sans");
+    let mut environment = String::new();
+    for _ in 0..64 {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.original_font.family = family.as_str().into();
+                cx.notify();
+            });
+        });
+        environment = read(&mut cx, &showcase, |this, cx| {
+            crate::chrome::status_environment(this, cx).join(" · ")
+        });
+        if status_text_width(&mut cx, &environment).is_some_and(|w| w > bar.size.width) {
+            break;
+        }
+        family.push_str(" Extended");
+    }
+    assert!(
+        status_text_width(&mut cx, &environment).is_some_and(|w| w > bar.size.width),
+        "the environment {environment:?} is no wider than the {:?} bar, so nothing is cut short",
+        bar.size.width
+    );
+    assert!(
+        environment.contains("(not on this system; drawn in the platform's substitute, "),
+        "the environment does not name the substitute for {family:?}: {environment}"
+    );
+    draw(&mut cx);
+    the_status_bar_items_abut(&mut cx, &showcase, &environment);
+    let text = read(&mut cx, &showcase, |this, _| {
+        this.status_environment_drawn.text()
+    });
+    assert!(
+        text != environment && text.ends_with('…'),
+        "the status bar does not cut its environment short: it draws {text:?}"
+    );
+
+    hover(&mut cx, bar.center());
+    settle(&mut cx);
+    draw(&mut cx);
+    let info = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).shown().map(|info| (**info).clone())
+    });
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("StatusBar")
+    );
+    let text = info.map(|info| info.to_text()).unwrap_or_default();
+    assert!(
+        text.contains(&environment),
+        "the status bar's info does not carry the whole environment {environment:?}:\n{text}"
     );
 }
 
@@ -14534,7 +14626,7 @@ fn the_status_bars_info_names_upstreams_edge_only_without_a_theme(cx: &mut TestA
                 && t.contains(&format!("{}px", crate::info::px_text(w))))),
         "the status bar's info does not give its top edge as status_bar.border.line_width, {width:?}: {edge:?}"
     );
-    let bare = cx.update(|_window, cx| crate::info::status_bar(Theme::global(cx), false));
+    let bare = cx.update(|_window, cx| crate::info::status_bar(Theme::global(cx), false, ""));
     assert!(
         bare.not_themeable
             .iter()

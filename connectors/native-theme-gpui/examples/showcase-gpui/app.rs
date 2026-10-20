@@ -264,6 +264,11 @@ pub(crate) struct Showcase {
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
+    /// The layout of the status bar's environment text in the last frame:
+    /// the text it drew, cut short with an ellipsis where the bar left it
+    /// too little room (`TextLayout::text`).
+    #[cfg(test)]
+    pub(crate) status_environment_drawn: gpui::TextLayout,
     /// The decorations the self-tests say the window was granted. gpui's test
     /// platform grants server-side decorations whatever it is asked for (gpui-pre
     /// platform.rs, `PlatformWindow::window_decorations`), so this is how a test
@@ -1480,6 +1485,8 @@ impl Showcase {
             _native_theme,
             status_title_drawn: None,
             #[cfg(test)]
+            status_environment_drawn: gpui::TextLayout::default(),
+            #[cfg(test)]
             frame_for_test: None,
             #[cfg(test)]
             os_preferences_for_test: None,
@@ -2153,6 +2160,12 @@ impl Render for Showcase {
             .shown_title(cx)
             .map(SharedString::from);
         self.status_title_drawn = shown.clone();
+        let environment = SharedString::from(chrome::status_environment(self, cx).join(" · "));
+        let environment_text = gpui::StyledText::new(environment.clone());
+        #[cfg(test)]
+        {
+            self.status_environment_drawn = environment_text.layout().clone();
+        }
 
         // Main layout: the title bar or the menu-bar row (spec S8), the
         // toolbar, the body and the status bar. Dialogs, sheets and
@@ -2191,7 +2204,13 @@ impl Render for Showcase {
                             .overflow_hidden()
                             .child(div().flex_1().min_w_0().h_full().child(body)),
                     )
-                    .child(chrome::status_bar(self, cx, shown)),
+                    .child(chrome::status_bar(
+                        self,
+                        cx,
+                        &environment,
+                        environment_text,
+                        shown,
+                    )),
             )
             // Deferred at the highest priority, so it is the topmost hitbox:
             // dialogs, menus and popovers paint deferred themselves (gpui-base

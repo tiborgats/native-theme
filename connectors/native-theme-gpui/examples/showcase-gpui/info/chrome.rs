@@ -1084,8 +1084,10 @@ pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> St
 
 /// The window's `StatusBar` (spec §2.7). Its geometry line is recorded by
 /// `native_info` where `demo::status_bar` applies the builder; `styled` is
-/// whether it does, which decides the colour of the text.
-pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
+/// whether it does, which decides the colour of the text. `environment` is
+/// the whole text the bar draws after its toggle, which a bar too narrow
+/// for it cuts short.
+pub fn status_bar(t: &Theme, styled: bool, environment: &str) -> WidgetInfo {
     let info = WidgetInfo::new("StatusBar")
         .color(claim(
             "bg",
@@ -1118,7 +1120,7 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
         )
         .not_themeable(
             "item gap",
-            "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the left region holds one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
+            "gap_2, 0.5rem, between the items of each region, on the region elements the refinement does not reach (status_bar.rs:84); the middle region opens with one item, the side-panel toggle and the environment text, which demo::status_bar spaces by layout.widget_gap, none where it is unstated",
         );
     // Under a native theme demo::status_bar draws the top edge
     // status_bar.border.line_width thick, over upstream's border_t_1, and
@@ -1138,6 +1140,12 @@ pub fn status_bar(t: &Theme, styled: bool) -> WidgetInfo {
         } else {
             "the side-panel toggle at the bar's left end, then the operating system; the installed preset and colour mode; the font the installed theme states as defaults.font, in the unit its source stated; the installed text-scale factor; and each installed accessibility preference that is set, by its field name"
         },
+    )
+    .instance(
+        "environment",
+        format!(
+            "{environment} -- drawn whole where it fits, else cut short with an ellipsis (truncate) in the room the toggle and the shown title leave it: demo::status_bar puts the toggle and the environment in the middle region, which takes what the right one leaves, since upstream's left region would shrink with the right one and cut the shown title short too (status_bar.rs, RenderOnce for StatusBar)"
+        ),
     )
     .instance(
         "right",

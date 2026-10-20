@@ -6,8 +6,8 @@ use gpui::DefiniteLength;
 use gpui::{
     Action, AnyElement, App, Axis, ClickEvent, ClipboardItem, Context, Div, ElementId, Entity,
     FontWeight, Global, Hsla, ImageSource, KeyDownEvent, Keystroke, Length, MouseButton, Pixels,
-    Rems, RenderOnce, SharedString, Stateful, StyleRefinement, Window, anchored, deferred, div,
-    prelude::*, px, relative, rems,
+    Rems, RenderOnce, SharedString, Stateful, StyleRefinement, StyledText, Window, anchored,
+    deferred, div, prelude::*, px, relative, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
 use gpui_component::{
@@ -963,19 +963,21 @@ pub(crate) fn toolbar(
 }
 
 /// The window's `StatusBar` (spec §2.7, §3.2), refined by
-/// `geometry::status_bar`: on the left `toggle`, then `environment`; on the
-/// right `shown`, the title of what the inspector shows, where it shows one.
+/// `geometry::status_bar`: on the left `toggle`, then `environment_text`
+/// drawing `environment`; on the right `shown`, the title of what the
+/// inspector shows, where it shows one.
 pub(crate) fn status_bar(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     toggle: impl IntoElement,
-    environment: impl Into<SharedString>,
+    environment: &str,
+    environment_text: StyledText,
     shown: Option<SharedString>,
     widget_gap: Option<Pixels>,
 ) -> Stateful<Div> {
     // What `native_info` applies the builder under.
     let styled = cx.native().is_some();
-    let mut bar_info = info::status_bar(cx.theme(), styled);
+    let mut bar_info = info::status_bar(cx.theme(), styled, environment);
     let text_line = native_value(cx, |n| line_height_of(&n, &n.resolved.status_bar.font));
     // Its top edge `status_bar.border.line_width` thick, over upstream's
     // `border_t_1` (status_bar.rs, `RenderOnce for StatusBar`), which the
@@ -1000,25 +1002,38 @@ pub(crate) fn status_bar(
     .when_some(edge, |bar, edge| bar.border_t(edge))
     // Its text one line of `status_bar.font` tall (`line_height_of`).
     .when_some(text_line, |bar, line| bar.line_height(line))
-    // The toggle and the environment as one left item, `layout.widget_gap`
-    // apart: the left region spaces its items by a `gap_2` of its own
-    // (status_bar.rs, `RenderOnce for StatusBar`), which no style reaches.
-    // Plain text, not Labels, as in the title bar: a Label would paint
-    // foreground over the colour `geometry::status_bar` gives the bar.
-    .left(
+    // The toggle and the environment as one item, `layout.widget_gap`
+    // apart: a region spaces its items by a `gap_2` of its own (status_bar.rs,
+    // `RenderOnce for StatusBar`), which no style reaches. Plain text, not
+    // Labels, as in the title bar: a Label would paint foreground over the
+    // colour `geometry::status_bar` gives the bar.
+    //
+    // The item opens the middle region, before an empty box that fills the
+    // rest of it, so its edges are where the two ends stop. Upstream's left
+    // and right regions both start at their content's width and both shrink,
+    // `overflow_hidden` (status_bar.rs:84) with gpui's flex-shrink 1
+    // (gpui-pre style.rs:802), each by its share of what the bar lacks, so an
+    // environment wider than the bar would cut the shown title short too; the
+    // middle region, `flex_1` (status_bar.rs:100), starts at none and takes
+    // what the right one leaves it. There the environment shrinks alone: it
+    // is cut short with an ellipsis (`truncate`), the toggle keeps its width,
+    // and the bar's info carries the whole text. With no left region the
+    // middle one starts at the bar's left padding, where the left one did.
+    .child(
         with_gap(h_flex(), widget_gap)
+            .min_w_0()
             .items_center()
-            .child(toggle)
+            .child(div().flex_shrink_0().child(toggle))
             .child(
                 div()
                     .relative()
+                    .min_w_0()
+                    .truncate()
                     .debug_selector(|| STATUS_ENVIRONMENT.into())
-                    .child(environment.into())
+                    .child(environment_text)
                     .child(elements::record(ui, "chrome.status_bar.environment")),
             ),
     )
-    // The middle region holds nothing; this empty box fills it, so its
-    // edges are where the two ends stop.
     .child(div().flex_1().debug_selector(|| STATUS_MIDDLE.into()))
     .when_some(shown, |bar, title| {
         bar.right(

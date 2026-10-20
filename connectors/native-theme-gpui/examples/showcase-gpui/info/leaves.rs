@@ -1190,7 +1190,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "layout.widget_gap_px",
-        "gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's left region (demo::status_bar)",
+        "gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's middle region (demo::status_bar)",
     ),
     (
         "",
