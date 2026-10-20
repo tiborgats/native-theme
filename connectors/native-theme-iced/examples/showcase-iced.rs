@@ -5075,6 +5075,9 @@ enum LeafReach {
 
 /// The export, read.
 struct ContractLeaves {
+    /// The bundled preset/mode combinations the walk spliced in, by the
+    /// contract's names (`<preset>/<mode>`), which an `except` list uses.
+    combinations: Vec<String>,
     leaves: BTreeMap<String, LeafReach>,
     /// Every row a leaf moves, with the connector feature it exists under
     /// where a build can lack it.
@@ -5149,7 +5152,11 @@ fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
             (row.clone(), cfg)
         })
         .collect();
-    Ok(ContractLeaves { leaves, rows })
+    Ok(ContractLeaves {
+        combinations: toml_strings(table.get("combinations")),
+        leaves,
+        rows,
+    })
 }
 
 /// The export, read once; `None` if it does not parse, which
@@ -5410,30 +5417,16 @@ fn status_name(status: &str) -> &str {
         .map_or(status, |(variant, _)| variant)
 }
 
-/// How the connector draws `leaf` on `element`, read from the contract's
-/// export: the rows of its [`Drawing`] the leaf moves, under the statuses the
-/// page draws, on `installed`, the bundled combination shown
-/// (`<preset>/<mode>`), or in any bundled one where the theme is the OS's
-/// (`None`); or why no row reads it. `None` where the showcase draws the
-/// leaf itself, or the export has no such leaf.
-fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> Option<String> {
-    let export = contract_leaves()?;
-    let reach = export.leaves.get(leaf)?;
-    let drawing = drawing(element, leaf)?;
-    let moves = match reach {
-        LeafReach::Named { kind, why } => {
-            return Some(match kind.as_str() {
-                "inherited" | "ruled" => format!("not drawn: {why}"),
-                _ => match kind.strip_prefix("fallback of ") {
-                    Some(option) => format!(
-                        "not drawn in a bundled theme, each of which states {option}: {why}"
-                    ),
-                    None => format!("not reachable: {why}"),
-                },
-            });
-        }
-        LeafReach::Moves(moves) => moves,
-    };
+/// The rows of `moves` a [`colour_route`] names: those of `drawing` this
+/// build has, moved on `installed` (every bundled combination where `None`),
+/// each with the statuses the page draws it in, by variant name; a row with
+/// statuses none of which is drawn is left out.
+fn shown_rows<'a>(
+    export: &ContractLeaves,
+    moves: &'a [RowMove],
+    drawing: &Drawing,
+    installed: Option<&str>,
+) -> Vec<(&'a str, Vec<&'a str>)> {
     let mut rows: Vec<(&str, Vec<&str>)> = Vec::new();
     for m in moves {
         let shown = drawing.draws_row(&m.row)
@@ -5466,6 +5459,37 @@ fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) 
             }
         }
     }
+    rows
+}
+
+/// How the connector draws `leaf` on `element`, read from the contract's
+/// export: the rows of its [`Drawing`] the leaf moves, under the statuses the
+/// page draws, on `installed`, the bundled combination shown
+/// (`<preset>/<mode>`), or in any bundled one where the theme is the OS's
+/// (`None`); or why no row reads it. `None` where the showcase draws the
+/// leaf itself, or the export has no such leaf.
+fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> Option<String> {
+    let export = contract_leaves()?;
+    // A combination the export does not name is no bundled one: its routes
+    // are the OS theme's.
+    let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
+    let reach = export.leaves.get(leaf)?;
+    let drawing = drawing(element, leaf)?;
+    let moves = match reach {
+        LeafReach::Named { kind, why } => {
+            return Some(match kind.as_str() {
+                "inherited" | "ruled" => format!("not drawn: {why}"),
+                _ => match kind.strip_prefix("fallback of ") {
+                    Some(option) => format!(
+                        "not drawn in a bundled theme, each of which states {option}: {why}"
+                    ),
+                    None => format!("not reachable: {why}"),
+                },
+            });
+        }
+        LeafReach::Moves(moves) => moves,
+    };
+    let rows = shown_rows(export, moves, &drawing, installed);
     if rows.is_empty() {
         let names = drawing
             .rows
@@ -5845,7 +5869,6 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
             "basic_table: a cell's text colour".into()
         }
         ("list", "item_font.color") => "list_row: text_color at rest".into(),
-        ("list", "alternate_row_background") => "the alternate row container's background".into(),
         ("list", "selection_background") if under("basic.table.") => {
             "basic_table: the selected row container's background".into()
         }
@@ -15744,14 +15767,23 @@ mod tests {
             Err(error) => panic!("contract-leaves.toml: {error}"),
         };
         assert!(contract_leaves().is_some(), "the export is read");
-        let json = values::theme_json(&State::default().current_resolved).unwrap_or_default();
+        let jsons: Vec<serde_json::Value> = bundled_combinations()
+            .iter()
+            .map(|(label, r)| match serde_json::to_value(r) {
+                Ok(json) => json,
+                Err(error) => panic!("{label}: {error}"),
+            })
+            .collect();
         let mut failures = Vec::new();
         for element in elements::elements() {
             for leaf in &element.leaves {
                 let pointer = format!("/{}", leaf.replace('.', "/"));
-                let colour = json.pointer(&pointer).is_some_and(|v| {
-                    v.as_str()
-                        .is_some_and(|s| s.parse::<native_theme::color::Rgba>().is_ok())
+                // A colour in any bundled combination.
+                let colour = jsons.iter().any(|json| {
+                    json.pointer(&pointer).is_some_and(|v| {
+                        v.as_str()
+                            .is_some_and(|s| s.parse::<native_theme::color::Rgba>().is_ok())
+                    })
                 });
                 if colour && !export.leaves.contains_key(leaf) {
                     failures.push(format!("{}: {leaf} is not in the export", element.id));
@@ -15774,6 +15806,150 @@ mod tests {
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// The installed preset's name is the contract's for the same
+    /// combination (`Combination::label`, which the export lists as
+    /// `combinations`): every bundled preset in both modes names one of them,
+    /// all 34 are named, and the OS theme names none.
+    #[test]
+    fn the_installed_combination_is_named_as_the_contract_names_it() {
+        let Some(export) = contract_leaves() else {
+            panic!("contract-leaves.toml does not parse");
+        };
+        let mut state = State::default();
+        let mut named = BTreeSet::new();
+        for info in native_theme::theme::Theme::list_presets() {
+            for is_dark in [false, true] {
+                state.current_choice = ThemeChoice::Preset(info.key.to_owned());
+                state.is_dark = is_dark;
+                let label = state.installed_combination();
+                assert!(
+                    label
+                        .as_ref()
+                        .is_some_and(|l| export.combinations.contains(l)),
+                    "{} (dark: {is_dark}) is named {label:?}, which the export does not name",
+                    info.key
+                );
+                named.extend(label);
+            }
+        }
+        let listed: BTreeSet<String> = export.combinations.iter().cloned().collect();
+        assert_eq!(
+            named, listed,
+            "the presets name every combination of the export"
+        );
+        assert_eq!(listed.len(), 34, "17 presets in both modes");
+        state.current_choice = ThemeChoice::OsTheme("default".to_owned());
+        assert_eq!(
+            state.installed_combination(),
+            None,
+            "the OS theme is no bundled one"
+        );
+    }
+
+    /// D1: on a bundled preset a colour route names only the rows the leaf
+    /// moves there -- a row its `except` lists for that preset is left out,
+    /// every other row of the element's drawing it moves in a drawn state is
+    /// named -- and no "(in a bundled theme)"; under the OS theme it names
+    /// every row it moves in any bundled one, and says so. Over every listed
+    /// colour leaf the connector draws and every bundled combination.
+    #[test]
+    fn a_colour_route_names_the_rows_moved_on_the_installed_preset() {
+        let Some(export) = contract_leaves() else {
+            panic!("contract-leaves.toml does not parse");
+        };
+        let mut failures = Vec::new();
+        for element in elements::elements() {
+            for leaf in &element.leaves {
+                let (Some(drawing), Some(LeafReach::Moves(moves))) =
+                    (drawing(element, leaf), export.leaves.get(leaf))
+                else {
+                    continue;
+                };
+                // A move the element draws: its row is the drawing's and this
+                // build's, and it moves the row in a state the page draws.
+                let drawn = |m: &RowMove| {
+                    drawing.draws_row(&m.row)
+                        && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
+                        && (m.statuses.is_empty()
+                            || m.statuses.iter().any(|s| drawing.draws_status(s)))
+                };
+                for installed in export.combinations.iter().map(Some).chain([None]) {
+                    let label = installed.map(String::as_str);
+                    let moved = |m: &&RowMove| {
+                        drawn(m) && label.is_none_or(|l| !m.except.iter().any(|e| e == l))
+                    };
+                    let want: BTreeSet<&str> =
+                        moves.iter().filter(moved).map(|m| m.row.as_str()).collect();
+                    let shown: BTreeSet<&str> = shown_rows(export, moves, &drawing, label)
+                        .into_iter()
+                        .map(|(row, _)| row)
+                        .collect();
+                    if shown != want {
+                        failures.push(format!(
+                            "{} {leaf} on {label:?}: names {shown:?}, moves {want:?}",
+                            element.id
+                        ));
+                    }
+                    let route = iced_route(element, leaf, label);
+                    let holds = match (label, want.is_empty()) {
+                        (Some(l), true) => route.starts_with(&format!("not drawn here: on {l} ")),
+                        (Some(_), false) => {
+                            route.starts_with("iced: ") && !route.ends_with("(in a bundled theme)")
+                        }
+                        (None, true) => route.starts_with("not drawn here: "),
+                        (None, false) => {
+                            route.starts_with("iced: ") && route.ends_with("(in a bundled theme)")
+                        }
+                    };
+                    if !holds || want.iter().any(|row| !route.contains(row)) {
+                        failures.push(format!(
+                            "{} {leaf} on {label:?}: \"{route}\" for {want:?}",
+                            element.id
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+
+        // The fixed case: the On toggle's pressed fill is its checked fill only
+        // where the theme states no checked pair (`except` lists those that do).
+        let Some(element) = elements::element("basic.buttons.toggle_on") else {
+            panic!("basic.buttons.toggle_on is not listed");
+        };
+        let leaf = "button.active_background";
+        let Some(LeafReach::Moves(moves)) = export.leaves.get(leaf) else {
+            panic!("{leaf} moves no row");
+        };
+        let checked = moves
+            .iter()
+            .filter(|m| m.row == "styles::button_toggle.background")
+            .find(|m| m.statuses.iter().any(|s| s.starts_with("(true, Active)")));
+        let Some(checked) = checked else {
+            panic!("{leaf} moves no checked toggle's fill");
+        };
+        let Some(states) = checked.except.first() else {
+            panic!("every bundled preset leaves the checked pair unstated");
+        };
+        let Some(leaves) = export
+            .combinations
+            .iter()
+            .find(|c| !checked.except.contains(*c))
+        else {
+            panic!("every bundled preset states the checked pair");
+        };
+        let on_states = iced_route(element, leaf, Some(states));
+        assert!(
+            on_states.starts_with("not drawn here: "),
+            "{states} states the checked pair: {on_states}"
+        );
+        let on_leaves = iced_route(element, leaf, Some(leaves));
+        assert!(
+            on_leaves.contains("styles::button_toggle.background (Active, Hovered, Pressed)"),
+            "{leaves} leaves the checked pair unstated: {on_leaves}"
+        );
     }
 
     /// Every key of the derivation sentences is a row the export records.
