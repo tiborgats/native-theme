@@ -536,14 +536,14 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
     cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Section: strict panic lints (library code and the gpui showcase)
+# Section: strict panic lints (library code and the gpui and iced showcases)
 #
 # scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
 # lints promoted to errors; the lint list and what each lint catches are
 # there, and CI's clippy job runs the same script.
 #
-# Scope: library targets (--lib), and the gpui showcase example, an
-# application the repo ships, which the no-panic rule covers as it covers the
+# Scope: library targets (--lib), and the gpui and iced showcase examples,
+# applications the repo ships, which the no-panic rule covers as it covers the
 # libraries. Tests and the other examples are exempt because they
 # legitimately use .unwrap() / asserts for failure clarity and demo brevity.
 # Bin targets (if any in the future) should be added to this list.
@@ -552,7 +552,7 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
 # feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
 # watch) are checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-print_section "Strict panic lints (library code and the gpui showcase)"
+print_section "Strict panic lints (library code and the gpui and iced showcases)"
 run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
@@ -586,6 +586,9 @@ run_check "strict-panic (native-theme-build)" \
 # `watch.rs` are linted too; nothing in the library is compiled only without one.
 run_check "strict-panic (native-theme-iced, iced_aw, watch, native)" \
     bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
+# Its showcase, with the connector's features.
+run_check "strict-panic (showcase-iced, iced_aw, watch, native)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
 # The gpui connector with `native` and `watch` too, so `watch.rs` is linted.
 run_check "strict-panic (native-theme-gpui, native, watch)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch

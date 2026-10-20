@@ -118,22 +118,29 @@ jobs:
       - name: Strict panic lints (native-theme-build)
         if: matrix.package == 'native-theme-build'
         run: bash scripts/check_strict_panic.sh -p native-theme-build --lib
+      # A connector's library and its showcase example are steps of their
+      # own, so a library failure does not hide the showcase's run; the
+      # showcase examples are applications the repo ships, so the lints hold
+      # them as they hold the libraries.
       - name: Strict panic lints (iced connector)
         if: matrix.package == 'native-theme-iced'
         run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
-      # One step per core, so a gpui-pre failure does not hide the GPUI Fast run;
-      # the showcase example is an application the repo ships, so the lints
-      # hold it as they hold the library.
-      - name: Strict panic lints (gpui connector and its showcase, native, watch)
+      - name: Strict panic lints (iced showcase)
+        if: matrix.package == 'native-theme-iced'
+        run: bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
+      # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
+      - name: Strict panic lints (gpui connector, native, watch)
         if: matrix.package == 'native-theme-gpui'
-        run: |
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch
-      - name: Strict panic lints (gpui connector and its showcase, gpui-fast, native, watch)
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
+      - name: Strict panic lints (gpui showcase, native, watch)
         if: matrix.package == 'native-theme-gpui'
-        run: |
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
-          bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch
+      - name: Strict panic lints (gpui connector, gpui-fast, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
+      - name: Strict panic lints (gpui showcase, gpui-fast, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
