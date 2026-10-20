@@ -1413,10 +1413,10 @@ struct State {
     // Screenshot mode
     screenshot_path: Option<String>,
     screenshot_countdown: u8,
-    /// `--screenshot`'s capture of the window with its frame under way, with
-    /// the window's content it is checked against: on Windows, until the
-    /// second run has found the window ([`capture::FrameCapture::poll`]).
-    frame_capture: Option<(capture::FrameCapture, capture::Content)>,
+    /// `--screenshot`'s capture of the window with its frame under way: on
+    /// Windows, until the second run has found the window
+    /// ([`capture::FrameCapture::poll`]).
+    frame_capture: Option<capture::FrameCapture>,
     /// The files the run asked for (`--dump-layout`, `--screenshot`) and
     /// which are written yet: the run quits once every one is written
     /// (`cli::Outputs`, the showcases' exit rule).
@@ -2101,8 +2101,11 @@ enum Message {
     // Screenshot
     ScreenshotTick,
     /// The window's logical content size and scale factor, read before the
-    /// OS capture of the window with its frame.
+    /// OS capture of the window with its frame starts.
     CaptureFrame(iced::Size, f32),
+    /// The same, read again for each poll of the capture under way, so it is
+    /// checked against the content as the window has it then.
+    CapturePolled(iced::Size, f32),
 }
 
 // ---------------------------------------------------------------------------
@@ -2136,44 +2139,60 @@ fn screenshot_written(state: &mut State, captured: Result<(), String>) -> iced::
     }
 }
 
+/// The window's logical content size and scale factor, read now and handed
+/// to `then`; a run with no window fails its `--screenshot` to `path`.
+fn read_content(path: String, then: fn(iced::Size, f32) -> Message) -> iced::Task<Message> {
+    iced::window::latest().then(move |opt_id| match opt_id {
+        Some(id) => iced::window::size(id)
+            .then(move |size| iced::window::scale_factor(id).map(move |scale| then(size, scale))),
+        None => failed_capture(&path, "the showcase has no window"),
+    })
+}
+
+/// The window's content in physical pixels and the display's scale factor,
+/// from its logical `size` and `scale`, which
+/// [`capture::FrameCapture::poll`] checks a capture against.
+fn physical_content(size: iced::Size, scale: f32) -> capture::Content {
+    let scale = f64::from(scale);
+    let physical = |logical: f32| (f64::from(logical) * scale).round() as i64;
+    ((physical(size.width), physical(size.height)), scale)
+}
+
 fn update(state: &mut State, message: Message) -> iced::Task<Message> {
     match message {
         Message::ScreenshotTick => {
-            if let Some((capture, content)) = &mut state.frame_capture {
-                let content = *content;
-                if let Some(captured) = capture.poll(|| Ok(content)) {
-                    state.frame_capture = None;
-                    return screenshot_written(state, captured);
-                }
+            let path = state.screenshot_path.clone().unwrap_or_default();
+            if state.frame_capture.is_some() {
+                // The content as the window has it at this poll.
+                return read_content(path, Message::CapturePolled);
             } else if state.screenshot_countdown > 0 {
                 state.screenshot_countdown = state.screenshot_countdown.saturating_sub(1);
                 if state.screenshot_countdown == 0 {
-                    let path = state.screenshot_path.clone().unwrap_or_default();
                     // The OS capture of the window with its frame, once the
                     // content's size is known.
-                    return iced::window::latest().then(move |opt_id| match opt_id {
-                        Some(id) => iced::window::size(id).then(move |size| {
-                            iced::window::scale_factor(id)
-                                .map(move |scale| Message::CaptureFrame(size, scale))
-                        }),
-                        None => failed_capture(&path, "the showcase has no window"),
-                    });
+                    return read_content(path, Message::CaptureFrame);
                 }
             }
         }
         Message::CaptureFrame(size, scale) => {
             if let Some(path) = state.screenshot_path.clone() {
-                let scale = f64::from(scale);
-                let physical = |logical: f32| (f64::from(logical) * scale).round() as i64;
-                let content = ((physical(size.width), physical(size.height)), scale);
-                let mut capture = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
-                    Ok(capture) => capture,
+                let mut pending = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
+                    Ok(pending) => pending,
                     Err(error) => failed_capture(&path, &error),
                 };
-                match capture.poll(|| Ok(content)) {
+                match pending.poll(|| Ok(physical_content(size, scale))) {
                     Some(captured) => return screenshot_written(state, captured),
-                    None => state.frame_capture = Some((capture, content)),
+                    None => state.frame_capture = Some(pending),
                 }
+            }
+        }
+        Message::CapturePolled(size, scale) => {
+            // A poll read after the capture ended finds none under way.
+            if let Some(pending) = &mut state.frame_capture
+                && let Some(captured) = pending.poll(|| Ok(physical_content(size, scale)))
+            {
+                state.frame_capture = None;
+                return screenshot_written(state, captured);
             }
         }
         Message::Quit => return iced::exit(),
@@ -17032,12 +17051,26 @@ mod tests {
                 "scale {scale}"
             );
         }
+        // The window at its default size where the display's scale is 2
+        // expects twice the content, and a narrower display clamped the
+        // window: each names the size it expected.
         let (captured, content) = framed(1);
-        assert!(capture::check_frame_capture(captured, content, 2.0).is_err());
-        // A narrower display clamped the window.
+        let expected = format!("expected {}x{}", width * 2 + 2, height * 2 + 32);
+        let wrong_scale = capture::check_frame_capture(captured, content, 2.0);
         assert!(
-            capture::check_frame_capture((width - 256, height + 32), (width - 258, height), 1.0)
-                .is_err()
+            wrong_scale.as_ref().is_err_and(
+                |e| e.contains(&expected) && e.contains("did not open at its default size")
+            ),
+            "{wrong_scale:?}"
+        );
+        let clamped =
+            capture::check_frame_capture((width - 256, height + 32), (width - 258, height), 1.0);
+        let expected = format!("expected {}x{}", width + 2, height + 32);
+        assert!(
+            clamped.as_ref().is_err_and(
+                |e| e.contains(&expected) && e.contains("did not open at its default size")
+            ),
+            "{clamped:?}"
         );
         let frameless = capture::check_frame_capture((width, height), (width, height), 1.0);
         assert!(
