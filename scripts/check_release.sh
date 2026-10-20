@@ -481,8 +481,8 @@ done
 # clippy on the platform code: a Linux clippy run never sees the macOS and
 # Windows branches, so lints in them (8 on macOS, 11 on Windows, found
 # 2026-10-11) went unnoticed. Clippy builds no binary, so windows-msvc needs
-# only its standard library, no linker. CI's clippy job runs the same four
-# for both targets.
+# only its standard library, no linker. CI's clippy job runs the same five
+# for both targets, the iced showcase's in its iced leg.
 for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
         print_warn "skipped clippy ($target): target not installed (rustup target add $target)"
@@ -501,6 +501,11 @@ for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
     # which no showcase's own cross-target build can lint from Linux.
     run_check "clippy, showcase-support ($target)" \
         cargo clippy --target "$target" -p native-theme-showcase-support --all-targets -- -D warnings
+    # The iced showcase's own macOS and Windows code (its capture through the
+    # shared crate, the system icon sets), with iced_aw as the screenshot
+    # workflow builds it.
+    run_check "clippy, iced showcase ($target)" \
+        cargo clippy --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw -- -D warnings
 done
 
 # ─────────────────────────────────────────────────────────────────────────────

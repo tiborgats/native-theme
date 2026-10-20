@@ -128,6 +128,17 @@ jobs:
       - name: Strict panic lints (iced showcase)
         if: matrix.package == 'native-theme-iced'
         run: bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
+      # The showcase's macOS and Windows code (its window capture through the
+      # shared crate, the system icon sets), which a Linux run never compiles;
+      # with iced_aw, as the screenshot workflow builds it. Clippy builds no
+      # binary, so each target needs only its standard library.
+      - name: Clippy (iced showcase, iced_aw, macOS and Windows targets)
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            cargo clippy --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw
+          done
       # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
       - name: Strict panic lints (gpui connector, native, watch)
         if: matrix.package == 'native-theme-gpui'

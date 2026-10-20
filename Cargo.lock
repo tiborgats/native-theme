@@ -5888,9 +5888,7 @@ dependencies = [
  "native-theme",
  "native-theme-showcase-support",
  "native-theme-test-fixtures",
- "objc2 0.6.4",
  "serde_json",
- "windows 0.62.2",
 ]
 
 [[package]]
