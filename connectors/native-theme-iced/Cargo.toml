@@ -120,6 +120,9 @@ image = { version = "0.25.10", default-features = false, features = ["png"] }
 # the layout dump (`--dump-layout`), both the shared crate's
 # `serde_json::Value`; the contract's tests splice the theme as JSON.
 serde_json = "1.0.151"
+# The contract's export, `contract-leaves.toml`, which the showcase reads for
+# the colour rows of its Widget Info.
+toml = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 native-theme = { workspace = true, features = ["system-icons", "linux"] }

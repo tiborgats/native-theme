@@ -1782,6 +1782,19 @@ impl State {
         }
     }
 
+    /// The bundled preset/mode combination installed, as the contract's
+    /// export names it (`<preset>/<mode>`), or `None` under the OS theme,
+    /// which is no bundled combination.
+    fn installed_combination(&self) -> Option<String> {
+        match &self.current_choice {
+            ThemeChoice::OsTheme(_) => None,
+            ThemeChoice::Preset(key) => {
+                let mode = if self.is_dark { "dark" } else { "light" };
+                Some(format!("{key}/{mode}"))
+            }
+        }
+    }
+
     /// Install `choice` in `mode`: every theme and colour-mode switch
     /// installs through here. The pickers then show `choice` and `mode`.
     ///
@@ -2413,10 +2426,10 @@ fn view(state: &State) -> Element<'_, Message> {
     // The window's fill, `window.background_color`, under everything.
     let window = tagged(
         "chrome.window",
-        container(window).width(Fill).height(Fill).style(surface(
-            to_color(resolved.window.background_color),
-            to_color(resolved.defaults.text_color),
-        )),
+        container(window)
+            .width(Fill)
+            .height(Fill)
+            .style(surface(resolved, Surface::Window)),
     )
     .root();
     let page: Element<'_, Message> = match state.overlay {
@@ -3512,6 +3525,18 @@ fn chrome_icon<'a>(
     }
 }
 
+/// The colour [`icon_button`] gives a bundled set's icon: the label's,
+/// `button.font.color`, or `button.active_text_color` while `selected`, as
+/// [`ghost_button`] gives a label. An OS icon theme's icons keep theirs.
+fn icon_colour(resolved: &ResolvedTheme, selected: bool) -> Color {
+    let b = &resolved.button;
+    to_color(if selected {
+        b.active_text_color
+    } else {
+        b.font.color
+    })
+}
+
 /// A flat button in the platform's button state colours, built from the
 /// leaves the gpui connector's `variants::ghost_button` takes: no fill and no
 /// frame at rest, its label `button.font.color`; `button.hover_background`
@@ -3684,6 +3709,24 @@ fn list_row(
     }
 }
 
+/// A list's frame: its fill, `list.background_color`, which shows under
+/// rows with no fill of their own ([`list_row`]), framed by `list.border`'s
+/// colour, width and radius.
+fn list_frame(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
+    let l = &resolved.list;
+    let fill = to_color(l.background_color);
+    let border = iced::Border {
+        color: to_color(l.border.color),
+        width: l.border.line_width,
+        radius: l.border.corner_radius.into(),
+    };
+    move |_theme| container::Style {
+        background: Some(iced::Background::Color(fill)),
+        border,
+        ..container::Style::default()
+    }
+}
+
 /// A horizontal separator: `separator.line_width` thick, in
 /// `separator.line_color` (`styles::rule`).
 fn separator_line<'a>(resolved: &ResolvedTheme) -> Element<'a, Message> {
@@ -3692,18 +3735,91 @@ fn separator_line<'a>(resolved: &ResolvedTheme) -> Element<'a, Message> {
         .into()
 }
 
-/// The separator's style (`styles::rule`) in `color`: a line a widget's own
-/// leaf colours, as the status bar's edge and a menu's separator.
-fn line_style(resolved: &ResolvedTheme, color: Color) -> impl Fn(&Theme) -> rule::Style + use<> {
+/// A line the separator's style draws (`styles::rule`) in a widget's own
+/// leaf colour.
+#[derive(Clone, Copy, Debug)]
+enum Line {
+    /// A menu's separator, `menu.separator_color`.
+    MenuSeparator,
+    /// The toolbar's bottom edge, `toolbar.border.color`.
+    Toolbar,
+    /// The status bar's top edge, `status_bar.border.color`.
+    StatusBar,
+}
+
+impl Line {
+    #[cfg(test)]
+    const ALL: [Self; 3] = [Self::MenuSeparator, Self::Toolbar, Self::StatusBar];
+}
+
+/// The separator's style (`styles::rule`) in `line`'s colour.
+fn line_style(resolved: &ResolvedTheme, line: Line) -> impl Fn(&Theme) -> rule::Style + use<> {
     let separator = styles::rule(resolved);
+    let color = to_color(match line {
+        Line::MenuSeparator => resolved.menu.separator_color,
+        Line::Toolbar => resolved.toolbar.border.color,
+        Line::StatusBar => resolved.status_bar.border.color,
+    });
     move |theme| rule::Style {
         color,
         ..separator(theme)
     }
 }
 
-/// A container filled with `background`, its text in `text_color`.
-fn surface(background: Color, text_color: Color) -> impl Fn(&Theme) -> container::Style + use<> {
+/// A surface of the chrome: a container in a widget's own fill and text
+/// colour.
+#[derive(Clone, Copy, Debug)]
+enum Surface {
+    /// The window, `window.background_color` under `defaults.text_color`.
+    Window,
+    /// The toolbar, `toolbar.background_color` under `toolbar.font.color`.
+    Toolbar,
+    /// The side panel, `sidebar.background_color` under
+    /// `sidebar.font.color`.
+    SidePanel,
+    /// A tab row's strip, `tab.bar_background` under `tab.font.color`.
+    TabStrip,
+    /// The status bar, `status_bar.background_color` under
+    /// `status_bar.font.color`.
+    StatusBar,
+}
+
+impl Surface {
+    #[cfg(test)]
+    const ALL: [Self; 5] = [
+        Self::Window,
+        Self::Toolbar,
+        Self::SidePanel,
+        Self::TabStrip,
+        Self::StatusBar,
+    ];
+}
+
+/// A container filled with `surface`'s fill, its text in its text colour.
+fn surface(
+    resolved: &ResolvedTheme,
+    surface: Surface,
+) -> impl Fn(&Theme) -> container::Style + use<> {
+    let (background, text_color) = match surface {
+        Surface::Window => (
+            resolved.window.background_color,
+            resolved.defaults.text_color,
+        ),
+        Surface::Toolbar => (
+            resolved.toolbar.background_color,
+            resolved.toolbar.font.color,
+        ),
+        Surface::SidePanel => (
+            resolved.sidebar.background_color,
+            resolved.sidebar.font.color,
+        ),
+        Surface::TabStrip => (resolved.tab.bar_background, resolved.tab.font.color),
+        Surface::StatusBar => (
+            resolved.status_bar.background_color,
+            resolved.status_bar.font.color,
+        ),
+    };
+    let (background, text_color) = (to_color(background), to_color(text_color));
     move |_theme| container::Style {
         text_color: Some(text_color),
         background: Some(iced::Background::Color(background)),
@@ -3762,12 +3878,7 @@ struct IconButton<'a> {
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
-    let b = &resolved.button;
-    let color = to_color(if spec.selected {
-        b.active_text_color
-    } else {
-        b.font.color
-    });
+    let color = icon_colour(resolved, spec.selected);
     let button = match spec
         .icon
         .as_ref()
@@ -3880,7 +3991,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     };
     let separator = |id: Option<&'static str>| {
         let line = rule::horizontal(resolved.separator.line_width)
-            .style(line_style(resolved, to_color(m.separator_color)));
+            .style(line_style(resolved, Line::MenuSeparator));
         Item::new(match id {
             Some(id) => Element::from(tagged(id, line)),
             None => line.into(),
@@ -4093,10 +4204,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
         ))
         .width(Fill)
         .align_y(iced::Center)
-        .style(surface(
-            to_color(t.background_color),
-            to_color(t.font.color),
-        ));
+        .style(surface(resolved, Surface::Toolbar));
     // `toolbar.bar_height` is the outer height, the line included.
     let bar = match t.bar_height {
         Some(h) => bar.height(Length::Fixed((h - t.border.line_width).max(0.0))),
@@ -4106,8 +4214,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
         "chrome.toolbar",
         column![
             bar,
-            rule::horizontal(t.border.line_width)
-                .style(line_style(resolved, to_color(t.border.color)))
+            rule::horizontal(t.border.line_width).style(line_style(resolved, Line::Toolbar))
         ],
     )
     .into()
@@ -4184,7 +4291,6 @@ where
 fn side_panel(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
-    let s = &resolved.sidebar;
     let settings = column![
         setting(
             state,
@@ -4289,10 +4395,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         .width(Fill)
         .height(Fill),
     )
-    .style(surface(
-        to_color(s.background_color),
-        to_color(s.font.color),
-    ))
+    .style(surface(resolved, Surface::SidePanel))
     .width(Fill)
     .height(Fill)
     .into()
@@ -4369,7 +4472,7 @@ fn tab_row<'a>(
         container(bar)
             .padding(Padding::ZERO.left(gap.container).right(gap.container))
             .width(Fill)
-            .style(surface(to_color(t.bar_background), to_color(t.font.color))),
+            .style(surface(resolved, Surface::TabStrip)),
     )
     .into()
 }
@@ -4521,11 +4624,10 @@ fn menu_bar_style(
 /// starts a drag, which the body follows ([`view`]).
 fn splitter(state: &State) -> Element<'_, Message> {
     let sp = &state.current_resolved.splitter;
-    let color = to_color(if state.splitter_hovered || state.splitter_dragging {
-        sp.hover_color
-    } else {
-        sp.divider_color
-    });
+    let color = splitter_colour(
+        &state.current_resolved,
+        state.splitter_hovered || state.splitter_dragging,
+    );
     let line = container(space())
         .width(Length::Fixed(sp.divider_width))
         .height(Fill)
@@ -4542,6 +4644,17 @@ fn splitter(state: &State) -> Element<'_, Message> {
             .interaction(iced::mouse::Interaction::ResizingHorizontally),
     )
     .into()
+}
+
+/// The [`splitter`]'s line: `splitter.divider_color`, or
+/// `splitter.hover_color` while `hovered` (under the pointer or dragged).
+fn splitter_colour(resolved: &ResolvedTheme, hovered: bool) -> Color {
+    let sp = &resolved.splitter;
+    to_color(if hovered {
+        sp.hover_color
+    } else {
+        sp.divider_color
+    })
 }
 
 /// The status bar's environment (spec §2.7), the three showcases' items
@@ -4617,15 +4730,11 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             Padding::from(gap.container),
         ))
         .width(Fill)
-        .style(surface(
-            to_color(s.background_color),
-            to_color(s.font.color),
-        ));
+        .style(surface(resolved, Surface::StatusBar));
     tagged(
         "chrome.status_bar",
         column![
-            rule::horizontal(s.border.line_width)
-                .style(line_style(resolved, to_color(s.border.color))),
+            rule::horizontal(s.border.line_width).style(line_style(resolved, Line::StatusBar)),
             bar,
         ],
     )
@@ -4684,12 +4793,7 @@ fn inspector_row<'a>(state: &State, name: String, value: String) -> Element<'a, 
 fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
-    let d = &resolved.defaults.border;
-    let frame = iced::Border {
-        color: to_color(d.color),
-        width: d.line_width,
-        radius: d.corner_radius.into(),
-    };
+    let frame = swatch_frame(resolved);
     row![
         container(space())
             .width(Length::Fixed(SWATCH_SIZE))
@@ -4704,6 +4808,27 @@ fn inspector_swatch<'a>(state: &State, label: String, color: Color) -> Element<'
     .spacing(gap.widget)
     .align_y(iced::Center)
     .into()
+}
+
+/// The frame of a Widget Info swatch: `defaults.border`'s colour, width and
+/// radius.
+fn swatch_frame(resolved: &ResolvedTheme) -> iced::Border {
+    let d = &resolved.defaults.border;
+    iced::Border {
+        color: to_color(d.color),
+        width: d.line_width,
+        radius: d.corner_radius.into(),
+    }
+}
+
+/// Widget Info's two text colours: its text, the side panel's
+/// `sidebar.font.color`, and its muted lines (the hint, how a leaf is
+/// applied), `defaults.muted_color`.
+fn info_inks(resolved: &ResolvedTheme) -> (Color, Color) {
+    (
+        to_color(resolved.sidebar.font.color),
+        to_color(resolved.defaults.muted_color),
+    )
 }
 
 /// The colour a Widget Info line ends in: its last word, `#` and the hex
@@ -4727,13 +4852,14 @@ fn hex_color(line: &str) -> Option<Color> {
 /// ([`iced_not_themeable`]).
 fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
     let json = values::theme_json(&state.current_resolved).unwrap_or_default();
+    let installed = state.installed_combination();
     ListedInfo::new(
         element,
         &json,
         &state.layout,
         Some(state.current_icon_set),
         state.current_icon_theme.as_deref(),
-        |leaf| iced_route(element, leaf),
+        |leaf| iced_route(element, leaf, installed.as_deref()),
         iced_not_themeable(element)
             .into_iter()
             .map(str::to_string)
@@ -4782,8 +4908,7 @@ fn element_info_view<'a>(
     let resolved = &state.current_resolved;
     let widget_gap = info_gap(state.layout.widget_gap);
     let section_gap = info_gap(state.layout.section_gap);
-    let ink = to_color(resolved.sidebar.font.color);
-    let muted = to_color(resolved.defaults.muted_color);
+    let (ink, muted) = info_inks(resolved);
     let regular = resolved.sidebar.font.weight;
     let line = scaled_text_size(resolved.sidebar.font.size, &state.accessibility)
         * resolved.defaults.line_height;
@@ -4812,12 +4937,7 @@ fn element_info_view<'a>(
             info_text(state, "Theme", HEADING_WEIGHT, ink)
         ),
     ];
-    let d = &resolved.defaults.border;
-    let frame = iced::Border {
-        color: to_color(d.color),
-        width: d.line_width,
-        radius: d.corner_radius.into(),
-    };
+    let frame = swatch_frame(resolved);
     for (index, row) in info.rows.into_iter().enumerate() {
         let first = index == 0;
         let leaf = info_text(state, format!("{} {}", row.leaf, row.value), regular, ink);
@@ -4902,10 +5022,481 @@ fn copy_button(
     }
 }
 
+// ---------------------------------------------------------------------------
+// The contract's export (connectors/native-theme-iced/contract-leaves.toml)
+// ---------------------------------------------------------------------------
+
+/// The iced connector's contract as its colour-leaf walk exports it: per
+/// colour leaf of `ResolvedTheme`, the rows it moves under which statuses and
+/// the bundled combinations in which it does not, or why no row reads it
+/// (the file's header). Widget Info's colour routes are read from it, so a
+/// colour claim names a row the contract proves.
+const CONTRACT_LEAVES: &str = include_str!("../contract-leaves.toml");
+
+/// One row a colour leaf moves, as the export records it.
+struct RowMove {
+    row: String,
+    /// The statuses it moves the row under, `{:?}` of the widget's status;
+    /// empty for a row that takes none.
+    statuses: Vec<String>,
+    /// The bundled combinations, `<preset>/<mode>`, in which it does not.
+    except: Vec<String>,
+}
+
+/// What the export records for one colour leaf.
+enum LeafReach {
+    Moves(Vec<RowMove>),
+    /// No row reads it in any bundled combination: the kind of reason the
+    /// naming entry gives, and the reason.
+    Named {
+        kind: String,
+        why: String,
+    },
+}
+
+/// The export, read.
+struct ContractLeaves {
+    leaves: BTreeMap<String, LeafReach>,
+    /// Every row a leaf moves, with the connector feature it exists under
+    /// where a build can lack it.
+    rows: BTreeMap<String, Option<String>>,
+}
+
+/// The strings of a TOML array, or none where `value` is no array.
+fn toml_strings(value: Option<&toml::Value>) -> Vec<String> {
+    value
+        .and_then(toml::Value::as_array)
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(toml::Value::as_str)
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Reads `text` in the export's format.
+fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
+    let table: toml::Table = text.parse().map_err(|e| format!("{e}"))?;
+    let section = |name: &str| {
+        table
+            .get(name)
+            .and_then(toml::Value::as_table)
+            .ok_or_else(|| format!("no [{name}] table"))
+    };
+    let mut leaves = BTreeMap::new();
+    for (leaf, entry) in section("leaves")? {
+        let entry = entry
+            .as_table()
+            .ok_or_else(|| format!("leaves.{leaf} is no table"))?;
+        let reach = match entry.get("moves").and_then(toml::Value::as_array) {
+            Some(moves) => LeafReach::Moves(
+                moves
+                    .iter()
+                    .filter_map(toml::Value::as_table)
+                    .filter_map(|m| {
+                        Some(RowMove {
+                            row: m.get("row")?.as_str()?.to_owned(),
+                            statuses: toml_strings(m.get("statuses")),
+                            except: toml_strings(m.get("except")),
+                        })
+                    })
+                    .collect(),
+            ),
+            None => {
+                let field = |key: &str| {
+                    entry
+                        .get(key)
+                        .and_then(toml::Value::as_str)
+                        .map(str::to_owned)
+                        .ok_or_else(|| format!("leaves.{leaf} has neither moves nor {key}"))
+                };
+                LeafReach::Named {
+                    kind: field("kind")?,
+                    why: field("why")?,
+                }
+            }
+        };
+        leaves.insert(leaf.clone(), reach);
+    }
+    let rows = section("rows")?
+        .iter()
+        .map(|(row, entry)| {
+            let cfg = entry
+                .get("cfg")
+                .and_then(toml::Value::as_str)
+                .map(str::to_owned);
+            (row.clone(), cfg)
+        })
+        .collect();
+    Ok(ContractLeaves { leaves, rows })
+}
+
+/// The export, read once; `None` if it does not parse, which
+/// `the_contract_export_parses_and_names_the_listed_colour_leaves` rules out.
+fn contract_leaves() -> Option<&'static ContractLeaves> {
+    static EXPORT: OnceLock<Result<ContractLeaves, String>> = OnceLock::new();
+    EXPORT
+        .get_or_init(|| parse_contract_leaves(CONTRACT_LEAVES))
+        .as_ref()
+        .ok()
+}
+
+/// Whether this build has a row the export records under `cfg`: the
+/// `styles::aw` rows need `iced_aw`; the `Spinner`'s need `spinner`, which
+/// the showcase requires.
+fn row_built(cfg: Option<&str>) -> bool {
+    match cfg {
+        None | Some("spinner") => true,
+        Some("iced_aw") => cfg!(feature = "iced_aw"),
+        Some(_) => false,
+    }
+}
+
+/// A listed element the connector draws: the rows of its widget's style
+/// function or accessor, as the export names them, and the statuses the page
+/// draws it in.
+struct Drawing {
+    /// Row-name prefixes: `styles::button.` names the rows of
+    /// `styles::button` and not of `styles::button_primary`.
+    rows: &'static [&'static str],
+    /// A status is drawn where it contains each of these...
+    with: &'static [&'static str],
+    /// ...and none of these.
+    without: &'static [&'static str],
+}
+
+impl Drawing {
+    const fn of(rows: &'static [&'static str]) -> Self {
+        Self {
+            rows,
+            with: &[],
+            without: &[],
+        }
+    }
+
+    /// The element as the page draws it, enabled: no disabled status.
+    const fn enabled(rows: &'static [&'static str]) -> Self {
+        Self {
+            rows,
+            with: &[],
+            without: &["Disabled"],
+        }
+    }
+
+    const fn only(
+        rows: &'static [&'static str],
+        with: &'static [&'static str],
+        without: &'static [&'static str],
+    ) -> Self {
+        Self {
+            rows,
+            with,
+            without,
+        }
+    }
+
+    fn draws_row(&self, row: &str) -> bool {
+        self.rows.iter().any(|prefix| row.starts_with(prefix))
+    }
+
+    fn draws_status(&self, status: &str) -> bool {
+        self.with.iter().all(|s| status.contains(s))
+            && !self.without.iter().any(|s| status.contains(s))
+    }
+}
+
+const BUTTON: &[&str] = &["styles::button."];
+const TEXT_INPUT: &[&str] = &["styles::text_input."];
+const TOGGLER: &[&str] = &["styles::toggler."];
+const CHECKBOX: &[&str] = &["styles::checkbox."];
+const SEGMENT: &[&str] = &["styles::segment.", "styles::segmented_control."];
+const PALETTE: &[&str] = &["palette.", "extended."];
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR: &[&str] = &["styles::aw::tab_bar.", "crate::tab_indicator_line"];
+
+/// What draws a colour leaf of `element`: the connector, through the rows of
+/// a [`Drawing`], or the showcase itself (`None`), whose route [`iced_route`]
+/// writes by hand. The class is chosen by the element's id, as the page
+/// builds it.
+fn drawing(element: &ShowcaseElement, leaf: &str) -> Option<Drawing> {
+    let id = element.id.as_str();
+    let under = |prefix: &str| id == prefix || id.starts_with(&format!("{prefix}."));
+    // A group's heading, and the text the page sets with no widget of its
+    // own: iced's text, in the window's palette.
+    if id.ends_with(".heading")
+        || id == "basic.card.text"
+        || (under("basic.typography") && !under("basic.typography.link"))
+    {
+        return Some(Drawing::of(PALETTE));
+    }
+    Some(match id {
+        _ if under("basic.buttons.toggle_on") => {
+            Drawing::only(&["styles::button_toggle."], &["(true, "], &["Disabled"])
+        }
+        _ if under("basic.buttons.primary") => Drawing::enabled(&["styles::button_primary."]),
+        _ if under("basic.buttons.disabled") => Drawing::only(BUTTON, &["Disabled"], &[]),
+        _ if under("basic.buttons.tooltip.bubble") => Drawing::of(&["styles::tooltip."]),
+        _ if under("basic.buttons") => Drawing::enabled(BUTTON),
+        // The check mark the theme states a line for is the showcase's
+        // ([`CheckMark`]).
+        _ if under("basic.checkboxes")
+            && (id.ends_with(".mark") || leaf == "checkbox.indicator_color") =>
+        {
+            return None;
+        }
+        _ if under("basic.checkboxes.unchecked") => {
+            Drawing::only(CHECKBOX, &["is_checked: false"], &["Disabled"])
+        }
+        _ if under("basic.checkboxes.checked") => {
+            Drawing::only(CHECKBOX, &["is_checked: true"], &["Disabled"])
+        }
+        _ if under("basic.checkboxes.disabled") => {
+            Drawing::only(CHECKBOX, &["Disabled", "is_checked: true"], &[])
+        }
+        _ if under("basic.radios.option_a") => {
+            Drawing::only(&["styles::radio."], &["is_selected: true"], &[])
+        }
+        _ if under("basic.radios.option_b") => {
+            Drawing::only(&["styles::radio."], &["is_selected: false"], &[])
+        }
+        // A disabled switch's label is the showcase's own colour.
+        _ if under("basic.switches.disabled") && leaf == "defaults.disabled_text_color" => {
+            return None;
+        }
+        _ if under("basic.switches.off") => {
+            Drawing::only(TOGGLER, &["is_toggled: false"], &["Disabled"])
+        }
+        _ if under("basic.switches.on") => {
+            Drawing::only(TOGGLER, &["is_toggled: true"], &["Disabled"])
+        }
+        _ if under("basic.switches.disabled") => {
+            Drawing::only(TOGGLER, &["Disabled", "is_toggled: true"], &[])
+        }
+        _ if under("basic.text_inputs.disabled") => Drawing::only(TEXT_INPUT, &["Disabled"], &[]),
+        _ if under("basic.text_inputs.focused") => Drawing::only(TEXT_INPUT, &["Focused"], &[]),
+        _ if under("basic.text_inputs") || under("basic.number_input") => {
+            Drawing::enabled(TEXT_INPUT)
+        }
+        _ if under("basic.text_area") => Drawing::enabled(&["styles::text_editor."]),
+        _ if under("basic.drop_down")
+            || ["theme", "mode", "icon_theme"]
+                .iter()
+                .any(|s| id == format!("chrome.side_panel.settings.{s}")) =>
+        {
+            Drawing::of(&["styles::pick_list."])
+        }
+        _ if under("basic.slider") => Drawing::of(&["styles::slider."]),
+        _ if under("basic.progress_bar") => Drawing::of(&["styles::progress_bar."]),
+        _ if under("basic.spinner") => Drawing::of(&["crate::Spinner"]),
+        // iced_aw's `TabBar` asks for `Active` for the open tab, `Disabled`
+        // for another, `Hovered` for the one under the pointer
+        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:589-595`).
+        #[cfg(feature = "iced_aw")]
+        _ if under("basic.tabs.one") => Drawing::only(
+            AW_TAB_BAR,
+            &[],
+            &["Disabled", "Pressed", "Focused", "Selected"],
+        ),
+        #[cfg(feature = "iced_aw")]
+        _ if under("basic.tabs.two") => Drawing::only(
+            AW_TAB_BAR,
+            &[],
+            &["Active", "Pressed", "Focused", "Selected"],
+        ),
+        #[cfg(feature = "iced_aw")]
+        _ if under("basic.tabs") => Drawing::of(AW_TAB_BAR),
+        // The page's and the inspector's tabs are the showcase's
+        // ([`tab_style`]); their line is the connector's.
+        _ if leaf == "tab.active_indicator_color" => Drawing::of(&["crate::tab_indicator_line"]),
+        _ if under("basic.segmented.week") => {
+            Drawing::only(SEGMENT, &[], &["(false, ", "Disabled"])
+        }
+        _ if under("basic.segmented.day") || under("basic.segmented.month") => {
+            Drawing::only(SEGMENT, &[], &["(true, ", "Disabled"])
+        }
+        _ if under("basic.segmented") => Drawing::enabled(SEGMENT),
+        // The list's scroll bar is vertical, and its rows overflow it.
+        _ if under("basic.list.scrollbar") => Drawing::only(
+            &["styles::scrollable.vertical_rail."],
+            &["is_vertical_scrollbar_disabled: false"],
+            &[],
+        ),
+        // The arrow is the showcase's canvas in the connector's colour; the
+        // header and its title are `styles::expander`'s.
+        _ if under("basic.expander") && id.ends_with(".arrow") => {
+            Drawing::of(&["crate::expander_arrow_color"])
+        }
+        _ if under("basic.expander") && (id.ends_with(".header") || id.ends_with(".title")) => {
+            Drawing::enabled(&["styles::expander."])
+        }
+        _ if under("basic.expander") => Drawing::enabled(&[
+            "styles::expander.",
+            "styles::expander_frame.",
+            "crate::expander_arrow_color",
+        ]),
+        _ if under("basic.card") => Drawing::of(&["styles::container_card."]),
+        _ if under("basic.typography.link") => Drawing::enabled(&["styles::button_link."]),
+        _ if under("basic.separator")
+            || id == "chrome.page_tabs.rule"
+            || id == "chrome.side_panel.separator" =>
+        {
+            Drawing::of(&["styles::rule."])
+        }
+        _ => return None,
+    })
+}
+
+/// A sentence for a row whose colour a leaf does not give alone, keyed by
+/// the export's row name, after the row in a colour route: where the
+/// connector derives a status or draws the row only under a condition.
+/// `every_derivation_sentence_names_an_exported_row` holds each key to the
+/// export.
+const DERIVED_ROWS: &[(&str, &str)] = &[
+    (
+        "styles::button_primary.background",
+        "Hovered and Pressed: iced's derivation from button.primary_background, \
+         Primary::generate(..).strong and .base",
+    ),
+    (
+        "styles::button_primary.text_color",
+        "Hovered and Pressed: button.primary_text_color, the label of iced's Primary pair",
+    ),
+    (
+        "styles::slider.handle.background",
+        "Dragged: iced's own handle fill, slider.thumb_color has no dragged variant",
+    ),
+    (
+        "styles::expander.border",
+        "0 wide where the theme states expander.frame_enabled",
+    ),
+    (
+        "styles::expander_frame.border",
+        "drawn where expander.frame_enabled is true",
+    ),
+];
+
+/// A status as a route names it: the variant, `Active` of `(true, Active)`
+/// or of `Active { is_checked: true }`, whose other fields the element's
+/// [`Drawing`] has already chosen.
+fn status_name(status: &str) -> &str {
+    let status = status
+        .strip_prefix('(')
+        .and_then(|s| s.strip_suffix(')'))
+        .and_then(|s| s.split_once(", "))
+        .map_or(status, |(_, variant)| variant);
+    status
+        .split_once(' ')
+        .map_or(status, |(variant, _)| variant)
+}
+
+/// How the connector draws `leaf` on `element`, read from the contract's
+/// export: the rows of its [`Drawing`] the leaf moves, under the statuses the
+/// page draws, on `installed`, the bundled combination shown
+/// (`<preset>/<mode>`), or in any bundled one where the theme is the OS's
+/// (`None`); or why no row reads it. `None` where the showcase draws the
+/// leaf itself, or the export has no such leaf.
+fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> Option<String> {
+    let export = contract_leaves()?;
+    let reach = export.leaves.get(leaf)?;
+    let drawing = drawing(element, leaf)?;
+    let moves = match reach {
+        LeafReach::Named { kind, why } => {
+            return Some(match kind.as_str() {
+                "inherited" | "ruled" => format!("not drawn: {why}"),
+                _ => match kind.strip_prefix("fallback of ") {
+                    Some(option) => format!(
+                        "not drawn in a bundled theme, each of which states {option}: {why}"
+                    ),
+                    None => format!("not reachable: {why}"),
+                },
+            });
+        }
+        LeafReach::Moves(moves) => moves,
+    };
+    let mut rows: Vec<(&str, Vec<&str>)> = Vec::new();
+    for m in moves {
+        let shown = drawing.draws_row(&m.row)
+            && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
+            && installed.is_none_or(|label| !m.except.iter().any(|e| e == label));
+        if !shown {
+            continue;
+        }
+        let mut statuses = m
+            .statuses
+            .iter()
+            .filter(|s| drawing.draws_status(s))
+            .map(|s| status_name(s))
+            .peekable();
+        if !m.statuses.is_empty() && statuses.peek().is_none() {
+            continue;
+        }
+        let seen = match rows.iter().position(|(row, _)| *row == m.row) {
+            Some(at) => rows.get_mut(at).map(|(_, seen)| seen),
+            None => {
+                rows.push((&m.row, Vec::new()));
+                rows.last_mut().map(|(_, seen)| seen)
+            }
+        };
+        if let Some(seen) = seen {
+            for s in statuses {
+                if !seen.contains(&s) {
+                    seen.push(s);
+                }
+            }
+        }
+    }
+    if rows.is_empty() {
+        let names = drawing
+            .rows
+            .iter()
+            .map(|prefix| prefix.trim_end_matches('.'))
+            .collect::<Vec<_>>()
+            .join(" or ");
+        return Some(match installed {
+            Some(label) => {
+                format!("not drawn here: on {label} it moves no row of {names} in the state shown")
+            }
+            None => format!(
+                "not drawn here: it moves no row of {names} in the state shown, in any bundled theme"
+            ),
+        });
+    }
+    let line = rows
+        .iter()
+        .map(|(row, statuses)| {
+            let mut text = (*row).to_owned();
+            if !statuses.is_empty() {
+                text.push_str(&format!(" ({})", statuses.join(", ")));
+            }
+            if let Some((_, sentence)) = DERIVED_ROWS.iter().find(|(key, _)| key == row) {
+                text.push_str(&format!(", {sentence}"));
+            }
+            text
+        })
+        .collect::<Vec<_>>()
+        .join("; ");
+    Some(match installed {
+        Some(_) => format!("iced: {line}"),
+        None => format!("iced: {line} (in a bundled theme)"),
+    })
+}
+
 /// How iced applies `leaf` to `element`: the connector's style function or
 /// helper and the field or setter it reaches, or why it cannot. One muted
 /// line of Widget Info.
-fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
+///
+/// A colour leaf the connector draws is routed from the contract's export
+/// ([`colour_route`]), on `installed`, the bundled combination shown
+/// (`<preset>/<mode>`, `None` under the OS theme). The lines below are the
+/// leaves the export does not cover: the lengths, flags and fonts, and the
+/// colours the showcase draws itself, each naming the function that draws it,
+/// which `every_hand_colour_route_names_a_function_that_reads_it` splices.
+fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> String {
+    if let Some(line) = colour_route(element, leaf, installed) {
+        return line;
+    }
     let id = element.id.as_str();
     let under = |prefix: &str| id.starts_with(prefix);
     // The flat buttons, drawn in `ghost_button`: the toolbar's, the Basic
@@ -4918,10 +5509,9 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         || under("chrome.page_tabs.menu")
         || under("chrome.status_bar.toggle")
         || id == "chrome.info.copy";
-    let toggle_on = under("basic.buttons.toggle_on");
     let class = if ghost {
         "ghost_button"
-    } else if toggle_on {
+    } else if under("basic.buttons.toggle_on") {
         "styles::button_toggle"
     } else if under("basic.buttons.primary") {
         "styles::button_primary"
@@ -4936,57 +5526,27 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
     };
     let line: Cow<'static, str> = match (table, field) {
         // ---- button ----
-        ("button", "background_color") => {
-            format!("{class}: button::Style::background at rest").into()
-        }
         ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
         ("button", "font.color") if ghost => {
-            "the icon's colour where the set is a bundled one (chrome_icon); an OS icon theme's keep theirs"
+            "icon_button: the icon's colour where the set is a bundled one, an OS icon theme's \
+             keeping theirs; ghost_button: the label's where the set has no icon"
                 .into()
         }
-        ("button", "font.color") => format!("{class}: button::Style::text_color at rest").into(),
         ("button", "min_width_px" | "min_height_px") => {
             "at_least(label, button_content_min_size): the minimum less button_padding".into()
         }
-        ("button", "hover_background") if ghost => "ghost_button: the Hovered fill".into(),
-        ("button", "hover_background") => {
-            format!("{class}: the Hovered fill, composited over the rest fill").into()
-        }
-        ("button", "hover_text_color") => format!("{class}: the Hovered text_color").into(),
-        ("button", "checked_background") => {
-            "styles::button_toggle: the checked fill, the Pressed fill where unstated".into()
-        }
-        ("button", "checked_text_color") => {
-            "styles::button_toggle: the checked text_color, the Pressed one where unstated".into()
-        }
-        ("button", "active_background") if toggle_on => {
-            "styles::button_toggle: the checked fill where checked_background is unstated, composited over button.background_color".into()
-        }
-        ("button", "active_background") if ghost => {
+        ("button", "hover_background") => "ghost_button: the Hovered fill".into(),
+        ("button", "hover_text_color") => "ghost_button: the Hovered text_color".into(),
+        ("button", "active_background") => {
             "ghost_button: the Pressed fill, and the fill while selected".into()
         }
-        ("button", "active_background") => {
-            format!("{class}: the Pressed fill, composited over the rest fill").into()
+        ("button", "active_text_color") => {
+            "ghost_button: the Pressed text_color, and the text_color while selected".into()
         }
-        ("button", "active_text_color") if toggle_on => {
-            "styles::button_toggle: the checked text_color where checked_text_color is unstated".into()
-        }
-        ("button", "active_text_color") => format!("{class}: the Pressed text_color").into(),
-        ("button", "primary_background") => {
-            "styles::button_primary: button::Style::background at rest".into()
-        }
-        ("button", "primary_text_color") => {
-            "styles::button_primary: button::Style::text_color at rest".into()
-        }
-        ("button", "disabled_background") => {
-            "styles::button: the Disabled fill (a button with no on_press)".into()
-        }
-        ("button", "disabled_text_color") => "styles::button: the Disabled text_color".into(),
         ("button", "disabled_opacity") => {
             "styles::button: the Disabled colours' alpha times it (iced has no widget opacity)"
                 .into()
         }
-        ("button", "border.color") => format!("{class}: button::Style::border.color").into(),
         ("button", "border.corner_radius_px") => {
             format!("{class}: button::Style::border.radius").into()
         }
@@ -5004,27 +5564,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "button_padding: Button::padding, the side plus button.border.line_width".into()
         }
         // ---- input, text area ----
-        ("input", "background_color") => "styles::text_input: text_input::Style::background".into(),
         ("input", "font") => "Text input size and theme_font (family, weight)".into(),
-        ("input", "font.color") => "styles::text_input: text_input::Style::value".into(),
-        ("input", "placeholder_color") => "styles::text_input: text_input::Style::placeholder".into(),
-        ("input", "caret_color") => {
-            "not reachable: text_input::Style has no caret colour; iced draws it in the value colour"
-                .into()
-        }
         ("input", "min_height_px") => {
             "control_line_height: the line box that fills it inside the padding".into()
         }
-        ("input", "hover_border_color") => "styles::text_input: the Hovered border.color".into(),
-        ("input", "focus_border_color") => "styles::text_input: the Focused border.color".into(),
-        ("input", "disabled_background") => {
-            "styles::text_input: the Disabled background (a field with no on_input)".into()
-        }
-        ("input", "disabled_text_color") => "styles::text_input: the Disabled value colour".into(),
         ("input", "disabled_opacity") => {
             "styles::text_input: the Disabled colours' alpha times it".into()
         }
-        ("input", "border.color") => "styles::text_input: text_input::Style::border.color".into(),
         ("input", "border.corner_radius_px") => {
             "styles::text_input: text_input::Style::border.radius".into()
         }
@@ -5034,7 +5580,6 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("input", f) if side(f).is_some() => {
             "input_padding: TextInput::padding, the side plus the line width".into()
         }
-        ("text_area", "border.color") => "styles::text_editor: text_editor::Style::border.color".into(),
         ("text_area", "border.corner_radius_px") => {
             "styles::text_editor: text_editor::Style::border.radius".into()
         }
@@ -5051,16 +5596,15 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "not reachable: the model states no shadow geometry; iced draws no shadow here".into()
         }
         // ---- checkbox and radio ----
-        ("checkbox", "background_color") if under("basic.radios.") => {
-            "styles::radio: radio::Style::background".into()
-        }
-        ("checkbox", "background_color") => "styles::checkbox: checkbox::Style::background".into(),
         ("checkbox", "font") => "Checkbox/Radio text_size and font (theme_font)".into(),
-        ("checkbox", "font.color") => "styles::checkbox / styles::radio: the label's text_color".into(),
-        ("checkbox", "indicator_color") if under("basic.radios.") => {
-            "native_theme_iced::radio: the dot's fill".into()
+        ("checkbox", "indicator_color") => {
+            "CheckMark: the mark's stroke colour, styles::checkbox's icon_color over its fill"
+                .into()
         }
-        ("checkbox", "indicator_color") => "the check mark's stroke colour (CheckMark canvas)".into(),
+        ("checkbox", "disabled_text_color") => {
+            "CheckMark: the disabled mark, styles::checkbox's Disabled icon_color, faded with its box"
+                .into()
+        }
         ("checkbox", "indicator_width_px") => "Checkbox/Radio::size".into(),
         ("checkbox", "check_mark_stroke_width_px") => {
             "CheckMark: the mark's stroke width, over iced's glyph made transparent".into()
@@ -5072,25 +5616,8 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "native_theme_iced::radio: Radio::size, indicator_width where unstated".into()
         }
         ("checkbox", "label_gap_px") => "Checkbox/Radio::spacing".into(),
-        ("checkbox", "hover_background") => {
-            "styles::checkbox / styles::radio: the Hovered unchecked fill".into()
-        }
-        ("checkbox", "unchecked_background") => {
-            "styles::checkbox / styles::radio: the unchecked fill".into()
-        }
-        ("checkbox", "unchecked_border_color") => {
-            "styles::checkbox / styles::radio: the unchecked border colour".into()
-        }
-        ("checkbox", "checked_background") => {
-            "styles::checkbox / styles::radio: the checked fill".into()
-        }
-        ("checkbox", "disabled_background") => "styles::checkbox: the Disabled fill".into(),
-        ("checkbox", "disabled_text_color") => "styles::checkbox: the Disabled label and mark".into(),
         ("checkbox", "disabled_opacity") => {
             "styles::checkbox: the Disabled colours' alpha times it; a drawn mark fades with its box's fill".into()
-        }
-        ("checkbox", "border.color") => {
-            "styles::checkbox / styles::radio: the checked border colour".into()
         }
         ("checkbox", "border.corner_radius_px") => "styles::checkbox: checkbox::Style::border.radius".into(),
         ("checkbox", "border.line_width_px") => {
@@ -5108,37 +5635,12 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         ("switch", "track_radius_px") => "styles::toggler: border_radius of track and thumb".into(),
-        ("switch", "checked_background" | "unchecked_background") => {
-            "styles::toggler: the track's background".into()
-        }
-        ("switch", "hover_checked_background" | "hover_unchecked_background") => {
-            "styles::toggler: the Hovered track background".into()
-        }
-        ("switch", "thumb_background") => "styles::toggler: the thumb's foreground".into(),
         ("switch", "unchecked_thumb_diameter_px") => {
             "native_theme_iced::switch: the off thumb, thumb_diameter where unstated"
                 .into()
         }
-        ("switch", "unchecked_thumb_background") => {
-            "styles::toggler: the off thumb's foreground, thumb_background where unstated".into()
-        }
-        ("switch", "disabled_checked_background") => {
-            "styles::toggler: the Disabled track background".into()
-        }
-        ("switch", "disabled_thumb_color") => "styles::toggler: the Disabled foreground".into(),
-        (
-            "switch",
-            "checked_track_border_color"
-            | "unchecked_track_border_color"
-            | "disabled_checked_track_border_color",
-        ) => "styles::toggler: the track's background_border_color, the track's border"
-            .into(),
         ("switch", "track_border_line_width_px") => {
             "styles::toggler: the track's background_border_width, the track's border".into()
-        }
-        ("switch", "thumb_border_color") => {
-            "styles::toggler: the thumb's foreground_border_color, the thumb's border"
-                .into()
         }
         ("switch", "thumb_border_line_width_px") => {
             "styles::toggler: the thumb's foreground_border_width, the thumb's border"
@@ -5148,12 +5650,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "styles::toggler: the Disabled colours' alpha times it; the label faded alike".into()
         }
         // ---- combo box (drop-down) ----
-        ("combo_box", "background_color") => "styles::pick_list: pick_list::Style::background".into(),
         ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
-        ("combo_box", "font.color") if under("basic.drop_down.trigger.arrow") => {
-            "styles::pick_list: pick_list::Style::handle_color".into()
-        }
-        ("combo_box", "font.color") => "styles::pick_list: pick_list::Style::text_color".into(),
         ("combo_box", "min_height_px") => {
             "control_line_height: the line box that fills it inside combo_box_padding".into()
         }
@@ -5166,8 +5663,6 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("combo_box", "arrow_area_width_px") => {
             "combo_box_padding: the right padding holds half the column the arrow leaves".into()
         }
-        ("combo_box", "hover_background") => "styles::pick_list: the Hovered background".into(),
-        ("combo_box", "border.color") => "styles::pick_list: pick_list::Style::border.color".into(),
         ("combo_box", "border.corner_radius_px") => {
             "styles::pick_list: pick_list::Style::border.radius".into()
         }
@@ -5216,7 +5711,15 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "not drawn: the panel's sections are padded by layout.container_margin".into()
         }
         ("sidebar", "font") => "the text's size and theme_font".into(),
-        ("sidebar", "font.color") => "the text's colour".into(),
+        ("sidebar", "font.color") if id == "chrome.info.copy" => {
+            "copy_button: the label at rest".into()
+        }
+        ("sidebar", "font.color") if under("chrome.info.") => {
+            "info_inks: the text's colour".into()
+        }
+        ("sidebar", "font.color") => {
+            "surface: the side panel's text_color, which the text takes".into()
+        }
         ("status_bar", "background_color") => "surface: the bar container's background".into(),
         ("status_bar", "border.color") => "line_style: the top edge's colour".into(),
         ("status_bar", "border.line_width_px") => {
@@ -5228,44 +5731,39 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("status_bar", "font") => "the text's size and theme_font".into(),
         ("status_bar", "font.color") => "surface: the bar's text_color".into(),
         ("splitter", "divider_width_px") => "the line container's width".into(),
-        ("splitter", "divider_color") => "the line container's background".into(),
-        ("splitter", "hover_color") => "the line's background under the pointer and while dragged".into(),
-        ("separator", "line_color") if under("chrome.menu.") => "not drawn here".into(),
-        ("separator", "line_color") => "styles::rule: rule::Style::color".into(),
+        ("splitter", "divider_color") => "splitter: the line container's background".into(),
+        ("splitter", "hover_color") => {
+            "splitter: the line's background under the pointer and while dragged".into()
+        }
         ("separator", "line_width_px") if under("basic.table.") => {
             "the grid lines' thickness: the column line's width and the header line's height (basic_table)"
                 .into()
         }
         ("separator", "line_width_px") => "rule::horizontal's thickness".into(),
         // ---- tabs ----
-        ("tab", "bar_background") if under("basic.tabs.") => {
-            "styles::aw::tab_bar: tab_bar::Style::background".into()
-        }
         ("tab", "bar_background") => "surface: the strip container's background".into(),
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
-        ("tab", "active_indicator_color" | "active_indicator_width_px" | "active_indicator_side")
-            if under("basic.tabs.") =>
-        {
+        ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
             "native_theme_iced::tab_indicator_line over the open tab's place in iced_aw's bar"
                 .into()
         }
-        ("tab", "active_indicator_color" | "active_indicator_width_px" | "active_indicator_side") => {
+        ("tab", "active_indicator_width_px" | "active_indicator_side") => {
             "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
         }
-        ("tab", "active_background") => "the open tab's background".into(),
-        ("tab", "active_text_color") => "the open tab's text colour".into(),
-        ("tab", "background_color") => "a tab's background at rest".into(),
-        ("tab", "hover_background") => "a tab's background under the pointer".into(),
-        ("tab", "hover_text_color") => "a tab's text colour under the pointer".into(),
+        ("tab", "active_background") => "tab_style: the open tab's background".into(),
+        ("tab", "active_text_color") => "tab_style: the open tab's text colour".into(),
+        ("tab", "background_color") => "tab_style: a tab's background at rest".into(),
+        ("tab", "hover_background") => "tab_style: a tab's background under the pointer".into(),
+        ("tab", "hover_text_color") => "tab_style: a tab's text colour under the pointer".into(),
         ("tab", "font") => "the label's size and theme_font".into(),
-        ("tab", "font.color") => "a tab's text colour at rest".into(),
+        ("tab", "font.color") => "tab_style: a tab's text colour at rest".into(),
         ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
             "TabBar::tab_width and height, fixed: iced_aw takes no minimum".into()
         }
         ("tab", "min_width_px" | "min_height_px") => {
             "at_least(label, ..): the minimum less the padding".into()
         }
-        ("tab", "border.color") => "the open tab's border colour".into(),
+        ("tab", "border.color") => "tab_style: the open tab's border colour".into(),
         ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
         ("tab", "border.line_width_px") => "the open tab's border width".into(),
         ("tab", f) if side(f).is_some() && under("basic.tabs.") => {
@@ -5275,23 +5773,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "padding_inside_border: the button's padding, the side plus the line width".into()
         }
         // ---- slider, progress bar, spinner ----
-        ("slider", "fill_color") => "styles::slider: the rail's filled colour".into(),
-        ("slider", "track_color") => "styles::slider: the rail's remaining colour".into(),
-        ("slider", "thumb_color") => "styles::slider: the handle's background".into(),
-        ("slider", "thumb_hover_color") => "styles::slider: the Hovered handle".into(),
         ("slider", "track_height_px") => "styles::slider: the rail's width".into(),
         ("slider", "thumb_diameter_px") => {
             "styles::slider: a circle handle of half of it; Slider::height".into()
-        }
-        ("progress_bar", "fill_color") => "styles::progress_bar: progress_bar::Style::bar".into(),
-        ("progress_bar", "track_color") => {
-            "styles::progress_bar: progress_bar::Style::background".into()
         }
         ("progress_bar", "track_height_px") => "ProgressBar::girth".into(),
         ("progress_bar", "min_width_px") => {
             "not reachable: ProgressBar takes a length, not a minimum; the page's own width".into()
         }
-        ("progress_bar", "border.color") => "styles::progress_bar: border.color".into(),
         ("progress_bar", "border.corner_radius_px") => "styles::progress_bar: border.radius".into(),
         ("progress_bar", "border.line_width_px") => "styles::progress_bar: border.width".into(),
         ("spinner", "diameter_px") => "native_theme_iced::Spinner: its width and height".into(),
@@ -5302,28 +5791,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "native_theme_iced::Spinner: the arc's stroke, where the icon set has no indicator"
                 .into()
         }
-        ("spinner", "fill_color") => {
-            "native_theme_iced::Spinner: the arc, or a bundled set's indicator".into()
-        }
         // ---- segmented control ----
-        ("segmented_control", "background_color") => "styles::segment: a segment's fill".into(),
         ("segmented_control", "font") => "the label's size and theme_font".into(),
-        ("segmented_control", "font.color") => "styles::segment: text_color at rest".into(),
-        ("segmented_control", "active_background") => {
-            "styles::segment: the selected segment's fill".into()
-        }
-        ("segmented_control", "active_text_color") => {
-            "styles::segment: the selected segment's text_color".into()
-        }
-        ("segmented_control", "hover_background") => "styles::segment: the Hovered fill".into(),
         ("segmented_control", "segment_height_px") => {
             "at_least(label, ..): each segment's outer height less its padding".into()
         }
         ("segmented_control", "separator_width_px") => {
             "the segments' Row::spacing, over the outline colour".into()
-        }
-        ("segmented_control", "border.color") => {
-            "styles::segmented_control: the outline, showing between segments".into()
         }
         ("segmented_control", "border.corner_radius_px") => {
             "styles::segmented_control and styles::segment: the outer corners".into()
@@ -5335,26 +5809,40 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "Button::padding of each segment, iced's own on an unstated side".into()
         }
         // ---- list and table ----
-        ("list", "background_color") if under("basic.table.") => {
-            "the table container's background".into()
+        ("list", "background_color") if under("basic.table.frame") => {
+            "basic_table: the frame container's background".into()
         }
-        ("list", "background_color") => "the list container's background".into(),
+        ("list", "background_color") if under("basic.table.") => {
+            "basic_table: the frame container's background, under the row".into()
+        }
+        ("list", "background_color") if under("basic.list.frame") => {
+            "list_frame: the list container's background".into()
+        }
+        ("list", "background_color") => {
+            "list_frame: the list container's background, under the row".into()
+        }
         ("list", "item_font") => "the row label's size and theme_font".into(),
-        ("list", "item_font.color") if under("basic.table.") => "a cell's text colour".into(),
+        ("list", "item_font.color") if under("basic.table.") => {
+            "basic_table: a cell's text colour".into()
+        }
         ("list", "item_font.color") => "list_row: text_color at rest".into(),
         ("list", "alternate_row_background") => "the alternate row container's background".into(),
         ("list", "selection_background") if under("basic.table.") => {
-            "the selected row container's background".into()
+            "basic_table: the selected row container's background".into()
         }
         ("list", "selection_background") => "list_row: the selected row's fill".into(),
         ("list", "selection_text_color") if under("basic.table.") => {
-            "the selected row's text colour".into()
+            "basic_table: the selected row's text colour".into()
         }
         ("list", "selection_text_color") => "list_row: the selected row's text_color".into(),
         ("list", "header_font") => "the header cells' size and theme_font".into(),
-        ("list", "header_font.color") => "the header cells' text colour".into(),
-        ("list", "header_background") => "the header row container's background".into(),
-        ("list", "grid_color") => "the grid lines' colour (rules between the cells)".into(),
+        ("list", "header_font.color") => "basic_table: the header cells' text colour".into(),
+        ("list", "header_background") => {
+            "basic_table: the header row container's background".into()
+        }
+        ("list", "grid_color") => {
+            "basic_table: the grid lines' colour (rules between the cells)".into()
+        }
         ("list", "header_height_px") => {
             "list_header_height: the header row's height; a row's where unstated".into()
         }
@@ -5374,7 +5862,10 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("list", "hover_background") => "list_row: the Hovered fill".into(),
         ("list", "hover_text_color") => "list_row: the Hovered text_color".into(),
-        ("list", "border.color") => "the frame container's border.color".into(),
+        ("list", "border.color") if under("basic.table.") => {
+            "basic_table: the frame container's border.color".into()
+        }
+        ("list", "border.color") => "list_frame: the frame container's border.color".into(),
         ("list", "border.corner_radius_px") => "the frame container's border.radius".into(),
         ("list", "border.line_width_px") => {
             "the frame container's border.width and padding".into()
@@ -5386,10 +5877,6 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "a row's padding; iced_aw's list's 5 px where unstated".into()
         }
         // ---- scrollbar ----
-        ("scrollbar", "track_color") => "styles::scrollable: the rail's background".into(),
-        ("scrollbar", "thumb_color") => "styles::scrollable: the scroller's background".into(),
-        ("scrollbar", "thumb_hover_color") => "styles::scrollable: the Hovered scroller".into(),
-        ("scrollbar", "thumb_active_color") => "styles::scrollable: the Dragged scroller".into(),
         ("scrollbar", "groove_width_px") => "styles::scrollbar: Scrollbar::width".into(),
         ("scrollbar", "thumb_width_px") => "styles::scrollbar: Scrollbar::scroller_width".into(),
         ("scrollbar", "min_thumb_length_px") => {
@@ -5398,15 +5885,10 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         ("scrollbar", "overlay_mode") => "styles::scrollbar: no spacing beside the content".into(),
         // ---- expander ----
         ("expander", "font") => "the title's size and theme_font".into(),
-        ("expander", "font.color") => "styles::expander: text_color".into(),
         ("expander", "header_height_px") => {
             "at_least(title row, ..): the height less the padding".into()
         }
         ("expander", "arrow_icon_size_px") => "the DisclosureArrow canvas's size".into(),
-        ("expander", "hover_background") => "styles::expander: the Hovered fill".into(),
-        ("expander", "arrow_color") => {
-            "expander_arrow_color: the DisclosureArrow's fill".into()
-        }
         ("expander", "arrow_side") => "the arrow before or after the title".into(),
         ("expander", "arrow_gap_px") => {
             "the header row's spacing; layout.widget_gap where unstated".into()
@@ -5416,9 +5898,6 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("expander", "frame_enabled") => {
             "one frame round header and body, or none; each header framed where unstated".into()
-        }
-        ("expander", "border.color") => {
-            "styles::expander / styles::expander_frame: border.color".into()
         }
         ("expander", "border.corner_radius_px") => {
             "styles::expander / styles::expander_frame: border.radius".into()
@@ -5430,22 +5909,17 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "padding_inside_border: the header's padding, the side plus the line width".into()
         }
         // ---- card ----
-        ("card", "background_color") => "styles::container_card: container::Style::background".into(),
-        ("card", "border.color") => "styles::container_card: border.color".into(),
         ("card", "border.corner_radius_px") => "styles::container_card: border.radius".into(),
         ("card", "border.line_width_px") => "styles::container_card: border.width".into(),
         ("card", f) if side(f).is_some() => {
             "the card container's padding; layout.container_margin where unstated".into()
         }
         // ---- tooltip ----
-        ("tooltip", "background_color") => "styles::tooltip: container::Style::background".into(),
         ("tooltip", "font") => "the tip's text size and theme_font".into(),
-        ("tooltip", "font.color") => "styles::tooltip: container::Style::text_color".into(),
         ("tooltip", "max_width_px") => "the tip container's max_width".into(),
         ("tooltip", "show_delay_ms") => {
             "tooltip_show_delay: Tooltip::delay; iced's own, none, where unstated".into()
         }
-        ("tooltip", "border.color") => "styles::tooltip: border.color".into(),
         ("tooltip", "border.corner_radius_px") => "styles::tooltip: border.radius".into(),
         ("tooltip", "border.line_width_px") => "styles::tooltip: border.width".into(),
         ("tooltip", f) if side(f).is_some() => {
@@ -5453,17 +5927,17 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- link ----
         ("link", "font") => "the span's size and theme_font".into(),
-        ("link", "font.color") => "styles::button_link: text_color at rest".into(),
         ("link", "underline_enabled") => "the span's underline".into(),
-        ("link", "background_color") => "styles::button_link: the background".into(),
-        ("link", "hover_background") => "styles::button_link: the Hovered background".into(),
-        ("link", "hover_text_color") => "styles::button_link: the Hovered text_color".into(),
-        ("link", "active_text_color") => "styles::button_link: the Pressed text_color".into(),
         // ---- window, layout ----
         ("window", "background_color") if id == "chrome.window" => {
             "surface: the window container's background".into()
         }
-        ("window", "background_color") => "the window's fill, which shows through".into(),
+        ("window", "background_color") if id == "chrome.menu_bar" => {
+            "menu_bar_style: bar_background".into()
+        }
+        ("window", "background_color") => {
+            "surface: the window container's background, which shows through".into()
+        }
         ("layout", "widget_gap_px") => "Row/Column::spacing between the items".into(),
         ("layout", "container_margin_px") => "the container's padding".into(),
         ("layout", "window_margin_px") => "the page's padding".into(),
@@ -5473,18 +5947,16 @@ fn iced_route(element: &ShowcaseElement, leaf: &str) -> String {
             "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
         }
         ("defaults", "font") => "the text's size and theme_font".into(),
-        ("defaults", "font.color") => "the text's colour: the palette's text".into(),
         ("defaults", "font.family") => "theme_font: the role's family".into(),
         ("defaults", "mono_font") => "theme_mono_font: the text's size and family".into(),
-        ("defaults", "mono_font.color") => "the text's colour".into(),
-        ("defaults", "muted_color") => "the text's colour".into(),
+        ("defaults", "muted_color") => "info_inks: the muted text's colour".into(),
         ("defaults", "disabled_text_color") => {
-            "the label's colour, times switch.disabled_opacity".into()
+            "disabled_switch_label: the label's colour, times switch.disabled_opacity".into()
         }
-        ("defaults", "focus_ring_color" | "focus_ring_width_px" | "focus_ring_offset_px") => {
+        ("defaults", "focus_ring_width_px" | "focus_ring_offset_px") => {
             "not reachable: iced draws no focus ring; the Focused border is the input's".into()
         }
-        ("defaults", "border.color") => "the swatch container's border.color".into(),
+        ("defaults", "border.color") => "swatch_frame: the swatch container's border.color".into(),
         ("defaults", "border.corner_radius_px") => "the swatch container's border.radius".into(),
         ("defaults", "border.line_width_px") => "the swatch container's border.width".into(),
         ("defaults", "icon_sizes.small_px" | "icon_sizes.toolbar_px" | "icon_sizes.large_px") => {
@@ -5536,8 +6008,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
     }
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
-    let muted = to_color(resolved.defaults.muted_color);
-    let text_color = to_color(resolved.sidebar.font.color);
+    let (text_color, muted) = info_inks(resolved);
     let Some(title) = info_title(&state.widget_info) else {
         return tagged(
             "chrome.info.hint",
@@ -6557,56 +7028,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // The mark the theme states a line for, over iced's glyph made
             // transparent: laid out whether checked or not, so the box keeps its
             // place in the widget tree as it toggles.
-            let status = if enabled {
-                checkbox::Status::Active {
-                    is_checked: checked,
-                }
-            } else {
-                checkbox::Status::Disabled {
-                    is_checked: checked,
-                }
-            };
-            // The style's mark colour over the box's fill over the page, one
-            // opaque colour: a translucent one comes out of iced's mesh
-            // pipeline darker than the same colour on a quad, where the box's
-            // fill blends as the connector composites
-            // (`styles::composite_over`). A disabled check fades as a whole,
-            // its mark over its fill and the pair at
-            // `checkbox.disabled_opacity` over the page (docs/platform-facts.md
-            // §2.1.6: GNOME's `filter: Opacity` on the whole widget, which
-            // keeps its normal colours), where the style fades each colour on
-            // its own: each is taken back to its unfaded self first.
-            let style = styles::checkbox(resolved)(&Theme::Light, status);
-            let page = to_color(resolved.window.background_color);
-            let opacity = if enabled || !c.disabled_opacity.is_finite() {
-                1.0
-            } else {
-                c.disabled_opacity.clamp(0.0, 1.0)
-            };
-            let unfaded = |colour: Color| Color {
-                a: if opacity > 0.0 {
-                    (colour.a / opacity).min(1.0)
-                } else {
-                    0.0
-                },
-                ..colour
-            };
-            let colour = match style.background {
-                iced::Background::Color(fill) => {
-                    let whole = over(unfaded(style.icon_color), over(unfaded(fill), page));
-                    over(
-                        Color {
-                            a: opacity,
-                            ..whole
-                        },
-                        page,
-                    )
-                }
-                _ => style.icon_color,
-            };
             let mark = canvas(CheckMark {
                 checked,
-                color: colour,
+                color: check_mark_colour(resolved, checked, enabled),
                 stroke,
                 inset: (inset_x, inset_y),
             })
@@ -6985,11 +7409,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // iced's toggler leaves. A disabled switch's label is the disabled text
     // colour, faded with the switch by `switch.disabled_opacity`, as the gpui
     // and egui switches draw it (docs/platform-facts.md §2.1.6).
-    let disabled_label = {
-        let mut c = to_color(resolved.defaults.disabled_text_color);
-        c.a *= resolved.switch.disabled_opacity;
-        c
-    };
+    let disabled_label = disabled_switch_label(resolved);
     // The thumb inside the track as `native_theme_iced::switch` seats it:
     // `switch.thumb_diameter` across on, `unchecked_thumb_diameter` off where
     // the theme states one, inset by half the difference of the two heights,
@@ -7340,12 +7760,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             ..b
         }
     };
-    let frame = iced::Border {
-        color: to_color(list_t.border.color),
-        width: list_t.border.line_width,
-        radius: list_t.border.corner_radius.into(),
-    };
-    let list_fill = to_color(list_t.background_color);
     let list: Element<'a, Message> = probe(
         probes::BASIC_LIST,
         Length::Shrink,
@@ -7361,11 +7775,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             )
             .padding(list_t.border.line_width)
             .width(Length::Fixed(BASIC_WIDE))
-            .style(move |_theme: &Theme| container::Style {
-                background: Some(iced::Background::Color(list_fill)),
-                border: frame,
-                ..container::Style::default()
-            }),
+            .style(list_frame(resolved)),
         )
         .part("basic.list.scrollbar", move |l| {
             node_at(l, &[0]).map(|s| groove_rect(s.bounds()))
@@ -7735,13 +8145,14 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
     let l = &resolved.list;
+    let colours = TableColours::of(resolved);
     let line = resolved.separator.line_width;
     let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
     let height = |font: &ResolvedFontSpec| {
         l.row_height
             .unwrap_or(scaled_text_size(font.size, a11y) * resolved.defaults.line_height + pad.y())
     };
-    let grid = to_color(l.grid_color);
+    let grid = colours.grid;
     let grid_line = move |w: Length, h: Length| {
         container(space())
             .width(w)
@@ -7788,8 +8199,7 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     // `list.header_height` where the theme states it; else the header is a row.
     let head_h =
         native_theme_iced::list_header_height(resolved).unwrap_or_else(|| height(&l.header_font));
-    let head_ink = to_color(l.header_font.color);
-    let head_fill = to_color(l.header_background);
+    let (head_ink, head_fill) = (colours.header_ink, colours.header_fill);
     let header = tagged(
         "basic.table.header",
         container(row![
@@ -7810,12 +8220,9 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         .map(|(i, (id, name, size))| {
             let selected = i == BASIC_TABLE_SELECTED;
             let (fill, ink) = if selected {
-                (
-                    Some(to_color(l.selection_background)),
-                    to_color(l.selection_text_color),
-                )
+                (Some(colours.selected_fill), colours.selected_ink)
             } else {
-                (None, to_color(l.item_font.color))
+                (None, colours.row_ink)
             };
             tagged(
                 id,
@@ -7831,11 +8238,11 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             .into()
         });
     let frame = iced::Border {
-        color: to_color(l.border.color),
+        color: colours.frame,
         width: l.border.line_width,
         radius: l.border.corner_radius.into(),
     };
-    let fill = to_color(l.background_color);
+    let fill = colours.fill;
     tagged(
         "basic.table.frame",
         container(column![header].extend(rows))
@@ -7848,6 +8255,103 @@ fn basic_table(state: &State) -> Element<'_, Message> {
             }),
     )
     .into()
+}
+
+/// The colour [`CheckMark`] draws a box's mark in: the style's mark colour,
+/// `styles::checkbox`'s `icon_color`, over the box's fill over the page, one
+/// opaque colour: a translucent one comes out of iced's mesh pipeline darker
+/// than the same colour on a quad, where the box's fill blends as the
+/// connector composites (`styles::composite_over`). A disabled check fades as
+/// a whole, its mark over its fill and the pair at
+/// `checkbox.disabled_opacity` over the page (docs/platform-facts.md §2.1.6:
+/// GNOME's `filter: Opacity` on the whole widget, which keeps its normal
+/// colours), where the style fades each colour on its own: each is taken back
+/// to its unfaded self first.
+fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> Color {
+    let c = &resolved.checkbox;
+    let status = if enabled {
+        checkbox::Status::Active {
+            is_checked: checked,
+        }
+    } else {
+        checkbox::Status::Disabled {
+            is_checked: checked,
+        }
+    };
+    let style = styles::checkbox(resolved)(&Theme::Light, status);
+    let page = to_color(resolved.window.background_color);
+    let opacity = if enabled || !c.disabled_opacity.is_finite() {
+        1.0
+    } else {
+        c.disabled_opacity.clamp(0.0, 1.0)
+    };
+    let unfaded = |colour: Color| Color {
+        a: if opacity > 0.0 {
+            (colour.a / opacity).min(1.0)
+        } else {
+            0.0
+        },
+        ..colour
+    };
+    match style.background {
+        iced::Background::Color(fill) => {
+            let whole = over(unfaded(style.icon_color), over(unfaded(fill), page));
+            over(
+                Color {
+                    a: opacity,
+                    ..whole
+                },
+                page,
+            )
+        }
+        _ => style.icon_color,
+    }
+}
+
+/// A disabled switch's label: the disabled text colour,
+/// `defaults.disabled_text_color`, faded with the switch by
+/// `switch.disabled_opacity`.
+fn disabled_switch_label(resolved: &ResolvedTheme) -> Color {
+    let mut c = to_color(resolved.defaults.disabled_text_color);
+    c.a *= resolved.switch.disabled_opacity;
+    c
+}
+
+/// The colours [`basic_table`] draws in, each the list's.
+#[derive(Clone, Copy, Debug)]
+struct TableColours {
+    /// The frame's fill, `list.background_color`, under the rows.
+    fill: Color,
+    /// The frame's line, `list.border.color`.
+    frame: Color,
+    /// The header row's fill, `list.header_background`.
+    header_fill: Color,
+    /// The header cells' text, `list.header_font.color`.
+    header_ink: Color,
+    /// A row's text, `list.item_font.color`.
+    row_ink: Color,
+    /// The selected row's fill, `list.selection_background`.
+    selected_fill: Color,
+    /// The selected row's text, `list.selection_text_color`.
+    selected_ink: Color,
+    /// The lines between the cells, `list.grid_color`.
+    grid: Color,
+}
+
+impl TableColours {
+    fn of(resolved: &ResolvedTheme) -> Self {
+        let l = &resolved.list;
+        Self {
+            fill: to_color(l.background_color),
+            frame: to_color(l.border.color),
+            header_fill: to_color(l.header_background),
+            header_ink: to_color(l.header_font.color),
+            row_ink: to_color(l.item_font.color),
+            selected_fill: to_color(l.selection_background),
+            selected_ink: to_color(l.selection_text_color),
+            grid: to_color(l.grid_color),
+        }
+    }
 }
 
 /// `style` with a transparent glyph where the theme states the check mark's
@@ -15187,13 +15691,272 @@ mod tests {
         let mut unrouted = Vec::new();
         for element in &list {
             for leaf in &element.leaves {
-                let route = iced_route(element, leaf);
+                let route = iced_route(element, leaf, None);
                 if route.contains("no route recorded") {
                     unrouted.push(format!("{}: {leaf}", element.id));
                 }
             }
         }
         assert!(unrouted.is_empty(), "leaves with no route: {unrouted:#?}");
+    }
+
+    /// The listed colour leaves the connector draws only where the theme
+    /// leaves another value unstated, in a state no bundled preset has, each
+    /// with the reason: the export moves no row of their drawing in any
+    /// bundled combination, so their routes say they are not drawn there.
+    const DRAWN_IN_NO_BUNDLED_THEME: &[(&str, &str, &str)] = &[(
+        "basic.text_inputs.focused",
+        "defaults.focus_ring_color",
+        "styles::text_input's focused border is the ring's colour where \
+         input.focus_border_color is unstated and the ring is inset (styles.rs, \
+         `focus_color`): adwaita's ring is inset but it states the border colour, \
+         and macos-tahoe, which leaves it unstated, has no inset ring",
+    )];
+
+    /// The contract's export parses, and names every colour leaf the element
+    /// list gives an element: a leaf whose value is a colour in the resolved
+    /// theme, or an unstated colour, is one the walk spliced. A connector-drawn
+    /// leaf's route names a row its drawing moves in a bundled theme, or why
+    /// no row reads it, save the leaves `DRAWN_IN_NO_BUNDLED_THEME` lists.
+    #[test]
+    fn the_contract_export_parses_and_names_the_listed_colour_leaves() {
+        let export = match parse_contract_leaves(CONTRACT_LEAVES) {
+            Ok(export) => export,
+            Err(error) => panic!("contract-leaves.toml: {error}"),
+        };
+        assert!(contract_leaves().is_some(), "the export is read");
+        let json = values::theme_json(&State::default().current_resolved).unwrap_or_default();
+        let mut failures = Vec::new();
+        for element in elements::elements() {
+            for leaf in &element.leaves {
+                let pointer = format!("/{}", leaf.replace('.', "/"));
+                let colour = json.pointer(&pointer).is_some_and(|v| {
+                    v.as_str()
+                        .is_some_and(|s| s.parse::<native_theme::color::Rgba>().is_ok())
+                });
+                if colour && !export.leaves.contains_key(leaf) {
+                    failures.push(format!("{}: {leaf} is not in the export", element.id));
+                }
+                let excepted = DRAWN_IN_NO_BUNDLED_THEME
+                    .iter()
+                    .any(|(id, l, _)| *id == element.id && l == leaf);
+                let undrawn = drawing(element, leaf).is_some()
+                    && export.leaves.contains_key(leaf)
+                    && iced_route(element, leaf, None).starts_with("not drawn here");
+                if undrawn != excepted {
+                    failures.push(format!(
+                        "{}: {leaf} moves {} row its drawing names in a bundled theme, \
+                         which DRAWN_IN_NO_BUNDLED_THEME {}",
+                        element.id,
+                        if undrawn { "no" } else { "a" },
+                        if excepted { "lists" } else { "does not list" }
+                    ));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// Every key of the derivation sentences is a row the export records.
+    #[test]
+    fn every_derivation_sentence_names_an_exported_row() {
+        let Some(export) = contract_leaves() else {
+            panic!("contract-leaves.toml does not parse");
+        };
+        let stale: Vec<&str> = DERIVED_ROWS
+            .iter()
+            .map(|(row, _)| *row)
+            .filter(|row| !export.rows.contains_key(*row))
+            .collect();
+        assert!(
+            stale.is_empty(),
+            "rows the export does not record: {stale:?}"
+        );
+    }
+
+    /// Every bundled preset in both modes, resolved as the contract resolves
+    /// them, with its `<preset>/<mode>` label.
+    fn bundled_combinations() -> Vec<(String, ResolvedTheme)> {
+        let mut out = Vec::new();
+        for info in native_theme::theme::Theme::list_presets() {
+            for (mode, name) in [
+                (native_theme::ColorMode::Light, "light"),
+                (native_theme::ColorMode::Dark, "dark"),
+            ] {
+                let resolved = native_theme::theme::Theme::preset(info.key)
+                    .and_then(|t| t.into_variant(mode))
+                    .and_then(|v| v.into_resolved(&native_theme::ResolutionContext::for_tests()));
+                match resolved {
+                    Ok(r) => out.push((format!("{}/{name}", info.key), r)),
+                    Err(error) => panic!("{} {name}: {error}", info.key),
+                }
+            }
+        }
+        out
+    }
+
+    /// What `function`, a showcase function a hand-written colour route
+    /// names, draws on `r`, in every state it draws, as text: what a splice
+    /// of a leaf it reads must move. `None` for a name that is no such
+    /// function.
+    fn drawn_by(function: &str, r: &ResolvedTheme) -> Option<String> {
+        let theme = native_theme_iced::to_theme(r, "splice");
+        let statuses = [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+            button::Status::Disabled,
+        ];
+        let buttons = |style: &dyn Fn(&Theme, button::Status) -> button::Style| {
+            statuses
+                .iter()
+                .map(|&s| format!("{:?}", style(&theme, s)))
+                .collect::<Vec<_>>()
+                .join(";")
+        };
+        Some(match function {
+            "ghost_button" => [false, true]
+                .map(|selected| buttons(&ghost_button(r, selected)))
+                .join("|"),
+            "copy_button" => buttons(&copy_button(ghost_button(r, false), r)),
+            "menu_row" => buttons(&menu_row(r)),
+            "menu_title" => [false, true]
+                .map(|open| buttons(&menu_title(r, open)))
+                .join("|"),
+            "menu_bar_style" => {
+                use iced_aw::style::Status as Aw;
+                let style = menu_bar_style(r);
+                [
+                    Aw::Active,
+                    Aw::Hovered,
+                    Aw::Pressed,
+                    Aw::Disabled,
+                    Aw::Focused,
+                    Aw::Selected,
+                ]
+                .map(|s| format!("{:?}", style(&theme, s)))
+                .join(";")
+            }
+            "tab_style" => [false, true]
+                .map(|selected| buttons(&tab_style(r, selected)))
+                .join("|"),
+            "list_row" => [false, true]
+                .map(|selected| buttons(&list_row(r, selected)))
+                .join("|"),
+            "list_frame" => format!("{:?}", list_frame(r)(&theme)),
+            "basic_table" => format!("{:?}", TableColours::of(r)),
+            "surface" => Surface::ALL
+                .map(|s| format!("{:?}", surface(r, s)(&theme)))
+                .join(";"),
+            "line_style" => Line::ALL
+                .map(|l| format!("{:?}", line_style(r, l)(&theme)))
+                .join(";"),
+            // The colour it gives a bundled set's icon; its label is
+            // `ghost_button`'s, which the route names as well.
+            "icon_button" => format!("{:?}", [false, true].map(|s| icon_colour(r, s))),
+            "info_inks" => format!("{:?}", info_inks(r)),
+            "swatch_frame" => format!("{:?}", swatch_frame(r)),
+            "splitter" => format!("{:?}", [false, true].map(|h| splitter_colour(r, h))),
+            "CheckMark" => format!(
+                "{:?}",
+                [(true, true), (true, false), (false, true), (false, false)]
+                    .map(|(checked, enabled)| check_mark_colour(r, checked, enabled))
+            ),
+            "disabled_switch_label" => format!("{:?}", disabled_switch_label(r)),
+            _ => return None,
+        })
+    }
+
+    /// The functions a hand-written route names: the word before the colon of
+    /// each of its `;`-separated parts that starts with one.
+    fn route_functions(route: &str) -> Vec<&str> {
+        route
+            .strip_prefix("iced: ")
+            .unwrap_or(route)
+            .split("; ")
+            .filter_map(|part| part.split_once(": ").map(|(name, _)| name))
+            .filter(|name| {
+                !name.is_empty()
+                    && name
+                        .chars()
+                        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == ':')
+            })
+            .collect()
+    }
+
+    /// M9-084: a colour the showcase draws itself is routed by hand, and each
+    /// such route names the function that draws it; splicing the leaf in a
+    /// bundled theme moves what that function draws, in at least one
+    /// combination (a soft option's fallback moves it only where the option
+    /// is unstated). `ghost_button(resolved, false)(&theme, Hovered)` moves
+    /// on `button.hover_text_color`, `menu_row` on `menu.hover_background`.
+    #[test]
+    fn every_hand_colour_route_names_a_function_that_reads_it() {
+        let Some(export) = contract_leaves() else {
+            panic!("contract-leaves.toml does not parse");
+        };
+        let combinations = bundled_combinations();
+        let jsons: Vec<serde_json::Value> = combinations
+            .iter()
+            .map(|(label, r)| match serde_json::to_value(r) {
+                Ok(json) => json,
+                Err(error) => panic!("{label}: {error}"),
+            })
+            .collect();
+        let mut checked: BTreeSet<(String, String)> = BTreeSet::new();
+        let mut failures = Vec::new();
+        for element in elements::elements() {
+            for leaf in &element.leaves {
+                if !export.leaves.contains_key(leaf) || drawing(element, leaf).is_some() {
+                    continue;
+                }
+                let route = iced_route(element, leaf, None);
+                if route.starts_with("not ") {
+                    continue;
+                }
+                let functions = route_functions(&route);
+                if functions.is_empty() {
+                    failures.push(format!(
+                        "{}: {leaf}: \"{route}\" names no function",
+                        element.id
+                    ));
+                }
+                for function in functions {
+                    if !checked.insert((function.to_owned(), leaf.clone())) {
+                        continue;
+                    }
+                    let pointer = format!("/{}", leaf.replace('.', "/"));
+                    let moved = combinations.iter().zip(&jsons).any(|((_, r), json)| {
+                        let Some(before) = drawn_by(function, r) else {
+                            return false;
+                        };
+                        ["#13579b", "#2468ac80"].iter().any(|hex| {
+                            let mut spliced = json.clone();
+                            let Some(value) = spliced.pointer_mut(&pointer) else {
+                                return false;
+                            };
+                            *value = serde_json::Value::String((*hex).to_owned());
+                            serde_json::from_value::<ResolvedTheme>(spliced)
+                                .ok()
+                                .and_then(|s| drawn_by(function, &s))
+                                .is_some_and(|after| after != before)
+                        })
+                    });
+                    if drawn_by(function, &State::default().current_resolved).is_none() {
+                        failures.push(format!(
+                            "{}: {leaf}: \"{route}\" names {function}, which this test cannot draw",
+                            element.id
+                        ));
+                    } else if !moved {
+                        failures.push(format!(
+                            "{}: {leaf}: {function} draws nothing it moves",
+                            element.id
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
     }
 
     /// A window menu is as wide as its widest row, as the gpui and egui
