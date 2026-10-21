@@ -4110,7 +4110,7 @@ pub(crate) fn select(
 /// them.
 fn combo_fill(cx: &App) -> Option<StyleRefinement> {
     // Upstream's own `transparent` token, which the trigger starts its edge
-    // with (select.rs:569).
+    // with (select.rs:570).
     let none = cx.theme().transparent;
     native_value(cx, |n| {
         let c = &n.resolved.combo_box;

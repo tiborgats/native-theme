@@ -613,7 +613,8 @@ pub fn switch(
     // A disabled Switch fades its track alone, to half alpha (switch.rs:190);
     // the disabled style is resolved after the checked one (gpui-base
     // switch.rs:117-127). The checked track is the colour `Switch::color`
-    // was handed, primary where it was handed none (switch.rs:181-184).
+    // was handed, primary where it was handed none (gpui-component
+    // switch.rs:181-184).
     let info = match (checked, disabled, native) {
         (true, false, Some(r)) => info.color(claim(
             "on track",

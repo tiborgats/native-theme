@@ -226,28 +226,28 @@ jobs:
       # all features; scripts/check_release.sh runs the same script.
       - run: bash scripts/check_features.sh
 
+  # A lint can fire at an MSRV and not on stable (native-theme without its
+  # Linux readers once warned of an unused binding at 1.95.0 alone), so the
+  # whole job denies warnings, and native-theme is checked without its
+  # readers, its default features, at its own MSRV too.
   msrv:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.88.0
       - run: cargo check --workspace --exclude native-theme-gpui --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
+      - run: cargo check -p native-theme --locked
       - uses: dtolnay/rust-toolchain@1.95.0
       - run: cargo check -p native-theme-egui -p native-theme-egui-widgets --all-features --locked
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       # `--all-features` would turn on `gpui-fast`, which changes the GPUI
-      # core: the default core and GPUI Fast are checked one at a time. A
-      # lint can fire at 1.95.0 and not on stable (native-theme without its
-      # Linux readers once warned of an unused binding here alone), so these
-      # three deny warnings.
-      - name: Check the gpui connector's three configurations, warnings denied
-        env:
-          RUSTFLAGS: -Dwarnings
-        run: |
-          cargo check -p native-theme-gpui --locked
-          cargo check -p native-theme-gpui --features native,watch --locked
-          cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
+      # core: the default core and GPUI Fast are checked one at a time.
+      - run: cargo check -p native-theme-gpui --locked
+      - run: cargo check -p native-theme-gpui --features native,watch --locked
+      - run: cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
 
   test-build-crate:
     name: Test native-theme-build and native-theme-derive
