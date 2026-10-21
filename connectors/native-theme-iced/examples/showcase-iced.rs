@@ -21278,9 +21278,13 @@ mod tests {
                 let last = last.trim();
                 let last = last.split_once(": ").map_or(last, |(_, value)| value);
                 let panel = probe_bounds(&mut ui, probes::SIDE_PANEL);
+                // The last line's text inside the panel's columns: the page
+                // beside it may read the same.
+                let in_panel =
+                    |b: &Rectangle| b.x >= panel.x && b.x + b.width <= panel.x + panel.width;
                 let bottom = texts(&mut ui)
                     .into_iter()
-                    .find(|(content, _)| content == last)
+                    .find(|(content, bounds)| content == last && in_panel(bounds))
                     .map(|(_, bounds)| bounds.y + bounds.height);
                 assert!(
                     bottom.is_some_and(|b| b > panel.y + panel.height),
