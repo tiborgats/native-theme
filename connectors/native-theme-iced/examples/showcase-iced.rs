@@ -223,6 +223,8 @@ mod probes {
         "probe-display-tooltip-left",
         "probe-display-tooltip-right",
     ];
+    /// The tip of the chrome tooltip shown ([`super::chrome_tip`]).
+    pub const CHROME_TIP: &str = "probe-chrome-tip";
     pub const DISPLAY_TIPS: [&str; 4] = [
         "probe-display-tip-top",
         "probe-display-tip-bottom",
@@ -4163,12 +4165,13 @@ fn chrome_tip<'a>(
     if let Some(key) = key {
         tip = tip.push(text(binding(key)).themed(font, resolved, a11y));
     }
-    tip.into()
+    drawn_probe(probes::CHROME_TIP, tip)
 }
 
 /// A flat button showing `icon` at `size`, or `label` in `font` where the
 /// icon theme has no icon for it, with a tooltip reading `label` and the key
-/// binding of `key`. `padding` is the button's; `selected` shows it on.
+/// binding of `key` on its `tip` side. `padding` is the button's;
+/// `selected` shows it on.
 struct IconButton<'a> {
     icon: &'a Option<IconData>,
     size: f32,
@@ -4181,6 +4184,12 @@ struct IconButton<'a> {
     /// The list's ids of the button and of its icon, where the list names
     /// the button.
     tags: Option<(&'static str, &'static str)>,
+    /// The side of the button its tooltip opens on: below, but for a button
+    /// at the window's bottom edge, where iced would pull the bubble back
+    /// over the button (`snap_within_viewport`, iced_widget 0.14.2
+    /// `src/tooltip.rs:525-545`), above, as gpui's own tooltip turns above
+    /// the pointer there (gpui-pre 0.3.9 `src/window.rs:3835-3844`).
+    tip: tooltip::Position,
 }
 
 fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Message> {
@@ -4214,7 +4223,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
         state,
         button,
         chrome_tip(state, spec.label, spec.key),
-        tooltip::Position::Bottom,
+        spec.tip,
     )
 }
 
@@ -4476,6 +4485,7 @@ fn toolbar(state: &State) -> Element<'_, Message> {
                 selected: false,
                 action,
                 tags: Some(tags),
+                tip: tooltip::Position::Bottom,
             },
         )
     };
@@ -5077,6 +5087,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             selected: state.side_panel_visible,
             action: Message::ToggleSidePanel,
             tags: Some(("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon")),
+            tip: tooltip::Position::Top,
         },
     );
     let mut items = row![
@@ -5115,9 +5126,9 @@ fn status_bar(state: &State) -> Element<'_, Message> {
 /// The status bar's padding on a side `status_bar.border.padding` leaves
 /// unstated: gpui-component's StatusBar's own, which the gpui showcase's bar
 /// keeps, `py_1` above and below and `px_2` at the sides (gpui-component
-/// 0.7.3 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
+/// 0.8.0 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
 /// (gpui-pre-macros 0.3.9 `src/styles.rs:939-951`), and gpui-component's rem
-/// is its `Theme::font_size` (`src/root.rs:440`), which the gpui connector
+/// is its `Theme::font_size` (`src/root.rs:538`), which the gpui connector
 /// fills with the scaled `defaults.font.size` (`native-theme-gpui/src/lib.rs`,
 /// `to_theme`): a quarter of that size above and below, a half at the sides.
 fn status_bar_padding(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Padding {
@@ -7013,6 +7024,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
             selected: false,
             action: Message::CloseOverlay,
             tags: None,
+            tip: tooltip::Position::Bottom,
         },
     );
     let head = row![
@@ -8027,8 +8039,8 @@ const BASIC_TABLE_SELECTED: usize = 1;
 
 /// The padding iced gives a tooltip's bubble where the showcase sets none:
 /// `Tooltip::DEFAULT_PADDING` (iced_widget 0.14.2 `src/tooltip.rs:89`),
-/// which iced keeps private. The layout dump reads the bubble's rectangle
-/// with it, and the Display page's Widget Info prints it.
+/// which iced keeps private: [`bubble_padding`] where the theme's has no
+/// receiver.
 const ICED_TOOLTIP_PADDING: f32 = 5.0;
 
 /// How a push button of the Basic page is dressed: the plain button, the
@@ -8105,25 +8117,35 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
         .then_some(side + b.line_width)
 }
 
+/// A tooltip's bubble padding as iced draws it: [`tooltip_padding`] where
+/// iced can carry the theme's, [`ICED_TOOLTIP_PADDING`] otherwise.
+fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
+    tooltip_padding(resolved).unwrap_or(ICED_TOOLTIP_PADDING)
+}
+
 /// A tooltip's gap to its control, in rems: gpui-component's `Tooltip`
-/// margin, `m_3` (gpui-component 0.7.3 `src/tooltip.rs:114`), `rems(0.75)`
+/// margin, `m_3` (gpui-component 0.8.0 `src/tooltip.rs:118`), `rems(0.75)`
 /// (gpui-pre-macros 0.3.9 `src/styles.rs:959-961`), which it lays around
-/// the bubble inside the popup it places, so the bubble stands that far
-/// from the popup's anchor on each side: the trigger's edge for a
-/// `Button::tooltip`, which gpui-base's side positioner places with no
-/// offset of its own (gpui-base 0.7.3 `src/positioner.rs:79-85`), and the
-/// pointer, a pixel off, for the tooltip the gpui showcase's Basic page
-/// builds (gpui-pre 0.3.9 `src/window.rs:3816-3817`, `prepaint_tooltip`).
-/// The model states no gap (`docs/property-registry.toml` `[tooltip]`).
+/// the bubble inside the popup, so the bubble stands that far from where
+/// the popup is placed. Every tooltip of the gpui showcase this one's are
+/// compared with (the toolbar's, the status bar's side-panel toggle's and
+/// the Basic page's, `showcase-gpui/demo.rs:1197`, `:1421`, `:5698`) is
+/// gpui's own element tooltip, which gpui places off the pointer, a pixel
+/// right of and below it (gpui-pre 0.3.9 `src/window.rs:3816-3817`,
+/// `prepaint_tooltip`), and above it where the window's bottom edge leaves
+/// no room (`:3835-3844`); so the gpui bubble stands `m_3` and a pixel from
+/// the pointer. The model states no gap (`docs/property-registry.toml`
+/// `[tooltip]`).
 const TOOLTIP_GAP_REMS: f32 = 0.75;
 
 /// The gap between every tooltip of the showcase and its control,
 /// [`TOOLTIP_GAP_REMS`] of gpui-component's rem, its `Theme::font_size`
-/// (`src/root.rs:440`), which the gpui connector fills with the scaled
-/// `defaults.font.size` (as [`status_bar_padding`]). iced places a tooltip
-/// by its control alone: its `FollowCursor` lays the bubble over the
-/// pointer, above it (iced_widget 0.14.2 `src/tooltip.rs:509-516`), not off
-/// it below as gpui's own tooltip, so the gap is kept from the control.
+/// (gpui-component 0.8.0 `src/root.rs:538`), which the gpui connector fills
+/// with the scaled `defaults.font.size` (as [`status_bar_padding`]). iced
+/// places a tooltip by its control alone: its `FollowCursor` lays the bubble
+/// over the pointer, above it, with no gap (iced_widget 0.14.2
+/// `src/tooltip.rs:509-516`), not off it as gpui's, so iced's tooltips keep
+/// the gpui bubble's distance from their control rather than the pointer.
 fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
     a11y.scaled(resolved.defaults.font.size) * TOOLTIP_GAP_REMS
 }
@@ -8134,7 +8156,7 @@ fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32
 fn tooltip_gap_text(state: &State) -> String {
     format!(
         "{}, gpui-component's tooltip margin, m_3: three quarters of the scaled \
-         defaults.font.size (tooltip_gap; gpui-component tooltip.rs:114)",
+         defaults.font.size (tooltip_gap; gpui-component tooltip.rs:118)",
         px_text(tooltip_gap(&state.current_resolved, &state.accessibility))
     )
 }
@@ -8309,9 +8331,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         // gpui and egui buttons are, rather than squeezed under its label.
         tagged(id, pushed.on_press_maybe(on_press)).loose()
     };
-    // The bubble is the tip padded by `tooltip_padding` where iced can carry
-    // it, iced's own padding otherwise, as `showcase_tooltip` pads it.
-    let tip_padding = tooltip_padding(resolved).unwrap_or(ICED_TOOLTIP_PADDING);
+    // The bubble is the tip padded as `showcase_tooltip` pads it.
+    let tip_padding = bubble_padding(resolved);
     let tip = showcase_tooltip(
         state,
         push(
@@ -9311,6 +9332,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 selected: false,
                 action: Message::ButtonPressed,
                 tags: Some(tags),
+                tip: tooltip::Position::Bottom,
             },
         )
     };
@@ -11286,18 +11308,18 @@ fn tooltip_info(state: &State) -> String {
         resolved.tooltip.max_width
     );
     let padding = tooltip_padding(resolved);
-    let padding_s = match padding {
-        Some(padding) => format!(
-            "{}, tooltip.border.padding's side, alike on all four, plus \
-             tooltip.border.line_width, which iced paints over it",
-            px_text(padding)
-        ),
-        None => format!(
-            "{}, iced's own: tooltip.border.padding states its sides unequal or not \
-             at all, and iced's Tooltip::padding is one number for all four",
-            px_text(ICED_TOOLTIP_PADDING)
-        ),
-    };
+    let padding_s = format!(
+        "{}, {}",
+        px_text(bubble_padding(resolved)),
+        match padding {
+            Some(_) =>
+                "tooltip.border.padding's side, alike on all four, plus \
+                        tooltip.border.line_width, which iced paints over it",
+            None =>
+                "iced's own: tooltip.border.padding states its sides unequal or not \
+                     at all, and iced's Tooltip::padding is one number for all four",
+        }
+    );
     let delay = native_theme_iced::tooltip_show_delay(resolved)
         .map(|delay| format!("{}ms, tooltip.show_delay", delay.as_millis()));
     let gap_s = tooltip_gap_text(state);
@@ -17310,14 +17332,18 @@ mod tests {
     /// installed theme's [`tooltip_gap`] (M9-083): the Basic bubble's "Not
     /// themeable" line and the Display page's info, which gives
     /// `tooltip.max_width` under Theme config and not under Not themeable
-    /// (M9-089), under kde-breeze and adwaita at text scales 1 and 1.5.
+    /// (M9-089), the bubble's padding and the show delay under Theme config
+    /// where the theme states them (kde-breeze's uniform padding, kde-breeze's
+    /// and adwaita's delay) and under Not themeable where it does not
+    /// (adwaita's unequal padding sides, catppuccin-mocha's padding and
+    /// delay), under the three at text scales 1 and 1.5.
     #[test]
     fn the_tooltip_info_names_the_gap_and_the_max_width() {
         let Some(bubble) = elements::element("basic.buttons.tooltip.bubble") else {
             panic!("basic.buttons.tooltip.bubble is not listed");
         };
         let mut failures = Vec::new();
-        for (preset, factor) in ["kde-breeze", "adwaita"]
+        for (preset, factor) in ["kde-breeze", "adwaita", "catppuccin-mocha"]
             .into_iter()
             .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
         {
@@ -17328,6 +17354,17 @@ mod tests {
             let mut accessibility = AccessibilityPreferences::default();
             accessibility.text_scaling_factor = factor;
             let gap = px_text(tooltip_gap(&resolved, &accessibility));
+            let padding = (
+                format!("padding: {}, ", px_text(bubble_padding(&resolved))),
+                tooltip_padding(&resolved).is_some(),
+            );
+            let delay = match native_theme_iced::tooltip_show_delay(&resolved) {
+                Some(delay) => (
+                    format!("delay: {}ms, tooltip.show_delay", delay.as_millis()),
+                    true,
+                ),
+                None => ("delay: none, iced's own".to_string(), false),
+            };
             let max_width = format!("{:.0}px", resolved.tooltip.max_width);
             let state = State {
                 current_theme: theme,
@@ -17361,6 +17398,19 @@ mod tests {
                 failures.push(format!(
                     "{preset} at {factor}: no {max_width} max width in\n{config}"
                 ));
+            }
+            for (row, stated) in [&padding, &delay] {
+                let (in_config, in_unthemed) = (config.contains(row), unthemed.contains(row));
+                if (in_config, in_unthemed) != (*stated, !*stated) {
+                    failures.push(format!(
+                        "{preset} at {factor}: \"{row}\" belongs under {}:\n{info}",
+                        if *stated {
+                            "Theme config"
+                        } else {
+                            "Not themeable"
+                        }
+                    ));
+                }
             }
             if unthemed.contains("max width") || !unthemed.contains(&format!("gap: {gap}")) {
                 failures.push(format!(
@@ -17520,7 +17570,7 @@ mod tests {
             };
             resolved.tooltip.show_delay = None;
             let gap = tooltip_gap(&resolved, &AccessibilityPreferences::default());
-            let padding = tooltip_padding(&resolved).unwrap_or(ICED_TOOLTIP_PADDING);
+            let padding = bubble_padding(&resolved);
 
             let state = State {
                 current_theme: theme,
@@ -17579,6 +17629,72 @@ mod tests {
                          {want} (the gap {gap} and the padding {padding})"
                     ));
                 }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// The chrome's tooltips stand [`tooltip_gap`] and the bubble's padding
+    /// from their control too (M9-083), the toolbar's below its button and
+    /// the status bar's side-panel toggle's above it: below, at the window's
+    /// bottom edge, iced's `snap_within_viewport` (on by default, iced_widget
+    /// 0.14.2 `src/tooltip.rs:105`, `:525-545`) would pull the bubble back
+    /// over the toggle, and gpui's own tooltip turns above the pointer there
+    /// (gpui-pre 0.3.9 `src/window.rs:3835-3844`). Under kde-breeze light.
+    #[test]
+    fn the_chrome_tooltips_stand_the_gap_from_their_control() {
+        let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        resolved.tooltip.show_delay = None;
+        let want = tooltip_gap(&resolved, &AccessibilityPreferences::default())
+            + bubble_padding(&resolved);
+        let state = State {
+            current_theme: theme,
+            current_resolved: resolved,
+            ..State::default()
+        };
+        let iced_theme = super::theme(&state);
+        let mut failures = Vec::new();
+        for (control, above) in [
+            ("chrome.toolbar.command_palette", false),
+            ("chrome.status_bar.toggle", true),
+        ] {
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let button = match drawn_layout().get(control) {
+                Some(rect) => *rect,
+                None => panic!("{control} is not drawn"),
+            };
+            ui.point_at(button.center());
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                position: button.center(),
+            })]);
+            for _ in 0..3 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let Some(tip) = drawn_layout().get(probes::CHROME_TIP).copied() else {
+                panic!("{control}: no tip drawn with the pointer on it");
+            };
+            let stands = if above {
+                button.y - (tip.y + tip.height)
+            } else {
+                tip.y - (button.y + button.height)
+            };
+            if (stands - want).abs() > 0.01 {
+                failures.push(format!(
+                    "{control}: the tip at {tip:?} stands {stands} {} the button at {button:?}, \
+                     want {want}",
+                    if above { "above" } else { "below" }
+                ));
             }
         }
         assert!(failures.is_empty(), "{failures:#?}");
