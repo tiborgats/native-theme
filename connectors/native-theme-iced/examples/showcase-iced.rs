@@ -17667,6 +17667,151 @@ mod tests {
         assert!(failures.is_empty(), "{failures:#?}");
     }
 
+    /// Minor 1 of the M9b T4 review: each field an extractor names is the
+    /// field of the style output by that name. For every style row a page
+    /// widget's info shows, the first leaf the export's `rows."<row>".leaves`
+    /// lists that moves it at a status the test draws, spliced in a bundled
+    /// combination it moves it in, moves the extractor's field of that row's
+    /// name; read by the contract's own record, not by the extractor.
+    #[test]
+    fn every_extractor_field_moves_with_a_leaf_of_its_row() {
+        let Some(export) = contract_leaves() else {
+            panic!("contract-leaves.toml does not parse");
+        };
+        let bundled: Vec<(String, ResolvedTheme, serde_json::Value)> = bundled_combinations()
+            .into_iter()
+            .map(|(label, r)| match serde_json::to_value(&r) {
+                Ok(json) => (label, r, json),
+                Err(error) => panic!("{label}: {error}"),
+            })
+            .collect();
+        let mut shown = BTreeSet::new();
+        over_bundled_infos(|_, _, infos, _| {
+            for info in infos {
+                for (_, rest) in style_lines(info) {
+                    shown.insert(style_row_of(rest).0.to_owned());
+                }
+            }
+        });
+        let mut failures = Vec::new();
+        for row in &shown {
+            let leaves = export
+                .rows
+                .get(row)
+                .map_or(&[][..], |r| r.leaves.as_slice());
+            // The first leaf with a move of the row at a status the test
+            // draws, the status and a combination it moves it in.
+            let splice = leaves.iter().find_map(|leaf| {
+                let Some(LeafReach::Moves(moves)) = export.leaves.get(leaf) else {
+                    return None;
+                };
+                moves.iter().filter(|m| m.row == *row).find_map(|m| {
+                    let statuses: Vec<Option<&str>> = match m.statuses.is_empty() {
+                        true => vec![None],
+                        false => m.statuses.iter().map(|s| Some(s.as_str())).collect(),
+                    };
+                    let (label, r, json) = bundled
+                        .iter()
+                        .find(|(label, _, _)| !m.except.iter().any(|e| e == label))?;
+                    let theme = native_theme_iced::to_theme(r, "splice");
+                    let status = statuses
+                        .into_iter()
+                        .find(|status| row_ink(row, *status, r, &theme).is_some())?;
+                    Some((leaf, label, r, json, status, theme))
+                })
+            });
+            let Some((leaf, label, r, json, status, theme)) = splice else {
+                failures.push(format!("{row}: no leaf of the export moves it where drawn"));
+                continue;
+            };
+            let base = row_ink(row, status, r, &theme);
+            let pointer = format!("/{}", leaf.replace('.', "/"));
+            let moved = ["#123456", "#fedcba", "#12345680"].iter().any(|hex| {
+                let mut spliced = json.clone();
+                let Some(value) = spliced.pointer_mut(&pointer) else {
+                    return false;
+                };
+                *value = serde_json::Value::from(*hex);
+                serde_json::from_value::<ResolvedTheme>(spliced)
+                    .is_ok_and(|spliced| row_ink(row, status, &spliced, &theme) != base)
+            });
+            if !moved {
+                failures.push(format!(
+                    "{row} ({}): {leaf} spliced on {label} does not move the extractor's field",
+                    status.unwrap_or("no status")
+                ));
+            }
+        }
+        assert!(!shown.is_empty(), "no info shows a style row");
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// The status a colour row's role names, as fragments of the `{:?}` of
+    /// the status it must be read at, for a row of `function` in the info
+    /// titled `title`: a hovered, focused or pressed role at that status, the
+    /// disabled row's at `Disabled`, a check box's, radio's or switch's
+    /// checked or on role in that state; an `iced_aw` tab or sidebar item
+    /// open at `Active` and the others at `Disabled`, a selection list's
+    /// selected row at `Selected` (`tab_bar.rs:589-595`,
+    /// `sidebar.rs:981-985`, `selection_list/list.rs:241-258`).
+    fn role_statuses(title: &str, function: &str, role: &str) -> Vec<&'static str> {
+        let mut want = Vec::new();
+        if title == "Disabled Buttons" {
+            want.push("Disabled");
+        }
+        for word in role.split(' ') {
+            want.extend(match (function, word) {
+                (_, "hover" | "hovered") => Some("Hovered"),
+                (_, "focus" | "focused") => Some("Focused"),
+                (_, "pressed") => Some("Pressed"),
+                ("styles::checkbox", "checked" | "checkmark") => Some("is_checked: true"),
+                ("styles::checkbox", "unchecked") => Some("is_checked: false"),
+                ("styles::radio", "selected") => Some("is_selected: true"),
+                ("styles::radio", "unselected") => Some("is_selected: false"),
+                ("styles::toggler", "on") => Some("is_toggled: true"),
+                ("styles::toggler", "off") => Some("is_toggled: false"),
+                ("styles::aw::tab_bar" | "styles::aw::sidebar", "selected") => Some("Active"),
+                ("styles::aw::tab_bar" | "styles::aw::sidebar", "other") => Some("Disabled"),
+                ("styles::aw::selection_list", "selected") => Some("Selected"),
+                _ => None,
+            });
+        }
+        want
+    }
+
+    /// Minor 1 of the M9b T4 review: each colour row is read at the status
+    /// its role names ([`role_statuses`]), and a row read at a hovered,
+    /// focused, pressed, dragged, opened, selected or disabled status has a
+    /// role that names it, over every bundled preset in both modes.
+    #[test]
+    fn every_page_colour_role_names_its_status() {
+        const NAMED: [&str; 7] = [
+            "Hovered", "Focused", "Pressed", "Dragged", "Opened", "Selected", "Disabled",
+        ];
+        let mut failures = BTreeSet::new();
+        over_bundled_infos(|_, _, infos, _| {
+            for info in infos {
+                let title = info.lines().next().unwrap_or_default();
+                for (line, rest) in style_lines(info) {
+                    let (row, status, _) = style_row_of(rest);
+                    let Some(status) = status else {
+                        continue;
+                    };
+                    let role = line.trim().split_once(": ").map_or("", |(role, _)| role);
+                    let function = row.split_once('.').map_or(row, |(function, _)| function);
+                    let want = role_statuses(title, function, role);
+                    let head = status.split([' ', '{']).next().unwrap_or_default();
+                    if want.iter().any(|w| !status.contains(w))
+                        || (NAMED.contains(&head) && !want.contains(&head))
+                    {
+                        failures.insert(format!("{title}: \"{line}\" names {want:?}"));
+                    }
+                }
+            }
+        });
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
     /// `each` over every bundled preset in both modes installed in a state:
     /// the state, its combination (`<preset>/<mode>`), the page widgets'
     /// infos its pages build and its resolved theme serialised.
