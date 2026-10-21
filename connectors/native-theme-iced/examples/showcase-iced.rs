@@ -9861,15 +9861,19 @@ fn toggler_thumb(s: &native_theme::theme::ResolvedSwitchTheme, is_toggled: bool)
     } else {
         off_thumb_size(s)
     };
-    let diameter = match (is_toggled, s.unchecked_thumb_diameter) {
-        (false, Some(d)) => d,
-        _ => s.thumb_diameter,
+    let (diameter, source) = match (is_toggled, s.unchecked_thumb_diameter) {
+        (false, Some(d)) => (d, "switch.unchecked_thumb_diameter"),
+        (false, None) => (
+            s.thumb_diameter,
+            "switch.thumb_diameter, switch.unchecked_thumb_diameter unstated",
+        ),
+        (true, _) => (s.thumb_diameter, "switch.thumb_diameter"),
     };
     if s.track_height > 0.0 && (0.0..=s.track_height).contains(&diameter) {
         stated
     } else {
         format!(
-            "iced's own padding ratio: {stated}, does not fit the {:.0}px track",
+            "{diameter:.0}px ({source}) does not fit the {:.0}px track: iced's own padding ratio",
             s.track_height
         )
     }
@@ -17756,7 +17760,8 @@ mod tests {
                     });
                     let holds = line.is_some_and(|l| {
                         if title == "iced's Toggler" && !fits {
-                            l.contains("iced's own")
+                            l.contains(&format!("{off:.0}px ({leaf}"))
+                                && l.ends_with(" track: iced's own padding ratio")
                         } else {
                             l.contains(&format!("{off:.0}px, {leaf}"))
                         }
