@@ -1379,9 +1379,12 @@ fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressB
     (cx, look)
 }
 
-/// The fill's bounds after `ms` milliseconds more, on a frame drawn then,
-/// once the animation's next-frame notify is delivered, which tests have
-/// no frame loop to deliver.
+/// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
+/// Each draw that lays the running animation out asks for its next frame
+/// (`Window::request_animation_frame`, which queues a notify of its view),
+/// and `simulate_next_frame` delivers that notify, which tests have no
+/// frame loop to deliver: a call delivers the request the draw before it
+/// queued, the first call `window_with`'s.
 fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
     std::thread::sleep(std::time::Duration::from_millis(ms));
     cx.update(|window, cx| window.simulate_next_frame(cx));

@@ -213,6 +213,11 @@ connectors and showcases (§12).
   - `a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again`: it draws the full
     frame §2.4 asks for with its own `window.refresh()`. The three partial-frame tests' docs
     say who draws the frame after the settle.
+- *Added 2026-10-22 (G3 T5), on the line above:* "gpui-pre's suites pass unchanged" means
+  that no gpui-pre test failed without `refresh()`; the three tests changed for GPUI Fast run
+  on gpui-pre too, and pass there as changed. The fix the bullet "All pass" cites is gpui-fast
+  0.1.9's, by its release notes: "remove debug bounds for elements no longer drawn" (PRs #74
+  and #75).
 
 ### 2.4 Widget Info under GPUI Fast's partial frames (K4, K5, K6, K19)
 
