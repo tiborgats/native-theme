@@ -116,7 +116,7 @@ pub fn data_table(
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
-    info.config("keyboard focus", "a DataTable focused from the keyboard takes `ring` and the focus ring, which DataTable::new turns on; one focused by a click shows neither (table/data_table.rs:114, 228-235)")
+    info.config("keyboard focus", "a focused DataTable takes `ring` while the last input was a key press, so a click alone shows none of it, an arrow key after the click does, and a mouse move takes it away: its edge in `ring`, with the focus ring outside it where the theme's focus_ring is on (gpui-component/styled.rs:250-271, focus_style); DataTable::new turns it on (table/data_table.rs:114, 228-235)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
         .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
