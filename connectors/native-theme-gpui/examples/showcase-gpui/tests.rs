@@ -65,6 +65,11 @@ use crate::{
 };
 use native_theme::icons::IconSetChoice;
 
+/// The painted scene, read as the widget tests read it.
+#[path = "../../src/widgets/scene_read.rs"]
+mod scene_read;
+use scene_read::{scene_quads, scene_underlines};
+
 /// The window the interaction test lays the showcase out in.
 ///
 /// The width is the application's own. The height is not: a page is one
@@ -177,65 +182,6 @@ fn ids_drawn_twice(cx: &mut VisualTestContext) -> Vec<String> {
         ui.map(|ui| ui.read(cx).drawn_twice.iter().cloned().collect())
             .unwrap_or_default()
     })
-}
-
-/// Every quad the window's last frame painted, on either core. On gpui-pre
-/// that is `painted_quads()`. On GPUI Fast `painted_quads()` (gpui-fast
-/// 0.1.10 src/window.rs:2925) reads the scene's own quads only, and since
-/// 0.1.10 what a rounded overflow clip holds is painted into a clip-group
-/// `LayerFrame` instead (src/fast/rounded_clip_scene.rs:1-10, :60-75), so
-/// this reads `painted_scene()` (src/fast/rounded_clip.rs:232-237) and the
-/// scene of every frame with `tile_size == 0` (src/fast/layers/scene.rs:80-93,
-/// `LayerContent::scene` :186), clip groups inside clip groups included.
-/// Tiled frames, the composited scroll layers, are not followed: every clip
-/// group's scene holds a copy of them (rounded_clip_scene.rs, `new_scene`),
-/// so their content would be counted more than once; an absence test over
-/// a composited scroll layer therefore still sees none of its content.
-/// The order is not paint order. src/widgets/tests.rs has the same helper.
-fn scene_quads(window: &gpui::Window) -> Vec<gpui::Quad> {
-    #[cfg(feature = "gpui-fast")]
-    {
-        let mut quads = Vec::new();
-        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
-            quads.extend(scene.quads.iter().cloned())
-        });
-        quads
-    }
-    #[cfg(not(feature = "gpui-fast"))]
-    {
-        window.painted_quads()
-    }
-}
-
-/// Every underline the window's last frame painted, on either core, read
-/// as [`scene_quads`] reads the quads: a clip group's scene takes every
-/// kind of primitive.
-fn scene_underlines(window: &gpui::Window) -> Vec<gpui::Underline> {
-    #[cfg(feature = "gpui-fast")]
-    {
-        let mut underlines = Vec::new();
-        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
-            underlines.extend(scene.underlines.iter().cloned())
-        });
-        underlines
-    }
-    #[cfg(not(feature = "gpui-fast"))]
-    {
-        window.painted_underlines()
-    }
-}
-
-/// `scene`, then the scene of each of its clip-group frames, depth first.
-#[cfg(feature = "gpui-fast")]
-fn for_each_clip_group_scene(scene: &gpui::Scene, f: &mut impl FnMut(&gpui::Scene)) {
-    f(scene);
-    for frame in &scene.layers.frames {
-        if frame.tile_size == 0
-            && let Some(group) = frame.content.scene()
-        {
-            for_each_clip_group_scene(group, f);
-        }
-    }
 }
 
 /// Switch to `page` and draw the frame that shows it, then the frame a
@@ -12360,7 +12306,8 @@ fn a_reused_views_target_is_hovered_and_listed_after_a_partial_frame(cx: &mut Te
 /// The other way round: a frame that builds a view again without its
 /// target, and draws the view beside it from the last frame, takes the
 /// target and its element of the list away, though nothing records: the
-/// host around them, built again on GPUI Fast too, records nothing itself. The element leaves the layout dump, and the
+/// host around them, which this frame builds again on GPUI Fast too,
+/// records nothing itself. The element leaves the layout dump, and the
 /// target, smaller than the sibling, is never chosen again: with the
 /// pointer on the sibling, the sibling is shown. A full frame follows the
 /// settle, as in
@@ -12381,6 +12328,11 @@ fn a_target_a_partial_frame_no_longer_draws_is_gone(cx: &mut TestAppContext) {
         after[1],
         before[1].saturating_add(1),
         "the notify drew no frame that built the hosted view"
+    );
+    assert_eq!(
+        after[0],
+        before[0].saturating_add(1),
+        "the frame did not build the host once, as both cores do here"
     );
     if cfg!(feature = "gpui-fast") {
         assert_eq!(

@@ -23,6 +23,13 @@ use native_theme::{AccessibilityPreferences, ResolutionContext};
 
 use super::*;
 
+/// The painted scene, read as the showcase's tests read it. These read no
+/// underline.
+#[allow(dead_code)]
+#[path = "scene_read.rs"]
+mod scene_read;
+use scene_read::scene_quads;
+
 /// The two presets the tests draw under: a light desktop theme and a dark
 /// one whose sizes all differ from it.
 const PRESETS: [(&str, ColorMode); 2] = [
@@ -1038,48 +1045,6 @@ fn redraw(cx: &mut VisualTestContext) {
         window.refresh();
         window.draw(cx).clear(cx)
     });
-}
-
-/// Every quad the window's last frame painted, on either core. On gpui-pre
-/// that is `painted_quads()`. On GPUI Fast `painted_quads()` (gpui-fast
-/// 0.1.10 src/window.rs:2925) reads the scene's own quads only, and since
-/// 0.1.10 what a rounded overflow clip holds is painted into a clip-group
-/// `LayerFrame` instead (src/fast/rounded_clip_scene.rs:1-10, :60-75), so
-/// this reads `painted_scene()` (src/fast/rounded_clip.rs:232-237) and the
-/// scene of every frame with `tile_size == 0` (src/fast/layers/scene.rs:80-93,
-/// `LayerContent::scene` :186), clip groups inside clip groups included.
-/// Tiled frames, the composited scroll layers, are not followed: every clip
-/// group's scene holds a copy of them (rounded_clip_scene.rs, `new_scene`),
-/// so their content would be counted more than once; an absence test over
-/// a composited scroll layer therefore still sees none of its content.
-/// The order is not paint order. The showcase's tests
-/// (examples/showcase-gpui/tests.rs) have the same helper.
-fn scene_quads(window: &Window) -> Vec<gpui::Quad> {
-    #[cfg(feature = "gpui-fast")]
-    {
-        let mut quads = Vec::new();
-        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
-            quads.extend(scene.quads.iter().cloned())
-        });
-        quads
-    }
-    #[cfg(not(feature = "gpui-fast"))]
-    {
-        window.painted_quads()
-    }
-}
-
-/// `scene`, then the scene of each of its clip-group frames, depth first.
-#[cfg(feature = "gpui-fast")]
-fn for_each_clip_group_scene(scene: &gpui::Scene, f: &mut impl FnMut(&gpui::Scene)) {
-    f(scene);
-    for frame in &scene.layers.frames {
-        if frame.tile_size == 0
-            && let Some(group) = frame.content.scene()
-        {
-            for_each_clip_group_scene(group, f);
-        }
-    }
 }
 
 /// A key pressed and released, as gpui-component's own tests activate a

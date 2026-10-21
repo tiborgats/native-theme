@@ -27,7 +27,7 @@
 //! view copies the element states it used (gpui-fast window.rs:4079-4084 and
 //! :4163-4168, splice.rs:779-784, and for a composited scroll layer
 //! src/fast/layers/reuse.rs:101-106 and :204-209; gpui-pre
-//! window.rs:4008-4010). Each record holds a weak handle to a [`Presence`]
+//! window.rs:4008-4013). Each record holds a weak handle to a [`Presence`]
 //! its recorder keeps in its element state ([`begin_record`]): the record
 //! stands for a drawn element while the handle is live.
 //!
@@ -118,7 +118,7 @@ pub struct InfoRegistry {
     layout: HashMap<&'static str, Record>,
     /// The draws that recorded anything, counted, for the tests' check of
     /// two records under one id in one draw. A draw prepaints everything
-    /// before it paints anything (gpui-fast src/window.rs:3757-3813, gpui-pre
+    /// before it paints anything (gpui-fast src/window.rs:3757-3821, gpui-pre
     /// alike), so a record made after a target or a `record` box painted
     /// ([`painted`]) is the next draw's. That holds while every draw that
     /// records paints a target or a `record` box: one whose only records
