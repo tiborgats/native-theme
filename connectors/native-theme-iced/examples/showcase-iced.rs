@@ -4454,11 +4454,11 @@ fn tab_button<'a>(
 }
 
 /// A tab row, the page tabs' and the inspector's: each tab a
-/// [`tab_button`], on a strip of `tab.bar_background` whose sides are `layout.container_margin`, as the
-/// gpui showcase's tab bars are inset. More tabs than the strip is wide
-/// scroll sideways, with no bar of their own; `trailing`, where given, stays
-/// at the strip's right end. `tag` is the strip's id in the list, `id` its
-/// scrollable's widget id.
+/// [`tab_button`], on a strip of `tab.bar_background` whose sides are
+/// `layout.container_margin`, as the gpui showcase's tab bars are inset.
+/// More tabs than the strip is wide scroll sideways, with no bar of their
+/// own; `trailing`, where given, stays at the strip's right end. `tag` is the
+/// strip's id in the list, `id` its scrollable's widget id.
 fn tab_row<'a>(
     state: &'a State,
     (tag, id): (&'static str, &'static str),
@@ -5256,11 +5256,69 @@ const PALETTE: &[&str] = &["palette.", "extended."];
 #[cfg(feature = "iced_aw")]
 const AW_TAB_BAR: &[&str] = &["styles::aw::tab_bar.", "crate::tab_indicator_line"];
 
-/// What draws a colour leaf of `element` under `resolved`: the connector,
-/// through the rows of a [`Drawing`], or the showcase itself (`None`), whose
-/// route [`iced_route`] writes by hand. The class is chosen by the element's
-/// id, as the page builds it.
-fn drawing(element: &ShowcaseElement, leaf: &str, resolved: &ResolvedTheme) -> Option<Drawing> {
+/// What the drawing of a listed element depends on in the state shown: the
+/// resolved theme, and, where iced_aw's `TabBar` draws the Basic page's
+/// tabs, which of them is open.
+#[derive(Clone, Copy)]
+struct Shown<'a> {
+    resolved: &'a ResolvedTheme,
+    /// [`State::basic_tab`]: the index of the open tab in [`BASIC_TABS`].
+    #[cfg(feature = "iced_aw")]
+    basic_tab: usize,
+}
+
+impl<'a> Shown<'a> {
+    fn of(state: &'a State) -> Self {
+        Self {
+            resolved: &state.current_resolved,
+            #[cfg(feature = "iced_aw")]
+            basic_tab: state.basic_tab,
+        }
+    }
+
+    /// `resolved` as the showcase opens: the first tab open.
+    #[cfg(test)]
+    fn opening(resolved: &'a ResolvedTheme) -> Self {
+        Self {
+            resolved,
+            #[cfg(feature = "iced_aw")]
+            basic_tab: 0,
+        }
+    }
+}
+
+/// The index in [`BASIC_TABS`] of the Basic page's tab the list's id `id`
+/// names.
+fn basic_tab_index(id: &str) -> Option<usize> {
+    match id {
+        "basic.tabs.one" => Some(0),
+        "basic.tabs.two" => Some(1),
+        _ => None,
+    }
+}
+
+/// Whether the tab of the list with id `id` is the open one under `state`:
+/// the Basic page's as `basic_tab` sets it, the page tabs' and the
+/// inspector's as their pages are shown; `None` for no tab.
+fn tab_open(state: &State, id: &str) -> Option<bool> {
+    if let Some(index) = basic_tab_index(id) {
+        return Some(index == state.basic_tab);
+    }
+    Some(match id {
+        "chrome.page_tabs.basic" => state.active_tab == Tab::Basic,
+        "chrome.page_tabs.buttons" => state.active_tab == Tab::Buttons,
+        "chrome.side_panel.inspector_tabs.widget" => state.inspector_tab == InspectorTab::Widget,
+        "chrome.side_panel.inspector_tabs.theme" => state.inspector_tab == InspectorTab::Theme,
+        _ => return None,
+    })
+}
+
+/// What draws a colour leaf of `element` as `shown`: the connector, through
+/// the rows of a [`Drawing`], or the showcase itself (`None`), whose route
+/// [`iced_route`] writes by hand. The class is chosen by the element's id,
+/// as the page builds it.
+fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Drawing> {
+    let resolved = shown.resolved;
     let id = element.id.as_str();
     let under = |prefix: &str| id == prefix || id.starts_with(&format!("{prefix}."));
     // A group's heading, and the text the page sets with no widget of its
@@ -5334,15 +5392,16 @@ fn drawing(element: &ShowcaseElement, leaf: &str, resolved: &ResolvedTheme) -> O
         _ if under("basic.spinner") => Drawing::of(&["crate::Spinner"]),
         // iced_aw's `TabBar` asks for `Active` for the open tab, `Disabled`
         // for another, `Hovered` for the one under the pointer
-        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:589-595`).
+        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:589-595`); the open one is
+        // `basic_tab`'s.
         #[cfg(feature = "iced_aw")]
-        _ if under("basic.tabs.one") => Drawing::only(
+        _ if basic_tab_index(id) == Some(shown.basic_tab) => Drawing::only(
             AW_TAB_BAR,
             &[],
             &["Disabled", "Pressed", "Focused", "Selected"],
         ),
         #[cfg(feature = "iced_aw")]
-        _ if under("basic.tabs.two") => Drawing::only(
+        _ if basic_tab_index(id).is_some() => Drawing::only(
             AW_TAB_BAR,
             &[],
             &["Active", "Pressed", "Focused", "Selected"],
@@ -5478,8 +5537,8 @@ fn shown_rows<'a>(
     rows
 }
 
-/// How the connector draws `leaf` on `element` under `resolved`, read from
-/// the contract's export: the rows of its [`Drawing`] the leaf moves, under
+/// How the connector draws `leaf` on `element` as `shown`, read from the
+/// contract's export: the rows of its [`Drawing`] the leaf moves, under
 /// the statuses the page draws, on `installed`, the bundled combination
 /// shown (`<preset>/<mode>`), or in any bundled one where the theme is the
 /// OS's (`None`); or why no row reads it. `None` where the showcase draws the
@@ -5487,7 +5546,7 @@ fn shown_rows<'a>(
 fn colour_route(
     element: &ShowcaseElement,
     leaf: &str,
-    resolved: &ResolvedTheme,
+    shown: Shown<'_>,
     installed: Option<&str>,
 ) -> Option<String> {
     let export = contract_leaves()?;
@@ -5495,7 +5554,7 @@ fn colour_route(
     // are the OS theme's.
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
     let reach = export.leaves.get(leaf)?;
-    let drawing = drawing(element, leaf, resolved)?;
+    let drawing = drawing(element, leaf, shown)?;
     let moves = match reach {
         LeafReach::Named { kind, why } => {
             return Some(match kind.as_str() {
@@ -5581,6 +5640,56 @@ fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
     icon.filter(|icon| matches!(icon, IconData::Svg(_) | IconData::Rgba(_)))
 }
 
+/// The route of a tab's `leaf` that its state shows it not drawing, where
+/// the tab with the list's id `id` is `open` or not: a closed tab neither
+/// framed nor marked (`tab_style`, `tab_indicator`, iced_aw's `TabBar`
+/// frames only its `Active` tab); and where `tab_style` draws it, a closed
+/// tab without the open tab's colours and an open one without a closed
+/// tab's, in every status. `None` where the leaf is drawn as its route says.
+fn shown_tab_route(id: &str, leaf: &str, open: bool) -> Option<&'static str> {
+    let by_tab_style = !(cfg!(feature = "iced_aw") && basic_tab_index(id).is_some());
+    match leaf {
+        "tab.active_indicator_color"
+        | "tab.active_indicator_width_px"
+        | "tab.active_indicator_side"
+            if !open =>
+        {
+            Some("not drawn: the line marks the open tab, and this one is closed")
+        }
+        "tab.border.color" | "tab.border.corner_radius_px" | "tab.border.line_width_px"
+            if !open =>
+        {
+            Some("not drawn: only the open tab is framed, and this one is closed")
+        }
+        "tab.active_background" | "tab.active_text_color" if !open && by_tab_style => {
+            Some("not drawn: this tab is closed; tab_style gives the open one these")
+        }
+        "tab.background_color"
+        | "tab.font.color"
+        | "tab.hover_background"
+        | "tab.hover_text_color"
+            if open && by_tab_style =>
+        {
+            Some(
+                "not drawn: this tab is open, and tab_style draws it in the open tab's colours in every status",
+            )
+        }
+        _ => None,
+    }
+}
+
+/// Whether the Basic page's spinner is a freedesktop indicator, which keeps
+/// its own colours (`native_theme_iced::Spinner`'s doc): the icon set
+/// [`State::reload_icons`] builds it from is freedesktop, and that theme has
+/// an indicator.
+fn spinner_keeps_its_colours(state: &State) -> bool {
+    state.basic_spinner.is_indicator()
+        && state
+            .icon_set_choice
+            .effective_icon_set(state.current_icon_set)
+            == IconSet::Freedesktop
+}
+
 /// How iced applies `leaf` to `element` as `state` draws it: the
 /// connector's style function or helper and the field or setter it reaches,
 /// or why it cannot. One muted line of Widget Info.
@@ -5597,11 +5706,20 @@ fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
 /// indicator, a flat button's label colours where it shows its label.
 fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     let resolved = &state.current_resolved;
+    let id = element.id.as_str();
+    if let Some(line) = tab_open(state, id).and_then(|open| shown_tab_route(id, leaf, open)) {
+        return line.to_owned();
+    }
+    if leaf == "spinner.fill_color" && spinner_keeps_its_colours(state) {
+        return "not drawn: the icon theme's indicator keeps its own colours, its \
+                currentColor, where it sets none, in defaults.text_color \
+                (native_theme_iced::Spinner)"
+            .to_owned();
+    }
     let installed = state.installed_combination();
-    if let Some(line) = colour_route(element, leaf, resolved, installed.as_deref()) {
+    if let Some(line) = colour_route(element, leaf, Shown::of(state), installed.as_deref()) {
         return line;
     }
-    let id = element.id.as_str();
     let under = |prefix: &str| id.starts_with(prefix);
     // The flat buttons, drawn in `ghost_button`: the toolbar's, the Basic
     // page's icon buttons, the page tabs' menu, the side-panel toggle and
@@ -5681,6 +5799,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                  button.active_text_color under the pointer"
                     .into()
             }
+            (false, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
             (false, Some(_)) => ICON_FOR_LABEL.into(),
             (false, None) => "ghost_button: the Hovered text_color".into(),
         },
@@ -5922,6 +6041,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "active_background") => "tab_style: the open tab's background".into(),
         ("tab", "active_text_color") => "tab_style: the open tab's text colour".into(),
         ("tab", "background_color") => "tab_style: a tab's background at rest".into(),
+        ("tab", "hover_background") if resolved.tab.hover_background.is_none() => {
+            "not drawn: unstated; tab_style takes tab.background_color under the pointer".into()
+        }
         ("tab", "hover_background") => "tab_style: a tab's background under the pointer".into(),
         ("tab", "hover_text_color") => "tab_style: a tab's text colour under the pointer".into(),
         ("tab", "font") => "the label's size and theme_font".into(),
@@ -6166,15 +6288,22 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
 fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<&'static str> {
     match element.name.as_str() {
         "Switch" => vec!["label gap: iced's toggler's, Toggler::DEFAULT_SIZE / 2"],
+        "Spinner" if spinner_keeps_its_colours(state) => {
+            vec!["the indicator's frames, own colours and pace: the icon theme's"]
+        }
         "Spinner" if state.basic_spinner.is_indicator() => {
             vec!["the indicator's frames and their pace: the icon set's"]
         }
         "Spinner" => vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second"],
         "Expander" => vec!["arrow shape: a filled triangle on a canvas"],
+        "Menu" if state.current_resolved.popover.border.shadow_enabled => vec![
+            "menu width: its widest row, the label and the shortcut \
+             layout.widget_gap apart inside the row's padding",
+            "shadow geometry: iced_aw's menu_shadow",
+        ],
         "Menu" => vec![
             "menu width: its widest row, the label and the shortcut \
              layout.widget_gap apart inside the row's padding",
-            "shadows: iced_aw's own",
         ],
         "Menu shortcut" => vec!["shortcut colour: the row's label colour"],
         "Tooltip" => vec!["gap to its control: the showcase's"],
@@ -16609,8 +16738,8 @@ mod tests {
                     .any(|(id, l, _)| *id == element.id && l == leaf);
                 let undrawn = export.leaves.contains_key(leaf)
                     && bundled.iter().any(|(_, r)| {
-                        drawing(element, leaf, r).is_some()
-                            && colour_route(element, leaf, r, None)
+                        drawing(element, leaf, Shown::opening(r)).is_some()
+                            && colour_route(element, leaf, Shown::opening(r), None)
                                 .is_some_and(|route| route.starts_with("not drawn here"))
                     });
                 if undrawn != excepted {
@@ -16685,9 +16814,10 @@ mod tests {
                 // The element as each bundled combination draws it, installed
                 // and under the OS theme.
                 for (combination, r) in &bundled {
-                    let (Some(drawing), Some(LeafReach::Moves(moves))) =
-                        (drawing(element, leaf, r), export.leaves.get(leaf))
-                    else {
+                    let (Some(drawing), Some(LeafReach::Moves(moves))) = (
+                        drawing(element, leaf, Shown::opening(r)),
+                        export.leaves.get(leaf),
+                    ) else {
                         continue;
                     };
                     // A move the element draws: its row is the drawing's and
@@ -16715,7 +16845,8 @@ mod tests {
                                 element.id
                             ));
                         }
-                        let route = colour_route(element, leaf, r, label).unwrap_or_default();
+                        let route = colour_route(element, leaf, Shown::opening(r), label)
+                            .unwrap_or_default();
                         let holds = match (label, want.is_empty()) {
                             (Some(l), true) => {
                                 route.starts_with(&format!("not drawn here: on {l} "))
@@ -16773,14 +16904,24 @@ mod tests {
             Some((_, r)) => r,
             None => panic!("{label} is no bundled combination"),
         };
-        let on_states =
-            colour_route(element, leaf, resolved(states), Some(states)).unwrap_or_default();
+        let on_states = colour_route(
+            element,
+            leaf,
+            Shown::opening(resolved(states)),
+            Some(states),
+        )
+        .unwrap_or_default();
         assert!(
             on_states.starts_with("not drawn here: "),
             "{states} states the checked pair: {on_states}"
         );
-        let on_leaves =
-            colour_route(element, leaf, resolved(leaves), Some(leaves)).unwrap_or_default();
+        let on_leaves = colour_route(
+            element,
+            leaf,
+            Shown::opening(resolved(leaves)),
+            Some(leaves),
+        )
+        .unwrap_or_default();
         assert!(
             on_leaves.contains("styles::button_toggle.background (Active, Hovered, Pressed)"),
             "{leaves} leaves the checked pair unstated: {on_leaves}"
@@ -16827,11 +16968,119 @@ mod tests {
         ("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon"),
     ];
 
+    /// The colour leaves of a flat button and of a tab, which the oracles
+    /// below splice.
+    const BUTTON_COLOURS: &[&str] = &[
+        "button.font.color",
+        "button.hover_background",
+        "button.hover_text_color",
+        "button.active_background",
+        "button.active_text_color",
+    ];
+    const TAB_COLOURS: &[&str] = &[
+        "tab.background_color",
+        "tab.font.color",
+        "tab.hover_background",
+        "tab.hover_text_color",
+        "tab.active_background",
+        "tab.active_text_color",
+        "tab.border.color",
+    ];
+
+    /// `r` with its colour leaf `leaf` set to a colour no bundled theme
+    /// states; `None` where the theme leaves the leaf unstated, so that
+    /// nothing draws it.
+    fn with_colour(r: &ResolvedTheme, leaf: &str) -> Option<ResolvedTheme> {
+        let mut json = serde_json::to_value(r).ok()?;
+        let value = json.pointer_mut(&format!("/{}", leaf.replace('.', "/")))?;
+        if !value.is_string() {
+            return None;
+        }
+        *value = serde_json::Value::String("#13579b".to_owned());
+        serde_json::from_value(json).ok()
+    }
+
+    /// What a flat button shows in its label's place.
+    #[derive(Clone, Copy, PartialEq)]
+    enum Shows {
+        /// Its label, in `ghost_button`'s text colour.
+        Label,
+        /// A bundled set's icon, in `icon_colour`'s.
+        BundledIcon,
+        /// An OS icon theme's icon, in its own colours.
+        OsIcon,
+    }
+
+    /// What `ghost_button` and the icon draw of a flat button under `r`, as
+    /// text: the fill in each status a pointer can give it, the label's
+    /// colour where the label shows, the icon's where `icon_button` colours
+    /// it.
+    fn ghost_drawn(r: &ResolvedTheme, selected: bool, shows: Shows) -> String {
+        let theme = native_theme_iced::to_theme(r, "splice");
+        let style = ghost_button(r, selected);
+        let mut drawn = String::new();
+        for status in [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+        ] {
+            let s = style(&theme, status);
+            drawn.push_str(&format!("{:?};", s.background));
+            if shows == Shows::Label {
+                drawn.push_str(&format!("{:?};", s.text_color));
+            }
+        }
+        if shows == Shows::BundledIcon {
+            drawn.push_str(&format!("{:?}", icon_colour(r, selected)));
+        }
+        drawn
+    }
+
+    /// What `tab_style` draws of a tab under `r`, `open` or not, in each
+    /// status a pointer can give it, as text.
+    fn tab_drawn(r: &ResolvedTheme, open: bool) -> String {
+        let theme = native_theme_iced::to_theme(r, "splice");
+        let style = tab_style(r, open);
+        [
+            button::Status::Active,
+            button::Status::Hovered,
+            button::Status::Pressed,
+        ]
+        .map(|status| format!("{:?}", style(&theme, status)))
+        .join(";")
+    }
+
+    /// Whether splicing the colour leaf `leaf` moves what `drawn` draws:
+    /// whether the state shown draws it.
+    fn moves(r: &ResolvedTheme, leaf: &str, drawn: impl Fn(&ResolvedTheme) -> String) -> bool {
+        with_colour(r, leaf).is_some_and(|spliced| drawn(&spliced) != drawn(r))
+    }
+
+    /// Whether the tab of the list with id `id` is the open one in `state`:
+    /// the Basic page's as `basic_tab` sets it, the page tabs' and the
+    /// inspector's as their pages are shown.
+    fn shown_open(state: &State, id: &str) -> Option<bool> {
+        Some(match id {
+            "basic.tabs.one" => state.basic_tab == 0,
+            "basic.tabs.two" => state.basic_tab == 1,
+            "chrome.page_tabs.basic" => state.active_tab == Tab::Basic,
+            "chrome.page_tabs.buttons" => state.active_tab == Tab::Buttons,
+            "chrome.side_panel.inspector_tabs.widget" => {
+                state.inspector_tab == InspectorTab::Widget
+            }
+            "chrome.side_panel.inspector_tabs.theme" => state.inspector_tab == InspectorTab::Theme,
+            _ => return None,
+        })
+    }
+
     /// What a route of `element`'s `leaf` claims that `state` does not draw:
     /// a check mark the theme states no line for, an `iced_aw` widget the
-    /// build has not, a text colour on an icon drawn in its own, a state the
-    /// selected toggle never shows, the menu's padding and shadow called
-    /// unreachable. `laid` is what the interface lays out under `state`.
+    /// build has not, a flat button's or a tab's colour its drawing function
+    /// does not draw in the state shown (spliced into `ghost_button`, the
+    /// icon's colour and `tab_style`), an OS icon theme's icon called
+    /// coloured by `icon_button`, a closed tab's line or frame, a spinner's
+    /// arc or tint where the set's indicator is drawn. `laid` is what the
+    /// interface lays out under `state`.
     fn route_faults(
         state: &State,
         laid: &ElementRects,
@@ -16842,9 +17091,10 @@ mod tests {
         let mut faults = Vec::new();
         let id = element.id.as_str();
         let mut fault = |what: &str| faults.push(format!("{id} {leaf}: {what}: \"{route}\""));
-        let c = &state.current_resolved.checkbox;
+        let r = &state.current_resolved;
+        let not_drawn = route.starts_with("not drawn");
         if id.starts_with("basic.checkboxes.") {
-            match c.check_mark_stroke_width {
+            match r.checkbox.check_mark_stroke_width {
                 None if route.contains("CheckMark") => fault("no CheckMark is drawn"),
                 Some(_)
                     if id.ends_with(".mark")
@@ -16861,60 +17111,78 @@ mod tests {
         }
         if let Some((_, icon)) = ICON_BUTTONS.iter().find(|(button, _)| *button == id) {
             let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
-            let iconed = laid.contains_key(icon);
-            let b = &state.current_resolved.button;
+            let shows = match (laid.contains_key(icon), state.chrome_icons.system) {
+                (false, _) => Shows::Label,
+                (true, false) => Shows::BundledIcon,
+                (true, true) => Shows::OsIcon,
+            };
             let claims_text =
                 route.contains("Hovered text_color") || route.contains("Pressed text_color");
-            if iconed && claims_text {
+            if shows != Shows::Label && claims_text {
                 fault("the icon's colour is set as it loads");
             }
-            if !iconed && !selected && leaf == "button.hover_text_color" && !claims_text {
-                fault("the label takes the Hovered text_color");
+            if shows == Shows::OsIcon && route.contains("icon_button") {
+                fault("an OS icon theme's icon is not coloured by icon_button");
             }
-            let not_drawn = route.starts_with("not drawn");
-            if selected {
-                let hidden = match leaf {
-                    "button.font.color" | "button.hover_text_color" => Some(true),
-                    "button.hover_background" => Some(b.active_background.is_some()),
-                    "button.active_background" => Some(b.active_background.is_none()),
-                    "button.active_text_color" => Some(iconed && state.chrome_icons.system),
-                    _ => None,
-                };
-                if hidden.is_some_and(|hidden| hidden != not_drawn) {
-                    fault("the selected toggle draws the active pair");
+            if BUTTON_COLOURS.contains(&leaf)
+                && moves(r, leaf, |r| ghost_drawn(r, selected, shows)) == not_drawn
+            {
+                fault(if selected {
+                    "the selected toggle's drawing"
+                } else {
+                    "the flat button's drawing"
+                });
+            }
+        }
+        if let Some(open) = shown_open(state, id) {
+            let aw = cfg!(feature = "iced_aw") && id.starts_with("basic.tabs.");
+            if !open
+                && (leaf.starts_with("tab.active_indicator") || leaf.starts_with("tab.border."))
+                && !leaf.starts_with("tab.border.padding")
+                && !not_drawn
+            {
+                fault("only the open tab is framed and marked");
+            }
+            if aw {
+                // iced_aw's TabBar asks for Active for the open tab and
+                // Disabled for another (iced_aw 0.14.1
+                // `src/widget/tab_bar.rs:589-595`).
+                let other = if open { "Disabled" } else { "Active" };
+                if route.contains(other) {
+                    fault("iced_aw draws the tab in another status");
                 }
+            } else if TAB_COLOURS.contains(&leaf)
+                && moves(r, leaf, |r| tab_drawn(r, open)) == not_drawn
+            {
+                fault("tab_style's drawing");
             }
         }
-        if id == "chrome.menu.theme" {
-            let want = match leaf {
-                "popover.border.shadow_enabled" => Some("iced: menu_bar_style: "),
-                l if l.starts_with("popover.border.padding_") => Some("iced: menu_popup_padding: "),
-                _ => None,
-            };
-            if want.is_some_and(|want| !route.starts_with(want)) {
-                fault("the menu's panel is padded and shadowed so");
+        if element.name == "Spinner" && state.basic_spinner.is_indicator() {
+            let own_colours = state
+                .icon_set_choice
+                .effective_icon_set(state.current_icon_set)
+                == IconSet::Freedesktop;
+            if leaf == "spinner.stroke_width_px" && !not_drawn {
+                fault("the set's indicator is drawn, not the arc");
             }
-        }
-        if element.name == "Spinner"
-            && leaf == "spinner.stroke_width_px"
-            && state.basic_spinner.is_indicator()
-            && !route.starts_with("not drawn")
-        {
-            fault("the set's indicator is drawn, not the arc");
+            if leaf == "spinner.fill_color" && own_colours != not_drawn {
+                fault("a freedesktop indicator keeps its own colours");
+            }
         }
         faults
     }
 
-    /// M9-069 to M9-073: a route, and a "Not themeable" line, names what the
-    /// state shown draws, over every bundled preset in both modes, the side
-    /// panel shown and hidden, in this build: no `CheckMark` where the theme
-    /// states no check-mark line (iced's glyph is drawn), the arc's sweep only
-    /// where the icon set has no indicator, no `iced_aw` widget without
-    /// `iced_aw`, no Hovered or Pressed text colour on a flat button whose
-    /// icon is drawn in a colour fixed as it loads, the selected side-panel
-    /// toggle's rows the active pair's, and the menu's panel padding and
-    /// shadow routed to `menu_popup_padding` and `menu_bar_style`. Each case
-    /// is seen both ways somewhere among the presets.
+    /// M9-069 to M9-073, M9-145 and M9-146 (M9b T5 fix round 1): a route,
+    /// and a "Not themeable" line, names what the state shown draws, over
+    /// every bundled preset in both modes, with the set's icons, the same
+    /// icons as an OS icon theme's and none, the side panel shown and hidden,
+    /// the first tab and page open and the second, in this build: no
+    /// `CheckMark` where the theme states no check-mark line (iced's glyph
+    /// is drawn), the arc's sweep only where the icon set has no indicator,
+    /// no `iced_aw` widget without `iced_aw`, a flat button's and a tab's
+    /// colours as their drawing functions draw them in the state shown, and
+    /// a closed tab neither framed nor marked. Each case is seen both ways
+    /// somewhere among the presets.
     #[test]
     fn a_route_names_a_widget_only_where_the_state_draws_it() {
         let mut state = State {
@@ -16932,31 +17200,42 @@ mod tests {
                     preset.key,
                     state.error_message
                 );
-                seen.insert((
-                    "stroke",
-                    state
-                        .current_resolved
-                        .checkbox
-                        .check_mark_stroke_width
-                        .is_some(),
-                ));
+                let r = &state.current_resolved;
+                seen.insert(("stroke", r.checkbox.check_mark_stroke_width.is_some()));
+                seen.insert(("pressed fill", r.button.active_background.is_some()));
+                seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
                 seen.insert(("indicator", state.basic_spinner.is_indicator()));
-                // The set's icons, and none: a set without them, whose flat
-                // buttons show their labels.
-                for bare in [false, true] {
-                    if bare {
-                        state.chrome_icons = ChromeIcons::default();
-                        state.loaded_icons.clear();
+                // The set's icons, the same icons as an OS icon theme's,
+                // which keep their own colours, and none: a set without
+                // them, whose flat buttons show their labels.
+                for icons in ["set", "os", "none"] {
+                    match icons {
+                        "os" => state.chrome_icons.system = true,
+                        "none" => {
+                            state.chrome_icons = ChromeIcons::default();
+                            state.loaded_icons.clear();
+                        }
+                        _ => {}
                     }
                     state.side_panel_visible = true;
+                    state.basic_tab = 0;
+                    state.active_tab = Tab::Basic;
                     let laid = {
                         let mut ui = interface(&state);
                         let _ = texts(&mut ui);
                         surveyed_layout()
                     };
-                    seen.insert(("icon", laid.contains_key("basic.icons.copy.icon")));
-                    for visible in [true, false] {
+                    let iconed = laid.contains_key("basic.icons.copy.icon");
+                    seen.insert(("icon", iconed));
+                    seen.insert(("os icon", iconed && state.chrome_icons.system));
+                    for (visible, basic_tab, page) in [
+                        (true, 0, Tab::Basic),
+                        (false, 0, Tab::Basic),
+                        (true, 1, Tab::Buttons),
+                    ] {
                         state.side_panel_visible = visible;
+                        state.basic_tab = basic_tab;
+                        state.active_tab = page;
                         for element in elements::elements() {
                             if element.name == "Spinner" {
                                 let arc = iced_not_themeable(&state, element)
@@ -16978,7 +17257,8 @@ mod tests {
                                         .into_iter()
                                         .map(|f| {
                                             format!(
-                                                "{} ({mode:?}, panel {visible}): {f}",
+                                                "{} ({mode:?}, {icons} icons, panel {visible}, \
+                                                 tab {basic_tab}): {f}",
                                                 preset.key
                                             )
                                         }),
@@ -16987,9 +17267,18 @@ mod tests {
                         }
                     }
                 }
+                state.basic_tab = 0;
+                state.active_tab = Tab::Basic;
             }
         }
-        for case in ["stroke", "indicator", "icon"] {
+        for case in [
+            "stroke",
+            "pressed fill",
+            "tab hover fill",
+            "indicator",
+            "icon",
+            "os icon",
+        ] {
             for holds in [false, true] {
                 if !seen.contains(&(case, holds)) {
                     failures.push(format!("no case has {case} {holds}: one side is unchecked"));
@@ -17003,6 +17292,118 @@ mod tests {
             "{} faults: {failures:#?}",
             failures.len()
         );
+    }
+
+    /// M9-069, M9-144 (M9b T5 fix round 1): the open menu's
+    /// `popover.border.padding_*` and `.shadow_enabled` lines name the
+    /// function that pads and shadows its panel, which a splice of the leaf
+    /// moves, and the "Not themeable" shadow line shows only where
+    /// `popover.border.shadow_enabled` keeps iced_aw's shadow.
+    #[test]
+    fn the_menus_panel_lines_name_what_pads_and_shadows_it() {
+        let Some(element) = elements::element("chrome.menu.theme") else {
+            panic!("chrome.menu.theme is not listed");
+        };
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        let r = state.current_resolved.clone();
+        let Ok(json) = serde_json::to_value(&r) else {
+            panic!("kde-breeze does not serialise");
+        };
+        let mut failures = Vec::new();
+        for leaf in element
+            .leaves
+            .iter()
+            .filter(|l| l.starts_with("popover.border.padding_") || l.ends_with("shadow_enabled"))
+        {
+            let route = iced_route(&state, element, leaf);
+            let functions = route_functions(&route);
+            if functions.is_empty() {
+                failures.push(format!("{leaf}: \"{route}\" names no function"));
+            }
+            // The resolved theme serialises a side as `padding.<side>`.
+            let field = leaf
+                .strip_suffix("_px")
+                .unwrap_or(leaf)
+                .replace("padding_", "padding.");
+            let mut spliced = json.clone();
+            let Some(value) = spliced.pointer_mut(&format!("/{}", field.replace('.', "/"))) else {
+                panic!("{leaf} is not in the resolved theme");
+            };
+            *value = match value.as_bool() {
+                Some(on) => serde_json::Value::Bool(!on),
+                None => serde_json::Value::from(value.as_f64().unwrap_or_default() + 3.0),
+            };
+            let Ok(spliced) = serde_json::from_value::<ResolvedTheme>(spliced) else {
+                panic!("{leaf}: the splice does not parse");
+            };
+            for function in functions {
+                let moved = drawn_by(function, &r)
+                    .zip(drawn_by(function, &spliced))
+                    .is_some_and(|(before, after)| before != after);
+                if !moved {
+                    failures.push(format!("{leaf}: {function} draws nothing it moves"));
+                }
+            }
+        }
+        for shadow in [true, false] {
+            state.current_resolved.popover.border.shadow_enabled = shadow;
+            let lines = iced_not_themeable(&state, element);
+            if lines.iter().any(|l| l.contains("shadow")) != shadow {
+                failures.push(format!("shadow_enabled {shadow}: {lines:?}"));
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// M9-146 (M9b T5 fix round 1): a freedesktop indicator keeps its own
+    /// colours, its `currentColor` filled in with `defaults.text_color`
+    /// where it sets none (spinner.rs's doc): the Basic Spinner's
+    /// `spinner.fill_color` route says it is not drawn, and its "Not
+    /// themeable" line names the icon theme's colours. The theme is a
+    /// fixture, so on every host.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_freedesktop_indicator_is_routed_in_its_own_colours() -> std::io::Result<()> {
+        const NAME: &str = "tests::a_freedesktop_indicator_is_routed_in_its_own_colours";
+        const STYLED: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><style id="current-color-scheme">.ColorScheme-Text { color:#232629; }</style><g fill="currentColor"><path class="ColorScheme-Text" d="M2 2h18v18H2z"/><path class="ColorScheme-Text" d="M6 28h10v10H6z"/></g></svg>"#;
+        if native_theme_test_fixtures::in_child() {
+            let Some(element) = elements::element("basic.spinner.indicator") else {
+                panic!("basic.spinner.indicator is not listed");
+            };
+            let mut state = State::default();
+            assert!(state.install_in_mode(
+                ThemeChoice::Preset("kde-breeze".to_owned()),
+                AppColorMode::Light
+            ));
+            let _ = update(
+                &mut state,
+                Message::IconSetSelected(IconSetChoice::Freedesktop("styled".to_owned())),
+            );
+            assert!(
+                state.basic_spinner.is_indicator(),
+                "the fixture's indicator is drawn"
+            );
+            let route = iced_route(&state, element, "spinner.fill_color");
+            assert!(
+                route.starts_with("not drawn: ") && !route.contains("bundled tint"),
+                "{route}"
+            );
+            let lines = iced_not_themeable(&state, element);
+            assert!(lines.iter().any(|l| l.contains("own colours")), "{lines:?}");
+            return Ok(());
+        }
+        native_theme_test_fixtures::run(
+            NAME,
+            native_theme_test_fixtures::Child::kde("styled"),
+            |icons| native_theme_test_fixtures::write_indicator_theme(icons, "styled", STYLED),
+        )
     }
 
     /// The Basic page under `state`, drawn at the window's width and tall
@@ -18254,6 +18655,7 @@ mod tests {
             "menu_title" => [false, true]
                 .map(|open| buttons(&menu_title(r, open)))
                 .join("|"),
+            "menu_popup_padding" => format!("{:?}", menu_popup_padding(r)),
             "menu_bar_style" => {
                 use iced_aw::style::Status as Aw;
                 let style = menu_bar_style(r);
@@ -18347,8 +18749,9 @@ mod tests {
             })
         });
         for (state, element, leaf) in routes {
-            let resolved = &state.current_resolved;
-            if !export.leaves.contains_key(leaf) || drawing(element, leaf, resolved).is_some() {
+            if !export.leaves.contains_key(leaf)
+                || drawing(element, leaf, Shown::of(state)).is_some()
+            {
                 continue;
             }
             let route = iced_route(state, element, leaf);
