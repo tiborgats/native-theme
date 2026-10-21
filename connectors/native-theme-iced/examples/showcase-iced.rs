@@ -6664,6 +6664,10 @@ thread_local! {
     /// Every page widget's Widget Info a view built, for the tests to read.
     static BUILT_INFOS: std::cell::RefCell<Vec<String>> =
         const { std::cell::RefCell::new(Vec::new()) };
+    /// Every row (`styles::<fn>.<field>`) a [`style_paints`] call asked for
+    /// that its extractor did not produce, for the tests to read.
+    static UNPRODUCED_ROWS: std::cell::RefCell<Vec<String>> =
+        const { std::cell::RefCell::new(Vec::new()) };
 }
 
 fn hoverable<'a>(info: String, content: Element<'a, Message>) -> Element<'a, Message> {
@@ -6801,7 +6805,10 @@ impl Paint {
 /// The rows of `function` (`styles::<fn>`) that `rows` names, each as its
 /// role and the export's field name, from what `style` -- the function as
 /// the page calls it -- paints at `status`, on the installed theme. `zero`
-/// is why an edge among them is 0 wide where it is.
+/// is why an edge among them is 0 wide where it is. A field the output
+/// leaves unset (a `text_color` of `None`) gives no row;
+/// `every_requested_colour_field_is_produced` holds every other to its
+/// extractor.
 fn style_paints<S: Copy + std::fmt::Debug, O>(
     state: &State,
     function: &str,
@@ -6816,8 +6823,12 @@ fn style_paints<S: Copy + std::fmt::Debug, O>(
     let installed = state.installed_combination();
     rows.iter()
         .filter_map(|&(role, field)| {
-            let (_, ink) = painted.iter().find(|(f, _)| *f == field)?;
             let row = format!("{function}.{field}");
+            let Some((_, ink)) = painted.iter().find(|(f, _)| *f == field) else {
+                #[cfg(test)]
+                UNPRODUCED_ROWS.with(|rows| rows.borrow_mut().push(row));
+                return None;
+            };
             let mut source = row.clone();
             if let Some(status) = &status {
                 source.push_str(&format!(" ({status})"));
@@ -17636,6 +17647,24 @@ mod tests {
             off,
             "a page widget's info changes with the switch"
         );
+    }
+
+    /// Minor 7 of the M9b T4 review: every row a page widget's info asks
+    /// [`style_paints`] for is one its extractor produces, over every bundled
+    /// preset in both modes, save a `text_color` the style leaves unset (a
+    /// checkbox's, a radio's or a container's, which iced then inherits): a
+    /// misspelt or missing field does not drop its row unseen.
+    #[test]
+    fn every_requested_colour_field_is_produced() {
+        let mut failures = BTreeSet::new();
+        over_bundled_infos(|_, combination, _, _| {
+            for row in UNPRODUCED_ROWS.with(|rows| std::mem::take(&mut *rows.borrow_mut())) {
+                if !row.ends_with(".text_color") {
+                    failures.insert(format!("{combination}: {row}"));
+                }
+            }
+        });
+        assert!(failures.is_empty(), "{failures:#?}");
     }
 
     /// `each` over every bundled preset in both modes installed in a state:
