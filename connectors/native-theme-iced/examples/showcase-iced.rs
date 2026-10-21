@@ -11675,30 +11675,25 @@ fn grid_info(state: &State) -> String {
     let d = &state.current_resolved.defaults;
     widget_tooltip(
         "Grid",
-        &[
-            Paint::leaf(
-                "cell fill",
-                "each cell's own color",
-                to_color(d.accent_color),
-            ),
-            Paint::leaf(
-                "cell border",
-                "defaults.border.color",
-                to_color(d.border.color),
-            ),
-        ],
+        &[Paint::leaf(
+            "cell border",
+            "defaults.border.color",
+            to_color(d.border.color),
+        )],
         &[
             ("columns", "4"),
-            ("cell radius", "defaults.border.corner_radius"),
-        ],
-        &[
             (
-                "Style",
-                "grid has no Catalog and no Style — it only places its children \
-                 (grid.rs:13-19)",
+                "cell fill",
+                "each cell's own: the ResolvedDefaults colour its caption names",
             ),
-            ("spacing", "the showcase's own scale"),
+            ("cell radius", "defaults.border.corner_radius"),
+            ("spacing", "layout.widget_gap, none where unstated"),
         ],
+        &[(
+            "Style",
+            "grid has no Catalog and no Style — it only places its children \
+             (grid.rs:13-19)",
+        )],
     )
 }
 
@@ -11839,7 +11834,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             text("Grid (cells in columns)").role(section_title(ts), resolved, a11y),
             text(
                 "iced_widget::grid distributes its children over a fixed number of \
-                 columns. Here: the eight colors ResolvedDefaults names."
+                 columns. Here: eight of the colours ResolvedDefaults names."
             )
             .body(resolved, a11y),
             grid([
@@ -18061,6 +18056,36 @@ mod tests {
         assert!(
             texts(&mut ui).iter().any(|(content, _)| *content == want),
             "the Display page does not show \"{want}\""
+        );
+    }
+
+    /// M9-098 (info-truth): the Grid's Widget Info names what spaces it,
+    /// `layout.widget_gap` (none where unstated: `Gaps`), shows no single
+    /// hex for its cells, each of which is its own colour, and the page's
+    /// caption claims eight of the colours `ResolvedDefaults` names, not all
+    /// of them.
+    #[test]
+    fn the_grid_says_what_it_draws() {
+        let state = page_state("kde-breeze", Tab::Layout);
+        let info = grid_info(&state);
+        assert!(
+            info.lines()
+                .any(|line| line.trim() == "spacing: layout.widget_gap, none where unstated"),
+            "the Grid's info does not name layout.widget_gap:\n{info}"
+        );
+        let fill = info
+            .lines()
+            .find(|line| line.trim().starts_with("cell fill:"));
+        assert!(
+            fill.is_some_and(|line| !line.contains('#')),
+            "the Grid's cell fill row is missing or shows a hex: {fill:?}"
+        );
+        let mut ui = interface(&state);
+        assert!(
+            texts(&mut ui)
+                .iter()
+                .any(|(content, _)| content.contains("eight of the colours ResolvedDefaults names")),
+            "the Grid's caption does not say \"eight of the colours\""
         );
     }
 
