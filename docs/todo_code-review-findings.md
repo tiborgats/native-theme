@@ -12492,6 +12492,66 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* X#18.
 
+#### M9-144 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:6177
+**Claim:** Hovering the open Theme menu, Widget Info's "Not themeable" section says "shadows: iced_aw's own" under every theme, while `menu_bar_style` draws no menu shadow where `popover.border.shadow_enabled` is false.
+**Evidence:** `iced_not_themeable`'s "Menu" arm is unconditional (:6172-6178 at 6a8f5986). `menu_bar_style` keeps iced_aw's `menu_shadow` only where `popover.border.shadow_enabled` is true, and `iced::Shadow::default()` otherwise (:4622-4636). Every bundled preset resolves the flag to true through `defaults.border.shadow_enabled`, so only an OS or user theme that states false shows the false line.
+**Fix proposed:** Give the shadow line only where `popover.border.shadow_enabled` is true, naming iced_aw's `menu_shadow` as the shadow's geometry.
+**Verdict:** CONFIRMED by the M9b T5 review (Minor 1); `iced_not_themeable` already takes the state since T5.
+**Triage:** fix — CONFIRMED.
+**Status:** fixed — 89dd2ea4 (M9b T5 fix round 1; `the_menus_panel_lines_name_what_pads_and_shadows_it`).
+*Source:* m9b-T5-review.md, Minor 1.
+
+#### M9-145 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5339
+**Claim:** Widget Info routes each listed tab as if it were in the state the element list names. Basic's tab One is always the open one, Two always closed, the page tab Basic open and Buttons closed. After a click opens the other tab, or on another page, the lines claim the open tab's fill, frame and line on the closed tab, and the closed tab's colours on the open one. Under macos-tahoe, which states no `tab.hover_background`, the line "tab_style: a tab's background under the pointer" names a leaf that is not drawn.
+**Evidence:**
+- In the iced_aw build, `drawing` fixes `basic.tabs.one` to the open tab's statuses and `.two` to a closed tab's (:5339-5350 at 6a8f5986), although `basic_tab` chooses the open one. iced_aw asks `Active` of the open tab and `Disabled` of another (iced_aw 0.14.1 `src/widget/tab_bar.rs:589-595`).
+- The hand routes (:5922-5940) do not depend on which tab is open, and neither does `drawing`'s `tab.active_indicator_color` arm (:5354). Meanwhile `tab_style(resolved, open)`, `tab_indicator` and `styles::aw::tab_bar` (frame width 0 except on `Active`) draw by it.
+- `tab_style` takes `tab.hover_background.unwrap_or(tab.background_color)`, and macos-tahoe's `[light.tab]` and `[dark.tab]` state no `hover_background`.
+**Fix proposed:** Route a tab by which one is open in the state shown: `basic_tab`, the page shown and the inspector tab. A closed tab is neither framed nor marked. Where `tab_style` draws it, a tab has its own state's colours. iced_aw's statuses come from `basic_tab`. An unstated `tab.hover_background` reads not drawn.
+**Verdict:** CONFIRMED by the M9b T5 review (Minor 6 (b), the iced_aw half). The default build's tabs, the page tabs and the inspector's are the same class, and the T5 fix round's table test found macos-tahoe's hover fill.
+**Triage:** fix — CONFIRMED.
+**Status:** fixed — 89dd2ea4 (M9b T5 fix round 1; `a_route_names_a_widget_only_where_the_state_draws_it`, tabs held to `tab_style` by splicing, iced_aw's statuses to `basic_tab`).
+*Source:* m9b-T5-review.md, Minor 6 (b).
+
+#### M9-146 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5334
+**Claim:** Where the Basic page's Spinner is a freedesktop icon theme's indicator, its `spinner.fill_color` line names `crate::Spinner (arc, bundled tint)`, and its "Not themeable" line names only the indicator's frames and pace. But the indicator is drawn in its own colours, and neither the arc nor the bundled tint is drawn.
+**Evidence:**
+- `drawing` routes every `basic.spinner` colour leaf to the `crate::Spinner` rows (:5334 at 6a8f5986).
+- The export's `spinner.fill_color` row is `crate::Spinner (arc, bundled tint)` (contract-leaves.toml:843-846).
+- `Spinner::new` passes `defaults.text_color` for a freedesktop indicator, which keeps its own colours with only its unset `currentColor` filled in (connectors/native-theme-iced/src/spinner.rs:26-33, :145-149).
+**Fix proposed:** Where the effective icon set is freedesktop and its indicator is drawn, route `spinner.fill_color` as not drawn, and name the icon theme's own colours in the "Not themeable" line.
+**Verdict:** CONFIRMED by the M9b T5 review (Minor 6 (a)).
+**Triage:** fix — CONFIRMED.
+**Status:** fixed — 89dd2ea4 (M9b T5 fix round 1; `a_freedesktop_indicator_is_routed_in_its_own_colours`, on a fixture icon theme).
+*Source:* m9b-T5-review.md, Minor 6 (a).
+
+#### M9-147 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:7610
+**Claim:** On the 14 presets that state no `checkbox.check_mark_stroke_width`, the layout dump records `basic.checkboxes.checked.mark` and `.disabled.mark` as the inset box of the showcase's `CheckMark`. No `CheckMark` is drawn there: iced draws its own glyph, centred in the whole box.
+**Evidence:**
+- The check closure tags the mark part as the indicator shrunk by the mark's inset whether or not the stroke is stated (:7605-7613 at 6a8f5986), and it returns iced's plain checkbox where the stroke is unstated (:7615-7617).
+- iced draws the glyph at the box's centre with the box's size as its bounds (iced_widget 0.14.2 `src/checkbox.rs:420-436`).
+- The parity group for the mark's box names catppuccin-mocha, which states no stroke (docs/showcase-exceptions.toml:722-749).
+**Fix proposed:** Record the mark as the whole box where the theme states no stroke, and the `CheckMark` box where it states one. Rewrite iced's half of the parity group's reason.
+**Verdict:** CONFIRMED in the M9b T5 report (concern (a)); the T5 review left it to a new entry.
+**Triage:** fix — CONFIRMED.
+**Status:** fixed — 6a02c688 (M9b T5 fix round 1; `the_check_mark_is_laid_out_where_it_is_drawn`). The catppuccin-mocha mark keys stay in the parity group until the controller's parity run lists them as stale.
+*Source:* m9b-T5-report.md, Concerns (a).
+
+#### M9-148 · M9b · info-truth · S4 · connectors/native-theme-iced/src/styles.rs:580
+**Claim:** The iced connector says the focus ring is drawn where it is inset, "`defaults.focus_ring_offset` minus its width". That is unclear about the condition, and it says nothing of a ring inset with a gap, which is not drawn. The condition is `focus_ring_offset == -focus_ring_width`.
+**Evidence:** `styles::text_input` draws the ring only where `d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width` (styles.rs:546). The same wording is in four places:
+- `text_input`'s doc (:579-583);
+- the contract's `UNREACHABLE` evidence for `defaults.focus_ring_offset` (src/contract/derived.rs:956-963);
+- the README's Keyboard focus paragraph (README.md:503-509);
+- CHANGELOG.md:411.
+
+The showcase's routes were reworded in T4's fix round (9b3d9cdb).
+**Fix proposed:** Say "inset at the field's edge (`defaults.focus_ring_offset` is minus `defaults.focus_ring_width`)", and name a ring inset with a gap among those that are not drawn.
+**Verdict:** CONFIRMED by the M9b T4 fix round's review (the connector's copy of its Minor 4).
+**Triage:** fix — CONFIRMED.
+**Status:** fixed — 66a46b87 (M9b T5 fix round 1).
+*Source:* m9b-T5-fix1-brief.md, the T4 fix round's item.
+
 
 ### Rejected
 
