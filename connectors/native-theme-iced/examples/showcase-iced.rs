@@ -17665,8 +17665,10 @@ mod tests {
     }
 
     /// The focused field's focus-ring lengths route to what draws the ring
-    /// (M8 T16): `styles::text_input`'s Focused border, which splicing
-    /// either leaf moves in a bundled theme whose ring is inset (adwaita's).
+    /// (M8 T16): `styles::text_input`'s Focused border. In every bundled
+    /// theme whose ring is inset at the edge (adwaita's), a ring 1 wider and
+    /// still inset draws that border 1 wider, and a ring moved off the edge
+    /// moves it.
     #[test]
     fn the_focus_ring_routes_name_the_border_that_draws_it() {
         let Some(element) = elements::element("basic.text_inputs.focused") else {
@@ -17687,28 +17689,37 @@ mod tests {
                 route.starts_with("iced: styles::text_input: ") && !route.contains("no focus ring"),
                 "{leaf}: {route}"
             );
-            // The resolved theme serialises the length by its field's name.
-            let field = leaf.strip_suffix("_px").unwrap_or(leaf);
-            let pointer = format!("/{}", field.replace('.', "/"));
-            let moved = bundled_combinations().iter().any(|(_, r)| {
-                let Ok(mut json) = serde_json::to_value(r) else {
-                    return false;
-                };
-                let Some(value) = json.pointer_mut(&pointer) else {
-                    return false;
-                };
-                let Some(stated) = value.as_f64() else {
-                    return false;
-                };
-                *value = serde_json::Value::from(stated + 1.0);
-                let theme = native_theme_iced::to_theme(r, "splice");
-                serde_json::from_value::<ResolvedTheme>(json).is_ok_and(|spliced| {
-                    styles::text_input(&spliced)(&theme, focused).border
-                        != styles::text_input(r)(&theme, focused).border
-                })
-            });
-            assert!(moved, "{leaf} moves no Focused border in a bundled theme");
         }
+        let mut inset = 0;
+        for (label, r) in bundled_combinations() {
+            let d = &r.defaults;
+            if !(d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width) {
+                continue;
+            }
+            inset += 1;
+            let theme = native_theme_iced::to_theme(&r, "splice");
+            let border = |r: &ResolvedTheme| styles::text_input(r)(&theme, focused).border;
+            // A ring 1 wider and still inset at the edge: the Focused border
+            // is that wide.
+            let mut wider = r.clone();
+            wider.defaults.focus_ring_width += 1.0;
+            wider.defaults.focus_ring_offset -= 1.0;
+            assert_eq!(
+                border(&wider).width,
+                d.focus_ring_width + 1.0,
+                "{label}: the Focused border under a {}px inset ring",
+                d.focus_ring_width + 1.0
+            );
+            // A ring moved off the edge is not drawn.
+            let mut off = r.clone();
+            off.defaults.focus_ring_offset += 1.0;
+            assert_ne!(
+                border(&off),
+                border(&r),
+                "{label}: defaults.focus_ring_offset moves no Focused border"
+            );
+        }
+        assert!(inset > 0, "no bundled theme's focus ring is inset");
     }
 
     /// The page widgets' infos the pages of `state` build, each opening
