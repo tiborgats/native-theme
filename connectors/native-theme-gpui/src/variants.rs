@@ -3,10 +3,10 @@
 //!
 //! gpui-component paints a flat button's hover from a token that means something
 //! else. A standalone `.ghost()` button hovers with `tokens.accent`, the
-//! item-highlight colour of menus and lists (`src/button/button.rs:1185-1192`);
+//! item-highlight colour of menus and lists (`src/button/button.rs:1191-1198`);
 //! an [`InputGroupButton`](gpui_component::input::InputGroupButton) hovers with
 //! `muted`, the subdued-surface colour of `Kbd`, code blocks and chat bubbles
-//! (`src/input/group.rs:551-590`). Both readings are hardcoded, and both tokens
+//! (`src/input/group.rs:556-595`). Both readings are hardcoded, and both tokens
 //! are mapped correctly for what they are, so no theme value can make either
 //! button hover the way the platform's buttons do: under KDE Breeze the first
 //! turns selection blue and the second a grey that is barely distinguishable
@@ -16,7 +16,7 @@
 //! `ButtonVariants::custom` is upstream's supported seam for exactly this, and
 //! it reaches both widgets: a custom variant replaces `.ghost()` on a `Button`,
 //! and makes `InputGroupButton` skip its in-group repaint
-//! (`src/input/group.rs:551-552`). Buttons gpui-component builds internally
+//! (`src/input/group.rs:556-557`). Buttons gpui-component builds internally
 //! (a dialog's close button, calendar navigation, the tab bar) stay upstream
 //! work; see "Upstream PR candidates" in `docs/todo.md`.
 //!

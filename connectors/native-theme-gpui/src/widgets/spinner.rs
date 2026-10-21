@@ -107,7 +107,7 @@ impl SpinnerLook {
 }
 
 /// The arc's turn: a turn a second, gpui-component's indeterminate period
-/// (progress/progress_circle.rs:201) and egui's `Spinner`'s (egui 0.36.2
+/// (progress/progress_circle.rs:204) and egui's `Spinner`'s (egui 0.36.2
 /// `src/widgets/spinner.rs:48`).
 const ARC_PERIOD: Duration = Duration::from_secs(1);
 

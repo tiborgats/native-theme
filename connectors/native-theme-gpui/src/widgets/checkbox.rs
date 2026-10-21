@@ -221,7 +221,7 @@ pub(super) struct Parts {
 
 impl Parts {
     /// gpui-base's own tab order: a tab stop at index 0
-    /// (gpui-base 0.7.3 checkbox.rs:76-77, radio.rs:72-73).
+    /// (gpui-base 0.7.3 checkbox.rs:79-80, radio.rs:72-73).
     fn new(id: ElementId) -> Self {
         Self {
             id,
@@ -246,7 +246,7 @@ impl Parts {
     /// the control's headless primitive, styled as the row the pointer hovers
     /// and the focus ring follows, the caller's style refined onto it after
     /// the widget's own, as gpui-component refines its checkbox's
-    /// (checkbox.rs:291). Without a native theme or a finite look it hands
+    /// (checkbox.rs:293). Without a native theme or a finite look it hands
     /// the parts back, for gpui-component's control.
     fn render<E>(
         mut self,
@@ -285,7 +285,7 @@ impl Parts {
             .items_center()
             .gap(look.label_gap)
             // The row the focus ring follows, as gpui-component rounds it
-            // (checkbox.rs:287).
+            // (checkbox.rs:289).
             .rounded(px(f32::from(cx.theme().radius) / 2.))
             .when(focused, |row| row.focus_ring_style(window, cx))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
@@ -395,7 +395,7 @@ fn indicator_and_label(
     cx: &mut App,
 ) -> (AnyElement, Option<AnyElement>) {
     // gpui-component fades the mark in and out on a spring rather than
-    // swapping it (checkbox.rs:194-200); gpui holds it still under reduced
+    // swapping it (checkbox.rs:196-202); gpui holds it still under reduced
     // motion.
     let opacity = spring(
         (parts.id.clone(), "mark"),

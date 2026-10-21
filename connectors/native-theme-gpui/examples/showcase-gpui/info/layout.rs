@@ -459,37 +459,37 @@ pub fn tab_row(
                 "bar",
                 "tab_bar",
                 t.tab_bar,
-                "gpui-component/tab/tab_bar.rs:371",
+                "gpui-component/tab/tab_bar.rs:388",
             ))
             .color(claim(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:131",
+                "gpui-component/tab/tab.rs:172",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:224",
+                "gpui-component/tab/tab.rs:276",
             ))
             .color(claim(
                 "selected tab",
                 "tab_active",
                 t.tab_active,
-                "gpui-component/tab/tab.rs:225",
+                "gpui-component/tab/tab.rs:277",
             ))
             .color(claim(
                 "selected tab's sides",
                 "border",
                 t.border,
-                "gpui-component/tab/tab.rs:231",
+                "gpui-component/tab/tab.rs:283",
             ))
             .color(claim(
                 "rule under the bar",
                 "border",
                 t.border,
-                "gpui-component/tab/tab_bar.rs:553",
+                "gpui-component/tab/tab_bar.rs:654",
             ))
             .not_themeable("hover", "transparent: a Tab-variant tab paints no hover fill, and the Tab sets its hover style itself, which replaces one a caller gives (tab/tab.rs, TabVariant::hovered and RenderOnce for Tab), so tab.hover_background has no receiver")
             .not_themeable("edges", "the selected tab's 1px sides and the bar's 1px bottom rule in border, px literals set inside render (tab/tab.rs, TabVariant::selected; tab/tab_bar.rs, RenderOnce for TabBar), while the model's tab.border states the tab's own edge")
@@ -877,25 +877,25 @@ pub fn segmented(
                 "track",
                 "tab_bar_segmented",
                 t.tab_bar_segmented,
-                "gpui-component/tab/tab_bar.rs:393",
+                "gpui-component/tab/tab_bar.rs:410",
             ))
             .color(claim(
                 "selected segment",
                 "background",
                 t.background,
-                "gpui-component/tab/tab_bar.rs:260",
+                "gpui-component/tab/tab_bar.rs:277",
             ))
             .color(claim(
                 "label",
                 "tab_foreground",
                 t.tab_foreground,
-                "gpui-component/tab/tab.rs:159",
+                "gpui-component/tab/tab.rs:200",
             ))
             .color(claim(
                 "selected label",
                 "tab_active_foreground",
                 t.tab_active_foreground,
-                "gpui-component/tab/tab.rs:247",
+                "gpui-component/tab/tab.rs:299",
             ))
             .not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
     };
@@ -1033,26 +1033,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:716, :801-806).
+    // style (button/button.rs:716, :807-812).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1302",
+                "gpui-component/button/button.rs:1308",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1009",
+                "gpui-component/button/button.rs:1015",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1061",
+                "gpui-component/button/button.rs:1067",
             ))
             .not_themeable(
                 "hover",
@@ -1063,31 +1063,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:995",
+            "gpui-component/button/button.rs:1001",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:1009",
+            "gpui-component/button/button.rs:1015",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1061",
+            "gpui-component/button/button.rs:1067",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1139",
+            "gpui-component/button/button.rs:1145",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1223",
+            "gpui-component/button/button.rs:1229",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -1462,13 +1462,13 @@ pub fn sidebar_item(
             "bg",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:312",
+            "gpui-component/sidebar/menu.rs:318",
         ))
         .color(claim(
             "text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:313",
+            "gpui-component/sidebar/menu.rs:319",
         ))
     } else {
         info.color(claim(
@@ -1481,13 +1481,13 @@ pub fn sidebar_item(
             "hover bg, at 80%",
             "sidebar_accent",
             t.sidebar_accent.opacity(0.8),
-            "gpui-component/sidebar/menu.rs:306",
+            "gpui-component/sidebar/menu.rs:312",
         ))
         .color(claim(
             "hover text",
             "sidebar_accent_foreground",
             t.sidebar_accent_foreground,
-            "gpui-component/sidebar/menu.rs:307",
+            "gpui-component/sidebar/menu.rs:313",
         ))
     };
     let info = info

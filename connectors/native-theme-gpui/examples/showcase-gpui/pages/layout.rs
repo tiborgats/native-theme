@@ -68,7 +68,7 @@ const SIDEBAR_HEADER: &str = "Workspace";
 /// which takes the height it is given (sidebar/mod.rs, `RenderOnce for
 /// Sidebar`), so a sample needs one. The model states none, so this is the
 /// showcase's own: room for the header and the three items, in rems, so it
-/// grows with the text as the rows do (`h_7`, sidebar/menu.rs:323).
+/// grows with the text as the rows do (`h_7`, sidebar/menu.rs:329).
 const SIDEBAR_HEIGHT: Rems = rems(12.);
 
 /// The toolkits native-theme has a connector for, as `(toolkit, crate)`:

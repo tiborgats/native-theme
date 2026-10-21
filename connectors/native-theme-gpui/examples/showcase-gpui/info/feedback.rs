@@ -310,7 +310,7 @@ pub fn progress_circle(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("ProgressCircle").variant(kind.name());
     // Under reduced motion an indeterminate circle holds its loop's start,
-    // where both ends are at 0 (progress_circle.rs:183-187), and an arc of
+    // where both ends are at 0 (progress_circle.rs:186-190), and an arc of
     // no length is not painted (:108): only the track shows.
     let arc_drawn = kind != CircleKind::Indeterminate || !reduce_motion;
     let info = if arc_drawn {
@@ -318,7 +318,7 @@ pub fn progress_circle(
             "arc",
             "progress_bar",
             t.progress_bar,
-            "gpui-component/progress/progress_circle.rs:158",
+            "gpui-component/progress/progress_circle.rs:161",
         ))
     } else {
         info
@@ -327,7 +327,7 @@ pub fn progress_circle(
         "track, progress_bar at 20% (progress/progress_circle.rs:103)",
         "progress_bar",
         t.progress_bar.opacity(0.2),
-        "gpui-component/progress/progress_circle.rs:158",
+        "gpui-component/progress/progress_circle.rs:161",
     ));
     let determinate_size = "size_2 to size_5 per Size, rems, so it follows the platform font; the model carries no circular-progress diameter";
     let info = match kind {
@@ -911,13 +911,13 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/tooltip.rs:115",
+            "gpui-component/tooltip.rs:119",
         ),
         claim(
             "tooltip border",
             "border",
             t.border,
-            "gpui-component/tooltip.rs:119",
+            "gpui-component/tooltip.rs:123",
         ),
     ];
     if text {
@@ -925,7 +925,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/tooltip.rs:116",
+            "gpui-component/tooltip.rs:120",
         ));
     }
     claims

@@ -482,7 +482,7 @@ pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
 
 /// A rem multiple of the showcase's own as the window lays it out: its size
 /// in logical pixels at gpui-component's rem, which is `Theme::font_size`
-/// (gpui-component 0.7.3 `root.rs:440`), then the multiple itself.
+/// (gpui-component 0.7.3 `root.rs:538`), then the multiple itself.
 pub fn rems_text(r: Rems, t: &Theme) -> String {
     format!(
         "{}px ({} rem of the {}px font_size)",

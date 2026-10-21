@@ -111,11 +111,11 @@ const ROWS: &[Row] = &[
     },
     // Upstream documents `selection` as the *input* selection background
     // (`theme_color.rs:228`), and its text readers are the input editor style
-    // (`input/input.rs:562`), the text view (`text/mod.rs:52`), the touch
+    // (`input/input.rs:567`), the text view (`text/mod.rs:52`), the touch
     // handle (`touch_selection/handle.rs:96`) and the time field's selected
     // segment (`time/time_field.rs:135`). It also fills a token input's chips
     // (`input/token.rs:50-51`) and outlines a table's or list's
-    // secondary-selected row (`table/state.rs:2295`, `list/list_item.rs:272`),
+    // secondary-selected row (`table/state.rs:2419`, `list/list_item.rs:272`),
     // so it is not only a text selection. The documented meaning decides the
     // model's counterpart: `input.selection_background`, which inherits
     // `defaults.text_selection_background` and in turn
@@ -127,7 +127,7 @@ const ROWS: &[Row] = &[
         get: |tc| tc.selection,
         exceptions: &[],
     },
-    // The link's own text (`link.rs:76`, `button/button.rs:1053`), which the
+    // The link's own text (`link.rs:76`, `button/button.rs:1059`), which the
     // model states as `link.font.color` -- the one font colour that inherits
     // `defaults.link_color` instead of `defaults.font.color`.
     Row {
@@ -139,8 +139,8 @@ const ROWS: &[Row] = &[
     // `link_hover` and `link_active` are upstream's hovered and pressed link
     // *text* colours ("Hover link text color", `theme_color.rs:179`, `:181`), and
     // their only reader takes each as the `fg` of a `Button::link`
-    // (`button/button.rs:1199, 1275, 1317`) over the transparent fill that
-    // variant paints in every state (`:1193, 1270, 1310`). Neither native
+    // (`button/button.rs:1205, 1281, 1323`) over the transparent fill that
+    // variant paints in every state (`:1199, 1276, 1316`). Neither native
     // field is a soft option, so both are plain rows.
     Row {
         slot: "link_hover",
@@ -372,8 +372,8 @@ const ROWS: &[Row] = &[
     // The header row's own fill: the model states it
     // (`list.header_background`, inheriting `defaults.surface_color`), and it
     // differs from the window background in nearly every preset. Upstream
-    // paints `table_head` as the header row (`table/column.rs:278`,
-    // `table/state.rs:1608, :1852`, `table/table.rs:199`); `list_head` has no
+    // paints `table_head` as the header row (`table/column.rs:282`,
+    // `table/state.rs:1751, :1998`, `table/table.rs:199`); `list_head` has no
     // reader in 0.7.3 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
@@ -413,7 +413,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1853`), which the model states as `list.header_font`.
+    // `table/state.rs:1999`), which the model states as `list.header_font`.
     Row {
         slot: "table_head_foreground",
         native: |r| r.list.header_font.color,
@@ -421,7 +421,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The line between rows and columns (`table/table.rs:203, 343, 415`,
-    // `table/state.rs:1504, 1607, 2063, 2323`), which the model states as
+    // `table/state.rs:1618, 1750, 2198, 2447`), which the model states as
     // `list.grid_color` rather than as the generic border.
     Row {
         slot: "table_row_border",
@@ -454,7 +454,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The track a segmented tab bar paints itself with
-    // (`tab/tab_bar.rs:393`, the `TabVariant::Segmented` arm). The model
+    // (`tab/tab_bar.rs:410`, the `TabVariant::Segmented` arm). The model
     // states it in `SegmentedControlTheme`, a struct of its own -- the
     // justification this row used to carry was about `ResolvedTabTheme`,
     // which indeed has no segmented field, and stopped there.
@@ -908,8 +908,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         field: "link.hover_background",
         native: |r| r.link.hover_background,
         evidence: "`ButtonVariant::Link` paints `theme.transparent` as its \
-                   background in every state (`button/button.rs:1193` hovered, \
-                   `:1270` pressed, `:1310` selected) and the `Link` widget \
+                   background in every state (`button/button.rs:1199` hovered, \
+                   `:1276` pressed, `:1316` selected) and the `Link` widget \
                    paints none at all (`link.rs:70-90`); `transparent` lives \
                    on `Theme`, not on `ThemeColor`, and is not one of the 139. \
                    `link_hover` and `link_active` are the link's hover and \
@@ -928,18 +928,18 @@ const NO_RECEIVER: &[NoReceiver] = &[
         stated_none: &[],
         native: |r| r.segmented_control.active_background,
         evidence: "the selected segment of a `TabVariant::Segmented` bar is \
-                   filled with `tokens.background` (`tab/tab.rs:249`, and \
-                   `:201` while hovered) -- the window token, not one of its \
+                   filled with `tokens.background` (`tab/tab.rs:301`, and \
+                   `:247` while hovered) -- the window token, not one of its \
                    own -- so a platform that tints the active segment has \
                    nowhere to put the tint. `tab_bar_segmented` takes the \
-                   track around it (`tab/tab_bar.rs:393`).",
+                   track around it (`tab/tab_bar.rs:410`).",
     },
     NoReceiver {
         field: "segmented_control.active_text_color",
         stated_none: &[],
         native: |r| r.segmented_control.active_text_color,
         evidence: "the selected segment's label is `tab_active_foreground` \
-                   (`tab/tab.rs:247`), the token the `tab_active_foreground` \
+                   (`tab/tab.rs:299`), the token the `tab_active_foreground` \
                    row gives `tab.active_text_color`; upstream has no \
                    segmented-specific text token, so the segmented control's \
                    own label colour cannot reach it.",
@@ -949,7 +949,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         stated_none: &[],
         native: |r| r.segmented_control.font.color,
         evidence: "a `TabBar` labels every segment from the tab family -- \
-                   `tab_foreground` on the bar (`tab/tab_bar.rs:541`) and on \
+                   `tab_foreground` on the bar (`tab/tab_bar.rs:642`) and on \
                    an idle segment (`tab/tab.rs:154`), `tab_active_foreground` \
                    on the selected one (`:247`) -- and those two tokens are \
                    `tab.font.color` and `tab.active_text_color` by their rows. \
@@ -962,7 +962,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
         evidence: "a segmented `TabBar` paints no border at all: the bottom \
                    rule is drawn only for the `Underline` and `Tab` variants \
                    and takes the shared `border` token \
-                   (`tab/tab_bar.rs:542-556`), which the `border` row gives \
+                   (`tab/tab_bar.rs:643-657`), which the `border` row gives \
                    `defaults.border.color`.",
     },
     // With `widgets` the connector's own switch draws it (`SwitchLook`), and
@@ -1019,7 +1019,7 @@ struct UnreadColour {
 /// colour: the selection is a fill behind it.
 #[cfg(feature = "widgets")]
 const SELECTED_TEXT: &str = "`InputEditorStyle` has a selection fill and no \
-     selected-text colour (`input/input.rs:556-563`), so a selected run is \
+     selected-text colour (`input/input.rs:561-568`), so a selected run is \
      drawn in the field's text colour";
 
 /// The colour leaves of `ResolvedTheme` that reach no sink in any of the 34
@@ -1131,7 +1131,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "button.hover_text_color",
         why: Unread::NoReceiver(
             "a hovered Default, Primary or Secondary button keeps its \
-             `text_color` (`button/button.rs:1198-1203`), and a \
+             `text_color` (`button/button.rs:1204-1209`), and a \
              `ButtonCustomVariant` has one foreground for every state \
              (`:40-45`)",
         ),
@@ -1139,7 +1139,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "combo_box.hover_background",
         why: Unread::NoReceiver(
-            "neither trigger has a hover style (`select.rs:536-555`, \
+            "neither trigger has a hover style (`select.rs:563-582`, \
              `combobox.rs:981-998`), and a `StyleRefinement` has no hover \
              state",
         ),
@@ -1147,11 +1147,11 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "combo_box.border.color",
         why: Unread::NoReceiver(
-            "the trigger's edge is `border_color(input)` (`select.rs:548`, \
-             `combobox.rs:993`) before the refinement (`select.rs:553`, \
+            "the trigger's edge is `border_color(input)` (`select.rs:575`, \
+             `combobox.rs:993`) before the refinement (`select.rs:580`, \
              `combobox.rs:998`), the only receiver, and a trigger built with \
              `appearance(false)` keeps `border_1()` in `transparent` \
-             (`select.rs:542-543`, `combobox.rs:987-988`), which an edge \
+             (`select.rs:569-570`, `combobox.rs:987-988`), which an edge \
              colour in the refinement would paint. The leaf equals \
              `input.border.color`, which the `input` row reads, in all 34 \
              combinations",
@@ -1161,9 +1161,9 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "text_area.border.color",
         why: Unread::NoReceiver(
             "a text area's edge is `border_color(input)` \
-             (`input/input.rs:798`) before the refinement (`:803`), the only \
+             (`input/input.rs:811`) before the refinement (`:816`), the only \
              receiver, and a field built with `bordered(false)` or \
-             `appearance(false)` draws no edge (`input/input.rs:795-799`), \
+             `appearance(false)` draws no edge (`input/input.rs:808-812`), \
              which an edge colour in the refinement would paint over the \
              width `geometry::text_area` sets. The leaf inherits \
              `input.border.color` (`docs/inheritance-rules.toml:181`), which \
@@ -1180,7 +1180,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "input.focus_border_color",
         why: Unread::NoReceiver(
-            "a focused field's edge is `ring` (`input/input.rs:761`, `:806`), \
+            "a focused field's edge is `ring` (`input/input.rs:774`, `:819`), \
              the token every focus ring shares, which the `ring` row gives \
              `defaults.focus_ring_color`",
         ),
@@ -1189,15 +1189,15 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "input.hover_border_color",
         why: Unread::NoReceiver(
             "an `Input` has no hover style: its render \
-             (`input/input.rs:707-803`) sets no `.hover(`",
+             (`input/input.rs:720-816`) sets no `.hover(`",
         ),
     },
     UnreadColour {
         leaf: "input.placeholder_color",
         why: Unread::NoReceiver(
             "the placeholder is `editor_style.muted_foreground` (gpui-base \
-             `input/base/element.rs:2543-2547`), which is \
-             `theme.muted_foreground` (`input/input.rs:559`), the token all \
+             `input/base/element.rs:2634-2638`), which is \
+             `theme.muted_foreground` (`input/input.rs:564`), the token all \
              muted text shares",
         ),
     },
@@ -1226,7 +1226,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "menu.background_color",
         why: Unread::NoReceiver(
-            "a `PopupMenu` paints `popover_style` (`menu/popup_menu.rs:1499` \
+            "a `PopupMenu` paints `popover_style` (`menu/popup_menu.rs:1509` \
              -> `styled.rs:190`) and is not `Styled`: its fill is the \
              `popover` token, which the `popover` row gives \
              `popover.background_color`",
@@ -1249,7 +1249,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "menu.font.color",
         why: Unread::NoReceiver(
-            "menu text is `popover_foreground` (`menu/popup_menu.rs:1500`), \
+            "menu text is `popover_foreground` (`menu/popup_menu.rs:1510`), \
              which the `popover_foreground` row gives `popover.font.color`",
         ),
     },
@@ -1257,14 +1257,14 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "menu.separator_color",
         why: Unread::NoReceiver(
             "the separator is a hairline in `border` \
-             (`menu/popup_menu.rs:1270-1276`), the token every edge shares",
+             (`menu/popup_menu.rs:1280-1286`), the token every edge shares",
         ),
     },
     UnreadColour {
         leaf: "segmented_control.hover_background",
         why: Unread::NoReceiver(
             "a segment's fill is `tokens.background` or transparent \
-             (`tab/tab.rs:197-204`), the site of the segmented control's \
+             (`tab/tab.rs:243-250`), the site of the segmented control's \
              `NO_RECEIVER` entries",
         ),
     },
@@ -1272,7 +1272,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "sidebar.hover_background",
         why: Unread::NoReceiver(
             "a hovered sidebar item takes `sidebar_accent` at 0.8, the \
-             selection's token (`sidebar/menu.rs:305-308`)",
+             selection's token (`sidebar/menu.rs:311-314`)",
         ),
     },
     UnreadColour {
@@ -1739,7 +1739,7 @@ struct Pair {
 }
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.7.3/src/tab/tab.rs:132, 143, 150, 155, 160`), so its
+/// (`gpui-component-0.7.3/src/tab/tab.rs:173, 184, 191, 196, 201`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1346`, §2.11), which under
@@ -1748,7 +1748,7 @@ struct Pair {
 /// feature only: `widgets::TabBar` paints the idle fill.
 #[cfg(not(feature = "widgets"))]
 const IDLE_TAB_SURFACE: &str = "upstream paints an idle tab transparent \
-                                (tab/tab.rs:132) and Breeze Dark's idle tab fill, \
+                                (tab/tab.rs:173) and Breeze Dark's idle tab fill, \
                                 Window.darker(120), is darker than the bar";
 
 /// Where the `tab label` pair may be worse than the platform's.
@@ -1992,9 +1992,9 @@ const PAIRS: &[Pair] = &[
     },
     // With the `widgets` feature a tab row is `widgets::TabBar`, and the
     // emitted side is what it paints (`TabLook`). Without it, gpui-component's
-    // idle tab paints `transparent` in every variant (`tab/tab.rs:132, 143,
-    // 150, 155, 160`), so its label lands on the bar -- a live surface
-    // (`tab/tab_bar.rs:371`, `tab/tab.rs:309`), which is what the emitted
+    // idle tab paints `transparent` in every variant (`tab/tab.rs:173, 184,
+    // 191, 196, 201`), so its label lands on the bar -- a live surface
+    // (`tab/tab_bar.rs:388`, `tab/tab.rs:367`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
     // `tokens.tab`, which nothing in 0.7.3 reads, keeps its row but takes no
@@ -2025,7 +2025,7 @@ const PAIRS: &[Pair] = &[
     },
     // The header row upstream paints: `table_head_foreground` on
     // `tokens.table_head` (`table/table.rs:199-200`,
-    // `table/state.rs:1852-1853`), over the window behind the table.
+    // `table/state.rs:1998-1999`), over the window behind the table.
     Pair {
         what: "table head text",
         native: |r, _| {
@@ -2072,7 +2072,7 @@ const PAIRS: &[Pair] = &[
         exceptions: &[],
     },
     // A `Button::link` paints no fill in any state
-    // (`button/button.rs:1193, 1270, 1310`) and takes `link_hover` and
+    // (`button/button.rs:1199, 1276, 1316`) and takes `link_hover` and
     // `link_active` as its text, so both pairs are that colour on the window.
     Pair {
         what: "hovered link text",
@@ -2118,16 +2118,16 @@ const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
     what: "a focused text field's edge and focus ring",
     evidence: "gpui-component 0.7.3 draws a focused Input in its own way: \
                `border_1()` in the `ring` colour as a focus-state style \
-               (`src/input/input.rs:758-762`), which a `StyleRefinement` such \
+               (`src/input/input.rs:771-775`), which a `StyleRefinement` such \
                as `geometry::input` cannot reach, so a field the theme leaves \
                without a line (adwaita's 0) gains a 1px edge and its text moves \
                in a pixel; and its own ring, `FOCUS_RING_WIDTH` 3 outside that \
                edge (`src/styled.rs:11`, `:257-262`, `:301-327`, called at \
-               `src/input/input.rs:806`). It cannot draw the theme's inset ring \
+               `src/input/input.rs:819`). It cannot draw the theme's inset ring \
                in a focus state. The 1px edge is not forced: \
                `Input::focus_bordered(false)` (`src/input/input.rs:311-314`, \
                also `FocusableExt::focus_ring(false)`, `:164-167`) turns off \
-               both the edge (`:760`) and the ring (`:805`), but leaves a \
+               both the edge (`:773`) and the ring (`:818`), but leaves a \
                focused field with no focus display at all; the connector keeps \
                upstream's display and the 1px edge with it",
 }];
@@ -2173,7 +2173,7 @@ const REPORTED: &[Reported] = &[
         what: "selected text",
         why: "ThemeColor has no foreground for selected text: `selection` is a \
               highlight upstream paints under text that keeps its own colour \
-              (input/input.rs:562), while the platform pairs \
+              (input/input.rs:567), while the platform pairs \
               input.selection_background with input.selection_text_color",
         native: |r| {
             (

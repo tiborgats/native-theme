@@ -149,15 +149,15 @@ the dialogs, sheets and notifications. A window opened before
 `gpui_kit::init` gets no `WindowState` — the root plugin `init` registers,
 which hosts them and sets the window's rem — so its first `open_dialog`,
 `open_sheet` or `notifications` call panics with upstream's "component window
-state is missing" (gpui-component `src/root.rs:112, 130`), and text scaling
+state is missing" (gpui-component `src/root.rs:121, 139`), and text scaling
 fails silently, the rem staying gpui's default (`src/root.rs:21, 438-440`;
-gpui-base `src/root.rs:44-45`).
+gpui-base `src/root.rs:67-68`).
 
 gpui-base's `Root` paints no background of its own (gpui-base
-`src/root.rs:280-310`). The root plugin `gpui_kit::init` registers fills the
+`src/root.rs:241-271`). The root plugin `gpui_kit::init` registers fills the
 root of every window `gpui_kit::open_window` opens with the theme's
 `background`, the theme's `window.background_color`, and draws its text in
-the theme's font and `foreground` (gpui-component `src/root.rs:444-452`). A
+the theme's font and `foreground` (gpui-component `src/root.rs:542-550`). A
 view opened with gpui's own `cx.open_window`, outside that root, has no
 background until the application paints `cx.theme().background` on it. A
 surface the theme states translucent, such as windows-11's sidebar
@@ -331,7 +331,7 @@ test over every preset and mode says so.
 | `button` | `button.min_height`, `.min_width`, `.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color`, `button.font` weight, `defaults.line_height` | `Button` (the label size is set on an inner element — `button_label` reaches it on a child label; the outline/ghost/link/text variants take the native border too) |
 | `button_label` | `button.font`, `defaults.line_height` | the label passed as a `Button`'s child |
 | `toggle` | `button.font`, `defaults.line_height` | `Toggle` |
-| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:267-288`, `input/number_input.rs:158-165`, `input/input.rs:784-786`) |
+| `input` | `input.min_height`, `input.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | `Input`. Upstream pads the root before the refinement, so the platform's sides arrive; an `Input` with a suffix takes its right padding from upstream after the refinement. When refining an `InputGroup` or `NumberInput` frame, clear the padding sides: the inner Input already pads (`input/group.rs:272-293`, `input/number_input.rs:173-180`, `input/input.rs:797-799`) |
 | `input_height` | `input.min_height`, `defaults.line_height` | `Input`, through `refine_style`: the height rule `input` applies, and nothing else of it. Above a text-scaling factor of 1 the field grows around its own text and padding |
 | `text_area` | `text_area.border.padding` (the stated sides, less the editor's own `Size::Medium` padding), `.corner_radius`, `.line_width`, `input.font`, `defaults.line_height` | a multi-line `Input` or a `Textarea` root. No height. A stated side below the editor's own padding (10 across, 8 down) stays the editor's |
 | `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated), `input.disabled_text_color` and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement. The disabled text colour is what gpui-base then draws at half its alpha, as it draws every disabled field's text |

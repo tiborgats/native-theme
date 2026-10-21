@@ -4,9 +4,9 @@
 //! gpui-component builds its checkbox, radio, switch, slider, progress bar and
 //! spinner from sizes and alpha blends of its own, which no `ThemeColor` field
 //! or `StyleRefinement` reaches: the indicator in rems per `Size`
-//! (`checkbox.rs:227-232`), the switch's track and thumb in pixels
-//! (`switch.rs:194-203`), the slider's rail as its fill at 0.2
-//! (`slider.rs:290`), the progress bar's track likewise
+//! (`checkbox.rs:229-234`), the switch's track and thumb in pixels
+//! (`switch.rs:195-204`), the slider's rail as its fill at 0.2
+//! (`slider.rs:301`), the progress bar's track likewise
 //! (`progress/progress.rs:135`), and the spinner as a turning icon
 //! (`spinner.rs:25`). The controls here are built the way gpui-component
 //! builds its own -- on gpui-base's headless primitives, which own
@@ -18,7 +18,7 @@
 //!
 //! The tab bar joins them because no gpui-component `TabBar` variant draws
 //! what `tab.*` states: each paints an idle tab transparent
-//! (`tab/tab.rs:132`) and marks the selected one its own way, with a primary
+//! (`tab/tab.rs:173`) and marks the selected one its own way, with a primary
 //! underline or a frame in `border` (`tab/tab.rs`, `TabVariant`). The
 //! separator joins them because gpui-component's draws its line a literal
 //! `px(1.)` thick (`separator.rs:78-82`).

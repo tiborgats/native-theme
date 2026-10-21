@@ -341,7 +341,7 @@ pub(super) fn popup_menu(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "menu separator",
         "border",
         t.border,
-        "gpui-component/menu/popup_menu.rs:1276",
+        "gpui-component/menu/popup_menu.rs:1286",
     ))
     .config(
         "menu border-radius",
@@ -646,31 +646,31 @@ fn underline_tab_bar(
             "text",
             "tab_foreground",
             t.tab_foreground,
-            "gpui-component/tab/tab.rs:159",
+            "gpui-component/tab/tab.rs:200",
         ))
         .color(claim(
             "hover text",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:208",
+            "gpui-component/tab/tab.rs:254",
         ))
         .color(claim(
             "active text",
             "tab_active_foreground",
             t.tab_active_foreground,
-            "gpui-component/tab/tab.rs:254",
+            "gpui-component/tab/tab.rs:306",
         ))
         .color(claim(
             "active underline",
             "primary",
             t.primary,
-            "gpui-component/tab/tab_bar.rs:277",
+            "gpui-component/tab/tab_bar.rs:294",
         ))
         .color(claim(
             "bottom rule",
             "border",
             t.border,
-            "gpui-component/tab/tab_bar.rs:553",
+            "gpui-component/tab/tab_bar.rs:654",
         ))
         .not_themeable(
             "tab fill",
@@ -678,7 +678,7 @@ fn underline_tab_bar(
         )
         .not_themeable(
             "fill",
-            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:270-277). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:681-686). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:287-294). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:836-841). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
         )
         .not_themeable(
             "corners",
@@ -772,13 +772,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1024",
+                "gpui-component/button/button.rs:1030",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1201",
+                "gpui-component/button/button.rs:1207",
             ),
         ),
         GhostContent::Icon => (
@@ -786,13 +786,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1024",
+                "gpui-component/button/button.rs:1030",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1201",
+                "gpui-component/button/button.rs:1207",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -800,13 +800,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1024",
+                "gpui-component/button/button.rs:1030",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1201",
+                "gpui-component/button/button.rs:1207",
             ),
         ),
     };
@@ -822,27 +822,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1240",
+        "gpui-component/button/button.rs:1246",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1185-1191).
+/// in dark mode (button/button.rs:1191-1197).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1188",
+            "gpui-component/button/button.rs:1194",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1186",
+            "gpui-component/button/button.rs:1192",
         )
     }
 }
@@ -1171,7 +1171,7 @@ pub fn resize_handle(
             "line",
             "handle",
             base.resizable.handle.unwrap_or(base.tokens.colors.border),
-            "gpui-base/resizable/resize_handle.rs:467",
+            "gpui-base/resizable/resize_handle.rs:515",
         ))
         .color(claim(
             "line while pressed",
@@ -1179,7 +1179,7 @@ pub fn resize_handle(
             base.resizable
                 .active_handle
                 .unwrap_or(base.tokens.colors.ring),
-            "gpui-base/resizable/resize_handle.rs:464",
+            "gpui-base/resizable/resize_handle.rs:512",
         ))
         .instance(
             "colour source",
@@ -1260,13 +1260,13 @@ pub(super) fn dialog_surface(
             "bg",
             "background",
             t.background,
-            "gpui-component/dialog/dialog.rs:720",
+            "gpui-component/dialog/dialog.rs:722",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/dialog/dialog.rs:722",
+            "gpui-component/dialog/dialog.rs:724",
         ))
         .not_themeable(
             "fill",
@@ -1296,11 +1296,11 @@ pub(super) fn dialog_surface(
         "unreported",
         if close_button {
             format!(
-                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
+                "the surface's padding and its close button show no info of their own: upstream builds the surface, and the button on it, around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 718-804), so only {reported} report"
             )
         } else {
             format!(
-                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 716-802), so only {reported} report"
+                "the surface's padding shows no info of its own: upstream builds the surface around what the showcase passes in, with no hook for an element of the caller's (dialog/dialog.rs, Dialog::render, lines 718-804), so only {reported} report"
             )
         },
     )
@@ -1327,7 +1327,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bo
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base/dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:689; gpui-base/dialog.rs:613)",
     )
 }
 
@@ -1546,7 +1546,7 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
             "page item",
             "sidebar_accent",
             t.sidebar_accent,
-            "gpui-component/sidebar/menu.rs:312",
+            "gpui-component/sidebar/menu.rs:318",
         ))
         .color(claim(
             "header rule",
@@ -1564,7 +1564,7 @@ pub(super) fn settings(t: &Theme, variant: &'static str) -> WidgetInfo {
             "item description",
             "muted_foreground",
             t.muted_foreground,
-            "gpui-component/setting/item.rs:299",
+            "gpui-component/setting/item.rs:302",
         ))
         .not_themeable(
             "group",
@@ -1624,20 +1624,20 @@ pub fn preference_switch(
             "track",
             "primary",
             t.primary,
-            "gpui-component/switch.rs:183",
+            "gpui-component/switch.rs:184",
         )),
         (false, false) => info.color(claim(
             "track",
             "switch",
             t.switch,
-            "gpui-component/switch.rs:184",
+            "gpui-component/switch.rs:185",
         )),
     };
     info.color(claim(
         "thumb",
         "switch_thumb",
         t.switch_thumb,
-        "gpui-component/switch.rs:190",
+        "gpui-component/switch.rs:191",
     ))
     .not_themeable(
         "size",

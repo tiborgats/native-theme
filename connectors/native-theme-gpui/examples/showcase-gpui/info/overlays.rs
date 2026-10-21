@@ -112,7 +112,7 @@ pub fn dialog(
         )
         .instance(
             "closes",
-            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:687; gpui-base/dialog.rs:613)",
+            "from its Close Button or the close button in its corner, on Escape, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:689; gpui-base/dialog.rs:613)",
         )
 }
 
@@ -172,7 +172,7 @@ pub fn alert_dialog(
         "confirm button",
         "button_danger",
         t.button_danger,
-        "gpui-component/button/button.rs:998",
+        "gpui-component/button/button.rs:1004",
     ))
     .not_themeable(
         "surface",

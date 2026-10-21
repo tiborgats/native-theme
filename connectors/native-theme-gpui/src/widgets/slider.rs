@@ -17,15 +17,15 @@ use crate::ActiveNativeTheme;
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
 /// gpui-component's own, its fill colour at half alpha round the thumb
-/// (slider.rs:216-219).
+/// (slider.rs:224-227).
 const THUMB_OUTLINE_ALPHA: f32 = 0.5;
 
 /// The outline's width inside the thumb: gpui-component's `p(px(1.))`
-/// (slider.rs:219).
+/// (slider.rs:227).
 const THUMB_OUTLINE_WIDTH: Pixels = gpui::px(1.);
 
 /// The length of a vertical slider, which `SliderTheme` does not state:
-/// gpui-component's own, `h(px(120.))` (slider.rs:268).
+/// gpui-component's own, `h(px(120.))` (slider.rs:279).
 const VERTICAL_LENGTH: Pixels = gpui::px(120.);
 
 /// The group name the thumb's hover style listens to.
@@ -53,7 +53,7 @@ pub struct SliderLook {
     /// enabled.
     pub hover_thumb: Option<Hsla>,
     /// The thumb's outline, which the model does not state: gpui-component's
-    /// fill colour at half alpha (gpui-component's, slider.rs:216-219).
+    /// fill colour at half alpha (gpui-component's, slider.rs:224-227).
     pub outline: Hsla,
     /// The whole control's opacity: `slider.disabled_opacity` when disabled,
     /// on top of the disabled colours (docs/platform-facts.md §2.1.6), else 1.
@@ -144,10 +144,10 @@ impl SliderLook {
 ///
 /// A range state (`SliderState::default_value(20.0..80.0)`) draws a thumb at
 /// each end and the fill between them, as gpui-component's slider does
-/// (slider.rs:149-156, :305-308): a press moves the nearer thumb, as
+/// (slider.rs:157-164, :316-319): a press moves the nearer thumb, as
 /// gpui-base picks it, and the keys move the end, which stops at the start.
 /// The start moves by pointer only: a screen reader is told the range's end
-/// alone, as gpui-base's slider reports it (slider.rs:505), and AccessKit's
+/// alone, as gpui-base's slider reports it (slider.rs:516), and AccessKit's
 /// Increment and Decrement step the end.
 ///
 /// Its length is the caller's (`Styled`): a horizontal slider's width, a

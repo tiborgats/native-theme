@@ -548,7 +548,7 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
 /// Table, List and Tree are framed alike, and by the list theme.
 ///
 /// The `DataTable` draws a frame of its own from `Theme::radius` and
-/// `Theme::border` (gpui-component `src/table/data_table.rs:181-185`); the
+/// `Theme::border` (gpui-component `src/table/data_table.rs:221-225`); the
 /// `List` and the `Tree` draw none — both only refine a plain `div()`
 /// (`src/list/list.rs`, `RenderOnce for List<D>`; `src/tree.rs`,
 /// `RenderOnce for Tree`) — so the box around them is the showcase's own
@@ -3255,7 +3255,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 }
 
 /// Upstream's Underline TabBar pads neither itself nor its tabs
-/// (tab/tab.rs:79-81, tab/tab_bar.rs:395-404): it leaves the inset to the
+/// (tab/tab.rs:79-81, tab/tab_bar.rs:412-421): it leaves the inset to the
 /// container it is in. So the page TabBar is inset by
 /// `layout.container_margin`, and the inspector's by what pads the side
 /// panel's content: the panel's own padding where the theme states a
@@ -3936,7 +3936,7 @@ fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1312, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1318, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -4051,7 +4051,7 @@ const SIDEBAR_ICON_PRESETS: [&str; 7] = [
 /// expanded and in the collapsed sample's rail.
 ///
 /// Upstream gives no hook to measure the drawn icon: `SidebarMenuItem`
-/// places the `Icon` it is given itself (sidebar/menu.rs:315), and an `Icon`
+/// places the `Icon` it is given itself (sidebar/menu.rs:321), and an `Icon`
 /// builds its `svg()` with nothing of it reachable but its style
 /// (icon.rs:175-183), so no debug selector gets there. What is checked:
 ///
@@ -4067,9 +4067,9 @@ const SIDEBAR_ICON_PRESETS: [&str; 7] = [
 ///   wide as it is tall (the first check), has to fit the item's measured
 ///   width;
 /// - expanded, where every row is `h_7` whatever its icon
-///   (sidebar/menu.rs:323), the icon is no taller than that: 1.75 rem at the
+///   (sidebar/menu.rs:329), the icon is no taller than that: 1.75 rem at the
 ///   rem the `WindowState` root plugin installs, the theme's font size
-///   (root.rs:440). The items'
+///   (root.rs:538). The items'
 ///   measured heights are checked to be that row. The icon's is a model
 ///   check, not a measurement: an icon taller than its row overflows it
 ///   without moving any bound a test can read.
@@ -5067,7 +5067,7 @@ fn settle_at(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1054). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1060). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -5931,7 +5931,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1351-1355) -- in
+/// `input_background()` at half opacity (button/button.rs:1357-1361) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -6303,7 +6303,7 @@ fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[Strin
 }
 
 /// Click the sort button of the DataTable's column `col_ix`: upstream's
-/// `("icon-sort", col_ix)` (gpui-component 0.7.3 table/state.rs:1643, with
+/// `("icon-sort", col_ix)` (gpui-component 0.7.3 table/state.rs:1789, with
 /// `test_support()`).
 fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
     cx.update(|window, cx| {
@@ -6350,7 +6350,7 @@ fn the_tables_sort_button_sorts_its_rows(cx: &mut TestAppContext) {
 
 /// A header dragged to another place takes its cells with it
 /// (`SampleTableDelegate::move_column`, which upstream asks for in
-/// table/delegate.rs:120-130): the Role column dragged before the Name
+/// table/delegate.rs:145-155): the Role column dragged before the Name
 /// column holds the roles, and its sort button then sorts the rows by them.
 #[gpui::test]
 fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
@@ -11699,8 +11699,8 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
 /// padding (spec §3.6), the reported defect. Under kde-breeze that is
 /// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
 /// the frame's inner edge: upstream draws the frame with `border_1`
-/// (dialog/dialog.rs:721) and pads each section inside it with the
-/// refinement's sides (dialog/dialog.rs:635-647, :756-758).
+/// (dialog/dialog.rs:723) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:635-647, :758-760).
 #[gpui::test]
 fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -12745,7 +12745,7 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 /// activated from the keyboard by a listener that does not notify stays
 /// drawn as it was until something else redraws the window. gpui-component
 /// documents these values as controlled: the owner writes the value and calls
-/// `cx.notify()` (gpui-component 0.7.3 `src/checkbox.rs:104-108`).
+/// `cx.notify()` (gpui-component 0.7.3 `src/checkbox.rs:106-110`).
 #[test]
 fn every_listener_that_writes_state_notifies() {
     let sources = showcase_sources();
@@ -12814,7 +12814,7 @@ fn every_listener_that_writes_state_notifies() {
 /// alone. A drawn frame cannot show it: a test draws its frames itself, dirty
 /// window or not, and on GPUI Fast 0.1.7 a view that is not cached is drawn
 /// again whenever an entity it read was written, notified or not
-/// (`src/fast/retained.rs:579-601`, `src/fast/dependencies.rs:513-527`), so
+/// (`src/fast/retained.rs:601-623`, `src/fast/dependencies.rs:513-527`), so
 /// the frame after Space shows the new state on both backends either way.
 #[gpui::test]
 fn a_checkbox_toggled_from_the_keyboard_notifies_the_showcase(cx: &mut TestAppContext) {

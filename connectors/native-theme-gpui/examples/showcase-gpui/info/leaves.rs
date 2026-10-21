@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1312, active)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1318, active)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1184, Custom; :1198-1203, text_color)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.toolbar.",
@@ -286,7 +286,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1274-1278, text_color)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1280-1284, text_color)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1110-1115, shadow)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1116-1121, shadow)",
     ),
     (
         "",
@@ -366,7 +366,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1198-1203, text_color)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1204-1209, text_color)",
     ),
     (
         "",
@@ -566,7 +566,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.arrow_icon_size_px",
-        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:599-600, Caret)",
+        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:626-627, Caret)",
     ),
     (
         "",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:440, font_size; :448, font_family)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:538, font_size; :546, font_family)",
     ),
     (
         "basic.typography",
@@ -712,7 +712,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:448, font_family)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:546, font_family)",
     ),
     (
         "basic.icons.large",
@@ -1079,12 +1079,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:2541, opacity)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:2632, opacity)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:758-761, ring)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:771-774, ring)",
     ),
     (
         "basic.text_area",
@@ -1099,7 +1099,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.font.color",
-        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:707, input_style)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:720, input_style)",
     ),
     (
         "basic.number_input",
@@ -1119,7 +1119,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:559, muted_foreground)",
+        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:564, muted_foreground)",
     ),
     // --- layout -------------------------------------------------------------------
     (

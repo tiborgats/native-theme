@@ -61,7 +61,7 @@ pub struct TabLook {
     pub padding_bottom: Option<Pixels>,
     /// `tab.item_gap`: the space between neighbouring tabs; where the theme
     /// states none, gpui-component's for its `TabVariant::Tab`, none
-    /// (tab/tab_bar.rs:368-371).
+    /// (tab/tab_bar.rs:385-388).
     pub gap: Pixels,
     /// The line that marks the selected tab, where the theme states its
     /// colour, width and side.
@@ -85,7 +85,7 @@ pub struct TabIndicator {
 
 /// The space between tabs where `tab.item_gap` is unstated: gpui-component
 /// lays the tabs of its default variant, `TabVariant::Tab`, with no gap
-/// (tab/tab_bar.rs:368-371).
+/// (tab/tab_bar.rs:385-388).
 const TAB_GAP: f32 = 0.;
 
 /// A stated side, `None` where it is unstated, or `Err` where it is not a
@@ -296,7 +296,7 @@ impl TabBar {
     /// [`wrap`](Self::wrap) the tabs do not scroll, so a click reveals
     /// nothing. A change of the selection, the tabs or the layout scrolls
     /// nothing, as in gpui-component's `TabBar::track_scroll`
-    /// (tab/tab_bar.rs:124-128); use `handle` to reveal a tab otherwise.
+    /// (tab/tab_bar.rs:138-142); use `handle` to reveal a tab otherwise.
     #[must_use]
     pub fn track_scroll(mut self, handle: &ScrollHandle) -> Self {
         self.scroll = Some(handle.clone());
@@ -351,7 +351,7 @@ impl RenderOnce for TabBar {
             return self.fallback();
         };
         // Without a tracked handle the bar keeps one, to reveal a clicked
-        // tab, as gpui-component's does (tab/tab_bar.rs:429-437).
+        // tab, as gpui-component's does (tab/tab_bar.rs:458-466).
         let scroll = self.scroll.clone().unwrap_or_else(|| {
             window
                 .use_keyed_state(format!("{}-scroll", self.id), cx, |_, _| {

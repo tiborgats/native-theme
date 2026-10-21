@@ -18,7 +18,7 @@ use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size
 use crate::ActiveNativeTheme;
 
 /// The space between the track and the label, which `SwitchTheme` does not
-/// state: gpui-component's own, `gap_2` (switch.rs:246).
+/// state: gpui-component's own, `gap_2` (switch.rs:247).
 const LABEL_GAP: gpui::Rems = rems(0.5);
 
 type ChangeHandler = Rc<dyn Fn(&bool, &mut Window, &mut App)>;
@@ -213,10 +213,10 @@ impl SwitchLook {
 /// (`docs/archive/todo_gpui-widgets-spec.md` §2.3),
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
-/// state. The thumb travels on gpui-component's spring (switch.rs:215-224).
+/// state. The thumb travels on gpui-component's spring (switch.rs:216-225).
 /// While focused, the track draws the focus ring in `ThemeColor::ring`
 /// (`defaults.focus_ring_color`), as gpui-component's switch does
-/// (switch.rs:279-282).
+/// (switch.rs:280-283).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Its
 /// `Styled` style refines the row, after the widget's own: the row's layout,
@@ -417,8 +417,8 @@ impl Switch {
             .gap(LABEL_GAP)
             .opacity(look.opacity)
             // The caller's style, refined onto the row after the widget's
-            // own, as gpui-component refines its checkbox's (checkbox.rs:291);
-            // its switch refines it onto a box round the row (switch.rs:227).
+            // own, as gpui-component refines its checkbox's (checkbox.rs:293);
+            // its switch refines it onto a box round the row (switch.rs:228).
             .refine_style(&self.style)
             .child(track)
             .when_some(self.label, |switch, label| {
@@ -428,7 +428,7 @@ impl Switch {
                         // `defaults.line_height`, the line box the model
                         // states, centred on the track -- where
                         // gpui-component makes the line box the track's
-                        // height (switch.rs:300).
+                        // height (switch.rs:301).
                         .line_height(gpui::relative(label_line))
                         .text_size(label_size)
                         .font_weight(label_weight)

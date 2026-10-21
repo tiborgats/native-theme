@@ -895,7 +895,7 @@ fn a_clicked_half_hidden_tab_scrolls_into_view(cx: &mut TestAppContext) {
 
 /// M6-26: a tracked handle is the one the bar scrolls; a change of the
 /// selection scrolls nothing, as gpui-component's `TabBar::track_scroll`
-/// says (tab/tab_bar.rs:124-128).
+/// says (tab/tab_bar.rs:138-142).
 #[gpui::test]
 fn a_tracked_tab_bar_scrolls_its_handle_on_a_click_only(cx: &mut TestAppContext) {
     let handle = gpui::ScrollHandle::new();
@@ -2059,7 +2059,7 @@ fn range_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, Entity<Slid
 }
 
 /// M6-20: a range state draws a thumb at each end, the fill between them,
-/// as gpui-component's slider draws one (slider.rs:149-156, :305-308).
+/// as gpui-component's slider draws one (slider.rs:157-164, :316-319).
 #[gpui::test]
 fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
     let (cx, state) = range_window(cx);
@@ -2082,7 +2082,7 @@ fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
 
 /// M6-20: the start of a range moves by pointer: a press on the rail nearer
 /// the start moves the start, as gpui-base picks the nearer thumb
-/// (slider.rs:677-689), and the start thumb follows; dragging that thumb
+/// (slider.rs:691-703), and the start thumb follows; dragging that thumb
 /// moves the start, not the end.
 #[gpui::test]
 fn a_range_slider_moves_its_start_by_pointer(cx: &mut TestAppContext) {

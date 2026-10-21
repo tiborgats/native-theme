@@ -319,7 +319,7 @@ pub fn to_theme(
     theme.mode = mode;
     theme.font_family = font_family(&d.font.family);
     // §3.4: gpui-component's `WindowState` root plugin sets the window rem
-    // to font_size (gpui-component src/root.rs:440), so scaling these two sizes scales every rem-relative
+    // to font_size (gpui-component src/root.rs:538), so scaling these two sizes scales every rem-relative
     // size in gpui-component, as the platform toolkit scales its own text.
     theme.font_size = px(prefs.scaled(d.font.size));
     theme.mono_font_family = font_family(&d.mono_font.family);

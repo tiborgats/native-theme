@@ -121,7 +121,7 @@ struct Harness {
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // What gpui-component's `WindowState` root plugin does for an
-        // application's window (`root.rs:440`, `:448`): the installed font size is the rem, which
+        // application's window (`root.rs:538`, `:546`): the installed font size is the rem, which
         // the connector scales by the text-scaling factor, and the installed
         // family is the text's.
         window.set_rem_size(cx.theme().font_size);
@@ -612,7 +612,7 @@ fn probed_button(
     styled(Button::new("b").child(text_probe()), s)
 }
 /// An Input whose prefix is the text probe: the prefix is the root's first
-/// child (`input/input.rs:808`), so its left edge is where the root's
+/// child (`input/input.rs:821`), so its left edge is where the root's
 /// padding ends, and it lays out one line of the root's text style.
 fn probed_input(
     s: Option<&StyleRefinement>,
@@ -668,8 +668,8 @@ fn probed_menu_row(
 
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
-/// upstream pads each root before the refinement (`input/input.rs:785` then
-/// `:803`, `select.rs:551` then `:553`, `combobox.rs:996` then `:998`), so the
+/// upstream pads each root before the refinement (`input/input.rs:798` then
+/// `:816`, `select.rs:578` then `:580`, `combobox.rs:996` then `:998`), so the
 /// platform's side is the one drawn.
 ///
 /// The left side is measured: it is where the first child starts. At least
@@ -692,7 +692,7 @@ fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
                 "input" => (r.input.border.padding.left, r.input.border.line_width),
                 // `geometry::select`/`combobox` give the trigger
                 // `combo_box.border.line_width` over upstream's `border_1()`
-                // (`select.rs:542`, `combobox.rs:987`), which the drawn inset
+                // (`select.rs:569`, `combobox.rs:987`), which the drawn inset
                 // includes.
                 _ => (
                     r.combo_box.border.padding.left,
@@ -786,7 +786,7 @@ fn filled_combobox(
 /// title's box ends to where the trigger ends. It is the trailing slot (the
 /// caret, or a Combobox's empty slot under a custom trigger), the row's gap
 /// before it, the right padding and the border, all inside the trigger
-/// (`select.rs:564-606`, `combobox.rs:1009-1028`), so two layouts of the same
+/// (`select.rs:591-633`, `combobox.rs:1009-1028`), so two layouts of the same
 /// widget differ in it by their right padding alone.
 fn right_inset(
     cx: &mut TestAppContext,
@@ -801,8 +801,8 @@ fn right_inset(
 
 /// D2: where the theme states `combo_box.arrow_area_width`, the right padding
 /// side is measured to an arrow column, and gpui's triggers have none: the
-/// caret sits inside the padded row (`select.rs:599-600` in the row at
-/// `:564-606`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
+/// caret sits inside the padded row (`select.rs:626-627` in the row at
+/// `:591-633`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
 /// kde-breeze and windows-11, which state the column and a right side of 0,
 /// the right inset a Select and a Combobox draw is upstream's own, measured
 /// on the unstyled widget. A theme that states no arrow column states its
@@ -885,8 +885,8 @@ fn without_right(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, an Input with no suffix is laid
 /// out with the stated right padding side: upstream pads a single-line root
-/// (`input/input.rs:784-786`) before the refinement (`:803`), and only a
-/// suffix pads the right side again after it (`:820`). The right side has no
+/// (`input/input.rs:797-799`) before the refinement (`:816`), and only a
+/// suffix pads the right side again after it (`:833`). The right side has no
 /// child to measure it by, so it is measured as the width it adds: the
 /// Input's width under the refinement, less its width under the same
 /// refinement with a right side of 0. At least one preset states a right side
@@ -935,7 +935,7 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, a Textarea refined as
 /// `geometry::input`'s doc says -- the padding sides cleared -- draws no
-/// padding: upstream pads only a single-line root (`input/input.rs:784-786`),
+/// padding: upstream pads only a single-line root (`input/input.rs:797-799`),
 /// so a multi-line root's inset is 0, and the refinement's padding must not
 /// reach it. The inset has no child to measure it by, so it is measured as
 /// the size it adds: the Textarea's size with the padding cleared equals its
@@ -1109,7 +1109,7 @@ fn bare_label(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harne
 /// label passed as a Medium Button's child and refined with
 /// `geometry::button_label` is as wide as the same text refined alone.
 /// Upstream sets the label's size on the content element
-/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:760`), which
+/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:766`), which
 /// is `text_sm` at Medium and which the child's own size overrules; unstyled,
 /// the child takes that `text_sm`.
 #[gpui::test]
@@ -1296,7 +1296,7 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
     }
 }
 
-/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2063`,
+/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2198`,
 /// `border_b_1()`), inside the row's height.
 const ROW_BORDER: f32 = 1.0;
 
@@ -1304,7 +1304,7 @@ const ROW_BORDER: f32 = 1.0;
 /// `DataTable` sized with `geometry::data_table_size`, whose container is
 /// refined with `geometry::table`, lies inside its row at text scales 1, 1.1
 /// and 2, and at 1 the row is `data_table_size`'s stated height. Upstream sets
-/// a `Size::Size` row's height verbatim (`table/state.rs:2047`, `:2061`;
+/// a `Size::Size` row's height verbatim (`table/state.rs:2182`, `:2196`;
 /// `sizing.rs:57-64`), so above a text scale of 1 the builder grows the row
 /// around the scaled text, which at 2 overruns every native preset's row.
 /// Above 1 the text lies inside the cell's padding too, the cell's own

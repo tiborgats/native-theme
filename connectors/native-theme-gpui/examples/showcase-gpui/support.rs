@@ -322,7 +322,7 @@ pub(crate) fn gutter_scroll(
         content
     };
     let watched = handle.clone();
-    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:227-262):
+    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:248-283):
     // a flex item that is not keeps its content's height as its minimum and
     // grows to it instead of scrolling.
     gpui::div()
@@ -974,7 +974,7 @@ impl TableDelegate for SampleTableDelegate {
         cx: &mut Context<TableState<Self>>,
     ) -> Stateful<Div> {
         // `demo::data_table` stripes the table, which shades its odd rows
-        // (table/state.rs:2042).
+        // (table/state.rs:2177).
         let striped = !row_ix.is_multiple_of(2);
         let (row, cells) = match self.rows.get(row_ix) {
             Some(cells) => (
