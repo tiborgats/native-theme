@@ -87,7 +87,9 @@ use native_theme_showcase_support::cli::{
 };
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
 use native_theme_showcase_support::info::ListedInfo;
-use native_theme_showcase_support::{Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values};
+use native_theme_showcase_support::{
+    INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values,
+};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
@@ -673,9 +675,10 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
         if moved {
             let under = UNDER_POINTER.get().map(|(id, _)| id);
             if under != REPORTED.get() {
-                REPORTED.set(under);
-                if let Some(id) = under {
-                    shell.publish(Message::ElementHovered(id));
+                match (under, REPORTED.replace(under)) {
+                    (Some(id), _) => shell.publish(Message::ElementHovered(id)),
+                    (None, Some(left)) => shell.publish(Message::ElementUnhovered(left)),
+                    (None, None) => {}
                 }
             }
         }
@@ -1329,11 +1332,15 @@ struct State {
     active_tab: Tab,
 
     // Widget Info (hover-driven)
-    widget_info: String,
-    /// The element of docs/showcase-elements.toml the pointer was last over,
-    /// which Widget Info shows in place of `widget_info`; `None` after a
-    /// hover of another page's widget.
-    hovered_element: Option<&'static str>,
+    /// What Widget Info shows: the element or page widget the pointer was
+    /// last over for [`INFO_SETTLE`], kept when the pointer leaves it;
+    /// `None` before any. Its text is built from the state in `view`.
+    hovered: Option<Hovered>,
+    /// The pointer's newest target and when it was entered, waiting out
+    /// [`INFO_SETTLE`] before it replaces `hovered` (gpui's
+    /// `InfoRegistry::pending`); `None` once it is shown, or the pointer has
+    /// left it.
+    pending: Option<(Hovered, Instant)>,
 
     // Chrome
     /// The inspector's open tab.
@@ -1670,8 +1677,8 @@ impl State {
             current_icon_theme: init_icon_theme,
             default_preset: system_preset,
             active_tab: Tab::Basic,
-            widget_info: String::new(),
-            hovered_element: None,
+            hovered: None,
+            pending: None,
             inspector_tab: InspectorTab::Widget,
             side_panel_visible: true,
             side_panel_width: LEFT_PANEL_WIDTH,
@@ -2105,6 +2112,36 @@ impl State {
     fn motion_reduced(&self) -> bool {
         self.os_accessibility.reduce_motion || self.accessibility.reduce_motion
     }
+
+    /// The pointer entered `choice` at `now`. A choice other than the shown
+    /// one waits [`INFO_SETTLE`] from its first entry, which a repeated
+    /// entry does not restart; the shown one drops whatever waits (gpui's
+    /// `InfoRegistry::reconsider`, egui's `end_pass`).
+    fn hover(&mut self, choice: Hovered, now: Instant) {
+        if self.hovered == Some(choice) {
+            self.pending = None;
+        } else if self.pending.is_none_or(|(waiting, _)| waiting != choice) {
+            self.pending = Some((choice, now));
+        }
+    }
+
+    /// The pointer left `left`: a wait for it lapses. What is shown stays.
+    fn unhover(&mut self, left: Hovered) {
+        if self.pending.is_some_and(|(waiting, _)| waiting == left) {
+            self.pending = None;
+        }
+    }
+
+    /// The waiting choice replaces what is shown once it has stood
+    /// [`INFO_SETTLE`] at `now`.
+    fn settle(&mut self, now: Instant) {
+        if let Some((choice, since)) = self.pending
+            && now.saturating_duration_since(since) >= INFO_SETTLE
+        {
+            self.hovered = Some(choice);
+            self.pending = None;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -2121,11 +2158,20 @@ enum Message {
     ColorModeSelected(AppColorMode),
 
     // Widget Info hover
-    WidgetHovered(String),
-    WidgetUnhovered,
+    /// The pointer entered a page widget ([`hoverable`]): Widget Info shows
+    /// it once the pointer has stood on it [`INFO_SETTLE`].
+    WidgetHovered(UnlistedKey),
+    /// The pointer left it.
+    WidgetUnhovered(UnlistedKey),
     /// The pointer moved onto an element of docs/showcase-elements.toml
-    /// ([`Tagged`]): Widget Info shows it.
+    /// ([`Tagged`]): Widget Info shows it once the pointer has stood on it
+    /// [`INFO_SETTLE`].
     ElementHovered(&'static str),
+    /// The pointer moved off it, onto no element.
+    ElementUnhovered(&'static str),
+    /// A tick while a hover waits out [`INFO_SETTLE`] and the animation tick,
+    /// which promotes it too, does not run.
+    InfoSettleTick,
 
     // Layout dump (`--dump-layout`)
     /// The layout has settled, or changed since it was last written.
@@ -2300,7 +2346,23 @@ fn physical_content(size: iced::Size, scale: f32) -> capture::Content {
 }
 
 fn update(state: &mut State, message: Message) -> iced::Task<Message> {
+    update_at(state, message, Instant::now())
+}
+
+/// [`update`] at `now` on the showcase's clock, which the tests set.
+fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Message> {
     match message {
+        // Widget Info keeps what it shows when the pointer leaves it (gpui's
+        // registry, spec v0.5.9 §4.3.3); a hover still waiting is dropped.
+        Message::WidgetHovered(key) => state.hover(Hovered::Unlisted(key), now),
+        Message::WidgetUnhovered(key) => state.unhover(Hovered::Unlisted(key)),
+        Message::ElementHovered(id) => state.hover(Hovered::Listed(id), now),
+        Message::ElementUnhovered(id) => state.unhover(Hovered::Listed(id)),
+        Message::InfoSettleTick => state.settle(now),
+        Message::AnimationTick => {
+            state.settle(now);
+            update_inner(state, Message::AnimationTick);
+        }
         Message::ScreenshotTick => {
             let path = state.screenshot_path.clone().unwrap_or_default();
             if state.frame_capture.is_some() {
@@ -2366,7 +2428,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
         Message::Copy(contents) => return iced::clipboard::write(contents),
         Message::PaletteRun(action) => {
             state.overlay = None;
-            return update(state, *action);
+            return update_at(state, *action, now);
         }
         Message::PaletteSubmitted => {
             let first = palette_groups(state)
@@ -2375,7 +2437,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                 .next();
             if let Some(entry) = first {
                 state.overlay = None;
-                return update(state, entry.action);
+                return update_at(state, entry.action, now);
             }
         }
         other => {
@@ -2397,16 +2459,6 @@ fn update_inner(state: &mut State, message: Message) {
         Message::ColorModeSelected(mode) => {
             let choice = state.current_choice.clone();
             state.install_in_mode(choice, mode);
-        }
-        Message::WidgetHovered(info) => {
-            state.widget_info = info;
-            state.hovered_element = None;
-        }
-        Message::ElementHovered(id) => {
-            state.hovered_element = Some(id);
-        }
-        Message::WidgetUnhovered => {
-            // Keep last info visible (like gpui showcase)
         }
         Message::ToggleSidePanel => state.side_panel_visible = !state.side_panel_visible,
         Message::ReloadSystemTheme => state.reload_system_theme(),
@@ -2520,7 +2572,7 @@ fn update_inner(state: &mut State, message: Message) {
         Message::AwActionChosen(what) => state.aw_last_action = what,
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
         Message::AnimationTick => {
-            let tick_duration = Duration::from_millis(50);
+            let tick_duration = TICK;
             let frames = state
                 .animated_frames
                 .iter()
@@ -4920,9 +4972,9 @@ fn status_bar(state: &State) -> Element<'_, Message> {
 /// element's (`name · state`), or the first line of another page's widget
 /// info; `None` before any hover.
 fn shown_title(state: &State) -> Option<String> {
-    match state.hovered_element.and_then(elements::element) {
-        Some(element) => Some(element.title()),
-        None => info_title(&state.widget_info).map(str::to_string),
+    match state.hovered? {
+        Hovered::Listed(id) => elements::element(id).map(ShowcaseElement::title),
+        Hovered::Unlisted(key) => info_title(&unlisted_info(state, key)).map(str::to_string),
     }
 }
 
@@ -6467,13 +6519,18 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<&'static 
 /// text's sections as `widget_tooltip` writes them -- a heading per section,
 /// a swatch line per colour, a name over its value per other line.
 fn inspector_widget(state: &State) -> Element<'_, Message> {
-    if let Some(element) = state.hovered_element.and_then(elements::element) {
-        return element_info_view(state, element);
-    }
+    let info = match state.hovered {
+        Some(Hovered::Listed(id)) => match elements::element(id) {
+            Some(element) => return element_info_view(state, element),
+            None => String::new(),
+        },
+        Some(Hovered::Unlisted(key)) => unlisted_info(state, key),
+        None => String::new(),
+    };
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
     let (text_color, muted) = info_inks(resolved);
-    let Some(title) = info_title(&state.widget_info) else {
+    let Some(title) = info_title(&info) else {
         return tagged(
             "chrome.info.hint",
             info_text(
@@ -6490,7 +6547,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
             .padding(Padding::ZERO.left(pad.left).right(pad.right))
             .style(ghost_button(resolved, false))
-            .on_press(Message::Copy(state.widget_info.clone()));
+            .on_press(Message::Copy(info.clone()));
     let mut body = column![
         row![
             inspector_heading(state, title.to_string()),
@@ -6501,12 +6558,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget);
     let mut colours = false;
-    for line in state
-        .widget_info
-        .lines()
-        .skip_while(|l| l.trim().is_empty())
-        .skip(1)
-    {
+    for line in info.lines().skip_while(|l| l.trim().is_empty()).skip(1) {
         if line.trim().is_empty() {
             continue;
         }
@@ -6937,10 +6989,115 @@ fn about(state: &State) -> Element<'_, Message> {
 // Hover helper: wraps a widget in mouse_area for Widget Info updates
 // ---------------------------------------------------------------------------
 
+/// A page widget Widget Info can show, one per [`hoverable`] site: its
+/// identity, from which [`unlisted_info`] builds the text under the theme
+/// installed when it is shown, so an install under a still pointer reaches
+/// what is shown. A key, not a builder's function pointer: the settle
+/// compares the waiting choice with the shown one, and Rust guarantees two
+/// function items neither distinct nor equal addresses (the
+/// `unpredictable_function_pointer_comparisons` lint).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UnlistedKey {
+    Button,
+    DisabledButtons,
+    TextInput,
+    SecureTextInput,
+    TextEditor,
+    Checkboxes,
+    Radios,
+    Switch,
+    IcedToggler,
+    PickList,
+    ComboBox,
+    Slider,
+    SteppedSlider,
+    VerticalSlider,
+    ProgressBar,
+    Card,
+    Tooltip,
+    Grid,
+    PaneGrid,
+    Table,
+    Canvas,
+    QrCode,
+    Markdown,
+    #[cfg(feature = "iced_aw")]
+    AwCard,
+    #[cfg(feature = "iced_aw")]
+    AwMenu,
+    #[cfg(feature = "iced_aw")]
+    AwTabBar,
+    #[cfg(feature = "iced_aw")]
+    AwSidebar,
+    #[cfg(feature = "iced_aw")]
+    AwSpinner,
+    #[cfg(feature = "iced_aw")]
+    AwSelectionList,
+    BasePalette,
+    /// One of the Theme Map's extended palette sections.
+    ThemeMapPalette(PaletteSection),
+    /// An Icons page cell: the icon loaded for the role.
+    Icon(IconRole),
+}
+
+/// What Widget Info shows, or waits to show: an element of
+/// docs/showcase-elements.toml ([`Tagged`]) or another page's widget.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Hovered {
+    Listed(&'static str),
+    Unlisted(UnlistedKey),
+}
+
+/// The Widget Info of the page widget `key` names, built from `state`: the
+/// theme installed now, the icons loaded now.
+fn unlisted_info(state: &State, key: UnlistedKey) -> String {
+    match key {
+        UnlistedKey::Button => button_info(state),
+        UnlistedKey::DisabledButtons => disabled_buttons_info(state),
+        UnlistedKey::TextInput => text_input_info(state),
+        UnlistedKey::SecureTextInput => secure_text_input_info(state),
+        UnlistedKey::TextEditor => text_editor_info(state),
+        UnlistedKey::Checkboxes => checkbox_info(state),
+        UnlistedKey::Radios => radio_info(state),
+        UnlistedKey::Switch => switch_info(state),
+        UnlistedKey::IcedToggler => iced_toggler_info(state),
+        UnlistedKey::PickList => pick_list_info(state),
+        UnlistedKey::ComboBox => combo_box_info(state),
+        UnlistedKey::Slider => slider_info(state),
+        UnlistedKey::SteppedSlider => stepped_slider_info(state),
+        UnlistedKey::VerticalSlider => vertical_slider_info(state),
+        UnlistedKey::ProgressBar => progress_bar_info(state),
+        UnlistedKey::Card => card_info(state),
+        UnlistedKey::Tooltip => tooltip_info(state),
+        UnlistedKey::Grid => grid_info(state),
+        UnlistedKey::PaneGrid => pane_grid_info(state),
+        UnlistedKey::Table => table_info(state),
+        UnlistedKey::Canvas => canvas_info(state),
+        UnlistedKey::QrCode => qr_code_info(state),
+        UnlistedKey::Markdown => markdown_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwCard => aw_card_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwMenu => aw_menu_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwTabBar => aw_tab_bar_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwSidebar => aw_sidebar_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwSpinner => aw_spinner_info(state),
+        #[cfg(feature = "iced_aw")]
+        UnlistedKey::AwSelectionList => aw_selection_list_info(state),
+        UnlistedKey::BasePalette => base_palette_info(state),
+        UnlistedKey::ThemeMapPalette(section) => palette_section_info(state, section),
+        UnlistedKey::Icon(role) => icon_info(state, role),
+    }
+}
+
 #[cfg(test)]
 thread_local! {
-    /// Every page widget's Widget Info a view built, for the tests to read.
-    static BUILT_INFOS: std::cell::RefCell<Vec<String>> =
+    /// Every page widget a view wrapped in [`hoverable`], for the tests to
+    /// read.
+    static BUILT_KEYS: std::cell::RefCell<Vec<UnlistedKey>> =
         const { std::cell::RefCell::new(Vec::new()) };
     /// Every row (`styles::<fn>.<field>`) a [`style_paints`] call asked for
     /// that its extractor did not produce, for the tests to read.
@@ -6948,12 +7105,14 @@ thread_local! {
         const { std::cell::RefCell::new(Vec::new()) };
 }
 
-fn hoverable<'a>(info: String, content: Element<'a, Message>) -> Element<'a, Message> {
+/// `content`, whose hover makes Widget Info show the page widget `key`
+/// names, once the pointer has stood on it [`INFO_SETTLE`].
+fn hoverable<'a>(key: UnlistedKey, content: Element<'a, Message>) -> Element<'a, Message> {
     #[cfg(test)]
-    BUILT_INFOS.with(|infos| infos.borrow_mut().push(info.clone()));
+    BUILT_KEYS.with(|keys| keys.borrow_mut().push(key));
     mouse_area(content)
-        .on_enter(Message::WidgetHovered(info))
-        .on_exit(Message::WidgetUnhovered)
+        .on_enter(Message::WidgetHovered(key))
+        .on_exit(Message::WidgetUnhovered(key))
         .into()
 }
 
@@ -9638,7 +9797,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let primary_row = hoverable(
-        button_info(state),
+        UnlistedKey::Button,
         column![
             text("Primary Actions").role(section_title(ts), resolved, a11y),
             row![
@@ -9680,7 +9839,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let disabled_row = hoverable(
-        disabled_buttons_info(state),
+        UnlistedKey::DisabledButtons,
         column![
             text("Disabled State").role(section_title(ts), resolved, a11y),
             text("Buttons without on_press are rendered as disabled:").body(resolved, a11y),
@@ -9803,6 +9962,67 @@ fn text_input_info(state: &State) -> String {
     )
 }
 
+/// The Widget Info of the Text Inputs page's password field.
+fn secure_text_input_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
+    widget_tooltip(
+        "TextInput (secure)",
+        &style_paints(
+            state,
+            "styles::text_input",
+            styles::text_input(resolved),
+            text_input_inks,
+            text_input::Status::Active,
+            &[("border", "border"), ("bg", "background")],
+            &line_zero("input"),
+        ),
+        &[
+            ("border-radius", &radius_s),
+            (
+                "text",
+                font_row("input.font", &resolved.input.font).as_str(),
+            ),
+        ],
+        &[("mode", "password / secure — dots replace chars")],
+    )
+}
+
+/// The Widget Info of the Text Inputs page's multi-line editor.
+fn text_editor_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let area_radius_s = format!("{:.0}px", resolved.text_area.border.corner_radius);
+    widget_tooltip_themed(
+        state,
+        "TextEditor (multi-line)",
+        &style_paints(
+            state,
+            "styles::text_editor",
+            styles::text_editor(resolved),
+            text_editor_inks,
+            text_editor::Status::Active,
+            &[
+                ("border", "border"),
+                ("bg", "background"),
+                ("text", "value"),
+                ("selection", "selection"),
+            ],
+            &line_zero("text_area"),
+        ),
+        &[
+            ("border-radius", &area_radius_s),
+            (
+                "text",
+                font_row("input.font", &resolved.input.font).as_str(),
+            ),
+        ],
+        &[
+            ("line numbers", "not built-in"),
+            ("syntax highlighting", "requires iced_highlighter"),
+        ],
+    )
+}
+
 fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -9811,9 +10031,6 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     let ts = &resolved.text_scale;
     let i = &resolved.input;
     let radius = i.border.corner_radius;
-    let radius_s = format!("{radius:.0}px");
-    let area = &resolved.text_area;
-    let area_radius_s = format!("{:.0}px", area.border.corner_radius);
 
     let header = section_header(
         "Text Inputs",
@@ -9836,7 +10053,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         }
 
         hoverable(
-            text_input_info(state),
+            UnlistedKey::TextInput,
             column![
                 text("TextInput (single line)").role(section_title(ts), resolved, a11y),
                 input,
@@ -9863,26 +10080,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         }
 
         hoverable(
-            widget_tooltip(
-                "TextInput (secure)",
-                &style_paints(
-                    state,
-                    "styles::text_input",
-                    styles::text_input(resolved),
-                    text_input_inks,
-                    text_input::Status::Active,
-                    &[("border", "border"), ("bg", "background")],
-                    &line_zero("input"),
-                ),
-                &[
-                    ("border-radius", &radius_s),
-                    (
-                        "text",
-                        font_row("input.font", &resolved.input.font).as_str(),
-                    ),
-                ],
-                &[("mode", "password / secure — dots replace chars")],
-            ),
+            UnlistedKey::SecureTextInput,
             column![
                 text("TextInput (secure / password)").role(section_title(ts), resolved, a11y),
                 input,
@@ -9893,35 +10091,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     };
 
     let multi_line = hoverable(
-        widget_tooltip_themed(
-            state,
-            "TextEditor (multi-line)",
-            &style_paints(
-                state,
-                "styles::text_editor",
-                styles::text_editor(resolved),
-                text_editor_inks,
-                text_editor::Status::Active,
-                &[
-                    ("border", "border"),
-                    ("bg", "background"),
-                    ("text", "value"),
-                    ("selection", "selection"),
-                ],
-                &line_zero("text_area"),
-            ),
-            &[
-                ("border-radius", &area_radius_s),
-                (
-                    "text",
-                    font_row("input.font", &resolved.input.font).as_str(),
-                ),
-            ],
-            &[
-                ("line numbers", "not built-in"),
-                ("syntax highlighting", "requires iced_highlighter"),
-            ],
-        ),
+        UnlistedKey::TextEditor,
         column![
             text("TextEditor (multi-line)").role(section_title(ts), resolved, a11y),
             probe(
@@ -10176,6 +10346,76 @@ fn toggler_thumb(s: &native_theme::theme::ResolvedSwitchTheme, is_toggled: bool)
     }
 }
 
+/// The Widget Info of the Selection page's iced Toggler.
+fn iced_toggler_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let sw = &resolved.switch;
+    let track_radius_s = format!("{:.0}px", sw.track_radius);
+    let track_height_s = format!("{:.0}px", sw.track_height);
+    widget_tooltip(
+        "iced's Toggler",
+        &toggler_paints(state),
+        &[
+            ("border-radius", &track_radius_s),
+            ("track height", &track_height_s),
+            ("on thumb size", &toggler_thumb(sw, true)),
+            ("off thumb size", &toggler_thumb(sw, false)),
+            (
+                "label",
+                format!(
+                    "{} — the model states no font for a switch",
+                    font_row("defaults.font", &resolved.defaults.font)
+                )
+                .as_str(),
+            ),
+        ],
+        &[
+            ("track width", "iced lays the track out as 2 x its height"),
+            (
+                "border",
+                "switch.*_track_border_color and .thumb_border_color, as wide as stated, where the theme states them; else iced's own, none",
+            ),
+            ("animation timing", "hardcoded"),
+        ],
+    )
+}
+
+/// The Widget Info of the Selection page's combo box.
+fn combo_box_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
+    widget_tooltip(
+        "ComboBox (searchable dropdown)",
+        &style_paints(
+            state,
+            "styles::text_input",
+            styles::text_input(resolved),
+            text_input_inks,
+            text_input::Status::Active,
+            &[
+                ("bg", "background"),
+                ("text", "value"),
+                ("border", "border"),
+            ],
+            &line_zero("input"),
+        )
+        .into_iter()
+        .chain(menu_paints(state))
+        .collect::<Vec<_>>(),
+        &[
+            ("border-radius", &input_radius_s),
+            (
+                "text and menu rows",
+                font_row("combo_box.font", &resolved.combo_box.font).as_str(),
+            ),
+        ],
+        &[
+            ("search", "built-in text filter"),
+            ("field style", "a ComboBox takes a text_input style"),
+        ],
+    )
+}
+
 fn view_selection(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -10185,9 +10425,6 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let c = &resolved.checkbox;
     let sw = &resolved.switch;
     let cb = &resolved.combo_box;
-    let track_radius_s = format!("{:.0}px", sw.track_radius);
-    let track_height_s = format!("{:.0}px", sw.track_height);
-    let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
 
     let header = section_header(
         "Selection Widgets",
@@ -10199,7 +10436,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let checkboxes = hoverable(
-        checkbox_info(state),
+        UnlistedKey::Checkboxes,
         column![
             text("Checkboxes").role(section_title(ts), resolved, a11y),
             checkbox(state.checkbox_a)
@@ -10246,7 +10483,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let radios = hoverable(
-        radio_info(state),
+        UnlistedKey::Radios,
         column![
             text("Radio Buttons").role(section_title(ts), resolved, a11y),
             probe(
@@ -10315,7 +10552,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // toggler stays shown below it, so the widget iced offers is on show
     // under the theme too, its track twice its height.
     let switch = hoverable(
-        switch_info(state),
+        UnlistedKey::Switch,
         row![
             probe(
                 probes::TOGGLER,
@@ -10333,32 +10570,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .into(),
     );
     let iced_toggler = hoverable(
-        widget_tooltip(
-            "iced's Toggler",
-            &toggler_paints(state),
-            &[
-                ("border-radius", &track_radius_s),
-                ("track height", &track_height_s),
-                ("on thumb size", &toggler_thumb(sw, true)),
-                ("off thumb size", &toggler_thumb(sw, false)),
-                (
-                    "label",
-                    format!(
-                        "{} — the model states no font for a switch",
-                        font_row("defaults.font", &resolved.defaults.font)
-                    )
-                    .as_str(),
-                ),
-            ],
-            &[
-                ("track width", "iced lays the track out as 2 x its height"),
-                (
-                    "border",
-                    "switch.*_track_border_color and .thumb_border_color, as wide as stated, where the theme states them; else iced's own, none",
-                ),
-                ("animation timing", "hardcoded"),
-            ],
-        ),
+        UnlistedKey::IcedToggler,
         toggler(state.toggler_enabled)
             .label("iced's Toggler")
             .size(sw.track_height)
@@ -10396,7 +10608,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .collect();
 
     let pickers = hoverable(
-        pick_list_info(state),
+        UnlistedKey::PickList,
         column![
             text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -10425,36 +10637,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let combos = hoverable(
-        widget_tooltip(
-            "ComboBox (searchable dropdown)",
-            &style_paints(
-                state,
-                "styles::text_input",
-                styles::text_input(resolved),
-                text_input_inks,
-                text_input::Status::Active,
-                &[
-                    ("bg", "background"),
-                    ("text", "value"),
-                    ("border", "border"),
-                ],
-                &line_zero("input"),
-            )
-            .into_iter()
-            .chain(menu_paints(state))
-            .collect::<Vec<_>>(),
-            &[
-                ("border-radius", &input_radius_s),
-                (
-                    "text and menu rows",
-                    font_row("combo_box.font", &resolved.combo_box.font).as_str(),
-                ),
-            ],
-            &[
-                ("search", "built-in text filter"),
-                ("field style", "a ComboBox takes a text_input style"),
-            ],
-        ),
+        UnlistedKey::ComboBox,
         column![
             text("ComboBox (searchable dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -10590,16 +10773,40 @@ fn progress_bar_info(state: &State) -> String {
     )
 }
 
+/// The Widget Info of the Range page's stepped slider.
+fn stepped_slider_info(state: &State) -> String {
+    widget_tooltip(
+        "Slider (stepped)",
+        &slider_paints(state, false),
+        &[("step", "5.0")],
+        &[("snap behavior", "hardcoded step increments")],
+    )
+}
+
+/// The Widget Info of the Range page's vertical slider.
+fn vertical_slider_info(state: &State) -> String {
+    let sl = &state.current_resolved.slider;
+    let rail_s = format!("{:.0}px", sl.track_height);
+    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
+    widget_tooltip(
+        "Vertical Slider",
+        &slider_paints(state, false),
+        &[
+            ("orientation", "vertical"),
+            ("rail width", &rail_s),
+            ("thumb diameter", &thumb_s),
+        ],
+        &[("widget width", "no native source — iced's own")],
+    )
+}
+
 fn view_range(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
-    let sl = &resolved.slider;
     let pb = &resolved.progress_bar;
-    let rail_s = format!("{:.0}px", sl.track_height);
-    let thumb_s = format!("{:.0}px", sl.thumb_diameter);
 
     let header = section_header(
         "Range Widgets",
@@ -10612,7 +10819,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
 
     let horiz_slider =
         hoverable(
-            slider_info(state),
+            UnlistedKey::Slider,
             column![
                 text("Horizontal Slider").role(section_title(ts), resolved, a11y),
                 row![
@@ -10637,12 +10844,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
         );
 
     let step_slider = hoverable(
-        widget_tooltip(
-            "Slider (stepped)",
-            &slider_paints(state, false),
-            &[("step", "5.0")],
-            &[("snap behavior", "hardcoded step increments")],
-        ),
+        UnlistedKey::SteppedSlider,
         column![
             text("Slider with Step (5-unit increments)").role(section_title(ts), resolved, a11y),
             row![
@@ -10662,16 +10864,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     );
 
     let vert_slider = hoverable(
-        widget_tooltip(
-            "Vertical Slider",
-            &slider_paints(state, false),
-            &[
-                ("orientation", "vertical"),
-                ("rail width", &rail_s),
-                ("thumb diameter", &thumb_s),
-            ],
-            &[("widget width", "no native source — iced's own")],
-        ),
+        UnlistedKey::VerticalSlider,
         column![
             text("Vertical Slider").role(section_title(ts), resolved, a11y),
             row![
@@ -10700,7 +10893,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     );
 
     let progress = hoverable(
-        progress_bar_info(state),
+        UnlistedKey::ProgressBar,
         column![
             text("Progress Bars").role(section_title(ts), resolved, a11y),
             text("Driven by horizontal slider value:").body(resolved, a11y),
@@ -10746,6 +10939,76 @@ fn view_range(state: &State) -> Element<'_, Message> {
 // Tab: Display
 // ---------------------------------------------------------------------------
 
+/// The Widget Info of the Display page's styled containers.
+fn card_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let card_radius_s = format!("{:.0}px", resolved.card.border.corner_radius);
+    widget_tooltip(
+        "Styled Containers (card)",
+        &style_paints(
+            state,
+            "styles::container_card",
+            statusless(styles::container_card(resolved)),
+            container_inks,
+            (),
+            &[("bg", "background"), ("border", "border")],
+            &line_zero("card"),
+        ),
+        &[
+            ("border-radius", &card_radius_s),
+            (
+                "padding",
+                "card.border.padding's stated sides inside its line_width, a \
+                 container's own Padding::ZERO for the others",
+            ),
+        ],
+        &[(
+            "text",
+            "CardTheme carries no font, so the labels are set explicitly: the \
+             title in defaults.font, the notes in the caption role",
+        )],
+    )
+}
+
+/// The Widget Info of the Display page's tooltips.
+fn tooltip_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let tip_radius_s = format!("{:.0}px", resolved.tooltip.border.corner_radius);
+    let delay_s = match native_theme_iced::tooltip_show_delay(resolved) {
+        Some(delay) => format!("{}ms, tooltip.show_delay", delay.as_millis()),
+        None => "none, iced's own (tooltip.show_delay unstated)".to_string(),
+    };
+    widget_tooltip(
+        "Tooltip",
+        &style_paints(
+            state,
+            "styles::tooltip",
+            statusless(styles::tooltip(resolved)),
+            container_inks,
+            (),
+            &[
+                ("bg", "background"),
+                ("text", "text_color"),
+                ("border", "border"),
+            ],
+            &line_zero("tooltip"),
+        ),
+        &[
+            ("positions", "Top / Bottom / Left / Right"),
+            ("border-radius", &tip_radius_s),
+            (
+                "label",
+                font_row("tooltip.font", &resolved.tooltip.font).as_str(),
+            ),
+        ],
+        &[
+            ("gap", "set per widget instance"),
+            ("delay", &delay_s),
+            ("max width", "iced wraps the tip's own content element"),
+        ],
+    )
+}
+
 fn view_display(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -10753,19 +11016,12 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let card = &resolved.card;
-    let tip = &resolved.tooltip;
     let sep = &resolved.separator;
     let card_radius = card.border.corner_radius;
     // A container is unpadded unless given a padding (container.rs:95), so a
     // side the card's theme leaves unstated stays at zero; a stated side lies
     // inside the border iced paints over the padded box.
     let card_pad = native_theme_iced::padding_inside_border(&card.border, Padding::ZERO);
-    let card_radius_s = format!("{card_radius:.0}px");
-    let tip_radius_s = format!("{:.0}px", tip.border.corner_radius);
-    let delay_s = match native_theme_iced::tooltip_show_delay(resolved) {
-        Some(delay) => format!("{}ms, tooltip.show_delay", delay.as_millis()),
-        None => "none, iced's own (tooltip.show_delay unstated)".to_string(),
-    };
     let line_width_s = format!("{:.0}px", sep.line_width);
 
     let header = section_header(
@@ -10778,31 +11034,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
     );
 
     let containers = hoverable(
-        widget_tooltip(
-            "Styled Containers (card)",
-            &style_paints(
-                state,
-                "styles::container_card",
-                statusless(styles::container_card(resolved)),
-                container_inks,
-                (),
-                &[("bg", "background"), ("border", "border")],
-                &line_zero("card"),
-            ),
-            &[
-                ("border-radius", &card_radius_s),
-                (
-                    "padding",
-                    "card.border.padding's stated sides inside its line_width, a \
-                     container's own Padding::ZERO for the others",
-                ),
-            ],
-            &[(
-                "text",
-                "CardTheme carries no font, so the labels are set explicitly: the \
-                 title in defaults.font, the notes in the caption role",
-            )],
-        ),
+        UnlistedKey::Card,
         column![
             text("Styled Containers").role(section_title(ts), resolved, a11y),
             container(
@@ -10853,35 +11085,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
     .spacing(gap.widget);
 
     let tooltips = hoverable(
-        widget_tooltip(
-            "Tooltip",
-            &style_paints(
-                state,
-                "styles::tooltip",
-                statusless(styles::tooltip(resolved)),
-                container_inks,
-                (),
-                &[
-                    ("bg", "background"),
-                    ("text", "text_color"),
-                    ("border", "border"),
-                ],
-                &line_zero("tooltip"),
-            ),
-            &[
-                ("positions", "Top / Bottom / Left / Right"),
-                ("border-radius", &tip_radius_s),
-                (
-                    "label",
-                    font_row("tooltip.font", &resolved.tooltip.font).as_str(),
-                ),
-            ],
-            &[
-                ("gap", "set per widget instance"),
-                ("delay", &delay_s),
-                ("max width", "iced wraps the tip's own content element"),
-            ],
-        ),
+        UnlistedKey::Tooltip,
         column![
             text("Tooltips").role(section_title(ts), resolved, a11y),
             row![
@@ -11044,6 +11248,132 @@ fn view_display(state: &State) -> Element<'_, Message> {
 /// `Clone` and carries the formatted strings rather than a borrow.
 type ScaleRow = (&'static str, String, String, String);
 
+/// The Widget Info of the Layout page's grid.
+fn grid_info(state: &State) -> String {
+    let d = &state.current_resolved.defaults;
+    widget_tooltip(
+        "Grid",
+        &[
+            Paint::leaf(
+                "cell fill",
+                "each cell's own color",
+                to_color(d.accent_color),
+            ),
+            Paint::leaf(
+                "cell border",
+                "defaults.border.color",
+                to_color(d.border.color),
+            ),
+        ],
+        &[
+            ("columns", "4"),
+            ("cell radius", "defaults.border.corner_radius"),
+        ],
+        &[
+            (
+                "Style",
+                "grid has no Catalog and no Style — it only places its children \
+                 (grid.rs:13-19)",
+            ),
+            ("spacing", "the showcase's own scale"),
+        ],
+    )
+}
+
+/// The Widget Info of the Layout page's pane grid.
+fn pane_grid_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let divider_width_s = format!("{:.0}px", resolved.splitter.divider_width);
+    widget_tooltip(
+        "PaneGrid",
+        &style_paints(
+            state,
+            "styles::pane_grid",
+            statusless(styles::pane_grid(resolved)),
+            pane_grid_inks,
+            (),
+            &[
+                ("hovered split", "hovered_split.color"),
+                ("picked split", "picked_split.color"),
+            ],
+            "splitter.divider_width 0",
+        ),
+        &[
+            ("split width", &divider_width_s),
+            ("pane surface", "styles::container_card"),
+            ("title bar", "styles::container_card"),
+            (
+                "title",
+                font_row("defaults.font", &resolved.defaults.font).as_str(),
+            ),
+            (
+                "controls",
+                font_row("button.font", &resolved.button.font).as_str(),
+            ),
+        ],
+        &[
+            (
+                "drop region",
+                "the model states no drop-target highlight — iced's own",
+            ),
+            (
+                "splitter.divider_color",
+                "no receiver: iced leaves an idle split unpainted",
+            ),
+        ],
+    )
+}
+
+/// The Widget Info of the Layout page's table.
+fn table_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let line_width_s = format!("{:.0}px", resolved.separator.line_width);
+    let header_height_s = match native_theme_iced::list_header_height(resolved) {
+        Some(h) => format!("{h:.0}px, list.header_height"),
+        None => "its text's (list.header_height unstated)".to_string(),
+    };
+    widget_tooltip(
+        "Table",
+        &[Paint::leaf(
+            "separators",
+            "iced's background.strong, read live",
+            state
+                .current_theme
+                .extended_palette()
+                .background
+                .strong
+                .color,
+        )],
+        &[
+            ("separator_x / separator_y", &line_width_s),
+            ("cell padding", "the showcase's own scale"),
+            (
+                "header",
+                font_row("list.header_font", &resolved.list.header_font).as_str(),
+            ),
+            ("header height", &header_height_s),
+            (
+                "cells",
+                font_row("list.item_font", &resolved.list.item_font).as_str(),
+            ),
+        ],
+        &[
+            (
+                "Style",
+                "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
+                 `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
+                 separator colors stay table::default(theme), which reads \
+                 palette.background.strong (table.rs:717-724)",
+            ),
+            (
+                "separator.line_color",
+                "has no receiver here; the hex above is the one on screen, not \
+                 the platform's separator colour",
+            ),
+        ],
+    )
+}
+
 /// Grid, PaneGrid and Table: the three `iced_widget` modules that arrange
 /// other widgets rather than paint a control.
 fn view_layout(state: &State) -> Element<'_, Message> {
@@ -11054,8 +11384,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
     let sp_th = &resolved.splitter;
-    let line_width_s = format!("{:.0}px", sep.line_width);
-    let divider_width_s = format!("{:.0}px", sp_th.divider_width);
 
     let header = section_header(
         "Layout Widgets",
@@ -11084,33 +11412,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let d = &resolved.defaults;
 
     let grid_demo = hoverable(
-        widget_tooltip(
-            "Grid",
-            &[
-                Paint::leaf(
-                    "cell fill",
-                    "each cell's own color",
-                    to_color(d.accent_color),
-                ),
-                Paint::leaf(
-                    "cell border",
-                    "defaults.border.color",
-                    to_color(d.border.color),
-                ),
-            ],
-            &[
-                ("columns", "4"),
-                ("cell radius", "defaults.border.corner_radius"),
-            ],
-            &[
-                (
-                    "Style",
-                    "grid has no Catalog and no Style — it only places its children \
-                     (grid.rs:13-19)",
-                ),
-                ("spacing", "the showcase's own scale"),
-            ],
-        ),
+        UnlistedKey::Grid,
         column![
             text("Grid (cells in columns)").role(section_title(ts), resolved, a11y),
             text(
@@ -11193,44 +11495,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     .style(styles::pane_grid(resolved));
 
     let pane_demo = hoverable(
-        widget_tooltip(
-            "PaneGrid",
-            &style_paints(
-                state,
-                "styles::pane_grid",
-                statusless(styles::pane_grid(resolved)),
-                pane_grid_inks,
-                (),
-                &[
-                    ("hovered split", "hovered_split.color"),
-                    ("picked split", "picked_split.color"),
-                ],
-                "splitter.divider_width 0",
-            ),
-            &[
-                ("split width", &divider_width_s),
-                ("pane surface", "styles::container_card"),
-                ("title bar", "styles::container_card"),
-                (
-                    "title",
-                    font_row("defaults.font", &resolved.defaults.font).as_str(),
-                ),
-                (
-                    "controls",
-                    font_row("button.font", &resolved.button.font).as_str(),
-                ),
-            ],
-            &[
-                (
-                    "drop region",
-                    "the model states no drop-target highlight — iced's own",
-                ),
-                (
-                    "splitter.divider_color",
-                    "no receiver: iced leaves an idle split unpainted",
-                ),
-            ],
-        ),
+        UnlistedKey::PaneGrid,
         column![
             text("PaneGrid (split, drag and resize)").role(section_title(ts), resolved, a11y),
             text(
@@ -11289,10 +11554,6 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     // table draws its header's line inside it.
     let cell_pad_y = sp.xs;
     let header_height = native_theme_iced::list_header_height(resolved);
-    let header_height_s = match header_height {
-        Some(h) => format!("{h:.0}px, list.header_height"),
-        None => "its text's (list.header_height unstated)".to_string(),
-    };
     let header_cell = |title: &'static str| -> Element<'_, Message> {
         let label = text(title).typeset(&resolved.list.header_font, a11y);
         match header_height {
@@ -11342,46 +11603,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     .width(Fill);
 
     let table_demo = hoverable(
-        widget_tooltip(
-            "Table",
-            &[Paint::leaf(
-                "separators",
-                "iced's background.strong, read live",
-                state
-                    .current_theme
-                    .extended_palette()
-                    .background
-                    .strong
-                    .color,
-            )],
-            &[
-                ("separator_x / separator_y", &line_width_s),
-                ("cell padding", "the showcase's own scale"),
-                (
-                    "header",
-                    font_row("list.header_font", &resolved.list.header_font).as_str(),
-                ),
-                ("header height", &header_height_s),
-                (
-                    "cells",
-                    font_row("list.item_font", &resolved.list.item_font).as_str(),
-                ),
-            ],
-            &[
-                (
-                    "Style",
-                    "iced_widget 0.14.2 gives Table a Catalog and a Style but no \
-                     `.style(..)` or `.class(..)` setter (table.rs:149-196), so its \
-                     separator colors stay table::default(theme), which reads \
-                     palette.background.strong (table.rs:717-724)",
-                ),
-                (
-                    "separator.line_color",
-                    "has no receiver here; the hex above is the one on screen, not \
-                     the platform's separator colour",
-                ),
-            ],
-        ),
+        UnlistedKey::Table,
         column![
             text("Table (columns and rows)").role(section_title(ts), resolved, a11y),
             text("The four typographic roles this theme resolves:").body(resolved, a11y),
@@ -11530,6 +11752,139 @@ impl<Message> canvas::Program<Message> for ThemeSketch {
     }
 }
 
+/// The Widget Info of the Graphics page's canvas.
+fn canvas_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let sep = &resolved.separator;
+    let d = &resolved.defaults;
+    let line_width_s = format!("{:.0}px", sep.line_width);
+    let dot_s = format!("{:.0}px", d.icon_sizes.large);
+    widget_tooltip(
+        "Canvas",
+        &[
+            Paint::leaf(
+                "panel fill",
+                "card.background_color",
+                to_color(resolved.card.background_color),
+            ),
+            Paint::leaf("outline", "separator.line_color", to_color(sep.line_color)),
+            Paint::leaf("baseline", "defaults.text_color", to_color(d.text_color)),
+            Paint::leaf("dot", "defaults.accent_color", to_color(d.accent_color)),
+        ],
+        &[
+            ("stroke width", &line_width_s),
+            ("panel radius", "card.border.corner_radius"),
+            ("dot diameter", &dot_s),
+        ],
+        &[(
+            "Style",
+            "canvas has no Catalog and no Style: a Program paints with \
+             whatever it is given (canvas/program.rs:49-56)",
+        )],
+    )
+}
+
+/// The Widget Info of the Graphics page's QR code.
+fn qr_code_info(state: &State) -> String {
+    let d = &state.current_resolved.defaults;
+    let qr_cell = to_color(d.text_color);
+    let qr_background = to_color(d.background_color);
+    widget_tooltip(
+        "QRCode",
+        &[
+            Paint::leaf("cell", "defaults.text_color", qr_cell),
+            Paint::leaf("background", "defaults.background_color", qr_background),
+        ],
+        &[("payload", QR_PAYLOAD)],
+        &[(
+            "cell size",
+            "no native source — iced's own DEFAULT_CELL_SIZE (qr_code.rs)",
+        )],
+    )
+}
+
+/// The Widget Info of the Graphics page's Markdown.
+fn markdown_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let ts = &resolved.text_scale;
+    widget_tooltip(
+        "Markdown",
+        &[
+            Paint::leaf(
+                "link",
+                "link.font.color",
+                to_color(resolved.link.font.color),
+            ),
+            // Markdown states no colour of its own, so iced paints it with
+            // the slot `Base::base` hands every inheriting widget
+            // (`iced_core` theme.rs:334); the connector sets that slot from
+            // `defaults.text_color`, so reading it live shows what is on
+            // screen rather than the palette input behind it.
+            Paint::leaf(
+                "text",
+                "extended.background.base.text, from defaults.text_color",
+                state.current_theme.extended_palette().background.base.text,
+            ),
+        ],
+        &[
+            (
+                "base size",
+                "defaults.font.size, times the text-scaling factor",
+            ),
+            (
+                "h1 / h2",
+                format!(
+                    "text_scale dialog_title / section_heading, size (times the \
+                     text-scaling factor); defaults.font's family, {}; weight {} / {}",
+                    family_label(
+                        &resolved.defaults.font.family,
+                        role_family(section_title(ts), resolved),
+                        &role_drawn(section_title(ts), resolved)
+                    ),
+                    weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
+                    weight_label(
+                        section_title(ts).weight,
+                        &role_drawn(section_title(ts), resolved)
+                    ),
+                )
+                .as_str(),
+            ),
+            (
+                "h3 – h6",
+                "defaults.font: the model names no role between section_heading \
+                 and body text",
+            ),
+            (
+                "code size",
+                "defaults.mono_font.size, times the text-scaling factor",
+            ),
+        ],
+        &[
+            (
+                "block spacing",
+                "Settings::spacing is iced's own, derived from the native base \
+                 size. It is not layout.widget_gap: iced reuses the one number \
+                 as the gap between blocks, as 0.6 and 0.75 of itself inside \
+                 lists, and as a list's horizontal indent (markdown.rs:1230, \
+                 :1364-1374)",
+            ),
+            (
+                "inline code chip",
+                "the model states no inline-code surface; its fill and its \
+                 foreground are iced's, as a pair",
+            ),
+            (
+                "font weight",
+                "iced 0.14's text engine takes a face only at the weight \
+                 asked for, and files a variable font at its default weight \
+                 alone; the showcase files the weights a variable face's wght \
+                 axis covers (register_weight), and a weight no face has is \
+                 drawn at the family's nearest face, as the h1 / h2 row says",
+            ),
+        ],
+    )
+}
+
 /// Canvas, QRCode and Markdown: the three modules that paint content the
 /// application supplies rather than a control.
 fn view_graphics(state: &State) -> Element<'_, Message> {
@@ -11540,8 +11895,6 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
     let d = &resolved.defaults;
-    let line_width_s = format!("{:.0}px", sep.line_width);
-    let dot_s = format!("{:.0}px", d.icon_sizes.large);
 
     let header = section_header(
         "Graphics Widgets",
@@ -11567,29 +11920,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     };
 
     let canvas_demo = hoverable(
-        widget_tooltip(
-            "Canvas",
-            &[
-                Paint::leaf(
-                    "panel fill",
-                    "card.background_color",
-                    to_color(resolved.card.background_color),
-                ),
-                Paint::leaf("outline", "separator.line_color", to_color(sep.line_color)),
-                Paint::leaf("baseline", "defaults.text_color", to_color(d.text_color)),
-                Paint::leaf("dot", "defaults.accent_color", to_color(d.accent_color)),
-            ],
-            &[
-                ("stroke width", &line_width_s),
-                ("panel radius", "card.border.corner_radius"),
-                ("dot diameter", &dot_s),
-            ],
-            &[(
-                "Style",
-                "canvas has no Catalog and no Style: a Program paints with \
-                 whatever it is given (canvas/program.rs:49-56)",
-            )],
-        ),
+        UnlistedKey::Canvas,
         column![
             text("Canvas (a drawing from the theme)").role(section_title(ts), resolved, a11y),
             text(
@@ -11622,18 +11953,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     };
 
     let qr_section = hoverable(
-        widget_tooltip(
-            "QRCode",
-            &[
-                Paint::leaf("cell", "defaults.text_color", qr_cell),
-                Paint::leaf("background", "defaults.background_color", qr_background),
-            ],
-            &[("payload", QR_PAYLOAD)],
-            &[(
-                "cell size",
-                "no native source — iced's own DEFAULT_CELL_SIZE (qr_code.rs)",
-            )],
-        ),
+        UnlistedKey::QrCode,
         column![
             text("QRCode").role(section_title(ts), resolved, a11y),
             text("Its two-colour Style is the platform's foreground on its background:")
@@ -11675,82 +11995,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
     };
 
     let markdown_demo = hoverable(
-        widget_tooltip(
-            "Markdown",
-            &[
-                Paint::leaf(
-                    "link",
-                    "link.font.color",
-                    to_color(resolved.link.font.color),
-                ),
-                // Markdown states no colour of its own, so iced paints it with
-                // the slot `Base::base` hands every inheriting widget
-                // (`iced_core` theme.rs:334); the connector sets that slot from
-                // `defaults.text_color`, so reading it live shows what is on
-                // screen rather than the palette input behind it.
-                Paint::leaf(
-                    "text",
-                    "extended.background.base.text, from defaults.text_color",
-                    state.current_theme.extended_palette().background.base.text,
-                ),
-            ],
-            &[
-                (
-                    "base size",
-                    "defaults.font.size, times the text-scaling factor",
-                ),
-                (
-                    "h1 / h2",
-                    format!(
-                        "text_scale dialog_title / section_heading, size (times the \
-                         text-scaling factor); defaults.font's family, {}; weight {} / {}",
-                        family_label(
-                            &resolved.defaults.font.family,
-                            role_family(section_title(ts), resolved),
-                            &role_drawn(section_title(ts), resolved)
-                        ),
-                        weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
-                        weight_label(
-                            section_title(ts).weight,
-                            &role_drawn(section_title(ts), resolved)
-                        ),
-                    )
-                    .as_str(),
-                ),
-                (
-                    "h3 – h6",
-                    "defaults.font: the model names no role between section_heading \
-                     and body text",
-                ),
-                (
-                    "code size",
-                    "defaults.mono_font.size, times the text-scaling factor",
-                ),
-            ],
-            &[
-                (
-                    "block spacing",
-                    "Settings::spacing is iced's own, derived from the native base \
-                     size. It is not layout.widget_gap: iced reuses the one number \
-                     as the gap between blocks, as 0.6 and 0.75 of itself inside \
-                     lists, and as a list's horizontal indent (markdown.rs:1230, \
-                     :1364-1374)",
-                ),
-                (
-                    "inline code chip",
-                    "the model states no inline-code surface; its fill and its \
-                     foreground are iced's, as a pair",
-                ),
-                (
-                    "font weight",
-                    "iced 0.14's text engine takes a face only at the weight \
-                     asked for, and files a variable font at its default weight \
-                     alone; the showcase files the weights a variable face's wght \
-                     axis covers (register_weight), and a weight no face has is \
-                     drawn at the family's nearest face, as the h1 / h2 row says",
-                ),
-            ],
-        ),
+        UnlistedKey::Markdown,
         column![
             text("Markdown").role(section_title(ts), resolved, a11y),
             container(markdown::view_with(
@@ -11904,6 +12149,313 @@ fn aw_paints<O>(
         .collect()
 }
 
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw Card.
+fn aw_card_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    widget_tooltip(
+        "Card",
+        &aw_paints(
+            state,
+            "styles::aw::card",
+            styles::aw::card(resolved),
+            aw_card_inks,
+            &[(
+                AwStatus::Active,
+                &[
+                    ("surface", "background"),
+                    ("head", "head_background"),
+                    ("body", "body_background"),
+                    ("foot", "foot_background"),
+                    ("head label", "head_text_color"),
+                    ("body label", "body_text_color"),
+                    ("foot label", "foot_text_color"),
+                    ("border", "border_color"),
+                ],
+            )],
+            &line_zero("card"),
+        ),
+        &[
+            ("radius", "card.border.corner_radius"),
+            (
+                "section padding",
+                "card.border.padding, on the head, the body and the foot \
+                 alike, where the theme states every side; otherwise \
+                 iced_aw's own, which it keeps private (widget/card.rs:21)",
+            ),
+            ("Dismiss padding", "button_padding"),
+            (
+                "Dismiss label",
+                font_row("button.font", &resolved.button.font).as_str(),
+            ),
+        ],
+        &[(
+            "close icon",
+            "not drawn: iced_aw 0.14.1 styles Card::on_close's button \
+                 with its default class, whose icon is white whatever \
+                 styles::aw::card sets (widget/card.rs:193-206), so the \
+                 themed Dismiss button closes the card instead",
+        )],
+    )
+}
+
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw MenuBar and context menu.
+fn aw_menu_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    widget_tooltip(
+        "MenuBar / Menu",
+        &aw_paints(
+            state,
+            "styles::aw::menu",
+            styles::aw::menu(resolved),
+            aw_menu_inks,
+            &[(
+                AwStatus::Active,
+                &[
+                    ("bar", "bar_background"),
+                    ("panel", "menu_background"),
+                    ("open path", "path"),
+                    ("bar border", "bar.border"),
+                    ("panel border", "menu.border"),
+                ],
+            )],
+            &line_zero("menu"),
+        ),
+        &[
+            (
+                "item height",
+                "menu.row_height where the theme states one, on the item button",
+            ),
+            (
+                "item padding",
+                "menu.border.padding's stated sides, iced's \
+                 button::DEFAULT_PADDING for the others, on the item button",
+            ),
+            (
+                "item label",
+                format!(
+                    "{}, the context menu's too",
+                    font_row("menu.font", &resolved.menu.font)
+                )
+                .as_str(),
+            ),
+        ],
+        &[
+            (
+                "label colour",
+                "menu_bar::Style has no text colour; the items are our own \
+                 widgets, so they take styles::button",
+            ),
+            (
+                "shadows",
+                "the model has no shadow geometry — iced_aw's own",
+            ),
+            (
+                "menu width",
+                "MenuTheme states none — its widest row inside the item padding",
+            ),
+        ],
+    )
+}
+
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw TabBar and Tabs.
+fn aw_tab_bar_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    widget_tooltip(
+        "TabBar / Tabs",
+        &aw_paints(
+            state,
+            "styles::aw::tab_bar",
+            styles::aw::tab_bar(resolved),
+            aw_tab_bar_inks,
+            &[
+                (
+                    AwStatus::Active,
+                    &[
+                        ("strip", "background"),
+                        ("selected tab", "tab_label_background"),
+                        ("selected label", "text_color"),
+                        ("selected border", "tab_label_border_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Hovered,
+                    &[
+                        ("hovered tab", "tab_label_background"),
+                        ("hovered label", "text_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Disabled,
+                    &[
+                        ("other tab", "tab_label_background"),
+                        ("other label", "text_color"),
+                    ],
+                ),
+            ],
+            &line_zero("tab"),
+        ),
+        &[
+            ("label", font_row("tab.font", &resolved.tab.font).as_str()),
+            ("tab width", "tab.min_width"),
+            ("bar height", "tab.min_height"),
+            (
+                "tab padding",
+                "tab.border.padding where the theme states every side; \
+                 otherwise iced_aw's own, which it keeps private \
+                 (widget/tab_bar.rs:41)",
+            ),
+        ],
+        &[(
+            "min_width / min_height",
+            "the platform states minima and iced_aw takes fixed lengths, so a \
+             tab here is exactly its minimum",
+        )],
+    )
+}
+
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw Sidebar.
+fn aw_sidebar_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    widget_tooltip(
+        "Sidebar",
+        &aw_paints(
+            state,
+            "styles::aw::sidebar",
+            styles::aw::sidebar(resolved),
+            aw_sidebar_inks,
+            &[
+                (
+                    AwStatus::Active,
+                    &[
+                        ("panel", "background"),
+                        ("selected item", "tab_label_background"),
+                        ("selected label", "text_color"),
+                        ("border", "border_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Hovered,
+                    &[
+                        ("hovered item", "tab_label_background"),
+                        ("hovered label", "text_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Disabled,
+                    &[
+                        ("other item", "tab_label_background"),
+                        ("other label", "text_color"),
+                    ],
+                ),
+            ],
+            &line_zero("sidebar"),
+        ),
+        &[(
+            "label",
+            font_row("sidebar.font", &resolved.sidebar.font).as_str(),
+        )],
+        &[(
+            "corner radius",
+            "sidebar::Style carries none but the close icon's; iced_aw rounds \
+             the panel with a hardcoded 0",
+        )],
+    )
+}
+
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw Spinner.
+fn aw_spinner_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    widget_tooltip(
+        "Spinner",
+        &style_paints(
+            state,
+            "styles::aw::spinner",
+            statusless(styles::aw::spinner(resolved)),
+            container_inks,
+            (),
+            &[("orbiting dot", "text_color")],
+            "",
+        ),
+        &[("orbit diameter", "spinner.diameter")],
+        &[
+            (
+                "Style",
+                "iced_aw 0.14.1 gives Spinner none at all: it paints in the \
+                 inherited text colour, which the wrapping container states",
+            ),
+            (
+                "spinner.stroke_width",
+                "no receiver: iced_aw paints no ring to stroke — one dot \
+                 circling the centre (spinner.rs:151), whose radius is \
+                 circle_radius, not a stroke width",
+            ),
+        ],
+    )
+}
+
+#[cfg(feature = "iced_aw")]
+/// The Widget Info of the Extra page's iced_aw SelectionList.
+fn aw_selection_list_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let row_height_s = match resolved.list.row_height {
+        Some(h) => format!("{h:.0}px"),
+        None => "not stated: the showcase's own padding".to_string(),
+    };
+    widget_tooltip(
+        "SelectionList",
+        &aw_paints(
+            state,
+            "styles::aw::selection_list",
+            styles::aw::selection_list(resolved),
+            aw_selection_list_inks,
+            &[
+                (
+                    AwStatus::Active,
+                    &[
+                        ("list", "background"),
+                        ("row label", "text_color"),
+                        ("border", "border_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Selected,
+                    &[
+                        ("selected row", "background"),
+                        ("selected label", "text_color"),
+                    ],
+                ),
+                (
+                    AwStatus::Hovered,
+                    &[
+                        ("hovered row", "background"),
+                        ("hovered label", "text_color"),
+                    ],
+                ),
+            ],
+            &line_zero("list"),
+        ),
+        &[
+            (
+                "row label",
+                font_row("list.item_font", &resolved.list.item_font).as_str(),
+            ),
+            ("row height", &row_height_s),
+        ],
+        &[(
+            "list.row_height",
+            "reachable only indirectly: iced_aw has no item_height setter, so \
+             a row is text_size + padding.y() (selection_list/list.rs:118, \
+             :209) and the showcase gives new_with the padding that makes the \
+             sum the platform's height",
+        )],
+    )
+}
+
 /// The six `styles::aw::*` functions, on the eight `iced_aw` widgets the
 /// connector's feature enables.
 #[cfg(feature = "iced_aw")]
@@ -11973,50 +12525,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     };
 
     let card_demo = hoverable(
-        widget_tooltip(
-            "Card",
-            &aw_paints(
-                state,
-                "styles::aw::card",
-                styles::aw::card(resolved),
-                aw_card_inks,
-                &[(
-                    AwStatus::Active,
-                    &[
-                        ("surface", "background"),
-                        ("head", "head_background"),
-                        ("body", "body_background"),
-                        ("foot", "foot_background"),
-                        ("head label", "head_text_color"),
-                        ("body label", "body_text_color"),
-                        ("foot label", "foot_text_color"),
-                        ("border", "border_color"),
-                    ],
-                )],
-                &line_zero("card"),
-            ),
-            &[
-                ("radius", "card.border.corner_radius"),
-                (
-                    "section padding",
-                    "card.border.padding, on the head, the body and the foot \
-                     alike, where the theme states every side; otherwise \
-                     iced_aw's own, which it keeps private (widget/card.rs:21)",
-                ),
-                ("Dismiss padding", "button_padding"),
-                (
-                    "Dismiss label",
-                    font_row("button.font", &resolved.button.font).as_str(),
-                ),
-            ],
-            &[(
-                "close icon",
-                "not drawn: iced_aw 0.14.1 styles Card::on_close's button \
-                     with its default class, whose icon is white whatever \
-                     styles::aw::card sets (widget/card.rs:193-206), so the \
-                     themed Dismiss button closes the card instead",
-            )],
-        ),
+        UnlistedKey::AwCard,
         column![
             text("Card").role(section_title(ts), resolved, a11y),
             card_section,
@@ -12103,60 +12612,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     .style(styles::aw::menu(resolved));
 
     let menu_demo = hoverable(
-        widget_tooltip(
-            "MenuBar / Menu",
-            &aw_paints(
-                state,
-                "styles::aw::menu",
-                styles::aw::menu(resolved),
-                aw_menu_inks,
-                &[(
-                    AwStatus::Active,
-                    &[
-                        ("bar", "bar_background"),
-                        ("panel", "menu_background"),
-                        ("open path", "path"),
-                        ("bar border", "bar.border"),
-                        ("panel border", "menu.border"),
-                    ],
-                )],
-                &line_zero("menu"),
-            ),
-            &[
-                (
-                    "item height",
-                    "menu.row_height where the theme states one, on the item button",
-                ),
-                (
-                    "item padding",
-                    "menu.border.padding's stated sides, iced's \
-                     button::DEFAULT_PADDING for the others, on the item button",
-                ),
-                (
-                    "item label",
-                    format!(
-                        "{}, the context menu's too",
-                        font_row("menu.font", &resolved.menu.font)
-                    )
-                    .as_str(),
-                ),
-            ],
-            &[
-                (
-                    "label colour",
-                    "menu_bar::Style has no text colour; the items are our own \
-                     widgets, so they take styles::button",
-                ),
-                (
-                    "shadows",
-                    "the model has no shadow geometry — iced_aw's own",
-                ),
-                (
-                    "menu width",
-                    "MenuTheme states none — its widest row inside the item padding",
-                ),
-            ],
-        ),
+        UnlistedKey::AwMenu,
         column![
             text("MenuBar and its Menus").role(section_title(ts), resolved, a11y),
             menu_bar,
@@ -12262,57 +12718,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     };
 
     let tab_demo = hoverable(
-        widget_tooltip(
-            "TabBar / Tabs",
-            &aw_paints(
-                state,
-                "styles::aw::tab_bar",
-                styles::aw::tab_bar(resolved),
-                aw_tab_bar_inks,
-                &[
-                    (
-                        AwStatus::Active,
-                        &[
-                            ("strip", "background"),
-                            ("selected tab", "tab_label_background"),
-                            ("selected label", "text_color"),
-                            ("selected border", "tab_label_border_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Hovered,
-                        &[
-                            ("hovered tab", "tab_label_background"),
-                            ("hovered label", "text_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Disabled,
-                        &[
-                            ("other tab", "tab_label_background"),
-                            ("other label", "text_color"),
-                        ],
-                    ),
-                ],
-                &line_zero("tab"),
-            ),
-            &[
-                ("label", font_row("tab.font", &resolved.tab.font).as_str()),
-                ("tab width", "tab.min_width"),
-                ("bar height", "tab.min_height"),
-                (
-                    "tab padding",
-                    "tab.border.padding where the theme states every side; \
-                     otherwise iced_aw's own, which it keeps private \
-                     (widget/tab_bar.rs:41)",
-                ),
-            ],
-            &[(
-                "min_width / min_height",
-                "the platform states minima and iced_aw takes fixed lengths, so a \
-                 tab here is exactly its minimum",
-            )],
-        ),
+        UnlistedKey::AwTabBar,
         column![
             text("TabBar (stand-alone) and Tabs (with content)").role(
                 section_title(ts),
@@ -12351,50 +12757,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .style(styles::aw::sidebar(resolved));
 
     let side_demo = hoverable(
-        widget_tooltip(
-            "Sidebar",
-            &aw_paints(
-                state,
-                "styles::aw::sidebar",
-                styles::aw::sidebar(resolved),
-                aw_sidebar_inks,
-                &[
-                    (
-                        AwStatus::Active,
-                        &[
-                            ("panel", "background"),
-                            ("selected item", "tab_label_background"),
-                            ("selected label", "text_color"),
-                            ("border", "border_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Hovered,
-                        &[
-                            ("hovered item", "tab_label_background"),
-                            ("hovered label", "text_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Disabled,
-                        &[
-                            ("other item", "tab_label_background"),
-                            ("other label", "text_color"),
-                        ],
-                    ),
-                ],
-                &line_zero("sidebar"),
-            ),
-            &[(
-                "label",
-                font_row("sidebar.font", &resolved.sidebar.font).as_str(),
-            )],
-            &[(
-                "corner radius",
-                "sidebar::Style carries none but the close icon's; iced_aw rounds \
-                 the panel with a hardcoded 0",
-            )],
-        ),
+        UnlistedKey::AwSidebar,
         column![
             text("Sidebar").role(section_title(ts), resolved, a11y),
             row![
@@ -12422,32 +12785,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // ---- Spinner ----
 
     let spinner_demo = hoverable(
-        widget_tooltip(
-            "Spinner",
-            &style_paints(
-                state,
-                "styles::aw::spinner",
-                statusless(styles::aw::spinner(resolved)),
-                container_inks,
-                (),
-                &[("orbiting dot", "text_color")],
-                "",
-            ),
-            &[("orbit diameter", "spinner.diameter")],
-            &[
-                (
-                    "Style",
-                    "iced_aw 0.14.1 gives Spinner none at all: it paints in the \
-                     inherited text colour, which the wrapping container states",
-                ),
-                (
-                    "spinner.stroke_width",
-                    "no receiver: iced_aw paints no ring to stroke — one dot \
-                     circling the centre (spinner.rs:151), whose radius is \
-                     circle_radius, not a stroke width",
-                ),
-            ],
-        ),
+        UnlistedKey::AwSpinner,
         column![
             text("Spinner (styled through its container)").role(section_title(ts), resolved, a11y),
             container(
@@ -12470,10 +12808,6 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // side takes half of what the label leaves. A theme that states no row
     // height, or one that does not clear its own label size, leaves the
     // showcase's own padding standing, rather than a negative inset.
-    let row_height_s = match list_t.row_height {
-        Some(h) => format!("{h:.0}px"),
-        None => "not stated: the showcase's own padding".to_string(),
-    };
     let row_label = scaled_text_size(list_t.item_font.size, a11y);
     let row_inset = list_t.row_height.map_or(0.0, |h| h - row_label);
     let list_padding = if row_inset > 0.0 {
@@ -12506,54 +12840,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     .height(Length::Fixed(180.0));
 
     let list_demo = hoverable(
-        widget_tooltip(
-            "SelectionList",
-            &aw_paints(
-                state,
-                "styles::aw::selection_list",
-                styles::aw::selection_list(resolved),
-                aw_selection_list_inks,
-                &[
-                    (
-                        AwStatus::Active,
-                        &[
-                            ("list", "background"),
-                            ("row label", "text_color"),
-                            ("border", "border_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Selected,
-                        &[
-                            ("selected row", "background"),
-                            ("selected label", "text_color"),
-                        ],
-                    ),
-                    (
-                        AwStatus::Hovered,
-                        &[
-                            ("hovered row", "background"),
-                            ("hovered label", "text_color"),
-                        ],
-                    ),
-                ],
-                &line_zero("list"),
-            ),
-            &[
-                (
-                    "row label",
-                    font_row("list.item_font", &resolved.list.item_font).as_str(),
-                ),
-                ("row height", &row_height_s),
-            ],
-            &[(
-                "list.row_height",
-                "reachable only indirectly: iced_aw has no item_height setter, so \
-                 a row is text_size + padding.y() (selection_list/list.rs:118, \
-                 :209) and the showcase gives new_with the padding that makes the \
-                 sum the platform's height",
-            )],
-        ),
+        UnlistedKey::AwSelectionList,
         column![
             text("SelectionList").role(section_title(ts), resolved, a11y),
             probe(probes::SELECTION_LIST, Length::Shrink, selection_list),
@@ -12800,7 +13087,6 @@ fn build_icon_cell<'a>(
     xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
-    let icon_name_str = loaded.name.unwrap_or("(unmapped)");
     let source_label = loaded.source.label();
     let icon_px = resolved.defaults.icon_sizes.toolbar;
     let cell_px = resolved.defaults.icon_sizes.large;
@@ -12839,10 +13125,8 @@ fn build_icon_cell<'a>(
         _ => placeholder_icon(icon_px),
     };
 
-    let info = format!("{role_name}\nicon: {icon_name_str}\nsource: {source_label}");
-
-    // Wrap in mouse_area for Widget Info hover
-    mouse_area(
+    hoverable(
+        UnlistedKey::Icon(loaded.role),
         container(
             column![
                 container(icon_element)
@@ -12856,11 +13140,26 @@ fn build_icon_cell<'a>(
         )
         .padding(Padding::from(SP.xs))
         .style(styles::container_card(resolved))
-        .width(Length::Fixed(100.0)),
+        .width(Length::Fixed(100.0))
+        .into(),
     )
-    .on_enter(Message::WidgetHovered(info))
-    .on_exit(Message::WidgetUnhovered)
-    .into()
+}
+
+/// The Widget Info of the Icons page's cell for `role`: the icon loaded for
+/// it now, and where it came from; empty where none is loaded for the role.
+fn icon_info(state: &State, role: IconRole) -> String {
+    state
+        .loaded_icons
+        .iter()
+        .find(|loaded| loaded.role == role)
+        .map(|loaded| {
+            format!(
+                "{role:?}\nicon: {}\nsource: {}",
+                loaded.name.unwrap_or("(unmapped)"),
+                loaded.source.label()
+            )
+        })
+        .unwrap_or_default()
 }
 
 /// A "?" in the slot of an icon that did not load, drawn at the icon's own
@@ -12879,6 +13178,24 @@ fn placeholder_icon<'a>(icon_px: f32) -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 // Tab: Theme Map
 // ---------------------------------------------------------------------------
+
+/// The Widget Info of the Theme Map's base palette.
+fn base_palette_info(state: &State) -> String {
+    let palette = state.current_theme.palette();
+    widget_tooltip(
+        "Base Palette (6 fields)",
+        &[
+            Paint::leaf("background", "background", palette.background),
+            Paint::leaf("text", "text", palette.text),
+            Paint::leaf("primary", "primary", palette.primary),
+            Paint::leaf("success", "success", palette.success),
+            Paint::leaf("warning", "warning", palette.warning),
+            Paint::leaf("danger", "danger", palette.danger),
+        ],
+        &[],
+        &[],
+    )
+}
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
@@ -12927,19 +13244,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
 
     // Base palette (6 colors)
     let base_palette = hoverable(
-        widget_tooltip(
-            "Base Palette (6 fields)",
-            &[
-                Paint::leaf("background", "background", palette.background),
-                Paint::leaf("text", "text", palette.text),
-                Paint::leaf("primary", "primary", palette.primary),
-                Paint::leaf("success", "success", palette.success),
-                Paint::leaf("warning", "warning", palette.warning),
-                Paint::leaf("danger", "danger", palette.danger),
-            ],
-            &[],
-            &[],
-        ),
+        UnlistedKey::BasePalette,
         column![
             text("Base Palette (6 fields)").role(section_title(ts), resolved, a11y),
             row![
@@ -12957,48 +13262,14 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     );
 
     // Extended palette sections (all 6 families use hoverable_ext_section)
-    let ext_background = hoverable_ext_section(
-        "Background (Extended)",
-        extended.background.base,
-        extended.background.weak,
-        extended.background.strong,
-        &swatch_style,
-    );
-    let ext_primary = hoverable_ext_section(
-        "Primary (Extended)",
-        extended.primary.base,
-        extended.primary.weak,
-        extended.primary.strong,
-        &swatch_style,
-    );
-    let ext_secondary = hoverable_ext_section(
-        "Secondary (Extended)",
-        extended.secondary.base,
-        extended.secondary.weak,
-        extended.secondary.strong,
-        &swatch_style,
-    );
-    let ext_success = hoverable_ext_section(
-        "Success (Extended)",
-        extended.success.base,
-        extended.success.weak,
-        extended.success.strong,
-        &swatch_style,
-    );
-    let ext_warning = hoverable_ext_section(
-        "Warning (Extended)",
-        extended.warning.base,
-        extended.warning.weak,
-        extended.warning.strong,
-        &swatch_style,
-    );
-    let ext_danger = hoverable_ext_section(
-        "Danger (Extended)",
-        extended.danger.base,
-        extended.danger.weak,
-        extended.danger.strong,
-        &swatch_style,
-    );
+    let [
+        ext_background,
+        ext_primary,
+        ext_secondary,
+        ext_success,
+        ext_warning,
+        ext_danger,
+    ] = PaletteSection::ALL.map(|section| hoverable_ext_section(section, extended, &swatch_style));
 
     // Resolved theme colors (defaults + selected per-widget)
     let native_colors = {
@@ -13171,18 +13442,101 @@ struct SwatchStyle<'s> {
     column_spacing: f32,
 }
 
-/// Build an extended palette section wrapped in a hoverable tooltip.
-///
-/// Combines `widget_tooltip` + `ext_palette_section` + `hoverable` to eliminate
-/// repetition in `view_theme_map`. Each call produces a complete hoverable section
-/// with all 6 swatches (base/weak/strong x color/text) and a Widget Info tooltip.
+/// One of the six families of iced's extended palette the Theme Map shows.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PaletteSection {
+    Background,
+    Primary,
+    Secondary,
+    Success,
+    Warning,
+    Danger,
+}
+
+impl PaletteSection {
+    const ALL: [PaletteSection; 6] = [
+        PaletteSection::Background,
+        PaletteSection::Primary,
+        PaletteSection::Secondary,
+        PaletteSection::Success,
+        PaletteSection::Warning,
+        PaletteSection::Danger,
+    ];
+
+    fn label(self) -> &'static str {
+        match self {
+            PaletteSection::Background => "Background (Extended)",
+            PaletteSection::Primary => "Primary (Extended)",
+            PaletteSection::Secondary => "Secondary (Extended)",
+            PaletteSection::Success => "Success (Extended)",
+            PaletteSection::Warning => "Warning (Extended)",
+            PaletteSection::Danger => "Danger (Extended)",
+        }
+    }
+
+    /// The family's base, weak and strong pairs in `extended`.
+    fn pairs(
+        self,
+        extended: &iced_core::theme::palette::Extended,
+    ) -> [iced_core::theme::palette::Pair; 3] {
+        match self {
+            PaletteSection::Background => {
+                let f = &extended.background;
+                [f.base, f.weak, f.strong]
+            }
+            PaletteSection::Primary => {
+                let f = &extended.primary;
+                [f.base, f.weak, f.strong]
+            }
+            PaletteSection::Secondary => {
+                let f = &extended.secondary;
+                [f.base, f.weak, f.strong]
+            }
+            PaletteSection::Success => {
+                let f = &extended.success;
+                [f.base, f.weak, f.strong]
+            }
+            PaletteSection::Warning => {
+                let f = &extended.warning;
+                [f.base, f.weak, f.strong]
+            }
+            PaletteSection::Danger => {
+                let f = &extended.danger;
+                [f.base, f.weak, f.strong]
+            }
+        }
+    }
+}
+
+/// The Widget Info of the Theme Map's extended palette section `section`,
+/// in the installed theme's palette.
+fn palette_section_info(state: &State, section: PaletteSection) -> String {
+    let [base, weak, strong] = section.pairs(state.current_theme.extended_palette());
+    widget_tooltip(
+        section.label(),
+        &[
+            Paint::leaf("base.color", "base.color", base.color),
+            Paint::leaf("base.text", "base.text", base.text),
+            Paint::leaf("weak.color", "weak.color", weak.color),
+            Paint::leaf("weak.text", "weak.text", weak.text),
+            Paint::leaf("strong.color", "strong.color", strong.color),
+            Paint::leaf("strong.text", "strong.text", strong.text),
+        ],
+        &[],
+        &[],
+    )
+}
+
+/// An extended palette section of `extended`, its six swatches
+/// (base/weak/strong x color/text) under its heading, wrapped in a
+/// hoverable whose Widget Info is [`palette_section_info`]'s.
 fn hoverable_ext_section<'a>(
-    label: &'a str,
-    base: iced_core::theme::palette::Pair,
-    weak: iced_core::theme::palette::Pair,
-    strong: iced_core::theme::palette::Pair,
+    section: PaletteSection,
+    extended: &iced_core::theme::palette::Extended,
     style: &SwatchStyle<'_>,
 ) -> Element<'a, Message> {
+    let label = section.label();
+    let [base, weak, strong] = section.pairs(extended);
     let SwatchStyle {
         border_color,
         border_width,
@@ -13210,19 +13564,6 @@ fn hoverable_ext_section<'a>(
             xxs_spacing,
         )
     };
-    let info = widget_tooltip(
-        label,
-        &[
-            Paint::leaf("base.color", "base.color", base.color),
-            Paint::leaf("base.text", "base.text", base.text),
-            Paint::leaf("weak.color", "weak.color", weak.color),
-            Paint::leaf("weak.text", "weak.text", weak.text),
-            Paint::leaf("strong.color", "strong.color", strong.color),
-            Paint::leaf("strong.text", "strong.text", strong.text),
-        ],
-        &[],
-        &[],
-    );
     let content: Element<'a, Message> = column![
         text(label).role(heading, resolved, a11y),
         row![
@@ -13237,7 +13578,7 @@ fn hoverable_ext_section<'a>(
     ]
     .spacing(column_spacing)
     .into();
-    hoverable(info, content)
+    hoverable(UnlistedKey::ThemeMapPalette(section), content)
 }
 
 /// The drop-down arrow: the connector's open chevron at the platform's own
@@ -13767,6 +14108,12 @@ fn theme(state: &State) -> Theme {
 // Subscription (animation tick)
 // ---------------------------------------------------------------------------
 
+/// The period of the animation tick, on which the Icons page's animated
+/// icons and the Basic page's spinner are redrawn, and of the settle tick,
+/// on which a hover that has stood [`INFO_SETTLE`] is shown, at most this
+/// late. The showcase's own; the model states none.
+const TICK: Duration = Duration::from_millis(50);
+
 fn subscription(state: &State) -> Subscription<Message> {
     let mut subs = vec![];
 
@@ -13774,8 +14121,12 @@ fn subscription(state: &State) -> Subscription<Message> {
     // spinner, which animates with the time since `animation_start`.
     let icons_animate = state.active_tab == Tab::Icons
         && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty());
+    // A hover waiting out INFO_SETTLE is promoted on the next tick: the
+    // animation's where it runs, else one of the same period.
     if (icons_animate || state.active_tab == Tab::Basic) && !state.motion_reduced() {
-        subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick));
+        subs.push(iced::time::every(TICK).map(|_| Message::AnimationTick));
+    } else if state.pending.is_some() {
+        subs.push(iced::time::every(TICK).map(|_| Message::InfoSettleTick));
     }
 
     // The key bindings the menus show, and Escape, which closes a dialog.
@@ -14011,8 +14362,9 @@ mod tests {
                 !matches!(
                     message,
                     Message::WidgetHovered(_)
-                        | Message::WidgetUnhovered
+                        | Message::WidgetUnhovered(_)
                         | Message::ElementHovered(_)
+                        | Message::ElementUnhovered(_)
                 )
             })
             .collect()
@@ -18178,10 +18530,19 @@ mod tests {
     }
 
     /// The title of the info `info` builds, the text of a `hoverable`'s
-    /// first argument at lines `lines` of `code`: the first string after a
-    /// `widget_tooltip` call in those lines of the original source, or in
-    /// those of the function `info` calls.
+    /// first argument at lines `lines` of `code`: for an [`UnlistedKey`],
+    /// the title of what its arm of [`unlisted_info`] calls; else the first
+    /// string after a `widget_tooltip` call in those lines of the original
+    /// source, or in those of the function `info` calls.
     fn info_title(code: &str, info: &str, lines: (usize, usize)) -> Option<String> {
+        if let Some(key) = info.trim().strip_prefix("UnlistedKey::") {
+            let builder = code.find("\nfn unlisted_info(")?;
+            let arm = format!("UnlistedKey::{key} => ");
+            let at = code[builder..].find(&arm)? + builder + arm.len();
+            let end = code[at..].find(",\n")? + at;
+            let line = line_at(code, at);
+            return info_title(code, &code[at..end], (line, line));
+        }
         let original: Vec<&str> = SHOWCASE.lines().collect();
         let callee: String = info
             .trim()
@@ -18981,17 +19342,25 @@ mod tests {
         assert!(inset > 0, "no bundled theme's focus ring is inset");
     }
 
-    /// The page widgets' infos the pages of `state` build, each opening
-    /// with its title.
+    /// The infos of the page widgets the pages of `state` wrap in
+    /// [`hoverable`], each opening with its title.
     fn built_infos(state: &mut State) -> Vec<String> {
-        BUILT_INFOS.with(|infos| infos.borrow_mut().clear());
+        built_keys(state)
+            .into_iter()
+            .map(|key| unlisted_info(state, key))
+            .collect()
+    }
+
+    /// The page widgets the pages of `state` wrap in [`hoverable`].
+    fn built_keys(state: &mut State) -> Vec<UnlistedKey> {
+        BUILT_KEYS.with(|keys| keys.borrow_mut().clear());
         let shown = state.active_tab;
         for tab in Tab::ALL {
             state.active_tab = *tab;
             drop(view(state));
         }
         state.active_tab = shown;
-        BUILT_INFOS.with(|infos| std::mem::take(&mut *infos.borrow_mut()))
+        BUILT_KEYS.with(|keys| std::mem::take(&mut *keys.borrow_mut()))
     }
 
     /// The info of `infos` titled `title`.
@@ -19448,7 +19817,8 @@ mod tests {
     /// the Basic page's plain button its title is "Button · Normal", not the
     /// primary button's; over the primary one, "Button · Primary". Its rows
     /// are the list's leaves in the list's order, each with a value, and the
-    /// status bar shows the same title.
+    /// status bar shows the same title, once the pointer has stood on it
+    /// [`INFO_SETTLE`].
     #[test]
     fn widget_info_names_the_hovered_element() {
         for (id, title) in [
@@ -19477,10 +19847,16 @@ mod tests {
                 let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
                 ui.into_messages().collect::<Vec<_>>()
             };
+            let start = Instant::now();
             for message in messages {
-                let _ = update(&mut state, message);
+                let _ = update_at(&mut state, message, start);
             }
-            assert_eq!(state.hovered_element, Some(id), "the pointer at {at:?}");
+            let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
+            assert_eq!(
+                state.hovered,
+                Some(Hovered::Listed(id)),
+                "the pointer at {at:?}"
+            );
             let element = match elements::element(id) {
                 Some(element) => element,
                 None => panic!("{id} is not in the list"),
@@ -19496,6 +19872,170 @@ mod tests {
                 "{id}: a row with no value"
             );
         }
+    }
+
+    /// Moves the pointer onto the text reading `label` in the real
+    /// interface of `state` and feeds what that produced through `update`,
+    /// `now` on the showcase's clock.
+    fn hover_text(state: &mut State, label: &str, now: Instant) {
+        let messages: Vec<Message> = {
+            let mut ui = interface(state);
+            let at = match texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content == label)
+            {
+                Some((_, bounds)) => bounds.center(),
+                None => panic!("{label}: no such text on {:?}", state.active_tab),
+            };
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            ui.into_messages().collect()
+        };
+        for message in messages {
+            let _ = update_at(state, message, now);
+        }
+    }
+
+    /// The tick that comes at `now` on the showcase's clock.
+    fn tick_at(state: &mut State, now: Instant) {
+        let _ = update_at(state, Message::InfoSettleTick, now);
+    }
+
+    /// What the inspector's Copy button copies, `None` where it shows none.
+    fn copied(state: &State) -> Option<String> {
+        let mut ui = interface(state);
+        ui.click("Copy").ok()?;
+        ui.into_messages().find_map(|message| match message {
+            Message::Copy(text) => Some(text),
+            _ => None,
+        })
+    }
+
+    /// `preset` installed in light through the theme picker's message.
+    fn installed(preset: &str) -> State {
+        let mut state = State::default();
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset(preset.to_owned())),
+        );
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Light));
+        state
+    }
+
+    /// M9-131: a page widget's Widget Info follows an install made with the
+    /// pointer still over it -- the Buttons page's primary row, a Theme Map
+    /// section and an Icons cell, under one preset, then another installed
+    /// without a move: what the inspector shows and copies is what the same
+    /// hover shows under the new theme from the start, its hexes the new
+    /// theme's, where it kept the old theme's text.
+    #[test]
+    fn widget_info_follows_an_install_under_a_still_pointer() {
+        let (from, to) = ("catppuccin-mocha", "material-3");
+        let settle = INFO_SETTLE;
+        for tab in [Tab::Buttons, Tab::ThemeMap, Tab::Icons] {
+            let hovered = |preset: &str| {
+                let mut state = installed(preset);
+                state.active_tab = tab;
+                let label = match tab {
+                    Tab::Buttons => "Primary Actions".to_owned(),
+                    Tab::ThemeMap => "Primary (Extended)".to_owned(),
+                    _ => match state.loaded_icons.first() {
+                        Some(icon) => format!("{:?}", icon.role),
+                        None => panic!("{preset}: no icon loaded"),
+                    },
+                };
+                let start = Instant::now();
+                hover_text(&mut state, &label, start);
+                tick_at(&mut state, start + settle);
+                state
+            };
+            let mut state = hovered(from);
+            let before = copied(&state);
+            assert!(before.is_some(), "{tab:?}: no info shown under {from}");
+            let _ = update(
+                &mut state,
+                Message::ThemeSelected(ThemeChoice::Preset(to.to_owned())),
+            );
+            let after = copied(&state);
+            assert_eq!(
+                after,
+                copied(&hovered(to)),
+                "{tab:?}: the info shown after installing {to} under a still pointer"
+            );
+            assert_ne!(after, before, "{tab:?}: {from} and {to} show the same info");
+        }
+    }
+
+    /// M9-132: the pointer passing over the page does not flicker Widget
+    /// Info through every widget it crosses, as the gpui and egui panels do
+    /// not: once one widget's info is shown, a second's replaces it only when
+    /// the pointer has stood on the second [`INFO_SETTLE`], and a third
+    /// entered before that restarts the wait, so the second's is never shown.
+    #[test]
+    fn a_new_hover_replaces_the_shown_info_once_it_has_stood_info_settle() {
+        let settle = INFO_SETTLE;
+        let ms = Duration::from_millis;
+        let selection = || {
+            let mut state = installed("kde-breeze");
+            state.active_tab = Tab::Selection;
+            state
+        };
+        let [first, second, third] = ["Checkboxes", "Radio Buttons", "PickList (dropdown)"];
+        let titles: Vec<Option<String>> = [first, second, third]
+            .iter()
+            .map(|label| {
+                let mut state = selection();
+                let start = Instant::now();
+                hover_text(&mut state, label, start);
+                tick_at(&mut state, start + settle);
+                shown_title(&state)
+            })
+            .collect();
+        assert!(
+            titles.iter().all(Option::is_some) && titles[0] != titles[1] && titles[1] != titles[2],
+            "three widgets, three infos: {titles:?}"
+        );
+        let mut state = selection();
+        let start = Instant::now();
+        hover_text(&mut state, first, start);
+        tick_at(&mut state, start + settle - ms(1));
+        assert_eq!(
+            shown_title(&state),
+            None,
+            "the first info before it has stood"
+        );
+        tick_at(&mut state, start + settle);
+        assert_eq!(
+            shown_title(&state),
+            titles[0],
+            "the first info once it has stood"
+        );
+
+        let moved = start + settle + ms(10);
+        hover_text(&mut state, second, moved);
+        assert_eq!(shown_title(&state), titles[0], "the second entered");
+        tick_at(&mut state, moved + ms(100));
+        assert_eq!(shown_title(&state), titles[0], "the second 100 ms on");
+        let crossed = moved + ms(150);
+        hover_text(&mut state, third, crossed);
+        tick_at(&mut state, moved + settle);
+        assert_eq!(
+            shown_title(&state),
+            titles[0],
+            "the second's wait is over, but the pointer moved on"
+        );
+        tick_at(&mut state, crossed + settle - ms(1));
+        assert_eq!(
+            shown_title(&state),
+            titles[0],
+            "the third before it has stood"
+        );
+        tick_at(&mut state, crossed + settle);
+        assert_eq!(
+            shown_title(&state),
+            titles[2],
+            "the third once it has stood"
+        );
     }
 
     /// A leaf's value reads as the resolved theme holds it, in the
@@ -19795,9 +20335,12 @@ mod tests {
                     let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
                     ui.into_messages().collect()
                 };
+                // The pointer stands there for INFO_SETTLE.
+                let start = Instant::now();
                 for message in messages {
-                    let _ = update(&mut state, message);
+                    let _ = update_at(&mut state, message, start);
                 }
+                let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
             }
             let page = held_page(view(&state), None, false, shielded);
             let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
@@ -20456,35 +20999,47 @@ mod tests {
     /// whatever Widget Info holds: on kde-breeze, whose scrollbar does not
     /// overlay, the panel's bar is laid out inside the panel, where round 2
     /// found it widening the panel by `scrollbar.groove_width` and moving the
-    /// page.
+    /// page. The tall info is the page widgets' longest, which overflows the
+    /// panel.
     #[test]
     fn the_side_panel_scrollbar_moves_nothing() {
-        let (theme, resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
+        let mut state = installed("kde-breeze");
         assert!(
-            !resolved.scrollbar.overlay_mode,
+            !state.current_resolved.scrollbar.overlay_mode,
             "kde-breeze's scrollbar no longer takes room of its own; pick a preset whose does"
         );
-        let long: String = std::iter::once("Tall info".to_string())
-            .chain((0..200).map(|i| format!("  row {i}: a value")))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let tallest = built_keys(&mut state)
+            .into_iter()
+            .max_by_key(|key| unlisted_info(&state, *key).lines().count());
         let mut drawn = Vec::new();
-        for info in [String::new(), long] {
-            let state = State {
-                current_theme: theme.clone(),
-                current_resolved: resolved.clone(),
-                widget_info: info,
-                ..State::default()
-            };
+        for hovered in [None, tallest.map(Hovered::Unlisted)] {
+            state.hovered = hovered;
             let mut ui: Simulator<'_, Message> =
                 Simulator::with_size(Settings::default(), Size::from(WINDOW_SIZE), view(&state));
             drawn.push((
                 probe_bounds(&mut ui, probes::SIDE_PANEL),
                 probe_bounds(&mut ui, probes::BASIC_BUTTON),
             ));
+            // The info's last line lies below the panel.
+            if let Some(Hovered::Unlisted(key)) = hovered {
+                let info = unlisted_info(&state, key);
+                let last = info
+                    .lines()
+                    .rfind(|l| !l.trim().is_empty())
+                    .unwrap_or_default();
+                let last = last.trim();
+                let last = last.split_once(": ").map_or(last, |(_, value)| value);
+                let panel = probe_bounds(&mut ui, probes::SIDE_PANEL);
+                let bottom = texts(&mut ui)
+                    .into_iter()
+                    .find(|(content, _)| content == last)
+                    .map(|(_, bounds)| bounds.y + bounds.height);
+                assert!(
+                    bottom.is_some_and(|b| b > panel.y + panel.height),
+                    "{key:?}'s info does not overflow the panel: {last:?} ends at \
+                     {bottom:?}, the panel is {panel:?}"
+                );
+            }
         }
         for (panel, _) in &drawn {
             assert_eq!(panel.width, LEFT_PANEL_WIDTH, "the side panel's width");
