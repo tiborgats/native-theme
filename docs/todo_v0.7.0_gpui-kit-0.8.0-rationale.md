@@ -2,8 +2,9 @@
 
 **Status:** design, drafted 2026-10-21 from the two investigation reports and the upstream
 sources, self-checked; revised the same day for the maintainer's decision on D1 (K14–K18),
-self-checked again; awaiting independent checks and the maintainer's approval; nothing
-implemented. What to build: [`todo_v0.7.0_gpui-kit-0.8.0-spec.md`](todo_v0.7.0_gpui-kit-0.8.0-spec.md).
+self-checked again; checked independently; approved by the maintainer on 2026-10-21, as
+D11 in [`todo_code-review-plan.md`](todo_code-review-plan.md) records; being implemented as
+milestone G3. What to build: [`todo_v0.7.0_gpui-kit-0.8.0-spec.md`](todo_v0.7.0_gpui-kit-0.8.0-spec.md).
 Tasks and gates: [`todo_v0.7.0_gpui-kit-0.8.0-plan.md`](todo_v0.7.0_gpui-kit-0.8.0-plan.md).
 
 GPUI Kit v0.8.0 was released on 2026-10-19: gpui-kit, gpui-kit-assets, gpui-component,

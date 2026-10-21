@@ -1,8 +1,9 @@
 # v0.7.0 — GPUI Kit 0.8.0 (G3): Specification
 
 **Status:** design, drafted 2026-10-21, self-checked; revised the same day for the
-maintainer's decision on D1 (§12), self-checked again; awaiting independent checks and the
-maintainer's approval; nothing implemented. Reasons:
+maintainer's decision on D1 (§12), self-checked again; checked independently; approved by
+the maintainer on 2026-10-21, as D11 in [`todo_code-review-plan.md`](todo_code-review-plan.md)
+records; being implemented as milestone G3. Reasons:
 [`todo_v0.7.0_gpui-kit-0.8.0-rationale.md`](todo_v0.7.0_gpui-kit-0.8.0-rationale.md)
 (K1–K18). Tasks and gates: [`todo_v0.7.0_gpui-kit-0.8.0-plan.md`](todo_v0.7.0_gpui-kit-0.8.0-plan.md).
 
