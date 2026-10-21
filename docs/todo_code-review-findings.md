@@ -12562,6 +12562,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Status:** fixed — 127d2ed5 (M9b T8; `the_side_panel_is_padded_as_gpuis`, over every bundled preset in both modes and kde-breeze with a spliced partial padding).
 *Source:* M8 T16's review amendment (7767fbbe); m9b-rulings.md, Addendum A, S9.
 
+#### M9-143 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:12872
+**Claim:** The `iced_aw` Extra-page Card pads its head, body and foot by `card.border.padding` without `card.border.line_width`, so where a preset states both its text sits a line width closer to the border than the Basic and Display cards', which pad inside the border.
+**Evidence:** At `b73dd1c6` (the parent of the fix) the Card takes `Card::padding(stated_padding(&card_t.border.padding))` where every side is stated (:12872), which sets the three sections alike (iced_aw 0.14.1 `src/widget/card.rs:216-221`). The Card paints its border over its whole bounds and lays its sections inside them with no inset (`:604-633`). The Basic and Display cards pad by `padding_inside_border(&card.border, Padding::ZERO)` (:11374, f6d73eb7, M8 T16). Under kde-breeze, the head's title is 7 px from the card's left and top and the body's caption 7 px from its left, where padding and line width give 8 (M9b T10's red run).
+**Fix proposed:** Where `card.border.padding` states every side, pad each section by the stated sides, a side that meets the card's edge (the head's top, every section's left and right, the foot's bottom) adding `card.border.line_width`, a side between two sections the stated side alone; where any side is unstated, keep iced_aw's own padding, which it keeps private (`card.rs:21`).
+**Verdict:** CONFIRMED by the M8 T16 review (the amendment of 2026-10-17, 7767fbbe: "the iced_aw Extra-page Card pads inside its border as the Basic and Display cards do"); the id is the one m9b-rulings.md's Addendum A (S9) reserved.
+**Triage:** fix — CONFIRMED (M9b T10).
+**Status:** fixed — 0b9bb16b (M9b T10; `aw_card_padding`, gated by `the_extra_card_pads_inside_its_border` under kde-breeze and adwaita).
+*Source:* M8 T16's review amendment (7767fbbe); m9b-rulings.md, Addendum A, S9.
+
 
 ### Rejected
 
@@ -12795,6 +12804,7 @@ Set from the plan's task table, the progress ledger's "complete" lines and the t
 - M9-008: fixed, with the right-clicked Tree row's hover text an upstream limit ([upstream] entry in docs/todo.md) and the entry's List evidence corrected (T18).
 - M9-124, M9-125, M9-126, M9-136: iced half M9b T1, egui half M9c T1. M9-128: iced half M9b T1. M9-127: iced M9b T2, egui M9c T1. M9-137: iced M9b T2. M9-138: iced M9b T6 and T13.
 - M9-130 and M9-139 (M9b's entries): their gpui halves are in M9a T4 (f3e058ee) and T16 (d320c727); the entries stay M9b's.
+- **M9a closed (2026-10-21).** CI run 39656159244 on `b73dd1c6`, the push after G3 Task 3, is green in all 40 jobs, *Test gpui connector* with its GPUI Fast step and *Security audit* among them. The GPUI Fast step that failed in run 39490500851 on gpui-fast 0.1.7's stale child-list crash passes on the 0.1.10 floor G3 Task 1 set (`c8d89e75`), so M9a's Step 8 closes on that run (D11; the G3 plan's *Interleaving with M9b*). The controller's M9a gpui-fast fix brief (`m9a-gpuifast-fix-brief.md`, in the review's SDD directory) is superseded (G3 rationale K4): its regression test is adopted (G3 Task 1, spec Appendix A); its workaround, `[upstream]` entry and CHANGELOG line are not. The SDD progress file records that.
 
 ### Status
 
