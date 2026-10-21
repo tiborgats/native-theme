@@ -6806,11 +6806,7 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
             "the window manager's, where it draws them: iced asks winit for a decorated window"
                 .to_string(),
         ),
-        (
-            "frame",
-            "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)"
-                .to_string(),
-        ),
+        ("frame", window_frame(std::env::consts::OS).to_string()),
         ("title", WINDOW_TITLE.to_string()),
     ];
     let section = |title: &'static str, rows: Vec<(&'static str, String)>| {
@@ -6828,6 +6824,26 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget)
     .into()
+}
+
+/// The inspector's "frame" row on the platform `os` names
+/// (`std::env::consts::OS`): the frame of the decorated window iced asks
+/// winit for. On Linux the window manager draws it where it draws
+/// decorations, and where a Wayland compositor draws none, as Mutter does,
+/// winit draws its own Adwaita frame (winit 0.30.13's `wayland-csd-adwaita`,
+/// on by iced's `wayland` feature, `sctk_adwaita::AdwaitaFrame`,
+/// `src/platform_impl/linux/wayland/window/state.rs:48`); on macOS and
+/// Windows the system draws its own title bar.
+fn window_frame(os: &str) -> &'static str {
+    match os {
+        "macos" => "the system's title bar: the window's own, with its traffic-light controls",
+        "windows" => "the system's title bar: the window's own caption, controls and border",
+        _ => {
+            "the window manager's (KWin: Breeze's title bar, controls, corners and shadow; \
+             Mutter under X11: the desktop's decoration); where a Wayland compositor draws \
+             none, as Mutter does, winit's own Adwaita frame"
+        }
+    }
 }
 
 /// One entry of the command palette: its label, the words it is also found
@@ -21064,6 +21080,42 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// M9-082: the inspector's "frame" row names the platform's frame, the
+    /// window manager's on Linux and the system's title bar on macOS and
+    /// Windows, and the inspector prints the running platform's row.
+    #[test]
+    fn the_window_frame_row_names_the_platforms_frame() {
+        let linux = window_frame("linux");
+        assert!(
+            linux.contains("KWin") && linux.contains("Mutter"),
+            "linux: {linux}"
+        );
+        let macos = window_frame("macos");
+        let windows = window_frame("windows");
+        for (os, row) in [("macos", macos), ("windows", windows)] {
+            assert!(
+                row.contains("title bar") && !row.contains("KWin") && !row.contains("Mutter"),
+                "{os}: {row}"
+            );
+        }
+        assert_ne!(
+            macos, windows,
+            "macOS and Windows draw different title bars"
+        );
+        let state = State {
+            inspector_tab: InspectorTab::Theme,
+            ..State::default()
+        };
+        let mut ui = interface(&state);
+        let found = texts(&mut ui);
+        let shown = found
+            .iter()
+            .position(|(text, _)| text == "frame")
+            .and_then(|at| found.get(at + 1))
+            .map(|(text, _)| text.as_str());
+        assert_eq!(shown, Some(window_frame(std::env::consts::OS)));
     }
 
     /// In a capture the pointer hovers nothing: the page `held_page` wraps
