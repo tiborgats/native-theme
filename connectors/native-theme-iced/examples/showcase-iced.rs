@@ -236,6 +236,8 @@ mod probes {
     pub const SLIDER: &str = "probe-slider";
     pub const VERTICAL_SLIDER: &str = "probe-vertical-slider";
     pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
+    /// The Layout page's table, whole.
+    pub const LAYOUT_TABLE: &str = "probe-layout-table";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
     /// The Display page's four tooltips' buttons, Top, Bottom, Left and
@@ -9658,7 +9660,10 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         cell.width(Length::FillPortion(1)).into()
     };
     // `list.header_height` where the theme states it; else the header is a
-    // row. Its line lies inside it.
+    // row, as gpui's unset header keeps its body rows' height. Its line lies
+    // inside it: a stated height grows to hold the line too, and where
+    // neither height is stated the header is a row's line box and padding,
+    // the line within them, as the body rows are tall.
     let head_h = height(
         native_theme_iced::list_header_height(resolved).or(l.row_height),
         &l.header_font,
@@ -11725,7 +11730,6 @@ fn grid_info(state: &State) -> String {
             to_color(d.border.color),
         )],
         &[
-            ("columns", "4"),
             (
                 "cell fill",
                 "each cell's own: the ResolvedDefaults colour its caption names",
@@ -11733,11 +11737,17 @@ fn grid_info(state: &State) -> String {
             ("cell radius", "defaults.border.corner_radius"),
             ("spacing", "layout.widget_gap, none where unstated"),
         ],
-        &[(
-            "Style",
-            "grid has no Catalog and no Style — it only places its children \
-             (grid.rs:13-19)",
-        )],
+        &[
+            (
+                "Style",
+                "grid has no Catalog and no Style — it only places its children \
+                 (grid.rs:13-19)",
+            ),
+            (
+                "columns",
+                "4, the showcase's own: the model states no column count",
+            ),
+        ],
     )
 }
 
@@ -11785,8 +11795,14 @@ fn pane_grid_info(state: &State) -> String {
     )
 }
 
+/// The four columns' text widths on the Layout page's table: role, size,
+/// weight and line height, the showcase's own; each cell adds
+/// [`LAYOUT_CELL_PAD`].
+const LAYOUT_TEXT_WIDTHS: [f32; 4] = [160.0, 90.0, 90.0, 110.0];
+
 /// The padding each cell of the Layout page's table holds: the showcase's
-/// own scale, as the model states no padding for a table's cells.
+/// own scale. iced's `table` takes no list padding here (the Basic table,
+/// built of containers, pads its cells by `list.border.padding`).
 const LAYOUT_CELL_PAD: Padding = Padding {
     top: SP.xs,
     right: SP.s,
@@ -11825,7 +11841,7 @@ fn table_info(state: &State) -> String {
              text scale"
         ),
         (Some(h), _) => format!("{h:.0}px, list.header_height"),
-        (None, _) => "its text's (list.header_height unstated)".to_string(),
+        (None, _) => "its text's and the cell padding's (list.header_height unstated)".to_string(),
     };
     let l = &resolved.list;
     widget_tooltip(
@@ -12097,9 +12113,9 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         .padding(cell_pad)
         .into()
     };
-    // The four columns' text widths, each with its cells' padding.
+    // The four columns' widths, each its text's and its cells' padding.
     let [role_w, size_w, weight_w, line_w] =
-        [160.0, 90.0, 90.0, 110.0].map(|width: f32| width + cell_pad.x());
+        LAYOUT_TEXT_WIDTHS.map(|width: f32| width + cell_pad.x());
     let scale_table = table(
         [
             table::column(
@@ -12137,7 +12153,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         column![
             text("Table (columns and rows)").role(section_title(ts), resolved, a11y),
             text("The four typographic roles this theme resolves:").body(resolved, a11y),
-            scale_table,
+            probe(probes::LAYOUT_TABLE, Length::Fill, scale_table),
         ]
         .spacing(gap.widget)
         .into(),
@@ -18050,8 +18066,9 @@ mod tests {
     /// `list.border.padding` and its header line inside it; its body rows
     /// are `list.row_height` (macos-tahoe) or their line box and padding.
     /// The Layout page's iced `table` makes its header cells, which hold
-    /// their padding and no rule, that height, and their text's height and
-    /// padding where the theme states none, as its rows are. Every
+    /// their padding and no rule, that height, and their line box at
+    /// `defaults.line_height` and padding where the theme states none, as
+    /// its rows are. Every
     /// expectation is computed from the theme at test time, at text scales
     /// 1 and 1.5.
     #[test]
@@ -18123,7 +18140,7 @@ mod tests {
             let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
             let want = match stated {
                 Some(h) => grown(h, l.header_font.size, 2.0 * SP.xs, 0.0),
-                None => height_of(&mut ui, "text_scale role") + 2.0 * SP.xs,
+                None => line_box(l.header_font.size) + 2.0 * SP.xs,
             };
             assert!(
                 (cell.height - want).abs() < 0.01,
@@ -18252,20 +18269,24 @@ mod tests {
     }
 
     /// The Layout page under `state`, drawn at the window's width: its
-    /// pixels, the bounds of the table's first header cell and of the cell
-    /// reading `section_heading`, and the frame's pixels per logical pixel.
-    fn layout_table_frame(state: &State) -> (image::RgbaImage, Rectangle, Rectangle, f32) {
-        let (mut header, mut cell) = (None, None);
+    /// pixels, the bounds of the table, of its first header cell and of the
+    /// cell reading `section_heading`, and the frame's pixels per logical
+    /// pixel.
+    fn layout_table_frame(
+        state: &State,
+    ) -> (image::RgbaImage, Rectangle, Rectangle, Rectangle, f32) {
+        let (mut table, mut header, mut cell) = (None, None, None);
         let (image, _, scale) =
             frame_after(state, view(state), Size::new(WINDOW_SIZE.0, 2000.0), |ui| {
+                table = Some(probe_bounds(ui, probes::LAYOUT_TABLE));
                 header = Some(probe_bounds(ui, probes::LAYOUT_TABLE_HEADER));
                 cell = texts(ui)
                     .into_iter()
                     .find(|(content, _)| content == "section_heading")
                     .map(|(_, bounds)| bounds);
             });
-        match (header, cell) {
-            (Some(header), Some(cell)) => (image, header, cell, scale),
+        match (table, header, cell) {
+            (Some(table), Some(header), Some(cell)) => (image, table, header, cell, scale),
             _ => panic!("the Layout table's header or its section_heading cell is not laid out"),
         }
     }
@@ -18275,14 +18296,25 @@ mod tests {
     /// in `list.item_font.color`, as the Basic table does. Under material-3
     /// light (whose header colour is not the text colour), a splice of each
     /// moves what the table draws, and the spliced header fill fills the
-    /// header cell.
+    /// header cell, which spans its column from the table's left edge.
     #[test]
     fn the_layout_table_takes_the_lists_colours() {
         let mut state = page_state("material-3", Tab::Layout);
         let theirs = state.current_resolved.clone();
-        let (base, header, cell, scale) = layout_table_frame(&state);
+        let (base, table, header, cell, scale) = layout_table_frame(&state);
         let [ink, item, fill] = ["#13579b", "#9b1357", "#579b13"].map(spliced_colour);
         let mut faults = Vec::new();
+
+        // The first header cell, its fill, spans its column from the table's
+        // left edge: the cell holds its padding, which iced's own table
+        // padding would leave unfilled outside it.
+        let column = LAYOUT_TEXT_WIDTHS.first().copied().unwrap_or_default() + LAYOUT_CELL_PAD.x();
+        if (header.x - table.x).abs() > 0.01 || (header.width - column).abs() > 0.01 {
+            faults.push(format!(
+                "the first header cell is {header:?}, not the {column} px column at the \
+                 table's left edge {table:?}"
+            ));
+        }
 
         state.current_resolved.list.header_font.color = ink;
         let (image, ..) = layout_table_frame(&state);
