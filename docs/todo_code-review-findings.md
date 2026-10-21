@@ -12580,6 +12580,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Status:** fixed — the commit that files this entry (G3 T3b): `linux_reader` is two functions by `cfg`; the MSRV job's gpui step runs its three checks with `RUSTFLAGS: -Dwarnings`, which fails on the old code (`error: unused variable: reader`) and passes on the new. G3 T3b fix round 1: `RUSTFLAGS: -Dwarnings` is the whole MSRV job's, and the job also checks native-theme without its readers (its default features) at its own MSRV, 1.88.0; every check in it passes so.
 *Source:* g3/g3-T1-rereview.md; g3/g3-T3b-carry.md.
 
+#### M9-150 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:9156
+**Claim:** Above an OS text scale of 1 the iced showcase's Basic list keeps a stated `list.row_height` and the window's menu rows a stated `menu.row_height`, so the scaled label and its padding run past the row, where gpui's list and menu rows grow.
+**Evidence:** at `c6db5a7a` the Basic list's rows are `Length::Fixed(list_t.row_height.unwrap_or(..))` (`showcase-iced.rs:9156`, `:9166`) and a menu row is `entry.height(Length::Fixed(h))` for `menu.row_height` (`:4366-4369`); gpui's `geometry::list_item` and `geometry::menu_item` (`connectors/native-theme-gpui/src/geometry.rs:427`, `:406`) take `with_height_rule` (`:204-213`): the stated height at a factor of 1 or less, a minimum with an automatic height above it. Under macos-monterey at 1.5 a list row stays 24 px and a menu row 22, where their text and padding need 39 and 37.
+**Fix proposed:** Grow both above a factor of 1 through the shared crate's `rows::scaled_height`, the rule M9b T11 gave the tables, with each row's own padding and no rule.
+**Verdict:** CONFIRMED by the M9b T11 review (`m9b-T11-review.md`, the ⚠️ on the controller's question 2).
+**Triage:** fix — CONFIRMED (M9b T11 fix round 1, the controller's ruling).
+**Status:** fixed — the commit that files this entry (M9b T11 fix round 1): the Basic list's rows and the window's menu rows take `rows::scaled_height(stated, prefs, font size, defaults.line_height, padding, 0)`; `stated_list_and_menu_rows_hold_their_text_at_every_text_scale` fails on the old code (macos-tahoe and macos-monterey list rows 24 tall, want 41 and 39; macos-monterey's menu row 22, want 37) and passes on the new. The Extra page's `iced_aw` menu rows and `SelectionList` are not changed.
+*Source:* m9b-T11-review.md; m9b-T11-fix1-brief.md.
+
 
 ### Rejected
 

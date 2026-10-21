@@ -4292,7 +4292,8 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// separators and key bindings, in `iced_aw`'s `MenuBar`: each title and row
 /// a button in [`menu_row`], in `menu.font`, padded by `menu.border.padding`
 /// (iced's button padding on a side it leaves unstated), `menu.row_height`
-/// tall where the theme states one; the rows' separators
+/// tall where the theme states one, grown above a text scale of 1 to hold
+/// the row's line and padding; the rows' separators
 /// `separator.line_width` thick in `menu.separator_color`. The row has the
 /// window's `window.background_color` and no frame; a menu's panel is
 /// `menu.background_color`, framed by the popover's border (platform-facts
@@ -4306,6 +4307,18 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     let gap = Gaps::from_layout(&state.layout);
     let m = &resolved.menu;
     let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+    // A row's stated height, grown above a text scale of 1 to hold its line
+    // and padding, as gpui's menu rows do (`rows::scaled_height`).
+    let row_height = m.row_height.map(|h| {
+        rows::scaled_height(
+            h,
+            a11y,
+            m.font.size,
+            resolved.defaults.line_height,
+            pad.y(),
+            0.0,
+        )
+    });
     // The bar's `index`th title.
     let title = |index: usize, id: &'static str, label: &'static str| {
         tagged(
@@ -4341,7 +4354,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         // out from the top: the model states the row's height ("height of a
         // single item row", docs/platform-facts.md §2 dimension rules), and
         // a menu item's label sits in the middle of it.
-        let line_height = match m.row_height {
+        let line_height = match row_height {
             Some(_) => Fill,
             None => Length::Shrink,
         };
@@ -4363,7 +4376,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         .width(Fill)
         .style(menu_row(resolved))
         .on_press(action);
-        let entry = match m.row_height {
+        let entry = match row_height {
             Some(h) => entry.height(Length::Fixed(h)),
             None => entry,
         };
@@ -6398,7 +6411,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("menu", "font.color") => "menu_row: text_color at rest".into(),
         ("menu", "hover_background") => "menu_row: the Hovered fill; menu_bar_style: path".into(),
         ("menu", "hover_text_color") => "menu_row: the Hovered text_color".into(),
-        ("menu", "row_height_px") => "the row button's height, where stated".into(),
+        ("menu", "row_height_px") => {
+            "the row button's height, where stated, grown above a text scale of 1 to hold \
+             its line and padding (rows::scaled_height)"
+                .into()
+        }
         ("menu", "separator_color") => "line_style: the rule's colour".into(),
         ("menu", f) if side(f).is_some() => "Button::padding, iced's own on an unstated side".into(),
         ("popover", "border.color") => "menu_bar_style: menu_border.color".into(),
@@ -6601,13 +6618,10 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              a text scale of 1; the label's line box and padding where both are"
                 .into()
         }
-        ("list", "row_height_px") if under("basic.table.") => {
+        ("list", "row_height_px") => {
             "a row's height, grown above a text scale of 1 to hold its label and padding \
              (rows::scaled_height); the label's line box and padding where unstated"
                 .into()
-        }
-        ("list", "row_height_px") => {
-            "a row's height; the label's line box and padding where unstated".into()
         }
         ("list", "hover_background") if under("basic.table.") => {
             "not reachable: the table's rows are containers, not hoverable".into()
@@ -9152,8 +9166,20 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
     // KDE's rows size to their content: the label's line box and the padding
     // the theme states above and below it.
+    // A stated height grows above a text scale of 1 to hold the label and
+    // its padding, as gpui's list rows do (`rows::scaled_height`).
     let label_line = label * resolved.defaults.line_height;
-    let row_height = list_t.row_height.unwrap_or(label_line + row_pad.y());
+    let row_height = match list_t.row_height {
+        Some(h) => rows::scaled_height(
+            h,
+            a11y,
+            list_t.item_font.size,
+            resolved.defaults.line_height,
+            row_pad.y(),
+            0.0,
+        ),
+        None => label_line + row_pad.y(),
+    };
     const LIST_ROW_IDS: [&str; 3] = ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"];
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
         let item = button(
@@ -18113,6 +18139,100 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// M9-150 (theme-data): a stated row height holds its text at every
+    /// text scale, as gpui's list and menu rows do (`geometry::list_item`,
+    /// `geometry::menu_item`: the stated height at a factor of 1 or less, a
+    /// minimum around the drawn text and padding above it). At 1 the Basic
+    /// list's rows are `list.row_height` (macos-tahoe) and the window's
+    /// menu rows `menu.row_height` (adwaita, macos-monterey, material-3);
+    /// at 1.5 each is at least the line box of its font at its scaled size
+    /// and `defaults.line_height`, rounded up, plus its padding
+    /// (`list.border.padding`, `menu.border.padding`), computed from the
+    /// theme at test time.
+    #[test]
+    fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
+        let theme_menu = MENU_TITLES.iter().position(|title| *title == "Theme");
+        let mut faults = Vec::new();
+        for (preset, factor) in ["macos-tahoe", "adwaita", "macos-monterey", "material-3"]
+            .into_iter()
+            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+        {
+            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+            accessibility.text_scaling_factor = factor;
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let grown = |height: f32, size: f32, pad_y: f32| {
+                if factor > 1.0 {
+                    let line = scaled_text_size(size, &accessibility) * r.defaults.line_height;
+                    height.max(line.ceil() + pad_y)
+                } else {
+                    height
+                }
+            };
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: accessibility.clone(),
+                active_tab: Tab::Basic,
+                held_menu: theme_menu,
+                ..State::default()
+            };
+            let iced_theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    panic!("{preset} at {factor}: the interface did not draw: {error}");
+                }
+            }
+            let drawn = drawn_layout();
+            let _ = texts(&mut ui);
+            let surveyed = surveyed_layout();
+            let height_of = |id: &str| {
+                drawn
+                    .get(id)
+                    .or_else(|| surveyed.get(id))
+                    .map(|rect| rect.height)
+            };
+            let l = &r.list;
+            if let Some(h) = l.row_height {
+                let pad = native_theme_iced::padding_or(
+                    &l.border.padding,
+                    Padding::from(AW_LIST_PADDING),
+                );
+                let want = grown(h, l.item_font.size, pad.y());
+                match height_of("basic.list.row_1") {
+                    Some(height) if (height - want).abs() < 0.01 => {}
+                    Some(height) => faults.push(format!(
+                        "{preset} at {factor}: basic.list.row_1 is {height} tall, want {want}"
+                    )),
+                    None => faults.push(format!(
+                        "{preset} at {factor}: basic.list.row_1 is not laid out"
+                    )),
+                }
+            }
+            let m = &r.menu;
+            if let Some(h) = m.row_height {
+                let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+                let want = grown(h, m.font.size, pad.y());
+                match height_of("chrome.menu.theme.light") {
+                    Some(height) if (height - want).abs() < 0.01 => {}
+                    Some(height) => faults.push(format!(
+                        "{preset} at {factor}: the Theme menu's Light row is {height} tall, \
+                         want {want}"
+                    )),
+                    None => faults.push(format!(
+                        "{preset} at {factor}: the Theme menu's Light row is not drawn"
+                    )),
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// A state showing `tab` under `preset` light, the side panel hidden, at
