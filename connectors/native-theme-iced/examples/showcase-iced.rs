@@ -11749,18 +11749,36 @@ fn table_info(state: &State) -> String {
         Some(h) => format!("{h:.0}px, list.header_height"),
         None => "its text's (list.header_height unstated)".to_string(),
     };
+    let l = &resolved.list;
     widget_tooltip(
         "Table",
-        &[Paint::leaf(
-            "separators",
-            "iced's background.strong, read live",
-            state
-                .current_theme
-                .extended_palette()
-                .background
-                .strong
-                .color,
-        )],
+        &[
+            Paint::leaf(
+                "header fill",
+                "list.header_background",
+                to_color(l.header_background),
+            ),
+            Paint::leaf(
+                "header text",
+                "list.header_font.color",
+                to_color(l.header_font.color),
+            ),
+            Paint::leaf(
+                "cell text",
+                "list.item_font.color",
+                to_color(l.item_font.color),
+            ),
+            Paint::leaf(
+                "separators",
+                "iced's background.strong, read live",
+                state
+                    .current_theme
+                    .extended_palette()
+                    .background
+                    .strong
+                    .color,
+            ),
+        ],
         &[
             ("separator_x / separator_y", &line_width_s),
             ("cell padding", "the showcase's own scale"),
@@ -11961,60 +11979,77 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         ),
     ];
 
-    // iced pads each row of a table by `padding_y` above and below its
-    // tallest cell (iced_widget 0.14.2 `src/table.rs:259`, `:312`), so a
-    // header cell is `list.header_height` less that padding where the theme
-    // states one, and its text's own height where it states none, as the
-    // rows' cells are. The rule under the header is iced's `separator_y`,
-    // which it draws between two rows, past the padding below the first
-    // (`:535-557`): it lies outside `list.header_height`, where the Basic
-    // table draws its header's line inside it.
-    let cell_pad_y = sp.xs;
+    // iced pads a table's cells outside them (iced_widget 0.14.2
+    // `src/table.rs:259`, `:312`), where nothing a cell draws reaches, so the
+    // table pads nothing and each cell pads itself, `cell_pad`: a header cell
+    // is filled with `list.header_background` to its edges, as the Basic
+    // table's header row is. A header cell is `list.header_height` tall
+    // where the theme states one, and its text's height and padding where it
+    // states none, as the rows' cells are. The rule under the header is
+    // iced's `separator_y`, which it draws between two rows (`:535-557`): it
+    // lies outside `list.header_height`, where the Basic table draws its
+    // header's line inside it.
+    let cell_pad = Padding::from([sp.xs, sp.s]);
+    let l = &resolved.list;
     let header_height = native_theme_iced::list_header_height(resolved);
-    let header_cell = |title: &'static str| -> Element<'_, Message> {
-        let label = text(title).typeset(&resolved.list.header_font, a11y);
-        match header_height {
-            Some(h) => container(label)
-                .height(Length::Fixed((h - 2.0 * cell_pad_y).max(0.0)))
-                .align_y(iced::Center)
-                .into(),
-            None => label.into(),
-        }
+    let (head_ink, head_fill) = (to_color(l.header_font.color), to_color(l.header_background));
+    let header_cell = |title: &'static str, width: f32| -> Element<'_, Message> {
+        container(
+            text(title)
+                .themed(&l.header_font, resolved, a11y)
+                .color(head_ink),
+        )
+        .padding(cell_pad)
+        .width(Length::Fixed(width))
+        .height(header_height.map_or(Length::Shrink, Length::Fixed))
+        .align_y(iced::Center)
+        .style(move |_: &Theme| container::Style {
+            background: Some(iced::Background::Color(head_fill)),
+            ..container::Style::default()
+        })
+        .into()
     };
+    let item_ink = to_color(l.item_font.color);
+    let body_cell = move |content: String| -> Element<'_, Message> {
+        container(
+            text(content)
+                .themed(&l.item_font, resolved, a11y)
+                .color(item_ink),
+        )
+        .padding(cell_pad)
+        .into()
+    };
+    // The four columns' text widths, each with its cells' padding.
+    let [role_w, size_w, weight_w, line_w] =
+        [160.0, 90.0, 90.0, 110.0].map(|width: f32| width + cell_pad.x());
     let scale_table = table(
         [
             table::column(
                 probe(
                     probes::LAYOUT_TABLE_HEADER,
                     Length::Shrink,
-                    header_cell("text_scale role"),
+                    header_cell("text_scale role", role_w),
                 ),
-                {
-                    let cell = resolved.list.item_font.clone();
-                    move |r: ScaleRow| text(r.0).typeset(&cell, a11y)
-                },
+                move |r: ScaleRow| body_cell(r.0.to_owned()),
             )
-            .width(Length::Fixed(160.0)),
-            table::column(header_cell("size"), {
-                let cell = resolved.list.item_font.clone();
-                move |r: ScaleRow| text(r.1).typeset(&cell, a11y)
+            .width(Length::Fixed(role_w)),
+            table::column(header_cell("size", size_w), move |r: ScaleRow| {
+                body_cell(r.1)
             })
-            .width(Length::Fixed(90.0)),
-            table::column(header_cell("weight"), {
-                let cell = resolved.list.item_font.clone();
-                move |r: ScaleRow| text(r.2).typeset(&cell, a11y)
+            .width(Length::Fixed(size_w)),
+            table::column(header_cell("weight", weight_w), move |r: ScaleRow| {
+                body_cell(r.2)
             })
-            .width(Length::Fixed(90.0)),
-            table::column(header_cell("line height"), {
-                let cell = resolved.list.item_font.clone();
-                move |r: ScaleRow| text(r.3).typeset(&cell, a11y)
+            .width(Length::Fixed(weight_w)),
+            table::column(header_cell("line height", line_w), move |r: ScaleRow| {
+                body_cell(r.3)
             })
-            .width(Length::Fixed(110.0)),
+            .width(Length::Fixed(line_w)),
         ],
         scale_rows,
     )
-    .padding_x(sp.s)
-    .padding_y(cell_pad_y)
+    .padding_x(0.0)
+    .padding_y(0.0)
     .separator_x(sep.line_width)
     .separator_y(sep.line_width)
     .width(Fill);
@@ -17928,9 +17963,9 @@ mod tests {
     /// theme states one (adwaita, material-3), else as tall as before
     /// (catppuccin-mocha): `list.row_height`, or its line box in the header
     /// font, at its scaled size, and `list.border.padding`. The Layout page's
-    /// iced `table` makes its header cells that height less the table's own
-    /// `padding_y` above and below, and leaves them their text's height where
-    /// the theme states none, as its rows are. At text scales 1 and 1.5.
+    /// iced `table` makes its header cells, which hold their padding, that
+    /// height, and their text's height and padding where the theme states
+    /// none, as its rows are. At text scales 1 and 1.5.
     #[test]
     fn the_tables_headers_take_the_themes_header_height() {
         for (preset, factor) in ["adwaita", "material-3", "catppuccin-mocha"]
@@ -17979,8 +18014,8 @@ mod tests {
             let mut ui = interface(&state);
             let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
             let want = match stated {
-                Some(h) => h - 2.0 * SP.xs,
-                None => height_of(&mut ui, "text_scale role"),
+                Some(h) => h,
+                None => height_of(&mut ui, "text_scale role") + 2.0 * SP.xs,
             };
             assert!(
                 (cell.height - want).abs() < 0.01,
@@ -18004,6 +18039,64 @@ mod tests {
         );
         state.active_tab = tab;
         state
+    }
+
+    /// The Layout page under `state`, drawn at the window's width: its
+    /// pixels, the bounds of the table's first header cell and of the cell
+    /// reading `section_heading`, and the frame's pixels per logical pixel.
+    fn layout_table_frame(state: &State) -> (image::RgbaImage, Rectangle, Rectangle, f32) {
+        let (mut header, mut cell) = (None, None);
+        let (image, _, scale) =
+            frame_after(state, view(state), Size::new(WINDOW_SIZE.0, 2000.0), |ui| {
+                header = Some(probe_bounds(ui, probes::LAYOUT_TABLE_HEADER));
+                cell = texts(ui)
+                    .into_iter()
+                    .find(|(content, _)| content == "section_heading")
+                    .map(|(_, bounds)| bounds);
+            });
+        match (header, cell) {
+            (Some(header), Some(cell)) => (image, header, cell, scale),
+            _ => panic!("the Layout table's header or its section_heading cell is not laid out"),
+        }
+    }
+
+    /// M9-091 (theme-data): the Layout page's table draws its header in
+    /// `list.header_font.color` on `list.header_background` and its cells
+    /// in `list.item_font.color`, as the Basic table does. Under material-3
+    /// light (whose header colour is not the text colour), a splice of each
+    /// moves what the table draws, and the spliced header fill fills the
+    /// header cell.
+    #[test]
+    fn the_layout_table_takes_the_lists_colours() {
+        let mut state = page_state("material-3", Tab::Layout);
+        let theirs = state.current_resolved.clone();
+        let (base, header, cell, scale) = layout_table_frame(&state);
+        let [ink, item, fill] = ["#13579b", "#9b1357", "#579b13"].map(spliced_colour);
+        let mut faults = Vec::new();
+
+        state.current_resolved.list.header_font.color = ink;
+        let (image, ..) = layout_table_frame(&state);
+        if pixels_in(&image, header, scale) == pixels_in(&base, header, scale) {
+            faults.push("list.header_font.color does not move the header".to_owned());
+        }
+
+        state.current_resolved = theirs.clone();
+        state.current_resolved.list.item_font.color = item;
+        let (image, ..) = layout_table_frame(&state);
+        if pixels_in(&image, cell, scale) == pixels_in(&base, cell, scale) {
+            faults.push("list.item_font.color does not move the cells".to_owned());
+        }
+
+        state.current_resolved = theirs;
+        state.current_resolved.list.header_background = fill;
+        let (image, ..) = layout_table_frame(&state);
+        let (filled, all) = inked_in(&image, header, scale, fill);
+        if all == 0 || filled * 2 <= all {
+            faults.push(format!(
+                "list.header_background fills {filled} of the header cell's {all} pixels"
+            ));
+        }
+        assert!(faults.is_empty(), "the Layout table: {faults:#?}");
     }
 
     /// M9-096 (theme-data): the Display page's Spacing & Layout boxes, drawn
@@ -19690,7 +19783,6 @@ mod tests {
     }
 
     /// A colour for a splice, from its `#rrggbb`.
-    #[cfg(feature = "iced_aw")]
     fn spliced_colour(hex: &str) -> native_theme::color::Rgba {
         match hex.parse() {
             Ok(colour) => colour,
@@ -19700,7 +19792,6 @@ mod tests {
 
     /// How many of `image`'s pixels inside `rect`, a rectangle in logical
     /// pixels, are `colour` (each channel within 2), and how many there are.
-    #[cfg(feature = "iced_aw")]
     fn inked_in(
         image: &image::RgbaImage,
         rect: Rectangle,
