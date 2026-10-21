@@ -1,11 +1,6 @@
 //! Widget tests (docs/archive/todo_gpui-widgets-spec.md §4): every leaf a widget
 //! paints is the one the spec names, the drawn boxes measure the stated
 //! sizes, and the controls behave as gpui-component's.
-//!
-//! A helper that draws again calls `window.refresh()` before
-//! `window.draw(cx)`, as `redraw` does: on GPUI Fast (the `gpui-fast`
-//! feature) a frame otherwise reuses the subtrees no view notified and keeps
-//! the last frame's `debug_bounds`.
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
@@ -1037,14 +1032,7 @@ fn centre(b: Bounds<Pixels>) -> gpui::Point<Pixels> {
 }
 
 fn redraw(cx: &mut VisualTestContext) {
-    // A full frame: GPUI Fast renders again only the views that were
-    // notified, and in test mode a partly reused frame keeps every bound the
-    // last frame drew (gpui-fast 0.1.7/0.1.8 src/fast/retained.rs:1360-1371). On
-    // gpui-pre it only marks the window dirty.
-    cx.update(|window, cx| {
-        window.refresh();
-        window.draw(cx).clear(cx)
-    });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
 }
 
 /// A key pressed and released, as gpui-component's own tests activate a
@@ -1391,9 +1379,12 @@ fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressB
     (cx, look)
 }
 
-/// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
+/// The fill's bounds after `ms` milliseconds more, on a frame drawn then,
+/// once the animation's next-frame notify is delivered, which tests have
+/// no frame loop to deliver.
 fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
     std::thread::sleep(std::time::Duration::from_millis(ms));
+    cx.update(|window, cx| window.simulate_next_frame(cx));
     redraw(cx);
     bounds(cx, "native-progress-fill")
 }
@@ -1521,7 +1512,7 @@ fn without_a_native_theme_the_widgets_are_gpui_components(cx: &mut TestAppContex
 }
 
 /// A checkbox (or switch) wired as gpui-component's: controlled, the
-/// requested value written back.
+/// requested value written back and the view notified.
 fn toggler(
     cx: &mut TestAppContext,
     disabled: bool,
@@ -1533,11 +1524,12 @@ fn toggler(
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
-        Box::new(move |_, _| {
-            let (v2, n2) = (v.clone(), n.clone());
-            let on_change = move |checked: &bool, _: &mut Window, _: &mut gpui::App| {
+        Box::new(move |_, cx| {
+            let (v2, n2, harness) = (v.clone(), n.clone(), cx.entity_id());
+            let on_change = move |checked: &bool, _: &mut Window, cx: &mut gpui::App| {
                 v2.set(*checked);
                 n2.set(n2.get() + 1);
+                cx.notify(harness);
             };
             if switch {
                 Switch::new("t")

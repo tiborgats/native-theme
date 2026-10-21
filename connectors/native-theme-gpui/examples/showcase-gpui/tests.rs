@@ -5,11 +5,6 @@
 //! workflow change. They build the real `Showcase` on GPUI's headless test
 //! platform — the same view, the same `Root`, the same window width `main`
 //! opens — and drive it with real input.
-//!
-//! A helper that draws calls `window.refresh()` before `window.draw(cx)`, as
-//! `draw` does: on GPUI Fast (the `gpui-fast` feature) a frame otherwise
-//! reuses the subtrees no view notified and keeps the last frame's
-//! `debug_bounds`, so an absence test would find an element no longer drawn.
 
 use gpui::{
     AbsoluteLength, AnyWindowHandle, App, Bounds, DefiniteLength, Entity, Focusable as _, Length,
@@ -145,15 +140,7 @@ fn open_with(
 /// Lay the window out and paint it, which is what fills `debug_bounds`,
 /// and check that no frame drawn so far drew two info targets under one id.
 fn draw(cx: &mut VisualTestContext) {
-    // A full frame: GPUI Fast reuses the subtrees no view notified, and in
-    // test mode a partly reused frame keeps every bound the last frame drew
-    // (gpui-fast 0.1.7/0.1.8 src/fast/retained.rs:1360-1371), so an element no
-    // longer drawn would still be found. On gpui-pre it only marks the window
-    // dirty.
-    cx.update(|window, cx| {
-        window.refresh();
-        window.draw(cx).clear(cx)
-    });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
     let twice = ids_drawn_twice(cx);
     assert!(
         twice.is_empty(),
@@ -12245,10 +12232,10 @@ fn twice(
 /// frame on GPUI Fast through the settle after it, and built again on
 /// gpui-pre.
 ///
-/// The hover comes first and a full frame after it: GPUI Fast builds again
-/// a view whose hover changed, and one that read the registry since an
-/// update of it (gpui-fast src/fast/retained.rs:601-626), as settling the
-/// choice is.
+/// The hover and the settle come first, and a frame `draw` draws after
+/// them: in it GPUI Fast builds again a view whose hover changed, and one
+/// that read the registry since an update of it (gpui-fast
+/// src/fast/retained.rs:601-626), as settling the choice is.
 #[gpui::test]
 fn a_reused_views_target_is_hovered_and_listed_after_a_partial_frame(cx: &mut TestAppContext) {
     let (host, ui, [host_renders, hosted_renders, _], cx) = open_host(cx, true, false);
@@ -12309,8 +12296,8 @@ fn a_reused_views_target_is_hovered_and_listed_after_a_partial_frame(cx: &mut Te
 /// host around them, which this frame builds again on GPUI Fast too,
 /// records nothing itself. The element leaves the layout dump, and the
 /// target, smaller than the sibling, is never chosen again: with the
-/// pointer on the sibling, the sibling is shown. A full frame follows the
-/// settle, as in
+/// pointer on the sibling, the sibling is shown. A frame `draw` draws
+/// follows the settle, as in
 /// `a_reused_views_target_is_hovered_and_listed_after_a_partial_frame`.
 #[gpui::test]
 fn a_target_a_partial_frame_no_longer_draws_is_gone(cx: &mut TestAppContext) {
@@ -12363,9 +12350,11 @@ fn a_target_a_partial_frame_no_longer_draws_is_gone(cx: &mut TestAppContext) {
 /// pointer never left, so no hover event comes between. On GPUI Fast the
 /// frame that takes it away builds the host only, which records nothing
 /// itself, and draws the sibling from the last frame; on gpui-pre the
-/// sibling records in it, which already prunes the hover. A full frame
-/// follows the first settle, as in
-/// `a_reused_views_target_is_hovered_and_listed_after_a_partial_frame`.
+/// sibling records in it, which already prunes the hover. A full frame,
+/// the test's own `window.refresh()` before `draw`, follows the first
+/// settle: after a frame `draw` alone draws there, GPUI Fast builds the
+/// sibling again in the frame that takes the target away, and the sibling
+/// records in it.
 #[gpui::test]
 fn a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again(cx: &mut TestAppContext) {
     let (host, ui, [host_renders, hosted_renders, sibling_renders], cx) =
@@ -12373,6 +12362,7 @@ fn a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again(cx: &mut 
     hover(cx, IN_BOTH);
     settle(cx);
     assert_eq!(shown(cx, &ui).as_deref(), Some("Hosted"));
+    cx.update(|window, _| window.refresh());
     draw(cx);
     let (host_before, sibling_before) = (host_renders.get(), sibling_renders.get());
     let hosted = cx.update(|_window, cx| host.read(cx).hosted.clone());
