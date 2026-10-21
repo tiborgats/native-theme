@@ -5085,9 +5085,16 @@ struct ContractLeaves {
     /// contract's names (`<preset>/<mode>`), which an `except` list uses.
     combinations: Vec<String>,
     leaves: BTreeMap<String, LeafReach>,
-    /// Every row a leaf moves, with the connector feature it exists under
-    /// where a build can lack it.
-    rows: BTreeMap<String, Option<String>>,
+    /// Every row a leaf moves.
+    rows: BTreeMap<String, ExportRow>,
+}
+
+/// What the export records for one row.
+struct ExportRow {
+    /// The colour leaves that move it, in some status and combination.
+    leaves: Vec<String>,
+    /// The connector feature it exists under, where a build can lack it.
+    cfg: Option<String>,
 }
 
 /// The strings of a TOML array, or none where `value` is no array.
@@ -5155,7 +5162,8 @@ fn parse_contract_leaves(text: &str) -> Result<ContractLeaves, String> {
                 .get("cfg")
                 .and_then(toml::Value::as_str)
                 .map(str::to_owned);
-            (row.clone(), cfg)
+            let leaves = toml_strings(entry.get("leaves"));
+            (row.clone(), ExportRow { leaves, cfg })
         })
         .collect();
     Ok(ContractLeaves {
@@ -5438,7 +5446,7 @@ fn shown_rows<'a>(
     let mut rows: Vec<(&str, Vec<&str>)> = Vec::new();
     for m in moves {
         let shown = drawing.draws_row(&m.row)
-            && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
+            && row_built(export.rows.get(&m.row).and_then(|r| r.cfg.as_deref()))
             && installed.is_none_or(|label| !m.except.iter().any(|e| e == label));
         if !shown {
             continue;
@@ -6825,29 +6833,32 @@ fn style_paints<S: Copy + std::fmt::Debug, O>(
 }
 
 /// What a colour row's text says after the row and its status: the colour
-/// leaves the contract's export records as moving `row` under
-/// `status` (`None`: a row that takes none), on `installed`, the bundled
-/// combination shown (`<preset>/<mode>`), or in any bundled one where the
-/// theme is the OS's (`None`, D1); where it records none, the row's
-/// derivation sentence ([`DERIVED_ROWS`]): a status the contract's rows
-/// leave to iced's derivation.
+/// leaves the contract's export records as moving `row` -- of those its
+/// `rows` entry lists -- under `status` (`None`: a row that takes none), on
+/// `installed`, the bundled combination shown (`<preset>/<mode>`), or in any
+/// bundled one where the theme is the OS's (`None`, D1); where it records
+/// none, the row's derivation sentence ([`DERIVED_ROWS`]): a status the
+/// contract's rows leave to iced's derivation.
 fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String {
     let Some(export) = contract_leaves() else {
         return String::new();
     };
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
-    let leaves: Vec<&str> = export
-        .leaves
+    let candidates = export
+        .rows
+        .get(row)
+        .map_or(&[][..], |r| r.leaves.as_slice());
+    let leaves: Vec<&str> = candidates
         .iter()
-        .filter(|(_, reach)| match reach {
-            LeafReach::Moves(moves) => moves.iter().any(|m| {
+        .filter(|leaf| match export.leaves.get(leaf.as_str()) {
+            Some(LeafReach::Moves(moves)) => moves.iter().any(|m| {
                 m.row == row
                     && status.is_none_or(|s| m.statuses.iter().any(|t| t == s))
                     && installed.is_none_or(|label| !m.except.iter().any(|e| e == label))
             }),
-            LeafReach::Named { .. } => false,
+            _ => false,
         })
-        .map(|(leaf, _)| leaf.as_str())
+        .map(String::as_str)
         .collect();
     let derived = DERIVED_ROWS
         .iter()
@@ -16668,7 +16679,7 @@ mod tests {
                     // draws.
                     let drawn = |m: &RowMove| {
                         drawing.draws_row(&m.row)
-                            && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
+                            && row_built(export.rows.get(&m.row).and_then(|r| r.cfg.as_deref()))
                             && (m.statuses.is_empty()
                                 || m.statuses.iter().any(|s| drawing.draws_status(s)))
                     };
