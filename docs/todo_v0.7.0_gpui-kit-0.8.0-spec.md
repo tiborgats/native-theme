@@ -405,6 +405,11 @@ connectors and showcases (§12).
   an upstream file named earlier in the note would put at another line, sets its chain
   aside (11 chains; for 3 of them, `[46]`, `[144]`, `[157]`, the chain rule alone would
   have used the wrong file).
+- *Added 2026-10-21 (G3 T3 fix round 1), correcting the line above:* `candidates()` reads
+  a crate directory's path from that crate's `src/` only, since its roots are each crate's
+  `src/` (`CN/src/showcase.rs`, `cited_source_dirs`); the crate-root case (`build.rs`,
+  matched where the path names it whole) is Task 2's script's alone, as `901918a1`'s body
+  states it.
 
 ### 3.2 Read by hand: what the gates read — Task 3's commit, which closes the unit
 

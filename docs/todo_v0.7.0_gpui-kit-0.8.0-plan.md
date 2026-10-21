@@ -240,6 +240,9 @@ Files: the citations of spec §3.1's scope. Depends on: Task 1, immediately.
   `git show` (a scratchpad copy a convenience only); a fix round that changes the list
   restates it whole in its body, and the last Task 2 commit that states it is the one read. The script is not run again (spec §3.3).
 - **Commit:** `docs(gpui): the citations that only moved between GPUI Kit 0.7.3 and 0.8.0 and gpui-fast 0.1.7 and 0.1.10 are renumbered (G3 T2)`.
+- *Added 2026-10-21 (G3 T3 fix round 1):* Task 2's two deviations, which its review accepted
+  (a path after a crate directory matched exactly, not by suffix; the set-aside rule for a
+  continuation whose file is uncertain), are stated in spec §3.1's dated lines.
 
 ## Task 3: Read and rewrite what the gates read; the unit closes
 
