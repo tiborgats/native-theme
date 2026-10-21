@@ -6569,10 +6569,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
              content (none where that is unstated) (side_panel)"
                 .into()
         }
+        ("layout", "container_margin_px") if id == "chrome.side_panel.inspector_tabs" => {
+            "the tab row's left and right padding where sidebar.border.padding states no side \
+             (none where that is unstated); where it states any, the side panel's padding \
+             insets it (side_panel_content_margin)"
+                .into()
+        }
         ("layout", "container_margin_px")
-            if id == "chrome.side_panel.settings"
-                || id == "chrome.side_panel.inspector_tabs"
-                || id == "chrome.side_panel.inspector" =>
+            if id == "chrome.side_panel.settings" || id == "chrome.side_panel.inspector" =>
         {
             "the padding where sidebar.border.padding states no side (none where that is \
              unstated); where it states any, the side panel's padding pads it \
@@ -6803,8 +6807,7 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     let window = [
         (
             "decorations",
-            "the window manager's, where it draws them: iced asks winit for a decorated window"
-                .to_string(),
+            window_decorations(std::env::consts::OS).to_string(),
         ),
         ("frame", window_frame(std::env::consts::OS).to_string()),
         ("title", WINDOW_TITLE.to_string()),
@@ -6824,6 +6827,16 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget)
     .into()
+}
+
+/// The inspector's "decorations" row on the platform `os` names
+/// (`std::env::consts::OS`): who draws the decorations of the decorated
+/// window iced asks winit for, as [`window_frame`] says of its frame.
+fn window_decorations(os: &str) -> &'static str {
+    match os {
+        "macos" | "windows" => "the system's: iced asks winit for a decorated window",
+        _ => "the window manager's, where it draws them: iced asks winit for a decorated window",
+    }
 }
 
 /// The inspector's "frame" row on the platform `os` names
@@ -20906,6 +20919,13 @@ mod tests {
         }
         let margin = route_of(&state, "chrome.status_bar", "layout.container_margin_px");
         assert!(margin.starts_with("not drawn"), "{margin}");
+        // The inspector's tab row takes the margin at its sides alone.
+        let tabs = route_of(
+            &state,
+            "chrome.side_panel.inspector_tabs",
+            "layout.container_margin_px",
+        );
+        assert!(tabs.contains("left and right"), "{tabs}");
     }
 
     /// M9-142 (Addendum A's S9, F row 5): the side panel is padded as gpui's,
@@ -21121,7 +21141,8 @@ mod tests {
 
     /// M9-082: the inspector's "frame" row names the platform's frame, the
     /// window manager's on Linux and the system's title bar on macOS and
-    /// Windows, and the inspector prints the running platform's row.
+    /// Windows, and its "decorations" row says the same of who draws them;
+    /// the inspector prints the running platform's frame row.
     #[test]
     fn the_window_frame_row_names_the_platforms_frame() {
         let linux = window_frame("linux");
@@ -21141,6 +21162,18 @@ mod tests {
             macos, windows,
             "macOS and Windows draw different title bars"
         );
+        let decorations = window_decorations("linux");
+        assert!(
+            decorations.contains("window manager"),
+            "linux: {decorations}"
+        );
+        for os in ["macos", "windows"] {
+            let decorations = window_decorations(os);
+            assert!(
+                decorations.contains("system") && !decorations.contains("window manager"),
+                "{os}: {decorations}"
+            );
+        }
         let state = State {
             inspector_tab: InspectorTab::Theme,
             ..State::default()
