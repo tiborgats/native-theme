@@ -4500,6 +4500,30 @@ where
         .into()
 }
 
+/// The inspector's tab row, Widget and Theme, the shown view's tab open.
+fn inspector_tabs(state: &State) -> Element<'_, Message> {
+    // The inspector's two tabs, Widget and Theme, first and second.
+    const INSPECTOR_TAB_IDS: [&str; 2] = [
+        "chrome.side_panel.inspector_tabs.widget",
+        "chrome.side_panel.inspector_tabs.theme",
+    ];
+    tab_row(
+        state,
+        ("chrome.side_panel.inspector_tabs", INSPECTOR_TABS_ID),
+        InspectorTab::ALL
+            .iter()
+            .enumerate()
+            .map(|(i, &tab)| TabSpec {
+                label: tab.label(),
+                open: tab == state.inspector_tab,
+                message: Message::InspectorTabSelected(tab),
+                tag: INSPECTOR_TAB_IDS.get(i).copied(),
+            })
+            .collect(),
+        None,
+    )
+}
+
 /// The side panel (spec S2): the theme settings -- Theme, Mode and Icon
 /// theme, each labelled above its drop-down -- padded by
 /// `layout.container_margin`; a separator from edge to edge; then the
@@ -4577,30 +4601,11 @@ fn side_panel(state: &State) -> Element<'_, Message> {
         InspectorTab::Widget => inspector_widget(state),
         InspectorTab::Theme => inspector_theme(state),
     };
-    // The inspector's two tabs, Widget and Theme, first and second.
-    const INSPECTOR_TAB_IDS: [&str; 2] = [
-        "chrome.side_panel.inspector_tabs.widget",
-        "chrome.side_panel.inspector_tabs.theme",
-    ];
     container(
         column![
             settings,
             tagged("chrome.side_panel.separator", separator_line(resolved)),
-            tab_row(
-                state,
-                ("chrome.side_panel.inspector_tabs", INSPECTOR_TABS_ID),
-                InspectorTab::ALL
-                    .iter()
-                    .enumerate()
-                    .map(|(i, &tab)| TabSpec {
-                        label: tab.label(),
-                        open: tab == state.inspector_tab,
-                        message: Message::InspectorTabSelected(tab),
-                        tag: INSPECTOR_TAB_IDS.get(i).copied(),
-                    })
-                    .collect(),
-                None,
-            ),
+            inspector_tabs(state),
             tagged(
                 "chrome.side_panel.inspector",
                 scrollable(
@@ -7844,6 +7849,100 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
         .then_some(side + b.line_width)
 }
 
+/// The Basic page's tab row: `iced_aw`'s `TabBar` in the `iced_aw` build,
+/// the page tab strip's tabs ([`tab_button`]) otherwise, `basic_tab` open.
+fn basic_tab_row(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let tab_t = &resolved.tab;
+    #[cfg(feature = "iced_aw")]
+    let tab_row: Element<'_, Message> = {
+        let [one, two] = BASIC_TABS;
+        let bar = TabBar::new(Message::BasicTabSelected)
+            .push(0, TabLabel::Text(one.to_string()))
+            .push(1, TabLabel::Text(two.to_string()))
+            .set_active_tab(&state.basic_tab)
+            .text_size(scaled_text_size(tab_t.font.size, &state.accessibility))
+            .text_font(theme_font(&tab_t.font))
+            .tab_width(Length::Fixed(tab_t.min_width))
+            .height(Length::Fixed(tab_t.min_height))
+            .width(Length::Shrink)
+            .style(styles::aw::tab_bar(resolved));
+        // tab.item_gap between the tabs, where stated; iced_aw's own none
+        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`). iced_aw lays
+        // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
+        // `layout`), so the bar cannot wrap as the page's other rows do; the
+        // page's column rule leaves every column room for the two tabs at
+        // `tab.min_width`, `tab.item_gap` apart, which is their width here.
+        let bar = match tab_t.item_gap {
+            Some(gap) => bar.spacing(gap),
+            None => bar,
+        };
+        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
+        // and takes a padding whole.
+        let bar: Element<'_, Message> =
+            match native_theme_iced::stated_padding(&tab_t.border.padding) {
+                Some(padding) => bar.padding(padding).into(),
+                None => bar.into(),
+            };
+        // The tabs are the bar's row's nodes, one per label
+        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
+        let bar: Element<'_, Message> = tagged("basic.tabs.bar", bar)
+            .loose()
+            .node("basic.tabs.one", &[0])
+            .node("basic.tabs.two", &[1])
+            .into();
+        // The active tab's line, where the theme states one, over that tab's
+        // place: iced_aw's tabs are `tab_width` wide, `spacing` apart
+        // (`src/widget/tab_bar.rs:490-510`), and its style has no line.
+        let slots = (0..BASIC_TABS.len()).map(|i| {
+            let line = (i == state.basic_tab)
+                .then(|| native_theme_iced::tab_indicator_line(resolved))
+                .flatten();
+            container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
+                .width(Length::Fixed(tab_t.min_width))
+                .height(Fill)
+                .into()
+        });
+        // tab.item_gap apart, as the bar's tabs are; a row's own none, as
+        // iced_aw's `DEFAULT_SPACING` is, where unstated.
+        let slots = match tab_t.item_gap {
+            Some(gap) => row(slots).spacing(gap),
+            None => row(slots),
+        };
+        iced::widget::Stack::new()
+            .push(bar)
+            .push(slots.height(Fill))
+            .into()
+    };
+    // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
+    // chosen one open, tab.item_gap apart where stated (a row's own none
+    // otherwise), on a strip of `tab.bar_background` as iced_aw's bar is.
+    #[cfg(not(feature = "iced_aw"))]
+    let tab_row: Element<'_, Message> = {
+        let tabs = BASIC_TABS.iter().enumerate().map(|(i, label)| {
+            tab_button(
+                state,
+                label,
+                i == state.basic_tab,
+                Message::BasicTabSelected(i),
+            )
+        });
+        let tabs = match tab_t.item_gap {
+            Some(gap) => row(tabs).spacing(gap),
+            None => row(tabs),
+        };
+        tagged(
+            "basic.tabs.bar",
+            container(tabs.wrap()).style(surface(resolved, Surface::TabStrip)),
+        )
+        .loose()
+        .node("basic.tabs.one", &[0, 0])
+        .node("basic.tabs.two", &[0, 1])
+        .into()
+    };
+    tab_row
+}
+
 /// The controls the three showcases all draw, in the same order, with the
 /// same labels, values and states, packed onto one screen so the gpui, iced
 /// and egui captures compare control by control, in five equal columns
@@ -8604,94 +8703,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     );
     let spinner_group = group("basic.spinner.heading", "Spinner", spinner);
 
-    let tab_t = &resolved.tab;
-    #[cfg(feature = "iced_aw")]
-    let tab_row: Element<'a, Message> = {
-        let [one, two] = BASIC_TABS;
-        let bar = TabBar::new(Message::BasicTabSelected)
-            .push(0, TabLabel::Text(one.to_string()))
-            .push(1, TabLabel::Text(two.to_string()))
-            .set_active_tab(&state.basic_tab)
-            .text_size(scaled_text_size(tab_t.font.size, a11y))
-            .text_font(theme_font(&tab_t.font))
-            .tab_width(Length::Fixed(tab_t.min_width))
-            .height(Length::Fixed(tab_t.min_height))
-            .width(Length::Shrink)
-            .style(styles::aw::tab_bar(resolved));
-        // tab.item_gap between the tabs, where stated; iced_aw's own none
-        // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`). iced_aw lays
-        // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
-        // `layout`), so the bar cannot wrap as the page's other rows do; the
-        // page's column rule leaves every column room for the two tabs at
-        // `tab.min_width`, `tab.item_gap` apart, which is their width here.
-        let bar = match tab_t.item_gap {
-            Some(gap) => bar.spacing(gap),
-            None => bar,
-        };
-        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
-        // and takes a padding whole.
-        let bar: Element<'a, Message> =
-            match native_theme_iced::stated_padding(&tab_t.border.padding) {
-                Some(padding) => bar.padding(padding).into(),
-                None => bar.into(),
-            };
-        // The tabs are the bar's row's nodes, one per label
-        // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
-        let bar: Element<'a, Message> = tagged("basic.tabs.bar", bar)
-            .loose()
-            .node("basic.tabs.one", &[0])
-            .node("basic.tabs.two", &[1])
-            .into();
-        // The active tab's line, where the theme states one, over that tab's
-        // place: iced_aw's tabs are `tab_width` wide, `spacing` apart
-        // (`src/widget/tab_bar.rs:490-510`), and its style has no line.
-        let slots = (0..BASIC_TABS.len()).map(|i| {
-            let line = (i == state.basic_tab)
-                .then(|| native_theme_iced::tab_indicator_line(resolved))
-                .flatten();
-            container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
-                .width(Length::Fixed(tab_t.min_width))
-                .height(Fill)
-                .into()
-        });
-        // tab.item_gap apart, as the bar's tabs are; a row's own none, as
-        // iced_aw's `DEFAULT_SPACING` is, where unstated.
-        let slots = match tab_t.item_gap {
-            Some(gap) => row(slots).spacing(gap),
-            None => row(slots),
-        };
-        iced::widget::Stack::new()
-            .push(bar)
-            .push(slots.height(Fill))
-            .into()
-    };
-    // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
-    // chosen one open, tab.item_gap apart where stated (a row's own none
-    // otherwise), on a strip of `tab.bar_background` as iced_aw's bar is.
-    #[cfg(not(feature = "iced_aw"))]
-    let tab_row: Element<'a, Message> = {
-        let tabs = BASIC_TABS.iter().enumerate().map(|(i, label)| {
-            tab_button(
-                state,
-                label,
-                i == state.basic_tab,
-                Message::BasicTabSelected(i),
-            )
-        });
-        let tabs = match tab_t.item_gap {
-            Some(gap) => row(tabs).spacing(gap),
-            None => row(tabs),
-        };
-        tagged(
-            "basic.tabs.bar",
-            container(tabs.wrap()).style(surface(resolved, Surface::TabStrip)),
-        )
-        .loose()
-        .node("basic.tabs.one", &[0, 0])
-        .node("basic.tabs.two", &[0, 1])
-        .into()
-    };
-    let tabs = group("basic.tabs.heading", "Tabs", tab_row);
+    let tabs = group("basic.tabs.heading", "Tabs", basic_tab_row(state));
 
     let sc = &resolved.segmented_control;
     // A segment has no border of its own (the control's outline is the
@@ -17943,21 +17955,48 @@ mod tests {
         with_colour(r, leaf).is_some_and(|spliced| drawn(&spliced) != drawn(r))
     }
 
-    /// Whether the tab of the list with id `id` is the open one in `state`:
-    /// the Basic page's as `basic_tab` sets it, the page tabs' and the
-    /// inspector's as their pages are shown.
-    fn shown_open(state: &State, id: &str) -> Option<bool> {
-        Some(match id {
-            "basic.tabs.one" => state.basic_tab == 0,
-            "basic.tabs.two" => state.basic_tab == 1,
-            "chrome.page_tabs.basic" => state.active_tab == Tab::Basic,
-            "chrome.page_tabs.buttons" => state.active_tab == Tab::Buttons,
-            "chrome.side_panel.inspector_tabs.widget" => {
-                state.inspector_tab == InspectorTab::Widget
-            }
-            "chrome.side_panel.inspector_tabs.theme" => state.inspector_tab == InspectorTab::Theme,
-            _ => return None,
-        })
+    /// The listed tab rows' two tabs each: the Basic page's, the page tabs'
+    /// and the inspector's.
+    const TAB_ROWS: [[&str; 2]; 3] = [
+        ["basic.tabs.one", "basic.tabs.two"],
+        ["chrome.page_tabs.basic", "chrome.page_tabs.buttons"],
+        [
+            "chrome.side_panel.inspector_tabs.widget",
+            "chrome.side_panel.inspector_tabs.theme",
+        ],
+    ];
+
+    /// Which tab of each listed row `state` draws open, by id: the rows
+    /// drawn by the functions the window draws them with
+    /// ([`basic_tab_row`], [`page_tabs`], [`inspector_tabs`];
+    /// [`tab_rows_frame`]) with `tab.active_background` spliced to a colour
+    /// of its own, which `tab_style` and `styles::aw::tab_bar` fill the open
+    /// tab with: a tab is open where most of its pixels are that colour. Read
+    /// from the drawing, not from the state, so a row that gives a tab the
+    /// wrong `open` is seen.
+    fn drawn_open(state: &mut State) -> BTreeMap<&'static str, bool> {
+        let mark: native_theme::color::Rgba = match "#13579b".parse() {
+            Ok(colour) => colour,
+            Err(error) => panic!("{error}"),
+        };
+        let want = to_color(mark).into_rgba8();
+        let theirs = state.current_resolved.tab.active_background;
+        state.current_resolved.tab.active_background = mark;
+        let (image, laid, scale) = tab_rows_frame(state);
+        state.current_resolved.tab.active_background = theirs;
+        let mut open = BTreeMap::new();
+        for tab in TAB_ROWS.into_iter().flatten() {
+            let Some(rect) = laid.get(tab) else {
+                panic!("{tab} is not drawn");
+            };
+            let pixels = pixels_in(&image, *rect, scale);
+            let marked = pixels
+                .iter()
+                .filter(|p| p.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+                .count();
+            open.insert(tab, marked * 2 > pixels.len());
+        }
+        open
     }
 
     /// What a route of `element`'s `leaf` claims that `state` does not draw:
@@ -17967,10 +18006,12 @@ mod tests {
     /// icon's colour and `tab_style`), an OS icon theme's icon called
     /// coloured by `icon_button`, a closed tab's line or frame, a spinner's
     /// arc or tint where the set's indicator is drawn. `laid` is what the
-    /// interface lays out under `state`.
+    /// interface lays out under `state`, `opens` which tabs it draws open
+    /// ([`drawn_open`]).
     fn route_faults(
         state: &State,
         laid: &ElementRects,
+        opens: &BTreeMap<&'static str, bool>,
         element: &ShowcaseElement,
         leaf: &str,
         route: &str,
@@ -18021,7 +18062,7 @@ mod tests {
                 });
             }
         }
-        if let Some(open) = shown_open(state, id) {
+        if let Some(&open) = opens.get(id) {
             let aw = cfg!(feature = "iced_aw") && id.starts_with("basic.tabs.");
             if !open
                 && (leaf.starts_with("tab.active_indicator") || leaf.starts_with("tab.border."))
@@ -18063,13 +18104,15 @@ mod tests {
     /// and a "Not themeable" line, names what the state shown draws, over
     /// every bundled preset in both modes, with the set's icons, the same
     /// icons as an OS icon theme's and none, the side panel shown and hidden,
-    /// the first tab and page open and the second, in this build: no
-    /// `CheckMark` where the theme states no check-mark line (iced's glyph
-    /// is drawn), the arc's sweep only where the icon set has no indicator,
-    /// no `iced_aw` widget without `iced_aw`, a flat button's and a tab's
-    /// colours as their drawing functions draw them in the state shown, and
-    /// a closed tab neither framed nor marked. Each case is seen both ways
-    /// somewhere among the presets.
+    /// the first tab, page and inspector tab open and the second, in this
+    /// build, each row's open tab read from its drawing ([`drawn_open`]) and
+    /// held to the one the state opens (`tab_open`): no `CheckMark` where
+    /// the theme states no check-mark line (iced's glyph is drawn), the arc's
+    /// sweep only where the icon set has no indicator, no `iced_aw` widget
+    /// without `iced_aw`, a flat button's and a tab's colours as their
+    /// drawing functions draw them in the state shown, and a closed tab
+    /// neither framed nor marked. Each case, and each tab open and closed, is
+    /// seen both ways somewhere among the presets.
     #[test]
     fn a_route_names_a_widget_only_where_the_state_draws_it() {
         let mut state = State {
@@ -18092,6 +18135,17 @@ mod tests {
                 seen.insert(("pressed fill", r.button.active_background.is_some()));
                 seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
                 seen.insert(("indicator", state.basic_spinner.is_indicator()));
+                // The side panel shown and hidden, and each tab of the
+                // three rows open: the Basic page's, the page tabs' and the
+                // inspector's.
+                let states = [
+                    (true, 0, Tab::Basic, InspectorTab::Widget),
+                    (false, 0, Tab::Basic, InspectorTab::Widget),
+                    (true, 1, Tab::Buttons, InspectorTab::Theme),
+                ];
+                // Which tabs each state draws open, read once, with the set's
+                // icons: the icons open no tab.
+                let mut opens = Vec::new();
                 // The set's icons, the same icons as an OS icon theme's,
                 // which keep their own colours, and none: a set without
                 // them, whose flat buttons show their labels.
@@ -18115,14 +18169,30 @@ mod tests {
                     let iconed = laid.contains_key("basic.icons.copy.icon");
                     seen.insert(("icon", iconed));
                     seen.insert(("os icon", iconed && state.chrome_icons.system));
-                    for (visible, basic_tab, page) in [
-                        (true, 0, Tab::Basic),
-                        (false, 0, Tab::Basic),
-                        (true, 1, Tab::Buttons),
-                    ] {
+                    for (n, (visible, basic_tab, page, inspector)) in states.into_iter().enumerate()
+                    {
                         state.side_panel_visible = visible;
                         state.basic_tab = basic_tab;
                         state.active_tab = page;
+                        state.inspector_tab = inspector;
+                        if opens.len() == n {
+                            let open = drawn_open(&mut state);
+                            for (&id, &drawn_open) in &open {
+                                seen.insert((id, drawn_open));
+                                if tab_open(&state, id) != Some(drawn_open) {
+                                    failures.push(format!(
+                                        "{} ({mode:?}, tab {basic_tab}, {page:?}, \
+                                         {inspector:?}): {id} drawn {}",
+                                        preset.key,
+                                        if drawn_open { "open" } else { "closed" }
+                                    ));
+                                }
+                            }
+                            opens.push(open);
+                        }
+                        let Some(open) = opens.get(n) else {
+                            panic!("state {n}'s tabs were not read");
+                        };
                         for element in elements::elements() {
                             if element.name == "Spinner" {
                                 let arc = iced_not_themeable(&state, element)
@@ -18140,12 +18210,12 @@ mod tests {
                             for leaf in &element.leaves {
                                 let route = iced_route(&state, element, leaf);
                                 failures.extend(
-                                    route_faults(&state, &laid, element, leaf, &route)
+                                    route_faults(&state, &laid, open, element, leaf, &route)
                                         .into_iter()
                                         .map(|f| {
                                             format!(
                                                 "{} ({mode:?}, {icons} icons, panel {visible}, \
-                                                 tab {basic_tab}): {f}",
+                                                 tab {basic_tab}, {page:?}, {inspector:?}): {f}",
                                                 preset.key
                                             )
                                         }),
@@ -18156,8 +18226,10 @@ mod tests {
                 }
                 state.basic_tab = 0;
                 state.active_tab = Tab::Basic;
+                state.inspector_tab = InspectorTab::Widget;
             }
         }
+        let tabs = TAB_ROWS.into_iter().flatten();
         for case in [
             "stroke",
             "pressed fill",
@@ -18165,7 +18237,10 @@ mod tests {
             "indicator",
             "icon",
             "os icon",
-        ] {
+        ]
+        .into_iter()
+        .chain(tabs)
+        {
             for holds in [false, true] {
                 if !seen.contains(&(case, holds)) {
                     failures.push(format!("no case has {case} {holds}: one side is unchecked"));
@@ -18355,12 +18430,44 @@ mod tests {
     /// enough for every column: the frame's pixels and the rectangles of the
     /// listed elements in it, in the frame's pixels per logical pixel.
     fn basic_frame(state: &State) -> (image::RgbaImage, ElementRects, f32) {
+        frame_of(state, view(state), Size::new(WINDOW_SIZE.0, 2000.0))
+    }
+
+    /// The three tab rows drawn alone under `state`, one under the other,
+    /// on the window's fill, as the window's root (which records the frame's
+    /// elements), at the window's width ([`frame_of`]).
+    fn tab_rows_frame(state: &State) -> (image::RgbaImage, ElementRects, f32) {
+        let rows = iced::widget::column![
+            basic_tab_row(state),
+            page_tabs(state),
+            inspector_tabs(state)
+        ]
+        // Apart, so no strip's pixels fall in another's rectangle.
+        .spacing(40.0);
+        let window = tagged(
+            "chrome.window",
+            container(rows)
+                .width(Fill)
+                .height(Fill)
+                .style(surface(&state.current_resolved, Surface::Window)),
+        )
+        .root();
+        frame_of(state, window.into(), Size::new(WINDOW_SIZE.0, 300.0))
+    }
+
+    /// `content` under `state`'s theme, drawn at `size`: the frame's pixels
+    /// and the rectangles of the listed elements in it, in the frame's
+    /// pixels per logical pixel.
+    fn frame_of<'a>(
+        state: &State,
+        content: Element<'a, Message>,
+        size: Size,
+    ) -> (image::RgbaImage, ElementRects, f32) {
         static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
         let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let size = Size::new(WINDOW_SIZE.0, 2000.0);
         let theme = theme(state);
         let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), size, view(state));
+            Simulator::with_size(Settings::default(), size, content);
         // The first frame records the elements, the second hands them over.
         let mut snapshot = None;
         for _ in 0..2 {
