@@ -11773,10 +11773,7 @@ const LAYOUT_CELL_PAD: Padding = Padding {
 /// ([`LAYOUT_CELL_PAD`]) and no rule, grown above a text scale of 1 to hold
 /// its label in `list.header_font` at `defaults.line_height`, as gpui's
 /// table rows grow (`rows::scaled_height`).
-fn layout_header_height(
-    resolved: &ResolvedTheme,
-    a11y: &AccessibilityPreferences,
-) -> Option<f32> {
+fn layout_header_height(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Option<f32> {
     native_theme_iced::list_header_height(resolved).map(|h| {
         rows::scaled_height(
             h,
@@ -18048,7 +18045,8 @@ mod tests {
             assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
             let l = &r.list;
             let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
-            let line_box = |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
+            let line_box =
+                |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
             // A stated height, grown above a factor of 1 to hold a line of
             // `size` inside `pad_y` and `rule`.
             let grown = |height: f32, size: f32, pad_y: f32, rule: f32| {
