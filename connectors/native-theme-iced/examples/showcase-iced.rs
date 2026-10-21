@@ -1306,7 +1306,6 @@ struct State {
     basic_details_open: bool,
     basic_more_open: bool,
     /// The Basic tab's tab bar and list: their selection.
-    #[cfg(feature = "iced_aw")]
     basic_tab: usize,
     basic_list_selected: Option<usize>,
     /// The Basic tab's number input and focused input.
@@ -1614,7 +1613,6 @@ impl State {
             basic_segment: BASIC_SEGMENT,
             basic_details_open: true,
             basic_more_open: false,
-            #[cfg(feature = "iced_aw")]
             basic_tab: 0,
             basic_list_selected: Some(BASIC_LIST_SELECTED),
             #[cfg(feature = "iced_aw")]
@@ -2039,7 +2037,6 @@ enum Message {
     BasicSegmentSelected(usize),
     BasicDetailsToggled,
     BasicMoreToggled,
-    #[cfg(feature = "iced_aw")]
     BasicTabSelected(usize),
     BasicListSelected(usize),
     #[cfg(feature = "iced_aw")]
@@ -2309,7 +2306,6 @@ fn update_inner(state: &mut State, message: Message) {
         Message::BasicSegmentSelected(i) => state.basic_segment = i,
         Message::BasicDetailsToggled => state.basic_details_open = !state.basic_details_open,
         Message::BasicMoreToggled => state.basic_more_open = !state.basic_more_open,
-        #[cfg(feature = "iced_aw")]
         Message::BasicTabSelected(i) => state.basic_tab = i,
         Message::BasicListSelected(i) => state.basic_list_selected = Some(i),
         #[cfg(feature = "iced_aw")]
@@ -4429,11 +4425,36 @@ struct TabSpec {
     tag: Option<&'static str>,
 }
 
-/// A tab row, the page tabs' and the inspector's: each tab a button in
-/// [`tab_style`], labelled in `tab.font`, padded by `tab.border.padding`
-/// inside its border (iced's button padding on a side it leaves unstated),
-/// at least `tab.min_width` by `tab.min_height`, on a strip of
-/// `tab.bar_background` whose sides are `layout.container_margin`, as the
+/// A tab as the page tabs', the inspector's and, without `iced_aw`, the
+/// Basic page's are: a button in [`tab_style`], `label` in `tab.font`,
+/// padded by `tab.border.padding` inside its border (iced's button padding
+/// on a side it leaves unstated), at least `tab.min_width` by
+/// `tab.min_height`, with the open tab's line where the theme states one.
+fn tab_button<'a>(
+    state: &'a State,
+    label: &'a str,
+    open: bool,
+    message: Message,
+) -> Element<'a, Message> {
+    let resolved = &state.current_resolved;
+    let t = &resolved.tab;
+    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
+    let min = iced::Size::new(
+        (t.min_width - pad.x()).max(0.0),
+        (t.min_height - pad.y()).max(0.0),
+    );
+    let tab = button(at_least(
+        text(label).themed(&t.font, resolved, &state.accessibility),
+        min,
+    ))
+    .padding(pad)
+    .style(tab_style(resolved, open))
+    .on_press(message);
+    native_theme_iced::tab_indicator(resolved, tab, open)
+}
+
+/// A tab row, the page tabs' and the inspector's: each tab a
+/// [`tab_button`], on a strip of `tab.bar_background` whose sides are `layout.container_margin`, as the
 /// gpui showcase's tab bars are inset. More tabs than the strip is wide
 /// scroll sideways, with no bar of their own; `trailing`, where given, stays
 /// at the strip's right end. `tag` is the strip's id in the list, `id` its
@@ -4445,24 +4466,10 @@ fn tab_row<'a>(
     trailing: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
-    let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let t = &resolved.tab;
-    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
-    let min = iced::Size::new(
-        (t.min_width - pad.x()).max(0.0),
-        (t.min_height - pad.y()).max(0.0),
-    );
     let tabs = tabs.into_iter().map(|spec| {
-        let tab = button(at_least(
-            text(spec.label).themed(&t.font, resolved, a11y),
-            min,
-        ))
-        .padding(pad)
-        .style(tab_style(resolved, spec.open))
-        .on_press(spec.message);
-        // The open tab's line, where the theme states one.
-        let tab = native_theme_iced::tab_indicator(resolved, tab, spec.open);
+        let tab = tab_button(state, spec.label, spec.open, spec.message);
         match spec.tag {
             Some(tag) => tagged(tag, tab).into(),
             None => tab,
@@ -5786,6 +5793,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         // ---- tabs ----
         ("tab", "bar_background") => "surface: the strip container's background".into(),
         ("tab", "item_gap_px") => "the tabs' spacing, where stated".into(),
+        #[cfg(feature = "iced_aw")]
         ("tab", "active_indicator_width_px" | "active_indicator_side") if under("basic.tabs.") => {
             "native_theme_iced::tab_indicator_line over the open tab's place in iced_aw's bar"
                 .into()
@@ -5800,6 +5808,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("tab", "hover_text_color") => "tab_style: a tab's text colour under the pointer".into(),
         ("tab", "font") => "the label's size and theme_font".into(),
         ("tab", "font.color") => "tab_style: a tab's text colour at rest".into(),
+        #[cfg(feature = "iced_aw")]
         ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
             "TabBar::tab_width and height, fixed: iced_aw takes no minimum".into()
         }
@@ -5809,6 +5818,7 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("tab", "border.color") => "tab_style: the open tab's border colour".into(),
         ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
         ("tab", "border.line_width_px") => "the open tab's border width".into(),
+        #[cfg(feature = "iced_aw")]
         ("tab", f) if side(f).is_some() && under("basic.tabs.") => {
             "TabBar::padding, where every side is stated".into()
         }
@@ -7270,7 +7280,7 @@ fn tooltip_padding(resolved: &ResolvedTheme) -> Option<f32> {
 /// `styles::container_card`. The list is list rows in a scrollable and the
 /// spinner an arc on a canvas, each drawn from its `list.*` and `spinner.*`
 /// leaves. The tab bar is `iced_aw`'s; without the `iced_aw` feature it is
-/// drawn as buttons.
+/// the page tab strip's tabs ([`tab_button`]).
 fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -8007,8 +8017,6 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let spinner_group = group("basic.spinner.heading", "Spinner", spinner);
 
     let tab_t = &resolved.tab;
-    #[cfg(not(feature = "iced_aw"))]
-    let tab_pad = native_theme_iced::padding_or(&tab_t.border.padding, button::DEFAULT_PADDING);
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'a, Message> = {
         let [one, two] = BASIC_TABS;
@@ -8069,32 +8077,32 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .push(slots.height(Fill))
             .into()
     };
-    // Without iced_aw, the page tab strip's tabs: buttons padded like the
-    // platform's tabs, the open one the call to action.
+    // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
+    // chosen one open, tab.item_gap apart where stated (a row's own none
+    // otherwise), on a strip of `tab.bar_background` as iced_aw's bar is.
     #[cfg(not(feature = "iced_aw"))]
-    let tab_row: Element<'a, Message> = tagged(
-        "basic.tabs.bar",
-        row(BASIC_TABS.iter().enumerate().map(|(i, label)| {
-            let tab = button(text(*label).themed(&tab_t.font, resolved, a11y))
-                .padding(tab_pad)
-                .on_press(Message::ButtonPressed);
-            if i == 0 {
-                native_theme_iced::tab_indicator(
-                    resolved,
-                    tab.style(styles::button_primary(resolved)),
-                    true,
-                )
-            } else {
-                tab.style(styles::button(resolved)).into()
-            }
-        }))
-        .spacing(tab_t.item_gap.unwrap_or(sp.xs))
-        .wrap(),
-    )
-    .loose()
-    .node("basic.tabs.one", &[0])
-    .node("basic.tabs.two", &[1])
-    .into();
+    let tab_row: Element<'a, Message> = {
+        let tabs = BASIC_TABS.iter().enumerate().map(|(i, label)| {
+            tab_button(
+                state,
+                label,
+                i == state.basic_tab,
+                Message::BasicTabSelected(i),
+            )
+        });
+        let tabs = match tab_t.item_gap {
+            Some(gap) => row(tabs).spacing(gap),
+            None => row(tabs),
+        };
+        tagged(
+            "basic.tabs.bar",
+            container(tabs.wrap()).style(surface(resolved, Surface::TabStrip)),
+        )
+        .loose()
+        .node("basic.tabs.one", &[0, 0])
+        .node("basic.tabs.two", &[0, 1])
+        .into()
+    };
     let tabs = group("basic.tabs.heading", "Tabs", tab_row);
 
     let sc = &resolved.segmented_control;
@@ -16594,6 +16602,151 @@ mod tests {
         assert!(
             stale.is_empty(),
             "rows the export does not record: {stale:?}"
+        );
+    }
+
+    /// The Basic page under `state`, drawn at the window's width and tall
+    /// enough for every column: the frame's pixels and the rectangles of the
+    /// listed elements in it, in the frame's pixels per logical pixel.
+    fn basic_frame(state: &State) -> (image::RgbaImage, ElementRects, f32) {
+        static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let theme = theme(state);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), size, view(state));
+        // The first frame records the elements, the second hands them over.
+        let mut snapshot = None;
+        for _ in 0..2 {
+            snapshot = Some(match ui.snapshot(&theme) {
+                Ok(snapshot) => snapshot,
+                Err(error) => panic!("the Basic page did not draw: {error}"),
+            });
+        }
+        let Some(snapshot) = snapshot else {
+            unreachable!("two frames were drawn")
+        };
+        let dir =
+            std::env::temp_dir().join(format!("showcase-iced-basic-{}-{call}", std::process::id()));
+        let image = snapshot
+            .matches_image(dir.join("basic.png"))
+            .map_err(|error| error.to_string())
+            .and_then(|_| {
+                std::fs::read_dir(&dir)
+                    .and_then(|mut entries| {
+                        entries
+                            .next()
+                            .unwrap_or_else(|| Err(std::io::Error::other("no snapshot written")))
+                    })
+                    .map_err(|error| error.to_string())
+            })
+            .and_then(|entry| {
+                image::open(entry.path())
+                    .map(|image| image.to_rgba8())
+                    .map_err(|error| error.to_string())
+            });
+        let _ = std::fs::remove_dir_all(&dir);
+        match image {
+            Ok(image) => {
+                let scale = image.width() as f32 / size.width;
+                (image, drawn_layout(), scale)
+            }
+            Err(error) => panic!("{}: {error}", dir.display()),
+        }
+    }
+
+    /// The pixels of `image` inside `rect`, a rectangle in logical pixels.
+    fn pixels_in(image: &image::RgbaImage, rect: Rectangle, scale: f32) -> Vec<[u8; 4]> {
+        let (x0, y0) = (
+            (rect.x * scale).ceil() as u32,
+            (rect.y * scale).ceil() as u32,
+        );
+        let (x1, y1) = (
+            (((rect.x + rect.width) * scale).floor() as u32).min(image.width()),
+            (((rect.y + rect.height) * scale).floor() as u32).min(image.height()),
+        );
+        (y0..y1)
+            .flat_map(|y| (x0..x1).map(move |x| (x, y)))
+            .map(|(x, y)| image.get_pixel(x, y).0)
+            .collect()
+    }
+
+    /// M9-073: the Basic page's tabs are the theme's tabs in either build,
+    /// as the page tab strip's are: under kde-breeze light, splicing
+    /// `tab.active_background` fills the open tab in it, splicing
+    /// `tab.font.color` moves the other tab's label, and splicing
+    /// `tab.min_width` sizes the other tab to it; a click on the second tab
+    /// opens it, which then takes the open tab's fill.
+    #[test]
+    fn the_basic_tabs_are_the_themes_tabs_and_switch() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            side_panel_visible: false,
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("kde-breeze".to_owned()),
+            AppColorMode::Light
+        ));
+        let theirs = state.current_resolved.clone();
+        let rect = |rects: &ElementRects, id: &str| match rects.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let (base, rects, scale) = basic_frame(&state);
+        let (one, two) = (
+            rect(&rects, "basic.tabs.one"),
+            rect(&rects, "basic.tabs.two"),
+        );
+
+        let fill: native_theme::color::Rgba = match "#13579b".parse() {
+            Ok(colour) => colour,
+            Err(error) => panic!("{error}"),
+        };
+        let want = to_color(fill).into_rgba8();
+        let filled = |image: &image::RgbaImage, tab: Rectangle| {
+            let pixels = pixels_in(image, tab, scale);
+            let inked = pixels
+                .iter()
+                .filter(|p| p.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+                .count();
+            (inked, pixels.len())
+        };
+        state.current_resolved.tab.active_background = fill;
+        let (image, rects, _) = basic_frame(&state);
+        let (inked, of) = filled(&image, rect(&rects, "basic.tabs.one"));
+        assert!(
+            inked * 2 > of,
+            "tab.active_background fills {inked} of the open tab's {of} pixels"
+        );
+
+        let _ = drive(&mut state, |ui| click_last_text(ui, "Two"));
+        let (image, rects, _) = basic_frame(&state);
+        let (inked, of) = filled(&image, rect(&rects, "basic.tabs.two"));
+        assert!(
+            inked * 2 > of,
+            "a click on the second tab leaves it closed: the open tab's fill covers {inked} of \
+             its {of} pixels"
+        );
+        let _ = drive(&mut state, |ui| click_last_text(ui, "One"));
+
+        state.current_resolved = theirs.clone();
+        state.current_resolved.tab.font.color = fill;
+        let (image, _, _) = basic_frame(&state);
+        assert_ne!(
+            pixels_in(&image, two, scale),
+            pixels_in(&base, two, scale),
+            "tab.font.color does not move the other tab's label"
+        );
+
+        state.current_resolved = theirs;
+        let wide = two.width.max(one.width) + 37.0;
+        state.current_resolved.tab.min_width = wide;
+        let (_, rects, _) = basic_frame(&state);
+        let drawn = rect(&rects, "basic.tabs.two").width;
+        assert!(
+            (drawn - wide).abs() < 0.5,
+            "the other tab is {drawn} wide under tab.min_width {wide}"
         );
     }
 
