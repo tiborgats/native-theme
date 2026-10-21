@@ -5995,8 +5995,18 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("defaults", "disabled_text_color") => {
             "disabled_switch_label: the label's colour, times switch.disabled_opacity".into()
         }
-        ("defaults", "focus_ring_width_px" | "focus_ring_offset_px") => {
-            "not reachable: iced draws no focus ring; the Focused border is the input's".into()
+        ("defaults", "focus_ring_width_px") => {
+            "styles::text_input: the Focused border's width, border.width.max(focus_ring_width), \
+             where the ring is inset (focus_ring_offset minus focus_ring_width): the ring drawn \
+             as the field's border; a ring outside or across the edge is not drawn, the Focused \
+             border then the input's own line"
+                .into()
+        }
+        ("defaults", "focus_ring_offset_px") => {
+            "styles::text_input: whether the ring is drawn: inset (minus focus_ring_width), as the \
+             Focused border; outside or across the edge, not (the contract's UNREACHABLE \
+             defaults.focus_ring_offset), the Focused border then the input's own line"
+                .into()
         }
         ("defaults", "border.color") => "swatch_frame: the swatch container's border.color".into(),
         ("defaults", "border.corner_radius_px") => "the swatch container's border.radius".into(),
@@ -15958,6 +15968,52 @@ mod tests {
             stale.is_empty(),
             "rows the export does not record: {stale:?}"
         );
+    }
+
+    /// The focused field's focus-ring lengths route to what draws the ring
+    /// (M8 T16): `styles::text_input`'s Focused border, which splicing
+    /// either leaf moves in a bundled theme whose ring is inset (adwaita's).
+    #[test]
+    fn the_focus_ring_routes_name_the_border_that_draws_it() {
+        let Some(element) = elements::element("basic.text_inputs.focused") else {
+            panic!("basic.text_inputs.focused is not listed");
+        };
+        let focused = text_input::Status::Focused { is_hovered: false };
+        for leaf in [
+            "defaults.focus_ring_width_px",
+            "defaults.focus_ring_offset_px",
+        ] {
+            assert!(
+                element.leaves.iter().any(|l| l == leaf),
+                "{leaf} is not listed"
+            );
+            let route = iced_route(element, leaf, None);
+            assert!(
+                route.starts_with("iced: styles::text_input: ") && !route.contains("no focus ring"),
+                "{leaf}: {route}"
+            );
+            // The resolved theme serialises the length by its field's name.
+            let field = leaf.strip_suffix("_px").unwrap_or(leaf);
+            let pointer = format!("/{}", field.replace('.', "/"));
+            let moved = bundled_combinations().iter().any(|(_, r)| {
+                let Ok(mut json) = serde_json::to_value(r) else {
+                    return false;
+                };
+                let Some(value) = json.pointer_mut(&pointer) else {
+                    return false;
+                };
+                let Some(stated) = value.as_f64() else {
+                    return false;
+                };
+                *value = serde_json::Value::from(stated + 1.0);
+                let theme = native_theme_iced::to_theme(r, "splice");
+                serde_json::from_value::<ResolvedTheme>(json).is_ok_and(|spliced| {
+                    styles::text_input(&spliced)(&theme, focused).border
+                        != styles::text_input(r)(&theme, focused).border
+                })
+            });
+            assert!(moved, "{leaf} moves no Focused border in a bundled theme");
+        }
     }
 
     /// Every bundled preset in both modes, resolved as the contract resolves

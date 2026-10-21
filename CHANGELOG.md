@@ -459,6 +459,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (gpui)**: a Typography Label's Widget Info ends its font-weight note at what sets the weight, gpui's default; the note went on with the panel's own history.
 - **Showcases (gpui)**: a column of the Data page's table dragged to another place takes its cells with it: the header moved alone, over the cells of the column it took the place of. The Role column's sort button sorts the rows by the roles wherever the column stands.
 - **Showcases (gpui)**: under a native theme the chrome menus' Widget Info says that an item's top or bottom the theme leaves unstated is padded by nothing, its height being the item-height line's, and an unstated left or right by upstream's 8 px; it gave the 8 px for every unstated side.
+- **Showcases (iced)**: the focused field's Widget Info lines for `defaults.focus_ring_width` and `.focus_ring_offset` say what iced draws: `styles::text_input` paints an inset ring (the offset minus the width, adwaita's) as the field's Focused border, that wide, and a ring outside or across the edge not at all, the Focused border then the field's own line; they said iced draws no focus ring.
 
 ## [0.6.1] - 2026-10-09
 
