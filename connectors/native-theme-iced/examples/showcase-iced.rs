@@ -4878,15 +4878,14 @@ fn hex_color(line: &str) -> Option<Color> {
 /// ([`iced_not_themeable`]).
 fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
     let json = values::theme_json(&state.current_resolved).unwrap_or_default();
-    let installed = state.installed_combination();
     ListedInfo::new(
         element,
         &json,
         &state.layout,
         Some(state.current_icon_set),
         state.current_icon_theme.as_deref(),
-        |leaf| iced_route(element, leaf, installed.as_deref()),
-        iced_not_themeable(element)
+        |leaf| iced_route(state, element, leaf),
+        iced_not_themeable(state, element)
             .into_iter()
             .map(str::to_string)
             .collect(),
@@ -5249,11 +5248,11 @@ const PALETTE: &[&str] = &["palette.", "extended."];
 #[cfg(feature = "iced_aw")]
 const AW_TAB_BAR: &[&str] = &["styles::aw::tab_bar.", "crate::tab_indicator_line"];
 
-/// What draws a colour leaf of `element`: the connector, through the rows of
-/// a [`Drawing`], or the showcase itself (`None`), whose route [`iced_route`]
-/// writes by hand. The class is chosen by the element's id, as the page
-/// builds it.
-fn drawing(element: &ShowcaseElement, leaf: &str) -> Option<Drawing> {
+/// What draws a colour leaf of `element` under `resolved`: the connector,
+/// through the rows of a [`Drawing`], or the showcase itself (`None`), whose
+/// route [`iced_route`] writes by hand. The class is chosen by the element's
+/// id, as the page builds it.
+fn drawing(element: &ShowcaseElement, leaf: &str, resolved: &ResolvedTheme) -> Option<Drawing> {
     let id = element.id.as_str();
     let under = |prefix: &str| id == prefix || id.starts_with(&format!("{prefix}."));
     // A group's heading, and the text the page sets with no widget of its
@@ -5273,8 +5272,10 @@ fn drawing(element: &ShowcaseElement, leaf: &str) -> Option<Drawing> {
         _ if under("basic.buttons.tooltip.bubble") => Drawing::of(&["styles::tooltip."]),
         _ if under("basic.buttons") => Drawing::enabled(BUTTON),
         // The check mark the theme states a line for is the showcase's
-        // ([`CheckMark`]).
+        // ([`CheckMark`]); where it states none, iced's glyph is drawn, in
+        // `styles::checkbox`'s colour.
         _ if under("basic.checkboxes")
+            && resolved.checkbox.check_mark_stroke_width.is_some()
             && (id.ends_with(".mark") || leaf == "checkbox.indicator_color") =>
         {
             return None;
@@ -5469,19 +5470,24 @@ fn shown_rows<'a>(
     rows
 }
 
-/// How the connector draws `leaf` on `element`, read from the contract's
-/// export: the rows of its [`Drawing`] the leaf moves, under the statuses the
-/// page draws, on `installed`, the bundled combination shown
-/// (`<preset>/<mode>`), or in any bundled one where the theme is the OS's
-/// (`None`); or why no row reads it. `None` where the showcase draws the
+/// How the connector draws `leaf` on `element` under `resolved`, read from
+/// the contract's export: the rows of its [`Drawing`] the leaf moves, under
+/// the statuses the page draws, on `installed`, the bundled combination
+/// shown (`<preset>/<mode>`), or in any bundled one where the theme is the
+/// OS's (`None`); or why no row reads it. `None` where the showcase draws the
 /// leaf itself, or the export has no such leaf.
-fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> Option<String> {
+fn colour_route(
+    element: &ShowcaseElement,
+    leaf: &str,
+    resolved: &ResolvedTheme,
+    installed: Option<&str>,
+) -> Option<String> {
     let export = contract_leaves()?;
     // A combination the export does not name is no bundled one: its routes
     // are the OS theme's.
     let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
     let reach = export.leaves.get(leaf)?;
-    let drawing = drawing(element, leaf)?;
+    let drawing = drawing(element, leaf, resolved)?;
     let moves = match reach {
         LeafReach::Named { kind, why } => {
             return Some(match kind.as_str() {
@@ -5533,18 +5539,58 @@ fn colour_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) 
     })
 }
 
-/// How iced applies `leaf` to `element`: the connector's style function or
-/// helper and the field or setter it reaches, or why it cannot. One muted
-/// line of Widget Info.
+/// The route of a flat button's label colour where it shows the icon set's
+/// icon in the label's place: [`icon_button`] colours the icon as it loads,
+/// so no status of `ghost_button` reaches it.
+const ICON_FOR_LABEL: &str = "not drawn: the set's icon stands in for the label, its colour \
+                              fixed as it loads (icon_button)";
+
+/// The route of a flat button's colour where its icon is an OS icon
+/// theme's, which keeps the colours its loader gives it.
+const OS_ICON_COLOURS: &str = "not drawn: an OS icon theme's icon keeps the colours it loads in";
+
+/// The icon the flat button of the list with id `id` shows in its label's
+/// place under `state`, where the icon set has one iced can draw
+/// ([`chrome_icon`]): the toolbar's, the Basic page's icon buttons', the
+/// side-panel toggle's and the page tabs' menu caret ([`page_menu`]).
+fn ghost_icon<'a>(state: &'a State, id: &str) -> Option<&'a IconData> {
+    let icons = &state.chrome_icons;
+    let icon = match id {
+        "chrome.toolbar.command_palette" => icons.palette.as_ref(),
+        "chrome.toolbar.reload_theme" => icons.reload.as_ref(),
+        "chrome.toolbar.preferences" => icons.preferences.as_ref(),
+        "basic.icons.copy" => icons.copy.as_ref(),
+        "basic.icons.paste" => icons.paste.as_ref(),
+        "basic.icons.delete" => icons.delete.as_ref(),
+        "chrome.status_bar.toggle" => icons.panel.as_ref(),
+        "chrome.page_tabs.menu" => state
+            .loaded_icons
+            .iter()
+            .find(|loaded| loaded.role == IconRole::NavDown)
+            .and_then(|loaded| loaded.data.as_ref()),
+        _ => None,
+    };
+    icon.filter(|icon| matches!(icon, IconData::Svg(_) | IconData::Rgba(_)))
+}
+
+/// How iced applies `leaf` to `element` as `state` draws it: the
+/// connector's style function or helper and the field or setter it reaches,
+/// or why it cannot. One muted line of Widget Info.
 ///
 /// A colour leaf the connector draws is routed from the contract's export
-/// ([`colour_route`]), on `installed`, the bundled combination shown
-/// (`<preset>/<mode>`, `None` under the OS theme). The lines below are the
-/// leaves the export does not cover: the lengths, flags and fonts, and the
-/// colours the showcase draws itself, each naming the function that draws it,
-/// which `every_hand_colour_route_names_a_function_that_reads_it` splices.
-fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) -> String {
-    if let Some(line) = colour_route(element, leaf, installed) {
+/// ([`colour_route`]), on the bundled combination installed (none under the
+/// OS theme). The lines below are the leaves the export does not cover: the
+/// lengths, flags and fonts, and the colours the showcase draws itself, each
+/// naming the function that draws it, which
+/// `every_hand_colour_route_names_a_function_that_reads_it` splices. A line
+/// names a widget only where the state draws it
+/// (`a_route_names_a_widget_only_where_the_state_draws_it`): the check mark
+/// where the theme states its line, the arc where the icon set has no
+/// indicator, a flat button's label colours where it shows its label.
+fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
+    let resolved = &state.current_resolved;
+    let installed = state.installed_combination();
+    if let Some(line) = colour_route(element, leaf, resolved, installed.as_deref()) {
         return line;
     }
     let id = element.id.as_str();
@@ -5559,6 +5605,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         || under("chrome.page_tabs.menu")
         || under("chrome.status_bar.toggle")
         || id == "chrome.info.copy";
+    // The icon a flat button shows in its label's place, drawn in a colour
+    // fixed as it loads ([`icon_button`]); the side-panel toggle while the
+    // panel shows, which `ghost_button` draws selected in every status.
+    let icon = ghost_icon(state, id).filter(|_| ghost);
+    let os_icon = icon.is_some() && state.chrome_icons.system;
+    let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+    let pressed_fill = resolved.button.active_background;
+    let mark = resolved.checkbox.check_mark_stroke_width.is_some();
     let class = if ghost {
         "ghost_button"
     } else if under("basic.buttons.toggle_on") {
@@ -5577,22 +5631,68 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
     let line: Cow<'static, str> = match (table, field) {
         // ---- button ----
         ("button", "font") => "the label's Text::size and theme_font (family, weight)".into(),
-        ("button", "font.color") if ghost => {
-            "icon_button: the icon's colour where the set is a bundled one, an OS icon theme's \
-             keeping theirs; ghost_button: the label's where the set has no icon"
-                .into()
-        }
+        ("button", "font.color") if ghost => match (icon.is_some(), selected) {
+            (true, _) if os_icon => OS_ICON_COLOURS.into(),
+            (true, true) => {
+                "not drawn: the toggle is selected, and icon_button colours its icon in \
+                 button.active_text_color"
+                    .into()
+            }
+            (true, false) => "icon_button: the icon's colour, set as the icon loads".into(),
+            (false, true) => {
+                "not drawn: the toggle is selected, and ghost_button gives its label \
+                 button.active_text_color"
+                    .into()
+            }
+            (false, false) => "ghost_button: the label's text_color at rest".into(),
+        },
         ("button", "min_width_px" | "min_height_px") => {
             "at_least(label, button_content_min_size): the minimum less button_padding".into()
         }
-        ("button", "hover_background") => "ghost_button: the Hovered fill".into(),
-        ("button", "hover_text_color") => "ghost_button: the Hovered text_color".into(),
-        ("button", "active_background") => {
-            "ghost_button: the Pressed fill, and the fill while selected".into()
-        }
-        ("button", "active_text_color") => {
-            "ghost_button: the Pressed text_color, and the text_color while selected".into()
-        }
+        ("button", "hover_background") => match (selected, pressed_fill) {
+            (true, Some(_)) => {
+                "not drawn: the toggle is selected, and ghost_button keeps its fill, \
+                 button.active_background, under the pointer"
+                    .into()
+            }
+            (true, None) => {
+                "ghost_button: the fill while selected, in every status, where \
+                 button.active_background is unstated"
+                    .into()
+            }
+            (false, Some(_)) => "ghost_button: the Hovered fill".into(),
+            (false, None) => {
+                "ghost_button: the Hovered fill, and the Pressed one, where \
+                 button.active_background is unstated"
+                    .into()
+            }
+        },
+        ("button", "hover_text_color") => match (selected, icon) {
+            (true, _) => {
+                "not drawn: the toggle is selected, and ghost_button keeps \
+                 button.active_text_color under the pointer"
+                    .into()
+            }
+            (false, Some(_)) => ICON_FOR_LABEL.into(),
+            (false, None) => "ghost_button: the Hovered text_color".into(),
+        },
+        ("button", "active_background") => match (selected, pressed_fill) {
+            (_, None) => {
+                "not drawn: unstated; ghost_button takes button.hover_background in its place"
+                    .into()
+            }
+            (true, Some(_)) => "ghost_button: the fill while selected, in every status".into(),
+            (false, Some(_)) => "ghost_button: the Pressed fill".into(),
+        },
+        ("button", "active_text_color") => match (selected, icon) {
+            (_, Some(_)) if os_icon => OS_ICON_COLOURS.into(),
+            (true, Some(_)) => "icon_button: the icon's colour while selected".into(),
+            (false, Some(_)) => ICON_FOR_LABEL.into(),
+            (true, None) => {
+                "ghost_button: the label's text_color while selected, in every status".into()
+            }
+            (false, None) => "ghost_button: the Pressed text_color".into(),
+        },
         ("button", "disabled_opacity") => {
             "styles::button: the Disabled colours' alpha times it (iced has no widget opacity)"
                 .into()
@@ -5656,8 +5756,11 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
                 .into()
         }
         ("checkbox", "indicator_width_px") => "Checkbox/Radio::size".into(),
-        ("checkbox", "check_mark_stroke_width_px") => {
+        ("checkbox", "check_mark_stroke_width_px") if mark => {
             "CheckMark: the mark's stroke width, over iced's glyph made transparent".into()
+        }
+        ("checkbox", "check_mark_stroke_width_px") => {
+            "not drawn: unstated, so iced draws its own glyph, whose line no style reaches".into()
         }
         ("checkbox", "radio_dot_diameter_px") => {
             "native_theme_iced::radio: the dot's diameter, over iced's own dot".into()
@@ -5673,8 +5776,13 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("checkbox", "border.line_width_px") => {
             "styles::checkbox / styles::radio: the border width".into()
         }
-        ("checkbox", f) if side(f).is_some() => {
+        ("checkbox", f) if side(f).is_some() && mark => {
             "CheckMark: the mark's box, inside the border and this side".into()
+        }
+        ("checkbox", f) if side(f).is_some() => {
+            "not drawn: iced's checkbox takes no padding, and the showcase paints no mark of its \
+             own where the theme states no check_mark_stroke_width"
+                .into()
         }
         // ---- switch ----
         ("switch", "track_width_px" | "track_height_px") => {
@@ -5735,10 +5843,12 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("popover", "border.corner_radius_px") => "menu_bar_style: menu_border.radius".into(),
         ("popover", "border.line_width_px") => "menu_bar_style: menu_border.width".into(),
         ("popover", "border.shadow_enabled") => {
-            "not reachable: the model states no shadow geometry; iced_aw's menu_shadow".into()
+            "menu_bar_style: iced_aw's menu_shadow where true, none where false".into()
         }
         ("popover", f) if side(f).is_some() => {
-            "not reachable: iced_aw's Menu has no padding around its rows".into()
+            "menu_popup_padding: Menu::padding, the side plus popover.border.line_width; \
+             iced_aw's 5 where unstated"
+                .into()
         }
         // ---- toolbar ----
         ("toolbar", "bar_height_px") => "the bar container's height, where stated".into(),
@@ -5840,9 +5950,11 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
         ("spinner", "min_diameter_px") => {
             "not reachable: the spinner is drawn at spinner.diameter".into()
         }
+        ("spinner", "stroke_width_px") if state.basic_spinner.is_indicator() => {
+            "not drawn: the icon set's indicator is drawn, not the arc".into()
+        }
         ("spinner", "stroke_width_px") => {
-            "native_theme_iced::Spinner: the arc's stroke, where the icon set has no indicator"
-                .into()
+            "native_theme_iced::Spinner: the arc's stroke, the icon set having no indicator".into()
         }
         // ---- segmented control ----
         ("segmented_control", "font") => "the label's size and theme_font".into(),
@@ -6040,11 +6152,14 @@ fn iced_route(element: &ShowcaseElement, leaf: &str, installed: Option<&str>) ->
     }
 }
 
-/// What iced draws for `element` that the theme states nothing for: the
-/// "Not themeable" lines of its Widget Info.
-fn iced_not_themeable(element: &ShowcaseElement) -> Vec<&'static str> {
+/// What iced draws for `element` as `state` shows it that the theme states
+/// nothing for: the "Not themeable" lines of its Widget Info.
+fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<&'static str> {
     match element.name.as_str() {
         "Switch" => vec!["label gap: iced's toggler's, Toggler::DEFAULT_SIZE / 2"],
+        "Spinner" if state.basic_spinner.is_indicator() => {
+            vec!["the indicator's frames and their pace: the icon set's"]
+        }
         "Spinner" => vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second"],
         "Expander" => vec!["arrow shape: a filled triangle on a canvas"],
         "Menu" => vec![
@@ -16356,9 +16471,44 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+    /// The showcase in the states a route depends on, each with no bundled
+    /// combination installed, as under the OS theme: a preset that states the
+    /// check mark's line (kde-breeze) and one that does not (nord), each with
+    /// the side panel shown and hidden, with its icon set's icons and with
+    /// none.
+    fn route_states() -> Vec<State> {
+        let mut states = Vec::new();
+        for preset in ["kde-breeze", "nord"] {
+            for visible in [true, false] {
+                for bare in [false, true] {
+                    let mut state = State {
+                        accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                        ..State::default()
+                    };
+                    assert!(
+                        state.install_in_mode(
+                            ThemeChoice::Preset(preset.to_owned()),
+                            AppColorMode::Light
+                        ),
+                        "{preset}: {:?}",
+                        state.error_message
+                    );
+                    state.current_choice = ThemeChoice::OsTheme("default".to_owned());
+                    state.side_panel_visible = visible;
+                    if bare {
+                        state.chrome_icons = ChromeIcons::default();
+                        state.loaded_icons.clear();
+                    }
+                    states.push(state);
+                }
+            }
+        }
+        states
+    }
+
     /// docs/showcase-elements.toml parses, and Widget Info has a route for
-    /// every leaf the list names: a line saying how iced applies it, or why
-    /// it cannot.
+    /// every leaf the list names, in each of [`route_states`]: a line saying
+    /// how iced applies it, or why it cannot.
     #[test]
     fn the_element_list_parses_and_every_leaf_has_a_route() {
         let list = match elements::showcase_elements() {
@@ -16366,12 +16516,14 @@ mod tests {
             Err(error) => panic!("docs/showcase-elements.toml: {error}"),
         };
         assert!(!list.is_empty(), "the element list is empty");
-        let mut unrouted = Vec::new();
-        for element in &list {
-            for leaf in &element.leaves {
-                let route = iced_route(element, leaf, None);
-                if route.contains("no route recorded") {
-                    unrouted.push(format!("{}: {leaf}", element.id));
+        let mut unrouted = BTreeSet::new();
+        for state in &route_states() {
+            for element in &list {
+                for leaf in &element.leaves {
+                    let route = iced_route(state, element, leaf);
+                    if route.contains("no route recorded") {
+                        unrouted.insert(format!("{}: {leaf}", element.id));
+                    }
                 }
             }
         }
@@ -16403,7 +16555,8 @@ mod tests {
             Err(error) => panic!("contract-leaves.toml: {error}"),
         };
         assert!(contract_leaves().is_some(), "the export is read");
-        let jsons: Vec<serde_json::Value> = bundled_combinations()
+        let bundled = bundled_combinations();
+        let jsons: Vec<serde_json::Value> = bundled
             .iter()
             .map(|(label, r)| match serde_json::to_value(r) {
                 Ok(json) => json,
@@ -16427,9 +16580,12 @@ mod tests {
                 let excepted = DRAWN_IN_NO_BUNDLED_THEME
                     .iter()
                     .any(|(id, l, _)| *id == element.id && l == leaf);
-                let undrawn = drawing(element, leaf).is_some()
-                    && export.leaves.contains_key(leaf)
-                    && iced_route(element, leaf, None).starts_with("not drawn here");
+                let undrawn = export.leaves.contains_key(leaf)
+                    && bundled.iter().any(|(_, r)| {
+                        drawing(element, leaf, r).is_some()
+                            && colour_route(element, leaf, r, None)
+                                .is_some_and(|route| route.starts_with("not drawn here"))
+                    });
                 if undrawn != excepted {
                     failures.push(format!(
                         "{}: {leaf} moves {} row its drawing names in a bundled theme, \
@@ -16495,59 +16651,69 @@ mod tests {
         let Some(export) = contract_leaves() else {
             panic!("contract-leaves.toml does not parse");
         };
+        let bundled = bundled_combinations();
         let mut failures = Vec::new();
         for element in elements::elements() {
             for leaf in &element.leaves {
-                let (Some(drawing), Some(LeafReach::Moves(moves))) =
-                    (drawing(element, leaf), export.leaves.get(leaf))
-                else {
-                    continue;
-                };
-                // A move the element draws: its row is the drawing's and this
-                // build's, and it moves the row in a state the page draws.
-                let drawn = |m: &RowMove| {
-                    drawing.draws_row(&m.row)
-                        && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
-                        && (m.statuses.is_empty()
-                            || m.statuses.iter().any(|s| drawing.draws_status(s)))
-                };
-                for installed in export.combinations.iter().map(Some).chain([None]) {
-                    let label = installed.map(String::as_str);
-                    let moved = |m: &&RowMove| {
-                        drawn(m) && label.is_none_or(|l| !m.except.iter().any(|e| e == l))
+                // The element as each bundled combination draws it, installed
+                // and under the OS theme.
+                for (combination, r) in &bundled {
+                    let (Some(drawing), Some(LeafReach::Moves(moves))) =
+                        (drawing(element, leaf, r), export.leaves.get(leaf))
+                    else {
+                        continue;
                     };
-                    let want: BTreeSet<&str> =
-                        moves.iter().filter(moved).map(|m| m.row.as_str()).collect();
-                    let shown: BTreeSet<&str> = shown_rows(export, moves, &drawing, label)
-                        .into_iter()
-                        .map(|(row, _)| row)
-                        .collect();
-                    if shown != want {
-                        failures.push(format!(
-                            "{} {leaf} on {label:?}: names {shown:?}, moves {want:?}",
-                            element.id
-                        ));
-                    }
-                    let route = iced_route(element, leaf, label);
-                    let holds = match (label, want.is_empty()) {
-                        (Some(l), true) => route.starts_with(&format!("not drawn here: on {l} ")),
-                        (Some(_), false) => {
-                            route.starts_with("iced: ") && !route.ends_with("(in a bundled theme)")
-                        }
-                        (None, true) => route.starts_with("not drawn here: "),
-                        (None, false) => {
-                            route.starts_with("iced: ") && route.ends_with("(in a bundled theme)")
-                        }
+                    // A move the element draws: its row is the drawing's and
+                    // this build's, and it moves the row in a state the page
+                    // draws.
+                    let drawn = |m: &RowMove| {
+                        drawing.draws_row(&m.row)
+                            && row_built(export.rows.get(&m.row).and_then(Option::as_deref))
+                            && (m.statuses.is_empty()
+                                || m.statuses.iter().any(|s| drawing.draws_status(s)))
                     };
-                    if !holds || want.iter().any(|row| !route.contains(row)) {
-                        failures.push(format!(
-                            "{} {leaf} on {label:?}: \"{route}\" for {want:?}",
-                            element.id
-                        ));
+                    for label in [Some(combination.as_str()), None] {
+                        let moved = |m: &&RowMove| {
+                            drawn(m) && label.is_none_or(|l| !m.except.iter().any(|e| e == l))
+                        };
+                        let want: BTreeSet<&str> =
+                            moves.iter().filter(moved).map(|m| m.row.as_str()).collect();
+                        let shown: BTreeSet<&str> = shown_rows(export, moves, &drawing, label)
+                            .into_iter()
+                            .map(|(row, _)| row)
+                            .collect();
+                        if shown != want {
+                            failures.push(format!(
+                                "{} {leaf} on {label:?}: names {shown:?}, moves {want:?}",
+                                element.id
+                            ));
+                        }
+                        let route = colour_route(element, leaf, r, label).unwrap_or_default();
+                        let holds = match (label, want.is_empty()) {
+                            (Some(l), true) => {
+                                route.starts_with(&format!("not drawn here: on {l} "))
+                            }
+                            (Some(_), false) => {
+                                route.starts_with("iced: ")
+                                    && !route.ends_with("(in a bundled theme)")
+                            }
+                            (None, true) => route.starts_with("not drawn here: "),
+                            (None, false) => {
+                                route.starts_with("iced: ")
+                                    && route.ends_with("(in a bundled theme)")
+                            }
+                        };
+                        if !holds || want.iter().any(|row| !route.contains(row)) {
+                            failures.push(format!(
+                                "{} {leaf} on {label:?}: \"{route}\" for {want:?}",
+                                element.id
+                            ));
+                        }
                     }
                 }
             }
         }
+        failures.dedup();
         assert!(failures.is_empty(), "{failures:#?}");
 
         // The fixed case: the On toggle's pressed fill is its checked fill only
@@ -16576,12 +16742,18 @@ mod tests {
         else {
             panic!("every bundled preset states the checked pair");
         };
-        let on_states = iced_route(element, leaf, Some(states));
+        let resolved = |label: &str| match bundled.iter().find(|(l, _)| l == label) {
+            Some((_, r)) => r,
+            None => panic!("{label} is no bundled combination"),
+        };
+        let on_states =
+            colour_route(element, leaf, resolved(states), Some(states)).unwrap_or_default();
         assert!(
             on_states.starts_with("not drawn here: "),
             "{states} states the checked pair: {on_states}"
         );
-        let on_leaves = iced_route(element, leaf, Some(leaves));
+        let on_leaves =
+            colour_route(element, leaf, resolved(leaves), Some(leaves)).unwrap_or_default();
         assert!(
             on_leaves.contains("styles::button_toggle.background (Active, Hovered, Pressed)"),
             "{leaves} leaves the checked pair unstated: {on_leaves}"
@@ -16602,6 +16774,207 @@ mod tests {
         assert!(
             stale.is_empty(),
             "rows the export does not record: {stale:?}"
+        );
+    }
+
+    /// The flat buttons that show an icon of the set where it has one, by
+    /// the list's id, with the id of the icon, which is laid out only where
+    /// the icon is drawn.
+    const ICON_BUTTONS: &[(&str, &str)] = &[
+        (
+            "chrome.toolbar.command_palette",
+            "chrome.toolbar.command_palette.icon",
+        ),
+        (
+            "chrome.toolbar.reload_theme",
+            "chrome.toolbar.reload_theme.icon",
+        ),
+        (
+            "chrome.toolbar.preferences",
+            "chrome.toolbar.preferences.icon",
+        ),
+        ("basic.icons.copy", "basic.icons.copy.icon"),
+        ("basic.icons.paste", "basic.icons.paste.icon"),
+        ("basic.icons.delete", "basic.icons.delete.icon"),
+        ("chrome.page_tabs.menu", "chrome.page_tabs.menu.icon"),
+        ("chrome.status_bar.toggle", "chrome.status_bar.toggle.icon"),
+    ];
+
+    /// What a route of `element`'s `leaf` claims that `state` does not draw:
+    /// a check mark the theme states no line for, an `iced_aw` widget the
+    /// build has not, a text colour on an icon drawn in its own, a state the
+    /// selected toggle never shows, the menu's padding and shadow called
+    /// unreachable. `laid` is what the interface lays out under `state`.
+    fn route_faults(
+        state: &State,
+        laid: &ElementRects,
+        element: &ShowcaseElement,
+        leaf: &str,
+        route: &str,
+    ) -> Vec<String> {
+        let mut faults = Vec::new();
+        let id = element.id.as_str();
+        let mut fault = |what: &str| faults.push(format!("{id} {leaf}: {what}: \"{route}\""));
+        let c = &state.current_resolved.checkbox;
+        if id.starts_with("basic.checkboxes.") {
+            match c.check_mark_stroke_width {
+                None if route.contains("CheckMark") => fault("no CheckMark is drawn"),
+                Some(_)
+                    if id.ends_with(".mark")
+                        && leaf == "checkbox.check_mark_stroke_width_px"
+                        && !route.contains("CheckMark") =>
+                {
+                    fault("the CheckMark draws it")
+                }
+                _ => {}
+            }
+        }
+        if cfg!(not(feature = "iced_aw")) && (route.contains("aw::") || route.contains("TabBar")) {
+            fault("this build has no iced_aw widget");
+        }
+        if let Some((_, icon)) = ICON_BUTTONS.iter().find(|(button, _)| *button == id) {
+            let selected = id == "chrome.status_bar.toggle" && state.side_panel_visible;
+            let iconed = laid.contains_key(icon);
+            let b = &state.current_resolved.button;
+            let claims_text =
+                route.contains("Hovered text_color") || route.contains("Pressed text_color");
+            if iconed && claims_text {
+                fault("the icon's colour is set as it loads");
+            }
+            if !iconed && !selected && leaf == "button.hover_text_color" && !claims_text {
+                fault("the label takes the Hovered text_color");
+            }
+            let not_drawn = route.starts_with("not drawn");
+            if selected {
+                let hidden = match leaf {
+                    "button.font.color" | "button.hover_text_color" => Some(true),
+                    "button.hover_background" => Some(b.active_background.is_some()),
+                    "button.active_background" => Some(b.active_background.is_none()),
+                    "button.active_text_color" => Some(iconed && state.chrome_icons.system),
+                    _ => None,
+                };
+                if hidden.is_some_and(|hidden| hidden != not_drawn) {
+                    fault("the selected toggle draws the active pair");
+                }
+            }
+        }
+        if id == "chrome.menu.theme" {
+            let want = match leaf {
+                "popover.border.shadow_enabled" => Some("iced: menu_bar_style: "),
+                l if l.starts_with("popover.border.padding_") => Some("iced: menu_popup_padding: "),
+                _ => None,
+            };
+            if want.is_some_and(|want| !route.starts_with(want)) {
+                fault("the menu's panel is padded and shadowed so");
+            }
+        }
+        if element.name == "Spinner"
+            && leaf == "spinner.stroke_width_px"
+            && state.basic_spinner.is_indicator()
+            && !route.starts_with("not drawn")
+        {
+            fault("the set's indicator is drawn, not the arc");
+        }
+        faults
+    }
+
+    /// M9-069 to M9-073: a route, and a "Not themeable" line, names what the
+    /// state shown draws, over every bundled preset in both modes, the side
+    /// panel shown and hidden, in this build: no `CheckMark` where the theme
+    /// states no check-mark line (iced's glyph is drawn), the arc's sweep only
+    /// where the icon set has no indicator, no `iced_aw` widget without
+    /// `iced_aw`, no Hovered or Pressed text colour on a flat button whose
+    /// icon is drawn in a colour fixed as it loads, the selected side-panel
+    /// toggle's rows the active pair's, and the menu's panel padding and
+    /// shadow routed to `menu_popup_padding` and `menu_bar_style`. Each case
+    /// is seen both ways somewhere among the presets.
+    #[test]
+    fn a_route_names_a_widget_only_where_the_state_draws_it() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let mut failures = Vec::new();
+        let mut seen = BTreeSet::new();
+        for preset in native_theme::theme::Theme::list_presets() {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                let choice = ThemeChoice::Preset(preset.key.to_owned());
+                assert!(
+                    state.install_in_mode(choice, mode),
+                    "{} ({mode:?}): {:?}",
+                    preset.key,
+                    state.error_message
+                );
+                seen.insert((
+                    "stroke",
+                    state
+                        .current_resolved
+                        .checkbox
+                        .check_mark_stroke_width
+                        .is_some(),
+                ));
+                seen.insert(("indicator", state.basic_spinner.is_indicator()));
+                // The set's icons, and none: a set without them, whose flat
+                // buttons show their labels.
+                for bare in [false, true] {
+                    if bare {
+                        state.chrome_icons = ChromeIcons::default();
+                        state.loaded_icons.clear();
+                    }
+                    state.side_panel_visible = true;
+                    let laid = {
+                        let mut ui = interface(&state);
+                        let _ = texts(&mut ui);
+                        surveyed_layout()
+                    };
+                    seen.insert(("icon", laid.contains_key("basic.icons.copy.icon")));
+                    for visible in [true, false] {
+                        state.side_panel_visible = visible;
+                        for element in elements::elements() {
+                            if element.name == "Spinner" {
+                                let arc = iced_not_themeable(&state, element)
+                                    .iter()
+                                    .any(|line| line.contains("arc"));
+                                if arc == state.basic_spinner.is_indicator() {
+                                    failures.push(format!(
+                                        "{} ({mode:?}): {}: an arc line {} the set's indicator",
+                                        preset.key,
+                                        element.id,
+                                        if arc { "beside" } else { "missing without" }
+                                    ));
+                                }
+                            }
+                            for leaf in &element.leaves {
+                                let route = iced_route(&state, element, leaf);
+                                failures.extend(
+                                    route_faults(&state, &laid, element, leaf, &route)
+                                        .into_iter()
+                                        .map(|f| {
+                                            format!(
+                                                "{} ({mode:?}, panel {visible}): {f}",
+                                                preset.key
+                                            )
+                                        }),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for case in ["stroke", "indicator", "icon"] {
+            for holds in [false, true] {
+                if !seen.contains(&(case, holds)) {
+                    failures.push(format!("no case has {case} {holds}: one side is unchecked"));
+                }
+            }
+        }
+        failures.sort();
+        failures.dedup();
+        assert!(
+            failures.is_empty(),
+            "{} faults: {failures:#?}",
+            failures.len()
         );
     }
 
@@ -17174,6 +17547,7 @@ mod tests {
             panic!("basic.text_inputs.focused is not listed");
         };
         let focused = text_input::Status::Focused { is_hovered: false };
+        let state = State::default();
         for leaf in [
             "defaults.focus_ring_width_px",
             "defaults.focus_ring_offset_px",
@@ -17182,7 +17556,7 @@ mod tests {
                 element.leaves.iter().any(|l| l == leaf),
                 "{leaf} is not listed"
             );
-            let route = iced_route(element, leaf, None);
+            let route = iced_route(&state, element, leaf);
             assert!(
                 route.starts_with("iced: styles::text_input: ") && !route.contains("no focus ring"),
                 "{leaf}: {route}"
@@ -17444,6 +17818,7 @@ mod tests {
     /// combination (a soft option's fallback moves it only where the option
     /// is unstated). `ghost_button(resolved, false)(&theme, Hovered)` moves
     /// on `button.hover_text_color`, `menu_row` on `menu.hover_background`.
+    /// The routes are those of each of [`route_states`].
     #[test]
     fn every_hand_colour_route_names_a_function_that_reads_it() {
         let Some(export) = contract_leaves() else {
@@ -17459,57 +17834,67 @@ mod tests {
             .collect();
         let mut checked: BTreeSet<(String, String)> = BTreeSet::new();
         let mut failures = Vec::new();
-        for element in elements::elements() {
-            for leaf in &element.leaves {
-                if !export.leaves.contains_key(leaf) || drawing(element, leaf).is_some() {
+        let states = route_states();
+        let routes = states.iter().flat_map(|state| {
+            elements::elements().iter().flat_map(move |element| {
+                element
+                    .leaves
+                    .iter()
+                    .map(move |leaf| (state, element, leaf))
+            })
+        });
+        for (state, element, leaf) in routes {
+            let resolved = &state.current_resolved;
+            if !export.leaves.contains_key(leaf) || drawing(element, leaf, resolved).is_some() {
+                continue;
+            }
+            let route = iced_route(state, element, leaf);
+            if route.starts_with("not ") {
+                continue;
+            }
+            let functions = route_functions(&route);
+            if functions.is_empty() {
+                failures.push(format!(
+                    "{}: {leaf}: \"{route}\" names no function",
+                    element.id
+                ));
+            }
+            for function in functions {
+                if !checked.insert((function.to_owned(), leaf.clone())) {
                     continue;
                 }
-                let route = iced_route(element, leaf, None);
-                if route.starts_with("not ") {
-                    continue;
-                }
-                let functions = route_functions(&route);
-                if functions.is_empty() {
+                let pointer = format!("/{}", leaf.replace('.', "/"));
+                let moved = combinations.iter().zip(&jsons).any(|((_, r), json)| {
+                    let Some(before) = drawn_by(function, r) else {
+                        return false;
+                    };
+                    ["#13579b", "#2468ac80"].iter().any(|hex| {
+                        let mut spliced = json.clone();
+                        let Some(value) = spliced.pointer_mut(&pointer) else {
+                            return false;
+                        };
+                        *value = serde_json::Value::String((*hex).to_owned());
+                        serde_json::from_value::<ResolvedTheme>(spliced)
+                            .ok()
+                            .and_then(|s| drawn_by(function, &s))
+                            .is_some_and(|after| after != before)
+                    })
+                });
+                if drawn_by(function, &State::default().current_resolved).is_none() {
                     failures.push(format!(
-                        "{}: {leaf}: \"{route}\" names no function",
+                        "{}: {leaf}: \"{route}\" names {function}, which this test cannot draw",
+                        element.id
+                    ));
+                } else if !moved {
+                    failures.push(format!(
+                        "{}: {leaf}: {function} draws nothing it moves",
                         element.id
                     ));
                 }
-                for function in functions {
-                    if !checked.insert((function.to_owned(), leaf.clone())) {
-                        continue;
-                    }
-                    let pointer = format!("/{}", leaf.replace('.', "/"));
-                    let moved = combinations.iter().zip(&jsons).any(|((_, r), json)| {
-                        let Some(before) = drawn_by(function, r) else {
-                            return false;
-                        };
-                        ["#13579b", "#2468ac80"].iter().any(|hex| {
-                            let mut spliced = json.clone();
-                            let Some(value) = spliced.pointer_mut(&pointer) else {
-                                return false;
-                            };
-                            *value = serde_json::Value::String((*hex).to_owned());
-                            serde_json::from_value::<ResolvedTheme>(spliced)
-                                .ok()
-                                .and_then(|s| drawn_by(function, &s))
-                                .is_some_and(|after| after != before)
-                        })
-                    });
-                    if drawn_by(function, &State::default().current_resolved).is_none() {
-                        failures.push(format!(
-                            "{}: {leaf}: \"{route}\" names {function}, which this test cannot draw",
-                            element.id
-                        ));
-                    } else if !moved {
-                        failures.push(format!(
-                            "{}: {leaf}: {function} draws nothing it moves",
-                            element.id
-                        ));
-                    }
-                }
             }
         }
+        failures.sort();
+        failures.dedup();
         assert!(failures.is_empty(), "{failures:#?}");
     }
 
