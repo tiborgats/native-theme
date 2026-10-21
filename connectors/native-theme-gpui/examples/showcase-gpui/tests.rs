@@ -29,7 +29,7 @@ use crate::chrome::menus;
 use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, as_rgba, claim,
-    epoch_marker, native_info, percent_text,
+    native_info, percent_text,
 };
 use crate::inspector::InspectorTab;
 use crate::support::{
@@ -11829,21 +11829,17 @@ impl Render for Nested {
                 .top(px(80.))
                 .size(px(40.))
         });
-        gpui::div()
-            .relative()
-            .size_full()
-            .child(epoch_marker(&self.ui))
-            .child(
-                gpui::div()
-                    .relative()
-                    .size_full()
-                    .children(inner)
-                    .info(&self.ui, "outer", WidgetInfo::new("Outer"))
-                    .absolute()
-                    .left(px(20.))
-                    .top(px(20.))
-                    .size(px(200.)),
-            )
+        gpui::div().relative().size_full().child(
+            gpui::div()
+                .relative()
+                .size_full()
+                .children(inner)
+                .info(&self.ui, "outer", WidgetInfo::new("Outer"))
+                .absolute()
+                .left(px(20.))
+                .top(px(20.))
+                .size(px(200.)),
+        )
     }
 }
 
@@ -12000,6 +11996,513 @@ fn a_page_change_keeps_an_info_still_drawn(cx: &mut TestAppContext) {
     change_page(cx, &view, &ui, true);
     settle(cx);
     assert_eq!(shown(cx, &ui).as_deref(), Some("Inner"));
+}
+
+/// How many times a view rendered: a test reads it to tell a frame that
+/// built the view from one that drew it from the last frame.
+type Renders = Rc<std::cell::Cell<usize>>;
+
+fn rendered(renders: &Renders) {
+    renders.set(renders.get().saturating_add(1));
+}
+
+/// A view of its own inside [`Host`]: while `show` holds, a 200×200 target
+/// at (20, `top`), `hosted`, that is also an element of the layout dump,
+/// `HOSTED_ELEMENT`.
+struct Hosted {
+    ui: Entity<InfoRegistry>,
+    renders: Renders,
+    show: bool,
+    top: f32,
+}
+
+/// Any id serves: only `the_layout_dump_holds_every_element_drawn` holds the
+/// recorded ids to the list.
+const HOSTED_ELEMENT: &str = "test.hosted";
+
+/// Inside the hosted target at its first place, and inside the host's own
+/// where it has one.
+const IN_HOSTED: Point<Pixels> = point(px(60.), px(120.));
+
+impl Render for Hosted {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        rendered(&self.renders);
+        if !self.show {
+            return gpui::div().into_any_element();
+        }
+        gpui::div()
+            .size_full()
+            .child(crate::elements::record(&self.ui, HOSTED_ELEMENT))
+            .info(&self.ui, "hosted", WidgetInfo::new("Hosted"))
+            .absolute()
+            .left(px(20.))
+            .top(px(self.top))
+            .size(px(200.))
+            .into_any_element()
+    }
+}
+
+/// A view of its own inside [`Host`], over part of [`Hosted`]: a 300×200
+/// target at (100, 20), `sibling`, larger than the hosted one.
+struct Sibling {
+    ui: Entity<InfoRegistry>,
+    renders: Renders,
+}
+
+/// Inside the sibling target, outside the hosted one.
+const IN_SIBLING: Point<Pixels> = point(px(350.), px(100.));
+
+/// Inside both the sibling target and the hosted one at its first place.
+const IN_BOTH: Point<Pixels> = point(px(150.), px(100.));
+
+impl Render for Sibling {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        rendered(&self.renders);
+        gpui::div()
+            .info(&self.ui, "sibling", WidgetInfo::new("Sibling"))
+            .absolute()
+            .left(px(100.))
+            .top(px(20.))
+            .w(px(300.))
+            .h(px(200.))
+    }
+}
+
+/// The window's root view: it draws [`Hosted`] while `show_hosted` holds,
+/// the [`Sibling`] where it has one, and, where `own_target` holds, a
+/// 460×460 target of its own at (10, 10), `host`, under both; else it
+/// records nothing itself.
+struct Host {
+    ui: Entity<InfoRegistry>,
+    renders: Renders,
+    hosted: Entity<Hosted>,
+    show_hosted: bool,
+    sibling: Option<Entity<Sibling>>,
+    own_target: bool,
+}
+
+impl Render for Host {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        rendered(&self.renders);
+        let own = self.own_target.then(|| {
+            gpui::div()
+                .info(&self.ui, "host", WidgetInfo::new("Host"))
+                .absolute()
+                .left(px(10.))
+                .top(px(10.))
+                .size(px(460.))
+        });
+        gpui::div()
+            .relative()
+            .size_full()
+            .children(own)
+            .children(self.show_hosted.then(|| self.hosted.clone()))
+            .children(self.sibling.clone())
+    }
+}
+
+/// A window whose root is a [`Host`], drawn once; and the host's registry
+/// and the render counts of the host, the hosted view and the sibling.
+#[allow(clippy::type_complexity)]
+fn open_host(
+    cx: &mut TestAppContext,
+    own_target: bool,
+    sibling: bool,
+) -> (
+    Entity<Host>,
+    Entity<InfoRegistry>,
+    [Renders; 3],
+    &mut VisualTestContext,
+) {
+    let (host, cx) = cx.add_window_view(move |_window, cx| {
+        let ui = cx.new(|_| InfoRegistry::new());
+        let hosted = cx.new(|_| Hosted {
+            ui: ui.clone(),
+            renders: Renders::default(),
+            show: true,
+            top: 20.,
+        });
+        let sibling = sibling.then(|| {
+            cx.new(|_| Sibling {
+                ui: ui.clone(),
+                renders: Renders::default(),
+            })
+        });
+        Host {
+            ui,
+            renders: Renders::default(),
+            hosted,
+            show_hosted: true,
+            sibling,
+            own_target,
+        }
+    });
+    let (ui, renders) = cx.update(|_window, cx| {
+        let this = host.read(cx);
+        let sibling = this
+            .sibling
+            .as_ref()
+            .map(|s| s.read(cx).renders.clone())
+            .unwrap_or_default();
+        (
+            this.ui.clone(),
+            [
+                this.renders.clone(),
+                this.hosted.read(cx).renders.clone(),
+                sibling,
+            ],
+        )
+    });
+    draw(cx);
+    (host, ui, renders, cx)
+}
+
+/// Change `view` and notify it alone, then let the window draw its next
+/// frame as the app draws one: no `refresh`, so GPUI Fast draws every view
+/// nothing changed for from the last frame.
+fn notify_alone<V: 'static>(
+    cx: &mut VisualTestContext,
+    view: &Entity<V>,
+    change: impl FnOnce(&mut V),
+) {
+    cx.update(|_window, cx| {
+        view.update(cx, |this, cx| {
+            change(this);
+            cx.notify();
+        })
+    });
+    cx.run_until_parked();
+}
+
+/// What the registry drew twice so far, its targets' ids and its elements'.
+fn twice(
+    cx: &mut VisualTestContext,
+    ui: &Entity<InfoRegistry>,
+) -> (
+    std::collections::BTreeSet<String>,
+    std::collections::BTreeSet<&'static str>,
+) {
+    cx.update(|_window, cx| {
+        let ui = ui.read(cx);
+        (ui.drawn_twice.clone(), ui.listed_twice.clone())
+    })
+}
+
+/// A frame that builds a view again but draws a view nested in it from the
+/// last frame, as GPUI Fast draws one (gpui-fast 0.1.10
+/// src/fast/retained.rs, `reuse_retained_prepaint`), runs none of the
+/// nested view's code: its target records nothing. It is still drawn, so
+/// it stays hovered and chosen over the larger target around it, and
+/// listed. On gpui-pre the frame builds both views, and the test holds as
+/// well. The render counts show which frames the test drew: the host built
+/// in the notified frame on both cores, the hosted view drawn from the last
+/// frame on GPUI Fast through the settle after it, and built again on
+/// gpui-pre.
+///
+/// The hover comes first and a full frame after it: GPUI Fast builds again
+/// a view whose hover changed, and one that read the registry since an
+/// update of it (gpui-fast src/fast/retained.rs:601-626), as settling the
+/// choice is.
+#[gpui::test]
+fn a_reused_views_target_is_hovered_and_listed_after_a_partial_frame(cx: &mut TestAppContext) {
+    let (host, ui, [host_renders, hosted_renders, _], cx) = open_host(cx, true, false);
+    hover(cx, IN_HOSTED);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Hosted"));
+    draw(cx);
+    let (host_before, hosted_before) = (host_renders.get(), hosted_renders.get());
+    notify_alone(cx, &host, |_| {});
+    assert_eq!(
+        host_renders.get(),
+        host_before.saturating_add(1),
+        "the notify drew no frame that built the host"
+    );
+    let reused = cfg!(feature = "gpui-fast");
+    if reused {
+        assert_eq!(
+            hosted_renders.get(),
+            hosted_before,
+            "GPUI Fast built the hosted view again, so the frame is no partial one"
+        );
+    } else {
+        assert!(
+            hosted_renders.get() > hosted_before,
+            "gpui-pre drew the hosted view from the last frame, so the frame is no full one"
+        );
+    }
+    settle(cx);
+    assert_eq!(
+        shown(cx, &ui).as_deref(),
+        Some("Hosted"),
+        "the hosted target, drawn from the last frame, is no longer chosen"
+    );
+    if reused {
+        assert_eq!(
+            hosted_renders.get(),
+            hosted_before,
+            "a frame drawn on the settle built the hosted view again, so its target \
+             recorded afresh"
+        );
+    }
+    let listed = cx.update(|_window, cx| ui.read(cx).layout_drawn());
+    assert!(
+        listed.contains_key(HOSTED_ELEMENT),
+        "the layout dump lost the hosted view's element: {listed:?}"
+    );
+    let (targets, elements) = twice(cx, &ui);
+    assert!(targets.is_empty(), "drawn twice in one frame: {targets:?}");
+    assert!(
+        elements.is_empty(),
+        "listed twice in one frame: {elements:?}"
+    );
+}
+
+/// The other way round: a frame that builds a view again without its
+/// target, and draws the view beside it from the last frame, takes the
+/// target and its element of the list away, though nothing records: the
+/// host around them, built again on GPUI Fast too, records nothing itself. The element leaves the layout dump, and the
+/// target, smaller than the sibling, is never chosen again: with the
+/// pointer on the sibling, the sibling is shown. A full frame follows the
+/// settle, as in
+/// `a_reused_views_target_is_hovered_and_listed_after_a_partial_frame`.
+#[gpui::test]
+fn a_target_a_partial_frame_no_longer_draws_is_gone(cx: &mut TestAppContext) {
+    let (host, ui, [host_renders, hosted_renders, sibling_renders], cx) =
+        open_host(cx, false, true);
+    hover(cx, IN_HOSTED);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Hosted"));
+    draw(cx);
+    let before = [&host_renders, &hosted_renders, &sibling_renders].map(|r| r.get());
+    let hosted = cx.update(|_window, cx| host.read(cx).hosted.clone());
+    notify_alone(cx, &hosted, |this| this.show = false);
+    let after = [&host_renders, &hosted_renders, &sibling_renders].map(|r| r.get());
+    assert_eq!(
+        after[1],
+        before[1].saturating_add(1),
+        "the notify drew no frame that built the hosted view"
+    );
+    if cfg!(feature = "gpui-fast") {
+        assert_eq!(
+            after[2], before[2],
+            "GPUI Fast built the sibling again, so the frame recorded"
+        );
+    }
+    let listed = cx.update(|_window, cx| ui.read(cx).layout_drawn());
+    assert!(
+        !listed.contains_key(HOSTED_ELEMENT),
+        "the layout dump still holds the hosted view's element: {listed:?}"
+    );
+    hover(cx, IN_SIBLING);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Sibling"));
+    let (targets, elements) = twice(cx, &ui);
+    assert!(targets.is_empty(), "drawn twice in one frame: {targets:?}");
+    assert!(
+        elements.is_empty(),
+        "listed twice in one frame: {elements:?}"
+    );
+}
+
+/// A hovered target that a frame recording nothing took away gets no hover
+/// end from gpui; drawn again away from the pointer, as a new element that
+/// starts from not hovered (gpui-pre elements/div.rs:3154-3163), it must
+/// not win over the larger target the pointer is still on, which the
+/// pointer never left, so no hover event comes between. On GPUI Fast the
+/// frame that takes it away builds the host only, which records nothing
+/// itself, and draws the sibling from the last frame; on gpui-pre the
+/// sibling records in it, which already prunes the hover. A full frame
+/// follows the first settle, as in
+/// `a_reused_views_target_is_hovered_and_listed_after_a_partial_frame`.
+#[gpui::test]
+fn a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again(cx: &mut TestAppContext) {
+    let (host, ui, [host_renders, hosted_renders, sibling_renders], cx) =
+        open_host(cx, false, true);
+    hover(cx, IN_BOTH);
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Hosted"));
+    draw(cx);
+    let (host_before, sibling_before) = (host_renders.get(), sibling_renders.get());
+    let hosted = cx.update(|_window, cx| host.read(cx).hosted.clone());
+    // Out of the pointer's way once drawn again; no notify of its own.
+    cx.update(|_window, cx| hosted.update(cx, |this, _| this.top = 240.));
+    notify_alone(cx, &host, |this| this.show_hosted = false);
+    assert_eq!(
+        host_renders.get(),
+        host_before.saturating_add(1),
+        "the notify drew no frame that built the host"
+    );
+    if cfg!(feature = "gpui-fast") {
+        assert_eq!(
+            sibling_renders.get(),
+            sibling_before,
+            "GPUI Fast built the sibling again, so the frame recorded"
+        );
+    }
+    let hosted_before = hosted_renders.get();
+    notify_alone(cx, &host, |this| this.show_hosted = true);
+    assert!(
+        hosted_renders.get() > hosted_before,
+        "the hosted view was drawn again from an earlier frame, not as a new element"
+    );
+    settle(cx);
+    assert_eq!(shown(cx, &ui).as_deref(), Some("Sibling"));
+}
+
+/// Two sibling targets under one id, each holding an element of the list
+/// under one id, as a duplicate id in the showcase would draw them.
+struct Twins {
+    ui: Entity<InfoRegistry>,
+}
+
+impl Render for Twins {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        let twin = |left: f32| {
+            gpui::div()
+                .size_full()
+                .child(crate::elements::record(&self.ui, "test.twin"))
+                .info(&self.ui, "twin", WidgetInfo::new("Twin"))
+                .absolute()
+                .left(px(left))
+                .top(px(20.))
+                .size(px(100.))
+        };
+        gpui::div()
+            .relative()
+            .size_full()
+            .child(twin(20.))
+            .child(twin(200.))
+    }
+}
+
+/// The tests' check of two targets under one id finds two drawn in the same
+/// draw, and two elements of the list likewise.
+#[gpui::test]
+fn the_duplicate_check_finds_two_targets_drawn_together(cx: &mut TestAppContext) {
+    let (view, cx) = cx.add_window_view(|_window, cx| Twins {
+        ui: cx.new(|_| InfoRegistry::new()),
+    });
+    let ui = cx.update(|_window, cx| view.read(cx).ui.clone());
+    draw(cx);
+    let (targets, elements) = twice(cx, &ui);
+    assert!(
+        targets.contains("twin"),
+        "two targets under `twin` not found: {targets:?}"
+    );
+    assert!(
+        elements.contains("test.twin"),
+        "two elements under `test.twin` not found: {elements:?}"
+    );
+}
+
+/// A cached view of its own, holding a target under the id the view around
+/// it also draws one under once `fresh` holds; it counts its renders.
+struct Cached {
+    ui: Entity<InfoRegistry>,
+    renders: Renders,
+}
+
+impl Render for Cached {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        rendered(&self.renders);
+        gpui::div()
+            .info(&self.ui, "pair", WidgetInfo::new("Cached"))
+            .absolute()
+            .left(px(20.))
+            .top(px(20.))
+            .size(px(100.))
+    }
+}
+
+/// Draws [`Cached`] as a cached view, which both cores draw from the last
+/// frame while nothing changed for it (gpui-pre src/view.rs, `cached`), and,
+/// once `fresh` holds, a target of its own under the same id.
+struct Pair {
+    ui: Entity<InfoRegistry>,
+    cached: Entity<Cached>,
+    fresh: bool,
+}
+
+impl Render for Pair {
+    fn render(
+        &mut self,
+        _window: &mut gpui::Window,
+        _cx: &mut gpui::Context<Self>,
+    ) -> impl IntoElement {
+        let fresh = self.fresh.then(|| {
+            gpui::div()
+                .info(&self.ui, "pair", WidgetInfo::new("Fresh"))
+                .absolute()
+                .left(px(200.))
+                .top(px(20.))
+                .size(px(100.))
+        });
+        gpui::div()
+            .relative()
+            .size_full()
+            .child(
+                self.cached
+                    .clone()
+                    .cached(gpui::StyleRefinement::default().size_full()),
+            )
+            .children(fresh)
+    }
+}
+
+/// The tests' check of two targets under one id finds a target recorded
+/// beside one under the same id that the frame drew from the last frame,
+/// which recorded nothing: the frame builds the view around it and draws
+/// the cached view from the last frame, on both cores.
+#[gpui::test]
+fn the_duplicate_check_finds_a_fresh_target_beside_a_reused_one(cx: &mut TestAppContext) {
+    let renders = Renders::default();
+    let counted = renders.clone();
+    let (view, cx) = cx.add_window_view(move |_window, cx| {
+        let ui = cx.new(|_| InfoRegistry::new());
+        let cached = cx.new(|_| Cached {
+            ui: ui.clone(),
+            renders: counted,
+        });
+        Pair {
+            ui,
+            cached,
+            fresh: false,
+        }
+    });
+    let ui = cx.update(|_window, cx| view.read(cx).ui.clone());
+    draw(cx);
+    let before = renders.get();
+    notify_alone(cx, &view, |this| this.fresh = true);
+    assert_eq!(
+        renders.get(),
+        before,
+        "the cached view was built again, so its target recorded beside the fresh one"
+    );
+    let (targets, _) = twice(cx, &ui);
+    assert!(
+        targets.contains("pair"),
+        "two targets under `pair` not found: {targets:?}"
+    );
 }
 
 /// No code of the showcase but its tests clones gpui-component's `Theme`:

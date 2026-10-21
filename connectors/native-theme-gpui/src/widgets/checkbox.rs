@@ -563,7 +563,7 @@ impl Checkbox {
     }
 
     /// Hands `observer` the bounds of the box, the check mark and the label
-    /// as each frame lays them out ([`PartBounds`]).
+    /// as a frame lays them out ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
         self.parts.observer = Some(observer);
@@ -722,7 +722,7 @@ impl Radio {
     }
 
     /// Hands `observer` the bounds of the circle, the dot and the label as
-    /// each frame lays them out ([`PartBounds`]).
+    /// a frame lays them out ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
         self.parts.observer = Some(observer);

@@ -114,7 +114,7 @@ impl ProgressBar {
         }
     }
 
-    /// Hands `observer` the bounds of the fill as each frame lays it out
+    /// Hands `observer` the bounds of the fill as a frame lays it out
     /// ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {

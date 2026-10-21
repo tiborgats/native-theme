@@ -246,7 +246,7 @@ impl TabBar {
     }
 
     /// Hands `observer` the bounds of each tab, as [`Part::Tab`] with its
-    /// index, as each frame lays them out ([`PartBounds`]).
+    /// index, as a frame lays them out ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
         self.observer = Some(observer);

@@ -202,7 +202,7 @@ impl Slider {
     }
 
     /// Hands `observer` the bounds of the rail, its fill and the thumbs as
-    /// each frame lays them out ([`PartBounds`]).
+    /// a frame lays them out ([`PartBounds`]).
     #[must_use]
     pub fn on_part_bounds(mut self, observer: PartBounds) -> Self {
         self.observer = Some(observer);

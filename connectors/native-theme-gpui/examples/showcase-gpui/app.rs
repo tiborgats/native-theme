@@ -49,7 +49,7 @@ use native_theme_showcase_support::rows;
 
 use crate::chrome;
 use crate::elements;
-use crate::info::{InfoRegistry, epoch_marker};
+use crate::info::InfoRegistry;
 use crate::inspector::{Inspector, PanelLook};
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
@@ -2180,9 +2180,6 @@ impl Render for Showcase {
             .bg(background)
             .text_color(foreground)
             .track_focus(&self.focus_handle)
-            // First, so its prepaint opens the frame for every target
-            // (info/registry.rs, epoch_marker).
-            .child(epoch_marker(&self.info_ui))
             .child(elements::record(&self.info_ui, "chrome.window"))
             .child(
                 v_flex()

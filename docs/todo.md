@@ -1955,6 +1955,31 @@ model, the platform presets and the three connectors
       >   row is drawn beside a title bar", left `Some(Bounds { origin: Point {
       >   x: 0px, y: 0px }, size: Size { 1280px × 26px } })`, right `None`
 
+- [ ] [1.0] **The layout dump on GPUI Fast is stale inside a scrolled,
+      composited scroll layer.** The showcase's Widget Info registry
+      (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs`)
+      keeps each element of the list at the bounds it last recorded. Once
+      GPUI Fast has seen a scroll area scroll for two frames
+      (`PROMOTE_AFTER_SCROLLED_FRAMES`, gpui-fast 0.1.10
+      `src/fast/layers/policy.rs:41`, `:286-287`), it composites the area
+      while it scrolls: the content is drawn moved by the scroll, and its
+      children's prepaint, where the elements record, is skipped
+      (`src/fast/layers/paint.rs:233-235`, `src/fast/layers/reuse.rs:39`). So
+      `InfoRegistry::layout_drawn`, and with it `--dump-layout`, reports the
+      positions of the layer's last repaint for what is inside it, off by the
+      scroll since; a `widgets::PartBounds` observer there is not called
+      either. Hovers and the inspector's choice are unaffected: gpui moves
+      the hitboxes, and the choice compares areas only. No gate reads such a
+      dump: the screenshot and dump scripts build the gpui showcase on its
+      default core, gpui-pre (`scripts/capture_window.sh`,
+      `scripts/generate_screenshots_gpui.sh`), and G3 Task 9's GPUI Fast
+      dumps are taken at rest, before any scroll streak. If a GPUI Fast dump
+      after a scroll is ever needed, the dump calls `window.refresh()` before
+      each reading: a refreshing frame turns the layers off
+      (`src/fast/layers/mod.rs:130`) and reuse with them
+      (`src/fast/retained.rs:602`), and `DumpSettle` already reads until the
+      layout holds. Found 2026-10-21 (G3 Task 1).
+
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
 - [ ] [upstream] a `ghost_hover` / `ghost_hover_foreground` token pair separate from

@@ -133,10 +133,18 @@ pub enum Part {
 /// Where a theme-drawn control reports the bounds each of its parts was
 /// laid out at, in window coordinates, outer edge of its border included --
 /// for an application that measures its own layout, as the showcase's
-/// layout dump does. Called while the frame is laid out (gpui's prepaint),
-/// each frame, for the parts the control draws; a control drawn as
-/// gpui-component's own, with no native theme installed, reports nothing.
-pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut App)>;
+/// layout dump does. Called while a frame lays the control out (gpui's
+/// prepaint), for the parts the control draws, with the window being drawn;
+/// a control drawn as gpui-component's own, with no native theme installed,
+/// reports nothing. A frame that draws the control from the last one, as
+/// GPUI Fast draws a view nothing changed for, does not lay it out and does
+/// not call it: the parts are where they were. Nor does a frame in which
+/// GPUI Fast composites a scroll area the control is in while it scrolls:
+/// it draws the area's content moved by the scroll, without laying it out
+/// (gpui-fast 0.1.10 src/fast/layers/paint.rs:233-235,
+/// src/fast/layers/reuse.rs:39), so there the parts have moved by the
+/// scroll since the last call.
+pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut Window, &mut App)>;
 
 /// An absolute, invisible box laid over a part whose border is `border`
 /// wide, reaching out to the border's outer edge: an absolute child is laid
@@ -145,7 +153,7 @@ pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut App)>;
 fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoElement + use<> {
     let observer = observer.clone();
     canvas(
-        move |bounds, _: &mut Window, cx: &mut App| observer(part, bounds, cx),
+        move |bounds, window: &mut Window, cx: &mut App| observer(part, bounds, window, cx),
         |_, (), _, _| {},
     )
     .absolute()

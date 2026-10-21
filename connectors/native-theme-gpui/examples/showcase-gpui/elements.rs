@@ -18,7 +18,7 @@ use native_theme_gpui::widgets::{Part, PartBounds};
 pub use native_theme_showcase_support::elements::elements;
 pub use native_theme_showcase_support::elements::{ShowcaseElement, element};
 
-use crate::info::InfoRegistry;
+use crate::info::{InfoRegistry, begin_record, painted};
 
 /// The elements of the list that a widget reporting itself under an info id
 /// (`InfoExt::info`) is, as (info id, element id): the widget's info is then
@@ -254,11 +254,14 @@ const PARTS: &[ControlParts] = &[
 pub fn part_observer(ui: &Entity<InfoRegistry>, info_id: &str) -> Option<PartBounds> {
     let &(_, parts) = PARTS.iter().find(|(id, _)| *id == info_id)?;
     let ui = ui.clone();
-    Some(std::rc::Rc::new(move |part, bounds, cx: &mut App| {
-        if let Some(&(_, id)) = parts.iter().find(|(p, _)| *p == part) {
-            ui.update(cx, |r, _| r.record_layout(id, bounds));
-        }
-    }))
+    Some(std::rc::Rc::new(
+        move |part, bounds, window: &mut Window, cx: &mut App| {
+            if let Some(&(_, id)) = parts.iter().find(|(p, _)| *p == part) {
+                let presence = begin_record(&ui, id.into(), window, cx);
+                ui.update(cx, |r, _| r.record_layout(id, bounds, presence));
+            }
+        },
+    ))
 }
 
 /// The Buttons whose labels are elements of the list, as (Button id,
@@ -334,20 +337,19 @@ pub fn listed_for(info_id: &str) -> Option<&'static str> {
 /// parent's padding box. For a part inside a box the showcase builds itself,
 /// with no border of its own.
 pub fn record(ui: &Entity<InfoRegistry>, id: &'static str) -> impl IntoElement {
-    let ui = ui.clone();
+    let (ui, on_paint) = (ui.clone(), ui.clone());
     canvas(
-        move |bounds,
-              #[cfg_attr(not(test), allow(unused_variables))] window: &mut Window,
-              cx: &mut App| {
+        move |bounds, window: &mut Window, cx: &mut App| {
             #[cfg(test)]
             let colour = window.text_style().color;
+            let presence = begin_record(&ui, id.into(), window, cx);
             ui.update(cx, |r, _| {
-                r.record_layout(id, bounds);
+                r.record_layout(id, bounds, presence);
                 #[cfg(test)]
                 r.text_colours.insert(id, colour);
             });
         },
-        |_, _, _, _| {},
+        move |_, _, _, cx: &mut App| painted(&on_paint, cx),
     )
     .absolute()
     .top_0()
@@ -425,9 +427,10 @@ pub trait ListedExt: IntoElement + Sized {
     fn listed(self, ui: &Entity<InfoRegistry>, id: &'static str) -> Div {
         let ui = ui.clone();
         div()
-            .on_children_prepainted(move |bounds, _window, cx| {
+            .on_children_prepainted(move |bounds, window, cx| {
                 if let Some(bounds) = bounds.first() {
-                    ui.update(cx, |r, _| r.record_layout(id, *bounds));
+                    let presence = begin_record(&ui, id.into(), window, cx);
+                    ui.update(cx, |r, _| r.record_layout(id, *bounds, presence));
                 }
             })
             .child(self)
