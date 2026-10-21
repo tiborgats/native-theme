@@ -450,13 +450,13 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     match kind {
         ButtonKind::Primary => vec![
             claim(
-                "bg, at 80% (the whole Button fades, button.rs:836)",
+                "bg, at 80% (the whole Button fades, button/button.rs:842)",
                 "button_primary",
                 t.button_primary.opacity(0.8),
                 "gpui-component/button/button.rs:1002",
             ),
             claim(
-                "text, at 80% (the whole Button fades, button.rs:836)",
+                "text, at 80% (the whole Button fades, button/button.rs:842)",
                 "button_primary_foreground",
                 t.button_primary_foreground.opacity(0.8),
                 "gpui-component/button/button.rs:1020",
@@ -542,7 +542,7 @@ pub fn button(
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
                 }),
                 (ButtonState::Disabled, _) => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :830)".to_string(),
+                (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: line 842, the opacity(0.8))".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -631,8 +631,9 @@ pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// Upstream fills a selected Button with its variant's selected style,
 /// which for a custom variant is the variant's active colour and its
 /// foreground (button/button.rs, ButtonVariant::selected), and gives it no
-/// hover or press style: those apply only while it is neither disabled nor
-/// selected (button/button.rs, RenderOnce for Button).
+/// hover or press style: it registers the hover on every Button, but paints
+/// it, as it paints the press, only while the Button is neither disabled,
+/// loading nor selected (button/button.rs:716-748, RenderOnce for Button).
 pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     ghost_variant(
         info.color(claim(

@@ -1033,7 +1033,7 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:716, :807-812).
+    // style (button/button.rs:716, :741, :807-812).
     let info = if selected {
         info.variant("selected")
             .color(claim(

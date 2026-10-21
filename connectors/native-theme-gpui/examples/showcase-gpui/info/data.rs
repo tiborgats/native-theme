@@ -116,7 +116,7 @@ pub fn data_table(
         info.not_themeable("row height", "upstream's Medium 32px: with no native theme installed nothing states list.row_height (sizing.rs, table_row_height)")
             .not_themeable("text", "text_sm, which a Medium cell sets on itself (sizing.rs, table_cell_size)")
     };
-    info.config("keyboard focus", "a Tab-focused DataTable takes `ring` and the focus ring (table/data_table.rs:190-193)")
+    info.config("keyboard focus", "a DataTable focused from the keyboard takes `ring` and the focus ring, which DataTable::new turns on; one focused by a click shows neither (table/data_table.rs:114, 228-235)")
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
         .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
@@ -763,7 +763,7 @@ pub fn tree_row(
     };
     list_item(t, label, state, styled, gutter)
         .not_themeable("right-click", "not followed here: Tree tells the row's builder whether the row is selected and nothing else (gpui-component/tree.rs, Tree::new), and marks a right-clicked row after it is built (gpui-component/tree.rs, RenderOnce for Tree). A right-clicked row paints no hover and gains a 1px selection outline, over the selected fill when it is selected (list/list_item.rs, ListItem::render)")
-        .instance("click", "selects the row, and opens or closes a folder (gpui-base/tree.rs, TreeState::on_entry_click)")
+        .instance("click", "a full click, the press released on the row, selects it and opens or closes a folder; a press dragged off the row does neither (gpui-base/tree.rs, TreeState::on_entry_click)")
 }
 
 /// The notes every Avatar of the page shares: each has a name and no image.

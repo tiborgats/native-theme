@@ -466,7 +466,7 @@ pub fn panel_toggle(
     let info = if open {
         super::buttons::native_ghost_selected(info, t).not_themeable(
             "fill",
-            "the ghost variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style and hovers only a Button that is neither disabled nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
+            "the ghost variant's active colour while selected, and no hover or press style: upstream paints a selected Button with its variant's selected style, and its hover style, which it registers on every Button, only on one that is neither disabled, loading nor selected (button/button.rs, ButtonVariant::selected; RenderOnce for Button)",
         )
     } else {
         super::buttons::native_ghost(info, t).not_themeable(
@@ -678,7 +678,7 @@ fn underline_tab_bar(
         )
         .not_themeable(
             "fill",
-            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:287-294). The active tab's own 2px primary bottom border (tab/tab.rs:253-262) is transparent once the indicator is drawn (tab/tab.rs:836-841). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
+            "none, on the bar or on a tab: an Underline bar is transparent, and marks the active tab with its sliding indicator, a 2px primary bar under the tab (tab/tab_bar.rs:287-294). The active tab's own 2px primary bottom border (tab/tab.rs:305-314) is transparent once the indicator is drawn (tab/tab.rs:836-841). tab_active and tab_bar are the Tab variant's (tab/tab_bar.rs, TabBar::render; tab/tab.rs, TabVariant::selected)",
         )
         .not_themeable(
             "corners",
@@ -745,7 +745,7 @@ pub fn page_tab_bar(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
         )
         .not_themeable(
             "menu",
-            "after the tabs, an extra-small ghost Button with a caret opens a menu of every page, the shown one checked, whose rows show their pages too: the showcase builds it as the bar's suffix as menu(true) would, since upstream's names each tab by a label, and a tab's label here is a child in tab.font. The Button shows whether or not the tabs overflow, and the tabs scroll sideways where they do not fit (tab/tab_bar.rs, TabBar::render)",
+            "after the tabs, an extra-small ghost Button with a caret opens a menu of every page, the shown one checked, whose rows show their pages too: the showcase builds it as the bar's suffix as menu(true) would, since upstream's names each tab by a label, and a tab's label here is a child in tab.font. The Button shows whether or not the tabs overflow, and the tabs scroll sideways where they do not fit, under a mouse wheel's vertical turns too until the strip reaches its end (tab/tab_bar.rs, TabBar::render; gpui-base/scrollable_mask.rs, ScrollableMask::vertical_wheel)",
         )
         .not_themeable(
             "own icons",
@@ -1288,8 +1288,8 @@ pub(super) fn dialog_surface(
         match (entrance, reduce_motion) {
             (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would slide and fade in over 0.25s on a literal curve, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; gpui-pre/elements/animation.rs, AnimationExt)",
             (false, false) => "a 0.25s slide and fade on a literal curve, not the theme's motion tokens: the default entrance, which the showcase keeps where the theme states no dialog.entrance; Dialog::entrance's Fade and FadeSlide take the motion tokens instead (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION)",
-            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would fade in place over the motion tokens' duration_normal on their easing_enter -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; gpui-pre/elements/animation.rs, AnimationExt)",
-            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, not a literal: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance)",
+            (true, true) => "none: reduced motion is on, so the Dialog appears at rest at once, where it would fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity -- DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::render, line 664; gpui-pre/elements/animation.rs, AnimationExt)",
+            (true, false) => "a fade in place over the motion tokens' duration_normal on their easing_enter, held within 0 to 1 since it drives the opacity, not a literal: DialogEntrance::Fade, which geometry::dialog_entrance gives the theme's dialog.entrance, the nearest entrance gpui-component draws (dialog/entrance.rs, DialogEntrance::Fade; dialog/dialog.rs, Dialog::entrance; dialog/dialog.rs, Dialog::render, line 664)",
         },
     )
     .instance(

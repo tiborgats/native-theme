@@ -518,6 +518,6 @@ pub fn diff(t: &Theme) -> WidgetInfo {
         .not_themeable("collapse button", "the icon, hover and pressed swatches are the file header's ghost collapse Button, which the widget builds and no refinement reaches (diff/mod.rs, render_file_header)")
         .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight on the file header's collapse button (diff/mod.rs, render_file_header)"))
         .instance("hover", "DiffHoverHighlight::Both, set by the showcase: upstream highlights nothing by default (diff/mod.rs, DiffHoverHighlight)")
-        .instance("add-annotation button", "none: it is shown only when on_add_annotation is set (diff/mod.rs, add_annotation_button: line 1513), and this one is not. It would paint primary, primary_foreground and radius (lines 1537-1539)")
+        .instance("add-annotation button", "none: it is shown only when on_add_annotation is set (diff/mod.rs, add_annotation_button: line 1513), and this one is not. It would paint primary, primary_foreground and radius (diff/mod.rs, add_annotation_button: lines 1542-1544)")
         .instance("conflict sides", "none: only a file read by DiffFile::parse_conflicts is conflicted (diff/conflict.rs, parse_conflicts: lines 264-265), and this patch is read by DiffFile::parse. Its current side would be tinted success and its incoming side info (diff/mod.rs, conflict_tint: lines 1103-1104)")
 }
