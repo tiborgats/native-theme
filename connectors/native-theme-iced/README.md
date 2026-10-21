@@ -501,11 +501,12 @@ a reader feature only (see [Runtime theme change](#runtime-theme-change)).
 gpui and egui connectors.
 
 Keyboard focus: `styles::text_input` and `styles::text_editor` draw a focused
-field's border as the theme's focus ring where that ring is inset
-(`defaults.focus_ring_offset` minus its width, as adwaita states it),
-`defaults.focus_ring_width` wide in `input.focus_border_color` or the ring's
-colour. A ring that lies outside the field's edge or across it (KDE, Windows,
-macOS) is not one iced can draw; there a focused field recolours its line at
+field's border as the theme's focus ring where that ring is inset at the
+field's edge (`defaults.focus_ring_offset` is minus
+`defaults.focus_ring_width`, as adwaita states it), `defaults.focus_ring_width`
+wide in `input.focus_border_color` or the ring's colour. A ring that lies
+outside the field's edge or across it (KDE, Windows, macOS), or inside it with
+a gap, is not one iced can draw; there a focused field recolours its line at
 rest, in `input.focus_border_color` where the theme states one.
 
 ### Text scaling

@@ -954,13 +954,14 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
     Unreachable {
         field: "defaults.focus_ring_offset",
         evidence: "a focused text field draws the theme's focus ring only where the \
-             ring lies inside its edge (offset minus the width), as its border: \
-             iced paints a quad's border inside the quad's bounds \
-             (iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`) and a \
-             `text_input::Style` has one border and no outline \
-             (iced_widget 0.14.2 `src/text_input.rs:1713-1726`). A ring outside \
-             the edge (KDE's +2, Windows' and the colour schemes' +1) or across it \
-             (macOS's -1 with width 3) has nowhere to be drawn, so a focused \
+             ring is inset at its edge (`focus_ring_offset` is minus \
+             `focus_ring_width`), as its border: iced paints a quad's border \
+             inside the quad's bounds (iced_wgpu 0.14.0 \
+             `src/shader/quad/solid.wgsl:78-83`) and a `text_input::Style` has \
+             one border and no outline (iced_widget 0.14.2 \
+             `src/text_input.rs:1713-1726`). A ring outside the edge (KDE's +2, \
+             Windows' and the colour schemes' +1), across it (macOS's -1 with \
+             width 3) or inset with a gap has nowhere to be drawn, so a focused \
              field recolours its rest line in `input.focus_border_color` instead",
         lost: |_, r| {
             let d = &r.defaults;

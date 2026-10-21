@@ -538,9 +538,9 @@ impl InputColors {
         // border_color, ..)`, iced_wgpu 0.14.0 `src/shader/quad/solid.wgsl:78-83`),
         // while the platform lays the ring over the field's fill, so a
         // translucent ring is composited over the fill here. A ring that lies
-        // outside the edge (offset 0 or more: KDE's +2, Windows' +1) or
-        // straddles it (macOS's -1 with width 3) is not a border iced can
-        // draw; there a focused field recolours its rest line (the contract's
+        // outside the edge (offset 0 or more: KDE's +2, Windows' +1),
+        // straddles it (macOS's -1 with width 3) or lies inside it with a gap
+        // (an offset below minus the width) is not a border iced can draw; there a focused field recolours its rest line (the contract's
         // `UNREACHABLE` entry for `defaults.focus_ring_offset`).
         let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
         let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {
@@ -577,10 +577,13 @@ impl InputColors {
 ///
 /// Every color is `input.*`: the fill, the border and its hovered and focused
 /// colors, the placeholder, the value and the selection. Where the theme's
-/// focus ring is inset (`defaults.focus_ring_offset` minus its width), a
-/// focused field draws it as its border, `defaults.focus_ring_width` wide in
+/// focus ring is inset at the field's edge (`defaults.focus_ring_offset` is
+/// minus `defaults.focus_ring_width`, libadwaita's), a focused field draws it
+/// as its border, `defaults.focus_ring_width` wide in
 /// `input.focus_border_color` (or the ring's colour), so a field with no rest
-/// line still shows its focus. The disabled state is
+/// line still shows its focus. A ring outside or across the edge, or inset
+/// with a gap, is not drawn: the focused field's line at rest then takes
+/// `input.focus_border_color` where the theme states one. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
 /// model states, each colour's alpha multiplied by `input.disabled_opacity`
 /// (iced has no widget opacity; `docs/platform-facts.md` §2.1.6). `icon` has
