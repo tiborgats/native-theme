@@ -10429,15 +10429,13 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     );
 
     let single_line = {
-        let mut input = text_input("Type something here...", &state.text_input_value)
+        let input = text_input("Type something here...", &state.text_input_value)
             .id(TEXT_INPUT_ID)
             .on_input(Message::TextInputChanged)
             .size(scaled_text_size(resolved.input.font.size, a11y))
             .font(theme_font(&resolved.input.font))
-            .style(styles::text_input(resolved));
-        {
-            input = input.padding(inp_pad);
-        }
+            .style(styles::text_input(resolved))
+            .padding(inp_pad);
 
         hoverable(
             UnlistedKey::TextInput,
@@ -10456,15 +10454,13 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     };
 
     let secure_input = {
-        let mut input = text_input("Password field...", &state.text_input_value)
+        let input = text_input("Password field...", &state.text_input_value)
             .on_input(Message::TextInputChanged)
             .secure(true)
             .size(scaled_text_size(resolved.input.font.size, a11y))
             .font(theme_font(&resolved.input.font))
-            .style(styles::text_input(resolved));
-        {
-            input = input.padding(inp_pad);
-        }
+            .style(styles::text_input(resolved))
+            .padding(inp_pad);
 
         hoverable(
             UnlistedKey::SecureTextInput,
@@ -17988,6 +17984,20 @@ mod tests {
                 cell.height
             );
         }
+    }
+
+    /// M9-100 (simplify): the Text Inputs page chains each single-line
+    /// input's padding into its builder; no bare block reassigns it.
+    #[test]
+    fn the_text_inputs_chain_their_padding() {
+        let source: String = strip_comments_and_strings(SHOWCASE)
+            .chars()
+            .filter(|c| !c.is_whitespace())
+            .collect();
+        assert!(
+            !source.contains("{input=input.padding("),
+            "a bare {{ input = input.padding(..); }} block remains"
+        );
     }
 
     /// The Basic tab's push button, text field and drop-down are laid out at
