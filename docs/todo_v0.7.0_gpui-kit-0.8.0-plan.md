@@ -271,6 +271,7 @@ Files: `SC/demo.rs`, `SC/pages/layout.rs`, `SC/info/layout.rs`, `SC/tests.rs`,
 
 - [ ] Spec §5, the tests first (they fail: no sample).
 - [ ] Gate: the colour-claim gate passes with the new panel; coverage `missing 0`.
+- [ ] Added at G3 Task 0 (M9-082's gpui half, assigned here as the gpui showcase's writer): `SC/inspector.rs`'s frame row (`:301`, the `Decorations::Server` arm) names the frame per platform, as the iced showcase's `window_frame(std::env::consts::OS)` does since `9a0c356b` (M9b T8), where it prints the KWin sentence on every platform; a test on the row's text per platform, failing first; in its own commit, with the ledger's M9-082 status set to fixed.
 - **Commit:** `feat(showcase-gpui): the Layout page shows TabBar's Folder variant, with its theme colours claimed and its literals noted (G3 T6)`.
 
 ## Task 7: The slider's accessibility

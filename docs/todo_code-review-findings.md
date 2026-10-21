@@ -11959,7 +11959,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Fix proposed:** Name the frame per platform under cfg (KWin/Mutter on Linux, the system's on macOS and Windows), in both showcases.
 **Verdict:** CONFIRMED — The Window section's frame row is the fixed string 'whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)' on every platform (showcase-iced.rs:6277-6281), with no cfg for macOS/Windows. (verifier: Cosmetic: the KWin text is labelled as KWin's case, not claimed for macOS/Windows; S4 is right.)
 **Triage:** fix — CONFIRMED.
-**Status:** open
+**Status:** open — iced half fixed: 9a0c356b (M9b T8; `window_frame(std::env::consts::OS)`, `the_window_frame_row_names_the_platforms_frame`); gpui half, the same KWin sentence in the inspector's `Decorations::Server` arm with no per-platform text (`showcase-gpui/inspector.rs:301`), assigned to G3 Task 6, which edits the gpui showcase (I2: fixed when that half lands)
 *Source:* B1#17.
 
 #### M9-083 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:7041
@@ -12552,6 +12552,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Triage:** fix — CONFIRMED.
 **Status:** fixed — 66a46b87 (M9b T5 fix round 1).
 *Source:* m9b-T5-fix1-brief.md, the T4 fix round's item.
+
+#### M9-142 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:4536
+**Claim:** The iced side panel ignores `sidebar.border.padding`. Under adwaita, windows-11 and material-3, which state it since M9a T17, the panel itself is not padded and its theme settings and inspector content are padded by `layout.container_margin`, where the gpui and egui side panels pad the whole panel by the stated sides and leave its content unpadded.
+**Evidence:** At `fa90c6c0` (the parent of the fix) no line of `showcase-iced.rs` reads `sidebar.border`. `side_panel` (:4536) pads the settings by `gap.container` (:4597-4598) and the inspector's content by the same (:4613), and its doc says so ("padded by `layout.container_margin`", :4527-4528). gpui reads the stated sides through `sidebar_padding` and `side_panel_content_margin` (`showcase-gpui/demo.rs:1545`, `:1556`), egui through its `side_panel` (`showcase-egui/chrome.rs:757-759`). The three presets state `[light.sidebar.border]` and `[dark.sidebar.border]` paddings (adwaita.toml:311, :743; windows-11.toml:411, :1008; material-3.toml:360, :879), the only bundled presets with a `sidebar.border` section.
+**Fix proposed:** Pad the whole side panel where `sidebar.border.padding` states any side, each unstated side by `layout.container_margin` (none where that is unstated), with no line width, and then pad the settings, the inspector's tab row and its content by nothing, as gpui and egui do; where no side is stated, keep `container_margin` on those three.
+**Verdict:** CONFIRMED by the M8 T16 review (the amendment of 2026-10-17, 7767fbbe: "iced's side panel reads `sidebar.border.padding` as gpui's and egui's do"); the id is the one m9b-rulings.md's Addendum A (S9) reserved.
+**Triage:** fix — CONFIRMED (M9b T8).
+**Status:** fixed — 127d2ed5 (M9b T8; `the_side_panel_is_padded_as_gpuis`, over every bundled preset in both modes and kde-breeze with a spliced partial padding).
+*Source:* M8 T16's review amendment (7767fbbe); m9b-rulings.md, Addendum A, S9.
 
 
 ### Rejected
