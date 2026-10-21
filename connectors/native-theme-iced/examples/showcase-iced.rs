@@ -236,6 +236,8 @@ mod probes {
     pub const SLIDER: &str = "probe-slider";
     pub const VERTICAL_SLIDER: &str = "probe-vertical-slider";
     pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
+    /// The Display page's Right-aligned Spacing & Layout box.
+    pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
     /// The Display page's four tooltips' buttons, Top, Bottom, Left and
     /// Right, and their tips ([`super::drawn_probe`]).
     pub const DISPLAY_TOOLTIPS: [&str; 4] = [
@@ -11610,24 +11612,28 @@ fn view_display(state: &State) -> Element<'_, Message> {
         text("Spacing & Layout").role(section_title(ts), resolved, a11y),
         row![
             container(text("A").body(resolved, a11y))
-                .padding(Padding::from(sp.m))
+                .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("B").body(resolved, a11y))
-                .padding(Padding::from(sp.m))
+                .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             container(text("C").body(resolved, a11y))
-                .padding(Padding::from(sp.m))
+                .padding(card_pad)
                 .style(styles::container_card(resolved))
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             space().width(Fill),
-            container(text("Right-aligned").role(&ts.caption, resolved, a11y))
-                .padding(Padding::from(sp.m))
-                .style(styles::container_card(resolved)),
+            probe(
+                probes::DISPLAY_SPACING_BOX,
+                Length::Shrink,
+                container(text("Right-aligned").role(&ts.caption, resolved, a11y))
+                    .padding(card_pad)
+                    .style(styles::container_card(resolved)),
+            ),
         ]
         .spacing(gap.widget)
         .align_y(iced::Center),
@@ -17983,6 +17989,58 @@ mod tests {
                 "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
                 cell.height
             );
+        }
+    }
+
+    /// A state showing `tab` under `preset` light, the side panel hidden, at
+    /// a text scale of 1.
+    fn page_state(preset: &str, tab: Tab) -> State {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            side_panel_visible: false,
+            ..State::default()
+        };
+        assert!(
+            state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light),
+            "{preset} does not install"
+        );
+        state.active_tab = tab;
+        state
+    }
+
+    /// M9-096 (theme-data): the Display page's Spacing & Layout boxes, drawn
+    /// as cards, are padded as the page's cards are, by `card.border.padding`
+    /// inside `card.border.line_width` (`padding_inside_border`): under
+    /// kde-breeze and windows-11, which state a card padding, the
+    /// Right-aligned box's label is the stated side plus the line in from
+    /// its box's left and top, read from the theme.
+    #[test]
+    fn the_spacing_boxes_take_the_cards_padding() {
+        for preset in ["kde-breeze", "windows-11"] {
+            let state = page_state(preset, Tab::Display);
+            let card = &state.current_resolved.card.border;
+            let (Some(left), Some(top)) = (card.padding.left, card.padding.top) else {
+                panic!("{preset} states no card padding");
+            };
+            let mut ui = interface(&state);
+            let frame = probe_bounds(&mut ui, probes::DISPLAY_SPACING_BOX);
+            let label = match texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content == "Right-aligned")
+            {
+                Some((_, bounds)) => bounds,
+                None => panic!("{preset}: the Right-aligned box has no label"),
+            };
+            for (side, inset, want) in [
+                ("left", label.x - frame.x, left + card.line_width),
+                ("top", label.y - frame.y, top + card.line_width),
+            ] {
+                assert!(
+                    (inset - want).abs() < 0.01,
+                    "{preset}: the Right-aligned label is {inset} in from its box's {side}, \
+                     want {want}"
+                );
+            }
         }
     }
 
