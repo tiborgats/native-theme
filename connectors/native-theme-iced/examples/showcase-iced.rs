@@ -8539,7 +8539,7 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     }
 }
 
-/// The Widget Info of the Basic page's switches.
+/// The Widget Info of the Selection page's switch, the connector's.
 fn switch_info(resolved: &ResolvedTheme) -> String {
     let sw = &resolved.switch;
     widget_tooltip(
@@ -8597,15 +8597,13 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of a button, the Buttons page's primary row and the
-/// Basic page's buttons. `sized` is whether the buttons take the theme's
-/// minimum size (`at_least`), as the Basic page's do.
-fn button_info(state: &State, sized: bool) -> String {
+/// The Widget Info of the Buttons page's primary row.
+fn button_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
     let label = font_row("button.font", &resolved.button.font);
-    let mut config = vec![
+    let config = [
         ("border-radius", radius_s.as_str()),
         (
             "padding",
@@ -8617,17 +8615,6 @@ fn button_info(state: &State, sized: bool) -> String {
         ("shadow", "iced's own — the model has no shadow geometry"),
         ("label", label.as_str()),
     ];
-    let mut not_themeable = Vec::new();
-    if sized {
-        config.push((
-            "minimum size",
-            "button.min_width × button.min_height, outer: the label in \
-             at_least(.., button_content_min_size(..)), the minimum less \
-             button_padding",
-        ));
-    } else {
-        not_themeable.push(("min-height", "hardcoded by iced"));
-    }
     widget_tooltip_themed(
         state,
         "Button (Primary)",
@@ -8649,7 +8636,7 @@ fn button_info(state: &State, sized: bool) -> String {
             ),
         ],
         &config,
-        &not_themeable,
+        &[("min-height", "hardcoded by iced")],
     )
 }
 
@@ -8673,7 +8660,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let primary_row = hoverable(
-        button_info(state, false),
+        button_info(state),
         column![
             text("Primary Actions").role(section_title(ts), resolved, a11y),
             row![
@@ -8797,15 +8784,13 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of a single-line text field, the Text Inputs page's and
-/// the Basic page's. `sized` is whether the field takes `input.min_height`
-/// (`control_line_height`), as the Basic page's do.
-fn text_input_info(state: &State, sized: bool) -> String {
+/// The Widget Info of the Text Inputs page's single-line text field.
+fn text_input_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let i = &resolved.input;
     let radius_s = format!("{:.0}px", i.border.corner_radius);
     let text = font_row("input.font", &resolved.input.font);
-    let mut config = vec![
+    let config = [
         ("border-radius", radius_s.as_str()),
         (
             "padding",
@@ -8816,20 +8801,6 @@ fn text_input_info(state: &State, sized: bool) -> String {
         ),
         ("text", text.as_str()),
     ];
-    let mut not_themeable = Vec::new();
-    if sized {
-        config.push((
-            "height",
-            "input.min_height: control_line_height gives the text the line box \
-             that fills it inside input_padding",
-        ));
-    } else {
-        not_themeable.push((
-            "height",
-            "iced's: a line of the text size, plus the padding",
-        ));
-    }
-    not_themeable.push(("icon color", "no native source — iced's own"));
     widget_tooltip_themed(
         state,
         "TextInput",
@@ -8849,7 +8820,13 @@ fn text_input_info(state: &State, sized: bool) -> String {
             ),
         ],
         &config,
-        &not_themeable,
+        &[
+            (
+                "height",
+                "iced's: a line of the text size, plus the padding",
+            ),
+            ("icon color", "no native source — iced's own"),
+        ],
     )
 }
 
@@ -8886,7 +8863,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         }
 
         hoverable(
-            text_input_info(state, false),
+            text_input_info(state),
             column![
                 text("TextInput (single line)").role(section_title(ts), resolved, a11y),
                 input,
@@ -9007,7 +8984,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
 // Tab: Selection
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of a checkbox, the Selection page's and the Basic page's.
+/// The Widget Info of the Selection page's checkboxes.
 fn checkbox_info(resolved: &ResolvedTheme) -> String {
     let c = &resolved.checkbox;
     let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
@@ -9058,8 +9035,7 @@ fn checkbox_info(resolved: &ResolvedTheme) -> String {
     )
 }
 
-/// The Widget Info of a radio button, the Selection page's and the Basic
-/// page's.
+/// The Widget Info of the Selection page's radio buttons.
 fn radio_info(resolved: &ResolvedTheme) -> String {
     let c = &resolved.checkbox;
     let label_gap_s = format!("{:.0}px", c.label_gap);
@@ -9119,33 +9095,17 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
     )
 }
 
-/// The Widget Info of a pick list, the Selection page's and the Basic page's
-/// drop-down. `sized` is whether it takes `combo_box_padding` and
-/// `combo_box.min_height` (`control_line_height`), as the Basic page's does.
-fn pick_list_info(resolved: &ResolvedTheme, sized: bool) -> String {
+/// The Widget Info of the Selection page's pick list.
+fn pick_list_info(resolved: &ResolvedTheme) -> String {
     let cb = &resolved.combo_box;
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
     let rows = font_row("combo_box.font", &resolved.combo_box.font);
-    let mut config = vec![
+    let config = [
         ("border-radius", combo_radius_s.as_str()),
         ("arrow size", arrow_size_s.as_str()),
         ("label and menu rows", rows.as_str()),
     ];
-    if sized {
-        config.push((
-            "padding",
-            "combo_box_padding — each side combo_box.border.padding states, plus \
-             combo_box.border.line_width (the theme's padding lies inside the \
-             border, which iced paints over its padding); iced's pick-list \
-             padding for the others",
-        ));
-        config.push((
-            "height",
-            "combo_box.min_height: control_line_height gives the label the line \
-             box that fills it inside combo_box_padding",
-        ));
-    }
     widget_tooltip(
         "PickList (dropdown)",
         &[
@@ -9421,7 +9381,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .collect();
 
     let pickers = hoverable(
-        pick_list_info(resolved, false),
+        pick_list_info(resolved),
         column![
             text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -9545,8 +9505,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // Tab: Range
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of a horizontal slider, the Range page's and the Basic
-/// page's.
+/// The Widget Info of the Range page's horizontal slider.
 fn slider_info(resolved: &ResolvedTheme) -> String {
     let sl = &resolved.slider;
     let rail_s = format!("{:.0}px", sl.track_height);
@@ -9578,7 +9537,7 @@ fn slider_info(resolved: &ResolvedTheme) -> String {
     )
 }
 
-/// The Widget Info of a progress bar, the Range page's and the Basic page's.
+/// The Widget Info of the Range page's progress bars.
 fn progress_bar_info(resolved: &ResolvedTheme) -> String {
     let pb = &resolved.progress_bar;
     let bar_girth_s = format!("{:.0}px", pb.track_height);
