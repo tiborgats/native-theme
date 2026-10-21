@@ -17151,7 +17151,8 @@ mod tests {
     }
 
     /// The style functions each page widget's Widget Info names rows of, by
-    /// its title: those its page draws the widget with, read from the page.
+    /// its title: those its page draws the widget with, which
+    /// `drawn_with_is_what_the_pages_draw_with` reads in the page's code.
     /// Every colour row of such an info is a row of one of them.
     const DRAWN_WITH: &[(&str, &[&str])] = &[
         ("Switch (native_theme_iced::switch)", &["styles::toggler"]),
@@ -17198,6 +17199,196 @@ mod tests {
         #[cfg(feature = "iced_aw")]
         ("SelectionList", &["styles::aw::selection_list"]),
     ];
+
+    /// The connector's widget functions a page draws a widget through, and
+    /// the style function each draws it with: the switch with
+    /// `styles::toggler_over` over the window background, `styles::toggler`'s
+    /// colours there (lib.rs `switch`); the radio with `styles::radio`
+    /// (lib.rs `radio`).
+    const DRAWN_THROUGH: &[(&str, &str)] = &[
+        ("native_theme_iced::switch", "styles::toggler"),
+        ("native_theme_iced::radio", "styles::radio"),
+    ];
+
+    /// The style functions (`styles::<fn>`) `text`, code with its comments and
+    /// strings removed, calls, and those the connector functions
+    /// [`DRAWN_THROUGH`] lists that it calls draw with.
+    fn styles_called(text: &str) -> BTreeSet<String> {
+        let mut called = BTreeSet::new();
+        for (at, _) in text.match_indices("styles::") {
+            let joined = text[..at]
+                .chars()
+                .next_back()
+                .is_some_and(|c| c.is_alphanumeric() || c == '_' || c == ':');
+            let name: String = text[at..]
+                .chars()
+                .take_while(|c| c.is_alphanumeric() || *c == '_' || *c == ':')
+                .collect();
+            if !joined && text[at + name.len()..].starts_with('(') {
+                called.insert(name);
+            }
+        }
+        for (function, style) in DRAWN_THROUGH {
+            if !call_sites(text, function).is_empty() {
+                called.insert((*style).to_owned());
+            }
+        }
+        called
+    }
+
+    /// `content` with the `let` statements of the names it uses that `scope`
+    /// binds before its end, and theirs in turn: the code that builds a
+    /// widget a page wraps.
+    fn with_bindings(scope: &str, content: &str) -> String {
+        let mut code = content.to_owned();
+        let mut seen = BTreeSet::new();
+        let mut pending = vec![content.to_owned()];
+        while let Some(text) = pending.pop() {
+            for name in text
+                .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+                .filter(|name| name.starts_with(|c: char| c.is_lowercase() || c == '_'))
+            {
+                if !seen.insert(name.to_owned()) {
+                    continue;
+                }
+                let at = ["let", "let mut"]
+                    .iter()
+                    .flat_map(|binding| {
+                        [format!("{binding} {name} ="), format!("{binding} {name}:")]
+                    })
+                    .filter_map(|binding| scope.rfind(binding.as_str()))
+                    .max();
+                let Some(at) = at else {
+                    continue;
+                };
+                let mut depth = 0usize;
+                let end = scope[at..]
+                    .char_indices()
+                    .find_map(|(offset, c)| {
+                        match c {
+                            '(' | '[' | '{' => depth += 1,
+                            ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                            ';' if depth == 0 => return Some(at + offset),
+                            _ => {}
+                        }
+                        None
+                    })
+                    .unwrap_or(scope.len());
+                let statement = &scope[at..end];
+                code.push('\n');
+                code.push_str(statement);
+                pending.push(statement.to_owned());
+            }
+        }
+        code
+    }
+
+    /// The title of the info `info` builds, the text of a `hoverable`'s
+    /// first argument at lines `lines` of `code`: the first string after a
+    /// `widget_tooltip` call in those lines of the original source, or in
+    /// those of the function `info` calls.
+    fn info_title(code: &str, info: &str, lines: (usize, usize)) -> Option<String> {
+        let original: Vec<&str> = SHOWCASE.lines().collect();
+        let callee: String = info
+            .trim()
+            .chars()
+            .take_while(|c| c.is_alphanumeric() || *c == '_')
+            .collect();
+        let (first, last) = if callee.starts_with("widget_tooltip") {
+            lines
+        } else {
+            let at = code.find(&format!("\nfn {callee}("))? + 1;
+            let open = code[at..].find('{')? + at;
+            (
+                line_at(code, at),
+                line_at(code, close_of_block(code, open)?),
+            )
+        };
+        let text = original.get(first.checked_sub(1)?..last)?.join("\n");
+        let after = &text[text.find("widget_tooltip")?..];
+        let open = after.find('"')? + 1;
+        let close = after[open..].find('"')? + open;
+        Some(after[open..close].to_owned())
+    }
+
+    /// The offset of the `}` that closes the block opened at `open`.
+    fn close_of_block(code: &str, open: usize) -> Option<usize> {
+        let mut depth = 0usize;
+        for (offset, c) in code[open..].char_indices() {
+            match c {
+                '{' => depth += 1,
+                '}' => {
+                    depth = depth.checked_sub(1)?;
+                    if depth == 0 {
+                        return Some(open + offset);
+                    }
+                }
+                _ => {}
+            }
+        }
+        None
+    }
+
+    /// Minor 2 of the M9b T4 review: [`DRAWN_WITH`] is the pages'. For each
+    /// of its titles, a widget a page wraps in `hoverable` with the info of
+    /// that title is drawn with every style function `DRAWN_WITH` names for
+    /// it: the code that builds the widget (the `hoverable`'s second
+    /// argument and the bindings it uses) calls it, or a connector function
+    /// [`DRAWN_THROUGH`] lists that draws with it.
+    #[test]
+    fn drawn_with_is_what_the_pages_draw_with() {
+        let source = strip_comments_and_strings(SHOWCASE);
+        let code = source
+            .find("\nmod tests {")
+            .map_or(&source[..], |end| &source[..end]);
+        let mut drawn: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+        for site in call_sites(code, "hoverable") {
+            let Some(end) = close_of_call(code, site) else {
+                continue;
+            };
+            let open = site + "hoverable(".len();
+            let args = &code[open..end - 1];
+            let mut depth = 0usize;
+            let comma = args.char_indices().find_map(|(at, c)| {
+                match c {
+                    '(' | '[' | '{' => depth += 1,
+                    ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                    ',' if depth == 0 => return Some(at),
+                    _ => {}
+                }
+                None
+            });
+            let Some(comma) = comma else {
+                continue;
+            };
+            let (info, content) = (&args[..comma], &args[comma + 1..]);
+            let lines = (line_at(code, open), line_at(code, open + comma));
+            let Some(title) = info_title(code, info, lines) else {
+                continue;
+            };
+            let scope_start = code[..site].rfind("\nfn ").unwrap_or(0);
+            let built = with_bindings(&code[scope_start..site], content);
+            drawn
+                .entry(title)
+                .or_default()
+                .extend(styles_called(&built));
+        }
+        let mut failures = Vec::new();
+        for (title, functions) in DRAWN_WITH {
+            let Some(called) = drawn.get(*title) else {
+                failures.push(format!("no page wraps a widget in the {title} info"));
+                continue;
+            };
+            for function in *functions {
+                if !called.contains(*function) {
+                    failures.push(format!(
+                        "{title}: the page draws it with {called:?}, not {function}"
+                    ));
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
 
     /// Rows an info must show, by its title: the states the ledger found
     /// shown wrong (M9-085's hovered primary fill, M9-086's disabled
