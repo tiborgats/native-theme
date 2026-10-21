@@ -6127,14 +6127,15 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("defaults", "focus_ring_width_px") => {
             "styles::text_input: the Focused border's width, border.width.max(focus_ring_width), \
-             where the ring is inset (focus_ring_offset minus focus_ring_width): the ring drawn \
-             as the field's border; a ring outside or across the edge is not drawn, the Focused \
-             border then the input's own line"
+             where focus_ring_offset is minus focus_ring_width (the ring inset at the edge): the \
+             ring drawn as the field's border; a ring outside or across the edge, or inset with \
+             a gap, is not drawn, the Focused border then the input's own line"
                 .into()
         }
         ("defaults", "focus_ring_offset_px") => {
-            "styles::text_input: whether the ring is drawn: inset (minus focus_ring_width), as the \
-             Focused border; outside or across the edge, not (the contract's UNREACHABLE \
+            "styles::text_input: whether the ring is drawn: where focus_ring_offset is minus \
+             focus_ring_width (the ring inset at the edge), as the Focused border; outside or \
+             across the edge, or inset with a gap, not (the contract's UNREACHABLE \
              defaults.focus_ring_offset), the Focused border then the input's own line"
                 .into()
         }
