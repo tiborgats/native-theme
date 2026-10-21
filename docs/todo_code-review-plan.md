@@ -73,6 +73,7 @@ standing rules in `CLAUDE.md`, the memory index, `docs/platform-facts.md`,
 | M7 | egui connector and `native-theme-egui-widgets` | ~13.5k | 5 + 5 verifiers | A, B |
 | M8 | Cross-cutting: connector parity, shared code, test quality, scripts and CI, docs | ~8k scripts + sampling | 4 + 4 verifiers | A, B |
 | M9 | Optional: the three showcases (72k lines, 14k of them tests), split M9a/b/c | ~58k | 3 per showcase + verifiers | A, B per part |
+| G3 | GPUI Kit 0.8.0: floors, gpui-fast 0.1.10, the moved citations, the GPUI Fast test workarounds, `TabVariant::Folder` in the showcase, the slider's accessibility; `windows-11`'s folder-shaped tabs as a theme value in all three connectors (the G3 documents' D1); between M9b's tasks (D11) | gpui connector and showcase; for D1 core + 3 connectors and showcases | per-task SDD reviews | end |
 
 *Production lines* exclude in-file `#[cfg(test)]` modules and the connectors' test-only
 `contract`, `compat`, `mapping_*`, `install_tests`, `style_diff` and `tripwires` modules.
@@ -277,6 +278,17 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
   connectors). Order: **G1 → M5's fix phase → G2 → M6, M7.** M5's review phase ran while the
   documents were reviewed and is at stop point A; its fix phase starts when G1 closes. The
   maintainer approved the documents, G2's API breaks, and the pushes and probe dispatch during G1.
+- **D11 — GPUI Kit 0.8.0 as milestone G3 (maintainer, 2026-10-20/21).** GPUI Kit 0.8.0
+  (2026-10-19, on gpui-pre 0.3.9 or GPUI Fast 0.1.10; the maintainer's move to it, 2026-10-20)
+  is handled by milestone G3, designed in
+  `docs/todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md` (approved 2026-10-21) and executed
+  by subagent-driven development. G3 runs between M9b's tasks as the one writer: it starts a
+  task only on a clean tree at an M9b task boundary, and its Tasks 1–3 run back to back (the
+  plan's *Interleaving with M9b*). Its first green push, after Task 3, closes M9a's red CI job
+  (run 39490500851, *Test gpui connector*, the GPUI Fast step: the stale child-list crash,
+  fixed upstream in gpui-fast 0.1.9, which G3's 0.1.10 floor guarantees), and with it M9a's
+  Step 8 (rationale K13). The maintainer decided the documents' D1, `windows-11`'s tabs in
+  WinUI 3's folder shape: "Yes, in G3" (rationale K14; Tasks 11–15).
 ---
 
 ## The finding ledger
@@ -955,7 +967,10 @@ Split so each part can stop on its own:
 
 A new session: read this file, then the ledger. Between M4 and M6 the order is D10's (G1 → M5's
 fix phase → G2); G1 and G2 resume from their SDD ledger
-(`.superpowers/sdd/todo_v0.7.0_gpui-kit-0.7.3-plan/progress.md`) and `git log`. The current milestone is the first whose
+(`.superpowers/sdd/todo_v0.7.0_gpui-kit-0.7.3-plan/progress.md`) and `git log`. During M9b, G3
+(D11) takes turns with M9b's tasks as the one writer; both resume from the review's SDD ledger
+(`.superpowers/sdd/todo_code-review-plan/progress.md`) and `git log`, G3 at the first task of
+`docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md` that ledger does not record complete. The current milestone is the first whose
 *Status* line in the ledger is not `done`; inside it, the first unchecked step of the
 template. If the last step started was Step 2 and its Workflow did not finish, re-run it
 (Workflow resume works only inside the session that started it). If it was Step 7, re-run

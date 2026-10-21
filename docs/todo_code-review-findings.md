@@ -16,6 +16,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | closed 2026-10-14 (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md; *G2* below) |
 | M6–M9 | not started |
+| G3 | in progress (2026-10-21; D11, docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
 
 ## Baseline (M0, 2026-10-11)
 
@@ -12927,3 +12928,22 @@ command's `--all-targets` explained in CONTRIBUTING.md and the gpui README); the
 re-checked. Task 15's own review moved the live Windows hover-time item to docs/todo.md's
 Post-1.0 section (`a2b97e5c`). The task reviews' deferred minors that still hold are in
 docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothing pushed.
+
+## G3 — GPUI Kit 0.8.0 (docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md)
+
+- **Registered (2026-10-21, Task 0).** The maintainer approved the rationale, spec and plan
+  (`docs/todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md`) on 2026-10-21 and decided their
+  D1, `windows-11`'s tabs in WinUI 3's folder shape: "Yes, in G3" (Tasks 11–15). G3 runs
+  between M9b's tasks as the one writer (D11; the plan's *Interleaving with M9b*), and its
+  tasks resume from the review's SDD ledger (`.superpowers/sdd/todo_code-review-plan/progress.md`).
+- **Inputs (plan Task 0).** Every input the documents cite by name is in
+  `.superpowers/sdd/todo_code-review-plan/g3/` (untracked, as that directory is), checked at
+  registration: `gk080-whats-new.md`, `gk080-trial-build.md`, `gpui-fast-panic-diagnosis.md`,
+  `g3-check1.md` … `g3-check13.md`, the check passes' scan scripts `c10/` (`appA.rs`,
+  `bare_scan.py`, `diag.rs`, `diag2.rs`, `probe_scan.py`), `c11/` (`files.py`, `fnstop.py`,
+  `fnstop2.py`, `nameless.py`, `nameless2.py`, `scan3.py`, `sc.rs`), `c12_enum.py` with its
+  `c12_enum.out`, and `c13/` (`scan.py`), and `g3-d1-revision-notes.md`. None is missing.
+  M8 T17's `cites.py`, which the spec and rationale cite as a precedent, lived in a session
+  scratchpad and is not kept; the spec says so, and Task 2 writes its script from §3.1.
+
+**Status:** in progress: Task 0 done 2026-10-21. Next: Tasks 1–3, back to back, as one unit.
