@@ -20245,6 +20245,58 @@ mod tests {
         );
     }
 
+    /// The pointer leaving a hover before it has stood [`INFO_SETTLE`]
+    /// drops the wait: on the Basic page a listed element (the Tagged root's
+    /// `ElementUnhovered`), on the Selection page a page widget
+    /// (`WidgetUnhovered`), each entered and left for empty space within
+    /// 250 ms in one simulator that sees both moves; a tick past
+    /// [`INFO_SETTLE`] then shows nothing new.
+    #[test]
+    fn a_hover_left_before_it_has_stood_is_not_shown() {
+        let ms = Duration::from_millis;
+        for (tab, label, left) in [
+            (Tab::Basic, "Checkboxes", "ElementUnhovered"),
+            (Tab::Selection, "Checkboxes", "WidgetUnhovered"),
+        ] {
+            let mut state = installed("kde-breeze");
+            state.active_tab = tab;
+            let before = state.hovered;
+            let messages: Vec<Message> = {
+                let mut ui = interface(&state);
+                let at = match texts(&mut ui)
+                    .into_iter()
+                    .find(|(content, _)| content == label)
+                {
+                    Some((_, bounds)) => bounds.center(),
+                    None => panic!("{label}: no such text on {tab:?}"),
+                };
+                // Below the page's content, where nothing is laid out.
+                let empty = Point::new(at.x, TALL_WINDOW.height - 200.0);
+                for point in [at, empty] {
+                    ui.point_at(point);
+                    let _ =
+                        ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: point })]);
+                }
+                ui.into_messages().collect()
+            };
+            let names: Vec<String> = messages.iter().map(|m| format!("{m:?}")).collect();
+            assert!(
+                names.iter().any(|name| name.starts_with(left)),
+                "{tab:?}: leaving {label} sent no {left}: {names:?}"
+            );
+            let start = Instant::now();
+            for (n, message) in messages.into_iter().enumerate() {
+                let _ = update_at(&mut state, message, start + ms(10 * n as u64));
+            }
+            tick_at(&mut state, start + INFO_SETTLE + ms(100));
+            assert_eq!(
+                (state.hovered, state.pending),
+                (before, None),
+                "{tab:?}: {label}, left within 250 ms ({names:?})"
+            );
+        }
+    }
+
     /// A leaf's value reads as the resolved theme holds it, in the
     /// registry's spelling: a padding side in px, a font as its family, the
     /// size its source stated and its weight, a colour as its hex, a layout
