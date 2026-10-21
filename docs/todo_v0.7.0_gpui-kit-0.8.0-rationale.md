@@ -908,6 +908,135 @@ upstream citations, a different set, and (b) is no second run of it (spec §3.3)
 includes `docs/todo.md`, as M8 T17's did: a digits-only change keeps the entries' text true
 and is not a rewrite.
 
+*Added 2026-10-21 (K19):* the *Breaking Changes* lines gain one more, `widgets::PartBounds`,
+whose observer now takes the window.
+
+### K19 — Widget Info under GPUI Fast's partial frames: an element-state presence token; `PartBounds` gets the window
+
+*Added 2026-10-21 as a Task 1 deviation, adopted by the controller's ruling (the design and its
+review, `g3-T1-partial-frames.md` and `g3-T1-partial-frames-review.md`, in the review's SDD
+directory); the maintainer accepted the `PartBounds` break the same day, as the controller
+relays. The approved text above is unchanged.*
+
+**What Task 1 measured.** After the bump, eight showcase tests failed on GPUI Fast 0.1.10
+only, all in `draw`'s check that no frame drew two info targets under one id
+(`a_selected_list_row_and_an_unselected_one_show_different_infos`,
+`a_selected_list_or_tree_rows_info_names_the_selection_text_colour`,
+`a_table_row_reports_what_the_table_paints_on_it`,
+`escape_clears_the_query_then_closes_the_palette`, `the_menus_answer_the_keyboard`,
+`the_palette_reports_itself`, `the_palette_installs_a_preset`, `the_palette_switches_page`).
+Traced with render and record counters in `the_menus_answer_the_keyboard`: on gpui-fast 0.1.7
+the showcase's `epoch_marker` ran in every one of its 31 frames, while 0.1.10 draws partial
+frames. A keystroke's or a mouse move's
+frame built `MenuBar` and `Inspector`, or the showcase's `ListRow` views, and drew `Showcase`
+from the last frame. So `epoch_marker`, `Showcase`'s first child, did not run, and the rebuilt
+view's targets recorded a second time in one epoch. The next frame built `Showcase` and drew
+`Inspector` from the last frame. Its targets then kept an older epoch and read as not drawn:
+their hovers were dropped, and the choice and the layout dump lost them. That second half is a
+run-time defect on GPUI Fast, not a test artefact. Which 0.1.7→0.1.10 change makes these views
+qualify for reuse is not pinned down; 0.1.7 already has the same splice and reuse code.
+
+**How gpui-fast 0.1.10 draws a view from the last frame** (read; `GF10` paths):
+- Every entity view is a retained subtree (`fast/retained.rs:1-18`). A view that is not dirty
+  is drawn from its record; one dirty only through a nested view is spliced, its nested dirty
+  views built (`fast/splice.rs:1-21`); otherwise it is built (`retained.rs:1492-1532`). A
+  notify marks the view and its ancestors dirty (`window.rs:2294-2306`).
+- A view drawn from the last frame runs none of its prepaint or paint code. Its records are
+  copied, the element states it used among them (`window.rs:4079-4084`, `:4163-4168`;
+  `splice.rs:779-784`), and a composited scroll layer's likewise (`fast/layers/reuse.rs:101-106`,
+  `:204-209`).
+- An element state lives while each frame uses or copies it, and goes with the first frame
+  that does not (`window.rs:1221-1231`, `:3561-3567`; gpui-pre `window.rs:1195-1202`).
+- gpui has no per-frame or per-view hook.
+
+**The options.**
+1. *Flag a duplicate only where the bounds differ.* It masks a collision at equal bounds, and
+   fixes neither the stale "drawn" of a removed target nor the reused view read as not drawn.
+   Rejected.
+2. *Force full frames* (`window.refresh()`, at run time or in the tests only). At run time it
+   defeats GPUI Fast. In the tests only, they would stop exercising real GPUI Fast frames, and
+   the run-time defect would stay hidden. Rejected.
+3. *Per-view epochs from `current_view()`.* A reused view runs no code, so its presence is
+   never signalled. A view removed under a rebuilt parent is not seen. Rows drawn inside
+   gpui-component's List, Table and palette entities have no marker of ours. And
+   `current_view()` unwraps an empty stack. Rejected.
+4. *Defer, the eight red until a later task.* Widget Info stays broken on a supported backend,
+   the run-time half untested, and the plan's expected red is no longer true. Rejected.
+5. *An element-state presence token.* Each recorder keeps an `Rc<Presence>` in gpui element
+   state, and its record holds a `Weak`: the record stands for a drawn element while the
+   `Weak` is alive. It rides on what gpui itself carries forward. It needs no hook and no
+   dependency, and it gives the same answer on both cores: gpui-pre draws only a `.cached()`
+   view from the last frame and copies its element states too (gpui-pre `view.rs:530-546`,
+   `window.rs:3996-4013`). **Chosen.**
+6. *Hitbox-based "drawn".* It covers hover only, not the layout dump, and there is no public
+   query. Rejected.
+7. *A per-frame hook through `on_next_frame` or `request_animation_frame`.* It keeps the
+   window drawing and still gives no presence. Rejected.
+8. *An upstream hook.* Not needed.
+
+**Sub-decisions of 5.**
+- *Where the token lives:* `with_global_id(key)` and `with_element_state::<Rc<Presence>>`,
+  under the recorder's id path and the record's id. A state is keyed by its type too
+  (`window.rs:7420-7433`), so the downcast's `unwrap` (`:4495`) cannot fail, and the `expect`
+  (`:4497`) cannot either, since a box is only put back holding a state (`:4501`,
+  `:4513-4516`). `use_keyed_state` would need an entity per target; a token held in a closure
+  dies with the frame's arena.
+- *The end of a frame:* a `Window::defer` scheduled by the frame's first record
+  (`window.rs:2645-2650`; it runs as the drawing update flushes its effects, `app.rs:1351-1366`,
+  `:2080-2105`). A marker's paint would not do: a partial frame skips it.
+- *What the end of a frame updates:* the registry only when the frame changed what it decides.
+  An update outside drawing has every view that recorded into it built again under a notified
+  view (`fast/dependencies.rs:757-797`). The design agent measured it: updating at every frame
+  end built a reused view again (3 renders against 2). So the frame bookkeeping (`open`, and in
+  the tests `painted`) is kept in `Cell`s and set through reads.
+- *The tests' duplicate check:* draws are counted by the alternation of prepaint and paint (a
+  draw prepaints everything before it paints anything, `window.rs:3757-3813`). A fresh record
+  whose replaced holder is still drawn at the frame's end is flagged too. Frame ends as the
+  boundary gave false duplicates under gpui-kit's test helpers, which draw several times in
+  one update. Its assumption: every draw that records paints a target or a `record` box. A
+  draw whose only records are `.listed()` boxes or part observers would give a false
+  duplicate, a loud one, never a miss.
+- *Parts:* each part gets its own token, since a part comes and goes while its control stays
+  (`Part::Tab(ix)` with the tab count, `StartThumb` on a range slider only, `Label` only with
+  a label). So `widgets::PartBounds` becomes `Fn(Part, Bounds<Pixels>, &mut Window, &mut App)`,
+  gpui's own prepaint-callback shape. The alternatives weighed:
+  - a connector-held token handed over as an opaque handle: it breaks the signature just the
+    same, and adds a public type and a liveness contract to keep;
+  - a token passed through `&mut App`: a hidden side channel that depends on order;
+  - a second, additive observer type: two APIs for one purpose, in a pre-1.0 crate whose
+    0.7.0 breaks already;
+  - parts tied to the control's own token: wrong for the parts that come and go.
+
+  `PartBounds` shipped in 0.6.0, so its change is a *Breaking Changes* line. 0.7.0 breaks
+  already, and nothing promises compatibility before 1.0.
+- *Hover pruning* (the review's I1): a hovered target that a frame recording nothing took
+  away gets no frame end, so it stays in `hovered`. Drawn again as a new element away from the
+  pointer, it would be chosen. So `record_target` drops the id from `hovered` when the record
+  it replaces stands for an element no longer drawn. What remains is lateness: after such a
+  frame, the choice is revisited at the next record or at a hover event of that id. It is
+  never wrong meanwhile, since an element not drawn is never chosen.
+- *A limitation:* inside a scroll area that GPUI Fast composites while it scrolls (after two
+  scrolled frames, `fast/layers/policy.rs:41`, `:286-287`), the children's prepaint is skipped
+  and the content is drawn moved by the scroll (`fast/layers/paint.rs:233-235`,
+  `layers/reuse.rs:39`). The records there keep the bounds of the layer's last repaint. Hovers
+  and the choice hold, since gpui moves the hitboxes and the choice compares areas only; the
+  layout dump does not. No gate reads a GPUI Fast dump after a scroll: the dump and screenshot
+  scripts build the gpui showcase on gpui-pre, and Task 9 dumps at rest. A `[1.0]`
+  `docs/todo.md` entry records it, with the fix if one is ever needed.
+- *A cost, not a defect:* every record is an update made while drawing, which GPUI Fast counts
+  as a write. So a retained subtree that read the registry and did not write it itself is
+  built again in the next frame (`dependencies.rs:757-797`, `:646-653`), as a view that
+  records before a view nested in it records is. Task 9 measures how much reuse the showcase
+  keeps.
+
+The cost if this is wrong: one more rewrite of the registry inside the showcase, and of one
+public closure type.
+
+**Moved citations** (the review's M10): the change moves `part_bounds` in
+`CN/src/widgets/mod.rs` from `:145-156` (K15 above; spec §12.3) to `:153-164`, and
+`SC/app.rs:2232`'s `.occlude()` (§1.4) to `:2229`, since the marker's three lines go. Tasks 5
+and 12 locate by content.
+
 ---
 
 ## 3 -- The maintainer's approvals
@@ -916,6 +1045,9 @@ D1, the one decision these documents asked for, is decided (K14). The maintainer
 G3 needs (checkpoints, not preferences): the documents; the two pushes (after Task 3, which
 closes M9a's red CI, and at the close); the GPUI Fast run on the desktop session (Task 9),
 since it takes window focus as M9a's batch runs did.
+
+*Added 2026-10-21:* the maintainer accepted K19's `widgets::PartBounds` break, as the
+controller relays; the controller's ruling adopted K19 as a Task 1 deviation.
 
 ---
 

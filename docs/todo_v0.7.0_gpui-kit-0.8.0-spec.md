@@ -194,6 +194,65 @@ connectors and showcases (§12).
   cause the failure shows (read in `GF10/fast/retained.rs` / `GF10/window.rs:4119-4144`), and
   the todo entry gets a dated line instead of closing.
 
+### 2.4 Widget Info under GPUI Fast's partial frames (K4, K5, K6, K19)
+
+*Added 2026-10-21 as a Task 1 deviation, adopted by the controller's ruling (rationale K19).*
+
+- `SC/info/registry.rs`: a record, a target's or an element of the list's, holds a
+  `Weak<Presence>`. Its recorder keeps the `Rc` in gpui element state (`begin_record`, called
+  from the recorder's prepaint, under the recorder's id path and the record's id).
+  The invariants:
+  - drawn means the `Weak` is alive;
+  - it is read only between draws (the frame's end, the settle timer, hover events, the
+    layout dump, the tests);
+  - one frame end per update that recorded: the update's first record schedules it through
+    `Window::defer`. It updates the registry only when the frame changed what it decides
+    (`frame_changes_anything`); in the tests, an assertion after `close_frame` checks that
+    nothing is left for it to change.
+
+  `epoch_marker` goes, from `SC/app.rs` and from the tests' `Nested`. The registry's module
+  doc says what "drawn" means, with the composited scroll layer's exception, and what its
+  updates cost (rationale K19).
+- `record_target` drops its id from `hovered` when the record it replaces stands for an
+  element no longer drawn (rationale K19, *Hover pruning*). `close_frame`'s doc says when the
+  choice is revisited after a frame that recorded nothing.
+- The tests' duplicate check counts draws by the alternation of paint and prepaint:
+  `painted`, from a target's or a `record` box's paint. It also flags a fresh record beside a
+  replaced holder still drawn at the frame's end (`displaced`). Its assumption is stated in
+  the registry's doc: every draw that records paints a target or a `record` box; otherwise a
+  false duplicate, never a miss.
+- `CN/src/widgets/mod.rs`: `PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut Window, &mut
+  App)>`. Its doc says that a frame drawing the control from the last one does not call it,
+  nor does one in which GPUI Fast composites a scroll area the control is in. The six
+  `on_part_bounds` docs (`checkbox.rs`, twice, `switch.rs`, `slider.rs`, `progress.rs`,
+  `tab_bar.rs`) say "as a frame lays them out ([`PartBounds`])". In `SC/elements.rs`, the
+  recorders call `begin_record`, and `record` calls `painted`.
+- Tests, in `SC/tests.rs`, passing on both cores:
+  - `a_reused_views_target_is_hovered_and_listed_after_a_partial_frame` checks:
+    - the host's renders at the notify, on both cores;
+    - on GPUI Fast, the hosted view not built through the notify and the settle after it;
+      on gpui-pre, built;
+    - the hosted target still shown over the larger one around it;
+    - the layout dump, and `drawn_twice` and `listed_twice` empty.
+  - `a_target_a_partial_frame_no_longer_draws_is_gone`: the opposite direction.
+  - `a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again`: the hover pruning.
+  - `the_duplicate_check_finds_two_targets_drawn_together` and
+    `the_duplicate_check_finds_a_fresh_target_beside_a_reused_one`: the check's two paths,
+    each asserting that it finds its id; the first checks an element of the list too.
+
+  Each partial-frame test hovers and settles first, then draws a full frame. GPUI Fast builds
+  again a view whose hover changed, or one that read the registry since an update of it, so a
+  partial frame comes only after that.
+- Red first: run the tests against the epoch registry on gpui-fast 0.1.10, and run the
+  pruning test on the design's prototype, which had no pruning. Both outputs go in the
+  commit body.
+- Commit order (plan Task 1): this change is measured green on gpui-fast 0.1.7 on both cores,
+  so it is committed before the bump. That keeps "expected red: the two showcase citation
+  gates only" true.
+- `docs/todo.md`, *native-theme-gpui connector*: the `[1.0]` entry "**The layout dump on
+  GPUI Fast is stale inside a scrolled, composited scroll layer.**" `CHANGELOG.md`
+  `[Unreleased]` *Breaking Changes*: the `PartBounds` line, with the composite caveat.
+
 ## 3 -- Citations (K3)
 
 ### 3.1 Renumbering — digits only
@@ -606,6 +665,12 @@ shortens the time M9b is held and M9a's CI stays red.
   refuses on Linux (`cli::screenshot_support`). A difference is fixed, or
   explained in the ledger (gpui-fast 0.1.8's text-measurement fix and 0.1.10's compositing
   are the candidates).
+- *Added 2026-10-21 (K19):* the GPUI Fast dumps depend on §2.4. Before it, a reused view's
+  elements dropped out of the dump. They are taken at rest, before any scroll streak, since
+  inside a composited scroll layer the dump is stale (§2.4). The run also counts how much
+  reuse the showcase keeps (render counts under a hover sequence), since every record has the
+  registry's other readers built again in the next frame (K19). A `docs/todo.md` line follows
+  if it is little.
 
 ## 10 -- Documents
 
@@ -630,6 +695,7 @@ shortens the time M9b is held and M9a's CI stays red.
   *Added* — `widgets::Slider::accessibility_label` and
   the themed slider's disabled state for assistive technology; the Layout page's Folder tab
   bar.
+  *Added 2026-10-21 (K19):* *Breaking Changes*, the `widgets::PartBounds` line (§2.4).
 - `ROADMAP.md`: the v0.7.0 paragraph (`:72-74`) names GPUI Kit 0.8.0; in *v0.7.2 — Upstream
   receivers*, the bullet "a gpui-fast marker constant" goes (gpui-kit 0.8.0's
   `GPUI_FAST`), and every bullet that cites a line "at gpui-component 0.7.x" / "gpui-base
@@ -698,6 +764,7 @@ shortens the time M9b is held and M9a's CI stays red.
   `separator.*` rule under the page tabs stays, rationale K14 (f)).
 - D1 (§12): every gate §12 names passes; `windows-11`'s selected tabs draw the folder shape
   in all three showcases and no other bundled preset's tabs change.
+- *Added 2026-10-21 (K19):* §2.4's tests pass on both cores.
 
 ---
 

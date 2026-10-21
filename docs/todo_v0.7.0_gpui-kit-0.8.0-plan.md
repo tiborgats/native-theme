@@ -145,6 +145,8 @@ decided: rationale K14).
     in Task 15, after the three receivers, and the shared list names it only then (Task 15);
     every candidate of Task 11's windows listed and decided, the reviewer's re-run of the
     facts enumeration and of the inheritance and model scans matching the lists (Task 11).
+11. *Added 2026-10-21 (K19):* **The presence token** answers on both cores; no panic in the
+    registry; the public `PartBounds` break (Task 1).
 
 ---
 
@@ -195,6 +197,22 @@ Depends on: Task 0; an M9b boundary.
   own review (spec §3.1, *Not Task 1's lines*).
 - **Commit:** `build(gpui): GPUI Kit 0.8.0 on gpui-fast 0.1.10, which fixes the stale child-list crash the regression test now holds; tests read the painted scene's clip groups (G3 T1)`.
   Leaves red: the two showcase citation gates (Tasks 2–3).
+- *Added 2026-10-21 as a Task 1 deviation, adopted by the controller's ruling (rationale K19,
+  spec §2.4):*
+  - Files, besides the above: `SC/info/registry.rs`, `SC/elements.rs`, `SC/app.rs`,
+    `CN/src/widgets/mod.rs` and the six `on_part_bounds` docs in
+    `CN/src/widgets/{checkbox,switch,slider,progress,tab_bar}.rs`, and `CHANGELOG.md`.
+  - [ ] Spec §2.4: the presence-token registry, the hover pruning, `PartBounds` with the
+    window, the five tests, red first on 0.1.10.
+  - Commit order: the registry change is green on gpui-fast 0.1.7 (measured on both cores).
+    It is therefore its own commit, before the bump: `fix(gpui showcase): Widget Info counts a
+    target drawn while its element state lives, so GPUI Fast's reused views stay hovered and
+    listed; widgets::PartBounds gets the window (G3 T1)`.
+    - The amendment is a docs commit before it.
+    - The bump commit keeps its message above, and it is the only commit left red, on the two
+      citation gates.
+    - Task 2's base stays the M9b boundary commit Task 1 started from, so all three commits'
+      lines are Task 1's.
 
 ## Task 2: Renumber the moved citations
 
@@ -251,6 +269,9 @@ Depends on: Task 3b.
 
 - [ ] Spec §2.3: the five tests and both suites on both cores without `refresh()`; the
   result applied as the spec says; the todo entry closed or dated.
+- *Added 2026-10-21 (K19):* without `refresh()` in the draw helpers, every test frame can be
+  partial, which exercises the duplicate check's assumption (spec §2.4). A false duplicate it
+  reports is fixed in the registry, not by keeping `refresh()`.
 - **Commit:** `test(gpui): the draw helpers no longer force a full frame, since gpui-fast 0.1.10 drops the bounds of elements it no longer draws (G3 T4)`
   (or, if any test needs it, `test(gpui): the draw helpers' full frame is kept for <cause> (G3 T4)`).
 
@@ -393,6 +414,8 @@ for a desktop run.
 
 - [ ] Spec §9: the eight dumps, the four comparisons, the screenshot; a difference fixed (its
   own commit, gated) or explained.
+- *Added 2026-10-21 (K19):* it depends on spec §2.4 and dumps at rest, before any scroll
+  streak. It also counts how much reuse the showcase keeps (spec §9's added line).
 - **Commit:** the ledger's note, `docs(review): the showcase's layout on GPUI Fast 0.1.10 against gpui-pre's (G3 T9)`.
 
 ## Task 10: Documents, stamp, gates, close, archive
