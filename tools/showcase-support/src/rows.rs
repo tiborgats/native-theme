@@ -1,6 +1,9 @@
 //! The side panel's pickers' rows: the preset picker's, which the command
-//! palette lists too, and the icon-theme picker's.
+//! palette lists too, and the icon-theme picker's; and a table row's height
+//! under the OS text scale, which the iced and egui showcases' tables take
+//! as the gpui connector's `DataTable` rows do.
 
+use native_theme::AccessibilityPreferences;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::theme::{IconSet, Theme};
 
@@ -71,10 +74,77 @@ pub fn icon_rows(
         .collect()
 }
 
+/// A table row's height, or its header row's, where the theme states one
+/// (`list.row_height`, `list.header_height`), under the OS text-scaling
+/// factor of `prefs`: the gpui connector's rule for its `DataTable` rows
+/// (`connectors/native-theme-gpui/src/geometry.rs`, `table_row_height`,
+/// which `data_table_size` and `list_header_height` take). At a factor of 1
+/// or less `stated`, verbatim; above 1 at least the line box of the row's
+/// font at its scaled size (`prefs.scaled(font_size)`) and `line_height`
+/// (`defaults.line_height`), rounded up, plus `padding_y`, the row's top and
+/// bottom padding together, and `rule`, the width of any line drawn inside
+/// the row's height. So a stated height holds the text the OS scales up, as
+/// gpui's does. The model states no such growth, and the iced and egui
+/// connectors style no table: each showcase passes its own table's padding
+/// and rule.
+#[must_use]
+pub fn scaled_height(
+    stated: f32,
+    prefs: &AccessibilityPreferences,
+    font_size: f32,
+    line_height: f32,
+    padding_y: f32,
+    rule: f32,
+) -> f32 {
+    if prefs.text_scale_factor() <= 1.0 {
+        return stated;
+    }
+    let line = (prefs.scaled(font_size) * line_height).ceil();
+    stated.max(line + padding_y + rule)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    fn scaled_by(factor: f32) -> AccessibilityPreferences {
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = factor;
+        prefs
+    }
+
+    /// At a factor of 1, below it, or one the preferences ignore (not
+    /// finite and positive), a stated height is kept, even where its text
+    /// would not fit it.
+    #[test]
+    fn a_stated_height_is_kept_at_a_factor_of_one_or_less() {
+        for factor in [1.0, 0.5, 0.0, -1.0, f32::NAN, f32::INFINITY] {
+            assert_eq!(
+                scaled_height(20.0, &scaled_by(factor), 30.0, 1.2, 8.0, 1.0),
+                20.0,
+                "factor {factor}"
+            );
+        }
+    }
+
+    /// Above 1 the height is at least the scaled line box, rounded up, the
+    /// padding and the rule: 13 × 1.5 × 1.2 = 23.4, so 24 + 6 + 1.
+    #[test]
+    fn above_one_a_stated_height_grows_to_hold_its_text() {
+        let prefs = scaled_by(1.5);
+        assert_eq!(scaled_height(24.0, &prefs, 13.0, 1.2, 6.0, 1.0), 31.0);
+        assert_eq!(scaled_height(24.0, &prefs, 13.0, 1.2, 6.0, 0.0), 30.0);
+    }
+
+    /// Above 1 a stated height that already holds the scaled text stays.
+    #[test]
+    fn above_one_a_tall_enough_height_stays() {
+        assert_eq!(
+            scaled_height(56.0, &scaled_by(1.5), 14.0, 1.2, 0.0, 1.0),
+            56.0
+        );
+    }
 
     /// `default` first, labelled with the preset it builds on, then this
     /// platform's presets in their order, each a key `--theme` takes.

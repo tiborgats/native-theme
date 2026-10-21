@@ -6591,11 +6591,19 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "basic_table: the grid lines' colour (rules between the cells)".into()
         }
         ("list", "header_height_px") => {
-            "list_header_height: the header row's height; a row's where unstated".into()
+            "list_header_height: the header row's height, grown above a text scale of 1 \
+             to hold its label, padding and line (rows::scaled_height); a row's where \
+             unstated"
+                .into()
         }
         ("list", "row_height_px") if under("basic.table.header") => {
-            "the header row's height where list.header_height is unstated; the label's \
-             line box and padding where both are"
+            "the header row's height where list.header_height is unstated, grown so above \
+             a text scale of 1; the label's line box and padding where both are"
+                .into()
+        }
+        ("list", "row_height_px") if under("basic.table.") => {
+            "a row's height, grown above a text scale of 1 to hold its label and padding \
+             (rows::scaled_height); the label's line box and padding where unstated"
                 .into()
         }
         ("list", "row_height_px") => {
@@ -9555,7 +9563,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// rows in `list.item_font` -- the second selected, in
 /// `list.selection_background` and `.selection_text_color` -- each
 /// `list.row_height` tall, or its
-/// line box and padding where unstated; the two columns half the width
+/// line box and padding where unstated, a stated height grown above a text
+/// scale of 1 to hold its text, as gpui's table rows grow
+/// (`rows::scaled_height`); the two columns half the width
 /// inside the frame each (the model states no column width); the cells
 /// padded by `list.border.padding`, none on a side it leaves unstated; a
 /// `list.grid_color` line between the columns and under the header,
@@ -9569,9 +9579,13 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     let colours = TableColours::of(resolved);
     let line = resolved.separator.line_width;
     let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
-    let height = |font: &ResolvedFontSpec| {
-        l.row_height
-            .unwrap_or(scaled_text_size(font.size, a11y) * resolved.defaults.line_height + pad.y())
+    let line_height = resolved.defaults.line_height;
+    // A row `stated` tall, grown above a text scale of 1 to hold its text in
+    // `font` inside its padding and `rule`, as gpui's table rows grow
+    // (`rows::scaled_height`); its line box and padding where unstated.
+    let height = |stated: Option<f32>, font: &ResolvedFontSpec, rule: f32| match stated {
+        Some(h) => rows::scaled_height(h, a11y, font.size, line_height, pad.y(), rule),
+        None => scaled_text_size(font.size, a11y) * line_height + pad.y(),
     };
     let grid = colours.grid;
     let grid_line = move |w: Length, h: Length| {
@@ -9617,9 +9631,13 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         };
         cell.width(Length::FillPortion(1)).into()
     };
-    // `list.header_height` where the theme states it; else the header is a row.
-    let head_h =
-        native_theme_iced::list_header_height(resolved).unwrap_or_else(|| height(&l.header_font));
+    // `list.header_height` where the theme states it; else the header is a
+    // row. Its line lies inside it.
+    let head_h = height(
+        native_theme_iced::list_header_height(resolved).or(l.row_height),
+        &l.header_font,
+        line,
+    );
     let (head_ink, head_fill) = (colours.header_ink, colours.header_fill);
     let header = tagged(
         "basic.table.header",
@@ -9634,7 +9652,7 @@ fn basic_table(state: &State) -> Element<'_, Message> {
     )
     .node("basic.table.header.name", &[0, 0])
     .node("basic.table.header.size", &[0, 1]);
-    let row_h = height(&l.item_font);
+    let row_h = height(l.row_height, &l.item_font, 0.0);
     let rows = BASIC_TABLE_ROWS
         .iter()
         .enumerate()
@@ -11741,13 +11759,50 @@ fn pane_grid_info(state: &State) -> String {
     )
 }
 
+/// The padding each cell of the Layout page's table holds: the showcase's
+/// own scale, as the model states no padding for a table's cells.
+const LAYOUT_CELL_PAD: Padding = Padding {
+    top: SP.xs,
+    right: SP.s,
+    bottom: SP.xs,
+    left: SP.s,
+};
+
+/// The Layout page's table header cells' height where the theme states
+/// `list.header_height`: that height, holding the cell's padding
+/// ([`LAYOUT_CELL_PAD`]) and no rule, grown above a text scale of 1 to hold
+/// its label in `list.header_font` at `defaults.line_height`, as gpui's
+/// table rows grow (`rows::scaled_height`).
+fn layout_header_height(
+    resolved: &ResolvedTheme,
+    a11y: &AccessibilityPreferences,
+) -> Option<f32> {
+    native_theme_iced::list_header_height(resolved).map(|h| {
+        rows::scaled_height(
+            h,
+            a11y,
+            resolved.list.header_font.size,
+            resolved.defaults.line_height,
+            LAYOUT_CELL_PAD.y(),
+            0.0,
+        )
+    })
+}
+
 /// The Widget Info of the Layout page's table.
 fn table_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let line_width_s = format!("{:.0}px", resolved.separator.line_width);
-    let header_height_s = match native_theme_iced::list_header_height(resolved) {
-        Some(h) => format!("{h:.0}px, list.header_height"),
-        None => "its text's (list.header_height unstated)".to_string(),
+    let header_height_s = match (
+        native_theme_iced::list_header_height(resolved),
+        layout_header_height(resolved, &state.accessibility),
+    ) {
+        (Some(h), Some(drawn)) if drawn > h => format!(
+            "{drawn:.0}px: list.header_height {h:.0}px, grown to hold its text at the OS \
+             text scale"
+        ),
+        (Some(h), _) => format!("{h:.0}px, list.header_height"),
+        (None, _) => "its text's (list.header_height unstated)".to_string(),
     };
     let l = &resolved.list;
     widget_tooltip(
@@ -11989,9 +12044,9 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     // iced's `separator_y`, which it draws between two rows (`:535-557`): it
     // lies outside `list.header_height`, where the Basic table draws its
     // header's line inside it.
-    let cell_pad = Padding::from([sp.xs, sp.s]);
+    let cell_pad = LAYOUT_CELL_PAD;
     let l = &resolved.list;
-    let header_height = native_theme_iced::list_header_height(resolved);
+    let header_height = layout_header_height(resolved, a11y);
     let (head_ink, head_fill) = (to_color(l.header_font.color), to_color(l.header_background));
     let header_cell = |title: &'static str, width: f32| -> Element<'_, Message> {
         container(
@@ -17959,16 +18014,26 @@ mod tests {
         assert!(failures.is_empty(), "{failures:#?}");
     }
 
-    /// The Basic table's header row is `list.header_height` tall where the
-    /// theme states one (adwaita, material-3), else as tall as before
-    /// (catppuccin-mocha): `list.row_height`, or its line box in the header
-    /// font, at its scaled size, and `list.border.padding`. The Layout page's
-    /// iced `table` makes its header cells, which hold their padding, that
-    /// height, and their text's height and padding where the theme states
-    /// none, as its rows are. At text scales 1 and 1.5.
+    /// The tables' stated heights hold their text at every text scale, as
+    /// gpui's `DataTable` rows do (`native_theme_gpui::geometry::list_header_height`):
+    /// at a factor of 1 a stated `list.header_height` or `list.row_height`
+    /// is the row's height, verbatim; above 1 it grows to at least the line
+    /// box of the row's font at its scaled size and `defaults.line_height`,
+    /// rounded up, plus the row's own top and bottom padding and any rule
+    /// inside it. The Basic table's header row is `list.header_height` tall
+    /// where the theme states one (adwaita, material-3, macos-tahoe), else
+    /// `list.row_height` (none of these), else its line box in the header
+    /// font and `list.border.padding` (catppuccin-mocha), its padding
+    /// `list.border.padding` and its header line inside it; its body rows
+    /// are `list.row_height` (macos-tahoe) or their line box and padding.
+    /// The Layout page's iced `table` makes its header cells, which hold
+    /// their padding and no rule, that height, and their text's height and
+    /// padding where the theme states none, as its rows are. Every
+    /// expectation is computed from the theme at test time, at text scales
+    /// 1 and 1.5.
     #[test]
     fn the_tables_headers_take_the_themes_header_height() {
-        for (preset, factor) in ["adwaita", "material-3", "catppuccin-mocha"]
+        for (preset, factor) in ["adwaita", "material-3", "macos-tahoe", "catppuccin-mocha"]
             .into_iter()
             .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
         {
@@ -17983,38 +18048,57 @@ mod tests {
             assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
             let l = &r.list;
             let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
-            let row = l.row_height.unwrap_or(
-                scaled_text_size(l.header_font.size, &accessibility) * r.defaults.line_height
-                    + pad.y(),
-            );
-            let want = stated.unwrap_or(row);
+            let line_box = |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
+            // A stated height, grown above a factor of 1 to hold a line of
+            // `size` inside `pad_y` and `rule`.
+            let grown = |height: f32, size: f32, pad_y: f32, rule: f32| {
+                if factor > 1.0 {
+                    height.max(line_box(size).ceil() + pad_y + rule)
+                } else {
+                    height
+                }
+            };
+            let rule = r.separator.line_width;
+            let want_header = match stated.or(l.row_height) {
+                Some(h) => grown(h, l.header_font.size, pad.y(), rule),
+                None => line_box(l.header_font.size) + pad.y(),
+            };
+            let want_row = match l.row_height {
+                Some(h) => grown(h, l.item_font.size, pad.y(), 0.0),
+                None => line_box(l.item_font.size) + pad.y(),
+            };
 
             let mut state = State {
                 current_theme: theme,
                 current_resolved: resolved,
-                accessibility,
+                accessibility: accessibility.clone(),
                 active_tab: Tab::Basic,
                 ..State::default()
             };
             let mut ui = interface(&state);
             // A selector goes through the whole tree, as the dump's `Survey` does.
             let _ = texts(&mut ui);
-            let header = match surveyed_layout().get("basic.table.header") {
-                Some(rect) => *rect,
-                None => panic!("{preset} at {factor}: the Basic table's header is not laid out"),
-            };
-            assert!(
-                (header.height - want).abs() < 0.01,
-                "{preset} at {factor}: the Basic table's header is {} tall, want {want}",
-                header.height
-            );
+            let surveyed = surveyed_layout();
+            for (id, want) in [
+                ("basic.table.header", want_header),
+                ("basic.table.row_1", want_row),
+            ] {
+                let height = match surveyed.get(id) {
+                    Some(rect) => rect.height,
+                    None => panic!("{preset} at {factor}: {id} is not laid out"),
+                };
+                assert!(
+                    (height - want).abs() < 0.01,
+                    "{preset} at {factor}: {id} is {height} tall, want {want}"
+                );
+            }
             drop(ui);
 
             state.active_tab = Tab::Layout;
             let mut ui = interface(&state);
             let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
             let want = match stated {
-                Some(h) => h,
+                Some(h) => grown(h, l.header_font.size, 2.0 * SP.xs, 0.0),
                 None => height_of(&mut ui, "text_scale role") + 2.0 * SP.xs,
             };
             assert!(
@@ -18022,6 +18106,14 @@ mod tests {
                 "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
                 cell.height
             );
+            if stated.is_some() {
+                let info = table_info(&state);
+                let row = format!("header height: {want:.0}px");
+                assert!(
+                    info.lines().any(|line| line.trim().starts_with(&row)),
+                    "{preset} at {factor}: the Table info gives no \"{row}\":\n{info}"
+                );
+            }
         }
     }
 

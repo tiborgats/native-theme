@@ -16,7 +16,8 @@
 //! - [`elements`]: the element list, parsed once;
 //! - [`values`]: a leaf's value in the text the three showcases agreed;
 //! - [`info`]: a listed element's Widget Info rows and Copy text;
-//! - [`rows`]: the preset and icon-theme pickers' rows;
+//! - [`rows`]: the preset and icon-theme pickers' rows, and a table row's
+//!   height under the OS text scale;
 //! - [`status`]: the status bar's environment items.
 
 #![forbid(unsafe_code)]
