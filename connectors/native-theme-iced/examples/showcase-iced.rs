@@ -17483,19 +17483,63 @@ mod tests {
 
     /// M9-085..088 (info-truth): every colour a page widget's Widget Info
     /// shows is what the style function its page draws it with paints, at
-    /// the status the row names, over every bundled preset in both modes and
-    /// the switch both ways: a hovered primary button is iced's derivation
-    /// from `button.primary_background`, a disabled class keeps its own pair
+    /// the status the row names, over every bundled preset in both modes: a
+    /// hovered primary button is iced's derivation from
+    /// `button.primary_background`, a disabled class keeps its own pair
     /// faded, the off thumb is the off thumb's, and an edge the theme states
-    /// 0 wide reads "not drawn". The rows `SHOWN_ROWS` lists are shown.
+    /// 0 wide reads "not drawn". The rows `SHOWN_ROWS` lists are shown, and
+    /// the infos are the same with the switch on and off.
     #[test]
     fn every_page_colour_is_the_style_output_at_its_status() {
+        let mut failures = Vec::new();
+        let mut titles = BTreeSet::new();
+        over_bundled_infos(|state, combination, infos, json| {
+            for info in infos {
+                let title = info.lines().next().unwrap_or_default();
+                titles.insert(title.to_owned());
+                for (_, row) in SHOWN_ROWS.iter().filter(|(t, _)| *t == title) {
+                    if !info.lines().any(|l| l.contains(&format!(": {row}"))) {
+                        failures.push(format!("{combination}: {title} shows no {row}"));
+                    }
+                }
+                failures.extend(
+                    colour_row_faults(state, info, json)
+                        .into_iter()
+                        .map(|f| format!("{combination}: {f}")),
+                );
+            }
+        });
+        for (title, _) in DRAWN_WITH {
+            if !titles.contains(*title) {
+                failures.push(format!("no page builds the {title} info"));
+            }
+        }
+        failures.dedup();
+        assert!(failures.is_empty(), "{failures:#?}");
+
+        // No info depends on the switch's state: each shows the on and the
+        // off rows both.
+        let mut state = State {
+            toggler_enabled: false,
+            ..State::default()
+        };
+        let off = built_infos(&mut state);
+        state.toggler_enabled = true;
+        assert_eq!(
+            built_infos(&mut state),
+            off,
+            "a page widget's info changes with the switch"
+        );
+    }
+
+    /// `each` over every bundled preset in both modes installed in a state:
+    /// the state, its combination (`<preset>/<mode>`), the page widgets'
+    /// infos its pages build and its resolved theme serialised.
+    fn over_bundled_infos(mut each: impl FnMut(&State, &str, &[String], &serde_json::Value)) {
         let mut state = State {
             accessibility: native_theme_iced::AccessibilityPreferences::default(),
             ..State::default()
         };
-        let mut failures = Vec::new();
-        let mut titles = BTreeSet::new();
         for preset in native_theme::theme::Theme::list_presets() {
             for dark in [false, true] {
                 let choice = ThemeChoice::Preset(preset.key.to_owned());
@@ -17507,35 +17551,11 @@ mod tests {
                     Ok(json) => json,
                     Err(error) => panic!("{}: {error}", preset.key),
                 };
-                for toggled in [false, true] {
-                    state.toggler_enabled = toggled;
-                    for info in &built_infos(&mut state) {
-                        let title = info.lines().next().unwrap_or_default();
-                        titles.insert(title.to_owned());
-                        for (_, row) in SHOWN_ROWS.iter().filter(|(t, _)| *t == title) {
-                            if !info.lines().any(|l| l.contains(&format!(": {row}"))) {
-                                failures.push(format!(
-                                    "{} (dark: {dark}): {title} shows no {row}",
-                                    preset.key
-                                ));
-                            }
-                        }
-                        failures.extend(
-                            colour_row_faults(&state, info, &json)
-                                .into_iter()
-                                .map(|f| format!("{} (dark: {dark}): {f}", preset.key)),
-                        );
-                    }
-                }
+                let infos = built_infos(&mut state);
+                let combination = state.installed_combination().unwrap_or_default();
+                each(&state, &combination, &infos, &json);
             }
         }
-        for (title, _) in DRAWN_WITH {
-            if !titles.contains(*title) {
-                failures.push(format!("no page builds the {title} info"));
-            }
-        }
-        failures.dedup();
-        assert!(failures.is_empty(), "{failures:#?}");
     }
 
     /// The focused field's focus-ring lengths route to what draws the ring
