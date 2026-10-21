@@ -15583,12 +15583,14 @@ mod tests {
     }
 
     /// The showcase started with `read` as its OS theme read, or `None`,
-    /// said on stderr under `test`'s name, where the read fails: off Linux
-    /// in a build without the platform's reader (`native`), since a
-    /// `SystemTheme` comes only from a read of the OS, which core builds with
-    /// no public constructor besides. On Linux the read never fails (core
-    /// falls back to the platform preset where no reader runs), so it fails
-    /// the test there.
+    /// said on stderr under `test`'s name, where the read fails off Linux:
+    /// a `SystemTheme` comes only from a read of the OS, which core builds
+    /// with no public constructor besides, so nothing else can stand in.
+    /// The example's dev-dependencies turn on native-theme's `macos` and
+    /// `windows` readers on those targets (`connectors/native-theme-iced/Cargo.toml`),
+    /// so a skip there means the read itself failed at run time, not a
+    /// missing feature. On Linux the read never fails (core falls back to
+    /// the platform preset where no reader runs), so it fails the test there.
     fn started_with_os(
         test: &str,
         read: fn() -> native_theme::Result<native_theme::SystemTheme>,
@@ -15599,8 +15601,8 @@ mod tests {
                 panic!("{test}: the OS theme failed to read on Linux: {error}");
             }
             eprintln!(
-                "{test}: skipped, nothing asserted: this build reads no OS theme on this \
-                 platform ({error}); run it with --features native"
+                "{test}: skipped, nothing asserted: the OS theme failed to read on this \
+                 platform at run time ({error}), and a SystemTheme comes from no other source"
             );
             return None;
         }
@@ -18274,7 +18276,8 @@ mod tests {
     /// without `iced_aw`, a flat button's and a tab's colours as their
     /// drawing functions draw them in the state shown, and a closed tab
     /// neither framed nor marked. Each case, and each tab open and closed, is
-    /// seen both ways somewhere among the presets.
+    /// seen both ways somewhere among the presets. The open tabs are read once
+    /// per tab state: the side panel hidden opens the tabs it opens shown.
     #[test]
     fn a_route_names_a_widget_only_where_the_state_draws_it() {
         let mut state = State {
@@ -18305,9 +18308,13 @@ mod tests {
                     (false, 0, Tab::Basic, InspectorTab::Widget),
                     (true, 1, Tab::Buttons, InspectorTab::Theme),
                 ];
-                // Which tabs each state draws open, read once, with the set's
-                // icons: the icons open no tab.
-                let mut opens = Vec::new();
+                // Which tabs each state draws open, read once per tab state,
+                // with the set's icons: neither the icons nor the side
+                // panel's visibility opens a tab ([`drawn_open`] draws the
+                // rows on their own), so the panel hidden reads the same as
+                // the panel shown.
+                let mut opens: Vec<((usize, Tab, InspectorTab), BTreeMap<&'static str, bool>)> =
+                    Vec::new();
                 // The set's icons, the same icons as an OS icon theme's,
                 // which keep their own colours, and none: a set without
                 // them, whose flat buttons show their labels.
@@ -18331,13 +18338,13 @@ mod tests {
                     let iconed = laid.contains_key("basic.icons.copy.icon");
                     seen.insert(("icon", iconed));
                     seen.insert(("os icon", iconed && state.chrome_icons.system));
-                    for (n, (visible, basic_tab, page, inspector)) in states.into_iter().enumerate()
-                    {
+                    for (visible, basic_tab, page, inspector) in states {
                         state.side_panel_visible = visible;
                         state.basic_tab = basic_tab;
                         state.active_tab = page;
                         state.inspector_tab = inspector;
-                        if opens.len() == n {
+                        let tabs = (basic_tab, page, inspector);
+                        if !opens.iter().any(|(read, _)| *read == tabs) {
                             let open = drawn_open(&mut state);
                             for (&id, &drawn_open) in &open {
                                 seen.insert((id, drawn_open));
@@ -18350,10 +18357,10 @@ mod tests {
                                     ));
                                 }
                             }
-                            opens.push(open);
+                            opens.push((tabs, open));
                         }
-                        let Some(open) = opens.get(n) else {
-                            panic!("state {n}'s tabs were not read");
+                        let Some((_, open)) = opens.iter().find(|(read, _)| *read == tabs) else {
+                            panic!("{tabs:?}: the tabs were not read");
                         };
                         for element in elements::elements() {
                             if element.name == "Spinner" {
@@ -20653,6 +20660,36 @@ mod tests {
                             r.x + r.width,
                             bounds.x + bounds.width
                         );
+                    }
+                    // Each control of a stated width is drawn at it: iced
+                    // clamps a fixed width to its column, so a column too
+                    // narrow for the count's assumption squeezes it. This
+                    // reads the widths the page states, not the count's.
+                    let r = &state.current_resolved;
+                    for (id, width) in [
+                        ("basic.text_area.field", BASIC_WIDE),
+                        ("basic.list.frame", BASIC_WIDE),
+                        ("basic.expander.details", BASIC_WIDE),
+                        ("basic.card.frame", BASIC_WIDE),
+                        ("basic.separator.line", BASIC_WIDE),
+                        ("basic.table.frame", BASIC_WIDE),
+                        ("basic.number_input.field", BASIC_WIDTH),
+                        ("basic.slider.control", BASIC_WIDTH),
+                        ("basic.progress_bar.bar", BASIC_WIDTH),
+                        (
+                            "basic.drop_down.trigger",
+                            BASIC_WIDTH.max(r.combo_box.min_width),
+                        ),
+                    ] {
+                        match laid.get(id) {
+                            Some(rect) => assert!(
+                                near(rect.width, width),
+                                "{preset} (dark: {dark}): {id} is drawn {}px wide, its stated \
+                                 width {width}px",
+                                rect.width
+                            ),
+                            None => panic!("{preset} (dark: {dark}): {id} is not laid out"),
+                        }
                     }
                     // The columns the count chose hold the widest control it
                     // counted with: a column narrower squeezes that control.
