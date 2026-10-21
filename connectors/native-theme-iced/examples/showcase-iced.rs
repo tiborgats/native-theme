@@ -185,6 +185,27 @@ fn drawn_probe<'a>(
     content.into()
 }
 
+/// A [`drawn_probe`] of the Extra page's menu item labelled `label`, under
+/// its [`probes::aw_menu_item`] id where the tests measure it.
+#[cfg(all(test, feature = "iced_aw"))]
+fn aw_menu_probe<'a>(
+    label: &str,
+    content: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    match probes::aw_menu_item(label) {
+        Some(id) => drawn_probe(id, content),
+        None => content.into(),
+    }
+}
+
+#[cfg(all(not(test), feature = "iced_aw"))]
+fn aw_menu_probe<'a>(
+    _label: &str,
+    content: impl Into<Element<'a, Message>>,
+) -> Element<'a, Message> {
+    content.into()
+}
+
 /// The [`probe`] tags, shared by the render code and by
 /// `interactive_controls_respond`.
 mod probes {
@@ -239,11 +260,38 @@ mod probes {
     /// The Extra page's `iced_aw` `Tabs` ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_TABS: &str = "probe-aw-tabs";
-    /// The Extra page's context menu's popup ([`super::drawn_probe`]); its
-    /// entries, and the page's menu titles and rows, are recorded under
-    /// their labels.
+    /// The Extra page's context menu's popup ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_CONTEXT_MENU: &str = "probe-aw-context-menu";
+    /// The Extra page's File title, the File menu's first row, its Recent
+    /// row, the Recent submenu's first row and the context menu's first
+    /// entry ([`super::aw_menu_probe`]).
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_FILE: &str = "probe-aw-menu-file";
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_NEW_WINDOW: &str = "probe-aw-menu-new-window";
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_RECENT: &str = "probe-aw-menu-recent";
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_RECENT_FIRST: &str = "probe-aw-menu-recent-first";
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_COPY: &str = "probe-aw-context-copy";
+
+    /// The probe of the Extra page's menu item labelled `label`, where the
+    /// tests measure it.
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub fn aw_menu_item(label: &str) -> Option<&'static str> {
+        [
+            ("File", AW_FILE),
+            ("New window", AW_NEW_WINDOW),
+            ("Recent", AW_RECENT),
+            ("adwaita.toml", AW_RECENT_FIRST),
+            ("Copy", AW_COPY),
+        ]
+        .into_iter()
+        .find(|&(item, _)| item == label)
+        .map(|(_, id)| id)
+    }
 }
 
 /// The `widget::Id` of the single-line `text_input`.
@@ -12466,9 +12514,10 @@ fn menu_width<'a>(
 /// `src/widget/menu/menu_tree.rs:161`), which it keeps in no constant.
 const AW_MENU_PADDING: f32 = 5.0;
 
-/// The padding of a menu's panel round its rows: the popup's,
+/// The padding of the window's menus' panels round their rows: the popup's,
 /// `popover.border.padding` (platform-facts §2.6: the popup border is
-/// §2.16's), inside `popover.border.line_width`, which iced_aw paints over
+/// §2.16's), inside `popover.border.line_width`, the line
+/// [`menu_bar_style`] frames them by, which iced_aw paints over
 /// the panel's padding (`pad_rectangle` round the rows, one quad with its
 /// border, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:764-780`);
 /// [`AW_MENU_PADDING`] on a side the theme leaves unstated.
@@ -12479,9 +12528,32 @@ fn menu_popup_padding(resolved: &ResolvedTheme) -> Padding {
     )
 }
 
+/// The padding of the Extra page's menu panels round their rows, the
+/// drop-downs' and the context menu's popup: the popup's padding,
+/// `popover.border.padding` (platform-facts §2.6, as [`menu_popup_padding`]),
+/// inside the line those panels are framed by, `menu.border.line_width`
+/// (`styles::aw::menu`'s `menu_border`, which iced_aw paints over the
+/// panel's padding, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:770-779`,
+/// and [`menu_panel`]'s, which a container paints over its padding);
+/// [`AW_MENU_PADDING`] on a side the theme leaves unstated. The window's
+/// menus are framed by the popover's own border, so they take
+/// [`menu_popup_padding`].
+#[cfg(feature = "iced_aw")]
+fn aw_menu_padding(resolved: &ResolvedTheme) -> Padding {
+    let line = resolved.menu.border.line_width;
+    let side = |stated: Option<f32>| stated.map_or(AW_MENU_PADDING, |v| v + line);
+    let p = &resolved.popover.border.padding;
+    Padding {
+        top: side(p.top),
+        right: side(p.right),
+        bottom: side(p.bottom),
+        left: side(p.left),
+    }
+}
+
 /// A drop-down of the Extra page's `MenuBar`, `width` wide
 /// ([`menu_width`]), its rows `gap` apart, its panel padded by `padding`
-/// round them ([`menu_popup_padding`]). `iced_aw` pads the panel out from
+/// round them ([`aw_menu_padding`]). `iced_aw` pads the panel out from
 /// the rows (`pad_rectangle`, iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:419`,
 /// `:770`) and places the rows `offset` from the item that opens the menu,
 /// so the rows lie `facing` (the panel's padding on that side) and `gap`
@@ -12501,24 +12573,24 @@ fn aw_menu<'a>(
         .padding(padding)
 }
 
-/// The Extra page's context menu's popup, drawn as the page's menus' panel
-/// (`styles::aw::menu`'s `menu_background` and `menu_border`):
-/// `menu.background_color`, framed by `menu.border`'s colour, width and
-/// radius. `iced_aw`'s `ContextMenu` styles only its backdrop
-/// (`style/context_menu.rs:48-59`), and the popup is the page's own element.
+/// The Extra page's context menu's popup, drawn as the page's menus'
+/// panel: `styles::aw::menu`'s `menu_background`, `menu_border` and
+/// `menu_shadow`, read from its output (`menu.background_color`, framed by
+/// `menu.border`, with iced_aw's own shadow). `iced_aw`'s `ContextMenu`
+/// styles only its backdrop (`style/context_menu.rs:48-59`), and the popup
+/// is the page's own element.
 #[cfg(feature = "iced_aw")]
 fn menu_panel(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style + use<> {
-    let m = &resolved.menu;
-    let fill = to_color(m.background_color);
-    let border = iced::Border {
-        color: to_color(m.border.color),
-        width: m.border.line_width,
-        radius: m.border.corner_radius.into(),
-    };
-    move |_theme| container::Style {
-        background: Some(iced::Background::Color(fill)),
-        border,
-        ..container::Style::default()
+    let menu = styles::aw::menu(resolved);
+    move |theme| {
+        // A `MenuBar` asks its style for `Active` alone (`menu_bar.rs:587`).
+        let panel = menu(theme, AwStatus::Active);
+        container::Style {
+            background: Some(panel.menu_background),
+            border: panel.menu_border,
+            shadow: panel.menu_shadow,
+            ..container::Style::default()
+        }
     }
 }
 
@@ -12690,20 +12762,27 @@ fn aw_menu_info(state: &State) -> String {
             ),
             (
                 "panel padding",
-                "menu_popup_padding: popover.border.padding, the side plus \
-                 popover.border.line_width; iced_aw's 5 where unstated",
+                "aw_menu_padding: popover.border.padding inside menu.border's \
+                 line, the side plus menu.border.line_width; iced_aw's 5 \
+                 where unstated",
             ),
             (
                 "context menu",
-                "our own popup, drawn as the panel: menu.background_color \
-                 framed by menu.border, padded by menu_popup_padding; its \
-                 entries menu_row",
+                "our own popup, drawn as the panel (styles::aw::menu's \
+                 menu_background, menu_border and menu_shadow): \
+                 menu.background_color framed by menu.border, padded by \
+                 aw_menu_padding; its entries menu_row",
             ),
         ],
         &[
             (
                 "shadows",
                 "the model has no shadow geometry — iced_aw's own",
+            ),
+            (
+                "panel offset",
+                "the showcase's sp.xxs (2 px): a menu's panel lies that far \
+                 from the item that opens it, and its rows that far apart",
             ),
             (
                 "menu width",
@@ -13012,7 +13091,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .style(menu_row(resolved))
         .width(Fill)
         .padding(item_pad);
-        drawn_probe(
+        aw_menu_probe(
             label,
             match menu_t.row_height {
                 Some(h) => entry.height(Length::Fixed(h)),
@@ -13024,7 +13103,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // iced_aw marks the title whose menu is open itself, handing it a
     // pointer at its centre (`menu_title`).
     let menu_root = move |label: &'static str| {
-        drawn_probe(
+        aw_menu_probe(
             label,
             button(text(label).typeset(&menu_t.font, a11y))
                 .on_press(Message::AwActionChosen(format!("Menu: {label}")))
@@ -13032,7 +13111,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 .padding(item_pad),
         )
     };
-    let popup_pad = menu_popup_padding(resolved);
+    let popup_pad = aw_menu_padding(resolved);
     // A menu of the rows `entries`, each with the menu it opens where it
     // opens one, as wide as its widest row. Its panel's side `facing` the
     // item that opens it (`popup_pad.top` under a title, `.left` beside a
@@ -13116,7 +13195,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     let context_demo = ContextMenu::new(context_underlay, move || {
         let entry = |label: &'static str| -> Element<'_, Message> {
-            drawn_probe(
+            aw_menu_probe(
                 label,
                 button(text(label).typeset(&menu_t.font, a11y))
                     .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
@@ -15416,8 +15495,8 @@ mod tests {
         // selector run over that tab would take the whole test down. Clicking
         // needs no selector -- `simulate` never calls `operate` -- and the
         // point is the popup's own padding, the menu panel's
-        // (`menu_popup_padding`), plus a few pixels into its first entry.
-        let popup_pad = menu_popup_padding(&state.current_resolved);
+        // (`aw_menu_padding`), plus a few pixels into its first entry.
+        let popup_pad = aw_menu_padding(&state.current_resolved);
         let messages = drive(state, |ui| {
             let underlay = match ui.find("Right-click inside this panel") {
                 Ok(target) => match target.visible_bounds() {
@@ -16970,13 +17049,16 @@ mod tests {
         // three it returns from `card_t.border`, in the one match that reads
         // them; no other call sets a section's padding.
         let from_border = source.find("aw_card_padding(&card_t.border)");
+        // The match that reads it, to its closing `};`.
+        let within =
+            from_border.and_then(|from| source[from..].find("};").map(|end| from..from + end));
         for (per_section, argument) in [
             (".padding_head(", ".padding_head(head)"),
             (".padding_body(", ".padding_body(body)"),
             (".padding_foot(", ".padding_foot(foot)"),
         ] {
             for (at, _) in source.match_indices(per_section) {
-                let computed = from_border.is_some_and(|from| (from..from + 300).contains(&at))
+                let computed = within.as_ref().is_some_and(|within| within.contains(&at))
                     && source[at..].starts_with(argument);
                 assert!(
                     computed,
@@ -19595,11 +19677,16 @@ mod tests {
     /// splice of `button.background_color` filled it; a label that
     /// `menu.font.color` moves; under the pointer a fill of
     /// `menu.hover_background` and a label `menu.hover_text_color` moves. The
-    /// File menu's panel reaches [`menu_popup_padding`] round its rows, which
-    /// a splice of `popover.border.padding` moves, and starts at its title's
-    /// foot. The context menu's popup is the menu's panel:
+    /// File menu's panel reaches [`aw_menu_padding`] round its rows, which
+    /// a splice of `popover.border.padding` moves, and lies `SP.xxs` below
+    /// its title's foot; the Recent submenu's panel lies `SP.xxs` right of
+    /// its row. The panels' padding is `popover.border.padding` inside
+    /// `menu.border`'s line, the line they draw ([`aw_menu_padding`]):
+    /// under kde-breeze the context entry is `popover.border.padding` plus
+    /// `menu.border.line_width` in from its popup's corner, read from the
+    /// leaves (12 px), where the popover's own line made it 13. The context menu's popup is the menu's panel:
     /// `menu.background_color`, framed by `menu.border`, its first entry
-    /// `menu_popup_padding` in from its corner.
+    /// that padding in from its corner.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_menus_are_the_themes_menus() {
@@ -19619,7 +19706,7 @@ mod tests {
 
         // The File title at rest.
         let (base, rects, scale) = extra_frame(&state, |_| {});
-        let title = rect(&rects, "File");
+        let title = rect(&rects, probes::AW_FILE);
         state.current_resolved.button.background_color = fill;
         let (image, _, _) = extra_frame(&state, |_| {});
         faults.extend(unfilled(&image, scale, "the File title", title));
@@ -19631,7 +19718,7 @@ mod tests {
         // The File menu open, its first row at rest.
         state.current_resolved = theirs.clone();
         let (base, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let row = rect(&rects, "New window");
+        let row = rect(&rects, probes::AW_NEW_WINDOW);
         state.current_resolved.menu.font.color = label;
         let (image, _, _) = extra_frame(&state, open_extra_file_menu);
         let row_moved = pixels_in(&image, row, scale) != pixels_in(&base, row, scale);
@@ -19646,9 +19733,12 @@ mod tests {
         wide.button.background_color = fill;
         state.current_resolved = wide.clone();
         let (image, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let (title, row) = (rect(&rects, "File"), rect(&rects, "New window"));
+        let (title, row) = (
+            rect(&rects, probes::AW_FILE),
+            rect(&rects, probes::AW_NEW_WINDOW),
+        );
         faults.extend(unfilled(&image, scale, "the File menu's first row", row));
-        let pad = menu_popup_padding(&wide);
+        let pad = aw_menu_padding(&wide);
         let edge = wide.menu.border.line_width;
         let inside = Rectangle {
             x: row.x - pad.left + edge + 1.0,
@@ -19660,34 +19750,55 @@ mod tests {
         if of == 0 || inked < of {
             faults.push(format!(
                 "the File menu's panel fills {inked} of the {of} pixels {:.0} px left of its \
-                 first row, menu_popup_padding's left inside menu.border",
+                 first row, popover.border.padding's left inside menu.border",
                 pad.left
             ));
         }
         let outside = Rectangle {
-            x: row.x - pad.left - 3.0,
+            x: row.x - pad.left - 2.0,
             y: row.center_y() - 1.0,
-            width: 2.0,
+            width: 1.5,
             height: 2.0,
         };
         let (inked, _) = inked_in(&image, outside, scale, panel_fill);
         if inked > 0 {
             faults.push(format!(
-                "the File menu's panel reaches past menu_popup_padding's left: {inked} pixels"
+                "the File menu's panel reaches past its padding's left: {inked} pixels"
             ));
         }
-        if row.y - pad.top < title.y + title.height - 0.5 {
+        let clear = (row.y - pad.top) - (title.y + title.height);
+        if (clear - SP.xxs).abs() > 0.5 {
             faults.push(format!(
-                "the File menu's panel starts at {}, over its title, whose foot is at {}",
-                row.y - pad.top,
-                title.y + title.height
+                "the File menu's panel starts {clear} px below its title's foot, want {}",
+                SP.xxs
+            ));
+        }
+
+        // The Recent submenu, open beside its row.
+        state.current_resolved = theirs.clone();
+        let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
+        let recent = rect(&rects, probes::AW_RECENT);
+        let (_, rects, _) = extra_frame(&state, move |ui| {
+            open_extra_file_menu(ui);
+            move_to(ui, recent.center());
+        });
+        let (recent, sub) = (
+            rect(&rects, probes::AW_RECENT),
+            rect(&rects, probes::AW_RECENT_FIRST),
+        );
+        let pad = aw_menu_padding(&theirs);
+        let clear = (sub.x - pad.left) - (recent.x + recent.width);
+        if (clear - SP.xxs).abs() > 0.5 {
+            faults.push(format!(
+                "the Recent submenu's panel starts {clear} px right of its row, want {}",
+                SP.xxs
             ));
         }
 
         // The File menu's first row under the pointer.
         state.current_resolved = theirs.clone();
         let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
-        let row = rect(&rects, "New window");
+        let row = rect(&rects, probes::AW_NEW_WINDOW);
         let hover_row = move |ui: &mut Simulator<'_, Message>| {
             open_extra_file_menu(ui);
             move_to(ui, row.center());
@@ -19709,12 +19820,24 @@ mod tests {
         // The context menu's popup and its first entry at rest.
         state.current_resolved = theirs.clone();
         let (base, rects, _) = extra_frame(&state, open_extra_context_menu);
-        let (popup, copy) = (rect(&rects, probes::AW_CONTEXT_MENU), rect(&rects, "Copy"));
-        let pad = menu_popup_padding(&theirs);
+        let (popup, copy) = (
+            rect(&rects, probes::AW_CONTEXT_MENU),
+            rect(&rects, probes::AW_COPY),
+        );
+        let popover = &theirs.popover.border.padding;
+        let (Some(left), Some(top)) = (popover.left, popover.top) else {
+            panic!("kde-breeze states no popover.border.padding to read");
+        };
+        let line = theirs.menu.border.line_width;
+        let pad = Padding {
+            left: left + line,
+            top: top + line,
+            ..aw_menu_padding(&theirs)
+        };
         if (copy.x - popup.x - pad.left).abs() > 0.5 || (copy.y - popup.y - pad.top).abs() > 0.5 {
             faults.push(format!(
                 "the context menu's first entry is {} by {} in from its popup's corner, \
-                 menu_popup_padding {} by {}",
+                 popover.border.padding inside menu.border's line {} by {}",
                 copy.x - popup.x,
                 copy.y - popup.y,
                 pad.left,
@@ -19977,7 +20100,7 @@ mod tests {
     /// M9-090, M9-097, M9-143 (info-truth): the Extra page's Widget Info
     /// says what the page draws, under kde-breeze light: the MenuBar's label
     /// colour is [`menu_row`]'s (the titles [`menu_title`]'s), the menus'
-    /// panel padding is [`menu_popup_padding`]'s and the context menu's popup
+    /// panel padding is [`aw_menu_padding`]'s and the context menu's popup
     /// the panel's, with no `styles::button` named; the tabs' spacing is
     /// `tab.item_gap`; the Card's sections are padded inside
     /// `card.border.line_width`.
@@ -20001,15 +20124,20 @@ mod tests {
             (
                 &menu,
                 "panel padding",
-                &["menu_popup_padding", "popover.border.padding"][..],
+                &[
+                    "aw_menu_padding",
+                    "popover.border.padding",
+                    "menu.border.line_width",
+                ][..],
             ),
+            (&menu, "panel offset", &["sp.xxs"][..]),
             (
                 &menu,
                 "context menu",
                 &[
                     "menu.background_color",
                     "menu.border",
-                    "menu_popup_padding",
+                    "aw_menu_padding",
                     "menu_row",
                 ][..],
             ),
