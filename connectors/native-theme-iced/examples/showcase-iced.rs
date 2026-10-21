@@ -11596,9 +11596,12 @@ fn view_display(state: &State) -> Element<'_, Message> {
             text("Theme Information").role(section_title(ts), resolved, a11y),
             text(theme_info_text).role(&ts.caption, resolved, a11y),
             text(font_info).role(&ts.caption, resolved, a11y),
+            // The presets the theme picker and `--theme` offer: this
+            // platform's.
             text(format!(
-                "Available presets: {} | All presets have both light and dark variants.",
-                native_theme::theme::Theme::list_presets().len(),
+                "Available presets on this platform: {} | All presets have both light and \
+                 dark variants.",
+                native_theme::theme::Theme::list_presets_for_platform().len(),
             ))
             .role(&ts.caption, resolved, a11y),
         ]
@@ -18042,6 +18045,23 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// M9-099 (ux): the Display page counts the presets this platform
+    /// offers, the ones the theme picker and `--theme` take, and says so.
+    #[test]
+    fn the_presets_line_counts_this_platforms() {
+        let state = page_state("kde-breeze", Tab::Display);
+        let mut ui = interface(&state);
+        let want = format!(
+            "Available presets on this platform: {} | All presets have both light and dark \
+             variants.",
+            native_theme::theme::Theme::list_presets_for_platform().len()
+        );
+        assert!(
+            texts(&mut ui).iter().any(|(content, _)| *content == want),
+            "the Display page does not show \"{want}\""
+        );
     }
 
     /// M9-100 (simplify): the Text Inputs page chains each single-line
