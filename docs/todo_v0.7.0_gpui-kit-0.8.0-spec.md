@@ -200,6 +200,19 @@ connectors and showcases (§12).
 - Any fails: the call stays in the failing helper's module with a comment stating the 0.1.10
   cause the failure shows (read in `GF10/fast/retained.rs` / `GF10/window.rs:4119-4144`), and
   the todo entry gets a dated line instead of closing.
+- *Added 2026-10-22 (G3 T4), the controller's ruling:* the five pass without `refresh()` on
+  GPUI Fast, and gpui-pre's suites pass unchanged. Three GPUI Fast tests failed, and none of
+  them shows a GPUI Fast cause. Each was a test that leaned on the forced full frame, so the
+  "any fails" rule above, which assumed such a cause, does not apply. Instead the calls go,
+  as under "All pass", and the todo entry closes. The three tests change:
+  - `a_checkbox_toggles_on_click_enter_and_space`: the harness's `on_change` notifies its
+    view.
+  - `a_loading_progress_bar_sweeps_its_fill_in_the_theme`: `fill_after` delivers the
+    animation's next frame through `Window::simulate_next_frame`, which both cores have
+    under `test-support`.
+  - `a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again`: it draws the full
+    frame §2.4 asks for with its own `window.refresh()`. The three partial-frame tests' docs
+    say who draws the frame after the settle.
 
 ### 2.4 Widget Info under GPUI Fast's partial frames (K4, K5, K6, K19)
 
