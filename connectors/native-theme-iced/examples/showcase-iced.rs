@@ -18326,8 +18326,7 @@ mod tests {
                 // panel's visibility opens a tab ([`drawn_open`] draws the
                 // rows on their own), so the panel hidden reads the same as
                 // the panel shown.
-                let mut opens: Vec<((usize, Tab, InspectorTab), BTreeMap<&'static str, bool>)> =
-                    Vec::new();
+                let mut opens = Vec::new();
                 // The set's icons, the same icons as an OS icon theme's,
                 // which keep their own colours, and none: a set without
                 // them, whose flat buttons show their labels.
