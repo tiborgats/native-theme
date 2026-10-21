@@ -1565,11 +1565,12 @@ platform (`native-theme/src/watch/`).
 
 ### iced showcase: the startup fallback outside Linux
 - [x] [1.0] When `SystemTheme::from_system()` fails at startup, the iced showcase installs the adwaita preset and selects it (`showcase-iced.rs` `State::starting_with`, `:950`, fallback `load_adwaita_fallback` `:497`), also on macOS and Windows, where adwaita is `platforms: &["linux"]` (`native-theme/src/presets.rs:149`) and the theme picker does not list it. The gpui showcase instead keeps gpui-component's own theme under `default` and shows the error. Decide what a failed OS read falls back to off Linux (the platform's own preset would match the "only native presets" rule).
-  *Closed by M9b T6 (2026-10-21, fb0d3ef5):* a failed OS read at startup installs and
-      selects the platform's own preset (`platform_fallback_preset`): on Linux the one a
-      system read merges over (`native_theme::pipeline::platform_preset_name`,
-      `kde-breeze` on KDE, `adwaita` elsewhere), on macOS `macos-tahoe` and on Windows
-      `windows-11`, the newest generation's (the M9b rulings' amendment), with the OS's
-      accessibility preferences (`detect::accessibility_preferences()`);
-      `the_startup_fallback_is_the_platform_preset_in_every_mode` holds it to a preset the
-      platform offers, computed at test time.
+  *Closed by M9b T6 (2026-10-21, fb0d3ef5; the preset's rule as fix round 1 sets it, c95b9ff8):* a
+      failed OS read at startup installs and selects the platform's own preset
+      (`platform_fallback_preset`), the one a system read merges over on every platform
+      (`native_theme::pipeline::platform_preset_name`, as the egui showcase falls back to):
+      `kde-breeze` on KDE, `adwaita` on another Linux desktop, the running version's
+      generation on macOS, `windows-11` on Windows; with the OS's accessibility preferences
+      (`detect::accessibility_preferences()`).
+      `the_startup_fallback_is_the_platform_preset_in_every_mode` computes the preset from
+      `platform_preset_name` itself and holds it to a preset the platform offers.
