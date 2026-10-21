@@ -393,6 +393,18 @@ connectors and showcases (§12).
   `<T1-last>`, the script is fixed and run again from that tree, or the failing numbers
   go on the set-aside list, each failing number's whole chain (or the numbers of its note
   for that file) — never a run over numbers that already moved.
+- *Added 2026-10-21 (G3 T2 review):* Task 2's two deviations, which its review accepted
+  (`g3/g3-T2-review.md` §2, §3), are part of this section. (a) After a leading crate
+  directory, the rest is the exact path from that crate's `src/` (or its root, for a
+  crate-root file such as `build.rs`), as the showcase gates' `candidates()` read it
+  (`CN/src/showcase.rs:2572`), not a `/`-bounded suffix, which would set aside
+  `gpui-component/tooltip.rs` (`src/tooltip.rs`, `src/plot/tooltip.rs`) and
+  `gpui-base/tree.rs`; a path without a crate directory still matches by its end. (b) One
+  set-aside rule more, for a continuation whose file is uncertain: a continuation that
+  words, not a comma, "and", "then" or an arrow, part from the number before it, and that
+  an upstream file named earlier in the note would put at another line, sets its chain
+  aside (11 chains; for 3 of them, `[46]`, `[144]`, `[157]`, the chain rule alone would
+  have used the wrong file).
 
 ### 3.2 Read by hand: what the gates read — Task 3's commit, which closes the unit
 
