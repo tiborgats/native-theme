@@ -111,7 +111,7 @@ const ROWS: &[Row] = &[
     },
     // Upstream documents `selection` as the *input* selection background
     // (`theme_color.rs:228`), and its text readers are the input editor style
-    // (`input/input.rs:567`), the text view (`text/mod.rs:52`), the touch
+    // (`input/input.rs:567`), the text view (`text/mod.rs:54`), the touch
     // handle (`touch_selection/handle.rs:96`) and the time field's selected
     // segment (`time/time_field.rs:135`). It also fills a token input's chips
     // (`input/token.rs:50-51`) and outlines a table's or list's
@@ -374,7 +374,7 @@ const ROWS: &[Row] = &[
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:282`,
     // `table/state.rs:1751, :1998`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.7.3 beyond a schema fallback (`theme/schema.rs:972, 1010`),
+    // reader in 0.8.0 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -642,7 +642,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The four base-palette colours the connector maps directly
-    // (`colors.rs:686-693`); their `_light` siblings are derived.
+    // (`colors.rs:681-688`); their `_light` siblings are derived.
     Row {
         slot: "red",
         native: |r| r.defaults.danger_color,
@@ -950,8 +950,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         native: |r| r.segmented_control.font.color,
         evidence: "a `TabBar` labels every segment from the tab family -- \
                    `tab_foreground` on the bar (`tab/tab_bar.rs:642`) and on \
-                   an idle segment (`tab/tab.rs:154`), `tab_active_foreground` \
-                   on the selected one (`:247`) -- and those two tokens are \
+                   an idle segment (`tab/tab.rs:195`), `tab_active_foreground` \
+                   on the selected one (`:299`) -- and those two tokens are \
                    `tab.font.color` and `tab.active_text_color` by their rows. \
                    The segmented control's own label colour has nowhere to go.",
     },
@@ -974,8 +974,8 @@ const NO_RECEIVER: &[NoReceiver] = &[
         native: |r| r.switch.checked_background,
         evidence: "`ThemeColor` has no checked-state field for a switch -- \
                    only `switch` and `switch_thumb` -- and upstream paints a \
-                   checked one with `tokens.primary` (`switch.rs:180-183`). \
-                   `Switch::color` is a per-instance receiver (`switch.rs:102`), \
+                   checked one with `tokens.primary` (`switch.rs:181-184`). \
+                   `Switch::color` is a per-instance receiver (`switch.rs:103`), \
                    which an application can feed and the connector does not. \
                    Recorded at `colors.rs`'s Issue 51 note as well.",
     },
@@ -986,7 +986,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
 /// (`native-theme-iced/src/contract/derived.rs`) has the same shape.
 #[cfg(feature = "widgets")]
 enum Unread {
-    /// gpui-component and gpui-base 0.7.3 have nowhere to draw the value as
+    /// gpui-component and gpui-base 0.8.0 have nowhere to draw the value as
     /// the model states it, or only a receiver that would also paint a
     /// variant upstream leaves bare. The evidence cites the upstream source,
     /// `file.rs:line`.
@@ -1739,7 +1739,7 @@ struct Pair {
 }
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.7.3/src/tab/tab.rs:173, 184, 191, 196, 201`), so its
+/// (`gpui-component-0.8.0/src/tab/tab.rs:173, 184, 191, 196, 201, 212`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1346`, §2.11), which under
@@ -1798,7 +1798,7 @@ fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 95 sites outside `theme/` in 0.7.3) and the surfaces
+/// alone has 96 sites outside `theme/` in 0.8.0) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -1993,11 +1993,11 @@ const PAIRS: &[Pair] = &[
     // With the `widgets` feature a tab row is `widgets::TabBar`, and the
     // emitted side is what it paints (`TabLook`). Without it, gpui-component's
     // idle tab paints `transparent` in every variant (`tab/tab.rs:173, 184,
-    // 191, 196, 201`), so its label lands on the bar -- a live surface
+    // 191, 196, 201, 212`), so its label lands on the bar -- a live surface
     // (`tab/tab_bar.rs:388`, `tab/tab.rs:367`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
-    // `tokens.tab`, which nothing in 0.7.3 reads, keeps its row but takes no
+    // `tokens.tab`, which nothing in 0.8.0 reads, keeps its row but takes no
     // part here.
     Pair {
         what: "tab label",
@@ -2116,7 +2116,7 @@ struct UpstreamLimit {
 )]
 const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
     what: "a focused text field's edge and focus ring",
-    evidence: "gpui-component 0.7.3 draws a focused Input in its own way: \
+    evidence: "gpui-component 0.8.0 draws a focused Input in its own way: \
                `border_1()` in the `ring` colour as a focus-state style \
                (`src/input/input.rs:771-775`), which a `StyleRefinement` such \
                as `geometry::input` cannot reach, so a field the theme leaves \
@@ -2268,7 +2268,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.7.3 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.8.0 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -2291,7 +2291,7 @@ const INERT_SURFACES: &[(&str, &str)] = &[
     (
         "sidebar primary button label",
         "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.7.3",
+         outside theme/ in 0.8.0",
     ),
 ];
 
@@ -2454,7 +2454,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.7.3 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.8.0 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

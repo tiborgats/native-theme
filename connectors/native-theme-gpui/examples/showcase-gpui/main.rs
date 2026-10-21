@@ -345,7 +345,7 @@ pub(crate) const PAGE_ROOT: &str = "page-root";
 
 /// The debug selector the content pane's scrolled element carries. Its right
 /// edge is the scroll area's, which is where a vertical scrollbar's track ends
-/// (gpui-base `src/scrollbar.rs:1408-1432`), so
+/// (gpui-base `src/scrollbar.rs:1422-1446`), so
 /// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the page
 /// reaches under the bar.
 pub(crate) const CONTENT_SCROLL: &str = "content-scroll";

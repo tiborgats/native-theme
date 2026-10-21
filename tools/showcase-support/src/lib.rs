@@ -84,7 +84,7 @@ pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 /// A dialog's padding on a side the theme's `dialog.border.padding` leaves
 /// unstated, inside the dialog's border line: gpui-component's `Dialog`'s
 /// own, `Edges::all(px(16.))`, which each stated side replaces
-/// (gpui-component 0.7.3 `src/dialog/dialog.rs:635-647`), and which the gpui
+/// (gpui-component 0.8.0 `src/dialog/dialog.rs:635-647`), and which the gpui
 /// showcase's dialogs keep. The iced showcase pads its dialogs so (and the
 /// egui showcase after M9c T7), as the shared chrome looks like gpui's; the
 /// model states no such default.

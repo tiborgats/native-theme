@@ -301,7 +301,7 @@ fn scrollbar_of(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> (Pix
 /// gpui-component overlays its scrollbar on the scroll area whatever the
 /// platform does (`src/scroll/scrollable.rs`, `Scrollable`), and gpui-base
 /// draws the vertical track flush with the area's right edge, at the width
-/// the connector installed (gpui-base `src/scrollbar.rs:1408-1432`). Where
+/// the connector installed (gpui-base `src/scrollbar.rs:1422-1446`). Where
 /// the platform's scrollbars are not overlays the connector also asks for
 /// an always-visible bar (`src/lib.rs`, `scrollbar_mode`), so that width
 /// has to be reserved beside the content or the bar sits on it.
@@ -338,7 +338,7 @@ fn a_non_overlay_scrollbar_keeps_off_the_content(cx: &mut TestAppContext) {
 }
 
 /// A page that fits its pane keeps no strip for a scrollbar: gpui-base
-/// draws none while the content fits (gpui-base src/scrollbar.rs:1402-1406),
+/// draws none while the content fits (gpui-base src/scrollbar.rs:1416-1419),
 /// so the Basic page takes the pane's whole width under kde-breeze, whose
 /// scrollbars are not overlays.
 #[gpui::test]
@@ -399,8 +399,8 @@ fn the_scroll_area_scrolls_inside_its_frame(cx: &mut TestAppContext) {
 }
 
 /// The page body lays gpui-component's `ScrollbarLayer` over its right edge
-/// (setting/page.rs:227-255, scroll/scrollable.rs:19-29) and reserves only the
-/// `px_4` each group's row is wrapped in, inside the list (:239-243);
+/// (setting/page.rs:227-257, scroll/scrollable.rs:19-29) and reserves only the
+/// `px_4` each group's row is wrapped in, inside the list (setting/page.rs:241-245);
 /// kde-breeze's groove is 21px, wider than that, so without a gutter on the
 /// group the bar covers the rows.
 #[gpui::test]
@@ -3201,7 +3201,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
 }
 
 /// Upstream's Underline TabBar pads neither itself nor its tabs
-/// (tab/tab.rs:79-81, tab/tab_bar.rs:412-421): it leaves the inset to the
+/// (tab/tab.rs:121-122, tab/tab_bar.rs:412-421): it leaves the inset to the
 /// container it is in. So the page TabBar is inset by
 /// `layout.container_margin`, and the inspector's by what pads the side
 /// panel's content: the panel's own padding where the theme states a
@@ -4008,7 +4008,7 @@ const SIDEBAR_ICON_PRESETS: [&str; 7] = [
 ///   own: an item is as wide as the rail lets it be whatever its icon, and
 ///   grows taller rather than overlap. What does is the item's height:
 ///   there a row has no height of its own and holds its icon alone
-///   (sidebar/menu.rs:316-323), inside `p_2` on every side (:299), so the
+///   (sidebar/menu.rs:322-329), inside `p_2` on every side (:305), so the
 ///   measured height less that padding is the icon's, and the icon, as
 ///   wide as it is tall (the first check), has to fit the item's measured
 ///   width;
@@ -4797,7 +4797,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
 }
 
 /// The boxes painted in the tooltip's fill in the last frame: upstream fills
-/// a tooltip with `popover` (tooltip.rs:114-115), and the connector's
+/// a tooltip with `popover` (tooltip.rs:118-119), and the connector's
 /// `geometry::tooltip` refinement repaints it in `tooltip.background_color`.
 fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
@@ -4841,13 +4841,13 @@ fn tooltip_width(cx: &mut VisualTestContext, selector: &'static str) -> Option<P
 /// action is bound to Ctrl+B (Cmd+B on macOS), and the tooltip is wider while the action has
 /// that binding than once the bindings are gone -- upstream's Tooltip adds
 /// the binding's Kbd beside the text only where the action has one
-/// (tooltip.rs:95-107, :134-142). The tooltip's text is not readable from
+/// (tooltip.rs:99-111, :138-146). The tooltip's text is not readable from
 /// the test's frame, so its width is what shows the Kbd.
 #[gpui::test]
 fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     use_preset(&mut cx, &showcase, "kde-breeze");
-    // A tooltip fades in (tooltip.rs:179-182); without motion it is drawn
+    // A tooltip fades in (tooltip.rs:183-186); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
     let cases: [(&'static str, Box<dyn gpui::Action>, String); 1] = [(
@@ -6009,8 +6009,8 @@ fn the_textarea_keeps_its_own_height(cx: &mut TestAppContext) {
 }
 
 /// A Switch's corner line follows upstream's condition: the theme's radius
-/// under 4px, the track's own height from 4px up (switch.rs:204-208), 4px
-/// itself included (`radius >= px(4.)`, switch.rs:204).
+/// under 4px, the track's own height from 4px up (switch.rs:205-209), 4px
+/// itself included (`radius >= px(4.)`, switch.rs:205).
 #[gpui::test]
 fn a_switchs_corner_line_follows_upstreams_condition(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -6249,7 +6249,7 @@ fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[Strin
 }
 
 /// Click the sort button of the DataTable's column `col_ix`: upstream's
-/// `("icon-sort", col_ix)` (gpui-component 0.7.3 table/state.rs:1789, with
+/// `("icon-sort", col_ix)` (gpui-component 0.8.0 table/state.rs:1789, with
 /// `test_support()`).
 fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
     cx.update(|window, cx| {
@@ -8066,7 +8066,7 @@ fn the_token_input_holds_its_token(cx: &mut TestAppContext) {
 /// upstream loads them by asset path, and gpui keeps the first SVG it drew
 /// for a path (Task 6's spike, `docs/todo.md`), so they cannot follow the
 /// chosen theme. The widgets are those whose shown configuration draws one
-/// (gpui-component 0.7.3): a DropdownButton's caret, a Clipboard's Copy, a
+/// (gpui-component 0.8.0): a DropdownButton's caret, a Clipboard's Copy, a
 /// NumberInput's steps, a Checkbox's check, a Rating's stars, a Select's,
 /// a Combobox's and a ColorSelect's caret, a DatePicker's Calendar, a
 /// Calendar's month buttons, the command palette's Search, a Dialog's and a
@@ -12697,7 +12697,7 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 /// activated from the keyboard by a listener that does not notify stays
 /// drawn as it was until something else redraws the window. gpui-component
 /// documents these values as controlled: the owner writes the value and calls
-/// `cx.notify()` (gpui-component 0.7.3 `src/checkbox.rs:106-110`).
+/// `cx.notify()` (gpui-component 0.8.0 `src/checkbox.rs:106-110`).
 #[test]
 fn every_listener_that_writes_state_notifies() {
     let sources = showcase_sources();
@@ -12764,9 +12764,9 @@ fn every_listener_that_writes_state_notifies() {
 /// `cx.notify()`. That missing frame request is the bug, and it is what this
 /// counts, through an observer of the showcase, which runs on a notify
 /// alone. A drawn frame cannot show it: a test draws its frames itself, dirty
-/// window or not, and on GPUI Fast 0.1.7 a view that is not cached is drawn
-/// again whenever an entity it read was written, notified or not
-/// (`src/fast/retained.rs:601-623`, `src/fast/dependencies.rs:513-527`), so
+/// window or not, and on GPUI Fast a view that is not cached is drawn again
+/// whenever an entity it read was written, notified or not (gpui-fast 0.1.10
+/// `src/fast/retained.rs:601-623`, `src/fast/dependencies.rs:513-527`), so
 /// the frame after Space shows the new state on both backends either way.
 #[gpui::test]
 fn a_checkbox_toggled_from_the_keyboard_notifies_the_showcase(cx: &mut TestAppContext) {
@@ -14515,7 +14515,7 @@ fn no_page_spaces_by_a_bare_rem_multiple() {
     const INSIDE_A_SAMPLE: [(&str, &[&str], &str); 1] = [(
         "component_toolbar",
         &[".gap_1()"],
-        "a ToolbarGroup's gap where toolbar.item_gap is unstated: upstream's own, the gap_1 a Small Toolbar spaces its items by (gpui-component 0.7.3 toolbar.rs:254), which a group, spacing nothing itself (gpui-base 0.7.3 toolbar.rs:251-262), takes from the caller; the sample shows upstream's Toolbar, so it keeps upstream's value and names no constant",
+        "a ToolbarGroup's gap where toolbar.item_gap is unstated: upstream's own, the gap_1 a Small Toolbar spaces its items by (gpui-component 0.8.0 toolbar.rs:254), which a group, spacing nothing itself (gpui-base 0.8.0 toolbar.rs:251-262), takes from the caller; the sample shows upstream's Toolbar, so it keeps upstream's value and names no constant",
     )];
     let sources = showcase_sources();
     let read: Vec<_> = sources
@@ -15051,7 +15051,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
 /// `layout.widget_gap` from the next Badge, as the controls of every other
 /// row are apart, and touches it where the theme states no gap. Upstream
 /// draws a Medium count 3px per digit past its Button's right edge
-/// (gpui-component 0.7.3 `badge.rs:137-141`, the `Size::Medium` arm), so
+/// (gpui-component 0.8.0 `badge.rs:137-141`, the `Size::Medium` arm), so
 /// the Buttons are that much further apart (M9-022).
 #[gpui::test]
 fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
@@ -15116,7 +15116,7 @@ fn a_badges_count_is_a_widget_gap_from_the_next(cx: &mut TestAppContext) {
 }
 
 /// How far a Badge's count stands past its Button is upstream's 3px a
-/// printed character (gpui-component 0.7.3 `badge.rs:137-141`, the
+/// printed character (gpui-component 0.8.0 `badge.rs:137-141`, the
 /// `Size::Medium` arm): one digit 3px, two 6px, a count above 99 printed
 /// `99+`, three characters (`badge.rs:130-134`); none for a dot, which sits
 /// inside the Button (`badge.rs:129`), nor for a zero count, which upstream

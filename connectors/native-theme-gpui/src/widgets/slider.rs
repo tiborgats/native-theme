@@ -344,7 +344,7 @@ impl RenderOnce for Slider {
         let radius = px(f32::from(look.thumb) / 2.);
         let beyond = px(-f32::from(radius));
         // The rail is a pill unless the theme squares its corners
-        // (slider.rs:174); `SliderTheme` states no rail radius.
+        // (slider.rs:182); `SliderTheme` states no rail radius.
         let pill = cx.theme().radius_full();
 
         // The end thumb, the one the keys move, draws the focus ring.

@@ -458,7 +458,7 @@ reason = "iced's helpers lay the indicator over a tab built from iced widgets (c
 connector = "gpui"
 name = "pick_list_handle"
 kind = "absent"
-reason = "a widget part iced takes per call, `PickList::handle` (connectors/native-theme-iced/src/lib.rs, `pick_list_handle`'s doc); gpui-component's `Select` draws its own caret, sized inside the trigger, which no style reaches (examples/showcase-gpui/info/leaves.rs, `combo_box.arrow_icon_size_px`: gpui-component `select.rs:599-600`)"
+reason = "a widget part iced takes per call, `PickList::handle` (connectors/native-theme-iced/src/lib.rs, `pick_list_handle`'s doc); gpui-component's `Select` draws its own caret, sized inside the trigger, which no style reaches (examples/showcase-gpui/info/leaves.rs, `combo_box.arrow_icon_size_px`: gpui-component `select.rs:626-627`)"
 
 [[exception]]
 connector = "egui"

@@ -91,7 +91,7 @@
 //! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
 //! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
-//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:801-808`) |
+//! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
 //! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill` |
@@ -130,7 +130,7 @@
 //! (checkbox and radio indicators, switch, slider, separator thickness,
 //! splitter width, button icon gap, popup-menu rows), and tab
 //! height, radius and text size, which `Tab`'s render writes into the same
-//! style bag the caller's setters fill (`tab/tab.rs:801-808`), stay upstream
+//! style bag the caller's setters fill (`tab/tab.rs:958-966`), stay upstream
 //! work; §14 of the v0.5.8 specification
 //! (<https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md>)
 //! lists each item with the upstream line that makes it unreachable. For

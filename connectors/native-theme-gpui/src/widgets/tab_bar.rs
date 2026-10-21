@@ -16,7 +16,7 @@ use super::{Part, PartBounds, color, font_text, length, over, part_bounds};
 use crate::ActiveNativeTheme;
 
 /// A tab's side padding where `tab.border.padding` states none:
-/// gpui-component's for a tab at the default `Size` (tab/tab.rs:72-80,
+/// gpui-component's for a tab at the default `Size` (tab/tab.rs:112-118,
 /// `TabVariant::inner_paddings`).
 const TAB_PADDING: f32 = 12.;
 
@@ -211,7 +211,11 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// where unstated, as gpui-component's). The tabs scroll sideways where they
 /// do not fit, a clicked tab into view
 /// ([`track_scroll`](Self::track_scroll)), or wrap onto a further row with
-/// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them.
+/// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them. A vertical
+/// mouse wheel scrolls them sideways too: gpui turns it so on a row that
+/// scrolls on one axis alone (gpui-pre `src/elements/div.rs:3354-3362`), as
+/// gpui-component 0.8.0's `TabBar`, whose row locks its axis, does by a wheel
+/// mask (`tab/tab_bar.rs:691`, `:697`).
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its
 /// inset. Without a native theme, or with a length that is not finite, it

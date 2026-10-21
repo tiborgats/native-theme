@@ -221,7 +221,7 @@ pub(super) struct Parts {
 
 impl Parts {
     /// gpui-base's own tab order: a tab stop at index 0
-    /// (gpui-base 0.7.3 checkbox.rs:79-80, radio.rs:72-73).
+    /// (gpui-base 0.8.0 checkbox.rs:79-80, radio.rs:72-73).
     fn new(id: ElementId) -> Self {
         Self {
             id,
@@ -297,7 +297,7 @@ impl Parts {
 }
 
 /// gpui-component's check mark, the Lucide `check` icon it draws as
-/// `IconName::Check` (gpui-kit-assets 0.7.3 `assets/icons/check.svg`,
+/// `IconName::Check` (gpui-kit-assets 0.8.0 `assets/icons/check.svg`,
 /// `M20 6 9 17l-5-5`): a polyline through these points of its view box,
 /// round-capped and round-joined (`stroke-linecap`, `stroke-linejoin`).
 const CHECK_POINTS: [(f32, f32); 3] = [(20., 6.), (9., 17.), (4., 12.)];

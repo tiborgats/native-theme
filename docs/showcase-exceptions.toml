@@ -17,9 +17,10 @@
 # of egui 0.36.2 it was read at. Each was read in the
 # vendored source on 2026-09-21 -- `Loading` and `Text` on 2026-09-22, when
 # the gpui matching rule stopped accepting a bare path segment and reported
-# them -- and cites the file and line it was read at: gpui-component 0.7.3
+# them -- and cites the file and line it was read at: gpui-component 0.8.0
 # (first read at 0.6.4; the gpui section re-read at 0.7.0 on 2026-10-01,
-# re-pointed to 0.7.1 on 2026-10-06 and to 0.7.3 on 2026-10-14), iced_widget
+# re-pointed to 0.7.1 on 2026-10-06, to 0.7.3 on 2026-10-14 and to 0.8.0
+# on 2026-10-21), iced_widget
 # 0.14.2, iced_aw 0.14.1.
 
 # Composition slots and internal parts of gpui-component widgets. Each is a
@@ -49,11 +50,11 @@ QuestionnaireChoiceDescription = "secondary text inside a `QuestionnaireChoice` 
 SearchableListItemElement = "the row `Select`, `Combobox` and `MultiCombobox` dropdowns render (searchable_list/item.rs:11-18)"
 SidebarFooter = "the footer of a `Sidebar` (sidebar/footer.rs:8-10)"
 SidebarHeader = "the header of a `Sidebar` (sidebar/header.rs:8-10)"
-SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:358-369, :378; read in gpui-component 0.7.3), so under any other chosen icon theme it would show another icon theme's icon. The status bar's side-panel toggle is a Button whose `PanelLeft` comes from the chosen icon theme"
-SpeechButton = "it would mix icon themes: it draws gpui-component's own `Mic` or `Square`, chosen as it renders with no setter (speech/button.rs:96-100; read in gpui-component 0.7.3), so under any other chosen icon theme it would show another icon theme's icon; without a recognizer it renders an empty element (:78-79). The Inputs page drives its SpeechState from a Button of the showcase's own"
+SidebarToggleButton = "it would mix icon themes: it draws gpui-component's own `PanelLeftClose` or `PanelLeftOpen`, chosen as it renders with no setter (sidebar/mod.rs:358-369, :378; read in gpui-component 0.8.0), so under any other chosen icon theme it would show another icon theme's icon. The status bar's side-panel toggle is a Button whose `PanelLeft` comes from the chosen icon theme"
+SpeechButton = "it would mix icon themes: it draws gpui-component's own `Mic` or `Square`, chosen as it renders with no setter (speech/button.rs:96-100; read in gpui-component 0.8.0), so under any other chosen icon theme it would show another icon theme's icon; without a recognizer it renders an empty element (:78-79). The Inputs page drives its SpeechState from a Button of the showcase's own"
 TableCaption = "the caption below a `Table` (table/table.rs:610)"
 TableFooter = "the footer section of a `Table` (table/table.rs:283)"
-WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` root plugin and never constructed by the showcase, which is what the check counts as shown: `WindowState::decorate` wraps the window in `window_border()` (root.rs:552-560; read in gpui-component 0.7.3). A second, nested one would call `set_client_inset` again (window_border.rs:155), so the showcase builds none; the inspector's Theme tab states the facts of the one gpui-component draws"
+WindowBorder = "the window's own edge, drawn by gpui-component's `WindowState` root plugin and never constructed by the showcase, which is what the check counts as shown: `WindowState::decorate` wraps the window in `window_border()` (root.rs:552-560; read in gpui-component 0.8.0). A second, nested one would call `set_client_inset` again (window_border.rs:155), so the showcase builds none; the inspector's Theme tab states the facts of the one gpui-component draws"
 
 # A widget whose state the toolkit only builds fallibly, which the showcase
 # cannot hold without a panic path (v0.6.0-rc1 gpui-kit 0.7 rationale K12).
@@ -647,7 +648,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:724-728, hovered at :1197, border_color at :1061), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:842-848, a second is debug-asserted) and refines it after a group hover (:3454, :3473), so no style the application gives reaches the hovered edge; the model states no hovered button edge, and iced and egui keep button.border.color"
+reason = "in the hover capture: gpui-component gives a hovered Default Button its variant's edge, the `input` token (button/button.rs:737-748, hovered at :1203, border_color at :1067), which the connector maps from input.border.color; gpui keeps one hover style per element (gpui-pre src/elements/div.rs:842-848, a second is debug-asserted) and refines it after a group hover (:3454, :3473), so no style the application gives reaches the hovered edge; the model states no hovered button edge, and iced and egui keep button.border.color"
 keys = [
     "hover@basic.buttons.default.border",
 ]
@@ -870,7 +871,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "toolkit limit, with a trade-off: gpui-component draws a focused Input its own way, border_1 in the ring colour as a focus-state style a geometry refinement cannot reach (gpui-component 0.7.3 src/input/input.rs:771-775) and its own 3px ring outside that edge (src/styled.rs:11, :257-262, :301-327, called at src/input/input.rs:819), and cannot draw the theme's inset ring in a focus state; Input::focus_bordered(false) (src/input/input.rs:311-314) would drop both, leaving no focus display, so the connector keeps upstream's and adwaita's translucent inset ring ($focus_border_color, docs/platform-facts.md section 2.1.5) is two layers at the sampled edge in gpui, where iced (the ring as the field's border composited over its fill, styles::text_input; checked by the unit test contract::a_focused_borderless_input_draws_the_inset_focus_ring, as no capture was taken after the change: the next release asset run recaptures it) and egui (the ring stroked over the fill, connectors/native-theme-egui/src/plugin.rs:663) draw it once over the fill as libadwaita does; recorded as the gpui contract's UPSTREAM_LIMITS entry; that 1px edge, over the 0 adwaita's input.border.line_width states, also lays the focused field's text a pixel further in than iced's and egui's, which pad it by the stated padding alone"
+reason = "toolkit limit, with a trade-off: gpui-component draws a focused Input its own way, border_1 in the ring colour as a focus-state style a geometry refinement cannot reach (gpui-component 0.8.0 src/input/input.rs:771-775) and its own 3px ring outside that edge (src/styled.rs:11, :257-262, :301-327, called at src/input/input.rs:819), and cannot draw the theme's inset ring in a focus state; Input::focus_bordered(false) (src/input/input.rs:311-314) would drop both, leaving no focus display, so the connector keeps upstream's and adwaita's translucent inset ring ($focus_border_color, docs/platform-facts.md section 2.1.5) is two layers at the sampled edge in gpui, where iced (the ring as the field's border composited over its fill, styles::text_input; checked by the unit test contract::a_focused_borderless_input_draws_the_inset_focus_ring, as no capture was taken after the change: the next release asset run recaptures it) and egui (the ring stroked over the fill, connectors/native-theme-egui/src/plugin.rs:663) draw it once over the fill as libadwaita does; recorded as the gpui contract's UPSTREAM_LIMITS entry; that 1px edge, over the 0 adwaita's input.border.line_width states, also lays the focused field's text a pixel further in than iced's and egui's, which pad it by the stated padding alone"
 keys = [
     "rest@adwaita:basic.text_inputs.focused.border",
     "rest@adwaita:basic.text_inputs.focused.text.x",
@@ -984,7 +985,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence: kde-breeze, material-3 and catppuccin-mocha state no segmented_control.border.padding_* (None), so a segment is its label and each toolkit's own side padding (gpui: upstream's 12 for a segment at the default Size, gpui-component tab/tab.rs:73-80, TabVariant::inner_paddings; iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; egui: button_padding in the segmented-control scope, egui-0.36.2/src/style.rs:1458); on kde-breeze and catppuccin-mocha gpui's three segments so padded are wider than the Basic page's column, so its row wraps, as a row wider than its column does in all three, and the control is two lines tall, the third segment and the line before it on the second"
+reason = "theme silence: kde-breeze, material-3 and catppuccin-mocha state no segmented_control.border.padding_* (None), so a segment is its label and each toolkit's own side padding (gpui: upstream's 12 for a segment at the default Size, gpui-component tab/tab.rs:113-118, TabVariant::inner_paddings; iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; egui: button_padding in the segmented-control scope, egui-0.36.2/src/style.rs:1458); on kde-breeze and catppuccin-mocha gpui's three segments so padded are wider than the Basic page's column, so its row wraps, as a row wider than its column does in all three, and the control is two lines tall, the third segment and the line before it on the second"
 keys = [
     "catppuccin-mocha:basic.segmented.control.h",
     "kde-breeze:basic.segmented.control.h",
@@ -1002,7 +1003,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "a sum: the card follows the segmented control, which on kde-breeze and catppuccin-mocha is two lines tall in gpui for the reason basic.segmented.control.h gives (no segmented_control.border.padding_* stated there, so gpui-component's own 12 per side, tab/tab.rs:73-80) | sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material-3 and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
+reason = "a sum: the card follows the segmented control, which on kde-breeze and catppuccin-mocha is two lines tall in gpui for the reason basic.segmented.control.h gives (no segmented_control.border.padding_* stated there, so gpui-component's own 12 per side, tab/tab.rs:113-118) | sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material-3 and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
 keys = [
     "catppuccin-mocha:basic.card.heading.y",
     "kde-breeze:basic.card.heading.y",
@@ -1029,13 +1030,13 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:602-603, Scrollbar::vertical), so the dump has no rectangle for it; the bar is drawn"
+reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:612-613, Scrollbar::vertical), so the dump has no rectangle for it; the bar is drawn"
 keys = [
     "basic.list.scrollbar.present",
 ]
 
 [[parity.group]]
-reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:602-603, Scrollbar::vertical), so the dump has no rectangle for it; the bar is drawn | the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
+reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:612-613, Scrollbar::vertical), so the dump has no rectangle for it; the bar is drawn | the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
     "catppuccin-mocha:basic.list.scrollbar.h",
     "kde-breeze:basic.list.scrollbar.h",
@@ -1043,13 +1044,13 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:602-603, Scrollbar::vertical), so the dump has no rectangle for its thumb; the thumb is drawn"
+reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:612-613, Scrollbar::vertical), so the dump has no rectangle for its thumb; the thumb is drawn"
 keys = [
     "basic.list.scrollbar.thumb.present",
 ]
 
 [[parity.group]]
-reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:602-603, Scrollbar::vertical), so the dump has no rectangle for its thumb; the thumb is drawn | the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow"
+reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:612-613, Scrollbar::vertical), so the dump has no rectangle for its thumb; the thumb is drawn | the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow"
 keys = [
     "adwaita:basic.list.scrollbar.thumb.h",
     "material-3:basic.list.scrollbar.thumb.h",

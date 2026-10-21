@@ -610,10 +610,10 @@ pub fn switch(
     native: Option<&ResolvedTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch");
-    // A disabled Switch fades its track alone, to half alpha (switch.rs:189);
+    // A disabled Switch fades its track alone, to half alpha (switch.rs:190);
     // the disabled style is resolved after the checked one (gpui-base
     // switch.rs:117-127). The checked track is the colour `Switch::color`
-    // was handed, primary where it was handed none (switch.rs:180-183).
+    // was handed, primary where it was handed none (switch.rs:181-184).
     let info = match (checked, disabled, native) {
         (true, false, Some(r)) => info.color(claim(
             "on track",
@@ -685,7 +685,7 @@ pub fn switch(
         info
     };
     // The track takes the theme's radius only under 4px; from 4px up it is
-    // rounded by its own height (switch.rs:204-208).
+    // rounded by its own height (switch.rs:205-209).
     let info = if t.radius.as_f32() < 4.0 {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     } else {

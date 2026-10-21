@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.3,
-//! gpui-base 0.7.3 and gpui-pre 0.3.9.
+//! Upstream citations in this module are verified against gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -463,7 +463,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     // `SegmentedControlTheme` is the model's struct for exactly this control,
     // so the token takes its background (Issue 42). The active segment is not
     // reachable: upstream fills it with `tokens.background`
-    // (`tab/tab.rs:249`) and labels it `tab_active_foreground` (`:247`).
+    // (`tab/tab.rs:301`) and labels it `tab_active_foreground` (`:299`).
     tc.tab_bar_segmented = c.segmented_bg;
     tc.tab_foreground = c.tab_fg;
 
@@ -1229,7 +1229,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.7.3 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.8.0 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();

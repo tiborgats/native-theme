@@ -3811,6 +3811,21 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 - [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
       M8 T21 (2026-10-17): `named_image`: M9c; the parity items are the G1/G2 section's (M9a), not repeated here.
 
+### egui showcase: its gpui-component citations miss the code they name
+
+- [ ] [v0.7.0] For M9c (G3 Task 3b, 2026-10-21): four `GC/` citations in the egui showcase
+      point at other code, at gpui-component 0.7.3 already and at 0.8.0, which the
+      workspace builds now. Their 0.8.0 lines, read in the registry's gpui-component 0.8.0:
+      - `connectors/native-theme-egui/examples/showcase-egui/chrome.rs`, `page_tabs`' doc,
+        the tab bar's page menu: `GC/tab/tab_bar.rs:554-584` (the tab row) is `:699-732`,
+        `TabBar::render`'s Ghost `menu` Button, the selected tab's item `checked`.
+      - The same file, the doc of the dialog title row: `GC/dialog/dialog.rs:696-701` is
+        `:749-756` (the `DialogTitle`) and `:789-804` (the Ghost close button,
+        `IconName::Close`).
+      - `connectors/native-theme-egui/examples/showcase-egui/demo.rs`, `GHOST_NOTE` and the
+        `ghost` scope's doc: `GC/button/button.rs:973, :1063` is `:1008` (`bg_color`'s
+        `Ghost` arm, `transparent`) and `:1098` (`border_color`'s).
+
 ---
 
 ## Post-1.0

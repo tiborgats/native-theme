@@ -44,8 +44,8 @@
 //! * a size the theme does not state keeps gpui-component's own value, named
 //!   as a constant with its upstream line.
 //!
-//! Upstream citations are verified against gpui-component 0.7.3, gpui-base
-//! 0.7.3 and gpui-pre 0.3.9.
+//! Upstream citations are verified against gpui-component 0.8.0, gpui-base
+//! 0.8.0 and gpui-pre 0.3.9.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
 /// writes it (gpui-pre-macros `derive_into_element.rs`). Written out, so the

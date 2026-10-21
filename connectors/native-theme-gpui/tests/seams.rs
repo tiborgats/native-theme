@@ -458,7 +458,7 @@ seam!(
 /// The tooltip's seam is a width, and the text has to keep to it.
 ///
 /// A tooltip's text sits in a bare `div()` inside upstream's `h_flex()`
-/// (`src/tooltip.rs:127-133`), so it is a flex item with an automatic minimum
+/// (`src/tooltip.rs:131-137`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
 /// width (`gpui-pre-0.3.9/src/elements/text.rs:656-663`). The item's minimum is
@@ -533,7 +533,7 @@ fn two_line_tooltip(
 /// are spaced by the line height the bubble gives the text: the platform's
 /// `defaults.line_height`, which `geometry::tooltip` carries, not gpui's
 /// default, the golden ratio (gpui-pre `src/style.rs:494`), which upstream's
-/// tooltip leaves in place (`src/tooltip.rs:110-133` sets none).
+/// tooltip leaves in place (`src/tooltip.rs:114-137` sets none).
 #[gpui::test]
 fn wrapped_tooltip_text_takes_the_platform_line_height(cx: &mut TestAppContext) {
     let r = resolved(LINE_HEIGHT_PRESET);
@@ -942,7 +942,7 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:803`): at least
+/// Left in, the refinement's padding would reach the root (`:816`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]

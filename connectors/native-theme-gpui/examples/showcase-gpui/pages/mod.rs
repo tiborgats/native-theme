@@ -27,12 +27,12 @@ pub(crate) const ICON_GRID_GAP: Rems = rems(0.5);
 
 /// How far upstream draws a Badge's count past its Button's right edge, a
 /// character at a time: a Medium count, `Badge::new`'s size, is placed
-/// `-3px * len` from the right (gpui-component 0.7.3 `badge.rs:137-141`,
+/// `-3px * len` from the right (gpui-component 0.8.0 `badge.rs:137-141`,
 /// the `Size::Medium` arm; `Size::Medium` is the default, `sizing.rs:9-10`).
 pub(crate) const BADGE_COUNT_OVERHANG: Pixels = px(3.);
 
 /// The highest count a Badge prints as it is: above it, `99+`
-/// (gpui-component 0.7.3 `badge.rs:46`, `:130-134`).
+/// (gpui-component 0.8.0 `badge.rs:46`, `:130-134`).
 const BADGE_MAX: usize = 99;
 
 /// How far the count a Badge shows for `count` stands past its Button's
@@ -53,7 +53,7 @@ pub(crate) fn badge_count_overhang(count: Option<usize>) -> Pixels {
 /// The room the Layout page leaves on either side of the Carousel: the
 /// showcase's own, gpui's `px_16`, as the theme states no distance for it.
 /// Upstream places the Previous and Next Buttons outside the frame, a
-/// `mr_4`/`ml_4` margin past its edge (gpui-component 0.7.3
+/// `mr_4`/`ml_4` margin past its edge (gpui-component 0.8.0
 /// `carousel/carousel.rs:780-785`), so the page keeps a Button's width free
 /// there (spec §3.1). The Carousel's info says so.
 pub(crate) const CAROUSEL_SIDE_ROOM: Rems = rems(4.);

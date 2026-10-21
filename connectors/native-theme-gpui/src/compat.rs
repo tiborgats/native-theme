@@ -108,7 +108,7 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// version of its own.
 ///
 /// Three shapes appear in this workspace: `iced_core = "0.14"`,
-/// `gpui-kit = { version = "0.7.3", features = [..] }` and
+/// `gpui-kit = { version = "0.8.0", features = [..] }` and
 /// `gpui = { package = "gpui-pre", version = "0.3.9" }`, whose package name is
 /// not its key. A dependency inherited from the workspace
 /// (`native-theme = { workspace = true }`) states no version and is not one of

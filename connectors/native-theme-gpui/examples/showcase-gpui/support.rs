@@ -296,12 +296,13 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 }
 
 /// A box `id` that scrolls `content` vertically: the structure
-/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:147-196, a
+/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:153-206, a
 /// root the caller sizes, a scroll area filling it, the content at least the
-/// area's height, the scrollbar laid over the root), on the application's
+/// area's height, the scrollbar laid over the root; this one leaves out the
+/// `gpui_base::ScrollBounce` 0.8.0 wraps the area in, :187-194), on the application's
 /// own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
 /// free only while it overflows the area. gpui-base hides the bar while the
-/// content fits (gpui-base src/scrollbar.rs:1402-1406), and the platform's
+/// content fits (gpui-base src/scrollbar.rs:1416-1419), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
 /// overflow; a frame whose layout changes it calls `relayout`, which asks
 /// the view for another frame.
@@ -510,7 +511,7 @@ pub(crate) fn role_for_gpui_icon(icon: &IconName) -> Option<IconRole> {
     })
 }
 
-/// The 106 gpui-component 0.7.3 IconName variants shown in the gallery.
+/// The 106 gpui-component 0.8.0 IconName variants shown in the gallery.
 pub(crate) const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
@@ -900,7 +901,7 @@ impl SampleTableDelegate {
             }
             TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
             // A right-clicked cell clears the right-clicked row (table/
-            // state.rs:820). Only a `cell_selectable` table emits it.
+            // state.rs:845). Only a `cell_selectable` table emits it.
             TableEvent::RightClickedCell(..) => self.right_clicked_row = None,
             _ => {}
         }

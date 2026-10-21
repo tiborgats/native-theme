@@ -10,8 +10,8 @@
 //! rebuild also carries 0.7.0's plot theme (`:455`), which this module leaves
 //! as upstream projects it.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.3,
-//! gpui-base 0.7.3 and gpui-pre 0.3.9.
+//! Upstream citations in this module are verified against gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
@@ -39,7 +39,7 @@ pub struct ScrollbarGeometry {
     pub thumb_width: Pixels,
     /// `((groove_width − thumb_width) / 2).max(0)`: centres the thumb, which
     /// gpui-base anchors `inset` from the track's outer edge
-    /// (gpui-base `src/scrollbar.rs:1200-1231`, painted at `:1505-1530`: 0.6.4
+    /// (gpui-base `src/scrollbar.rs:1209-1240`, painted at `:1520-1545`: 0.6.4
     /// moved the arithmetic into a private `ThumbGeometry`, which subtracts
     /// `2 × inset` from the thumb length and clamps the inset to half of it).
     /// [`scrollbar_styles`] therefore passes `min_thumb_length + 2 × inset` as
@@ -126,7 +126,7 @@ pub fn scrollbar_styles(g: &ScrollbarGeometry) -> ScrollbarStyles {
 
 /// The `min_length` gpui-base takes for the thumb: `min_thumb_length` and the
 /// inset at both ends, which gpui-base takes off the clamped length
-/// (`src/scrollbar.rs:1211-1216`), so the drawn thumb is at least the stated
+/// (`src/scrollbar.rs:1220-1225`), so the drawn thumb is at least the stated
 /// minimum.
 fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
     px(f32::from(g.min_thumb_length) + 2.0 * f32::from(g.thumb_inset))
@@ -143,12 +143,12 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// `gpui_kit::base::h_resizable` / `v_resizable`), which install no renderer
 /// (gpui-base `src/resizable/resize_handle.rs:357-384`) — the splitter's
 /// colours at that 1 px width, not `splitter.divider_width`, the hover colour
-/// only while the handle is dragged. They do not reach gpui-component 0.7.3's
+/// only while the handle is dragged. They do not reach gpui-component 0.8.0's
 /// `h_resizable` / `v_resizable`, which install gpui-component's own
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:28-31, 108, 119-126`), nor `Settings`'
 /// divider or the dock's edges, which install it internally
-/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:143`).
+/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:144`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
     ResizableTheme {
@@ -246,7 +246,7 @@ mod tests {
     }
 
     /// gpui-base clamps the thumb's length to `min_length` and then draws it
-    /// `2 × inset` shorter (`src/scrollbar.rs:1211-1216`), so the drawn
+    /// `2 × inset` shorter (`src/scrollbar.rs:1220-1225`), so the drawn
     /// minimum is the stated one only when `min_length` pays for both insets.
     #[test]
     fn the_drawn_thumb_is_at_least_the_stated_minimum() {

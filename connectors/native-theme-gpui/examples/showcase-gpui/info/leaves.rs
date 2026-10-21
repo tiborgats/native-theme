@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.7.3,
-//! gpui-base 0.7.3 and gpui-pre 0.3.9.
+//! is drawn instead. Upstream citations are to gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;

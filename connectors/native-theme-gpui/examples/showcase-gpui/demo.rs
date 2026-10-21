@@ -212,7 +212,7 @@ const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
 /// A menu row's side padding where `menu.border.padding` states no side,
 /// and its height where neither `menu.row_height` nor a vertical padding
 /// side is stated: upstream's `PopupMenu` row at the default Size
-/// (menu/popup_menu.rs:1236, `INNER_PADDING`; :1241, the item height). The
+/// (menu/popup_menu.rs:1236, `INNER_PADDING`; :1242, the item height). The
 /// height takes the connector's control-height rule (geometry.rs,
 /// `with_height_rule`): it is the row's height at a text scale of 1 or less
 /// and its minimum above.
@@ -221,7 +221,7 @@ pub(crate) const MENU_ROW_HEIGHT: Pixels = px(26.);
 
 /// What upstream's `PopupMenu` leaves round and between its rows, and
 /// between a row's label and its shortcut (menu/popup_menu.rs:1516-1518,
-/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1344, `gap_3`); the model states
+/// `p_1`, `gap_y_0p5`, `min_w(rems(8.))`; :1354, `gap_3`); the model states
 /// none of them.
 const MENU_POPUP_PADDING: Rems = rems(0.25);
 const MENU_POPUP_ROW_GAP: Rems = rems(0.125);
@@ -237,7 +237,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.7.3 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.8.0 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -1141,7 +1141,7 @@ pub(crate) struct ToolbarButton<'a> {
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
-/// (button/button.rs:626-629, 730-734), and the size an `Icon` is given last
+/// (button/button.rs:626-629, 773-778), and the size an `Icon` is given last
 /// wins over its style (icon.rs:187-193).
 pub(crate) fn toolbar_button(
     ui: &Entity<InfoRegistry>,
@@ -1211,7 +1211,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.7.3's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.8.0's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap, padding sides and bottom edge the theme states, and no
 /// fallback, since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
@@ -1721,7 +1721,7 @@ pub(crate) enum TabBarKind {
 /// the index of the tab clicked.
 ///
 /// Upstream's Underline bar pads neither itself nor its tabs (tab/tab.rs:
-/// 79-81, tab/tab_bar.rs:412-421), leaving the inset to its container, so
+/// 121-122, tab/tab_bar.rs:412-421), leaving the inset to its container, so
 /// the bar takes `container_margin`, the installed layout's
 /// `geometry::container_margin`, on its left and right, as the side panel's
 /// settings and the inspector's content do. Its bottom rule is drawn by an
@@ -2074,7 +2074,7 @@ pub(crate) fn tab_row(
 }
 
 /// A segment's side padding where `segmented_control.border` states none:
-/// upstream's own for a segment at the default Size (tab/tab.rs:73-80,
+/// upstream's own for a segment at the default Size (tab/tab.rs:113-118,
 /// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.
 pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 
@@ -3644,19 +3644,19 @@ pub(crate) struct StepIcons {
 ///
 /// Under a native theme, gpui-component's `NumberInput` rebuilt over the
 /// unstyled spin button it composes (`gpui_base::NumberInput`,
-/// input/number_input.rs:113-201), with what the theme states for a text
+/// input/number_input.rs:125-216), with what the theme states for a text
 /// field where upstream sets literals no caller reaches: the frame is
 /// `input.background_color` edged by `input.border` (colour, width, radius)
 /// at `geometry::input`'s height, in `input.hover_border_color` under the
 /// pointer and `input.focus_border_color` while focused; the value is an
 /// `Input` padded by `input.border.padding` in `input.font`. Upstream's
-/// fills its frame with its `input_background` (:113-114) and pads its value
-/// by its Size (:158-165). The theme states no spin-box layout: the value
+/// fills its frame with its `input_background` (:125-126) and pads its value
+/// by its Size (:173-180). The theme states no spin-box layout: the value
 /// starts at the field's padding and the step buttons stack at its right
 /// end (gpui-base's `controls_right`), as the desktops' spin boxes lay them
 /// out (Qt's QSpinBox, GTK's GtkSpinButton), where upstream's centres the
-/// value between − and + (:158-165); the buttons are upstream's otherwise
-/// (:116-156), each showing its chevron of `steps`, the chosen icon theme's
+/// value between − and + (:173-180); the buttons are upstream's otherwise
+/// (:128-171), each showing its chevron of `steps`, the chosen icon theme's
 /// at `geometry::icon_size_small`, or none where that theme has none.
 /// Without a native theme, upstream's `NumberInput`, which draws its own
 /// Minus and Plus.
@@ -4768,7 +4768,7 @@ pub(crate) fn tree(
 /// (`list_row_item`, `row_label`).
 ///
 /// `Tree::new` takes a closure that returns the `ListItem` itself and wraps
-/// it in a box of its own (tree.rs:41-44, 87-93), so nothing can be put
+/// it in a box of its own (tree.rs:42-45, 98-104), so nothing can be put
 /// around the row. Its info target is its suffix instead: `ListItem` puts
 /// the suffix straight into its root, which is `relative()`
 /// (list/list_item.rs:199, 233), so an absolute box there covers the
