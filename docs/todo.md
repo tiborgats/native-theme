@@ -3510,6 +3510,30 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       blocking hover and tooltips for everything behind that box; a consumer
       cannot get scroll chaining (the page moving on once the inner scroller
       reaches its end), because nothing reports that end to the ancestor.
+      G3 T5 (2026-10-22): gpui-component 0.8.0 wraps each of its scrolling
+      widgets in gpui-base's `ScrollBounce` (`src/scroll/scrollable.rs:188`,
+      `src/list/list.rs:603`, `src/tree.rs:127`, `src/table/state.rs:2727`,
+      `src/diff/mod.rs:557`, `src/message_scroller.rs:383`,
+      `src/setting/page.rs:233`, `src/sidebar/mod.rs:455`,
+      `src/command/state.rs:1033`), which keeps the wheel: in the capture
+      phase the innermost area under the pointer that can scroll claims it
+      and stops its propagation (gpui-base 0.8.0 `src/scroll_bounce.rs:248-270`,
+      `:556-610`); gpui-base's editor claims it in the capture phase too, and
+      scrolls and stops it in the bubble phase, before the page's listener
+      (`src/input/base/element.rs:478-495`, `src/input/base/state.rs:2706-2776`).
+      So none of the gpui showcase's eight scroll `.occlude()`s remains (the
+      DataTable, List, Tree, MessageScroller, Scrollable Area, Settings frame,
+      code Editor and Diff), each removed alone behind
+      `a_nested_scroller_keeps_the_wheel_to_itself` on both cores. The
+      Settings frame is GPUI's own `overflow_y_scroll` div, but the Settings
+      fills it, so the frame never scrolls; what does is the Settings' page
+      list, wrapped at `setting/page.rs:233`. Still open: scroll chaining (at its
+      end the inner area stretches instead of handing over, upstream's test
+      `the_innermost_area_takes_the_whole_gesture`, gpui-base
+      `src/scroll_bounce.rs:970`), and GPUI's own `overflow_*_scroll` divs,
+      whose listener still moves every scroller under the pointer, so a
+      nested one still needs `.occlude()` (the test fails, on both cores,
+      with the Scrollable Area's viewport made such a div and not occluded).
 - [ ] [upstream] Additional PRs as gaps are discovered during connector implementation
 - [ ] [upstream] Report: a single-select `Combobox` misses a change after a search.
       It decides that the selection changed by comparing the selection's

@@ -4289,10 +4289,7 @@ pub(crate) fn data_table(
         )
         .native(cx, geometry::table)
         .h(height)
-        // gpui's scroll listeners run in the bubble phase and stop at no one,
-        // so without this the page under the table scrolls by the same delta
-        // (div.rs, paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse).
-        .occlude()
+        .debug_selector(move || id.into())
 }
 
 /// What a row of the Data page's `DataTable` is, as the table paints it.
@@ -4525,11 +4522,6 @@ pub(crate) fn list(
     .child(List::new(state))
     .info(ui, id, list_info)
     .self_start()
-    // gpui's scroll listeners run in the bubble phase and stop at no one, so
-    // without this the page under the List scrolls by the same delta (div.rs,
-    // paint_scroll_listener; window.rs, HitboxBehavior::BlockMouse). Every
-    // demo box that holds a scroller of its own carries it.
-    .occlude()
     .debug_selector(move || selector.into())
 }
 
@@ -4758,8 +4750,6 @@ pub(crate) fn tree(
     }))
     .info(ui, id, tree_info)
     .self_start()
-    // As the List's box: the Tree scrolls on its own.
-    .occlude()
     .debug_selector(|| TREE_DEMO.into())
 }
 
@@ -4975,8 +4965,7 @@ pub(crate) fn message_scroller(
         .demo_frame(cx)
         .child(scroller)
         .info(ui, id, info::data::message_scroller(t, messages.len()))
-        // As the List's box: the thread scrolls on its own.
-        .occlude()
+        .debug_selector(move || id.into())
 }
 
 /// The Default Button reading `label`, refined by `geometry::button`, that
@@ -6499,11 +6488,6 @@ pub(crate) fn scroll_area(
         .debug_selector(move || format!("{id}-frame"))
         .child(viewport)
         .info(ui, id, area_info)
-        // A scroller inside the page's own takes the pointer out of the page's
-        // hit test, or a wheel turned here would scroll both (gpui-pre
-        // window.rs, HitboxBehavior::BlockMouse). On the wrapper, not the
-        // scroller: an occluding scroller would hide its wrapper's hover.
-        .occlude()
         .debug_selector(move || id.into())
 }
 

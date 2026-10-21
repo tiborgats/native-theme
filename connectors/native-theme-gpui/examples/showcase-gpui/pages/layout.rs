@@ -479,7 +479,6 @@ impl Showcase {
                     .debug_selector(|| "settings-frame".into())
                     .h(px(320.0))
                     .w_full()
-                    .occlude()
                     .demo_frame(cx)
                     .overflow_y_scroll()
                     .child(demo::settings(ui, cx, "layout-settings")),

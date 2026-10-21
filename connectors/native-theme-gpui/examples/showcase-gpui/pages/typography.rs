@@ -223,9 +223,13 @@ impl Showcase {
                 "typography-heading-editor",
                 "Code editor (Rust)",
             ))
-            .child(
-                demo::editor(ui, cx, "typography-editor", &self.editor_state, px(240.0)).occlude(),
-            )
+            .child(demo::editor(
+                ui,
+                cx,
+                "typography-editor",
+                &self.editor_state,
+                px(240.0),
+            ))
             .child(demo::heading(
                 ui,
                 cx,
@@ -239,6 +243,12 @@ impl Showcase {
                 MARKDOWN_SAMPLE,
             ))
             .child(demo::heading(ui, cx, "typography-heading-diff", "Diff"))
-            .child(demo::diff(ui, cx, "typography-diff", &self.diff_state, px(240.0)).occlude())
+            .child(demo::diff(
+                ui,
+                cx,
+                "typography-diff",
+                &self.diff_state,
+                px(240.0),
+            ))
     }
 }

@@ -422,58 +422,202 @@ fn scroll_at(cx: &mut VisualTestContext, at: Point<Pixels>, delta: Pixels) {
     draw(cx);
 }
 
-/// A window tall enough to show the Data page's List and Tree demos without
-/// scrolling the page first, and still far shorter than that page, so the
-/// page has somewhere to scroll to.
-const NESTED_SCROLL_WINDOW: gpui::Size<Pixels> = size(WINDOW_SIZE.width, px(1500.));
+/// Scroll the page so the element tagged `selector` sits in the middle of
+/// the content pane, or as near to it as the page's ends allow, and return
+/// where it is then and the pane's bounds.
+fn centre_in_page(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    selector: &'static str,
+) -> (Bounds<Pixels>, Bounds<Pixels>) {
+    let site = bounds_of(cx, selector);
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            let pane = this.content_scroll.bounds();
+            let offset = this.content_scroll.offset();
+            let max = this.content_scroll.max_offset();
+            let y = (offset.y - (site.center().y - pane.center().y)).clamp(-max.y, px(0.));
+            this.content_scroll.set_offset(point(offset.x, y));
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(cx);
+    let pane = read(cx, showcase, |this, _| this.content_scroll.bounds());
+    (bounds_of(cx, selector), pane)
+}
 
-/// A wheel turned inside the List or the Tree scrolls that widget, not the
-/// page under it.
+/// Where a nested scroller's content is scrolled to, written with `{:?}`:
+/// `a_nested_scroller_keeps_the_wheel_to_itself` compares two of them for a
+/// change only.
+type ScrolledTo = fn(&mut VisualTestContext, &Entity<Showcase>) -> String;
+
+/// The Diff's lines that the left line-number column holds a quarter, half
+/// and three quarters of the way down the Diff, which a click there selects
+/// (gpui-component `diff/mod.rs:1318-1327`, `begin_line_selection`):
+/// `DiffState` has no public scroll offset, so the lines under fixed points
+/// stand for it. A point over a row with no line number (a file header, a
+/// hunk separator) selects none, so at least one of the three has to. The
+/// selection is cleared before each click, as a click on the selected line
+/// clears it instead.
+fn diff_lines_down_the_middle(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> String {
+    let diff = bounds_of(cx, "typography-diff");
+    let lines: Vec<_> = [0.25, 0.5, 0.75]
+        .into_iter()
+        .map(|down| {
+            cx.update(|_window, cx| {
+                let state = showcase.read(cx).diff_state.clone();
+                state.update(cx, |state, cx| state.set_selected_lines(None, cx));
+            });
+            click_at(
+                cx,
+                point(diff.left() + px(10.), diff.top() + diff.size.height * down),
+            );
+            read(cx, showcase, |this, cx| {
+                this.diff_state.read(cx).selected_lines()
+            })
+        })
+        .collect();
+    assert!(
+        lines.iter().any(Option::is_some),
+        "typography-diff: no click down its middle selected a line"
+    );
+    format!("{lines:?}")
+}
+
+/// A wheel turned inside a nested scroller scrolls that widget, not the page
+/// under it, at each of the showcase's eight: the DataTable, List, Tree and
+/// MessageScroller (Data page), the Scrollable Area and the Settings (Layout
+/// page), the code Editor and the Diff (Typography page).
 ///
-/// gpui's scroll listener runs in the bubble phase and stops at no one:
+/// gpui's own scroll listener runs in the bubble phase and stops at no one:
 /// every scroll container whose hitbox is under the pointer moves by the
-/// same delta (gpui-pre `src/elements/div.rs`, `paint_scroll_listener`,
-/// and `Hitbox::should_handle_scroll`). A nested scroller therefore has to
-/// take the pointer out of the ancestors' hit test, which is what
-/// `occlude` does (gpui-pre `src/window.rs`, `HitboxBehavior::BlockMouse`).
+/// same delta (gpui-pre `src/elements/div.rs`, `paint_scroll_listener`), and
+/// the page's is one (`support::gutter_scroll`). gpui-component 0.8.0 wraps
+/// each of its scrolling widgets in gpui-base's `ScrollBounce`: in the
+/// capture phase the innermost area under the pointer that can scroll claims
+/// the wheel, scrolls and stops its propagation (gpui-base
+/// `src/scroll_bounce.rs:248-270`, `:556-610`), so the page's listener never
+/// runs. gpui-base's editor claims it in the capture phase too, and scrolls
+/// and stops it in the bubble phase, before the page's listener, an outer
+/// element's (`src/input/base/element.rs:478-495`,
+/// `src/input/base/state.rs:2706-2776`). There is no chaining: at its end the
+/// inner area keeps the wheel. An inner area whose content fits lets it go
+/// (`scroll_bounce.rs:570`), so a site here is one whose content overflows.
+///
+/// Each site is centred in a 1280 x 720 window, its page scrolled to it, and
+/// turned once towards its end and once back. Neither turn may move the
+/// page, and one of them has to move the site's content while the page had
+/// room to move the same way, or the site proves nothing. The three sites at
+/// the end of their page (the MessageScroller, the Diff, the Settings) leave
+/// the page no room towards the end, so their turn back is that one.
 #[gpui::test]
 fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
-    let (showcase, _root, mut cx) = open(cx, NESTED_SCROLL_WINDOW);
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     // windows-11's list rows (40px) are the tallest any bundled preset
-    // states, so the six sample rows are certain to overflow the demo box.
+    // states, so the List's six sample rows and the Tree's are certain to
+    // overflow their 200px boxes; the other sites overflow under it too.
     use_preset(&mut cx, &showcase, "windows-11");
+
+    let sites: [(Page, &'static str, ScrolledTo); 8] = [
+        (Page::Data, "data-table", |cx, showcase| {
+            read(cx, showcase, |this, cx| {
+                let offset = this.table_state.read(cx).vertical_scroll_handle.offset();
+                format!("{:?}", offset.y)
+            })
+        }),
+        (Page::Data, LIST_DEMO, |cx, showcase| {
+            read(cx, showcase, |this, cx| {
+                format!("{:?}", this.list_state.read(cx).scroll_handle().offset().y)
+            })
+        }),
+        (Page::Data, TREE_DEMO, |cx, showcase| {
+            read(cx, showcase, |this, cx| {
+                format!("{:?}", this.tree_state.read(cx).scroll_handle().offset().y)
+            })
+        }),
+        (Page::Data, "data-message-scroller", |cx, showcase| {
+            read(cx, showcase, |this, cx| {
+                format!("{:?}", this.chat_scroller.read(cx).logical_scroll_top())
+            })
+        }),
+        // The area's own handle is the showcase's div's, which it does not
+        // keep, so its first item stands for it.
+        (Page::Layout, "layout-scroll-area", |cx, _| {
+            format!("{:?}", bounds_of(cx, "layout-scroll-area-item-1").top())
+        }),
+        // The frame's own `overflow_y_scroll` never moves: the Settings
+        // fills it. What scrolls is the Settings' page list
+        // (gpui-component `setting/page.rs:229-257`), whose first group
+        // holds the row probe.
+        (Page::Layout, "settings-frame", |cx, _| {
+            format!("{:?}", bounds_of(cx, PROBE_SETTINGS_ROW).top())
+        }),
+        (Page::Typography, "typography-editor", |cx, showcase| {
+            read(cx, showcase, |this, cx| {
+                format!("{:?}", this.editor_state.read(cx).scroll_offset().y)
+            })
+        }),
+        (
+            Page::Typography,
+            "typography-diff",
+            diff_lines_down_the_middle,
+        ),
+    ];
+
+    // The same turn over the page outside every nested scroller moves the
+    // page, so a page that stays put below is the scroller's doing.
     show(&mut cx, &showcase, Page::Data);
-    assert!(
-        bounds_of(&mut cx, PAGE_ROOT).size.height > NESTED_SCROLL_WINDOW.height,
-        "the Data page fits in the window, so the page could not scroll either way"
+    let (heading, _pane) = centre_in_page(&mut cx, &showcase, "data-heading-list");
+    let page_before = bounds_of(&mut cx, CONTENT_SCROLL).top();
+    scroll_at(&mut cx, heading.center(), -px(50.));
+    assert_ne!(
+        bounds_of(&mut cx, CONTENT_SCROLL).top(),
+        page_before,
+        "a wheel over the List's heading did not move the page"
     );
 
-    // How far each demo's own scroller has been scrolled, so the step can
-    // tell "the page stayed put because the list took the wheel" from
-    // "nothing moved at all".
-    type Offset = fn(&Showcase, &App) -> Pixels;
-    let list_offset: Offset = |this, cx| this.list_state.read(cx).scroll_handle().offset().y;
-    let tree_offset: Offset = |this, cx| this.tree_state.read(cx).scroll_handle().offset().y;
-
-    for (selector, inner) in [(LIST_DEMO, list_offset), (TREE_DEMO, tree_offset)] {
-        let demo = bounds_of(&mut cx, selector);
+    for (page, selector, scrolled_to) in sites {
+        show(&mut cx, &showcase, page);
+        let (site, pane) = centre_in_page(&mut cx, &showcase, selector);
         assert!(
-            demo.top() > px(0.) && demo.bottom() < NESTED_SCROLL_WINDOW.height,
-            "{selector}: is not on screen, it sits at {demo:?}"
+            pane.top() <= site.top() && site.bottom() <= pane.bottom(),
+            "{selector}: is not wholly in the content pane {pane:?}, it sits at {site:?}"
         );
-        let page_before = bounds_of(&mut cx, CONTENT_SCROLL).top();
-        let inner_before = read(&mut cx, &showcase, inner);
-        scroll_at(&mut cx, demo.center(), -demo.size.height / 4.);
-        let page_after = bounds_of(&mut cx, CONTENT_SCROLL).top();
-        let inner_after = read(&mut cx, &showcase, inner);
-        assert_ne!(
-            inner_after, inner_before,
-            "{selector}: its own scroller did not move, so this step proves nothing"
-        );
-        assert_eq!(
-            page_after, page_before,
-            "{selector}: the wheel moved the page from {page_before:?} to {page_after:?} \
-                 while the widget under the pointer still had room to scroll"
+        let mut proved = false;
+        for towards_end in [true, false] {
+            let (offset, max) = read(&mut cx, &showcase, |this, _| {
+                (
+                    this.content_scroll.offset(),
+                    this.content_scroll.max_offset(),
+                )
+            });
+            let page_had_room = if towards_end {
+                offset.y > -max.y
+            } else {
+                offset.y < px(0.)
+            };
+            let page_before = bounds_of(&mut cx, CONTENT_SCROLL).top();
+            let inner_before = scrolled_to(&mut cx, &showcase);
+            let delta = site.size.height / 4.;
+            scroll_at(
+                &mut cx,
+                site.center(),
+                if towards_end { -delta } else { delta },
+            );
+            let inner_after = scrolled_to(&mut cx, &showcase);
+            let page_after = bounds_of(&mut cx, CONTENT_SCROLL).top();
+            assert_eq!(
+                page_after, page_before,
+                "{selector}: the wheel moved the page from {page_before:?} to {page_after:?} \
+                 while it was over a widget that scrolls"
+            );
+            proved |= page_had_room && inner_after != inner_before;
+        }
+        assert!(
+            proved,
+            "{selector}: no turn of the wheel moved its content while the page had room \
+             to move the same way, so this site proves nothing"
         );
     }
 }
