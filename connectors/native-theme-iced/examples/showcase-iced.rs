@@ -6525,7 +6525,16 @@ fn about(state: &State) -> Element<'_, Message> {
 // Hover helper: wraps a widget in mouse_area for Widget Info updates
 // ---------------------------------------------------------------------------
 
+#[cfg(test)]
+thread_local! {
+    /// Every page widget's Widget Info a view built, for the tests to read.
+    static BUILT_INFOS: std::cell::RefCell<Vec<String>> =
+        const { std::cell::RefCell::new(Vec::new()) };
+}
+
 fn hoverable<'a>(info: String, content: Element<'a, Message>) -> Element<'a, Message> {
+    #[cfg(test)]
+    BUILT_INFOS.with(|infos| infos.borrow_mut().push(info.clone()));
     mouse_area(content)
         .on_enter(Message::WidgetHovered(info))
         .on_exit(Message::WidgetUnhovered)
@@ -6539,12 +6548,14 @@ fn hoverable<'a>(info: String, content: Element<'a, Message>) -> Element<'a, Mes
 /// Build a multi-line info string for the Widget Info panel, with three of
 /// the sections the gpui showcase's `WidgetInfo::to_text` writes (that one
 /// adds a "This instance" section and a citation after each colour):
-/// - Theme colors: (role, field_name, live hex color)
+/// - Theme colors: a [`Paint`] per colour, its role, what paints it and the
+///   hex painted -- or, for an edge 0 wide, "not drawn" and the leaf that
+///   makes it so, with no hex: a zero-width edge is not drawn in its colour
 /// - Theme config: (what, live_value_string)
 /// - Not themeable: (what, reason why)
 fn widget_tooltip(
     name: &str,
-    colors: &[(&str, &str, Color)],
+    colors: &[Paint],
     config: &[(&str, &str)],
     not_themeable: &[(&str, &str)],
 ) -> String {
@@ -6552,8 +6563,13 @@ fn widget_tooltip(
 
     if !colors.is_empty() {
         s.push_str("\nTheme colors:\n");
-        for (role, field, val) in colors {
-            s.push_str(&format!("  {role}: {field} {}\n", color_to_hex(*val)));
+        for paint in colors {
+            let shown = match paint.ink {
+                Ink::Fill(color) => format!(" {}", color_to_hex(color)),
+                Ink::Edge { color, width } if width > 0.0 => format!(" {}", color_to_hex(color)),
+                Ink::Edge { .. } => format!(", not drawn ({})", paint.zero),
+            };
+            s.push_str(&format!("  {}: {}{shown}\n", paint.role, paint.source));
         }
     }
 
@@ -6574,32 +6590,406 @@ fn widget_tooltip(
     s
 }
 
-/// Like [`widget_tooltip`] but appends the active theme font settings.
+/// Like [`widget_tooltip`] but appends the active theme font settings: the
+/// sizes text is drawn at, the theme's times the OS text-scaling factor, with
+/// the theme's own beside them where the factor is not 1, as the Display
+/// page's font line gives them.
 fn widget_tooltip_themed(
     state: &State,
     name: &str,
-    colors: &[(&str, &str, Color)],
+    colors: &[Paint],
     config: &[(&str, &str)],
     not_themeable: &[(&str, &str)],
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
     let resolved = &state.current_resolved;
+    let a11y = &state.accessibility;
+    let size = |drawn: f32, stated: f32| {
+        if drawn == stated {
+            format!("{stated:.0}px")
+        } else {
+            format!(
+                "{drawn:.1}px (OS text scaling {:.2}: the theme states {stated:.1}px)",
+                a11y.text_scaling_factor
+            )
+        }
+    };
     let ff = family_label(
         &resolved.defaults.font.family,
         resolved_family(&resolved.defaults.font),
         &font_drawn(&resolved.defaults.font),
     );
-    let fs = format!("{:.0}px", state.current_resolved.defaults.font.size);
+    let fs = size(
+        native_theme_iced::font_size(resolved, a11y),
+        resolved.defaults.font.size,
+    );
     let mf = family_label(
         &resolved.defaults.mono_font.family,
         resolved_family(&resolved.defaults.mono_font),
         &mono_drawn(resolved),
     );
-    let ms = format!("{:.0}px", state.current_resolved.defaults.mono_font.size);
+    let ms = size(
+        native_theme_iced::mono_font_size(resolved, a11y),
+        resolved.defaults.mono_font.size,
+    );
     s.push_str(&format!(
         "\nTheme fonts:\n  Font: {ff} {fs}\n  Mono: {mf} {ms}\n"
     ));
     s
+}
+
+/// One colour row of a page widget's Widget Info: what it colours, what
+/// paints it, and what is painted.
+struct Paint {
+    role: &'static str,
+    /// The style function's row (`styles::<fn>.<field>`), its status and the
+    /// leaves that move it there, as the contract's export records them; or
+    /// what the showcase, or iced from a palette slot, paints it from.
+    source: String,
+    ink: Ink,
+    /// Why an edge is 0 wide where it is: the leaves that make it so, each
+    /// with its value (`<table>.border.line_width 0`, `<leaf> unstated`).
+    zero: String,
+}
+
+impl Paint {
+    /// A colour painted straight from what `source` names.
+    fn leaf(role: &'static str, source: impl Into<String>, color: Color) -> Self {
+        Self {
+            role,
+            source: source.into(),
+            ink: Ink::Fill(color),
+            zero: String::new(),
+        }
+    }
+}
+
+/// The rows of `function` (`styles::<fn>`) that `rows` names, each as its
+/// role and the export's field name, from what `style` -- the function as
+/// the page calls it -- paints at `status`, on the installed theme. `zero`
+/// is why an edge among them is 0 wide where it is.
+fn style_paints<S: Copy + std::fmt::Debug, O>(
+    state: &State,
+    function: &str,
+    style: impl Fn(&Theme, S) -> O,
+    inks: fn(&O) -> Vec<(&'static str, Ink)>,
+    status: S,
+    rows: &[(&'static str, &'static str)],
+    zero: &str,
+) -> Vec<Paint> {
+    let painted = inks(&style(&state.current_theme, status));
+    let status = Some(format!("{status:?}")).filter(|s| s != "()");
+    let installed = state.installed_combination();
+    rows.iter()
+        .filter_map(|&(role, field)| {
+            let (_, ink) = painted.iter().find(|(f, _)| *f == field)?;
+            let row = format!("{function}.{field}");
+            let mut source = row.clone();
+            if let Some(status) = &status {
+                source.push_str(&format!(" ({status})"));
+            }
+            source.push_str(&moved_by(&row, status.as_deref(), installed.as_deref()));
+            Some(Paint {
+                role,
+                source,
+                ink: *ink,
+                zero: zero.to_owned(),
+            })
+        })
+        .collect()
+}
+
+/// What a colour row's text says after the row and its status: the colour
+/// leaves the contract's export records as moving `row` under
+/// `status` (`None`: a row that takes none), on `installed`, the bundled
+/// combination shown (`<preset>/<mode>`), or in any bundled one where the
+/// theme is the OS's (`None`, D1); where it records none, the row's
+/// derivation sentence ([`DERIVED_ROWS`]): a status the contract's rows
+/// leave to iced's derivation.
+fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String {
+    let Some(export) = contract_leaves() else {
+        return String::new();
+    };
+    let installed = installed.filter(|label| export.combinations.iter().any(|c| c == label));
+    let leaves: Vec<&str> = export
+        .leaves
+        .iter()
+        .filter(|(_, reach)| match reach {
+            LeafReach::Moves(moves) => moves.iter().any(|m| {
+                m.row == row
+                    && status.is_none_or(|s| m.statuses.iter().any(|t| t == s))
+                    && installed.is_none_or(|label| !m.except.iter().any(|e| e == label))
+            }),
+            LeafReach::Named { .. } => false,
+        })
+        .map(|(leaf, _)| leaf.as_str())
+        .collect();
+    let derived = DERIVED_ROWS
+        .iter()
+        .find(|(key, _)| *key == row)
+        .map(|(_, sentence)| *sentence);
+    match (leaves.is_empty(), installed, derived) {
+        (false, Some(_), _) => format!(" from {}", leaves.join(", ")),
+        (false, None, _) => format!(" from {} (in a bundled theme)", leaves.join(", ")),
+        (true, _, Some(sentence)) => format!(", {sentence}"),
+        (true, Some(label), None) => format!(", moved by no colour leaf on {label}"),
+        (true, None, None) => ", moved by no colour leaf in a bundled theme".to_owned(),
+    }
+}
+
+/// What a field of a style function's output paints: a fill or a label in
+/// its colour, or an edge, which paints nothing where it is 0 wide.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Ink {
+    Fill(Color),
+    Edge { color: Color, width: f32 },
+}
+
+impl Ink {
+    /// A background's colour. Every style the connector writes fills with a
+    /// colour; none fills (no background) is transparent.
+    fn of(background: Option<iced::Background>) -> Self {
+        Self::Fill(match background {
+            Some(iced::Background::Color(color)) => color,
+            _ => Color::TRANSPARENT,
+        })
+    }
+
+    fn edge(border: iced::Border) -> Self {
+        Self::Edge {
+            color: border.color,
+            width: border.width,
+        }
+    }
+}
+
+/// A style function that takes no status, as one whose status is `()`: the
+/// export records its rows with no status.
+fn statusless<O>(style: impl Fn(&Theme) -> O) -> impl Fn(&Theme, ()) -> O {
+    move |theme, ()| style(theme)
+}
+
+/// The colour fields Widget Info reads of each style function's output, by
+/// the names the contract's export gives them (`styles::<fn>.<field>`): what
+/// iced paints from that output. A field iced fills in where the style leaves
+/// it unset is left out.
+fn button_inks(s: &button::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(s.background)),
+        ("text_color", Ink::Fill(s.text_color)),
+        ("border", Ink::edge(s.border)),
+    ]
+}
+
+fn text_input_inks(s: &text_input::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("border", Ink::edge(s.border)),
+        ("value", Ink::Fill(s.value)),
+        ("placeholder", Ink::Fill(s.placeholder)),
+        ("selection", Ink::Fill(s.selection)),
+    ]
+}
+
+fn text_editor_inks(s: &text_editor::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("border", Ink::edge(s.border)),
+        ("value", Ink::Fill(s.value)),
+        ("placeholder", Ink::Fill(s.placeholder)),
+        ("selection", Ink::Fill(s.selection)),
+    ]
+}
+
+fn checkbox_inks(s: &checkbox::Style) -> Vec<(&'static str, Ink)> {
+    let mut inks = vec![
+        ("background", Ink::of(Some(s.background))),
+        ("icon_color", Ink::Fill(s.icon_color)),
+        ("border", Ink::edge(s.border)),
+    ];
+    inks.extend(s.text_color.map(|c| ("text_color", Ink::Fill(c))));
+    inks
+}
+
+fn radio_inks(s: &radio::Style) -> Vec<(&'static str, Ink)> {
+    let mut inks = vec![
+        ("background", Ink::of(Some(s.background))),
+        ("dot_color", Ink::Fill(s.dot_color)),
+        (
+            "border_color",
+            Ink::Edge {
+                color: s.border_color,
+                width: s.border_width,
+            },
+        ),
+    ];
+    inks.extend(s.text_color.map(|c| ("text_color", Ink::Fill(c))));
+    inks
+}
+
+fn toggler_inks(s: &toggler::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("foreground", Ink::of(Some(s.foreground))),
+        (
+            "background_border_color",
+            Ink::Edge {
+                color: s.background_border_color,
+                width: s.background_border_width,
+            },
+        ),
+        (
+            "foreground_border_color",
+            Ink::Edge {
+                color: s.foreground_border_color,
+                width: s.foreground_border_width,
+            },
+        ),
+    ]
+}
+
+fn pick_list_inks(s: &pick_list::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("text_color", Ink::Fill(s.text_color)),
+        ("placeholder_color", Ink::Fill(s.placeholder_color)),
+        ("border", Ink::edge(s.border)),
+    ]
+}
+
+fn menu_inks(s: &iced::overlay::menu::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("border", Ink::edge(s.border)),
+        ("text_color", Ink::Fill(s.text_color)),
+        ("selected_text_color", Ink::Fill(s.selected_text_color)),
+        ("selected_background", Ink::of(Some(s.selected_background))),
+    ]
+}
+
+fn slider_inks(s: &slider::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("rail.backgrounds.0", Ink::of(Some(s.rail.backgrounds.0))),
+        ("rail.backgrounds.1", Ink::of(Some(s.rail.backgrounds.1))),
+        ("handle.background", Ink::of(Some(s.handle.background))),
+    ]
+}
+
+fn progress_bar_inks(s: &progress_bar::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("bar", Ink::of(Some(s.bar))),
+        ("border", Ink::edge(s.border)),
+    ]
+}
+
+fn container_inks(s: &container::Style) -> Vec<(&'static str, Ink)> {
+    let mut inks = vec![
+        ("background", Ink::of(s.background)),
+        ("border", Ink::edge(s.border)),
+    ];
+    inks.extend(s.text_color.map(|c| ("text_color", Ink::Fill(c))));
+    inks
+}
+
+fn pane_grid_inks(s: &pane_grid::Style) -> Vec<(&'static str, Ink)> {
+    let line = |l: pane_grid::Line| Ink::Edge {
+        color: l.color,
+        width: l.width,
+    };
+    vec![
+        ("hovered_split.color", line(s.hovered_split)),
+        ("picked_split.color", line(s.picked_split)),
+    ]
+}
+
+#[cfg(feature = "iced_aw")]
+fn aw_card_inks(s: &iced_aw::style::card::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("head_background", Ink::of(Some(s.head_background))),
+        ("head_text_color", Ink::Fill(s.head_text_color)),
+        ("body_background", Ink::of(Some(s.body_background))),
+        ("body_text_color", Ink::Fill(s.body_text_color)),
+        ("foot_background", Ink::of(Some(s.foot_background))),
+        ("foot_text_color", Ink::Fill(s.foot_text_color)),
+        (
+            "border_color",
+            Ink::Edge {
+                color: s.border_color,
+                width: s.border_width,
+            },
+        ),
+    ]
+}
+
+#[cfg(feature = "iced_aw")]
+fn aw_menu_inks(s: &iced_aw::style::menu_bar::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("bar_background", Ink::of(Some(s.bar_background))),
+        ("bar.border", Ink::edge(s.bar_border)),
+        ("menu_background", Ink::of(Some(s.menu_background))),
+        ("menu.border", Ink::edge(s.menu_border)),
+        ("path", Ink::of(Some(s.path))),
+    ]
+}
+
+#[cfg(feature = "iced_aw")]
+fn aw_tab_bar_inks(s: &iced_aw::style::tab_bar::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(s.background)),
+        (
+            "tab_label_background",
+            Ink::of(Some(s.tab_label_background)),
+        ),
+        (
+            "tab_label_border_color",
+            Ink::Edge {
+                color: s.tab_label_border_color,
+                width: s.tab_label_border_width,
+            },
+        ),
+        ("text_color", Ink::Fill(s.text_color)),
+        ("icon_color", Ink::Fill(s.icon_color)),
+    ]
+}
+
+#[cfg(feature = "iced_aw")]
+fn aw_sidebar_inks(s: &iced_aw::style::sidebar::Style) -> Vec<(&'static str, Ink)> {
+    let mut inks = vec![
+        ("background", Ink::of(s.background)),
+        (
+            "tab_label_background",
+            Ink::of(Some(s.tab_label_background)),
+        ),
+        ("text_color", Ink::Fill(s.text_color)),
+        ("icon_color", Ink::Fill(s.icon_color)),
+    ];
+    inks.extend(s.border_color.map(|color| {
+        (
+            "border_color",
+            Ink::Edge {
+                color,
+                width: s.border_width,
+            },
+        )
+    }));
+    inks
+}
+
+#[cfg(feature = "iced_aw")]
+fn aw_selection_list_inks(s: &iced_aw::style::selection_list::Style) -> Vec<(&'static str, Ink)> {
+    vec![
+        ("background", Ink::of(Some(s.background))),
+        ("text_color", Ink::Fill(s.text_color)),
+        (
+            "border_color",
+            Ink::Edge {
+                color: s.border_color,
+                width: s.border_width,
+            },
+        ),
+    ]
 }
 
 // ---------------------------------------------------------------------------
@@ -8539,40 +8929,127 @@ impl<Message> canvas::Program<Message> for DisclosureArrow {
     }
 }
 
+/// The colours `styles::toggler` paints the Selection page's switches in at
+/// rest, on and off: their tracks, the outlines the theme states, and the
+/// thumbs.
+fn toggler_paints(state: &State) -> Vec<Paint> {
+    use toggler::Status;
+    let r = &state.current_resolved;
+    let s = &r.switch;
+    let mut paints = Vec::new();
+    for (is_toggled, track, outline, thumb, colour) in [
+        (
+            true,
+            "on track",
+            "on track outline",
+            "on thumb",
+            (
+                "switch.checked_track_border_color",
+                s.checked_track_border_color,
+            ),
+        ),
+        (
+            false,
+            "off track",
+            "off track outline",
+            "off thumb",
+            (
+                "switch.unchecked_track_border_color",
+                s.unchecked_track_border_color,
+            ),
+        ),
+    ] {
+        let status = Status::Active { is_toggled };
+        let style = || styles::toggler(r);
+        paints.extend(style_paints(
+            state,
+            "styles::toggler",
+            style(),
+            toggler_inks,
+            status,
+            &[(track, "background"), (thumb, "foreground")],
+            "",
+        ));
+        paints.extend(style_paints(
+            state,
+            "styles::toggler",
+            style(),
+            toggler_inks,
+            status,
+            &[(outline, "background_border_color")],
+            &outline_zero(
+                colour,
+                ("switch.track_border_line_width", s.track_border_line_width),
+            ),
+        ));
+    }
+    paints.extend(style_paints(
+        state,
+        "styles::toggler",
+        styles::toggler(r),
+        toggler_inks,
+        Status::Active { is_toggled: true },
+        &[("thumb outline", "foreground_border_color")],
+        &outline_zero(
+            ("switch.thumb_border_color", s.thumb_border_color),
+            ("switch.thumb_border_line_width", s.thumb_border_line_width),
+        ),
+    ));
+    paints
+}
+
+/// Why a switch's outline is 0 wide: `styles::toggler` draws one only where
+/// the theme states its colour and a width, so the leaf of the two it leaves
+/// unstated, or the width it states 0.
+fn outline_zero(
+    (colour_leaf, colour): (&str, Option<native_theme::color::Rgba>),
+    (width_leaf, width): (&str, Option<f32>),
+) -> String {
+    let mut why = Vec::new();
+    if colour.is_none() {
+        why.push(format!("{colour_leaf} unstated"));
+    }
+    match width {
+        None => why.push(format!("{width_leaf} unstated")),
+        Some(w) if w <= 0.0 => why.push(format!("{width_leaf} 0")),
+        Some(_) => {}
+    }
+    why.join(", ")
+}
+
+/// The size of a switch's thumb while it is off, and the leaf it comes from:
+/// `switch.unchecked_thumb_diameter` where the theme states one, the on
+/// thumb's where not.
+fn off_thumb_size(s: &native_theme::theme::ResolvedSwitchTheme) -> String {
+    match s.unchecked_thumb_diameter {
+        Some(d) => format!("{d:.0}px, switch.unchecked_thumb_diameter"),
+        None => format!(
+            "{:.0}px, switch.thumb_diameter (switch.unchecked_thumb_diameter unstated)",
+            s.thumb_diameter
+        ),
+    }
+}
+
 /// The Widget Info of the Selection page's switch, the connector's.
-fn switch_info(resolved: &ResolvedTheme) -> String {
-    let sw = &resolved.switch;
+fn switch_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let on_thumb = format!(
+        "{:.0}px, switch.thumb_diameter",
+        resolved.switch.thumb_diameter
+    );
+    let off_thumb = off_thumb_size(&resolved.switch);
     widget_tooltip(
         "Switch (native_theme_iced::switch)",
-        &[
-            (
-                "on track",
-                "switch.checked_background",
-                to_color(sw.checked_background),
-            ),
-            (
-                "off track",
-                "switch.unchecked_background",
-                to_color(sw.unchecked_background),
-            ),
-            (
-                "thumb",
-                "switch.thumb_background",
-                to_color(sw.thumb_background),
-            ),
-        ],
+        &toggler_paints(state),
         &[
             ("track", "switch.track_width x switch.track_height"),
+            ("on thumb size", &on_thumb),
+            ("off thumb size", &off_thumb),
             (
-                "thumb",
-                "switch.thumb_diameter, inset by half the difference of the heights",
+                "thumb inset",
+                "half the difference of the track's and the thumb's heights",
             ),
             ("track radius", "switch.track_radius"),
-            (
-                "outlines",
-                "switch.*_track_border_color, track_border_line_width wide, and \
-                 thumb_border_color, thumb_border_line_width wide, where the theme states them",
-            ),
             (
                 "label",
                 format!(
@@ -8597,10 +9074,17 @@ fn switch_info(resolved: &ResolvedTheme) -> String {
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of the Buttons page's primary row.
+/// Why an edge the connector draws from `<table>.border` (`border_of`) is
+/// 0 wide where it is.
+fn line_zero(table: &str) -> String {
+    format!("{table}.border.line_width 0")
+}
+
+/// The Widget Info of the Buttons page's primary row: the primary button at
+/// rest and under the pointer.
 fn button_info(state: &State) -> String {
+    use button::Status;
     let resolved = &state.current_resolved;
-    let ext = state.current_theme.extended_palette();
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
     let label = font_row("button.font", &resolved.button.font);
     let config = [
@@ -8615,28 +9099,91 @@ fn button_info(state: &State) -> String {
         ("shadow", "iced's own — the model has no shadow geometry"),
         ("label", label.as_str()),
     ];
+    let primary = || styles::button_primary(resolved);
+    let mut colours = style_paints(
+        state,
+        "styles::button_primary",
+        primary(),
+        button_inks,
+        Status::Active,
+        &[
+            ("bg", "background"),
+            ("text", "text_color"),
+            ("border", "border"),
+        ],
+        &line_zero("button"),
+    );
+    colours.extend(style_paints(
+        state,
+        "styles::button_primary",
+        primary(),
+        button_inks,
+        Status::Hovered,
+        &[("hover bg", "background"), ("hover text", "text_color")],
+        "",
+    ));
     widget_tooltip_themed(
         state,
         "Button (Primary)",
-        &[
-            (
-                "bg",
-                "button.primary_background",
-                to_color(resolved.button.primary_background),
-            ),
-            (
-                "text",
-                "button.primary_text_color",
-                to_color(resolved.button.primary_text_color),
-            ),
-            (
-                "hover bg",
-                "iced's primary.strong",
-                ext.primary.strong.color,
-            ),
-        ],
+        &colours,
         &config,
         &[("min-height", "hardcoded by iced")],
+    )
+}
+
+/// The Widget Info of the Buttons page's disabled row: each of its three
+/// classes as `class_button` and `styles::button` draw it disabled.
+fn disabled_buttons_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    type ButtonStyle = Box<dyn Fn(&Theme, button::Status) -> button::Style>;
+    let classes: [(&str, ButtonStyle, [&'static str; 3]); 3] = [
+        (
+            "styles::button_primary",
+            Box::new(styles::button_primary(resolved)),
+            ["primary bg", "primary text", "primary border"],
+        ),
+        (
+            "styles::button",
+            Box::new(styles::button(resolved)),
+            ["secondary bg", "secondary text", "secondary border"],
+        ),
+        (
+            "styles::button_danger",
+            Box::new(styles::button_danger(resolved)),
+            ["danger bg", "danger text", "danger border"],
+        ),
+    ];
+    let mut colours = Vec::new();
+    for (function, style, [bg, text, border]) in classes {
+        colours.extend(style_paints(
+            state,
+            function,
+            style,
+            button_inks,
+            button::Status::Disabled,
+            &[(bg, "background"), (text, "text_color"), (border, "border")],
+            &line_zero("button"),
+        ));
+    }
+    let pair = format!(
+        "{}, faded by button.disabled_opacity ({})",
+        match resolved.button.disabled_background {
+            Some(_) => {
+                "button.disabled_background with button.disabled_text_color, for every class"
+            }
+            None => {
+                "where the theme states no button.disabled_background, the primary and \
+                 danger classes keep their own pair, the plain button its own fill with \
+                 button.disabled_text_color"
+            }
+        },
+        resolved.button.disabled_opacity
+    );
+    widget_tooltip(
+        "Disabled Buttons",
+        &colours,
+        &[("disabled pair", pair.as_str())],
+        &[("cursor", "not interactive")],
     )
 }
 
@@ -8702,31 +9249,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     );
 
     let disabled_row = hoverable(
-        widget_tooltip(
-            "Disabled Buttons",
-            &[
-                (
-                    "bg",
-                    "button.disabled_background",
-                    to_color(
-                        resolved
-                            .button
-                            .disabled_background
-                            .unwrap_or(resolved.button.background_color),
-                    ),
-                ),
-                (
-                    "text",
-                    "button.disabled_text_color",
-                    to_color(resolved.button.disabled_text_color),
-                ),
-            ],
-            &[],
-            &[
-                ("cursor", "not interactive"),
-                ("theme", "one disabled pair for every button class"),
-            ],
-        ),
+        disabled_buttons_info(state),
         column![
             text("Disabled State").role(section_title(ts), resolved, a11y),
             text("Buttons without on_press are rendered as disabled:").body(resolved, a11y),
@@ -8784,8 +9307,10 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of the Text Inputs page's single-line text field.
+/// The Widget Info of the Text Inputs page's single-line text field: at
+/// rest, under the pointer and focused.
 fn text_input_info(state: &State) -> String {
+    use text_input::Status;
     let resolved = &state.current_resolved;
     let i = &resolved.input;
     let radius_s = format!("{:.0}px", i.border.corner_radius);
@@ -8801,24 +9326,41 @@ fn text_input_info(state: &State) -> String {
         ),
         ("text", text.as_str()),
     ];
+    let field = || styles::text_input(resolved);
+    let zero = line_zero("input");
+    let mut colours = style_paints(
+        state,
+        "styles::text_input",
+        field(),
+        text_input_inks,
+        Status::Active,
+        &[
+            ("border", "border"),
+            ("bg", "background"),
+            ("text", "value"),
+            ("placeholder", "placeholder"),
+            ("selection", "selection"),
+        ],
+        &zero,
+    );
+    for (status, role) in [
+        (Status::Hovered, "hover border"),
+        (Status::Focused { is_hovered: false }, "focus border"),
+    ] {
+        colours.extend(style_paints(
+            state,
+            "styles::text_input",
+            field(),
+            text_input_inks,
+            status,
+            &[(role, "border")],
+            &zero,
+        ));
+    }
     widget_tooltip_themed(
         state,
         "TextInput",
-        &[
-            ("border", "input.border.color", to_color(i.border.color)),
-            ("bg", "input.background_color", to_color(i.background_color)),
-            ("text", "input.font.color", to_color(i.font.color)),
-            (
-                "placeholder",
-                "input.placeholder_color",
-                to_color(i.placeholder_color),
-            ),
-            (
-                "selection",
-                "input.selection_background",
-                to_color(i.selection_background),
-            ),
-        ],
+        &colours,
         &config,
         &[
             (
@@ -8892,10 +9434,15 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         hoverable(
             widget_tooltip(
                 "TextInput (secure)",
-                &[
-                    ("border", "input.border.color", to_color(i.border.color)),
-                    ("bg", "input.background_color", to_color(i.background_color)),
-                ],
+                &style_paints(
+                    state,
+                    "styles::text_input",
+                    styles::text_input(resolved),
+                    text_input_inks,
+                    text_input::Status::Active,
+                    &[("border", "border"), ("bg", "background")],
+                    &line_zero("input"),
+                ),
                 &[
                     ("border-radius", &radius_s),
                     (
@@ -8918,20 +9465,20 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
         widget_tooltip_themed(
             state,
             "TextEditor (multi-line)",
-            &[
-                (
-                    "border",
-                    "text_area.border.color",
-                    to_color(area.border.color),
-                ),
-                ("bg", "input.background_color", to_color(i.background_color)),
-                ("text", "input.font.color", to_color(i.font.color)),
-                (
-                    "selection",
-                    "input.selection_background",
-                    to_color(i.selection_background),
-                ),
-            ],
+            &style_paints(
+                state,
+                "styles::text_editor",
+                styles::text_editor(resolved),
+                text_editor_inks,
+                text_editor::Status::Active,
+                &[
+                    ("border", "border"),
+                    ("bg", "background"),
+                    ("text", "value"),
+                    ("selection", "selection"),
+                ],
+                &line_zero("text_area"),
+            ),
             &[
                 ("border-radius", &area_radius_s),
                 (
@@ -8984,8 +9531,10 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
 // Tab: Selection
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of the Selection page's checkboxes.
-fn checkbox_info(resolved: &ResolvedTheme) -> String {
+/// The Widget Info of the Selection page's checkboxes, checked and not.
+fn checkbox_info(state: &State) -> String {
+    use checkbox::Status;
+    let resolved = &state.current_resolved;
     let c = &resolved.checkbox;
     let checkbox_radius_s = format!("{:.0}px", c.border.corner_radius);
     let label_gap_s = format!("{:.0}px", c.label_gap);
@@ -8994,30 +9543,38 @@ fn checkbox_info(resolved: &ResolvedTheme) -> String {
     // `Checkbox::size` (checkbox.rs:176, laid out at :287) and `Radio::size`
     // (radio.rs:200, :300) take exactly that.
     let indicator_width_s = format!("{:.0}px", c.indicator_width);
+    let mut colours = Vec::new();
+    for (is_checked, rows) in [
+        (
+            true,
+            [
+                ("checked bg", "background"),
+                ("checkmark", "icon_color"),
+                ("checked border", "border"),
+            ],
+        ),
+        (
+            false,
+            [
+                ("bg", "background"),
+                ("unchecked border", "border"),
+                ("label", "text_color"),
+            ],
+        ),
+    ] {
+        colours.extend(style_paints(
+            state,
+            "styles::checkbox",
+            styles::checkbox(resolved),
+            checkbox_inks,
+            Status::Active { is_checked },
+            &rows,
+            &line_zero("checkbox"),
+        ));
+    }
     widget_tooltip(
         "Checkbox",
-        &[
-            (
-                "checked bg",
-                "checkbox.checked_background",
-                to_color(c.checked_background),
-            ),
-            (
-                "checkmark",
-                "checkbox.indicator_color",
-                to_color(c.indicator_color),
-            ),
-            (
-                "unchecked border",
-                "checkbox.unchecked_border_color",
-                to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
-            ),
-            (
-                "bg",
-                "checkbox.unchecked_background",
-                to_color(c.unchecked_background.unwrap_or(c.background_color)),
-            ),
-        ],
+        &colours,
         &[
             ("border-radius", &checkbox_radius_s),
             ("label gap", &label_gap_s),
@@ -9035,8 +9592,10 @@ fn checkbox_info(resolved: &ResolvedTheme) -> String {
     )
 }
 
-/// The Widget Info of the Selection page's radio buttons.
-fn radio_info(resolved: &ResolvedTheme) -> String {
+/// The Widget Info of the Selection page's radio buttons, selected and not.
+fn radio_info(state: &State) -> String {
+    use radio::Status;
+    let resolved = &state.current_resolved;
     let c = &resolved.checkbox;
     let label_gap_s = format!("{:.0}px", c.label_gap);
     // `checkbox.radio_indicator_width` where the theme sizes the radio apart
@@ -9066,72 +9625,67 @@ fn radio_info(resolved: &ResolvedTheme) -> String {
     }
     let label_s = font_row("checkbox.font", &resolved.checkbox.font);
     sizes.push(("label", label_s.as_str()));
-    widget_tooltip(
-        "Radio",
-        &[
-            (
-                "selected",
-                "checkbox.checked_background",
-                to_color(c.checked_background),
-            ),
-            (
-                "dot",
-                "checkbox.indicator_color",
-                to_color(c.indicator_color),
-            ),
-            (
-                "unselected border",
-                "checkbox.unchecked_border_color",
-                to_color(c.unchecked_border_color.unwrap_or(c.border.color)),
-            ),
-            (
-                "bg",
-                "checkbox.unchecked_background",
-                to_color(c.unchecked_background.unwrap_or(c.background_color)),
-            ),
-        ],
-        &sizes,
-        &unthemed,
-    )
+    let mut colours = Vec::new();
+    for (is_selected, rows) in [
+        (
+            true,
+            [
+                ("selected", "background"),
+                ("dot", "dot_color"),
+                ("selected border", "border_color"),
+            ],
+        ),
+        (
+            false,
+            [
+                ("bg", "background"),
+                ("unselected border", "border_color"),
+                ("label", "text_color"),
+            ],
+        ),
+    ] {
+        colours.extend(style_paints(
+            state,
+            "styles::radio",
+            styles::radio(resolved),
+            radio_inks,
+            Status::Active { is_selected },
+            &rows,
+            &line_zero("checkbox"),
+        ));
+    }
+    widget_tooltip("Radio", &colours, &sizes, &unthemed)
 }
 
-/// The Widget Info of the Selection page's pick list.
-fn pick_list_info(resolved: &ResolvedTheme) -> String {
+/// The Widget Info of the Selection page's pick list and its menu.
+fn pick_list_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
     let cb = &resolved.combo_box;
     let combo_radius_s = format!("{:.0}px", cb.border.corner_radius);
     let arrow_size_s = format!("{:.0}px", cb.arrow_icon_size);
     let rows = font_row("combo_box.font", &resolved.combo_box.font);
-    let config = [
-        ("border-radius", combo_radius_s.as_str()),
-        ("arrow size", arrow_size_s.as_str()),
-        ("label and menu rows", rows.as_str()),
-    ];
+    let mut colours = style_paints(
+        state,
+        "styles::pick_list",
+        styles::pick_list(resolved),
+        pick_list_inks,
+        pick_list::Status::Active,
+        &[
+            ("bg", "background"),
+            ("text", "text_color"),
+            ("border", "border"),
+        ],
+        &line_zero("combo_box"),
+    );
+    colours.extend(menu_paints(state));
     widget_tooltip(
         "PickList (dropdown)",
+        &colours,
         &[
-            (
-                "bg",
-                "combo_box.background_color",
-                to_color(cb.background_color),
-            ),
-            ("text", "combo_box.font.color", to_color(cb.font.color)),
-            (
-                "border",
-                "combo_box.border.color",
-                to_color(cb.border.color),
-            ),
-            (
-                "menu bg",
-                "menu.background_color",
-                to_color(resolved.menu.background_color),
-            ),
-            (
-                "menu selected",
-                "menu.hover_background",
-                to_color(resolved.menu.hover_background),
-            ),
+            ("border-radius", combo_radius_s.as_str()),
+            ("arrow size", arrow_size_s.as_str()),
+            ("label and menu rows", rows.as_str()),
         ],
-        &config,
         &[
             (
                 "dropdown arrow",
@@ -9145,6 +9699,48 @@ fn pick_list_info(resolved: &ResolvedTheme) -> String {
     )
 }
 
+/// The colours `styles::menu` paints a drop-down's menu in.
+fn menu_paints(state: &State) -> Vec<Paint> {
+    style_paints(
+        state,
+        "styles::menu",
+        statusless(styles::menu(&state.current_resolved)),
+        menu_inks,
+        (),
+        &[
+            ("menu bg", "background"),
+            ("menu text", "text_color"),
+            ("menu selected", "selected_background"),
+            ("menu selected text", "selected_text_color"),
+            ("menu border", "border"),
+        ],
+        &line_zero("menu"),
+    )
+}
+
+/// The size of iced's toggler's thumb, on or off: the stated diameter, which
+/// `styles::toggler` gives it as its padding ratio where it fits the track,
+/// or iced's own ratio where it does not.
+fn toggler_thumb(s: &native_theme::theme::ResolvedSwitchTheme, is_toggled: bool) -> String {
+    let stated = if is_toggled {
+        format!("{:.0}px, switch.thumb_diameter", s.thumb_diameter)
+    } else {
+        off_thumb_size(s)
+    };
+    let diameter = match (is_toggled, s.unchecked_thumb_diameter) {
+        (false, Some(d)) => d,
+        _ => s.thumb_diameter,
+    };
+    if s.track_height > 0.0 && (0.0..=s.track_height).contains(&diameter) {
+        stated
+    } else {
+        format!(
+            "iced's own padding ratio: {stated}, does not fit the {:.0}px track",
+            s.track_height
+        )
+    }
+}
+
 fn view_selection(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
@@ -9156,7 +9752,6 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let cb = &resolved.combo_box;
     let track_radius_s = format!("{:.0}px", sw.track_radius);
     let track_height_s = format!("{:.0}px", sw.track_height);
-    let thumb_diameter_s = format!("{:.0}px", sw.thumb_diameter);
     let input_radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
 
     let header = section_header(
@@ -9169,7 +9764,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let checkboxes = hoverable(
-        checkbox_info(resolved),
+        checkbox_info(state),
         column![
             text("Checkboxes").role(section_title(ts), resolved, a11y),
             checkbox(state.checkbox_a)
@@ -9216,7 +9811,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     );
 
     let radios = hoverable(
-        radio_info(resolved),
+        radio_info(state),
         column![
             text("Radio Buttons").role(section_title(ts), resolved, a11y),
             probe(
@@ -9285,7 +9880,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     // toggler stays shown below it, so the widget iced offers is on show
     // under the theme too, its track twice its height.
     let switch = hoverable(
-        switch_info(resolved),
+        switch_info(state),
         row![
             probe(
                 probes::TOGGLER,
@@ -9305,27 +9900,12 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let iced_toggler = hoverable(
         widget_tooltip(
             "iced's Toggler",
-            &[
-                (
-                    "active track",
-                    "switch.checked_background",
-                    to_color(sw.checked_background),
-                ),
-                (
-                    "inactive track",
-                    "switch.unchecked_background",
-                    to_color(sw.unchecked_background),
-                ),
-                (
-                    "thumb",
-                    "switch.thumb_background",
-                    to_color(sw.thumb_background),
-                ),
-            ],
+            &toggler_paints(state),
             &[
                 ("border-radius", &track_radius_s),
                 ("track height", &track_height_s),
-                ("thumb diameter", &thumb_diameter_s),
+                ("on thumb size", &toggler_thumb(sw, true)),
+                ("off thumb size", &toggler_thumb(sw, false)),
                 (
                     "label",
                     format!(
@@ -9381,7 +9961,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .collect();
 
     let pickers = hoverable(
-        pick_list_info(resolved),
+        pick_list_info(state),
         column![
             text("PickList (dropdown)").role(section_title(ts), resolved, a11y),
             probe(
@@ -9412,28 +9992,22 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     let combos = hoverable(
         widget_tooltip(
             "ComboBox (searchable dropdown)",
-            &[
-                (
-                    "bg",
-                    "input.background_color",
-                    to_color(resolved.input.background_color),
-                ),
-                (
-                    "text",
-                    "input.font.color",
-                    to_color(resolved.input.font.color),
-                ),
-                (
-                    "border",
-                    "input.border.color",
-                    to_color(resolved.input.border.color),
-                ),
-                (
-                    "menu bg",
-                    "menu.background_color",
-                    to_color(resolved.menu.background_color),
-                ),
-            ],
+            &style_paints(
+                state,
+                "styles::text_input",
+                styles::text_input(resolved),
+                text_input_inks,
+                text_input::Status::Active,
+                &[
+                    ("bg", "background"),
+                    ("text", "value"),
+                    ("border", "border"),
+                ],
+                &line_zero("input"),
+            )
+            .into_iter()
+            .chain(menu_paints(state))
+            .collect::<Vec<_>>(),
             &[
                 ("border-radius", &input_radius_s),
                 (
@@ -9505,30 +10079,47 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // Tab: Range
 // ---------------------------------------------------------------------------
 
+/// The colours `styles::slider` paints the Range page's sliders in: the
+/// rail's two parts and the handle, at rest and, where `hovered`, under the
+/// pointer.
+fn slider_paints(state: &State, hovered: bool) -> Vec<Paint> {
+    use slider::Status;
+    let resolved = &state.current_resolved;
+    let mut paints = style_paints(
+        state,
+        "styles::slider",
+        styles::slider(resolved),
+        slider_inks,
+        Status::Active,
+        &[
+            ("active track", "rail.backgrounds.0"),
+            ("inactive track", "rail.backgrounds.1"),
+            ("handle", "handle.background"),
+        ],
+        "",
+    );
+    if hovered {
+        paints.extend(style_paints(
+            state,
+            "styles::slider",
+            styles::slider(resolved),
+            slider_inks,
+            Status::Hovered,
+            &[("hovered handle", "handle.background")],
+            "",
+        ));
+    }
+    paints
+}
+
 /// The Widget Info of the Range page's horizontal slider.
-fn slider_info(resolved: &ResolvedTheme) -> String {
-    let sl = &resolved.slider;
+fn slider_info(state: &State) -> String {
+    let sl = &state.current_resolved.slider;
     let rail_s = format!("{:.0}px", sl.track_height);
     let thumb_s = format!("{:.0}px", sl.thumb_diameter);
     widget_tooltip(
         "Horizontal Slider",
-        &[
-            ("active track", "slider.fill_color", to_color(sl.fill_color)),
-            (
-                "inactive track",
-                "slider.track_color",
-                to_color(sl.track_color),
-            ),
-            ("handle", "slider.thumb_color", to_color(sl.thumb_color)),
-            (
-                "hovered handle",
-                "slider.thumb_hover_color",
-                sl.thumb_hover_color
-                    .map_or(to_color(sl.thumb_color), |hover| {
-                        styles::composite_over(to_color(hover), to_color(sl.thumb_color))
-                    }),
-            ),
-        ],
+        &slider_paints(state, true),
         &[("rail width", &rail_s), ("thumb diameter", &thumb_s)],
         &[
             ("widget height", "no native source — iced's own"),
@@ -9538,24 +10129,24 @@ fn slider_info(resolved: &ResolvedTheme) -> String {
 }
 
 /// The Widget Info of the Range page's progress bars.
-fn progress_bar_info(resolved: &ResolvedTheme) -> String {
-    let pb = &resolved.progress_bar;
-    let bar_girth_s = format!("{:.0}px", pb.track_height);
+fn progress_bar_info(state: &State) -> String {
+    let resolved = &state.current_resolved;
+    let bar_girth_s = format!("{:.0}px", resolved.progress_bar.track_height);
     widget_tooltip(
         "Progress Bar",
-        &[
-            ("fill", "progress_bar.fill_color", to_color(pb.fill_color)),
-            (
-                "track bg",
-                "progress_bar.track_color",
-                to_color(pb.track_color),
-            ),
-            (
-                "border",
-                "progress_bar.border.color",
-                to_color(pb.border.color),
-            ),
-        ],
+        &style_paints(
+            state,
+            "styles::progress_bar",
+            statusless(styles::progress_bar(resolved)),
+            progress_bar_inks,
+            (),
+            &[
+                ("fill", "bar"),
+                ("track bg", "background"),
+                ("border", "border"),
+            ],
+            &line_zero("progress_bar"),
+        ),
         &[("girth", &bar_girth_s)],
         &[
             ("min width", "progress_bar.min_width has no receiver"),
@@ -9586,7 +10177,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
 
     let horiz_slider =
         hoverable(
-            slider_info(resolved),
+            slider_info(state),
             column![
                 text("Horizontal Slider").role(section_title(ts), resolved, a11y),
                 row![
@@ -9613,7 +10204,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let step_slider = hoverable(
         widget_tooltip(
             "Slider (stepped)",
-            &[("track", "slider.fill_color", to_color(sl.fill_color))],
+            &slider_paints(state, false),
             &[("step", "5.0")],
             &[("snap behavior", "hardcoded step increments")],
         ),
@@ -9638,7 +10229,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     let vert_slider = hoverable(
         widget_tooltip(
             "Vertical Slider",
-            &[("track", "slider.fill_color", to_color(sl.fill_color))],
+            &slider_paints(state, false),
             &[
                 ("orientation", "vertical"),
                 ("rail width", &rail_s),
@@ -9674,7 +10265,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
     );
 
     let progress = hoverable(
-        progress_bar_info(resolved),
+        progress_bar_info(state),
         column![
             text("Progress Bars").role(section_title(ts), resolved, a11y),
             text("Driven by horizontal slider value:").body(resolved, a11y),
@@ -9754,14 +10345,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let containers = hoverable(
         widget_tooltip(
             "Styled Containers (card)",
-            &[
-                (
-                    "bg",
-                    "card.background_color",
-                    to_color(card.background_color),
-                ),
-                ("border", "card.border.color", to_color(card.border.color)),
-            ],
+            &style_paints(
+                state,
+                "styles::container_card",
+                statusless(styles::container_card(resolved)),
+                container_inks,
+                (),
+                &[("bg", "background"), ("border", "border")],
+                &line_zero("card"),
+            ),
             &[
                 ("border-radius", &card_radius_s),
                 (
@@ -9828,15 +10420,19 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let tooltips = hoverable(
         widget_tooltip(
             "Tooltip",
-            &[
-                (
-                    "bg",
-                    "tooltip.background_color",
-                    to_color(tip.background_color),
-                ),
-                ("text", "tooltip.font.color", to_color(tip.font.color)),
-                ("border", "tooltip.border.color", to_color(tip.border.color)),
-            ],
+            &style_paints(
+                state,
+                "styles::tooltip",
+                statusless(styles::tooltip(resolved)),
+                container_inks,
+                (),
+                &[
+                    ("bg", "background"),
+                    ("text", "text_color"),
+                    ("border", "border"),
+                ],
+                &line_zero("tooltip"),
+            ),
             &[
                 ("positions", "Top / Bottom / Left / Right"),
                 ("border-radius", &tip_radius_s),
@@ -10056,12 +10652,12 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Grid",
             &[
-                (
+                Paint::leaf(
                     "cell fill",
                     "each cell's own color",
                     to_color(d.accent_color),
                 ),
-                (
+                Paint::leaf(
                     "cell border",
                     "defaults.border.color",
                     to_color(d.border.color),
@@ -10164,18 +10760,18 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let pane_demo = hoverable(
         widget_tooltip(
             "PaneGrid",
-            &[
-                (
-                    "hovered split",
-                    "splitter.hover_color",
-                    to_color(sp_th.hover_color),
-                ),
-                (
-                    "picked split",
-                    "splitter.hover_color",
-                    to_color(sp_th.hover_color),
-                ),
-            ],
+            &style_paints(
+                state,
+                "styles::pane_grid",
+                statusless(styles::pane_grid(resolved)),
+                pane_grid_inks,
+                (),
+                &[
+                    ("hovered split", "hovered_split.color"),
+                    ("picked split", "picked_split.color"),
+                ],
+                "splitter.divider_width 0",
+            ),
             &[
                 ("split width", &divider_width_s),
                 ("pane surface", "styles::container_card"),
@@ -10313,7 +10909,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let table_demo = hoverable(
         widget_tooltip(
             "Table",
-            &[(
+            &[Paint::leaf(
                 "separators",
                 "iced's background.strong, read live",
                 state
@@ -10539,14 +11135,14 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Canvas",
             &[
-                (
+                Paint::leaf(
                     "panel fill",
                     "card.background_color",
                     to_color(resolved.card.background_color),
                 ),
-                ("outline", "separator.line_color", to_color(sep.line_color)),
-                ("baseline", "defaults.text_color", to_color(d.text_color)),
-                ("dot", "defaults.accent_color", to_color(d.accent_color)),
+                Paint::leaf("outline", "separator.line_color", to_color(sep.line_color)),
+                Paint::leaf("baseline", "defaults.text_color", to_color(d.text_color)),
+                Paint::leaf("dot", "defaults.accent_color", to_color(d.accent_color)),
             ],
             &[
                 ("stroke width", &line_width_s),
@@ -10594,8 +11190,8 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "QRCode",
             &[
-                ("cell", "defaults.text_color", qr_cell),
-                ("background", "defaults.background_color", qr_background),
+                Paint::leaf("cell", "defaults.text_color", qr_cell),
+                Paint::leaf("background", "defaults.background_color", qr_background),
             ],
             &[("payload", QR_PAYLOAD)],
             &[(
@@ -10647,7 +11243,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Markdown",
             &[
-                (
+                Paint::leaf(
                     "link",
                     "link.font.color",
                     to_color(resolved.link.font.color),
@@ -10657,7 +11253,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                 // (`iced_core` theme.rs:334); the connector sets that slot from
                 // `defaults.text_color`, so reading it live shows what is on
                 // screen rather than the palette input behind it.
-                (
+                Paint::leaf(
                     "text",
                     "extended.background.base.text, from defaults.text_color",
                     state.current_theme.extended_palette().background.base.text,
@@ -10845,6 +11441,34 @@ fn aw_menu<'a>(
     Menu::new(items).width(width).offset(gap).spacing(gap)
 }
 
+/// The status `iced_aw` asks its widgets' style functions for.
+#[cfg(feature = "iced_aw")]
+type AwStatus = iced_aw::style::Status;
+
+/// [`style_paints`] of an `iced_aw` style function at each status of
+/// `statuses`, with its rows: the status iced_aw draws each part in (a
+/// `Card` and a `MenuBar` ask for `Active` alone, `card.rs:601`,
+/// `menu_bar.rs:587`; a tab or sidebar item for `Active` while it is the
+/// open one, `Hovered` under the pointer, `Disabled` otherwise,
+/// `tab_bar.rs:589-595`, `sidebar.rs:981-985`; a selection-list row for
+/// `Selected`, `Hovered` or `Active`, `selection_list/list.rs:241-258`).
+#[cfg(feature = "iced_aw")]
+fn aw_paints<O>(
+    state: &State,
+    function: &str,
+    style: impl Fn(&Theme, AwStatus) -> O + Clone,
+    inks: fn(&O) -> Vec<(&'static str, Ink)>,
+    statuses: &[(AwStatus, &[(&'static str, &'static str)])],
+    zero: &str,
+) -> Vec<Paint> {
+    statuses
+        .iter()
+        .flat_map(|&(status, rows)| {
+            style_paints(state, function, style.clone(), inks, status, rows, zero)
+        })
+        .collect()
+}
+
 /// The six `styles::aw::*` functions, on the eight `iced_aw` widgets the
 /// connector's feature enables.
 #[cfg(feature = "iced_aw")]
@@ -10916,19 +11540,26 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let card_demo = hoverable(
         widget_tooltip(
             "Card",
-            &[
-                (
-                    "surface",
-                    "card.background_color",
-                    to_color(card_t.background_color),
-                ),
-                ("border", "card.border.color", to_color(card_t.border.color)),
-                (
-                    "labels",
-                    "defaults.text_color",
-                    to_color(resolved.defaults.text_color),
-                ),
-            ],
+            &aw_paints(
+                state,
+                "styles::aw::card",
+                styles::aw::card(resolved),
+                aw_card_inks,
+                &[(
+                    AwStatus::Active,
+                    &[
+                        ("surface", "background"),
+                        ("head", "head_background"),
+                        ("body", "body_background"),
+                        ("foot", "foot_background"),
+                        ("head label", "head_text_color"),
+                        ("body label", "body_text_color"),
+                        ("foot label", "foot_text_color"),
+                        ("border", "border_color"),
+                    ],
+                )],
+                &line_zero("card"),
+            ),
             &[
                 ("radius", "card.border.corner_radius"),
                 (
@@ -11039,19 +11670,23 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let menu_demo = hoverable(
         widget_tooltip(
             "MenuBar / Menu",
-            &[
-                (
-                    "bar and panel",
-                    "menu.background_color",
-                    to_color(menu_t.background_color),
-                ),
-                (
-                    "open path",
-                    "menu.hover_background",
-                    to_color(menu_t.hover_background),
-                ),
-                ("border", "menu.border.color", to_color(menu_t.border.color)),
-            ],
+            &aw_paints(
+                state,
+                "styles::aw::menu",
+                styles::aw::menu(resolved),
+                aw_menu_inks,
+                &[(
+                    AwStatus::Active,
+                    &[
+                        ("bar", "bar_background"),
+                        ("panel", "menu_background"),
+                        ("open path", "path"),
+                        ("bar border", "bar.border"),
+                        ("panel border", "menu.border"),
+                    ],
+                )],
+                &line_zero("menu"),
+            ),
             &[
                 (
                     "item height",
@@ -11194,28 +11829,38 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let tab_demo = hoverable(
         widget_tooltip(
             "TabBar / Tabs",
-            &[
-                (
-                    "strip",
-                    "tab.bar_background",
-                    to_color(tab_t.bar_background),
-                ),
-                (
-                    "selected tab",
-                    "tab.active_background",
-                    to_color(tab_t.active_background),
-                ),
-                (
-                    "selected label",
-                    "tab.active_text_color",
-                    to_color(tab_t.active_text_color),
-                ),
-                (
-                    "hovered tab",
-                    "tab.hover_background",
-                    to_color(tab_t.hover_background.unwrap_or(tab_t.background_color)),
-                ),
-            ],
+            &aw_paints(
+                state,
+                "styles::aw::tab_bar",
+                styles::aw::tab_bar(resolved),
+                aw_tab_bar_inks,
+                &[
+                    (
+                        AwStatus::Active,
+                        &[
+                            ("strip", "background"),
+                            ("selected tab", "tab_label_background"),
+                            ("selected label", "text_color"),
+                            ("selected border", "tab_label_border_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Hovered,
+                        &[
+                            ("hovered tab", "tab_label_background"),
+                            ("hovered label", "text_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Disabled,
+                        &[
+                            ("other tab", "tab_label_background"),
+                            ("other label", "text_color"),
+                        ],
+                    ),
+                ],
+                &line_zero("tab"),
+            ),
             &[
                 ("label", font_row("tab.font", &resolved.tab.font).as_str()),
                 ("tab width", "tab.min_width"),
@@ -11273,28 +11918,38 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let side_demo = hoverable(
         widget_tooltip(
             "Sidebar",
-            &[
-                (
-                    "panel",
-                    "sidebar.background_color",
-                    to_color(side_t.background_color),
-                ),
-                (
-                    "selected item",
-                    "sidebar.selection_background",
-                    to_color(side_t.selection_background),
-                ),
-                (
-                    "selected label",
-                    "sidebar.selection_text_color",
-                    to_color(side_t.selection_text_color),
-                ),
-                (
-                    "hovered item",
-                    "sidebar.hover_background",
-                    to_color(side_t.hover_background),
-                ),
-            ],
+            &aw_paints(
+                state,
+                "styles::aw::sidebar",
+                styles::aw::sidebar(resolved),
+                aw_sidebar_inks,
+                &[
+                    (
+                        AwStatus::Active,
+                        &[
+                            ("panel", "background"),
+                            ("selected item", "tab_label_background"),
+                            ("selected label", "text_color"),
+                            ("border", "border_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Hovered,
+                        &[
+                            ("hovered item", "tab_label_background"),
+                            ("hovered label", "text_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Disabled,
+                        &[
+                            ("other item", "tab_label_background"),
+                            ("other label", "text_color"),
+                        ],
+                    ),
+                ],
+                &line_zero("sidebar"),
+            ),
             &[(
                 "label",
                 font_row("sidebar.font", &resolved.sidebar.font).as_str(),
@@ -11334,11 +11989,15 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let spinner_demo = hoverable(
         widget_tooltip(
             "Spinner",
-            &[(
-                "orbiting dot",
-                "spinner.fill_color",
-                to_color(spin_t.fill_color),
-            )],
+            &style_paints(
+                state,
+                "styles::aw::spinner",
+                statusless(styles::aw::spinner(resolved)),
+                container_inks,
+                (),
+                &[("orbiting dot", "text_color")],
+                "",
+            ),
             &[("orbit diameter", "spinner.diameter")],
             &[
                 (
@@ -11414,28 +12073,37 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let list_demo = hoverable(
         widget_tooltip(
             "SelectionList",
-            &[
-                (
-                    "list",
-                    "list.background_color",
-                    to_color(list_t.background_color),
-                ),
-                (
-                    "selected row",
-                    "list.selection_background",
-                    to_color(list_t.selection_background),
-                ),
-                (
-                    "hovered row",
-                    "list.hover_background",
-                    to_color(list_t.hover_background),
-                ),
-                (
-                    "row label",
-                    "list.item_font.color",
-                    to_color(list_t.item_font.color),
-                ),
-            ],
+            &aw_paints(
+                state,
+                "styles::aw::selection_list",
+                styles::aw::selection_list(resolved),
+                aw_selection_list_inks,
+                &[
+                    (
+                        AwStatus::Active,
+                        &[
+                            ("list", "background"),
+                            ("row label", "text_color"),
+                            ("border", "border_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Selected,
+                        &[
+                            ("selected row", "background"),
+                            ("selected label", "text_color"),
+                        ],
+                    ),
+                    (
+                        AwStatus::Hovered,
+                        &[
+                            ("hovered row", "background"),
+                            ("hovered label", "text_color"),
+                        ],
+                    ),
+                ],
+                &line_zero("list"),
+            ),
             &[
                 (
                     "row label",
@@ -11827,12 +12495,12 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         widget_tooltip(
             "Base Palette (6 fields)",
             &[
-                ("background", "background", palette.background),
-                ("text", "text", palette.text),
-                ("primary", "primary", palette.primary),
-                ("success", "success", palette.success),
-                ("warning", "warning", palette.warning),
-                ("danger", "danger", palette.danger),
+                Paint::leaf("background", "background", palette.background),
+                Paint::leaf("text", "text", palette.text),
+                Paint::leaf("primary", "primary", palette.primary),
+                Paint::leaf("success", "success", palette.success),
+                Paint::leaf("warning", "warning", palette.warning),
+                Paint::leaf("danger", "danger", palette.danger),
             ],
             &[],
             &[],
@@ -12110,12 +12778,12 @@ fn hoverable_ext_section<'a>(
     let info = widget_tooltip(
         label,
         &[
-            ("base.color", "base.color", base.color),
-            ("base.text", "base.text", base.text),
-            ("weak.color", "weak.color", weak.color),
-            ("weak.text", "weak.text", weak.text),
-            ("strong.color", "strong.color", strong.color),
-            ("strong.text", "strong.text", strong.text),
+            Paint::leaf("base.color", "base.color", base.color),
+            Paint::leaf("base.text", "base.text", base.text),
+            Paint::leaf("weak.color", "weak.color", weak.color),
+            Paint::leaf("weak.text", "weak.text", weak.text),
+            Paint::leaf("strong.color", "strong.color", strong.color),
+            Paint::leaf("strong.text", "strong.text", strong.text),
         ],
         &[],
         &[],
@@ -15929,6 +16597,421 @@ mod tests {
         );
     }
 
+    /// The style functions each page widget's Widget Info names rows of, by
+    /// its title: those its page draws the widget with, read from the page.
+    /// Every colour row of such an info is a row of one of them.
+    const DRAWN_WITH: &[(&str, &[&str])] = &[
+        ("Switch (native_theme_iced::switch)", &["styles::toggler"]),
+        ("iced's Toggler", &["styles::toggler"]),
+        ("Button (Primary)", &["styles::button_primary"]),
+        (
+            "Disabled Buttons",
+            &[
+                "styles::button_primary",
+                "styles::button",
+                "styles::button_danger",
+            ],
+        ),
+        ("TextInput", &["styles::text_input"]),
+        ("TextInput (secure)", &["styles::text_input"]),
+        ("TextEditor (multi-line)", &["styles::text_editor"]),
+        ("Checkbox", &["styles::checkbox"]),
+        ("Radio", &["styles::radio"]),
+        (
+            "PickList (dropdown)",
+            &["styles::pick_list", "styles::menu"],
+        ),
+        (
+            "ComboBox (searchable dropdown)",
+            &["styles::text_input", "styles::menu"],
+        ),
+        ("Horizontal Slider", &["styles::slider"]),
+        ("Slider (stepped)", &["styles::slider"]),
+        ("Vertical Slider", &["styles::slider"]),
+        ("Progress Bar", &["styles::progress_bar"]),
+        ("Styled Containers (card)", &["styles::container_card"]),
+        ("Tooltip", &["styles::tooltip"]),
+        ("PaneGrid", &["styles::pane_grid"]),
+        #[cfg(feature = "iced_aw")]
+        ("Card", &["styles::aw::card"]),
+        #[cfg(feature = "iced_aw")]
+        ("MenuBar / Menu", &["styles::aw::menu"]),
+        #[cfg(feature = "iced_aw")]
+        ("TabBar / Tabs", &["styles::aw::tab_bar"]),
+        #[cfg(feature = "iced_aw")]
+        ("Sidebar", &["styles::aw::sidebar"]),
+        #[cfg(feature = "iced_aw")]
+        ("Spinner", &["styles::aw::spinner"]),
+        #[cfg(feature = "iced_aw")]
+        ("SelectionList", &["styles::aw::selection_list"]),
+    ];
+
+    /// Rows an info must show, by its title: the states the ledger found
+    /// shown wrong (M9-085's hovered primary fill, M9-086's disabled
+    /// classes, M9-087's off thumb, M9-088's zero-width borders, Addendum A's
+    /// focused, hovered and resting field).
+    const SHOWN_ROWS: &[(&str, &str)] = &[
+        (
+            "Button (Primary)",
+            "styles::button_primary.background (Hovered)",
+        ),
+        (
+            "Disabled Buttons",
+            "styles::button_primary.background (Disabled)",
+        ),
+        ("Disabled Buttons", "styles::button.background (Disabled)"),
+        (
+            "Disabled Buttons",
+            "styles::button_danger.background (Disabled)",
+        ),
+        (
+            "Switch (native_theme_iced::switch)",
+            "styles::toggler.foreground (Active { is_toggled: false })",
+        ),
+        (
+            "iced's Toggler",
+            "styles::toggler.foreground (Active { is_toggled: false })",
+        ),
+        ("Progress Bar", "styles::progress_bar.border "),
+        ("Tooltip", "styles::tooltip.border "),
+        ("TextInput", "styles::text_input.border (Active)"),
+        ("TextInput", "styles::text_input.border (Hovered)"),
+        (
+            "TextInput",
+            "styles::text_input.border (Focused { is_hovered: false })",
+        ),
+    ];
+
+    /// What the row `row` (`styles::<fn>.<field>`) paints at `status`, the
+    /// `{:?}` of the widget's status (`None` for a function that takes
+    /// none), on `r`: the connector's style function called as the page calls
+    /// it. `None` where the test draws no such row or status.
+    fn row_ink(row: &str, status: Option<&str>, r: &ResolvedTheme, theme: &Theme) -> Option<Ink> {
+        fn at<S: Copy + std::fmt::Debug, O>(
+            style: impl Fn(&Theme, S) -> O,
+            statuses: &[S],
+            inks: fn(&O) -> Vec<(&'static str, Ink)>,
+            (theme, status, field): (&Theme, Option<&str>, &str),
+        ) -> Option<Ink> {
+            let named = |s: &S| {
+                let text = format!("{s:?}");
+                match status {
+                    Some(status) => status == text,
+                    None => text == "()",
+                }
+            };
+            let s = statuses.iter().find(|s| named(s))?;
+            inks(&style(theme, *s))
+                .into_iter()
+                .find(|(f, _)| *f == field)
+                .map(|(_, ink)| ink)
+        }
+        use button::Status as B;
+        let buttons = [B::Active, B::Hovered, B::Pressed, B::Disabled];
+        let (function, field) = row.split_once('.')?;
+        let call = (theme, status, field);
+        match function {
+            "styles::button" => at(styles::button(r), &buttons, button_inks, call),
+            "styles::button_primary" => at(styles::button_primary(r), &buttons, button_inks, call),
+            "styles::button_danger" => at(styles::button_danger(r), &buttons, button_inks, call),
+            "styles::text_input" => {
+                use text_input::Status as S;
+                let statuses = [
+                    S::Active,
+                    S::Hovered,
+                    S::Focused { is_hovered: false },
+                    S::Focused { is_hovered: true },
+                    S::Disabled,
+                ];
+                at(styles::text_input(r), &statuses, text_input_inks, call)
+            }
+            "styles::text_editor" => {
+                use text_editor::Status as S;
+                let statuses = [
+                    S::Active,
+                    S::Hovered,
+                    S::Focused { is_hovered: false },
+                    S::Focused { is_hovered: true },
+                    S::Disabled,
+                ];
+                at(styles::text_editor(r), &statuses, text_editor_inks, call)
+            }
+            "styles::checkbox" => {
+                use checkbox::Status as S;
+                let statuses = [false, true].map(|is_checked| {
+                    [
+                        S::Active { is_checked },
+                        S::Hovered { is_checked },
+                        S::Disabled { is_checked },
+                    ]
+                });
+                at(
+                    styles::checkbox(r),
+                    statuses.as_flattened(),
+                    checkbox_inks,
+                    call,
+                )
+            }
+            "styles::radio" => {
+                use radio::Status as S;
+                let statuses = [false, true]
+                    .map(|is_selected| [S::Active { is_selected }, S::Hovered { is_selected }]);
+                at(styles::radio(r), statuses.as_flattened(), radio_inks, call)
+            }
+            "styles::toggler" => {
+                use toggler::Status as S;
+                let statuses = [false, true].map(|is_toggled| {
+                    [
+                        S::Active { is_toggled },
+                        S::Hovered { is_toggled },
+                        S::Disabled { is_toggled },
+                    ]
+                });
+                at(
+                    styles::toggler(r),
+                    statuses.as_flattened(),
+                    toggler_inks,
+                    call,
+                )
+            }
+            "styles::pick_list" => {
+                use pick_list::Status as S;
+                let statuses = [
+                    S::Active,
+                    S::Hovered,
+                    S::Opened { is_hovered: false },
+                    S::Opened { is_hovered: true },
+                ];
+                at(styles::pick_list(r), &statuses, pick_list_inks, call)
+            }
+            "styles::menu" => at(statusless(styles::menu(r)), &[()], menu_inks, call),
+            "styles::slider" => {
+                use slider::Status as S;
+                let statuses = [S::Active, S::Hovered, S::Dragged];
+                at(styles::slider(r), &statuses, slider_inks, call)
+            }
+            "styles::progress_bar" => at(
+                statusless(styles::progress_bar(r)),
+                &[()],
+                progress_bar_inks,
+                call,
+            ),
+            "styles::container_card" => at(
+                statusless(styles::container_card(r)),
+                &[()],
+                container_inks,
+                call,
+            ),
+            "styles::tooltip" => at(statusless(styles::tooltip(r)), &[()], container_inks, call),
+            "styles::pane_grid" => at(
+                statusless(styles::pane_grid(r)),
+                &[()],
+                pane_grid_inks,
+                call,
+            ),
+            #[cfg(feature = "iced_aw")]
+            aw => {
+                use iced_aw::style::Status as S;
+                let statuses = [
+                    S::Active,
+                    S::Hovered,
+                    S::Pressed,
+                    S::Disabled,
+                    S::Focused,
+                    S::Selected,
+                ];
+                match aw {
+                    "styles::aw::card" => at(styles::aw::card(r), &statuses, aw_card_inks, call),
+                    "styles::aw::menu" => at(styles::aw::menu(r), &statuses, aw_menu_inks, call),
+                    "styles::aw::tab_bar" => {
+                        at(styles::aw::tab_bar(r), &statuses, aw_tab_bar_inks, call)
+                    }
+                    "styles::aw::sidebar" => {
+                        at(styles::aw::sidebar(r), &statuses, aw_sidebar_inks, call)
+                    }
+                    "styles::aw::selection_list" => at(
+                        styles::aw::selection_list(r),
+                        &statuses,
+                        aw_selection_list_inks,
+                        call,
+                    ),
+                    "styles::aw::spinner" => at(
+                        statusless(styles::aw::spinner(r)),
+                        &[()],
+                        container_inks,
+                        call,
+                    ),
+                    _ => None,
+                }
+            }
+            #[cfg(not(feature = "iced_aw"))]
+            _ => None,
+        }
+    }
+
+    /// Whether `reason`, what a "not drawn (..)" row gives, holds on `json`:
+    /// each of its `<leaf> <value>` parts names a leaf of the theme that is
+    /// 0, or unstated.
+    fn zero_reason_holds(reason: &str, json: &serde_json::Value) -> bool {
+        reason.split(", ").all(|part| {
+            let Some((leaf, value)) = part.rsplit_once(' ') else {
+                return false;
+            };
+            let pointer = format!("/{}", leaf.replace('.', "/"));
+            let read = json
+                .pointer(&pointer)
+                .or_else(|| json.pointer(&format!("{pointer}_px")));
+            match value {
+                "0" => read
+                    .and_then(serde_json::Value::as_f64)
+                    .is_some_and(|v| v == 0.0),
+                "unstated" => read.is_none_or(serde_json::Value::is_null),
+                _ => false,
+            }
+        })
+    }
+
+    /// What is wrong with the colour rows of `info`, a page widget's Widget
+    /// Info, on `state`'s theme: a row of a style function shows the hex
+    /// that function's output paints at the row's status, or "not drawn"
+    /// with the leaf that makes it so where that output's edge is 0 wide; a
+    /// widget the connector draws names no colour but such a row, and only
+    /// rows of the functions its page draws it with.
+    fn colour_row_faults(state: &State, info: &str, json: &serde_json::Value) -> Vec<String> {
+        let mut faults = Vec::new();
+        let title = info.lines().next().unwrap_or_default();
+        let drawn_with = DRAWN_WITH
+            .iter()
+            .find(|(t, _)| *t == title)
+            .map(|(_, functions)| *functions);
+        let mut colours = false;
+        for line in info.lines().skip(1) {
+            if !line.starts_with(' ') {
+                colours = line == "Theme colors:";
+                continue;
+            }
+            if !colours {
+                continue;
+            }
+            let Some((_, rest)) = line.trim().split_once(": ") else {
+                faults.push(format!("{title}: \"{line}\" is no role and colour"));
+                continue;
+            };
+            if !rest.starts_with("styles::") {
+                if drawn_with.is_some() {
+                    faults.push(format!(
+                        "{title}: \"{line}\" names no row of the style it is drawn with"
+                    ));
+                }
+                continue;
+            }
+            let (row, tail) = rest.split_once(' ').unwrap_or((rest, ""));
+            let (status, tail) = match tail.strip_prefix('(') {
+                Some(t) => match t.split_once(')') {
+                    Some((status, t)) => (Some(status), t),
+                    None => (None, tail),
+                },
+                None => (None, tail),
+            };
+            if let Some(functions) = drawn_with
+                && !functions
+                    .iter()
+                    .any(|f| row.strip_prefix(f).is_some_and(|r| r.starts_with('.')))
+            {
+                faults.push(format!("{title}: {row} is not a row of {functions:?}"));
+            }
+            if contract_leaves().is_none_or(|export| !export.rows.contains_key(row)) {
+                faults.push(format!("{title}: {row} is no row of the export"));
+            }
+            let Some(ink) = row_ink(row, status, &state.current_resolved, &state.current_theme)
+            else {
+                faults.push(format!(
+                    "{title}: {row} at {status:?} is no row the test draws"
+                ));
+                continue;
+            };
+            let shown = match ink {
+                Ink::Fill(color) => Some(color),
+                Ink::Edge { color, width } => (width > 0.0).then_some(color),
+            };
+            match (shown, tail.rsplit_once(" not drawn (")) {
+                (Some(color), _) => {
+                    let hex = color_to_hex(color);
+                    if line.rsplit(' ').next() != Some(hex.as_str()) {
+                        faults.push(format!("{title}: \"{line}\", drawn {hex}"));
+                    }
+                }
+                (None, Some((_, reason))) => {
+                    let reason = reason.strip_suffix(')').unwrap_or(reason);
+                    if !zero_reason_holds(reason, json) {
+                        faults.push(format!("{title}: \"{line}\": the theme says otherwise"));
+                    }
+                }
+                (None, None) => {
+                    faults.push(format!("{title}: \"{line}\", drawn 0 wide: not drawn"));
+                }
+            }
+        }
+        faults
+    }
+
+    /// M9-085..088 (info-truth): every colour a page widget's Widget Info
+    /// shows is what the style function its page draws it with paints, at
+    /// the status the row names, over every bundled preset in both modes and
+    /// the switch both ways: a hovered primary button is iced's derivation
+    /// from `button.primary_background`, a disabled class keeps its own pair
+    /// faded, the off thumb is the off thumb's, and an edge the theme states
+    /// 0 wide reads "not drawn". The rows `SHOWN_ROWS` lists are shown.
+    #[test]
+    fn every_page_colour_is_the_style_output_at_its_status() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let mut failures = Vec::new();
+        let mut titles = BTreeSet::new();
+        for preset in native_theme::theme::Theme::list_presets() {
+            for dark in [false, true] {
+                let choice = ThemeChoice::Preset(preset.key.to_owned());
+                state.current_choice = choice.clone();
+                state.is_dark = dark;
+                let loaded = state.load_theme(&choice, dark);
+                assert!(loaded.is_ok(), "{} (dark: {dark}): {loaded:?}", preset.key);
+                let json = match serde_json::to_value(&state.current_resolved) {
+                    Ok(json) => json,
+                    Err(error) => panic!("{}: {error}", preset.key),
+                };
+                for toggled in [false, true] {
+                    state.toggler_enabled = toggled;
+                    for info in &built_infos(&mut state) {
+                        let title = info.lines().next().unwrap_or_default();
+                        titles.insert(title.to_owned());
+                        for (_, row) in SHOWN_ROWS.iter().filter(|(t, _)| *t == title) {
+                            if !info.lines().any(|l| l.contains(&format!(": {row}"))) {
+                                failures.push(format!(
+                                    "{} (dark: {dark}): {title} shows no {row}",
+                                    preset.key
+                                ));
+                            }
+                        }
+                        failures.extend(
+                            colour_row_faults(&state, info, &json)
+                                .into_iter()
+                                .map(|f| format!("{} (dark: {dark}): {f}", preset.key)),
+                        );
+                    }
+                }
+            }
+        }
+        for (title, _) in DRAWN_WITH {
+            if !titles.contains(*title) {
+                failures.push(format!("no page builds the {title} info"));
+            }
+        }
+        failures.dedup();
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
     /// The focused field's focus-ring lengths route to what draws the ring
     /// (M8 T16): `styles::text_input`'s Focused border, which splicing
     /// either leaf moves in a bundled theme whose ring is inset (adwaita's).
@@ -15972,6 +17055,123 @@ mod tests {
                 })
             });
             assert!(moved, "{leaf} moves no Focused border in a bundled theme");
+        }
+    }
+
+    /// The page widgets' infos the pages of `state` build, each opening
+    /// with its title.
+    fn built_infos(state: &mut State) -> Vec<String> {
+        BUILT_INFOS.with(|infos| infos.borrow_mut().clear());
+        let shown = state.active_tab;
+        for tab in Tab::ALL {
+            state.active_tab = *tab;
+            drop(view(state));
+        }
+        state.active_tab = shown;
+        BUILT_INFOS.with(|infos| std::mem::take(&mut *infos.borrow_mut()))
+    }
+
+    /// The info of `infos` titled `title`.
+    fn info_titled<'a>(infos: &'a [String], title: &str) -> Option<&'a String> {
+        infos.iter().find(|info| info.lines().next() == Some(title))
+    }
+
+    /// M9-087: the switches' infos size the off thumb as it is drawn,
+    /// `switch.unchecked_thumb_diameter` where the theme states one (16
+    /// against material-3's 24), the on thumb's elsewhere; iced's toggler
+    /// takes it as its padding ratio where it fits the track.
+    #[test]
+    fn the_switch_infos_size_the_off_thumb_as_drawn() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let mut failures = Vec::new();
+        for preset in native_theme::theme::Theme::list_presets() {
+            for dark in [false, true] {
+                let choice = ThemeChoice::Preset(preset.key.to_owned());
+                state.current_choice = choice.clone();
+                state.is_dark = dark;
+                let loaded = state.load_theme(&choice, dark);
+                assert!(loaded.is_ok(), "{} (dark: {dark}): {loaded:?}", preset.key);
+                let s = state.current_resolved.switch.clone();
+                let off = s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter);
+                let leaf = match s.unchecked_thumb_diameter {
+                    Some(_) => "switch.unchecked_thumb_diameter",
+                    None => "switch.thumb_diameter",
+                };
+                let fits = s.track_height > 0.0 && (0.0..=s.track_height).contains(&off);
+                let infos = built_infos(&mut state);
+                for title in ["Switch (native_theme_iced::switch)", "iced's Toggler"] {
+                    let line = info_titled(&infos, title).and_then(|info| {
+                        info.lines().find(|l| l.starts_with("  off thumb size: "))
+                    });
+                    let holds = line.is_some_and(|l| {
+                        if title == "iced's Toggler" && !fits {
+                            l.contains("iced's own")
+                        } else {
+                            l.contains(&format!("{off:.0}px, {leaf}"))
+                        }
+                    });
+                    if !holds {
+                        failures.push(format!(
+                            "{} (dark: {dark}): {title}: {line:?}, drawn {off}px ({leaf})",
+                            preset.key
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
+    /// M9-093: under an OS text-scaling factor other than 1 the "Theme
+    /// fonts" lines give the size text is drawn at, `font_size(r, a11y)` and
+    /// `mono_font_size(r, a11y)`, with the theme's own beside it, as the
+    /// Display page's font line does; at 1 the theme's size alone.
+    #[test]
+    fn the_theme_fonts_lines_give_the_drawn_size() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let loaded = state.load_theme(&ThemeChoice::Preset("kde-breeze".to_owned()), false);
+        assert!(loaded.is_ok(), "{loaded:?}");
+        for factor in [1.0, 1.5] {
+            state.accessibility.text_scaling_factor = factor;
+            let r = &state.current_resolved.clone();
+            let a11y = &state.accessibility.clone();
+            let infos = built_infos(&mut state);
+            for title in ["Button (Primary)", "TextInput", "TextEditor (multi-line)"] {
+                let Some(info) = info_titled(&infos, title) else {
+                    panic!("no page builds the {title} info");
+                };
+                for (key, drawn, stated) in [
+                    (
+                        "  Font: ",
+                        native_theme_iced::font_size(r, a11y),
+                        r.defaults.font.size,
+                    ),
+                    (
+                        "  Mono: ",
+                        native_theme_iced::mono_font_size(r, a11y),
+                        r.defaults.mono_font.size,
+                    ),
+                ] {
+                    let line = info.lines().find(|l| l.starts_with(key));
+                    let want = if factor == 1.0 {
+                        format!(" {stated:.0}px")
+                    } else {
+                        format!(
+                            " {drawn:.1}px (OS text scaling {factor:.2}: the theme states {stated:.1}px)"
+                        )
+                    };
+                    assert!(
+                        line.is_some_and(|l| l.ends_with(&want)),
+                        "{title} at {factor}: {line:?}, drawn at {drawn}px, the theme's {stated}px"
+                    );
+                }
+            }
         }
     }
 
