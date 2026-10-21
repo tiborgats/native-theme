@@ -63,7 +63,6 @@ use iced_aw::sidebar::Sidebar;
 use iced_aw::{Card, ContextMenu, SelectionList, Spinner, TabBar, TabLabel, Tabs};
 
 use iced::Subscription;
-use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
     AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader,
     MaterialLoader, SegoeFluentLoader, SfSymbolsLoader, TransformAnimation, default_icon_choice,
@@ -77,7 +76,8 @@ use native_theme_iced::icons::{spin_rotation_radians, to_svg_handle};
 use native_theme_iced::palette::to_color;
 use native_theme_iced::styles;
 use native_theme_iced::{
-    AccessibilityPreferences, at_least, combo_box_padding, control_line_height, scaled_text_size,
+    AccessibilityPreferences, SystemThemeExt, at_least, combo_box_padding, control_line_height,
+    scaled_text_size,
 };
 // The colour-mode picker's rows: its `Display` is the Mode drop-down's and
 // the Theme menu's name of a mode, its `label` the command palette's.
@@ -932,9 +932,29 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
-/// The bundled adwaita preset, resolved, as the last-resort fallback: what
-/// is drawn, with the icon set and icon theme the preset states.
-struct AdwaitaFallback {
+/// The preset the showcase starts with where the OS theme fails to read:
+/// the platform's own, never another platform's. On Linux (and any platform
+/// with no preset of its own) the one the core merges a system read over
+/// (`pipeline::platform_preset_name`: `kde-breeze` on KDE, `adwaita`
+/// elsewhere); on macOS and Windows the newest generation's preset, where a
+/// failed read leaves no version to choose one by (the M9b rulings'
+/// amendment on docs/todo.md's *iced showcase: the startup fallback outside
+/// Linux*).
+fn platform_fallback_preset() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "macos-tahoe"
+    } else if cfg!(target_os = "windows") {
+        "windows-11"
+    } else {
+        native_theme::pipeline::platform_preset_name().name
+    }
+}
+
+/// The platform's preset ([`platform_fallback_preset`]), resolved, as the
+/// last-resort fallback: what is drawn, with the icon set and icon theme
+/// the preset states.
+struct PlatformFallback {
+    key: &'static str,
     resolved: native_theme::theme::ResolvedTheme,
     theme: Theme,
     layout: LayoutTheme,
@@ -942,12 +962,13 @@ struct AdwaitaFallback {
     icon_theme: Option<String>,
 }
 
-/// Load the bundled adwaita preset as a last-resort fallback.
+/// Load the platform's preset as a last-resort fallback.
 ///
 /// Returns `None` if any step fails (should not happen for bundled data,
 /// but we never panic).
-fn load_adwaita_fallback(is_dark: bool) -> Option<AdwaitaFallback> {
-    let nt = native_theme::theme::Theme::preset("adwaita").ok()?;
+fn load_platform_fallback(is_dark: bool) -> Option<PlatformFallback> {
+    let key = platform_fallback_preset();
+    let nt = native_theme::theme::Theme::preset(key).ok()?;
     let r = nt
         .resolve(if is_dark {
             native_theme_iced::ColorMode::Dark
@@ -955,7 +976,8 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<AdwaitaFallback> {
             native_theme_iced::ColorMode::Light
         })
         .ok()?;
-    Some(AdwaitaFallback {
+    Some(PlatformFallback {
+        key,
         theme: native_theme_iced::to_theme_in(&r.variant, &nt.name, r.mode),
         resolved: r.variant,
         layout: nt.layout.clone(),
@@ -1174,7 +1196,6 @@ fn build_animation_caches(
     Vec<Duration>,                                     // animated_frame_elapsed
     Vec<(String, iced_core::svg::Handle, NonZeroU32)>, // animated_spins
     Instant,                                           // animation_start
-    bool,                                              // reduced_motion
     Vec<(String, iced_core::svg::Handle)>,             // animated_static
 ) {
     let mut animated_frames = Vec::new();
@@ -1218,7 +1239,6 @@ fn build_animation_caches(
     let animated_frame_indices = vec![0; animated_frames.len()];
     let animated_frame_elapsed = vec![Duration::ZERO; animated_frames.len()];
     let animation_start = Instant::now();
-    let reduced_motion = prefers_reduced_motion();
 
     (
         animated_frames,
@@ -1226,7 +1246,6 @@ fn build_animation_caches(
         animated_frame_elapsed,
         animated_spins,
         animation_start,
-        reduced_motion,
         animated_static,
     )
 }
@@ -1234,6 +1253,39 @@ fn build_animation_caches(
 // ---------------------------------------------------------------------------
 // Application state
 // ---------------------------------------------------------------------------
+
+/// The accessibility preferences the user set in the Preferences dialog,
+/// each `None` until set there. Every install puts these over the OS's
+/// (`PreferenceOverrides::over`), so a preference the user set stays across
+/// theme and mode switches and reloads, and one the user did not set
+/// follows the OS, as the gpui showcase's `PreferenceOverrides` does
+/// (`showcase-gpui/demo.rs`).
+#[derive(Clone, Debug, Default, PartialEq)]
+struct PreferenceOverrides {
+    text_scaling_factor: Option<f32>,
+    reduce_motion: Option<bool>,
+    high_contrast: Option<bool>,
+    reduce_transparency: Option<bool>,
+}
+
+impl PreferenceOverrides {
+    /// `prefs` with every preference the user set replaced by the user's.
+    fn over(&self, mut prefs: AccessibilityPreferences) -> AccessibilityPreferences {
+        if let Some(scale) = self.text_scaling_factor {
+            prefs.text_scaling_factor = scale;
+        }
+        if let Some(on) = self.reduce_motion {
+            prefs.reduce_motion = on;
+        }
+        if let Some(on) = self.high_contrast {
+            prefs.high_contrast = on;
+        }
+        if let Some(on) = self.reduce_transparency {
+            prefs.reduce_transparency = on;
+        }
+        prefs
+    }
+}
 
 struct State {
     // Theme
@@ -1246,8 +1298,23 @@ struct State {
     /// shared between the light and the dark variant, so it sits on the
     /// native `Theme` and on `SystemTheme` instead.
     layout: LayoutTheme,
-    /// OS accessibility preferences (from SystemTheme, not ResolvedTheme).
+    /// The accessibility preferences applied: the OS's
+    /// (`os_accessibility`) with the ones the user set in the Preferences
+    /// dialog put over them (`preference_overrides`), laid again by every
+    /// install and every change in the dialog.
     accessibility: native_theme_iced::AccessibilityPreferences,
+    /// The OS's accessibility preferences as last read: the kept `system`
+    /// read's, or, where the startup read failed and none has succeeded
+    /// since, `detect::accessibility_preferences()`.
+    os_accessibility: native_theme_iced::AccessibilityPreferences,
+    /// The preferences the user set in the Preferences dialog, each `None`
+    /// until set there.
+    preference_overrides: PreferenceOverrides,
+    /// The OS theme as last read (at startup, on Reload System Theme and on
+    /// the theme watcher's event, which sends it): both variants, so a
+    /// colour-mode switch under `default` picks the other one without
+    /// reading the OS again. `None` while no read has succeeded.
+    system: Option<native_theme::SystemTheme>,
     /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
     current_icon_set: IconSet,
     /// Icon theme name for the current theme; `None` where the theme names
@@ -1402,8 +1469,6 @@ struct State {
     animated_spins: Vec<(String, iced_core::svg::Handle, NonZeroU32)>,
     /// Start time for spin animations (used with spin_rotation_radians).
     animation_start: Instant,
-    /// Whether reduced motion is active (cached at init).
-    reduced_motion: bool,
     /// Static first-frame SVG handles for reduced motion: (set_name, handle).
     animated_static: Vec<(String, iced_core::svg::Handle)>,
     /// The Basic page's spinner: the icon set's indicator, or the arc.
@@ -1426,9 +1491,10 @@ struct State {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
-    /// Reads the OS theme at startup and when the `default` entry is
-    /// installed after it: `SystemTheme::from_system`, which a test replaces
-    /// with a read that fails.
+    /// Reads the OS theme at startup, on Reload System Theme (which the
+    /// theme watcher's event sends) and where `default` is installed with no
+    /// read kept (`system`): `SystemTheme::from_system`, which a test
+    /// replaces with a read that fails, changes or counts.
     read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
     /// Detects the system icon theme the Icons page names:
     /// `system_icon_theme`, which a test replaces with a detection that
@@ -1449,64 +1515,74 @@ impl Default for State {
 
 impl State {
     /// The showcase at startup, with the OS theme `read_system_theme` reads
-    /// installed, or adwaita where that read fails.
+    /// installed in the mode the read reports (the colour mode is System),
+    /// or the platform's preset ([`platform_fallback_preset`]) where that
+    /// read fails.
     fn starting_with(
         read_system_theme: fn() -> native_theme::Result<native_theme::SystemTheme>,
     ) -> Self {
         let color_mode = AppColorMode::System;
-        let is_dark = color_mode.is_dark();
         let (
             resolved,
             theme,
+            is_dark,
             initial_error,
             system_preset,
             init_icon_set,
             init_icon_theme,
-            accessibility,
+            os_accessibility,
             layout,
             fallback_choice,
+            system,
         ) = match read_system_theme() {
             Ok(system) => {
-                let r = system
-                    .pick(if is_dark {
-                        native_theme_iced::ColorMode::Dark
-                    } else {
-                        native_theme_iced::ColorMode::Light
-                    })
-                    .clone();
-                let t = native_theme_iced::to_theme(&r, &system.name);
-                let preset = system.preset.clone();
-                let is = system.icon_set;
-                let it = system.icon_theme.map(Cow::into_owned);
-                let acc = system.accessibility;
-                let lay = system.layout.clone();
-                (r, t, None, preset, is, it, acc, lay, None)
+                let loaded = system.to_iced_theme();
+                (
+                    loaded.resolved,
+                    loaded.theme,
+                    loaded.mode.is_dark(),
+                    None,
+                    system.preset.clone(),
+                    loaded.icon_set,
+                    loaded.icon_theme.map(Cow::into_owned),
+                    loaded.accessibility,
+                    system.layout.clone(),
+                    None,
+                    Some(system),
+                )
             }
             Err(e) => {
-                // Fallback: load adwaita preset through resolve pipeline. The
-                // theme picker names what is drawn, so a mode change installs
-                // adwaita again instead of reading the OS theme.
-                match load_adwaita_fallback(is_dark) {
+                // The platform's preset, resolved. The theme picker names
+                // what is drawn, so a mode change installs that preset again
+                // instead of reading the OS theme.
+                let is_dark = color_mode.is_dark();
+                match load_platform_fallback(is_dark) {
                     Some(fallback) => (
                         fallback.resolved,
                         fallback.theme,
-                        Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
-                        "adwaita".to_string(),
+                        is_dark,
+                        Some(format!(
+                            "OS theme failed: {e}. Using {} fallback.",
+                            fallback.key
+                        )),
+                        fallback.key.to_string(),
                         fallback.icon_set,
                         fallback.icon_theme,
-                        native_theme_iced::AccessibilityPreferences::default(),
+                        native_theme::detect::accessibility_preferences(),
                         fallback.layout,
-                        Some(ThemeChoice::Preset("adwaita".to_string())),
+                        Some(ThemeChoice::Preset(fallback.key.to_string())),
+                        None,
                     ),
                     None => {
                         // This is the only safe fallback when both OS theme
-                        // detection and the bundled adwaita preset fail.
+                        // detection and the bundled platform preset fail.
                         // With bundled data this case is near-impossible.
                         // process::exit avoids constructing a dummy
                         // ResolvedTheme (30+ required fields).
                         eprintln!(
-                            "Fatal: OS theme failed ({e}) and adwaita fallback \
-                                 also failed. Cannot start."
+                            "Fatal: OS theme failed ({e}) and the {} fallback \
+                                 also failed. Cannot start.",
+                            platform_fallback_preset()
                         );
                         std::process::exit(1);
                     }
@@ -1543,7 +1619,6 @@ impl State {
             animated_frame_elapsed,
             animated_spins,
             animation_start,
-            reduced_motion,
             animated_static,
         ) = build_animation_caches(
             anim_set,
@@ -1587,7 +1662,10 @@ impl State {
             is_dark,
             current_resolved: resolved,
             layout,
-            accessibility,
+            accessibility: os_accessibility.clone(),
+            os_accessibility,
+            preference_overrides: PreferenceOverrides::default(),
+            system,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
             default_preset: system_preset,
@@ -1676,7 +1754,6 @@ impl State {
             animated_frame_elapsed,
             animated_spins,
             animation_start,
-            reduced_motion,
             animated_static,
             basic_spinner,
             screenshot_path: None,
@@ -1800,7 +1877,18 @@ impl State {
     /// the pickers showing it and the mode it is drawn in, with the error in
     /// the banner; false is returned.
     fn install_in_mode(&mut self, choice: ThemeChoice, mode: AppColorMode) -> bool {
-        let is_dark = mode.is_dark();
+        // The OS theme in System mode is drawn in the mode its read reports
+        // (`SystemTheme::mode`); every other install in the mode named.
+        let is_dark = match (&choice, mode) {
+            (ThemeChoice::OsTheme(_), AppColorMode::System) => match self.os_theme() {
+                Ok(system) => system.mode.is_dark(),
+                Err(error) => {
+                    self.error_message = Some(error);
+                    return false;
+                }
+            },
+            _ => mode.is_dark(),
+        };
         let icon_theme = match self.load_theme(&choice, is_dark) {
             Ok(icon_theme) => icon_theme,
             Err(error) => {
@@ -1814,6 +1902,9 @@ impl State {
         };
         self.color_mode = mode;
         self.is_dark = is_dark;
+        self.accessibility = self
+            .preference_overrides
+            .over(self.os_accessibility.clone());
 
         // Only a choice that follows the preset is re-derived; the user's
         // pick of an icon theme stays chosen across theme switches.
@@ -1836,10 +1927,59 @@ impl State {
         self.install_in_mode(self.current_choice.clone(), self.color_mode);
     }
 
+    /// Read the OS theme again, as Reload System Theme and the theme
+    /// watcher's event ask, and install the current theme again over it: the
+    /// OS theme from the new read, a preset with the OS's preferences as now
+    /// read. A read that fails leaves everything installed as it was, with
+    /// the error in the banner.
+    fn reload_system_theme(&mut self) {
+        native_theme::detect::invalidate_caches();
+        match (self.read_system_theme)() {
+            Ok(system) => {
+                self.keep_os_theme(system);
+                self.rebuild_theme();
+            }
+            Err(e) => self.error_message = Some(format!("Failed to load OS theme: {e}")),
+        }
+    }
+
+    /// The OS theme as last read, read now where no read has succeeded yet
+    /// (the startup read failed).
+    fn os_theme(&mut self) -> Result<&native_theme::SystemTheme, String> {
+        match self.system {
+            Some(ref system) => Ok(system),
+            None => {
+                let system = (self.read_system_theme)()
+                    .map_err(|e| format!("Failed to load OS theme: {e}"))?;
+                Ok(self.keep_os_theme(system))
+            }
+        }
+    }
+
+    /// Keep `system`, a new read of the OS theme, with its accessibility
+    /// preferences as the OS's and its platform preset as the one the theme
+    /// picker's `default` row names.
+    fn keep_os_theme(&mut self, system: native_theme::SystemTheme) -> &native_theme::SystemTheme {
+        self.os_accessibility = system.accessibility.clone();
+        self.default_preset = system.preset.clone();
+        self.system.insert(system)
+    }
+
+    /// Record the user's `change` in the Preferences dialog and apply the
+    /// preferences, the user's over the OS's.
+    fn set_preference(&mut self, change: impl FnOnce(&mut PreferenceOverrides)) {
+        change(&mut self.preference_overrides);
+        self.accessibility = self
+            .preference_overrides
+            .over(self.os_accessibility.clone());
+    }
+
     /// Load `choice` in the mode `is_dark` names into the theme fields.
     ///
     /// `Ok` holds the icon theme the theme states (`None` where its TOML
-    /// states none); `Err` the error, with the theme fields untouched.
+    /// states none); `Err` the error, with the theme fields untouched. The
+    /// OS theme is the kept read's variant (`os_theme`): a mode switch reads
+    /// nothing.
     fn load_theme(
         &mut self,
         choice: &ThemeChoice,
@@ -1851,24 +1991,25 @@ impl State {
             native_theme_iced::ColorMode::Light
         };
         match choice {
-            ThemeChoice::OsTheme(_) => match (self.read_system_theme)() {
-                Ok(system) => {
-                    // Platform presets always specify icon_theme.
-                    self.current_icon_set = system.icon_set;
-                    self.accessibility = system.accessibility.clone();
-                    self.layout = system.layout.clone();
-                    self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
-                    self.current_resolved = system.pick(mode).clone();
-                    self.current_theme =
-                        native_theme_iced::to_theme(&self.current_resolved, &system.name);
-                    self.default_preset = system.preset.clone();
-                    self.error_message = None;
-                    Ok(self.current_icon_theme.clone())
-                }
-                // Only startup falls back to adwaita, with nothing installed
-                // yet; here the installed theme stays.
-                Err(e) => Err(format!("Failed to load OS theme: {e}")),
-            },
+            ThemeChoice::OsTheme(_) => {
+                // Only startup falls back to the platform's preset, with
+                // nothing installed yet; here a failed read leaves the
+                // installed theme.
+                let system = self.os_theme()?;
+                let icon_set = system.icon_set;
+                let layout = system.layout.clone();
+                // Each variant's own icon theme: KDE names one per variant.
+                let icon_theme = system.icon_theme_for(mode).map(str::to_owned);
+                let resolved = system.pick(mode).clone();
+                let theme = native_theme_iced::to_theme_in(&resolved, &system.name, mode);
+                self.current_icon_set = icon_set;
+                self.layout = layout;
+                self.current_icon_theme = icon_theme;
+                self.current_resolved = resolved;
+                self.current_theme = theme;
+                self.error_message = None;
+                Ok(self.current_icon_theme.clone())
+            }
             ThemeChoice::Preset(name) => {
                 let nt = native_theme::theme::Theme::preset(name)
                     .map_err(|e| format!("Failed to load preset '{name}': {e}"))?;
@@ -1884,7 +2025,8 @@ impl State {
                 self.current_icon_set = r.icon_set;
                 self.current_resolved = r.variant;
                 self.layout = nt.layout.clone();
-                self.current_theme = native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                self.current_theme =
+                    native_theme_iced::to_theme_in(&self.current_resolved, &nt.name, r.mode);
                 self.error_message = None;
                 Ok(icon_theme)
             }
@@ -1917,7 +2059,7 @@ impl State {
         let anim_set = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(
+        let (af, afi, afe, asp, astart, ast) = build_animation_caches(
             anim_set,
             self.icon_set_choice.freedesktop_theme(),
             self.current_resolved.defaults.text_color,
@@ -1927,7 +2069,6 @@ impl State {
         self.animated_frame_elapsed = afe;
         self.animated_spins = asp;
         self.animation_start = astart;
-        self.reduced_motion = rm;
         self.animated_static = ast;
         self.basic_spinner = native_theme_iced::Spinner::new(
             &self.current_resolved,
@@ -1957,9 +2098,12 @@ impl State {
     }
 
     /// Whether animations stop: the OS asks for reduced motion, or the
-    /// Preferences dialog's Reduce motion is on.
+    /// Preferences dialog's Reduce motion is on. The switch off is no
+    /// request, so the OS's request stops them whatever it shows (the gpui
+    /// connector's rule, native-theme-gpui `forward_reduce_motion`, spec
+    /// v0.5.9 §5).
     fn motion_reduced(&self) -> bool {
-        self.reduced_motion || self.accessibility.reduce_motion
+        self.os_accessibility.reduce_motion || self.accessibility.reduce_motion
     }
 }
 
@@ -2265,10 +2409,7 @@ fn update_inner(state: &mut State, message: Message) {
             // Keep last info visible (like gpui showcase)
         }
         Message::ToggleSidePanel => state.side_panel_visible = !state.side_panel_visible,
-        Message::ReloadSystemTheme => {
-            native_theme::detect::invalidate_caches();
-            state.rebuild_theme();
-        }
+        Message::ReloadSystemTheme => state.reload_system_theme(),
         // One dialog at a time: a second shortcut leaves the open one be.
         Message::Open(overlay) => {
             if state.overlay.is_none() {
@@ -2291,10 +2432,18 @@ fn update_inner(state: &mut State, message: Message) {
             state.side_panel_width = splitter_width(state.side_panel_width, size.width);
         }
         Message::PaletteQueryChanged(query) => state.palette_query = query,
-        Message::TextScaleSelected(scale) => state.accessibility.text_scaling_factor = scale.0,
-        Message::ReduceMotionToggled(on) => state.accessibility.reduce_motion = on,
-        Message::HighContrastToggled(on) => state.accessibility.high_contrast = on,
-        Message::ReduceTransparencyToggled(on) => state.accessibility.reduce_transparency = on,
+        Message::TextScaleSelected(scale) => {
+            state.set_preference(|set| set.text_scaling_factor = Some(scale.0));
+        }
+        Message::ReduceMotionToggled(on) => {
+            state.set_preference(|set| set.reduce_motion = Some(on))
+        }
+        Message::HighContrastToggled(on) => {
+            state.set_preference(|set| set.high_contrast = Some(on))
+        }
+        Message::ReduceTransparencyToggled(on) => {
+            state.set_preference(|set| set.reduce_transparency = Some(on));
+        }
         Message::BasicHeld | Message::MenuOpened => {}
         Message::MenuTitleOpened(title) => state.menu_title_open = title,
         Message::BasicRadioSelected(i) => state.basic_radio = i,
@@ -6717,7 +6866,7 @@ fn preferences(state: &State) -> Element<'_, Message> {
         text("Accessibility").role(section_title(&resolved.text_scale), resolved, a11y),
         caption_text(
             state,
-            "Read from the OS with its theme; the showcase applies each one itself",
+            "Read from the OS with its theme, one set here kept over the OS's across theme and mode switches; the showcase applies each one itself",
             to_color(resolved.defaults.muted_color),
         ),
         preference(
@@ -6729,7 +6878,7 @@ fn preferences(state: &State) -> Element<'_, Message> {
         preference(
             state,
             "Reduce motion",
-            "reduce_motion: the spinner and the Icons page's animations stop",
+            "reduce_motion: the spinner and the Icons page's animations stop; an OS request keeps them stopped whatever the switch shows",
             switch(a11y.reduce_motion, Message::ReduceMotionToggled),
         ),
         preference(
@@ -14731,48 +14880,62 @@ mod tests {
     }
 
     /// After startup, an OS theme that fails to read is a failed install
-    /// like any other: the installed theme stays drawn and named, never
-    /// adwaita under the `default` entry. Only at startup, with nothing
-    /// installed yet, is adwaita the fallback.
+    /// like any other: Reload System Theme, under a preset or under
+    /// `default`, and a switch to `default` where no read has succeeded
+    /// leave the installed theme drawn and named, with the error in the
+    /// banner, never the platform's preset under the `default` entry. Only at
+    /// startup, with nothing installed yet, is that preset the fallback.
     #[test]
     fn a_failed_os_theme_read_keeps_the_installed_theme() {
-        let mut state = State::default();
+        fn failing_read() -> native_theme::Result<native_theme::SystemTheme> {
+            Err(native_theme::error::Error::PlatformUnsupported {
+                platform: "the test's failing read",
+            })
+        }
         let preset = match native_theme::theme::Theme::list_presets_for_platform().first() {
             Some(info) => info.key,
             None => panic!("this platform offers no preset"),
         };
+        let mut under_preset = State::default();
         let _ = update(
-            &mut state,
+            &mut under_preset,
             Message::ThemeSelected(ThemeChoice::Preset(preset.to_string())),
         );
-        state.read_system_theme = || {
-            Err(native_theme::error::Error::PlatformUnsupported {
-                platform: "the test's failing read",
-            })
-        };
-        let before = shown(&state);
-
-        let _ = update(
-            &mut state,
-            Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
-        );
-        assert_eq!(
-            shown(&state),
-            before,
-            "a failed OS-theme read replaced {preset}"
-        );
-        assert!(
-            state.error_message.is_some(),
-            "a failed OS-theme read reported nothing"
-        );
+        let cases = [
+            (
+                format!("Reload System Theme under {preset}"),
+                under_preset,
+                Message::ReloadSystemTheme,
+            ),
+            (
+                "Reload System Theme under default".to_string(),
+                State::default(),
+                Message::ReloadSystemTheme,
+            ),
+            (
+                "a switch to default after the startup fallback".to_string(),
+                State::starting_with(failing_read),
+                Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
+            ),
+        ];
+        for (case, mut state, message) in cases {
+            state.read_system_theme = failing_read;
+            state.error_message = None;
+            let before = shown(&state);
+            let _ = update(&mut state, message);
+            assert_eq!(shown(&state), before, "{case} replaced the installed theme");
+            assert!(state.error_message.is_some(), "{case} reported nothing");
+        }
     }
 
-    /// An OS theme that fails to read at startup leaves adwaita drawn, and
-    /// the theme picker naming adwaita, with the failed read in the banner:
-    /// a colour-mode change, from the picker or `--variant`, and a rebuild
-    /// by the theme watcher install adwaita again, in the mode chosen.
+    /// An OS theme that fails to read at startup leaves the platform's own
+    /// preset drawn (`platform_fallback_preset`, never another platform's),
+    /// and the theme picker naming it, with the failed read in the banner
+    /// and the OS's accessibility preferences applied: a colour-mode change,
+    /// from the picker or `--variant`, and a rebuild install that preset
+    /// again, in the mode chosen.
     #[test]
-    fn the_startup_fallback_is_adwaita_in_every_mode() {
+    fn the_startup_fallback_is_the_platform_preset_in_every_mode() {
         fn failing_read() -> native_theme::Result<native_theme::SystemTheme> {
             Err(native_theme::error::Error::PlatformUnsupported {
                 platform: "the test's failing read",
@@ -14785,21 +14948,45 @@ mod tests {
                 state.error_message.clone(),
             )
         }
-        let adwaita = ThemeChoice::Preset("adwaita".to_string());
+        let key = platform_fallback_preset();
+        if cfg!(target_os = "linux") {
+            assert_eq!(
+                key,
+                native_theme::pipeline::platform_preset_name().name,
+                "on Linux the startup fallback is the preset a system read merges over"
+            );
+        }
+        assert!(
+            native_theme::theme::Theme::list_presets_for_platform()
+                .iter()
+                .any(|info| info.key == key),
+            "the startup fallback {key} is not a preset of this platform"
+        );
+        let fallback = ThemeChoice::Preset(key.to_string());
         let mut state = State::starting_with(failing_read);
-        assert_eq!(state.current_choice, adwaita, "the picker at startup");
+        assert_eq!(state.current_choice, fallback, "the picker at startup");
         assert!(
             state.error_message.is_some(),
             "the failed OS-theme read at startup reported nothing"
         );
-        let preset = native_theme::theme::Theme::preset("adwaita")
-            .and_then(|t| t.resolve(native_theme_iced::ColorMode::Light))
+        let mode = if state.is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        };
+        let preset = native_theme::theme::Theme::preset(key)
+            .and_then(|t| t.resolve(mode))
             .map(|r| (r.icon_set, r.icon_theme.map(Cow::into_owned)))
             .ok();
         assert_eq!(
             Some((state.current_icon_set, state.current_icon_theme.clone())),
             preset,
-            "the startup fallback's icons are not the adwaita preset's"
+            "the startup fallback's icons are not the {key} preset's"
+        );
+        assert_eq!(
+            state.accessibility,
+            native_theme::detect::accessibility_preferences(),
+            "the startup fallback's accessibility preferences are not the OS's"
         );
 
         let (other, other_name) = if state.is_dark {
@@ -14810,7 +14997,7 @@ mod tests {
         let _ = update(&mut state, Message::ColorModeSelected(other));
         assert_eq!(
             installed(&state),
-            (adwaita.clone(), other, None),
+            (fallback.clone(), other, None),
             "a colour-mode change after the startup fallback"
         );
 
@@ -14818,7 +15005,7 @@ mod tests {
         apply_cli_args(&mut state, &command_line(&[("--variant", other_name)]));
         assert_eq!(
             installed(&state),
-            (adwaita.clone(), other, None),
+            (fallback.clone(), other, None),
             "--variant {other_name} after the startup fallback"
         );
 
@@ -14826,9 +15013,250 @@ mod tests {
         state.rebuild_theme();
         assert_eq!(
             installed(&state),
-            (adwaita, other, None),
-            "the theme watcher's rebuild after the startup fallback"
+            (fallback, other, None),
+            "a rebuild after the startup fallback"
         );
+    }
+
+    /// The showcase started with `read` as its OS theme read, or `None` off
+    /// Linux where this build has no reader for the host (on Linux the read
+    /// falls back to the platform preset, so it never fails there).
+    fn started_with_os(
+        read: fn() -> native_theme::Result<native_theme::SystemTheme>,
+    ) -> Option<State> {
+        let state = State::starting_with(read);
+        if let Some(error) = &state.error_message {
+            if cfg!(target_os = "linux") {
+                panic!("the OS theme failed to read on Linux: {error}");
+            }
+            return None;
+        }
+        Some(state)
+    }
+
+    /// The OS theme this host reads, with `change` made to it.
+    fn os_read_with(
+        change: impl FnOnce(&mut native_theme::SystemTheme),
+    ) -> native_theme::Result<native_theme::SystemTheme> {
+        let mut system = native_theme::SystemTheme::from_system()?;
+        change(&mut system);
+        Ok(system)
+    }
+
+    /// Under `default`, each colour mode draws its icons from that mode's
+    /// icon theme (`SystemTheme::icon_theme_for`), as KDE names one per
+    /// variant: Dark chosen on a light desktop takes `breeze-dark`, not the
+    /// light variant's `breeze`, as the `kde-breeze` preset does in Dark.
+    #[test]
+    fn the_os_theme_takes_each_modes_icon_theme() {
+        fn breeze_variants() -> native_theme::Result<native_theme::SystemTheme> {
+            let overlay = native_theme::theme::Theme::from_toml(
+                "[light.defaults]\nicon_theme = \"breeze\"\n\
+                 [dark.defaults]\nicon_theme = \"breeze-dark\"\n",
+            )?;
+            let mut system = native_theme::SystemTheme::from_system()?.with_overlay(&overlay)?;
+            system.mode = native_theme_iced::ColorMode::Light;
+            system.icon_theme = system
+                .icon_theme_for(native_theme_iced::ColorMode::Light)
+                .map(|name| Cow::Owned(name.to_owned()));
+            Ok(system)
+        }
+        let Some(mut state) = started_with_os(breeze_variants) else {
+            return;
+        };
+        assert_eq!(
+            state.current_icon_theme.as_deref(),
+            Some("breeze"),
+            "the OS theme in its own (light) mode"
+        );
+        for (mode, wanted) in [
+            (AppColorMode::Dark, "breeze-dark"),
+            (AppColorMode::Light, "breeze"),
+        ] {
+            let _ = update(&mut state, Message::ColorModeSelected(mode));
+            assert_eq!(
+                state.current_icon_theme.as_deref(),
+                Some(wanted),
+                "the OS theme installed in {mode}"
+            );
+        }
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::Preset("nord".to_owned())),
+        );
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Dark));
+        let _ = update(
+            &mut state,
+            Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
+        );
+        assert_eq!(
+            state.current_icon_theme.as_deref(),
+            Some("breeze-dark"),
+            "a switch to the OS theme in Dark"
+        );
+    }
+
+    /// A preference set in the Preferences dialog stays what the user set
+    /// across a colour-mode change, Reload System Theme and a switch to the
+    /// OS theme; one the user did not set follows the OS.
+    #[test]
+    fn a_preference_set_by_the_user_survives_every_install() {
+        fn unscaled() -> native_theme::Result<native_theme::SystemTheme> {
+            os_read_with(|system| system.accessibility.text_scaling_factor = 1.0)
+        }
+        let Some(mut state) = started_with_os(unscaled) else {
+            return;
+        };
+        let os = state.accessibility.clone();
+        let set = match TEXT_SCALES
+            .iter()
+            .find(|scale| scale.0 != os.text_scaling_factor)
+        {
+            Some(scale) => *scale,
+            None => panic!("the Preferences dialog offers no scale but the OS's"),
+        };
+        let _ = update(&mut state, Message::TextScaleSelected(set));
+        let other = if state.is_dark {
+            AppColorMode::Light
+        } else {
+            AppColorMode::Dark
+        };
+        let steps = [
+            ("a colour-mode change", Message::ColorModeSelected(other)),
+            ("Reload System Theme", Message::ReloadSystemTheme),
+            (
+                "a switch to a preset",
+                Message::ThemeSelected(ThemeChoice::Preset("nord".to_owned())),
+            ),
+            (
+                "a switch to the OS theme",
+                Message::ThemeSelected(ThemeChoice::OsTheme(String::new())),
+            ),
+        ];
+        for (step, message) in steps {
+            let _ = update(&mut state, message);
+            assert_eq!(
+                state.accessibility.text_scaling_factor, set.0,
+                "the user's text scale after {step}"
+            );
+            assert_eq!(
+                (
+                    state.accessibility.reduce_motion,
+                    state.accessibility.high_contrast,
+                    state.accessibility.reduce_transparency,
+                ),
+                (os.reduce_motion, os.high_contrast, os.reduce_transparency),
+                "the preferences the user did not set after {step}"
+            );
+        }
+    }
+
+    /// The OS's request for reduced motion stops the animations whatever
+    /// the Preferences switch shows, and the switch's row says so; where the
+    /// OS asks for none, the switch on stops them (the gpui showcase's rule,
+    /// native-theme-gpui `forward_reduce_motion`: off is no request).
+    #[test]
+    fn an_os_motion_request_stops_the_animations_whatever_the_switch_shows() {
+        fn requested() -> native_theme::Result<native_theme::SystemTheme> {
+            os_read_with(|system| system.accessibility.reduce_motion = true)
+        }
+        fn not_requested() -> native_theme::Result<native_theme::SystemTheme> {
+            os_read_with(|system| system.accessibility.reduce_motion = false)
+        }
+        let Some(mut state) = started_with_os(requested) else {
+            return;
+        };
+        let _ = update(&mut state, Message::ReduceMotionToggled(false));
+        assert!(!state.accessibility.reduce_motion, "the switch shows off");
+        assert!(
+            state.motion_reduced(),
+            "the OS asks for reduced motion and the switch is off"
+        );
+        state.overlay = Some(Overlay::Preferences);
+        let mut ui = interface(&state);
+        let rule = "an OS request keeps them stopped whatever the switch shows";
+        assert!(
+            texts(&mut ui).iter().any(|(text, _)| text.contains(rule)),
+            "the Reduce motion row does not say that the OS's request wins"
+        );
+
+        let Some(mut state) = started_with_os(not_requested) else {
+            return;
+        };
+        assert!(
+            !state.motion_reduced(),
+            "neither the OS nor the switch asks"
+        );
+        let _ = update(&mut state, Message::ReduceMotionToggled(true));
+        assert!(state.motion_reduced(), "the switch on");
+    }
+
+    thread_local! {
+        /// The OS theme reads `counted_read` has made on this test's thread.
+        static OS_READS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    }
+
+    /// The OS theme as this host reads it, counted in [`OS_READS`].
+    fn counted_read() -> native_theme::Result<native_theme::SystemTheme> {
+        OS_READS.with(|reads| reads.set(reads.get() + 1));
+        native_theme::SystemTheme::from_system()
+    }
+
+    /// The OS theme is read once at startup and again on Reload System
+    /// Theme only: a colour-mode switch under `default` picks the other
+    /// variant of the read it keeps, which holds both.
+    #[test]
+    fn a_mode_switch_under_the_os_theme_reads_nothing() {
+        let reads = || OS_READS.with(std::cell::Cell::get);
+        OS_READS.with(|reads| reads.set(0));
+        let Some(mut state) = started_with_os(counted_read) else {
+            return;
+        };
+        assert_eq!(reads(), 1, "startup");
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Dark));
+        assert_eq!(reads(), 1, "a switch to Dark under the OS theme");
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Light));
+        assert_eq!(reads(), 1, "a switch to Light under the OS theme");
+        let _ = update(&mut state, Message::ReloadSystemTheme);
+        assert_eq!(reads(), 2, "Reload System Theme");
+    }
+
+    /// The iced theme's `is_dark` (which the window's title bar follows) is
+    /// the mode the theme was installed in, not iced's guess from its
+    /// background: on every install path, an OS theme whose dark variant
+    /// has the light background included.
+    #[test]
+    fn the_iced_theme_is_dark_in_the_mode_installed() {
+        fn light_dark_variant() -> native_theme::Result<native_theme::SystemTheme> {
+            os_read_with(|system| {
+                system.dark.defaults.background_color = system.light.defaults.background_color;
+                system.mode = native_theme_iced::ColorMode::Dark;
+            })
+        }
+        let drawn_dark = |state: &State| theme(state).extended_palette().is_dark;
+        let Some(mut state) = started_with_os(light_dark_variant) else {
+            return;
+        };
+        assert!(state.is_dark, "startup in the read's own mode, Dark");
+        assert!(drawn_dark(&state), "the OS theme at startup, in Dark");
+        for mode in [
+            AppColorMode::Light,
+            AppColorMode::Dark,
+            AppColorMode::System,
+        ] {
+            let _ = update(&mut state, Message::ColorModeSelected(mode));
+            assert_eq!(drawn_dark(&state), state.is_dark, "the OS theme in {mode}");
+        }
+        for info in native_theme::theme::Theme::list_presets() {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                assert!(
+                    state.install_in_mode(ThemeChoice::Preset(info.key.to_owned()), mode),
+                    "{} in {mode}",
+                    info.key
+                );
+                assert_eq!(drawn_dark(&state), state.is_dark, "{} in {mode}", info.key);
+            }
+        }
     }
 
     /// `--icon-set` takes exactly what the icon-theme picker offers: its
@@ -15067,7 +15495,7 @@ mod tests {
     #[test]
     fn a_freedesktop_theme_without_a_spinner_gets_none() {
         let theme = "no-such-icon-theme";
-        let (frames, _, _, spins, _, _, statics) = build_animation_caches(
+        let (frames, _, _, spins, _, statics) = build_animation_caches(
             IconSet::Freedesktop,
             Some(theme),
             State::default().current_resolved.defaults.text_color,
