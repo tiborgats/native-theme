@@ -6,6 +6,9 @@ self-checked again; checked independently; approved by the maintainer on 2026-10
 D11 in [`todo_code-review-plan.md`](todo_code-review-plan.md) records; being implemented as
 milestone G3. What to build: [`todo_v0.7.0_gpui-kit-0.8.0-spec.md`](todo_v0.7.0_gpui-kit-0.8.0-spec.md).
 Tasks and gates: [`todo_v0.7.0_gpui-kit-0.8.0-plan.md`](todo_v0.7.0_gpui-kit-0.8.0-plan.md).
+*Added 2026-10-21 (G3 T1 fix round 1):* the decisions run to K19, Task 1's deviation, after
+K14–K18; K19's "a draw prepaints everything before it paints anything" reads
+`window.rs:3757-3821` (the prompt, drag and tooltip paint included), where it cites `:3757-3813`.
 
 GPUI Kit v0.8.0 was released on 2026-10-19: gpui-kit, gpui-kit-assets, gpui-component,
 gpui-component-macros and gpui-base 0.8.0, on gpui-pre 0.3.9 (unchanged) or on GPUI Fast

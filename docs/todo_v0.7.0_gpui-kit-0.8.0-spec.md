@@ -6,6 +6,8 @@ the maintainer on 2026-10-21, as D11 in [`todo_code-review-plan.md`](todo_code-r
 records; being implemented as milestone G3. Reasons:
 [`todo_v0.7.0_gpui-kit-0.8.0-rationale.md`](todo_v0.7.0_gpui-kit-0.8.0-rationale.md)
 (K1–K18). Tasks and gates: [`todo_v0.7.0_gpui-kit-0.8.0-plan.md`](todo_v0.7.0_gpui-kit-0.8.0-plan.md).
+*Added 2026-10-21 (G3 T1 fix round 1):* the rationale's K19, Task 1's deviation (§2.4), follows
+K18.
 
 Abbreviations as in the rationale: `GK8`, `GC7`/`GC8`, `GB7`/`GB8`, `GF7`/`GF10` (registry
 sources, `~/.cargo/registry/src/index.crates.io-*/<crate>-<version>/src/`), `CN` =
@@ -136,6 +138,11 @@ connectors and showcases (§12).
 
 ### 2.2 Reading painted quads on both cores
 
+- *Added 2026-10-21 (G3 T1 fix round 1), the controller's ruling, which overrides the next
+  item's "one helper in each test module":* the helpers (`scene_quads`, `scene_underlines`,
+  and the clip-group descent) are in one file, `CN/src/widgets/scene_read.rs`, which both
+  test modules include with `#[path]`, so a fix to the descent is made once; the mutation
+  check runs against that one copy, from both modules.
 - One helper in each test module, `CN/src/widgets/tests.rs` and `SC/tests.rs`, named alike
   (`scene_quads(window: &Window) -> Vec<Quad>`), each doc comment naming the other copy:
   - default core: `window.painted_quads()`;

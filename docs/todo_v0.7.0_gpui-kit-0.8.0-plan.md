@@ -213,6 +213,14 @@ Depends on: Task 0; an M9b boundary.
       citation gates.
     - Task 2's base stays the M9b boundary commit Task 1 started from, so all three commits'
       lines are Task 1's.
+    - *Added 2026-10-21 (G3 T1 fix round 1), the controller's ruling:* Task 1's lines are
+      the lines the G3 Task 1 commits added, read with `git show` of each (`62ac5935`,
+      `b641e699`, `0be1b8fe`, `c8d89e75`), not every `+` line of `git diff <base>
+      <T1-last>`. M9b's T8 fix-round and T9 commits (`fb58c777` … `f876c1a7`) landed between
+      G3 T0's last commit and Task 1's second, while Task 1 was blocked on the partial-frame
+      design and before any red commit, against the *Interleaving* rule that Tasks 1–3 run
+      with no M9b commit between them; so `git diff 238988be c8d89e75` holds M9b's added
+      lines too, which this ruling leaves to Task 2's script like any other line.
 
 ## Task 2: Renumber the moved citations
 
