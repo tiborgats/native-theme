@@ -8337,8 +8337,11 @@ fn check_mark_colour(resolved: &ResolvedTheme, checked: bool, enabled: bool) -> 
     };
     match style.background {
         iced::Background::Color(fill) => {
-            let whole = over(unfaded(style.icon_color), over(unfaded(fill), page));
-            over(
+            let whole = styles::composite_over(
+                unfaded(style.icon_color),
+                styles::composite_over(unfaded(fill), page),
+            );
+            styles::composite_over(
                 Color {
                     a: opacity,
                     ..whole
@@ -8431,18 +8434,6 @@ const EGUI_ICON_WIDTH_INNER: f32 = 8.0;
 /// edge through the middle of its bottom edge to its top-right corner, the mark
 /// box being the indicator inside `inset` on each side: its border and the
 /// stated padding, or egui's share of the box where the theme states none.
-/// `top` over an opaque `bottom`, blended in sRGB as the connector blends a
-/// translucent layer (`styles::composite_over`) and as iced's quads show one:
-/// an opaque colour.
-fn over(top: Color, bottom: Color) -> Color {
-    let mix = |t: f32, b: f32| t * top.a + b * (1.0 - top.a);
-    Color::from_rgb(
-        mix(top.r, bottom.r),
-        mix(top.g, bottom.g),
-        mix(top.b, bottom.b),
-    )
-}
-
 struct CheckMark {
     checked: bool,
     color: Color,
