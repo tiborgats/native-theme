@@ -5,9 +5,9 @@ edition.workspace = true
 license.workspace = true
 # NOT inherited: the gpui-pre closure declares a higher floor than the
 # workspace. Set to the lowest toolchain that compiles the library; measured
-# 2026-10-12 on the 0.7.3 closure: 1.95.0 builds; 1.94.0 fails on
-# std::hint::cold_path in gpui-pre (src/profiler.rs:473, measured on 0.3.8,
-# the line unchanged in 0.3.9).
+# 2026-10-21 on the 0.8.0 closure: 1.95.0 builds; 1.94.0 fails on
+# std::hint::cold_path in gpui-pre 0.3.9 (src/profiler.rs:473), which
+# gpui-fast 0.1.10 calls at the same line.
 rust-version = "1.95.0"
 repository.workspace = true
 homepage.workspace = true
@@ -54,7 +54,7 @@ watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 
 [dependencies]
 # GPUI under the package name gpui-component uses, so both edges unify.
-# gpui-component 0.7.3 depends on `gpui-pre = "=0.3.9"` (an exact pin), so
+# gpui-component 0.8.0 depends on `gpui-pre = "=0.3.9"` (an exact pin), so
 # 0.3.9 is the only version that resolves with it. gpui-component does not
 # re-export gpui. The crate roots name GPUI through gpui-kit (below); this
 # dependency stays for the doctests, each a crate of its own that names
@@ -63,20 +63,20 @@ watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 gpui = { package = "gpui-pre", version = "0.3.9" }
 # A hard floor: 0.7.1 added IconName::Mic and IconName::Square, which the
 # icon tables name.
-gpui-component = "0.7.3"
+gpui-component = "0.8.0"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported), and the headless primitives
 # the `widgets` feature builds on (Tabs, the slider and progress parts).
-gpui-base = "0.7.3"
+gpui-base = "0.8.0"
 # The crate roots name GPUI through gpui-kit (`extern crate gpui_kit as gpui;`),
 # which re-exports whichever core it is built on, so the connector follows an
 # application that turns on `gpui-kit/gpui-fast`. No default features: the
 # library needs neither gpui-kit's component layer nor its assets.
-gpui-kit = { version = "0.7.3", default-features = false }
+gpui-kit = { version = "0.8.0", default-features = false }
 # `gpui::RenderImage::new` takes `image::Frame`s, so an icon can be handed to
 # gpui already decoded instead of as bytes gpui decodes again in the
 # background. Pinned to the version both GPUI backends resolve (gpui-pre
-# 0.3.9 and gpui-fast 0.1.7/0.1.8 each ask for `image` 0.25.1 and up, which resolves
+# 0.3.9 and gpui-fast 0.1.10 each ask for `image` 0.25.1 and up, which resolves
 # to 0.25.10), because the connector's `image` and GPUI's have to be the same
 # for the `Frame` type to match; no default features, since the connector
 # encodes and decodes nothing itself.
@@ -101,7 +101,7 @@ native-theme-showcase-support = { path = "../../tools/showcase-support" }
 # open_window(), and the Lucide assets under gpui_kit::assets.
 # tree-sitter-rust: the grammar for the showcase's code editor section.
 # test-support: `#[gpui::test]` and TestAppContext through the alias.
-gpui-kit = { version = "0.7.3", features = ["tree-sitter-rust", "test-support"] }
+gpui-kit = { version = "0.8.0", features = ["tree-sitter-rust", "test-support"] }
 # The OS readers and the watcher, so the showcase, tests/seams.rs and every
 # test build read the OS theme without the `native` feature named.
 native-theme = { workspace = true, features = ["native", "watch"] }

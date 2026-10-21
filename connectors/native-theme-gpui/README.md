@@ -73,10 +73,10 @@ crate sits.
 
 | Crate | Required |
 |---|---|
-| `gpui-component` | 0.7.3 |
-| `gpui-base` | 0.7.3 |
+| `gpui-component` | 0.8.0 |
+| `gpui-base` | 0.8.0 |
 | `gpui-pre` (GPUI, named `gpui` in the manifest) | 0.3.9 |
-| `gpui-kit` (GPUI as the code names it; the showcase) | 0.7.3 |
+| `gpui-kit` (GPUI as the code names it; the showcase) | 0.8.0 |
 | `rust-version` | 1.95.0 |
 
 Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
@@ -106,7 +106,7 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 ```toml
 [dependencies]
 native-theme-gpui = { version = "0.6", features = ["native"] }
-gpui-kit = "0.7.3"        # or gpui-component + gpui-base + gpui-pre directly
+gpui-kit = "0.8.0"        # or gpui-component + gpui-base + gpui-pre directly
 ```
 
 ```rust,no_run

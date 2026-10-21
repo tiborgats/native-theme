@@ -179,6 +179,65 @@ fn ids_drawn_twice(cx: &mut VisualTestContext) -> Vec<String> {
     })
 }
 
+/// Every quad the window's last frame painted, on either core. On gpui-pre
+/// that is `painted_quads()`. On GPUI Fast `painted_quads()` (gpui-fast
+/// 0.1.10 src/window.rs:2925) reads the scene's own quads only, and since
+/// 0.1.10 what a rounded overflow clip holds is painted into a clip-group
+/// `LayerFrame` instead (src/fast/rounded_clip_scene.rs:1-10, :60-75), so
+/// this reads `painted_scene()` (src/fast/rounded_clip.rs:232-237) and the
+/// scene of every frame with `tile_size == 0` (src/fast/layers/scene.rs:80-93,
+/// `LayerContent::scene` :186), clip groups inside clip groups included.
+/// Tiled frames, the composited scroll layers, are not followed: every clip
+/// group's scene holds a copy of them (rounded_clip_scene.rs, `new_scene`),
+/// so their content would be counted more than once; an absence test over
+/// a composited scroll layer therefore still sees none of its content.
+/// The order is not paint order. src/widgets/tests.rs has the same helper.
+fn scene_quads(window: &gpui::Window) -> Vec<gpui::Quad> {
+    #[cfg(feature = "gpui-fast")]
+    {
+        let mut quads = Vec::new();
+        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
+            quads.extend(scene.quads.iter().cloned())
+        });
+        quads
+    }
+    #[cfg(not(feature = "gpui-fast"))]
+    {
+        window.painted_quads()
+    }
+}
+
+/// Every underline the window's last frame painted, on either core, read
+/// as [`scene_quads`] reads the quads: a clip group's scene takes every
+/// kind of primitive.
+fn scene_underlines(window: &gpui::Window) -> Vec<gpui::Underline> {
+    #[cfg(feature = "gpui-fast")]
+    {
+        let mut underlines = Vec::new();
+        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
+            underlines.extend(scene.underlines.iter().cloned())
+        });
+        underlines
+    }
+    #[cfg(not(feature = "gpui-fast"))]
+    {
+        window.painted_underlines()
+    }
+}
+
+/// `scene`, then the scene of each of its clip-group frames, depth first.
+#[cfg(feature = "gpui-fast")]
+fn for_each_clip_group_scene(scene: &gpui::Scene, f: &mut impl FnMut(&gpui::Scene)) {
+    f(scene);
+    for frame in &scene.layers.frames {
+        if frame.tile_size == 0
+            && let Some(group) = frame.content.scene()
+        {
+            for_each_clip_group_scene(group, f);
+        }
+    }
+}
+
 /// Switch to `page` and draw the frame that shows it, then the frame a
 /// scroll area asks for when the page's overflow changed its scrollbar's
 /// strip (`support::gutter_scroll`).
@@ -2656,8 +2715,7 @@ fn a_link_is_underlined_at_rest_only_where_the_theme_says(cx: &mut TestAppContex
         let link = bounds_of(&mut cx, "basic-link");
         let painted = cx.update(|window, _| {
             let link = link.scale(window.scale_factor());
-            window
-                .painted_underlines()
+            scene_underlines(window)
                 .into_iter()
                 .filter(|u| u.bounds.intersects(&link))
                 .count()
@@ -3148,7 +3206,7 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
             let line = native_value(cx, |n| n.resolved.tab.active_indicator_width)
                 .flatten()
                 .map(|w| px(w).scale(scale));
-            window.painted_quads().into_iter().any(|q| {
+            scene_quads(window).into_iter().any(|q| {
                 q.background.as_solid() == Some(primary)
                     && q.bounds.top() >= row.top()
                     && q.bounds.bottom() <= row.bottom()
@@ -3168,8 +3226,7 @@ fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pix
     let painted = |cx: &mut VisualTestContext| {
         cx.update(|window, _| {
             let scale = window.scale_factor();
-            window
-                .painted_quads()
+            scene_quads(window)
                 .into_iter()
                 .filter(|q| !q.background.is_transparent())
                 .map(|q| Bounds {
@@ -4112,6 +4169,42 @@ fn the_sidebar_samples_icons_fit_their_items(cx: &mut TestAppContext) {
     }
 }
 
+/// A Layout page Sidebar item drawn without its icon, then with it, then
+/// without again, under presets of different text sizes, is laid out and
+/// drawn each time: GPUI Fast 0.1.7 reclaimed the row's earlier nodes with
+/// stale child lists and panicked prepainting the unmeasured label
+/// (src/elements/text.rs:650), which gpui-fast 0.1.9 fixed and GPUI Kit
+/// 0.8.0's floor of gpui-fast 0.1.10 includes. On any host: the icons are
+/// removed by hand, not by an icon theme the host cannot read.
+#[gpui::test]
+fn a_sidebar_item_losing_and_regaining_its_icon_is_drawn(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let set = |cx: &mut VisualTestContext, icons: bool, preset: &str| {
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.apply_theme_by_name(preset, window, cx);
+                if icons {
+                    this.select_icon_set("gpui-component built-in (Lucide)", window, cx);
+                } else {
+                    this.select_icon_set("Material (bundled)", window, cx);
+                    this.gpui_icons.clear();
+                }
+                cx.notify();
+            });
+        });
+        cx.run_until_parked();
+        draw(cx);
+        let shown = read(cx, &showcase, |this, _| {
+            this.chrome_icon(&IconName::LayoutDashboard).shown()
+        });
+        assert_eq!(shown, icons, "{preset}: the Sidebar items' icons");
+    };
+    set(&mut cx, false, "macos-tahoe");
+    show(&mut cx, &showcase, Page::Layout);
+    set(&mut cx, true, "material-3");
+    set(&mut cx, false, "ios-13");
+}
+
 /// The Layout page's two Sidebars and their items report themselves (spec
 /// S5): the pointer on an item settles on that item's info, active or not,
 /// and below the items, on the Sidebar's own.
@@ -4763,8 +4856,7 @@ fn a_panel_toggle_the_set_has_no_icon_for_is_labelled(cx: &mut TestAppContext) {
 fn tooltip_boxes(cx: &mut VisualTestContext) -> Vec<Bounds<gpui::ScaledPixels>> {
     cx.update(|window, cx| {
         let fill = native_color(cx, |n| n.resolved.tooltip.background_color);
-        window
-            .painted_quads()
+        scene_quads(window)
             .into_iter()
             .filter(|q| fill.is_some() && q.background.as_solid() == fill)
             .map(|q| q.bounds)
@@ -8177,8 +8269,7 @@ fn painted_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {
         let bounds = bounds.scale(window.scale_factor());
-        window
-            .painted_quads()
+        scene_quads(window)
             .into_iter()
             .filter(|q| {
                 !q.background.is_transparent()
@@ -8220,8 +8311,7 @@ fn a_hovered_field_takes_the_hover_border(cx: &mut TestAppContext) {
         let bounds = bounds_of(cx, field);
         cx.update(|window, _| {
             let bounds = bounds.scale(window.scale_factor());
-            window
-                .painted_quads()
+            scene_quads(window)
                 .into_iter()
                 .find(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
                 .map(|q| q.border_color)
@@ -8250,8 +8340,7 @@ fn painted_edge(cx: &mut VisualTestContext, selector: &'static str) -> Option<gp
     let bounds = bounds_of(cx, selector);
     cx.update(|window, _cx| {
         let bounds = bounds.scale(window.scale_factor());
-        window
-            .painted_quads()
+        scene_quads(window)
             .into_iter()
             .find(|q| q.bounds == bounds && q.border_widths.top.0 > 0.)
             .map(|q| q.border_color)
@@ -11503,8 +11592,7 @@ fn the_about_dialogs_link_takes_the_themes_underline(cx: &mut TestAppContext) {
         let link = bounds_of(&mut cx, OVERLAY_ABOUT_LINK);
         let painted = cx.update(|window, _| {
             let link = link.scale(window.scale_factor());
-            window
-                .painted_underlines()
+            scene_underlines(window)
                 .into_iter()
                 .filter(|u| u.bounds.intersects(&link))
                 .count()

@@ -9,13 +9,13 @@
 [advisories]
 ignore = [
     # instant 0.1.13, unmaintained, no patched release; reached through
-    # gpui-base and gpui-component 0.7.3 (native-theme-gpui's GPUI Kit).
+    # gpui-base and gpui-component 0.8.0 (native-theme-gpui's GPUI Kit).
     "RUSTSEC-2024-0384",
     # paste 1.0.15, unmaintained, no patched release; reached through
-    # gpui-component 0.7.3, metal 0.33.0 and pulp 0.22.3 (native-theme-gpui).
+    # gpui-component 0.8.0, metal 0.33.0 and pulp 0.22.3 (native-theme-gpui).
     "RUSTSEC-2024-0436",
     # rustls-pemfile 2.2.0, unmaintained, no patched release; reached through
-    # gpui-pre-reqwest 0.12.15, which gpui-kit-assets 0.7.3 (native-theme-gpui's
+    # gpui-pre-reqwest 0.12.15, which gpui-kit-assets 0.8.0 (native-theme-gpui's
     # GPUI Kit) depends on only under `cfg(target_family = "wasm")`, so no
     # target the workspace builds compiles it.
     "RUSTSEC-2025-0134",

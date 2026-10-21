@@ -1955,6 +1955,28 @@ model, the platform presets and the three connectors
       >   row is drawn beside a title bar", left `Some(Bounds { origin: Point {
       >   x: 0px, y: 0px }, size: Size { 1280px × 26px } })`, right `None`
 
+- [ ] [upstream] **File the gpui-fast issue: `Window::painted_quads()` omits
+      what a rounded clip and a scroll layer paint.** For the maintainer to
+      file on longbridge/gpui-fast (an agent files nothing). Under
+      `test-support`, gpui-fast 0.1.10's `painted_quads()` (`src/window.rs:2925`)
+      returns the rendered scene's own `quads` only. Since 0.1.10 the children
+      of a rounded overflow clip are painted into a clip-group `LayerFrame`
+      (`tile_size == 0`, `src/fast/rounded_clip_scene.rs:1-10`, `:60-75`), so
+      their quads are not among them, and neither are the primitives of a
+      composited scroll layer (a tiled `LayerFrame`, in 0.1.7's `Scene` too);
+      `painted_underlines()` likewise. Our repro: on GPUI Fast,
+      `a_loading_progress_bar_stands_still_under_reduced_motion` read no fill
+      (the bar clips its fill to its rounded track). Our tests read
+      `painted_scene()` instead (`scene_quads`, and the showcase's
+      `scene_underlines`, in `connectors/native-theme-gpui/src/widgets/tests.rs`
+      and `connectors/native-theme-gpui/examples/showcase-gpui/tests.rs`),
+      descending into the clip-group frames, not the tiled ones (each clip
+      group's scene holds a copy of those), so a test that asserts nothing is
+      painted over a composited scroll layer still sees none of its content.
+      Once `painted_quads()` and `painted_underlines()` include what the clip
+      groups and the scroll layers paint, the descent can go. Found
+      2026-10-21 (G3 Task 1).
+
 - [ ] [1.0] **The layout dump on GPUI Fast is stale inside a scrolled,
       composited scroll layer.** The showcase's Widget Info registry
       (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs`)

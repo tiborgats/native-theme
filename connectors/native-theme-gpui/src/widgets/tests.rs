@@ -629,7 +629,7 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     let painted = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
         cx.update(|window, _| {
             let b = b.scale(window.scale_factor());
-            let quads = window.painted_quads();
+            let quads = scene_quads(window);
             let fill = quads
                 .iter()
                 .find(|q| q.bounds == b && !q.background.is_transparent())
@@ -1040,6 +1040,48 @@ fn redraw(cx: &mut VisualTestContext) {
     });
 }
 
+/// Every quad the window's last frame painted, on either core. On gpui-pre
+/// that is `painted_quads()`. On GPUI Fast `painted_quads()` (gpui-fast
+/// 0.1.10 src/window.rs:2925) reads the scene's own quads only, and since
+/// 0.1.10 what a rounded overflow clip holds is painted into a clip-group
+/// `LayerFrame` instead (src/fast/rounded_clip_scene.rs:1-10, :60-75), so
+/// this reads `painted_scene()` (src/fast/rounded_clip.rs:232-237) and the
+/// scene of every frame with `tile_size == 0` (src/fast/layers/scene.rs:80-93,
+/// `LayerContent::scene` :186), clip groups inside clip groups included.
+/// Tiled frames, the composited scroll layers, are not followed: every clip
+/// group's scene holds a copy of them (rounded_clip_scene.rs, `new_scene`),
+/// so their content would be counted more than once; an absence test over
+/// a composited scroll layer therefore still sees none of its content.
+/// The order is not paint order. The showcase's tests
+/// (examples/showcase-gpui/tests.rs) have the same helper.
+fn scene_quads(window: &Window) -> Vec<gpui::Quad> {
+    #[cfg(feature = "gpui-fast")]
+    {
+        let mut quads = Vec::new();
+        for_each_clip_group_scene(window.painted_scene(), &mut |scene| {
+            quads.extend(scene.quads.iter().cloned())
+        });
+        quads
+    }
+    #[cfg(not(feature = "gpui-fast"))]
+    {
+        window.painted_quads()
+    }
+}
+
+/// `scene`, then the scene of each of its clip-group frames, depth first.
+#[cfg(feature = "gpui-fast")]
+fn for_each_clip_group_scene(scene: &gpui::Scene, f: &mut impl FnMut(&gpui::Scene)) {
+    f(scene);
+    for frame in &scene.layers.frames {
+        if frame.tile_size == 0
+            && let Some(group) = frame.content.scene()
+        {
+            for_each_clip_group_scene(group, f);
+        }
+    }
+}
+
 /// A key pressed and released, as gpui-component's own tests activate a
 /// control (checkbox.rs, `activate_key`).
 #[allow(clippy::unwrap_used)]
@@ -1244,8 +1286,7 @@ fn switch_draws_the_stated_outlines(
     let edge = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
         cx.update(|window, _| {
             let b = b.scale(window.scale_factor());
-            window
-                .painted_quads()
+            scene_quads(window)
                 .iter()
                 .find(|q| q.bounds == b && q.border_widths.top.0 > 0.)
                 .map(|q| {
@@ -1272,7 +1313,8 @@ fn switch_draws_the_stated_outlines(
     // The thumb lies over the track's outline, as qqc2-desktop-style's
     // handle lies over its track (SwitchIndicator.qml:38-79): gpui paints a
     // box's border after its children, so an outline on the track itself
-    // would cross the thumb.
+    // would cross the thumb. Read from `painted_quads()`, which is in paint
+    // order where `scene_quads` is not.
     let order = cx.update(|window, _| {
         let quads = window.painted_quads();
         let at = |b: Bounds<Pixels>, edge: bool| {
@@ -1283,7 +1325,10 @@ fn switch_draws_the_stated_outlines(
         };
         (at(track, true), at(thumb, false))
     });
-    if let (Some(edge), Some(fill)) = order {
+    if stated(track_colour, s.track_border_line_width).is_some() {
+        let (Some(edge), Some(fill)) = order else {
+            panic!("{state}: the track's outline and the thumb are not both painted: {order:?}");
+        };
         assert!(
             edge < fill,
             "{state}: the track's outline is painted over the thumb"
@@ -2161,8 +2206,7 @@ fn a_vertical_slider_lays_its_rail_out_vertically(cx: &mut TestAppContext) {
 fn painted_fill(cx: &mut VisualTestContext, b: Bounds<Pixels>) -> Option<gpui::Hsla> {
     cx.update(|window, _| {
         let b = b.scale(window.scale_factor());
-        window
-            .painted_quads()
+        scene_quads(window)
             .iter()
             .find(|q| q.bounds == b && !q.background.is_transparent())
             .and_then(|q| q.background.as_solid())
