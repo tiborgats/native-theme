@@ -7724,6 +7724,14 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 None => c.indicator_width * (1.0 - EGUI_ICON_WIDTH_INNER / EGUI_ICON_WIDTH) / 2.0,
             };
             let (inset_x, inset_y) = (inset(c.border.padding.left), inset(c.border.padding.top));
+            // The mark as the list records it: that box where the showcase
+            // paints the mark, and the whole box where the theme states no
+            // line and iced draws its own glyph, centred in the box
+            // (iced_widget 0.14.2 `src/checkbox.rs:420-436`).
+            let mark_inset = match stated {
+                Some(_) => Padding::from([inset_y, inset_x]),
+                None => Padding::ZERO,
+            };
             // The box and the label are the checkbox's two layout nodes
             // (`layout::next_to_each_other`, iced_widget 0.14.2
             // `src/checkbox.rs:280`), under the stack's first layer where the
@@ -7735,8 +7743,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                         .node(ids.label, label);
                     match ids.mark {
                         Some(mark) => tagged.part(mark, move |layout| {
-                            node_at(layout, at)
-                                .map(|b| b.bounds().shrink(Padding::from([inset_y, inset_x])))
+                            node_at(layout, at).map(|b| b.bounds().shrink(mark_inset))
                         }),
                         None => tagged,
                     }
@@ -17404,6 +17411,64 @@ mod tests {
             native_theme_test_fixtures::Child::kde("styled"),
             |icons| native_theme_test_fixtures::write_indicator_theme(icons, "styled", STYLED),
         )
+    }
+
+    /// M9-147 (M9b T5 fix round 1): the layout dump records a check box's
+    /// mark where it is drawn. Where the theme states no check-mark line
+    /// (nord), iced draws its own glyph, centred in the whole box (iced_widget
+    /// 0.14.2 `src/checkbox.rs:420-436`), so the mark is the box. Where it
+    /// states one (kde-breeze), the mark is the showcase's [`CheckMark`] box,
+    /// inside the box.
+    #[test]
+    fn the_check_mark_is_laid_out_where_it_is_drawn() {
+        for (preset, stated) in [("nord", false), ("kde-breeze", true)] {
+            let mut state = State {
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                ..State::default()
+            };
+            assert!(
+                state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
+            );
+            assert_eq!(
+                state
+                    .current_resolved
+                    .checkbox
+                    .check_mark_stroke_width
+                    .is_some(),
+                stated,
+                "{preset} states a check-mark line"
+            );
+            let laid = {
+                let mut ui = interface(&state);
+                let _ = texts(&mut ui);
+                surveyed_layout()
+            };
+            for check in ["checked", "disabled"] {
+                let rect = |part: &str| {
+                    let id = format!("basic.checkboxes.{check}.{part}");
+                    match laid.get(id.as_str()) {
+                        Some(rect) => *rect,
+                        None => panic!("{preset}: {id} is not laid out"),
+                    }
+                };
+                let (mark, indicator) = (rect("mark"), rect("indicator"));
+                if stated {
+                    assert!(
+                        mark != indicator
+                            && mark.x >= indicator.x
+                            && mark.y >= indicator.y
+                            && mark.x + mark.width <= indicator.x + indicator.width
+                            && mark.y + mark.height <= indicator.y + indicator.height,
+                        "{preset} {check}: the mark {mark:?} is not inside the box {indicator:?}"
+                    );
+                } else {
+                    assert_eq!(
+                        mark, indicator,
+                        "{preset} {check}: iced's glyph fills the box"
+                    );
+                }
+            }
+        }
     }
 
     /// The Basic page under `state`, drawn at the window's width and tall
