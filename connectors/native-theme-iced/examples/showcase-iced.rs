@@ -69,8 +69,8 @@ use native_theme::icons::{
     fill_current_color, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    ArrowSide, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedTheme,
+    ArrowSide, FontStyle, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::{spin_rotation_radians, to_svg_handle};
 use native_theme_iced::palette::to_color;
@@ -91,9 +91,9 @@ use native_theme_showcase_support::{
     DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values,
 };
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::num::NonZeroU32;
-use std::sync::{Mutex, OnceLock, PoisonError};
+use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
@@ -5115,17 +5115,32 @@ fn splitter_colour(resolved: &ResolvedTheme, hovered: bool) -> Color {
 
 /// The status bar's environment (spec §2.7), the three showcases' items
 /// (`status::environment`): the desktop, the preset and colour mode, the
-/// theme's `defaults.font` in the unit its source stated, the text-scaling
-/// factor, and each accessibility preference that is set, by its field name.
+/// theme's `defaults.font` by the family iced draws ([`drawn_family`]) in
+/// the unit its source stated, the text-scaling factor, and each
+/// accessibility preference that is set, by its field name. Where iced
+/// draws a generic family the font database names no face for, which the
+/// crate's label has no form for, the font item is [`family_label`]'s.
 fn status_environment(state: &State) -> Vec<String> {
     let mode = if state.is_dark { "dark" } else { "light" };
-    status::environment(
+    let font = &state.current_resolved.defaults.font;
+    let drawn = font_drawn(font);
+    let drawing = drawn_family(&drawn);
+    let mut items = status::environment(
         &state.preset_label(),
         mode,
-        &state.current_resolved.defaults.font,
-        None,
+        font,
+        drawing.flatten(),
         Some(&state.accessibility),
-    )
+    );
+    // The font is the third item: the desktop, `<preset> <mode>`, the font.
+    if let (None, Some(item)) = (drawing, items.get_mut(2)) {
+        *item = format!(
+            "{} {}",
+            family_label(&font.family, &drawn),
+            status::defined_size(font)
+        );
+    }
+    items
 }
 
 /// The title Widget Info shows: its text's first line, `None` before any
@@ -6948,20 +6963,12 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
     let fonts = [
         (
             "font_family",
-            family_label(
-                &d.font.family,
-                resolved_family(&d.font),
-                &font_drawn(&d.font),
-            ),
+            family_label(&d.font.family, &font_drawn(&d.font)),
         ),
         ("font_size", status::defined_size(&d.font)),
         (
             "mono_font_family",
-            family_label(
-                &d.mono_font.family,
-                resolved_family(&d.mono_font),
-                &mono_drawn(resolved),
-            ),
+            family_label(&d.mono_font.family, &mono_drawn(resolved)),
         ),
         ("mono_font_size", status::defined_size(&d.mono_font)),
     ];
@@ -7550,18 +7557,13 @@ fn widget_tooltip_themed(
     };
     let ff = family_label(
         &resolved.defaults.font.family,
-        resolved_family(&resolved.defaults.font),
         &font_drawn(&resolved.defaults.font),
     );
     let fs = size(
         native_theme_iced::font_size(resolved, a11y),
         resolved.defaults.font.size,
     );
-    let mf = family_label(
-        &resolved.defaults.mono_font.family,
-        resolved_family(&resolved.defaults.mono_font),
-        &mono_drawn(resolved),
-    );
+    let mf = family_label(&resolved.defaults.mono_font.family, &mono_drawn(resolved));
     let ms = size(
         native_theme_iced::mono_font_size(resolved, a11y),
         resolved.defaults.mono_font.size,
@@ -11617,14 +11619,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
         let r = &state.current_resolved;
         let ff = family_label(
             native_theme_iced::font_family(r),
-            resolved_family(&r.defaults.font),
             &font_drawn(&r.defaults.font),
         );
-        let mf = family_label(
-            native_theme_iced::mono_font_family(r),
-            resolved_family(&r.defaults.mono_font),
-            &mono_drawn(r),
-        );
+        let mf = family_label(native_theme_iced::mono_font_family(r), &mono_drawn(r));
         let drawn = format!(
             "Font: {ff} @ {:.1}px  |  Mono: {mf} @ {:.1}px",
             native_theme_iced::font_size(r, a11y),
@@ -12384,7 +12381,6 @@ fn markdown_info(state: &State) -> String {
                      text-scaling factor); defaults.font's family, {}; weight {} / {}",
                     family_label(
                         &resolved.defaults.font.family,
-                        role_family(section_title(ts), resolved),
                         &role_drawn(section_title(ts), resolved)
                     ),
                     weight_label(page_title(ts).weight, &role_drawn(page_title(ts), resolved)),
@@ -14369,14 +14365,14 @@ impl ShowDelay for iced::widget::Tooltip<'_, Message> {
     }
 }
 
-/// A theme font, its family and weight, as iced can draw it
+/// A theme font, its family, weight and style, as iced can draw it
 /// ([`font_from_database`]).
 fn theme_font(font: &ResolvedFontSpec) -> iced::Font {
     font_drawn(font).font
 }
 
-/// A `text_scale` role's font: the role's weight in the body font's family,
-/// which a role does not state for itself.
+/// A `text_scale` role's font: the role's weight in the body font's family
+/// and style, which a role does not state for itself.
 fn role_font(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> iced::Font {
     role_drawn(entry, resolved).font
 }
@@ -14387,58 +14383,107 @@ fn theme_mono_font(resolved: &ResolvedTheme) -> iced::Font {
 }
 
 /// How a theme font is drawn.
-fn font_drawn(font: &ResolvedFontSpec) -> Drawn<'static> {
-    font_from_database(resolved_family(font), font.weight, false)
+fn font_drawn(font: &ResolvedFontSpec) -> Drawn {
+    font_from_database(font, false)
 }
 
 /// How the theme's monospace font is drawn.
-fn mono_drawn(resolved: &ResolvedTheme) -> Drawn<'static> {
-    let mono = &resolved.defaults.mono_font;
-    font_from_database(resolved_family(mono), mono.weight, true)
+fn mono_drawn(resolved: &ResolvedTheme) -> Drawn {
+    font_from_database(&resolved.defaults.mono_font, true)
 }
 
-/// How a `text_scale` role is drawn: its weight in the body font's family.
-fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn<'static> {
-    font_from_database(role_family(entry, resolved), entry.weight, false)
+/// How a `text_scale` role is drawn: its weight in the body font's family
+/// and style.
+fn role_drawn(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> Drawn {
+    let at_weight = ResolvedFontSpec {
+        weight: entry.weight,
+        ..resolved.defaults.font.clone()
+    };
+    font_from_database(&at_weight, false)
 }
 
 /// A Widget Info row for text in a theme font: the field it comes from,
-/// and the weight it is drawn at where that is not the weight stated.
+/// and the family, weight and style it is drawn in where they are not the
+/// ones stated.
 fn font_row(field: &str, font: &ResolvedFontSpec) -> String {
     font_row_drawn(field, font, &font_drawn(font))
 }
 
-/// [`font_row`], given how the font is drawn.
-fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn<'_>) -> String {
-    let family = family_label(&font.family, resolved_family(font), drawn);
+/// [`font_row`], given how the font is drawn. An upright font drawn upright
+/// names no style.
+fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String {
+    let family = family_label(&font.family, drawn);
     let weight = weight_label(font.weight, drawn);
-    match (family == *font.family, weight == font.weight.to_string()) {
-        (true, true) => format!("{field}, family, size and weight"),
-        (true, false) => format!("{field}, family and size; weight {weight}"),
-        (false, true) => format!("{field}, size and weight; family {family}"),
-        (false, false) => format!("{field}, size; family {family}; weight {weight}"),
+    let style = style_label(font.style, drawn);
+    let mut stated = Vec::new();
+    let mut instead = Vec::new();
+    if family == *font.family {
+        stated.push("family");
+    } else {
+        instead.push(format!("family {family}"));
+    }
+    stated.push("size");
+    if weight == font.weight.to_string() {
+        stated.push("weight");
+    } else {
+        instead.push(format!("weight {weight}"));
+    }
+    if style == style_name(font.style) {
+        if font.style != FontStyle::Normal {
+            stated.push("style");
+        }
+    } else {
+        instead.push(format!("style {style}"));
+    }
+    let named = match stated.split_last() {
+        Some((last, [])) => (*last).to_string(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+        None => String::new(),
+    };
+    let mut row = format!("{field}, {named}");
+    for part in instead {
+        row.push_str("; ");
+        row.push_str(&part);
+    }
+    row
+}
+
+/// A theme family as the showcase shows it: the shared crate's label
+/// (`status::family_label`) of the family iced draws ([`drawn_family`]) —
+/// the stated name alone where iced draws a face of it, under whatever name
+/// the font database files it (`.SF NS` for "SF Pro" on macOS), and
+/// otherwise the family drawn in its place — or, where iced draws a generic
+/// family the database names no face for, which the crate's label has no
+/// form for, that generic family.
+fn family_label(stated: &str, drawn: &Drawn) -> String {
+    match drawn_family(drawn) {
+        Some(drawing) => status::family_label(stated, drawing),
+        None => {
+            let generic = match drawn.font.family {
+                iced::font::Family::Monospace => "generic monospace",
+                _ => "generic sans-serif",
+            };
+            format!("{stated} (not found; drawn in {generic})")
+        }
     }
 }
 
-/// A theme family as the showcase shows it: the stated name alone where
-/// iced draws text in the family asked for it — the one the font database
-/// holds for the face, `.SF NS` for "SF Pro" on macOS — and otherwise the
-/// generic family drawn instead and the family that resolves to.
-fn family_label(stated: &str, asked: &str, drawn: &Drawn<'_>) -> String {
-    let generic = match drawn.font.family {
-        iced::font::Family::Name(name) if name == asked => return stated.to_string(),
-        iced::font::Family::Monospace => "generic monospace",
-        _ => "generic sans-serif",
-    };
-    match drawn.family {
-        Some(resolved) => format!("{stated} (not found; drawn in {generic}: {resolved})"),
-        None => format!("{stated} (not found; drawn in {generic})"),
-    }
+/// The family a theme font is drawn in, as the shared crate's label takes
+/// it: `Some(None)` where iced draws a face of the stated family itself;
+/// `Some(Some(family))` where it draws another the font database names —
+/// the platform's substitute the connector asks for where the system lacks
+/// the stated family, or the family iced's generic one resolves to where
+/// the database holds neither; `None` where it draws a generic family the
+/// database names no face for.
+fn drawn_family(drawn: &Drawn) -> Option<Option<&str>> {
+    let drawing = drawn.family.as_deref()?;
+    let own = drawn.own && drawn.asked == Some(drawing);
+    Some((!own).then_some(drawing))
 }
 
 /// A theme weight as the showcase shows it: the number alone where iced
 /// draws it, and otherwise what is drawn instead and why.
-fn weight_label(stated: u16, drawn: &Drawn<'_>) -> String {
+fn weight_label(stated: u16, drawn: &Drawn) -> String {
     let asked = css_weight(native_theme_iced::to_iced_weight(stated));
     let at = css_weight(drawn.font.weight);
     if at == stated {
@@ -14446,8 +14491,37 @@ fn weight_label(stated: u16, drawn: &Drawn<'_>) -> String {
     } else if at == asked {
         format!("{stated} (drawn at {at}, iced's nearest weight)")
     } else {
-        let family = drawn.family.unwrap_or("the generic family");
+        let family = drawn.family.as_deref().unwrap_or("the generic family");
         format!("{stated} (drawn at {at}: {family} has no {asked} face)")
+    }
+}
+
+/// A theme style as the showcase shows it: its name alone where iced draws
+/// it, and otherwise the style drawn instead and why.
+fn style_label(stated: FontStyle, drawn: &Drawn) -> String {
+    let at = match drawn.font.style {
+        iced::font::Style::Normal => FontStyle::Normal,
+        iced::font::Style::Italic => FontStyle::Italic,
+        iced::font::Style::Oblique => FontStyle::Oblique,
+    };
+    let name = style_name(stated);
+    if at == stated {
+        name.to_string()
+    } else {
+        let family = drawn.family.as_deref().unwrap_or("the generic family");
+        format!(
+            "{name} (drawn {}: {family} has no {name} face)",
+            style_name(at)
+        )
+    }
+}
+
+/// A font style by the word the showcase shows it with.
+fn style_name(style: FontStyle) -> &'static str {
+    match style {
+        FontStyle::Normal => "upright",
+        FontStyle::Italic => "italic",
+        FontStyle::Oblique => "oblique",
     }
 }
 
@@ -14469,140 +14543,139 @@ fn css_weight(weight: iced::font::Weight) -> u16 {
     }
 }
 
-/// A font as iced draws it, and the family that draws it where the font
-/// database holds one: the theme's, or the one iced's generic family
-/// resolves to.
-#[derive(Clone, Copy, Debug, PartialEq)]
-struct Drawn<'a> {
+/// The style fontdb files a face at for the style iced asks for
+/// (`iced_graphics` `text.rs:306-312`, cosmic-text's `Style` being
+/// fontdb's).
+fn face_style(style: iced::font::Style) -> fontdb::Style {
+    match style {
+        iced::font::Style::Normal => fontdb::Style::Normal,
+        iced::font::Style::Italic => fontdb::Style::Italic,
+        iced::font::Style::Oblique => fontdb::Style::Oblique,
+    }
+}
+
+/// The style iced asks for to draw faces fontdb files at `style`.
+fn iced_style(style: fontdb::Style) -> iced::font::Style {
+    match style {
+        fontdb::Style::Normal => iced::font::Style::Normal,
+        fontdb::Style::Italic => iced::font::Style::Italic,
+        fontdb::Style::Oblique => iced::font::Style::Oblique,
+    }
+}
+
+/// A font as iced draws it, what it was asked for, and the family that
+/// draws it where the font database holds one: the theme's, or the one
+/// iced's generic family resolves to.
+#[derive(Clone, Debug, PartialEq)]
+struct Drawn {
+    /// The family iced is asked for, [`native_theme_iced::font`]'s: the one
+    /// the font database files the stated family's face under, or the
+    /// platform's substitute's where the system has no face of it.
+    asked: Option<&'static str>,
+    /// Whether the system has a face of the stated family itself, so that
+    /// `asked` is its name and not a substitute's.
+    own: bool,
     font: iced::Font,
-    family: Option<&'a str>,
+    family: Option<Arc<str>>,
 }
 
-/// The fonts built so far, by family, weight and whether monospace, and the
-/// family names they hold.
+/// The theme fonts worked out so far ([`FontKey`]).
 ///
-/// iced's `Family::Name` takes a `&'static str` (`iced_core` `font.rs:46`),
-/// so each family name is leaked once and reused; the showcase meets a few
-/// dozen at most. A font is worked out once, the first time a view asks for
-/// it, which is at startup and after a theme change for that theme's fonts.
-static FONTS: Mutex<FontBook> = Mutex::new(FontBook {
-    names: BTreeSet::new(),
-    fonts: BTreeMap::new(),
-    resolved: BTreeMap::new(),
-});
+/// A font is worked out once, the first time a view asks for it, which is
+/// at startup and after a theme change for that theme's fonts:
+/// [`native_theme_iced::font`] and `native_theme::fonts::system_face`
+/// select a face and copy its bytes on every call. iced's `Family::Name`
+/// takes a `&'static str` (`iced_core` `font.rs:46`): the names the fonts
+/// hold are the ones `native_theme_iced::font` leaks, once per family, and
+/// the showcase leaks none of its own.
+static FONTS: Mutex<BTreeMap<FontKey, Drawn>> = Mutex::new(BTreeMap::new());
 
-struct FontBook {
-    names: BTreeSet<&'static str>,
-    fonts: BTreeMap<(&'static str, u16, bool), Drawn<'static>>,
-    /// The family the database holds per stated family, weight and style.
-    resolved: BTreeMap<(&'static str, u16, u8), &'static str>,
-}
-
-impl FontBook {
-    fn intern(&mut self, name: &str) -> &'static str {
-        match self.names.get(name) {
-            Some(&held) => held,
-            None => {
-                let held: &'static str = Box::leak(name.to_owned().into_boxed_str());
-                self.names.insert(held);
-                held
-            }
-        }
-    }
-}
-
-/// The family iced's font database holds for a theme font, worked out once
-/// per family, weight and style — `system_font_family` copies the chosen
-/// face's bytes on every call — and interned, as the drawn fonts are.
-fn resolved_family(font: &ResolvedFontSpec) -> &'static str {
-    let mut book = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
-    let stated = book.intern(&font.family);
-    let key = (stated, font.weight, style_key(font.style));
-    if let Some(&held) = book.resolved.get(&key) {
-        return held;
-    }
-    let resolved = native_theme_iced::system_font_family(font);
-    let held = book.intern(&resolved);
-    book.resolved.insert(key, held);
-    held
-}
+/// A theme font by its stated family, weight, style ([`style_key`]) and
+/// whether it is the monospace one.
+type FontKey = (Arc<str>, u16, u8, bool);
 
 /// A `FontStyle` as a map key.
-fn style_key(style: native_theme::theme::FontStyle) -> u8 {
+fn style_key(style: FontStyle) -> u8 {
     match style {
-        native_theme::theme::FontStyle::Normal => 0,
-        native_theme::theme::FontStyle::Italic => 1,
-        native_theme::theme::FontStyle::Oblique => 2,
+        FontStyle::Normal => 0,
+        FontStyle::Italic => 1,
+        FontStyle::Oblique => 2,
     }
 }
 
-/// The family a `text_scale` role is drawn in: the body font's, at the
-/// role's weight.
-fn role_family(entry: &ResolvedTextScaleEntry, resolved: &ResolvedTheme) -> &'static str {
-    let at_weight = ResolvedFontSpec {
-        weight: entry.weight,
-        ..resolved.defaults.font.clone()
-    };
-    resolved_family(&at_weight)
-}
-
-/// [`drawable_font`] over the database iced draws text from, and the
-/// platform fallback list cosmic-text walks, after [`register_weight`] has
-/// filed the weight a variable face of the drawing family covers.
-fn font_from_database(family: &str, weight: u16, mono: bool) -> Drawn<'static> {
-    let mut book = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
-    let name = book.intern(family);
-    if let Some(&drawn) = book.fonts.get(&(name, weight, mono)) {
-        return drawn;
+/// How iced draws a theme font: [`drawable_font`] of the font
+/// [`native_theme_iced::font`] builds for it — the family the font database
+/// holds for the stated one, or for the platform's substitute where the
+/// system has none, its weight and its style — over the database iced draws
+/// text from and the platform fallback list cosmic-text walks, after
+/// [`register_weight`] has filed the weight a variable face of the drawing
+/// family covers. Worked out once per font ([`FONTS`]).
+fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
+    let key = (
+        spec.family.clone(),
+        spec.weight,
+        style_key(spec.style),
+        mono,
+    );
+    let mut fonts = FONTS.lock().unwrap_or_else(PoisonError::into_inner);
+    if let Some(drawn) = fonts.get(&key) {
+        return drawn.clone();
     }
-    let (font, drawing) = {
+    let asked = native_theme_iced::font(spec);
+    let own = native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some();
+    let drawn = {
         let mut system = iced::advanced::graphics::text::font_system()
             .write()
             .unwrap_or_else(PoisonError::into_inner);
         let raw = system.raw();
         let platform = cosmic_text::PlatformFallback;
         let fallbacks = platform.common_fallback();
-        let asked = css_weight(native_theme_iced::to_iced_weight(weight));
+        let weight = css_weight(asked.weight);
+        let wanted = face_style(asked.style);
+        // Files the weight in the style `family` is drawn in, where a
+        // variable face of that style covers it.
+        let file = |db: &mut fontdb::Database, family: &str| {
+            let style = drawn_style(db, family, wanted).unwrap_or(wanted);
+            lacks(db, family, style, weight)
+                && register_weight(db, family, style, weight, weight_axis)
+        };
         // The theme's family first: one the database holds only at weights
         // iced cannot ask for is passed over for the generic family unless
         // a variable face of it covers the weight.
-        let filed_theme =
-            lacks(raw.db(), name, asked) && register_weight(raw.db_mut(), name, asked, weight_axis);
-        let first = drawable_font(raw.db(), fallbacks, name, weight, mono);
-        let unmatched = first
-            .family
-            .filter(|drawing| lacks(raw.db(), drawing, asked))
-            .map(str::to_owned);
-        let first = (first.font, first.family.map(str::to_owned));
-        let filed = unmatched
-            .is_some_and(|drawing| register_weight(raw.db_mut(), &drawing, asked, weight_axis));
-        if filed_theme || filed {
-            let drawn = drawable_font(raw.db(), fallbacks, name, weight, mono);
-            (drawn.font, drawn.family.map(str::to_owned))
-        } else {
-            first
+        let first = drawable_font(raw.db(), fallbacks, asked, own, mono);
+        let first = match first.asked {
+            Some(family) if file(raw.db_mut(), family) => {
+                drawable_font(raw.db(), fallbacks, asked, own, mono)
+            }
+            _ => first,
+        };
+        match first.family.clone() {
+            Some(drawing) if file(raw.db_mut(), &*drawing) => {
+                drawable_font(raw.db(), fallbacks, asked, own, mono)
+            }
+            _ => first,
         }
     };
-    let drawn = Drawn {
-        font,
-        family: drawing.map(|drawing| book.intern(&drawing)),
-    };
-    book.fonts.insert((name, weight, mono), drawn);
+    fonts.insert(key, drawn.clone());
     drawn
 }
 
-/// The font iced draws `family` at the CSS `weight` in, given the font
-/// database and the platform's fallback families: the family where the
-/// database holds it, at the weight iced asks for where the family has a
-/// face of it, and otherwise at the weight of its nearest face.
+/// The font iced draws `asked` in, given the font database and the
+/// platform's fallback families: its family where the database holds it,
+/// in the style asked for where the family has faces of it and otherwise in
+/// its nearest ([`drawn_style`]), at the weight asked for where the family
+/// has a face of it in that style and otherwise at the weight of its
+/// nearest. `own` is handed on: whether the system has a face of the stated
+/// family itself.
 ///
 /// iced 0.14 draws text with cosmic-text 0.15, which takes a face only at
 /// the weight asked for (`font/fallback/mod.rs:279-287`, `:299-303`,
-/// `:446-456`), and fontdb 0.23 files a face at the one weight its OS/2
-/// table states, a variable font too (`lib.rs:1034-1037`, `:1161`). A
-/// weight its family has no face of therefore falls through to the next
-/// fallback family that has one: on macOS cosmic-text's fallback list puts
-/// the system family, `.SF NS`, first and the monospace Menlo second
+/// `:446-456`) and in the style and stretch asked for
+/// (`attrs.rs:323-327`), and fontdb 0.23 files a face at the one weight its
+/// OS/2 table states, a variable font too (`lib.rs:1034-1037`, `:1161`). A
+/// weight or style its family has no face of therefore falls through to the
+/// next fallback family that has one: on macOS cosmic-text's fallback list
+/// puts the system family, `.SF NS`, first and the monospace Menlo second
 /// (`font/fallback/macos.rs:30-38`), and bold section titles were drawn in
 /// a monospace bold. [`register_weight`] files the weights a variable face
 /// covers; where none does, the text stays in its family at the nearest
@@ -14615,52 +14688,84 @@ fn font_from_database(family: &str, weight: u16, mono: bool) -> Drawn<'static> {
 /// A family the database does not hold is drawn in iced's generic family,
 /// which cosmic-text resolves to the database's sans-serif family
 /// (`font/system.rs:158-160`) or, where the database does not hold that,
-/// to the first fallback family it holds; that family decides the weight.
-/// A monospace one keeps its weight: cosmic-text takes a monospaced face at
-/// any weight, the nearest first (`font/fallback/mod.rs:299-303`,
-/// `:375-413`).
-fn drawable_font<'a>(
-    db: &'a fontdb::Database,
-    fallbacks: &[&'a str],
-    family: &'static str,
-    weight: u16,
+/// to the first fallback family it holds; that family decides the style and
+/// the weight. A monospace one keeps its style and weight: cosmic-text
+/// takes a monospaced face at any weight, the nearest first
+/// (`font/fallback/mod.rs:299-303`, `:375-413`).
+fn drawable_font(
+    db: &fontdb::Database,
+    fallbacks: &[&str],
+    asked: iced::Font,
+    own: bool,
     mono: bool,
-) -> Drawn<'a> {
-    let (drawn, deciding) = if holds(db, family) {
-        (iced::font::Family::Name(family), Some(family))
-    } else if mono {
-        (iced::font::Family::Monospace, None)
-    } else {
-        let generic = db.family_name(&fontdb::Family::SansSerif);
-        let resolved = std::iter::once(generic)
-            .chain(fallbacks.iter().copied())
-            .find(|name| holds(db, name));
-        (iced::font::Family::SansSerif, resolved)
+) -> Drawn {
+    let named = match asked.family {
+        iced::font::Family::Name(name) => Some(name),
+        _ => None,
     };
-    let asked = native_theme_iced::to_iced_weight(weight);
+    let (drawn, deciding) = match named.filter(|name| holds(db, name)) {
+        Some(name) => (iced::font::Family::Name(name), Some(name)),
+        None if mono => (iced::font::Family::Monospace, None),
+        None => {
+            let generic = db.family_name(&fontdb::Family::SansSerif);
+            let resolved = std::iter::once(generic)
+                .chain(fallbacks.iter().copied())
+                .find(|name| holds(db, name));
+            (iced::font::Family::SansSerif, resolved)
+        }
+    };
+    let wanted = face_style(asked.style);
+    let style = deciding
+        .and_then(|name| drawn_style(db, name, wanted))
+        .unwrap_or(wanted);
     let weight = deciding
         .and_then(|name| {
-            let faces: Vec<u16> = upright_faces(db, name)
+            let faces: Vec<u16> = faces_of(db, name, style)
                 .map(|face| face.weight.0)
                 .filter(|&held| askable(held))
                 .collect();
-            nearest_weight(css_weight(asked), &faces)
+            nearest_weight(css_weight(asked.weight), &faces)
         })
-        .map_or(asked, native_theme_iced::to_iced_weight);
+        .map_or(asked.weight, native_theme_iced::to_iced_weight);
     Drawn {
+        asked: named,
+        own,
         font: iced::Font {
             family: drawn,
             weight,
-            ..iced::Font::DEFAULT
+            style: iced_style(style),
+            ..asked
         },
-        family: deciding,
+        family: deciding.map(Arc::from),
     }
 }
 
-/// Whether the database holds an upright face of `family` at a weight iced
-/// can ask for, one of its nine (`iced_graphics` `text.rs:278-290`).
+/// The style text in `wanted` is drawn in from `family`'s faces: the first
+/// of CSS's order for it that the family has a face of at a weight iced can
+/// ask for — italic, oblique, upright for italic; oblique, italic, upright
+/// for oblique; upright, oblique, italic for upright (fontdb 0.23
+/// `lib.rs:1264-1268`, native-theme's `fonts::select_face`) — or `None`
+/// where it has none.
+fn drawn_style(
+    db: &fontdb::Database,
+    family: &str,
+    wanted: fontdb::Style,
+) -> Option<fontdb::Style> {
+    use fontdb::Style::{Italic, Normal, Oblique};
+    let order = match wanted {
+        Italic => [Italic, Oblique, Normal],
+        Oblique => [Oblique, Italic, Normal],
+        Normal => [Normal, Oblique, Italic],
+    };
+    order
+        .into_iter()
+        .find(|&style| faces_of(db, family, style).any(|face| askable(face.weight.0)))
+}
+
+/// Whether the database holds a face of `family` at a weight iced can ask
+/// for, one of its nine (`iced_graphics` `text.rs:278-290`), in any style.
 fn holds(db: &fontdb::Database, family: &str) -> bool {
-    upright_faces(db, family).any(|face| askable(face.weight.0))
+    drawn_style(db, family, fontdb::Style::Normal).is_some()
 }
 
 /// Whether iced can ask cosmic-text for the CSS `weight`: whether it is one
@@ -14669,21 +14774,23 @@ fn askable(weight: u16) -> bool {
     css_weight(native_theme_iced::to_iced_weight(weight)) == weight
 }
 
-/// Whether the database holds upright faces of `family`, none of them at
+/// Whether the database holds faces of `family` in `style`, none of them at
 /// the CSS `weight`: whether a face at `weight` is worth filing.
-fn lacks(db: &fontdb::Database, family: &str, weight: u16) -> bool {
-    let mut faces = upright_faces(db, family).peekable();
+fn lacks(db: &fontdb::Database, family: &str, style: fontdb::Style, weight: u16) -> bool {
+    let mut faces = faces_of(db, family, style).peekable();
     faces.peek().is_some() && faces.all(|face| face.weight.0 != weight)
 }
 
-/// The upright faces of `family`: the only ones cosmic-text matches text
-/// that asks for no style or stretch against (`attrs.rs:323-327`).
-fn upright_faces<'a>(
+/// The faces of `family` in `style` at the normal stretch: the only ones
+/// cosmic-text matches text that asks for that style, and for no stretch,
+/// against (`attrs.rs:323-327`).
+fn faces_of<'a>(
     db: &'a fontdb::Database,
     family: &'a str,
+    style: fontdb::Style,
 ) -> impl Iterator<Item = &'a fontdb::FaceInfo> + 'a {
     db.faces().filter(move |face| {
-        face.style == fontdb::Style::Normal
+        face.style == style
             && face.stretch == fontdb::Stretch::Normal
             && face.families.iter().any(|(held, _)| held == family)
     })
@@ -14726,10 +14833,10 @@ fn weight_axis(db: &fontdb::Database, id: fontdb::ID) -> Option<(f32, f32)> {
     .flatten()
 }
 
-/// Files a face of `family` at the CSS `weight` where the family has none
-/// but a variable face of it covers that weight on its `wght` axis: a copy
-/// of that face's entry at `weight`, over the same font data. Returns
-/// whether it filed one.
+/// Files a face of `family` in `style` at the CSS `weight` where the family
+/// has none but a variable face of it in that style covers that weight on
+/// its `wght` axis: a copy of that face's entry at `weight`, over the same
+/// font data. Returns whether it filed one.
 ///
 /// cosmic-text 0.15 matches only the weight fontdb filed a face at, but it
 /// draws the face it matched at the weight asked for: it shapes with the
@@ -14743,14 +14850,15 @@ fn weight_axis(db: &fontdb::Database, id: fontdb::ID) -> Option<(f32, f32)> {
 fn register_weight(
     db: &mut fontdb::Database,
     family: &str,
+    style: fontdb::Style,
     weight: u16,
     axis: impl Fn(&fontdb::Database, fontdb::ID) -> Option<(f32, f32)>,
 ) -> bool {
-    if upright_faces(db, family).any(|face| face.weight.0 == weight) {
+    if faces_of(db, family, style).any(|face| face.weight.0 == weight) {
         return false;
     }
     let wanted = f32::from(weight);
-    let variable = upright_faces(db, family)
+    let variable = faces_of(db, family, style)
         .find(|face| axis(db, face.id).is_some_and(|(min, max)| min <= wanted && wanted <= max))
         .cloned();
     match variable {
@@ -14941,6 +15049,7 @@ mod tests {
     use iced::{Event, Point, Rectangle, Settings, Size};
     use iced_test::Simulator;
     use iced_test::selector::{self, Candidate};
+    use std::collections::BTreeSet;
 
     /// The macOS system UI font, stated "SF Pro", is a family iced's font
     /// database holds under the name `system_font_family` gives, and the
@@ -14969,7 +15078,7 @@ mod tests {
             font.family
         );
         assert_eq!(
-            family_label(&font.family, resolved_family(font), &font_drawn(font)),
+            family_label(&font.family, &font_drawn(font)),
             font.family.as_ref(),
             "the inspector shows the stated name alone"
         );
@@ -23312,19 +23421,42 @@ mod tests {
     fn database(faces: &[(&str, u16, bool)]) -> fontdb::Database {
         let mut db = fontdb::Database::new();
         for &(family, weight, monospaced) in faces {
-            db.push_face_info(fontdb::FaceInfo {
-                id: fontdb::ID::dummy(),
-                source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
-                index: 0,
-                families: vec![(family.to_string(), fontdb::Language::English_UnitedStates)],
-                post_script_name: format!("{family}-{weight}"),
-                style: fontdb::Style::Normal,
-                weight: fontdb::Weight(weight),
-                stretch: fontdb::Stretch::Normal,
-                monospaced,
-            });
+            push_face(&mut db, family, weight, fontdb::Style::Normal, monospaced);
         }
         db
+    }
+
+    /// Files a face of `family` in `style` at the CSS `weight`, carrying no
+    /// data, as [`database`] does.
+    fn push_face(
+        db: &mut fontdb::Database,
+        family: &str,
+        weight: u16,
+        style: fontdb::Style,
+        monospaced: bool,
+    ) {
+        db.push_face_info(fontdb::FaceInfo {
+            id: fontdb::ID::dummy(),
+            source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
+            index: 0,
+            families: vec![(family.to_string(), fontdb::Language::English_UnitedStates)],
+            post_script_name: format!("{family}-{weight}"),
+            style,
+            weight: fontdb::Weight(weight),
+            stretch: fontdb::Stretch::Normal,
+            monospaced,
+        });
+    }
+
+    /// The upright font the connector builds for `family` at the CSS
+    /// `weight`, as [`native_theme_iced::font`] builds it where the font
+    /// database files the family under that name.
+    fn asked(family: &'static str, weight: u16) -> iced::Font {
+        iced::Font {
+            family: iced::font::Family::Name(family),
+            weight: native_theme_iced::to_iced_weight(weight),
+            ..iced::Font::DEFAULT
+        }
     }
 
     /// A family the font database holds is drawn in, at the theme's weight
@@ -23332,7 +23464,7 @@ mod tests {
     #[test]
     fn a_held_family_keeps_the_theme_family_and_weight() {
         let db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
-        let font = drawable_font(&db, &[], "Theme Sans", 700, false).font;
+        let font = drawable_font(&db, &[], asked("Theme Sans", 700), true, false).font;
         assert_eq!(
             (font.family, font.weight),
             (
@@ -23348,12 +23480,85 @@ mod tests {
     #[test]
     fn a_weight_the_family_lacks_stays_in_the_family() {
         let db = database(&[("Theme Sans", 400, false), ("Mono Fallback", 700, true)]);
-        let font = drawable_font(&db, &["Mono Fallback"], "Theme Sans", 700, false).font;
+        let font = drawable_font(
+            &db,
+            &["Mono Fallback"],
+            asked("Theme Sans", 700),
+            true,
+            false,
+        )
+        .font;
         assert_eq!(
             (font.family, font.weight),
             (
                 iced::font::Family::Name("Theme Sans"),
                 iced::font::Weight::Normal
+            )
+        );
+    }
+
+    /// M9-092 (bug): an italic theme font is drawn in its family's italic
+    /// face where the database holds one, at the weight asked for in that
+    /// style, and an oblique one in its oblique face.
+    #[test]
+    fn an_italic_font_is_drawn_in_the_italic_face() {
+        let mut db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
+        push_face(&mut db, "Theme Sans", 700, fontdb::Style::Italic, false);
+        push_face(&mut db, "Theme Sans", 400, fontdb::Style::Oblique, false);
+        let italic = iced::Font {
+            style: iced::font::Style::Italic,
+            ..asked("Theme Sans", 700)
+        };
+        let font = drawable_font(&db, &[], italic, true, false).font;
+        assert_eq!(
+            (font.family, font.weight, font.style),
+            (
+                iced::font::Family::Name("Theme Sans"),
+                iced::font::Weight::Bold,
+                iced::font::Style::Italic
+            )
+        );
+        let oblique = iced::Font {
+            style: iced::font::Style::Oblique,
+            ..asked("Theme Sans", 400)
+        };
+        let font = drawable_font(&db, &[], oblique, true, false).font;
+        assert_eq!(
+            (font.weight, font.style),
+            (iced::font::Weight::Normal, iced::font::Style::Oblique)
+        );
+    }
+
+    /// A style the family has no face of is drawn in the family's nearest
+    /// one in CSS's order, never in a later fallback family that has it, as
+    /// a missing weight is: an italic font of a family with an oblique face
+    /// is drawn oblique, and one with upright faces alone upright, at the
+    /// nearest weight among the faces of that style.
+    #[test]
+    fn a_style_the_family_lacks_stays_in_the_family() {
+        let mut db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
+        push_face(&mut db, "Fallback Sans", 700, fontdb::Style::Italic, false);
+        let italic = iced::Font {
+            style: iced::font::Style::Italic,
+            ..asked("Theme Sans", 700)
+        };
+        let font = drawable_font(&db, &["Fallback Sans"], italic, true, false).font;
+        assert_eq!(
+            (font.family, font.weight, font.style),
+            (
+                iced::font::Family::Name("Theme Sans"),
+                iced::font::Weight::Bold,
+                iced::font::Style::Normal
+            )
+        );
+        push_face(&mut db, "Theme Sans", 400, fontdb::Style::Oblique, false);
+        let font = drawable_font(&db, &["Fallback Sans"], italic, true, false).font;
+        assert_eq!(
+            (font.family, font.weight, font.style),
+            (
+                iced::font::Family::Name("Theme Sans"),
+                iced::font::Weight::Normal,
+                iced::font::Style::Oblique
             )
         );
     }
@@ -23370,7 +23575,7 @@ mod tests {
             ("Mono Fallback", 400, true),
             ("Mono Fallback", 700, true),
         ]);
-        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false).font;
+        let font = drawable_font(&db, &fallbacks, asked("Absent Sans", 700), false, false).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::SansSerif, iced::font::Weight::Normal)
@@ -23378,7 +23583,7 @@ mod tests {
 
         let mut db = database(&[("Generic Sans", 400, false), ("Generic Sans", 700, false)]);
         db.set_sans_serif_family("Generic Sans");
-        let font = drawable_font(&db, &fallbacks, "Absent Sans", 700, false).font;
+        let font = drawable_font(&db, &fallbacks, asked("Absent Sans", 700), false, false).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::SansSerif, iced::font::Weight::Bold)
@@ -23391,7 +23596,7 @@ mod tests {
     #[test]
     fn an_absent_mono_family_keeps_its_weight() {
         let db = database(&[("Mono Fallback", 400, true)]);
-        let font = drawable_font(&db, &[], "Absent Mono", 700, true).font;
+        let font = drawable_font(&db, &[], asked("Absent Mono", 700), false, true).font;
         assert_eq!(
             (font.family, font.weight),
             (iced::font::Family::Monospace, iced::font::Weight::Bold)
@@ -23404,11 +23609,11 @@ mod tests {
     #[test]
     fn weights_are_ones_iced_can_ask_for() {
         let db = database(&[("Theme Sans", 400, false), ("Theme Sans", 700, false)]);
-        let font = drawable_font(&db, &[], "Theme Sans", 350, false).font;
+        let font = drawable_font(&db, &[], asked("Theme Sans", 350), true, false).font;
         assert_eq!(font.weight, iced::font::Weight::Normal);
 
         let db = database(&[("Theme Sans", 350, false), ("Theme Sans", 600, false)]);
-        let font = drawable_font(&db, &[], "Theme Sans", 400, false).font;
+        let font = drawable_font(&db, &[], asked("Theme Sans", 400), true, false).font;
         assert_eq!(font.weight, iced::font::Weight::Semibold);
     }
 
@@ -23416,10 +23621,13 @@ mod tests {
     /// face of gains one at that weight, over the same font data.
     #[test]
     fn a_variable_face_gains_the_weights_its_axis_covers() {
+        let upright = fontdb::Style::Normal;
         let mut db = database(&[("Theme Sans", 400, false)]);
-        let filed = register_weight(&mut db, "Theme Sans", 700, |_, _| Some((100.0, 900.0)));
+        let filed = register_weight(&mut db, "Theme Sans", upright, 700, |_, _| {
+            Some((100.0, 900.0))
+        });
         assert!(filed, "no face was filed");
-        let font = drawable_font(&db, &[], "Theme Sans", 700, false).font;
+        let font = drawable_font(&db, &[], asked("Theme Sans", 700), true, false).font;
         assert_eq!(
             (font.family, font.weight),
             (
@@ -23427,7 +23635,7 @@ mod tests {
                 iced::font::Weight::Bold
             )
         );
-        let sources: Vec<_> = upright_faces(&db, "Theme Sans")
+        let sources: Vec<_> = faces_of(&db, "Theme Sans", upright)
             .map(|face| (face.post_script_name.as_str(), face.index))
             .collect();
         assert_eq!(sources, [("Theme Sans-400", 0), ("Theme Sans-400", 0)]);
@@ -23437,10 +23645,13 @@ mod tests {
     /// stays at the family's nearest face.
     #[test]
     fn an_axis_short_of_the_weight_files_nothing() {
+        let upright = fontdb::Style::Normal;
         let mut db = database(&[("Theme Sans", 400, false)]);
-        let filed = register_weight(&mut db, "Theme Sans", 700, |_, _| Some((400.0, 600.0)));
+        let filed = register_weight(&mut db, "Theme Sans", upright, 700, |_, _| {
+            Some((400.0, 600.0))
+        });
         assert!(!filed, "a face was filed beyond the axis");
-        assert_eq!(upright_faces(&db, "Theme Sans").count(), 1);
+        assert_eq!(faces_of(&db, "Theme Sans", upright).count(), 1);
     }
 
     /// A static font files nothing: the axis is read from real font data,
@@ -23459,8 +23670,9 @@ mod tests {
             Some((name, _)) => name.clone(),
             None => panic!("the fixture holds no named face"),
         };
+        let upright = fontdb::Style::Normal;
         let weights = |db: &fontdb::Database| -> Vec<u16> {
-            upright_faces(db, &family)
+            faces_of(db, &family, upright)
                 .map(|face| face.weight.0)
                 .collect()
         };
@@ -23469,7 +23681,7 @@ mod tests {
             !before.contains(&700),
             "the fixture already has a bold face"
         );
-        let filed = register_weight(&mut db, &family, 700, weight_axis);
+        let filed = register_weight(&mut db, &family, upright, 700, weight_axis);
         assert!(!filed, "a static face gained a weight");
         assert_eq!(weights(&db), before);
     }
@@ -23481,19 +23693,27 @@ mod tests {
     fn a_family_held_only_between_iced_weights_is_drawn_in_the_generic_one() {
         let fallbacks = ["System Sans"];
         let mut db = database(&[("Theme Sans", 350, false), ("System Sans", 400, false)]);
-        let drawn = drawable_font(&db, &fallbacks, "Theme Sans", 700, false);
+        let drawn = drawable_font(&db, &fallbacks, asked("Theme Sans", 700), true, false);
         assert_eq!(
-            (drawn.font.family, drawn.font.weight, drawn.family),
+            (
+                drawn.font.family,
+                drawn.font.weight,
+                drawn.family.as_deref()
+            ),
             (
                 iced::font::Family::SansSerif,
                 iced::font::Weight::Normal,
                 Some("System Sans")
             )
         );
-        assert!(register_weight(&mut db, "Theme Sans", 700, |_, _| Some((
-            100.0, 900.0
-        ))));
-        let font = drawable_font(&db, &fallbacks, "Theme Sans", 700, false).font;
+        assert!(register_weight(
+            &mut db,
+            "Theme Sans",
+            fontdb::Style::Normal,
+            700,
+            |_, _| Some((100.0, 900.0))
+        ));
+        let font = drawable_font(&db, &fallbacks, asked("Theme Sans", 700), true, false).font;
         assert_eq!(
             (font.family, font.weight),
             (
@@ -23503,8 +23723,29 @@ mod tests {
         );
     }
 
-    /// A Widget Info row claims the family, and the weight, only where text
-    /// is drawn in them, and otherwise says what is drawn instead.
+    /// A drawn font for the label tests: `font` in `family`, the family the
+    /// database names for it, asked for as `asked`, a face of the stated
+    /// family itself where `own`.
+    fn drawn(
+        asked: Option<&'static str>,
+        own: bool,
+        font: iced::Font,
+        family: Option<&str>,
+    ) -> Drawn {
+        Drawn {
+            asked,
+            own,
+            font,
+            family: family.map(Arc::from),
+        }
+    }
+
+    /// A Widget Info row claims the family, the weight and, where it is not
+    /// upright, the style only where text is drawn in them, and otherwise
+    /// says what is drawn instead: the platform's substitute for a family
+    /// the system lacks (docs/todo.md, *iced showcase: Widget Info claims a
+    /// substituted family*), and the face an italic font is drawn in
+    /// (M9-092).
     #[test]
     fn a_font_row_claims_only_what_is_drawn() {
         let mut font = match native_theme_iced::from_preset("kde-breeze", false) {
@@ -23513,79 +23754,162 @@ mod tests {
         };
         font.family = "Theme Sans".into();
         font.weight = 700;
-        let drawn = |family, weight, resolved| Drawn {
-            font: iced::Font {
-                family,
-                weight,
-                ..iced::Font::DEFAULT
-            },
-            family: resolved,
-        };
-        // The family iced is asked for: "Theme Sans" where the system has
-        // it, else the platform's substitute for it (`system_font_family`).
-        let asked = resolved_family(&font);
         let held = drawn(
-            iced::font::Family::Name(asked),
-            iced::font::Weight::Bold,
-            Some(asked),
+            Some("Theme Sans"),
+            true,
+            asked("Theme Sans", 700),
+            Some("Theme Sans"),
         );
         assert_eq!(
             font_row_drawn("button.font", &font, &held),
             "button.font, family, size and weight"
         );
         let generic = drawn(
-            iced::font::Family::SansSerif,
-            iced::font::Weight::Normal,
+            Some("Theme Sans"),
+            false,
+            iced::Font {
+                family: iced::font::Family::SansSerif,
+                ..asked("Theme Sans", 400)
+            },
             Some("System Sans"),
         );
         assert_eq!(
             font_row_drawn("button.font", &font, &generic),
-            "button.font, size; family Theme Sans (not found; drawn in generic \
-             sans-serif: System Sans); weight 700 (drawn at 400: System Sans has no 700 face)"
+            "button.font, size; family Theme Sans (not on this system; drawn in the \
+             platform's substitute, System Sans); weight 700 (drawn at 400: System Sans has \
+             no 700 face)"
+        );
+        let mut segoe = font.clone();
+        segoe.family = "Segoe UI".into();
+        let substitute = drawn(
+            Some("Adwaita Sans"),
+            false,
+            asked("Adwaita Sans", 700),
+            Some("Adwaita Sans"),
+        );
+        assert_eq!(
+            font_row_drawn("button.font", &segoe, &substitute),
+            "button.font, size and weight; family Segoe UI (not on this system; drawn in the \
+             platform's substitute, Adwaita Sans)"
+        );
+        font.style = FontStyle::Italic;
+        let italic = Drawn {
+            font: iced::Font {
+                style: iced::font::Style::Italic,
+                ..held.font
+            },
+            ..held.clone()
+        };
+        assert_eq!(
+            font_row_drawn("button.font", &font, &italic),
+            "button.font, family, size, weight and style"
+        );
+        assert_eq!(
+            font_row_drawn("button.font", &font, &held),
+            "button.font, family, size and weight; style italic (drawn upright: Theme Sans \
+             has no italic face)"
         );
     }
 
-    /// A family is shown as the name alone where text is drawn in it, and
-    /// with the generic family drawn instead, and what that resolves to,
-    /// where it is not.
+    /// A family is shown as the name alone where text is drawn in a face of
+    /// it, under whatever name the database files it, and otherwise, through
+    /// the shared crate's `status::family_label`, with the family drawn in
+    /// its place — the platform's substitute, or what iced's generic family
+    /// resolves to — or, where the database names no face for the generic
+    /// family, that generic family.
     #[test]
     fn a_substituted_family_says_so() {
-        let drawn = |family, resolved| Drawn {
-            font: iced::Font {
-                family,
-                ..iced::Font::DEFAULT
-            },
-            family: resolved,
-        };
-        let held = drawn(iced::font::Family::Name("Theme Sans"), Some("Theme Sans"));
-        assert_eq!(
-            family_label("Theme Sans", "Theme Sans", &held),
-            "Theme Sans"
+        let held = drawn(
+            Some("Theme Sans"),
+            true,
+            asked("Theme Sans", 400),
+            Some("Theme Sans"),
         );
-        let generic = drawn(iced::font::Family::SansSerif, Some("System Sans"));
-        assert_eq!(
-            family_label("Theme Sans", "Theme Sans", &generic),
-            "Theme Sans (not found; drawn in generic sans-serif: System Sans)"
+        assert_eq!(family_label("Theme Sans", &held), "Theme Sans");
+        let generic = drawn(
+            Some("Theme Sans"),
+            false,
+            iced::Font::DEFAULT,
+            Some("System Sans"),
         );
-        let mono = drawn(iced::font::Family::Monospace, None);
         assert_eq!(
-            family_label("Theme Mono", "Theme Mono", &mono),
+            family_label("Theme Sans", &generic),
+            "Theme Sans (not on this system; drawn in the platform's substitute, System Sans)"
+        );
+        let mono = drawn(Some("Theme Mono"), false, iced::Font::MONOSPACE, None);
+        assert_eq!(
+            family_label("Theme Mono", &mono),
             "Theme Mono (not found; drawn in generic monospace)"
         );
-        let alias = drawn(iced::font::Family::Name(".SF NS"), Some(".SF NS"));
-        assert_eq!(family_label("SF Pro", ".SF NS", &alias), "SF Pro");
+        let alias = drawn(Some(".SF NS"), true, asked(".SF NS", 400), Some(".SF NS"));
+        assert_eq!(family_label("SF Pro", &alias), "SF Pro");
+        let substitute = drawn(
+            Some("Adwaita Sans"),
+            false,
+            asked("Adwaita Sans", 400),
+            Some("Adwaita Sans"),
+        );
+        assert_eq!(
+            family_label("Segoe UI", &substitute),
+            "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans)"
+        );
+    }
+
+    /// docs/todo.md, *iced showcase: Widget Info claims a substituted
+    /// family*: the status bar's font item names the family iced draws,
+    /// through the shared crate's `status::environment`: the stated name
+    /// alone where the system has a face of it, and the platform's
+    /// substitute where it has none and iced draws the substitute asked for
+    /// in its place, worked out from this system's fonts at test time
+    /// (windows-11's "Segoe UI" on a Linux system without it).
+    #[test]
+    fn the_status_bar_names_the_drawn_family() {
+        for preset in ["windows-11", "kde-breeze", "adwaita"] {
+            let state = page_state(preset, Tab::Basic);
+            let font = &state.current_resolved.defaults.font;
+            let own =
+                native_theme::fonts::system_face(&font.family, font.weight, font.style).is_some();
+            let asked = native_theme_iced::system_font_family(font);
+            let held = {
+                let mut system = iced::advanced::graphics::text::font_system()
+                    .write()
+                    .unwrap_or_else(PoisonError::into_inner);
+                holds(system.raw().db(), &asked)
+            };
+            let family = match (own, held) {
+                (true, true) => font.family.to_string(),
+                (false, true) => status::family_label(&font.family, Some(&asked)),
+                _ => {
+                    eprintln!(
+                        "{preset}: iced's font database holds no {asked:?} here; the generic \
+                         family's labels are the fixture tests'"
+                    );
+                    continue;
+                }
+            };
+            let want = format!("{family} {}", status::defined_size(font));
+            let items = status_environment(&state);
+            assert!(
+                items.contains(&want),
+                "{preset}: the status bar's items {items:?} do not hold {want:?}"
+            );
+        }
     }
 
     /// A weight is shown as the number alone where it is drawn, and with
     /// what is drawn instead, and why, where it is not.
     #[test]
     fn a_substituted_weight_says_so() {
-        let drawn = |weight| Drawn {
-            font: iced::Font {
-                weight,
-                ..iced::Font::DEFAULT
-            },
-            family: Some("Theme Sans"),
+        let drawn = |weight| {
+            drawn(
+                Some("Theme Sans"),
+                true,
+                iced::Font {
+                    weight,
+                    ..asked("Theme Sans", 400)
+                },
+                Some("Theme Sans"),
+            )
         };
         assert_eq!(weight_label(700, &drawn(iced::font::Weight::Bold)), "700");
         assert_eq!(
