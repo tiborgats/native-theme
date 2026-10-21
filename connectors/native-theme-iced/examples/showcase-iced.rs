@@ -21583,7 +21583,8 @@ mod tests {
     /// M9-082: the inspector's "frame" row names the platform's frame, the
     /// window manager's on Linux and the system's title bar on macOS and
     /// Windows, and its "decorations" row says the same of who draws them;
-    /// the inspector prints the running platform's frame row.
+    /// the inspector prints the running platform's frame and decorations
+    /// rows.
     #[test]
     fn the_window_frame_row_names_the_platforms_frame() {
         let linux = window_frame("linux");
@@ -21621,12 +21622,18 @@ mod tests {
         };
         let mut ui = interface(&state);
         let found = texts(&mut ui);
-        let shown = found
-            .iter()
-            .position(|(text, _)| text == "frame")
-            .and_then(|at| found.get(at + 1))
-            .map(|(text, _)| text.as_str());
-        assert_eq!(shown, Some(window_frame(std::env::consts::OS)));
+        let shown = |row: &str| {
+            found
+                .iter()
+                .position(|(text, _)| text == row)
+                .and_then(|at| found.get(at + 1))
+                .map(|(text, _)| text.as_str())
+        };
+        assert_eq!(shown("frame"), Some(window_frame(std::env::consts::OS)));
+        assert_eq!(
+            shown("decorations"),
+            Some(window_decorations(std::env::consts::OS))
+        );
     }
 
     /// In a capture the pointer hovers nothing: the page `held_page` wraps
