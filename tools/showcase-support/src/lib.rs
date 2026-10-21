@@ -81,6 +81,15 @@ pub const WINDOW_SIZE_PX: (u32, u32) = (1280, 720);
 /// `INFO_SETTLE`), which the egui showcase copied.
 pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 
+/// A dialog's padding on a side the theme's `dialog.border.padding` leaves
+/// unstated, inside the dialog's border line: gpui-component's `Dialog`'s
+/// own, `Edges::all(px(16.))`, which each stated side replaces
+/// (gpui-component 0.7.3 `src/dialog/dialog.rs:635-647`), and which the gpui
+/// showcase's dialogs keep. The iced and egui showcases pad theirs so, as
+/// the shared chrome looks like gpui's; the model states no such default.
+/// Logical pixels, not a rem multiple: text scale leaves it alone.
+pub const DIALOG_PADDING_PX: f32 = 16.0;
+
 #[cfg(test)]
 mod tests {
     use super::*;

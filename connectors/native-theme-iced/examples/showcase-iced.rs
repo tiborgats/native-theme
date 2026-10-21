@@ -88,7 +88,7 @@ use native_theme_showcase_support::cli::{
 use native_theme_showcase_support::elements::{self, ShowcaseElement};
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::{
-    INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values,
+    DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values,
 };
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
@@ -109,8 +109,6 @@ struct Spacing {
     xs: f32,
     s: f32,
     m: f32,
-    l: f32,
-    xl: f32,
 }
 
 impl Spacing {
@@ -120,8 +118,6 @@ impl Spacing {
             xs: 4.0,
             s: 8.0,
             m: 12.0,
-            l: 16.0,
-            xl: 24.0,
         }
     }
 }
@@ -220,9 +216,13 @@ const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 /// is rebuilt.
 ///
 /// Every field of `LayoutTheme` is an `Option`: `None` is the platform saying
-/// it states no such distance, and nothing is invented for it -- the
-/// showcase's own [`Spacing`] constant stands in, and the inspector's Theme
-/// tab says which of the two is on screen.
+/// it states no such distance, and nothing is invented for it: none is drawn,
+/// as the gpui showcase draws none (`geometry::section_gap` and the others,
+/// `None` through `with_gap`), and the inspector's Theme tab says the
+/// distance is not stated. The chrome bars and the dialog are the
+/// exceptions, each falling back on gpui's own value where the theme states
+/// none ([`MENU_BAR_PADDING`], [`TOOLBAR_PADDING`], [`TOOLBAR_GAP`],
+/// [`THEME_SETTINGS_GAP`], [`status_bar_padding`], [`DIALOG_PADDING_PX`]).
 struct Gaps {
     /// Space between adjacent widgets, `layout.widget_gap`.
     widget: f32,
@@ -237,22 +237,51 @@ struct Gaps {
 impl Gaps {
     fn from_layout(layout: &LayoutTheme) -> Self {
         Self {
-            widget: layout.widget_gap.unwrap_or(SP.s),
-            container: layout.container_margin.unwrap_or(SP.l),
-            window: layout.window_margin.unwrap_or(SP.l),
-            section: layout.section_gap.unwrap_or(SP.xl),
+            widget: layout.widget_gap.unwrap_or(0.0),
+            container: layout.container_margin.unwrap_or(0.0),
+            window: layout.window_margin.unwrap_or(0.0),
+            section: layout.section_gap.unwrap_or(0.0),
         }
     }
 }
 
 /// How one layout distance reads in the inspector's Theme tab: the
-/// platform's value, or the showcase constant that stood in for it.
-fn layout_value(stated: Option<f32>, fallback: f32) -> String {
+/// platform's value, or `not stated` where it states none, as Widget Info
+/// prints it ([`values::NOT_STATED`]): none is drawn for it.
+fn layout_value(stated: Option<f32>) -> String {
     match stated {
         Some(v) => format!("{v:.0}px"),
-        None => format!("{fallback:.0}px (showcase)"),
+        None => values::NOT_STATED.to_string(),
     }
 }
+
+/// The menu-bar row's side padding where the theme states no
+/// `layout.container_margin` (spec §3.1): the gpui showcase's
+/// `MENU_BAR_PADDING` (`showcase-gpui/demo.rs`), so the shared chrome looks
+/// as gpui's does. The model states no menu bar, and the row is the
+/// application's own element, with no toolkit default to fall back on: this
+/// is the showcases' own choice, not a platform's value, and the row's Widget
+/// Info says so.
+const MENU_BAR_PADDING: f32 = 8.0;
+
+/// The toolbar's padding on a side the theme leaves unstated twice over,
+/// neither `toolbar.border.padding` nor `layout.container_margin` stating it
+/// (spec §3.1): the gpui showcase's `TOOLBAR_PADDING`
+/// (`showcase-gpui/demo.rs`), the showcases' own choice, which the toolbar's
+/// Widget Info names.
+const TOOLBAR_PADDING: f32 = 8.0;
+
+/// The gap between the toolbar's items where the theme leaves it unstated
+/// twice over, neither `toolbar.item_gap` nor `layout.widget_gap` stating it:
+/// the gpui showcase's `TOOLBAR_GAP` (`showcase-gpui/demo.rs`), the
+/// showcases' own choice, which the toolbar's Widget Info names.
+const TOOLBAR_GAP: f32 = 4.0;
+
+/// The gap between the theme settings' rows, and between each row's label
+/// and its control, where `layout.widget_gap` is unstated (spec §3.1): the
+/// gpui showcase's `THEME_SETTINGS_GAP` (`showcase-gpui/demo.rs`), the
+/// showcases' own choice, which the settings' Widget Info names.
+const THEME_SETTINGS_GAP: f32 = 8.0;
 
 // ---------------------------------------------------------------------------
 // The shared element list (docs/showcase-elements.toml)
@@ -4138,7 +4167,8 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
 /// `menu.background_color`, framed by the popover's border (platform-facts
 /// §2.6: the popup border is §2.16's); its open title the bar's current
 /// item ([`menu_title`]). The row's sides are `layout.container_margin`, as
-/// the gpui showcase's: the model states no menu-bar inset.
+/// the gpui showcase's, and [`MENU_BAR_PADDING`] where that is unstated: the
+/// model states no menu-bar inset.
 fn menu_bar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
@@ -4341,10 +4371,11 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
         }),
         None => bar,
     };
+    let side = state.layout.container_margin.unwrap_or(MENU_BAR_PADDING);
     tagged(
         "chrome.menu_bar",
         container(bar)
-            .padding(Padding::ZERO.left(gap.container).right(gap.container))
+            .padding(Padding::ZERO.left(side).right(side))
             .width(Fill),
     )
     .into()
@@ -4354,9 +4385,11 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// buttons in the gpui showcase's order -- the command palette, Reload
 /// System Theme and Preferences -- their icons of the chosen icon theme at
 /// `toolbar.icon_size`, in a row filled with `toolbar.background_color`,
-/// padded by `toolbar.border.padding` where the theme states a side and by
-/// `layout.container_margin` where it does not, its items `toolbar.item_gap`
-/// apart, or `layout.widget_gap` apart where that is unstated, at least
+/// padded by `toolbar.border.padding` where the theme states a side, by
+/// `layout.container_margin` where it does not and by [`TOOLBAR_PADDING`]
+/// where that is unstated too, its items `toolbar.item_gap` apart, or
+/// `layout.widget_gap` apart where that is unstated, or [`TOOLBAR_GAP`]
+/// where that is unstated too, as the gpui showcase's toolbar, at least
 /// `toolbar.bar_height` tall where the theme states one. Under its padding a
 /// `toolbar.border.line_width` line in `toolbar.border.color`, as the
 /// resolved theme states it. §2.13 has no row for that border: on the
@@ -4365,7 +4398,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// cited in §2.13's padding row); the showcase draws what the theme holds.
 fn toolbar(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
+    let layout = &state.layout;
     let t = &resolved.toolbar;
     let icons = &state.chrome_icons;
     let pad = ghost_padding(resolved);
@@ -4417,12 +4450,12 @@ fn toolbar(state: &State) -> Element<'_, Message> {
             Message::Open(Overlay::Preferences),
         ),
     ]
-    .spacing(t.item_gap.unwrap_or(gap.widget))
+    .spacing(t.item_gap.or(layout.widget_gap).unwrap_or(TOOLBAR_GAP))
     .align_y(iced::Center);
     let bar = container(items)
         .padding(native_theme_iced::padding_or(
             &t.border.padding,
-            Padding::from(gap.container),
+            Padding::from(layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
         ))
         .width(Fill)
         .align_y(iced::Center)
@@ -4443,15 +4476,14 @@ fn toolbar(state: &State) -> Element<'_, Message> {
 }
 
 /// One of the theme settings: `label`, in `sidebar.font`, above `control`,
-/// `layout.widget_gap` apart; `tags` are the list's ids of the label and of
-/// the control.
+/// [`settings_gap`] apart; `tags` are the list's ids of the label and of the
+/// control.
 fn setting<'a>(
     state: &'a State,
     tags: (&'static str, &'static str),
     label: &'static str,
     control: Element<'a, Message>,
 ) -> Element<'a, Message> {
-    let gap = Gaps::from_layout(&state.layout);
     column![
         tagged(
             tags.0,
@@ -4463,8 +4495,42 @@ fn setting<'a>(
         ),
         tagged(tags.1, control),
     ]
-    .spacing(gap.widget)
+    .spacing(settings_gap(&state.layout))
     .into()
+}
+
+/// The gap between the theme settings' rows, and between each row's label
+/// and its control: `layout.widget_gap`, or [`THEME_SETTINGS_GAP`] where that
+/// is unstated, as the gpui showcase's settings.
+fn settings_gap(layout: &LayoutTheme) -> f32 {
+    layout.widget_gap.unwrap_or(THEME_SETTINGS_GAP)
+}
+
+/// `sidebar.border.padding`, where the theme states any side of it: the side
+/// panel's own padding, as the gpui and egui showcases take it. It then pads
+/// the whole panel, a side it leaves unstated by `layout.container_margin`
+/// (none where that is unstated too), with no line width, and the panel's
+/// content adds none ([`side_panel_content_margin`]). `None` where it states
+/// no side.
+fn sidebar_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Option<Padding> {
+    let p = &resolved.sidebar.border.padding;
+    [p.top, p.right, p.bottom, p.left]
+        .iter()
+        .any(Option::is_some)
+        .then(|| {
+            native_theme_iced::padding_or(p, Padding::from(layout.container_margin.unwrap_or(0.0)))
+        })
+}
+
+/// The padding of the side panel's settings and of the inspector's content,
+/// and the inspector's tab row's sides: `layout.container_margin` (none where
+/// it is unstated), or none where the theme states the panel's own padding
+/// ([`sidebar_padding`]), which pads them already.
+fn side_panel_content_margin(resolved: &ResolvedTheme, layout: &LayoutTheme) -> f32 {
+    match sidebar_padding(resolved, layout) {
+        Some(_) => 0.0,
+        None => layout.container_margin.unwrap_or(0.0),
+    }
 }
 
 /// A drop-down of the theme settings: as wide as the side panel's content,
@@ -4520,23 +4586,28 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
                 tag: INSPECTOR_TAB_IDS.get(i).copied(),
             })
             .collect(),
+        side_panel_content_margin(&state.current_resolved, &state.layout),
         None,
     )
 }
 
 /// The side panel (spec S2): the theme settings -- Theme, Mode and Icon
-/// theme, each labelled above its drop-down -- padded by
-/// `layout.container_margin`; a separator from edge to edge; then the
-/// inspector's tabs and its content, which fills the rest of the panel and
-/// scrolls. Filled with `sidebar.background_color`, lettered in
-/// `sidebar.font.color`.
+/// theme, each labelled above its drop-down, [`settings_gap`] apart; a
+/// separator; then the inspector's tabs and its content, which fills the rest
+/// of the panel and scrolls. Filled with `sidebar.background_color`,
+/// lettered in `sidebar.font.color`. As the gpui showcase's: where the theme
+/// states any side of `sidebar.border.padding` ([`sidebar_padding`]), the
+/// whole panel is padded by it and its content adds none; where it states no
+/// side, `layout.container_margin` pads the settings and the inspector's
+/// content and insets the inspector's tab row
+/// ([`side_panel_content_margin`]), none where that is unstated.
 ///
 /// The panel is as wide as the splitter leaves it, whatever it holds: its
 /// scrollbar, `scrollbar.groove_width` wide where the platform's does not
 /// overlay, is laid out inside that width and moves nothing beside it.
 fn side_panel(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
+    let content = side_panel_content_margin(resolved, &state.layout);
     let settings = column![
         setting(
             state,
@@ -4593,9 +4664,9 @@ fn side_panel(state: &State) -> Element<'_, Message> {
             ),
         ),
     ]
-    .spacing(gap.widget);
+    .spacing(settings_gap(&state.layout));
     let settings = container(tagged("chrome.side_panel.settings", settings))
-        .padding(Padding::from(gap.container))
+        .padding(Padding::from(content))
         .width(Fill);
     let body = match state.inspector_tab {
         InspectorTab::Widget => inspector_widget(state),
@@ -4608,20 +4679,17 @@ fn side_panel(state: &State) -> Element<'_, Message> {
             inspector_tabs(state),
             tagged(
                 "chrome.side_panel.inspector",
-                scrollable(
-                    container(body)
-                        .padding(Padding::from(gap.container))
-                        .width(Fill),
-                )
-                .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                .style(styles::scrollable(resolved))
-                .width(Fill)
-                .height(Fill)
+                scrollable(container(body).padding(Padding::from(content)).width(Fill))
+                    .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
+                    .style(styles::scrollable(resolved))
+                    .width(Fill)
+                    .height(Fill)
             ),
         ]
         .width(Fill)
         .height(Fill),
     )
+    .padding(sidebar_padding(resolved, &state.layout).unwrap_or(Padding::ZERO))
     .style(surface(resolved, Surface::SidePanel))
     .width(Fill)
     .height(Fill)
@@ -4667,7 +4735,9 @@ fn tab_button<'a>(
 
 /// A tab row, the page tabs' and the inspector's: each tab a
 /// [`tab_button`], on a strip of `tab.bar_background` whose sides are
-/// `layout.container_margin`, as the gpui showcase's tab bars are inset.
+/// `margin`, as the gpui showcase's tab bars are inset: the page tabs'
+/// `layout.container_margin`, the inspector's
+/// [`side_panel_content_margin`].
 /// More tabs than the strip is wide scroll sideways, with no bar of their
 /// own; `trailing`, where given, stays at the strip's right end. `tag` is the
 /// strip's id in the list, `id` its scrollable's widget id.
@@ -4675,10 +4745,10 @@ fn tab_row<'a>(
     state: &'a State,
     (tag, id): (&'static str, &'static str),
     tabs: Vec<TabSpec>,
+    margin: f32,
     trailing: Option<Element<'a, Message>>,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
-    let gap = Gaps::from_layout(&state.layout);
     let t = &resolved.tab;
     let tabs = tabs.into_iter().map(|spec| {
         let tab = tab_button(state, spec.label, spec.open, spec.message);
@@ -4708,7 +4778,7 @@ fn tab_row<'a>(
     tagged(
         tag,
         container(bar)
-            .padding(Padding::ZERO.left(gap.container).right(gap.container))
+            .padding(Padding::ZERO.left(margin).right(margin))
             .width(Fill)
             .style(surface(resolved, Surface::TabStrip)),
     )
@@ -4737,6 +4807,7 @@ fn page_tabs(state: &State) -> Element<'_, Message> {
         state,
         ("chrome.page_tabs", TAB_STRIP_ID),
         tabs,
+        state.layout.container_margin.unwrap_or(0.0),
         Some(page_menu(state)),
     )
 }
@@ -4920,8 +4991,9 @@ fn info_title(info: &str) -> Option<&str> {
 /// the side-panel toggle, then the environment joined by " · "; at its right
 /// the title of what Widget Info shows. Filled with
 /// `status_bar.background_color`, lettered in `status_bar.font`, padded by
-/// `status_bar.border.padding` (`layout.container_margin` on a side it
-/// leaves unstated), its top edge a `status_bar.border.line_width` line in
+/// `status_bar.border.padding` ([`status_bar_padding`] on a side it leaves
+/// unstated), its items `layout.widget_gap` apart (none where that is
+/// unstated), its top edge a `status_bar.border.line_width` line in
 /// `status_bar.border.color` outside that padding: the bar is its line, its
 /// padding and its content, the model's box (padding lies inside the
 /// border).
@@ -4965,7 +5037,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     let bar = container(items)
         .padding(native_theme_iced::padding_or(
             &s.border.padding,
-            Padding::from(gap.container),
+            status_bar_padding(resolved, a11y),
         ))
         .width(Fill)
         .style(surface(resolved, Surface::StatusBar));
@@ -4977,6 +5049,24 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         ],
     )
     .into()
+}
+
+/// The status bar's padding on a side `status_bar.border.padding` leaves
+/// unstated: gpui-component's StatusBar's own, which the gpui showcase's bar
+/// keeps, `py_1` above and below and `px_2` at the sides (gpui-component
+/// 0.7.3 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
+/// (gpui-pre-macros 0.3.9 `src/styles.rs:939-951`), and gpui-component's rem
+/// is its `Theme::font_size` (`src/root.rs:440`), which the gpui connector
+/// fills with the scaled `defaults.font.size` (`native-theme-gpui/src/lib.rs`,
+/// `to_theme`): a quarter of that size above and below, a half at the sides.
+fn status_bar_padding(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Padding {
+    let rem = a11y.scaled(resolved.defaults.font.size);
+    Padding {
+        top: rem / 4.0,
+        right: rem / 2.0,
+        bottom: rem / 4.0,
+        left: rem / 2.0,
+    }
 }
 
 /// The title of what Widget Info shows, for the status bar: the hovered
@@ -6191,23 +6281,32 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- toolbar ----
         ("toolbar", "bar_height_px") => "the bar container's height, where stated".into(),
-        ("toolbar", "item_gap_px") => {
-            "the buttons' Row::spacing; layout.widget_gap where unstated".into()
-        }
+        ("toolbar", "item_gap_px") => format!(
+            "the buttons' Row::spacing; layout.widget_gap where unstated, and \
+             TOOLBAR_GAP, {TOOLBAR_GAP}px, gpui's showcase constant, where that is unstated too"
+        )
+        .into(),
         ("toolbar", "background_color") => "surface: the bar container's background".into(),
         ("toolbar", "border.color") => "line_style: the bar's bottom line's colour".into(),
         ("toolbar", "border.line_width_px") => {
             "the bottom line rule's height, under the bar's padding".into()
         }
-        ("toolbar", f) if side(f).is_some() => {
-            "the bar container's padding; layout.container_margin where unstated".into()
-        }
+        ("toolbar", f) if side(f).is_some() => format!(
+            "the bar container's padding; layout.container_margin where unstated, and \
+             TOOLBAR_PADDING, {TOOLBAR_PADDING}px, gpui's showcase constant, where that is \
+             unstated too"
+        )
+        .into(),
         ("toolbar", "font") => "the button's text, where the icon set has no icon".into(),
         ("toolbar", "icon_size_px") => "the svg or image's width and height".into(),
         // ---- side panel, status bar, splitter, separator ----
         ("sidebar", "background_color") => "surface: the panel container's background".into(),
         ("sidebar", f) if side(f).is_some() => {
-            "not drawn: the panel's sections are padded by layout.container_margin".into()
+            "pads the side panel where any side is stated, a side it leaves unstated by \
+             layout.container_margin (none where that is unstated); where no side is stated, \
+             layout.container_margin pads the settings, the inspector's tab row and its \
+             content (none where that is unstated) (side_panel)"
+                .into()
         }
         ("sidebar", "font") => "the text's size and theme_font".into(),
         ("sidebar", "font.color") if id == "chrome.info.copy" => {
@@ -6225,7 +6324,16 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "the top edge rule's height, above the bar's padding".into()
         }
         ("status_bar", f) if side(f).is_some() => {
-            "the bar container's padding; layout.container_margin where unstated".into()
+            let upstream = match side(f) {
+                Some("top" | "bottom") => "py_1, a quarter",
+                _ => "px_2, a half",
+            };
+            format!(
+                "the bar container's padding; where unstated gpui-component's StatusBar \
+                 padding, which gpui's status bar keeps: {upstream} of the scaled \
+                 defaults.font.size (status_bar_padding; gpui-component status_bar.rs:89-90)"
+            )
+            .into()
         }
         ("status_bar", "font") => "the text's size and theme_font".into(),
         ("status_bar", "font.color") => "surface: the bar's text_color".into(),
@@ -6444,6 +6552,41 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("window", "background_color") => {
             "surface: the window container's background, which shows through".into()
         }
+        ("layout", "container_margin_px") if id == "chrome.menu_bar" => format!(
+            "the row's left and right padding; MENU_BAR_PADDING, {MENU_BAR_PADDING}px, gpui's \
+             showcase constant, where unstated"
+        )
+        .into(),
+        ("layout", "widget_gap_px") if id == "chrome.side_panel.settings" => format!(
+            "Column::spacing between the rows and between each label and its control; \
+             THEME_SETTINGS_GAP, {THEME_SETTINGS_GAP}px, gpui's showcase constant, where \
+             unstated (settings_gap)"
+        )
+        .into(),
+        ("layout", "container_margin_px") if id == "chrome.side_panel" => {
+            "pads a side of the side panel sidebar.border.padding leaves unstated, where it \
+             states any; where it states none, the settings, the inspector's tab row and its \
+             content (none where that is unstated) (side_panel)"
+                .into()
+        }
+        ("layout", "container_margin_px")
+            if id == "chrome.side_panel.settings"
+                || id == "chrome.side_panel.inspector_tabs"
+                || id == "chrome.side_panel.inspector" =>
+        {
+            "the padding where sidebar.border.padding states no side (none where that is \
+             unstated); where it states any, the side panel's padding pads it \
+             (side_panel_content_margin)"
+                .into()
+        }
+        ("layout", "container_margin_px") if id == "chrome.page_tabs" => {
+            "the tab row's left and right padding (none where that is unstated)".into()
+        }
+        ("layout", "container_margin_px") if id == "chrome.status_bar" => {
+            "not drawn: a side status_bar.border.padding leaves unstated takes \
+             gpui-component's StatusBar padding (status_bar_padding)"
+                .into()
+        }
         ("layout", "widget_gap_px") => "Row/Column::spacing between the items".into(),
         ("layout", "container_margin_px") => "the container's padding".into(),
         ("layout", "window_margin_px") => "the page's padding".into(),
@@ -6631,13 +6774,10 @@ fn inspector_theme(state: &State) -> Element<'_, Message> {
             "input padding",
             sides(native_theme_iced::input_padding(resolved)),
         ),
-        ("widget_gap", layout_value(layout.widget_gap, SP.s)),
-        (
-            "container_margin",
-            layout_value(layout.container_margin, SP.l),
-        ),
-        ("window_margin", layout_value(layout.window_margin, SP.l)),
-        ("section_gap", layout_value(layout.section_gap, SP.xl)),
+        ("widget_gap", layout_value(layout.widget_gap)),
+        ("container_margin", layout_value(layout.container_margin)),
+        ("window_margin", layout_value(layout.window_margin)),
+        ("section_gap", layout_value(layout.section_gap)),
     ];
     let d = &resolved.defaults;
     let fonts = [
@@ -6754,8 +6894,7 @@ fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
 /// button at its right, the chosen icon theme's `IconRole::WindowClose` at
 /// `defaults.icon_sizes.small`; its body in `dialog.body_font`'s colour; filled
 /// with `dialog.background_color`, framed by `dialog.border`, padded by
-/// `dialog.border.padding` inside the border (`layout.container_margin` on a
-/// side it leaves unstated), `dialog.max_width` wide and at least
+/// [`dialog_padding`], `dialog.max_width` wide and at least
 /// `dialog.min_height` tall.
 fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
@@ -6790,7 +6929,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
         close,
     ]
     .align_y(iced::Center);
-    let padding = native_theme_iced::padding_inside_border(&d.border, Padding::from(gap.container));
+    let padding = dialog_padding(state);
     let min_height = (d.min_height - padding.y()).max(0.0);
     let border = iced::Border {
         color: to_color(d.border.color),
@@ -6816,6 +6955,19 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
         ..container::Style::default()
     })
     .into()
+}
+
+/// The dialog's padding, as the gpui showcase's `Dialog` is padded: each side
+/// `dialog.border.padding` states, else gpui-component's
+/// [`DIALOG_PADDING_PX`], inside the border line; iced measures a padding
+/// from the bounds, so each side is the line width more
+/// (`padding_inside_border`).
+fn dialog_padding(state: &State) -> Padding {
+    let border = &state.current_resolved.dialog.border;
+    native_theme_iced::padding_inside_border(
+        border,
+        Padding::from(DIALOG_PADDING_PX + border.line_width),
+    )
 }
 
 /// The command palette: a query, in the model's text input, over the
@@ -7689,12 +7841,24 @@ fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
     }
 }
 
+/// The widest fixed-width control the theme states on the Basic page:
+/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
+/// apart, `BASIC_WIDE` and `BASIC_WIDTH`.
+fn basic_widest(resolved: &ResolvedTheme) -> f32 {
+    let t = &resolved.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    resolved
+        .combo_box
+        .min_width
+        .max(tabs)
+        .max(BASIC_WIDE)
+        .max(BASIC_WIDTH)
+}
+
 /// How many columns the Basic page lays its groups out in, from the theme
 /// alone, as the gpui and egui pages count them: the most, of five, four and
-/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
-/// widest fixed-width control the theme states on the page --
-/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is `content_width`
+/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds
+/// [`basic_widest`] -- where `page` is `content_width`
 /// less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
 /// scrolling page keeps free. Three where not even three do: the page is then
@@ -7709,14 +7873,7 @@ fn basic_column_count(resolved: &ResolvedTheme, layout: &LayoutTheme, content_wi
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let t = &resolved.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
-    let widest = resolved
-        .combo_box
-        .min_width
-        .max(tabs)
-        .max(BASIC_WIDE)
-        .max(BASIC_WIDTH);
+    let widest = basic_widest(resolved);
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -20382,16 +20539,19 @@ mod tests {
         );
     }
 
-    /// The Basic page never needs sideways scrolling under the presets and
-    /// modes the captures take (kde-breeze, material-3, catppuccin-mocha and
-    /// adwaita, light and dark): laid out in the page area of a 1280 x 720
-    /// window, every element ends inside the page's scroll area, and the page
-    /// has the columns its rule counts from the content panel's width. It may
-    /// be taller than its area (material-3 is): it then scrolls, and the test
-    /// reports by how much.
+    /// The Basic page never needs sideways scrolling under any bundled preset
+    /// in either mode (M9-074: macos-tahoe states no `layout.section_gap`, and
+    /// the column count takes none): laid out in the page area of a 1280 x
+    /// 720 window, every element ends inside the page's scroll area, and the
+    /// page has the columns its rule counts from the content panel's width.
+    /// It may be taller than its area (material-3 is): it then scrolls, and
+    /// the test reports by how much.
     #[test]
     fn the_basic_page_fits_the_window_across() {
-        for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
+        for preset in native_theme::theme::Theme::list_presets()
+            .iter()
+            .map(|info| info.key)
+        {
             for dark in [false, true] {
                 let mut state = State {
                     accessibility: native_theme_iced::AccessibilityPreferences::default(),
@@ -20478,7 +20638,430 @@ mod tests {
                             bounds.x + bounds.width
                         );
                     }
+                    // The columns the count chose hold the widest control it
+                    // counted with: a column narrower squeezes that control.
+                    let widest = basic_widest(&state.current_resolved);
+                    for (id, r) in laid
+                        .iter()
+                        .filter(|(id, _)| id.starts_with("basic.column_"))
+                    {
+                        assert!(
+                            r.width + 0.01 >= widest,
+                            "{preset} (dark: {dark}): {id} is {}px wide, narrower than the \
+                             {widest}px control the column count counted with",
+                            r.width
+                        );
+                    }
                 }
+            }
+        }
+    }
+
+    /// `preset` installed through `load_theme` in the mode `dark` names,
+    /// under the default accessibility preferences, so every size is the
+    /// theme's own.
+    fn loaded(preset: &str, dark: bool) -> State {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
+        assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+        state
+    }
+
+    /// Every bundled preset, in light and in dark.
+    fn every_preset_in_both_modes() -> impl Iterator<Item = (&'static str, bool)> {
+        native_theme::theme::Theme::list_presets()
+            .iter()
+            .flat_map(|info| [(info.key, false), (info.key, true)])
+    }
+
+    /// The rectangles and the texts of the frame `state`'s window draws at
+    /// [`WINDOW_SIZE`].
+    fn drawn_frame(state: &State) -> (ElementRects, Vec<(String, Rectangle)>) {
+        let theme = theme(state);
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(state));
+        for _ in 0..2 {
+            if let Err(error) = ui.snapshot(&theme) {
+                panic!("the interface did not draw: {error}");
+            }
+        }
+        let found = texts(&mut ui);
+        (drawn_layout(), found)
+    }
+
+    /// Whether two lengths are one, to a hundredth of a pixel.
+    fn near(a: f32, b: f32) -> bool {
+        (a - b).abs() < 0.01
+    }
+
+    /// The route Widget Info shows for `leaf` of the listed element `id`.
+    fn route_of(state: &State, id: &str, leaf: &str) -> String {
+        match elements::element(id) {
+            Some(element) => iced_route(state, element, leaf),
+            None => panic!("{id} is not in the list"),
+        }
+    }
+
+    /// M9-074 and M9-134: the four layout distances are the theme's or none,
+    /// as gpui lays them out. A layout that states nothing gives none of the
+    /// four; macos-tahoe, which states only `widget_gap` and `window_margin`,
+    /// gives those two and no section gap or container margin.
+    #[test]
+    fn the_gaps_are_the_stated_distances_or_none() {
+        let none = Gaps::from_layout(&LayoutTheme::default());
+        assert_eq!(
+            [none.widget, none.container, none.window, none.section],
+            [0.0; 4],
+            "a layout that states nothing"
+        );
+        let layout = match native_theme::theme::Theme::preset("macos-tahoe") {
+            Ok(theme) => theme.layout,
+            Err(error) => panic!("macos-tahoe: {error}"),
+        };
+        assert_eq!(
+            (layout.section_gap, layout.container_margin),
+            (None, None),
+            "macos-tahoe states a section gap or a container margin: this test needs a preset \
+             that leaves both unstated"
+        );
+        let tahoe = Gaps::from_layout(&layout);
+        assert_eq!(
+            Some(tahoe.widget),
+            layout.widget_gap,
+            "macos-tahoe's widget gap"
+        );
+        assert_eq!(
+            Some(tahoe.window),
+            layout.window_margin,
+            "macos-tahoe's window margin"
+        );
+        assert_eq!(
+            [tahoe.section, tahoe.container],
+            [0.0; 2],
+            "macos-tahoe's section gap and container margin"
+        );
+    }
+
+    /// M9-134 (F rows 4, 6 and 7): the chrome bars are padded as gpui's,
+    /// under every bundled preset in both modes, each expectation read from
+    /// the resolved theme. The menu bar's first title sits
+    /// `layout.container_margin` in from the bar's left, [`MENU_BAR_PADDING`]
+    /// where that is unstated. The toolbar's first button sits
+    /// `toolbar.border.padding`'s side in from the bar's left and top, else
+    /// `container_margin`, else [`TOOLBAR_PADDING`]. The status bar's items
+    /// sit `status_bar.border.padding`'s side inside the bar, under its top
+    /// line, else gpui-component's StatusBar padding: a half of the scaled
+    /// `defaults.font.size` at the sides and a quarter above and below.
+    /// Under macos-tahoe, which states none of them: 8, 8, and S/2 and S/4.
+    #[test]
+    fn the_chrome_bars_are_padded_as_gpuis() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            let r = &state.current_resolved;
+            let margin = state.layout.container_margin;
+            let (drawn, _) = drawn_frame(&state);
+            let rect = |id: &str| match drawn.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{preset} (dark: {dark}): {id} is not drawn"),
+            };
+            let bar = rect("chrome.menu_bar");
+            let first = rect("chrome.menu_bar.file");
+            let side = margin.unwrap_or(MENU_BAR_PADDING);
+            assert!(
+                near(first.x - bar.x, side),
+                "{preset} (dark: {dark}): the menu bar's first title is {}px in, expected {side}px",
+                first.x - bar.x
+            );
+            let bar = rect("chrome.toolbar");
+            let first = rect("chrome.toolbar.command_palette");
+            let stated = &r.toolbar.border.padding;
+            let left = stated.left.or(margin).unwrap_or(TOOLBAR_PADDING);
+            assert!(
+                near(first.x - bar.x, left),
+                "{preset} (dark: {dark}): the toolbar's first button is {}px in, expected {left}px",
+                first.x - bar.x
+            );
+            // A stated bar height centres the row: its top is then not the
+            // padding's.
+            if r.toolbar.bar_height.is_none() {
+                let top = stated.top.or(margin).unwrap_or(TOOLBAR_PADDING);
+                assert!(
+                    near(first.y - bar.y, top),
+                    "{preset} (dark: {dark}): the toolbar's first button is {}px down, expected \
+                     {top}px",
+                    first.y - bar.y
+                );
+            }
+            let s = state.accessibility.scaled(r.defaults.font.size);
+            let stated = &r.status_bar.border.padding;
+            let (left, top, bottom) = (
+                stated.left.unwrap_or(s / 2.0),
+                stated.top.unwrap_or(s / 4.0),
+                stated.bottom.unwrap_or(s / 4.0),
+            );
+            let bar = rect("chrome.status_bar");
+            let toggle = rect("chrome.status_bar.toggle");
+            let environment = rect("chrome.status_bar.environment");
+            assert!(
+                near(toggle.x - bar.x, left),
+                "{preset} (dark: {dark}): the status bar's toggle is {}px in, expected {left}px",
+                toggle.x - bar.x
+            );
+            let items_top = toggle.y.min(environment.y);
+            let items_bottom = (toggle.y + toggle.height).max(environment.y + environment.height);
+            let under_line = bar.y + r.status_bar.border.line_width;
+            assert!(
+                near(items_top - under_line, top),
+                "{preset} (dark: {dark}): the status bar's items are {}px under its line, \
+                 expected {top}px",
+                items_top - under_line
+            );
+            assert!(
+                near(bar.y + bar.height - items_bottom, bottom),
+                "{preset} (dark: {dark}): the status bar's items end {}px above its bottom, \
+                 expected {bottom}px",
+                bar.y + bar.height - items_bottom
+            );
+        }
+    }
+
+    /// M9-134, F row 3: the chrome's Widget Info names the constants and the
+    /// upstream padding the bars fall back on. Under macos-tahoe, which
+    /// states neither a container margin nor the bars' own paddings, they are
+    /// what the bars draw.
+    #[test]
+    fn the_chrome_info_names_what_an_unstated_padding_falls_back_on() {
+        let state = loaded("macos-tahoe", false);
+        let toolbar = route_of(&state, "chrome.toolbar", "toolbar.border.padding_left_px");
+        assert!(toolbar.contains("TOOLBAR_PADDING"), "{toolbar}");
+        let gap = route_of(&state, "chrome.toolbar", "toolbar.item_gap_px");
+        assert!(gap.contains("TOOLBAR_GAP"), "{gap}");
+        let menu_bar = route_of(&state, "chrome.menu_bar", "layout.container_margin_px");
+        assert!(menu_bar.contains("MENU_BAR_PADDING"), "{menu_bar}");
+        for (leaf, upstream) in [
+            ("status_bar.border.padding_top_px", "py_1"),
+            ("status_bar.border.padding_left_px", "px_2"),
+        ] {
+            let status = route_of(&state, "chrome.status_bar", leaf);
+            assert!(
+                status.contains("gpui-component") && status.contains(upstream),
+                "{leaf}: {status}"
+            );
+        }
+        let margin = route_of(&state, "chrome.status_bar", "layout.container_margin_px");
+        assert!(margin.starts_with("not drawn"), "{margin}");
+    }
+
+    /// M9-142 (Addendum A's S9, F row 5): the side panel is padded as gpui's,
+    /// under every bundled preset in both modes and under a padding spliced
+    /// into kde-breeze, which states none: where `sidebar.border.padding`
+    /// states any side, the whole panel, each side by its stated value, else
+    /// `layout.container_margin`, else none, and the settings, the
+    /// inspector's tab row and its content add none; where it states no
+    /// side, those three are padded by `container_margin` (the tab row at its
+    /// sides), none where that is unstated. The page tabs' sides are
+    /// `container_margin`, none where unstated. Under the spliced padding the
+    /// panel's route says so.
+    #[test]
+    fn the_side_panel_is_padded_as_gpuis() {
+        let spliced = {
+            let mut state = loaded("kde-breeze", false);
+            state.current_resolved.sidebar.border.padding = native_theme::theme::ResolvedPadding {
+                top: Some(3.0),
+                right: None,
+                bottom: Some(5.0),
+                left: Some(7.0),
+            };
+            (
+                "kde-breeze with a spliced sidebar padding".to_string(),
+                state,
+            )
+        };
+        let route = route_of(
+            &spliced.1,
+            "chrome.side_panel",
+            "sidebar.border.padding_top_px",
+        );
+        assert!(
+            !route.starts_with("not drawn")
+                && route.contains("a side it leaves unstated by layout.container_margin"),
+            "{route}"
+        );
+        let cases = every_preset_in_both_modes()
+            .map(|(preset, dark)| (format!("{preset} (dark: {dark})"), loaded(preset, dark)))
+            .chain(std::iter::once(spliced));
+        for (case, mut state) in cases {
+            state.inspector_tab = InspectorTab::Theme;
+            let margin = state.layout.container_margin;
+            let stated = state.current_resolved.sidebar.border.padding;
+            let own = [stated.top, stated.right, stated.bottom, stated.left]
+                .iter()
+                .any(Option::is_some);
+            let panel_side = |side: Option<f32>| {
+                if own {
+                    side.or(margin).unwrap_or(0.0)
+                } else {
+                    0.0
+                }
+            };
+            let (top, right, bottom, left) = (
+                panel_side(stated.top),
+                panel_side(stated.right),
+                panel_side(stated.bottom),
+                panel_side(stated.left),
+            );
+            let content = if own { 0.0 } else { margin.unwrap_or(0.0) };
+            let (drawn, found) = drawn_frame(&state);
+            let rect = |id: &str| match drawn.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{case}: {id} is not drawn"),
+            };
+            let panel = rect("chrome.side_panel");
+            let settings = rect("chrome.side_panel.settings");
+            assert!(
+                near(settings.x - panel.x, left + content)
+                    && near(settings.y - panel.y, top + content)
+                    && near(
+                        panel.x + panel.width - (settings.x + settings.width),
+                        right + content
+                    ),
+                "{case}: the settings at {settings:?} in the panel at {panel:?}, expected \
+                 {left} + {content} left, {top} + {content} top, {right} + {content} right"
+            );
+            let tab = rect("chrome.side_panel.inspector_tabs.widget");
+            assert!(
+                near(tab.x - panel.x, left + content),
+                "{case}: the inspector's first tab is {}px in, expected {left} + {content}",
+                tab.x - panel.x
+            );
+            let heading = match found.iter().find(|(text, _)| text == "Theme config") {
+                Some((_, bounds)) => *bounds,
+                None => panic!("{case}: the Theme tab's first heading is not laid out"),
+            };
+            assert!(
+                near(heading.x - panel.x, left + content),
+                "{case}: the inspector's content is {}px in, expected {left} + {content}",
+                heading.x - panel.x
+            );
+            let inspector = rect("chrome.side_panel.inspector");
+            assert!(
+                near(
+                    panel.y + panel.height - (inspector.y + inspector.height),
+                    bottom
+                ),
+                "{case}: the inspector ends {}px above the panel's bottom, expected {bottom}px",
+                panel.y + panel.height - (inspector.y + inspector.height)
+            );
+            let strip = rect("chrome.page_tabs");
+            let first = rect("chrome.page_tabs.basic");
+            let inset = margin.unwrap_or(0.0);
+            assert!(
+                near(first.x - strip.x, inset),
+                "{case}: the first page tab is {}px in, expected {inset}px",
+                first.x - strip.x
+            );
+        }
+    }
+
+    /// F rows 4 and 5, under macos-tahoe with its layout spliced to state no
+    /// `widget_gap`: the theme settings' rows, and each label and its
+    /// control, are [`THEME_SETTINGS_GAP`] apart, and the toolbar's items,
+    /// which macos-tahoe states no `toolbar.item_gap` for, [`TOOLBAR_GAP`]
+    /// apart, as gpui's are; the settings' Widget Info names the constant.
+    #[test]
+    fn the_settings_and_the_toolbar_keep_gpuis_gaps_where_the_theme_states_none() {
+        let mut state = loaded("macos-tahoe", false);
+        state.layout.widget_gap = None;
+        assert_eq!(
+            state.current_resolved.toolbar.item_gap, None,
+            "macos-tahoe states a toolbar item gap: this test needs one that does not"
+        );
+        let (drawn, _) = drawn_frame(&state);
+        let rect = |id: &str| match drawn.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let label = rect("chrome.side_panel.settings.theme_label");
+        let control = rect("chrome.side_panel.settings.theme");
+        let next = rect("chrome.side_panel.settings.mode_label");
+        assert!(
+            near(control.y - (label.y + label.height), THEME_SETTINGS_GAP),
+            "the Theme label and its control are {}px apart",
+            control.y - (label.y + label.height)
+        );
+        assert!(
+            near(next.y - (control.y + control.height), THEME_SETTINGS_GAP),
+            "the Theme and Mode rows are {}px apart",
+            next.y - (control.y + control.height)
+        );
+        let palette = rect("chrome.toolbar.command_palette");
+        let reload = rect("chrome.toolbar.reload_theme");
+        assert!(
+            near(reload.x - (palette.x + palette.width), TOOLBAR_GAP),
+            "the toolbar's first two items are {}px apart",
+            reload.x - (palette.x + palette.width)
+        );
+        let settings = route_of(&state, "chrome.side_panel.settings", "layout.widget_gap_px");
+        assert!(settings.contains("THEME_SETTINGS_GAP"), "{settings}");
+    }
+
+    /// F row 3: the inspector's Theme tab prints an unstated layout distance
+    /// as `not stated`, as Widget Info does, and a stated one as its value:
+    /// macos-tahoe's `section_gap` and `container_margin` are not stated,
+    /// kde-breeze states all four.
+    #[test]
+    fn the_theme_tab_says_an_unstated_distance_is_not_stated() {
+        for preset in ["macos-tahoe", "kde-breeze"] {
+            let mut state = loaded(preset, false);
+            state.inspector_tab = InspectorTab::Theme;
+            let layout = state.layout.clone();
+            let mut ui = interface(&state);
+            let found = texts(&mut ui);
+            for (name, stated) in [
+                ("widget_gap", layout.widget_gap),
+                ("container_margin", layout.container_margin),
+                ("window_margin", layout.window_margin),
+                ("section_gap", layout.section_gap),
+            ] {
+                let shown = found
+                    .iter()
+                    .position(|(text, _)| text == name)
+                    .and_then(|at| found.get(at + 1))
+                    .map(|(text, _)| text.clone());
+                let expected =
+                    stated.map_or_else(|| values::NOT_STATED.to_string(), |v| format!("{v:.0}px"));
+                assert_eq!(shown, Some(expected), "{preset}: {name}");
+            }
+        }
+    }
+
+    /// Addendum G, H m2 and I m2: a dialog is padded as gpui's `Dialog` is,
+    /// under every bundled preset in both modes: each side
+    /// `dialog.border.padding` states, else [`DIALOG_PADDING_PX`], inside the
+    /// border line, which iced measures from the bounds.
+    #[test]
+    fn a_dialog_is_padded_as_gpuis() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            let d = &state.current_resolved.dialog;
+            let line = d.border.line_width;
+            let stated = d.border.padding;
+            let drawn = dialog_padding(&state);
+            for (side, at, stated) in [
+                ("top", drawn.top, stated.top),
+                ("right", drawn.right, stated.right),
+                ("bottom", drawn.bottom, stated.bottom),
+                ("left", drawn.left, stated.left),
+            ] {
+                let expected = stated.unwrap_or(DIALOG_PADDING_PX) + line;
+                assert!(
+                    near(at, expected),
+                    "{preset} (dark: {dark}): the dialog's {side} padding is {at}px from its \
+                     bounds, expected {expected}px"
+                );
             }
         }
     }
