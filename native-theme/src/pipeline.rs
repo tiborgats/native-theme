@@ -1036,9 +1036,7 @@ fn linux_reader_kind(refined: crate::detect::RefinedDesktop) -> Option<LinuxRead
 }
 
 /// [`linux_reader_kind`]'s reader, with the preset of `refined`'s desktop.
-#[cfg(target_os = "linux")]
-// Without `kde` and `portal` there is no reader: `LinuxReader` has no variant.
-#[cfg_attr(not(any(feature = "kde", feature = "portal")), allow(unreachable_code))]
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 fn linux_reader(refined: crate::detect::RefinedDesktop) -> Option<SelectedReader> {
     let reader: Box<dyn crate::reader::ThemeReader> = match linux_reader_kind(refined)? {
         #[cfg(feature = "kde")]
@@ -1052,6 +1050,13 @@ fn linux_reader(refined: crate::detect::RefinedDesktop) -> Option<SelectedReader
         reader,
         linux_preset_for_de(refined.desktop).name,
     ))
+}
+
+/// [`linux_reader_kind`]'s reader: none without `kde` and `portal`, where
+/// `LinuxReader` has no variant.
+#[cfg(all(target_os = "linux", not(any(feature = "kde", feature = "portal"))))]
+fn linux_reader(refined: crate::detect::RefinedDesktop) -> Option<SelectedReader> {
+    match linux_reader_kind(refined)? {}
 }
 
 /// Single async implementation for all platforms. On Linux this may contain

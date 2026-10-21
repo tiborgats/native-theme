@@ -237,10 +237,17 @@ jobs:
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       # `--all-features` would turn on `gpui-fast`, which changes the GPUI
-      # core: the default core and GPUI Fast are checked one at a time.
-      - run: cargo check -p native-theme-gpui --locked
-      - run: cargo check -p native-theme-gpui --features native,watch --locked
-      - run: cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
+      # core: the default core and GPUI Fast are checked one at a time. A
+      # lint can fire at 1.95.0 and not on stable (native-theme without its
+      # Linux readers once warned of an unused binding here alone), so these
+      # three deny warnings.
+      - name: Check the gpui connector's three configurations, warnings denied
+        env:
+          RUSTFLAGS: -Dwarnings
+        run: |
+          cargo check -p native-theme-gpui --locked
+          cargo check -p native-theme-gpui --features native,watch --locked
+          cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
 
   test-build-crate:
     name: Test native-theme-build and native-theme-derive

@@ -12571,6 +12571,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Status:** fixed — 0b9bb16b (M9b T10; `aw_card_padding`, gated by `the_extra_card_pads_inside_its_border` under kde-breeze and adwaita).
 *Source:* M8 T16's review amendment (7767fbbe); m9b-rulings.md, Addendum A, S9.
 
+#### M9-149 · G3 · build · S4 · native-theme/src/pipeline.rs:1043
+**Claim:** native-theme built without its Linux readers (no `kde`, no `portal`: the features the gpui connector enables by default) warns `unused variable: reader` at the MSRV, and no gate denies it.
+**Evidence:** `cargo +1.95.0 check -p native-theme-gpui --locked` at `0b9bb16b` warns at `pipeline.rs:1043`: `linux_reader` binds `reader` to a `match` over `LinuxReader`, which has no variant in that build, so the code after it is unreachable (an `allow(unreachable_code)` kept that quiet) and the binding unused. Stable (1.99.1) does not warn, so `scripts/check_features.sh`, which builds every feature combination on stable, cannot see it; CI's MSRV job checks that configuration at 1.95.0 without `-Dwarnings`. Seen in G3 Task 1's MSRV log (the Task 1 fix round's re-review).
+**Fix proposed:** Give the build without a reader a `linux_reader` of its own, the empty `match` alone, and deny warnings in the MSRV job's three gpui connector checks.
+**Verdict:** CONFIRMED by the G3 Task 1 fix round's re-review; reproduced at `0b9bb16b`.
+**Triage:** fix — CONFIRMED (G3 Task 3b, the controller's carry).
+**Status:** fixed — the commit that files this entry (G3 T3b): `linux_reader` is two functions by `cfg`; the MSRV job's gpui step runs its three checks with `RUSTFLAGS: -Dwarnings`, which fails on the old code (`error: unused variable: reader`) and passes on the new.
+*Source:* g3/g3-T1-rereview.md; g3/g3-T3b-carry.md.
+
 
 ### Rejected
 
