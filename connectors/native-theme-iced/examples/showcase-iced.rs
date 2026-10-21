@@ -13492,36 +13492,25 @@ impl PaletteSection {
         }
     }
 
-    /// The family's base, weak and strong pairs in `extended`.
+    /// The family's base, weak and strong pairs in `extended`. Each family
+    /// is a type of its own (iced_core 0.14.0 `src/theme/palette.rs:450-598`),
+    /// so the array is built by one macro, not from one binding.
     fn pairs(
         self,
         extended: &iced_core::theme::palette::Extended,
     ) -> [iced_core::theme::palette::Pair; 3] {
+        macro_rules! pairs_of {
+            ($family:expr) => {
+                [$family.base, $family.weak, $family.strong]
+            };
+        }
         match self {
-            PaletteSection::Background => {
-                let f = &extended.background;
-                [f.base, f.weak, f.strong]
-            }
-            PaletteSection::Primary => {
-                let f = &extended.primary;
-                [f.base, f.weak, f.strong]
-            }
-            PaletteSection::Secondary => {
-                let f = &extended.secondary;
-                [f.base, f.weak, f.strong]
-            }
-            PaletteSection::Success => {
-                let f = &extended.success;
-                [f.base, f.weak, f.strong]
-            }
-            PaletteSection::Warning => {
-                let f = &extended.warning;
-                [f.base, f.weak, f.strong]
-            }
-            PaletteSection::Danger => {
-                let f = &extended.danger;
-                [f.base, f.weak, f.strong]
-            }
+            PaletteSection::Background => pairs_of!(extended.background),
+            PaletteSection::Primary => pairs_of!(extended.primary),
+            PaletteSection::Secondary => pairs_of!(extended.secondary),
+            PaletteSection::Success => pairs_of!(extended.success),
+            PaletteSection::Warning => pairs_of!(extended.warning),
+            PaletteSection::Danger => pairs_of!(extended.danger),
         }
     }
 }
