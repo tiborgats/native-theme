@@ -3743,25 +3743,6 @@ name in [`archive/todo_closed.md`](archive/todo_closed.md).
       M8 T21 (2026-10-17): for M9c, not M7: M7's Step 6 ruling sent it to
       M9a as the showcases' milestone; M9's plan gives each showcase its
       own, M9a gpui, M9b iced and M9c egui.
-- [ ] [v0.7.0] For M9b (M8 T14 review, 2026-10-17): above a text scale of 1 the iced
-      showcase's table headers keep a stated `list.header_height`, where gpui's grow.
-      iced: `basic_table` gives the header `native_theme_iced::list_header_height(resolved)`
-      where the theme states one (`connectors/native-theme-iced/examples/showcase-iced.rs:8405-8406`),
-      an accessor that returns the stated value and takes no accessibility preferences
-      (`connectors/native-theme-iced/src/lib.rs:1176-1178`); the header cell's text box is that
-      height less the rule, fixed (`:8380`, `:8390`), while its label is drawn at the scaled
-      `list.header_font` size. The Layout table's header cells are fixed the same way
-      (`:10361`, `:10368-10370`), and the Basic body rows keep a stated `list.row_height`
-      (`:8356-8359`). `the_tables_headers_take_the_themes_header_height` asserts the stated
-      height at text scale 1.5 for adwaita and material-3. gpui: `geometry::list_header_height`
-      grows a stated header above 1 to at least the scaled `list.item_font` line box, the cell
-      padding and the row's bottom border (`connectors/native-theme-gpui/src/geometry.rs:1074`,
-      through `table_row_height`, `:1091`), as `data_table_size` grows a row. The risk: where
-      the scaled label's line box and the padding no longer fit the stated height, iced's label
-      runs past its cell, which does not clip unless asked (iced_widget 0.14.2
-      `src/container.rs:102`), and over the header's rule, or is clipped where a parent clips.
-      M9b grows the iced headers (and the test's expectation) as gpui's do; M8 leaves the
-      behaviour as it is.
 
 ### Showcases: the strict panic lints do not reach the showcase examples
 

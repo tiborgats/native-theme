@@ -1456,6 +1456,36 @@ platform (`native-theme/src/watch/`).
       `#[cfg(test)]` counter reads one per build of each of the four dialogs
       (`a_dialog_reads_the_themes_entrance_once`). `info::chrome::panel_toggle` takes
       the status bar's `demo::PanelToggle`, and its `too_many_arguments` allow is gone.
+- [x] [v0.7.0] For M9b (M8 T14 review, 2026-10-17): above a text scale of 1 the iced
+      showcase's table headers keep a stated `list.header_height`, where gpui's grow.
+      iced: `basic_table` gives the header `native_theme_iced::list_header_height(resolved)`
+      where the theme states one (`connectors/native-theme-iced/examples/showcase-iced.rs:8405-8406`),
+      an accessor that returns the stated value and takes no accessibility preferences
+      (`connectors/native-theme-iced/src/lib.rs:1176-1178`); the header cell's text box is that
+      height less the rule, fixed (`:8380`, `:8390`), while its label is drawn at the scaled
+      `list.header_font` size. The Layout table's header cells are fixed the same way
+      (`:10361`, `:10368-10370`), and the Basic body rows keep a stated `list.row_height`
+      (`:8356-8359`). `the_tables_headers_take_the_themes_header_height` asserts the stated
+      height at text scale 1.5 for adwaita and material-3. gpui: `geometry::list_header_height`
+      grows a stated header above 1 to at least the scaled `list.item_font` line box, the cell
+      padding and the row's bottom border (`connectors/native-theme-gpui/src/geometry.rs:1074`,
+      through `table_row_height`, `:1091`), as `data_table_size` grows a row. The risk: where
+      the scaled label's line box and the padding no longer fit the stated height, iced's label
+      runs past its cell, which does not clip unless asked (iced_widget 0.14.2
+      `src/container.rs:102`), and over the header's rule, or is clipped where a parent clips.
+      M9b grows the iced headers (and the test's expectation) as gpui's do; M8 leaves the
+      behaviour as it is.
+  *Closed by M9b T11 (2026-10-21, 11c07f3c):* the iced showcase grows a stated height
+      above a text scale of 1 by gpui's rule, through the shared crate's
+      `rows::scaled_height` (with its unit tests), which the egui showcase's tables take
+      in M9c: the stated height at a factor of 1 or less; above it at least the line box
+      of the row's font at its scaled size and `defaults.line_height`, rounded up, plus the
+      row's padding and any rule inside it. The Basic table's header (`list.header_height`,
+      else `list.row_height`; its `separator.line_width` line inside it) and body rows
+      (`list.row_height`), and the Layout table's header (its cells' padding, no rule
+      inside) take it. `the_tables_headers_take_the_themes_header_height` expects the
+      grown heights at 1.5 over adwaita, material-3, macos-tahoe and catppuccin-mocha,
+      computed at test time (adwaita's 30 px header is 32).
 
 ### Closed items from M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 
