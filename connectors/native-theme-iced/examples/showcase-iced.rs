@@ -6854,8 +6854,8 @@ fn moved_by(row: &str, status: Option<&str>, installed: Option<&str>) -> String 
         .find(|(key, _)| *key == row)
         .map(|(_, sentence)| *sentence);
     match (leaves.is_empty(), installed, derived) {
-        (false, Some(_), _) => format!(" from {}", leaves.join(", ")),
-        (false, None, _) => format!(" from {} (in a bundled theme)", leaves.join(", ")),
+        (false, Some(_), _) => format!(" moved by {}", leaves.join(", ")),
+        (false, None, _) => format!(" moved by {} (in a bundled theme)", leaves.join(", ")),
         (true, _, Some(sentence)) => format!(", {sentence}"),
         (true, Some(label), None) => format!(", moved by no colour leaf on {label}"),
         (true, None, None) => ", moved by no colour leaf in a bundled theme".to_owned(),
@@ -17397,6 +17397,103 @@ mod tests {
         })
     }
 
+    /// A colour line's text after its role, where it names a style row
+    /// (`styles::<fn>.<field> (<status>)<label> <hex>`): the row, its status
+    /// and what follows the status.
+    fn style_row_of(rest: &str) -> (&str, Option<&str>, &str) {
+        let (row, tail) = rest.split_at(rest.find([' ', ',']).unwrap_or(rest.len()));
+        match tail.strip_prefix(" (").and_then(|t| t.split_once(')')) {
+            Some((status, tail)) => (row, Some(status), tail),
+            None => (row, None, tail),
+        }
+    }
+
+    /// The colour lines of `info` that name a style row: each line, and its
+    /// text after the role.
+    fn style_lines(info: &str) -> Vec<(&str, &str)> {
+        let mut lines = Vec::new();
+        let mut colours = false;
+        for line in info.lines().skip(1) {
+            if !line.starts_with(' ') {
+                colours = line == "Theme colors:";
+                continue;
+            }
+            if let Some((_, rest)) = line.trim().split_once(": ")
+                && colours
+                && rest.starts_with("styles::")
+            {
+                lines.push((line, rest));
+            }
+        }
+        lines
+    }
+
+    /// What is wrong with the labels of `info`'s style rows on
+    /// `combination`, a bundled one (D1): each says "moved by" the leaves
+    /// the export records as moving its row at its status there, read from
+    /// every leaf's moves, or, where it records none, names no leaf.
+    fn colour_label_faults(info: &str, combination: &str) -> Vec<String> {
+        let Some(export) = contract_leaves() else {
+            return vec!["contract-leaves.toml does not parse".to_owned()];
+        };
+        let title = info.lines().next().unwrap_or_default();
+        let mut faults = Vec::new();
+        for (line, rest) in style_lines(info) {
+            let (row, status, tail) = style_row_of(rest);
+            let label = match tail.rsplit_once(", not drawn (") {
+                Some((label, _)) => label,
+                None => tail.rsplit_once(' ').map_or("", |(label, _)| label),
+            };
+            let want: BTreeSet<&str> = export
+                .leaves
+                .iter()
+                .filter(|(_, reach)| match reach {
+                    LeafReach::Moves(moves) => moves.iter().any(|m| {
+                        m.row == row
+                            && match status {
+                                Some(s) => m.statuses.iter().any(|t| t == s),
+                                None => m.statuses.is_empty(),
+                            }
+                            && !m.except.iter().any(|e| e == combination)
+                    }),
+                    LeafReach::Named { .. } => false,
+                })
+                .map(|(leaf, _)| leaf.as_str())
+                .collect();
+            let named: BTreeSet<&str> = label
+                .strip_prefix(" moved by ")
+                .map(|leaves| leaves.split(", ").collect())
+                .unwrap_or_default();
+            if named != want {
+                faults.push(format!(
+                    "{title}: \"{line}\" names {named:?}, moved by {want:?}"
+                ));
+            }
+        }
+        faults
+    }
+
+    /// D1 (M9b T4 review, Important 1): a page widget's colour row says
+    /// "moved by" the colour leaves `contract-leaves.toml` records as moving
+    /// it at its status on the bundled preset shown, and names no other,
+    /// over every bundled preset in both modes. A leaf moves a row where a
+    /// splice of it changes the row; the theme need not state it.
+    #[test]
+    fn a_page_colour_names_the_leaves_that_move_it() {
+        let mut failures = Vec::new();
+        over_bundled_infos(|_, combination, infos, _| {
+            for info in infos {
+                failures.extend(
+                    colour_label_faults(info, combination)
+                        .into_iter()
+                        .map(|f| format!("{combination}: {f}")),
+                );
+            }
+        });
+        failures.dedup();
+        assert!(failures.is_empty(), "{failures:#?}");
+    }
+
     /// What is wrong with the colour rows of `info`, a page widget's Widget
     /// Info, on `state`'s theme: a row of a style function shows the hex
     /// that function's output paints at the row's status, or "not drawn"
@@ -17431,14 +17528,7 @@ mod tests {
                 }
                 continue;
             }
-            let (row, tail) = rest.split_once(' ').unwrap_or((rest, ""));
-            let (status, tail) = match tail.strip_prefix('(') {
-                Some(t) => match t.split_once(')') {
-                    Some((status, t)) => (Some(status), t),
-                    None => (None, tail),
-                },
-                None => (None, tail),
-            };
+            let (row, status, tail) = style_row_of(rest);
             if let Some(functions) = drawn_with
                 && !functions
                     .iter()
