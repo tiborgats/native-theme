@@ -13022,3 +13022,58 @@ docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothi
   scratchpad and is not kept; the spec says so, and Task 2 writes its script from §3.1.
 
 **Status:** in progress: Task 0 done 2026-10-21. Next: Tasks 1–3, back to back, as one unit.
+
+- **The showcase on GPUI Fast 0.1.10 against gpui-pre (2026-10-22, Task 9, spec §9; at
+  `98e1e954`).** Taken on the maintainer's desktop session with the maintainer's go, from the
+  default build (gpui-pre 0.3.9) and `--features gpui-fast` (gpui-fast 0.1.10): `--dump-layout`
+  and `--capture` through `scripts/capture_window.sh`'s `capture_showcase` (spectacle), for
+  kde-breeze and adwaita, light and dark, on the Basic and Layout pages, at rest, before any
+  scroll (spec §2.4). Compared by a script in the session's scratchpad (not kept): each dump's
+  header, element set and every element's `x`/`y`/`w`/`h`, and each capture pixel by pixel.
+  - *Layout dumps:* all eight pairs byte-identical, so the JSON diff is empty (Basic 172
+    elements, Layout 39; `kind`/`preset`/`variant`/`scale` equal). gpui-fast 0.1.8's
+    text-measurement fix moved no element. The Layout page's dump lists only the chrome; its
+    samples are compared by the captures below.
+  - *Captures* (1410×878 each, the content at +65+81): every pair differs in a few places, all
+    explained, none fixed, since GPUI Fast's drawing is the one upstream means in each case and
+    gpui-pre's comes from below the connector.
+    - The Layout page's labelled Separator: GPUI Fast centres "Section Break" on its line, and
+      gpui-pre draws it at the line's right end (content x 1169–1249, where the centre is
+      740–820; 712–824 pixels per pair, all in those two places). The Separator centres its
+      label: the row is `justify_center` and the label `mx_auto`, the line an absolute child
+      (gpui-component 0.8.0 `src/separator.rs:79-80`, `:136`, `:147`). The two cores lay it out
+      with different taffy: gpui-pre 0.3.9 takes `taffy = "0.13.0"` and gpui-fast 0.1.10
+      `=0.14.0`. taffy 0.13.0's `distribute_remaining_free_space` gives the free space to the
+      auto margins (`src/compute/flexbox.rs:1721`) and then offsets the item by the same free
+      space for `justify-content` (`:1746`), so the label moves by the free space twice. 0.14.0
+      sets it to zero once the margins have taken it (`:2140`), as CSS does. Neither
+      0.1.8's text measurement nor 0.1.10's compositing is involved. gpui-component pins
+      `gpui-pre = "=0.3.9"`, so no gpui-pre build can take taffy 0.14.
+    - On the Basic page, besides the spinner caught at another phase, as in G1: a few pixels at
+      the inner rounded corners of boxes that clip both axes and are rounded. These are the
+      Table frame's four corners, under the selected row's fill on the bottom ones (adwaita
+      dark: up to 190 levels), the Progress track's start under its fill, the List frame's right
+      corners, the segmented control's bottom-left under a divider and the Expander's
+      bottom-left under the foot of its body's "E" (210 levels at one pixel). GPUI Fast clips
+      such a box's children to its curved padding edge (`src/fast/rounded_clip.rs`, from
+      `src/style.rs:743`; only where both axes clip, `:68-70`, as CSS does; zed#37480), and it is
+      in neither 0.1.7 nor 0.1.8. gpui-pre's content mask is a rectangle (`src/window.rs:2231-2234`),
+      so a child's square corner shows past the rounded frame there. The captures are at rest,
+      so 0.1.10's scroll compositing is not involved.
+  - *Looked at (the Layout page on GPUI Fast, all four):* the Sidebar, expanded and collapsed, is
+    pixel-identical to gpui-pre's in every pair. The Folder TabBar comes after the TitleBar
+    sample, below the fold of a capture at rest, so none of the eight shows it. Its three tests
+    (`the_layout_page_draws_the_folder_tab_bar`,
+    `the_folder_tab_bar_paints_its_bar_and_separators_in_their_claims`,
+    `a_click_selects_a_folder_tab_and_not_the_disabled_one`) pass on both cores.
+  - *Reuse kept (spec §9's added line):* counted in a test window, with temporary render counters
+    on the showcase's views and gpui-fast's `Window::layout_stats` (`src/fast/stats.rs`). Neither
+    is committed. The pointer moved to, settled on and was nudged within 40 targets of the Basic
+    page and 40 of the chrome over the Layout page. On GPUI Fast, 91 frames built 1127 views and
+    drew 91 views from the last frame (7.5 %): Basic 53 frames, 742 built and 53 reused; Layout 38, 385
+    and 38. `Showcase` was built in 89 of the 91 frames, `Inspector` in 90, `MenuBar` in all of
+    them, and on the Basic page the 8 `ListRow`s in every frame. gpui-pre drew the same 91 frames
+    and built everything in each. This is rationale K19's cost: the records are updates of the
+    registry made while drawing (gpui-fast `src/fast/dependencies.rs:757-797`). The reuse kept is
+    little, so `docs/todo.md` gains "**The gpui showcase keeps little of GPUI Fast's reuse.**"
+    (`[1.0]`, beside the stale-dump entry).

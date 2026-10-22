@@ -1862,6 +1862,29 @@ model, the platform presets and the three connectors
       (`src/fast/retained.rs:602`), and `DumpSettle` already reads until the
       layout holds. Found 2026-10-21 (G3 Task 1).
 
+- [ ] [1.0] **The gpui showcase keeps little of GPUI Fast's reuse.** Every
+      Widget Info record is an update of the `InfoRegistry` entity made
+      while the window draws (`elements.rs`, `record`'s and the recorders'
+      `ui.update(..)`; `info/registry.rs`, the target's `record_layout` and
+      bounds updates), which GPUI Fast counts as a write: a retained subtree
+      that read the registry, or recorded into it before a view nested in it
+      did, is built again in the next frame (gpui-fast 0.1.10
+      `src/fast/dependencies.rs:757-797`, `note_update`; `:646-653`,
+      `written_since`). Counted on 2026-10-22 at `98e1e954`, in a test
+      window on GPUI Fast (`Window::layout_stats`, `src/fast/stats.rs`,
+      with render counters on the showcase's views), with the pointer
+      moved to, settled on and nudged within 40 targets of the Basic page
+      and 40 of the chrome over the Layout page: 91 frames built 1127 views
+      and drew 91 views from the last frame (7.5 %). `Showcase` was built in 89 of
+      them, `Inspector` in 90, `MenuBar` in all 91, and on the Basic page
+      the 8 `ListRow`s in every frame; gpui-pre drew the same 91 frames and
+      built everything in each. Widget Info stays right (rationale K19's
+      cost, not a defect). A way back to the reuse: the records kept
+      outside the entity, in cells the registry shares with its recorders,
+      so that drawing writes nothing gpui tracks, and the frame's end
+      notifying only where the frame changed what the registry decides, as
+      it does now. Found 2026-10-22 (G3 Task 9).
+
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
 - [ ] [upstream] a `ghost_hover` / `ghost_hover_foreground` token pair separate from
