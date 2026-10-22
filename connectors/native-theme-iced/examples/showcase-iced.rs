@@ -2855,7 +2855,25 @@ fn update_inner(state: &mut State, message: Message) {
         #[cfg(feature = "iced_aw")]
         Message::AwActionChosen(what) => state.aw_last_action = what,
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
-        _ => {} // Screenshot messages handled by update()
+        // `update_at` takes these and hands none of them on: the hover and
+        // settle messages, the ticks, the layout dump's, the screenshot's
+        // and the capture's, Quit, Copy and the command palette's runs.
+        Message::WidgetHovered(_)
+        | Message::WidgetUnhovered(_)
+        | Message::ElementHovered(_)
+        | Message::ElementUnhovered(_)
+        | Message::InfoSettleTick
+        | Message::AnimationTick
+        | Message::LayoutSettled
+        | Message::LayoutScaled(_)
+        | Message::DumpTimedOut
+        | Message::Quit
+        | Message::Copy(_)
+        | Message::PaletteRun(_)
+        | Message::PaletteSubmitted
+        | Message::ScreenshotTick
+        | Message::CaptureFrame(..)
+        | Message::CapturePolled(..) => {}
     }
     state.rebuild_info();
 }
@@ -18490,6 +18508,14 @@ mod tests {
     /// values at every moment, under reduced motion too: at fixed times, a
     /// day in among them, and for a frame list at its second, its last and
     /// its first frame again.
+    ///
+    /// This holds the wiring only: the `Spinner` it expects is built by the
+    /// recipe `Indicator::load` builds the stored one by, so it shows that
+    /// `indicator_at` draws the stored `Spinner`, not that the recipe is
+    /// right. The recipe's colours and pace are held against
+    /// `animated_frames_to_svg_handles_for` by
+    /// `the_icons_page_colours_an_indicator_as_the_connector_colours_one`
+    /// and `the_icons_page_indicator_keeps_its_sets_frame_rate`.
     fn assert_the_page_draws_the_spinner(
         snapshots: &Snapshots,
         choice: IconSetChoice,
