@@ -1669,6 +1669,10 @@ struct State {
     /// The window's logical width, which the splitter leaves the page
     /// [`PANEL_MIN_WIDTH`] of.
     window_width: f32,
+    /// The window's scale factor, its device pixels per logical pixel, which
+    /// the status bar's padding is rounded on ([`gpui_rounded`]): 1 until
+    /// the window reports its own.
+    scale_factor: f32,
     /// The dialog open over the window, if any.
     overlay: Option<Overlay>,
     /// The command palette's query.
@@ -1988,6 +1992,7 @@ impl State {
             splitter_hovered: false,
             menu_title_open: None,
             window_width: WINDOW_SIZE.0,
+            scale_factor: 1.0,
             overlay: None,
             palette_query: String::new(),
             chrome_icons,
@@ -2571,6 +2576,10 @@ enum Message {
     ReduceTransparencyToggled(bool),
     /// The window's new logical size, which bounds the splitter.
     WindowResized(iced::Size),
+    /// The window opened, so its scale factor can be read.
+    WindowOpened(iced::window::Id),
+    /// The window's scale factor, read or changed.
+    WindowRescaled(f32),
 
     // Basic tab
     /// A click on a checkbox held in the one state it shows: nothing changes.
@@ -2793,6 +2802,9 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
             return iced::widget::operation::focus(PALETTE_QUERY_ID);
         }
         Message::Copy(contents) => return iced::clipboard::write(contents),
+        Message::WindowOpened(id) => {
+            return iced::window::scale_factor(id).map(Message::WindowRescaled);
+        }
         Message::PaletteRun(action) => {
             state.overlay = None;
             return update_at(state, *action, now);
@@ -2854,6 +2866,11 @@ fn update_inner(state: &mut State, message: Message) {
         Message::WindowResized(size) => {
             state.window_width = size.width;
             state.side_panel_width = splitter_width(state.side_panel_width, size.width);
+        }
+        Message::WindowRescaled(scale) => {
+            if scale.is_finite() && scale > 0.0 {
+                state.scale_factor = scale;
+            }
         }
         Message::PaletteQueryChanged(query) => state.palette_query = query,
         Message::TextScaleSelected(scale) => {
@@ -2957,6 +2974,7 @@ fn update_inner(state: &mut State, message: Message) {
         | Message::DumpTimedOut
         | Message::Quit
         | Message::Copy(_)
+        | Message::WindowOpened(_)
         | Message::PaletteRun(_)
         | Message::PaletteSubmitted
         | Message::ScreenshotTick
@@ -5916,11 +5934,18 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             text(title).themed(&s.font, resolved, a11y),
         ));
     }
+    // Each side rounded as gpui rounds its bar's, so the items land on the
+    // pixels gpui's do.
+    let padding =
+        native_theme_iced::padding_or(&s.border.padding, status_bar_padding(resolved, a11y));
+    let rounded = |side: f32| gpui_rounded(side, state.scale_factor);
     let bar = container(items)
-        .padding(native_theme_iced::padding_or(
-            &s.border.padding,
-            status_bar_padding(resolved, a11y),
-        ))
+        .padding(Padding {
+            top: rounded(padding.top),
+            right: rounded(padding.right),
+            bottom: rounded(padding.bottom),
+            left: rounded(padding.left),
+        })
         .width(Fill)
         .style(surface(resolved, Surface::StatusBar));
     tagged(
@@ -5931,6 +5956,21 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         ],
     )
     .into()
+}
+
+/// `length` as gpui lays a padding out on a display of `scale`: rounded to
+/// whole device pixels, a half toward zero, before layout (gpui-pre 0.3.9
+/// `src/taffy.rs:523-527`, `round_to_device_pixel`; `src/util.rs:130-142`,
+/// `round_half_toward_zero`), in logical pixels again. So gpui's status bar
+/// is padded 3 px above and below under material-3's 14 px font, where a
+/// quarter of it is 3.5. `length` as it is where `scale` is no positive,
+/// finite factor.
+fn gpui_rounded(length: f32, scale: f32) -> f32 {
+    if !(scale.is_finite() && scale > 0.0) {
+        return length;
+    }
+    let device = length * scale;
+    (device.abs() - 0.5).ceil().copysign(device) / scale
 }
 
 /// The status bar's padding on a side `status_bar.border.padding` leaves
@@ -7300,7 +7340,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             format!(
                 "the bar container's padding; where unstated gpui-component's StatusBar \
                  padding, which gpui's status bar keeps: {upstream} of the scaled \
-                 defaults.font.size (status_bar_padding; gpui-component status_bar.rs:89-90)"
+                 defaults.font.size (status_bar_padding; gpui-component status_bar.rs:89-90); \
+                 each side rounded to whole device pixels as gpui rounds a padding, a half \
+                 toward zero (gpui_rounded)"
             )
             .into()
         }
@@ -16103,6 +16145,14 @@ fn subscription(state: &State) -> Subscription<Message> {
     #[cfg(all(target_os = "macos", not(test)))]
     subs.push(Subscription::run(system_menu::events));
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
+    // The window's scale factor, once it is open and whenever it changes.
+    subs.push(
+        iced::window::events().filter_map(|(id, event)| match event {
+            iced::window::Event::Opened { .. } => Some(Message::WindowOpened(id)),
+            iced::window::Event::Rescaled(scale) => Some(Message::WindowRescaled(scale)),
+            _ => None,
+        }),
+    );
 
     // The OS theme's changes, in every colour mode, as the gpui showcase
     // follows them: under a picked Light or Dark the OS still owns the
@@ -26475,10 +26525,15 @@ mod tests {
     /// `container_margin`, else [`TOOLBAR_PADDING`]. The status bar's items
     /// sit `status_bar.border.padding`'s side inside the bar, under its top
     /// line, else gpui-component's StatusBar padding: a half of the scaled
-    /// `defaults.font.size` at the sides and a quarter above and below.
-    /// Under macos-tahoe, which states none of them: 8, 8, and S/2 and S/4.
+    /// `defaults.font.size` at the sides and a quarter above and below; each
+    /// side rounded as gpui rounds a padding, to whole device pixels with a
+    /// half toward zero (M9b Step 8 I4: material-3's 3.5 px is 3, as in
+    /// gpui's dump). Under macos-tahoe, which states none of them: 8, 8, and
+    /// S/2 and S/4 rounded.
     #[test]
     fn the_chrome_bars_are_padded_as_gpuis() {
+        // gpui-pre 0.3.9 `src/util.rs:130-142`, at the tests' scale factor, 1.
+        let gpui_rounds = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
         for (preset, dark) in every_preset_in_both_modes() {
             let state = loaded(preset, dark);
             let r = &state.current_resolved;
@@ -26519,9 +26574,9 @@ mod tests {
             let s = state.accessibility.scaled(r.defaults.font.size);
             let stated = &r.status_bar.border.padding;
             let (left, top, bottom) = (
-                stated.left.unwrap_or(s / 2.0),
-                stated.top.unwrap_or(s / 4.0),
-                stated.bottom.unwrap_or(s / 4.0),
+                gpui_rounds(stated.left.unwrap_or(s / 2.0)),
+                gpui_rounds(stated.top.unwrap_or(s / 4.0)),
+                gpui_rounds(stated.bottom.unwrap_or(s / 4.0)),
             );
             let bar = rect("chrome.status_bar");
             let toggle = rect("chrome.status_bar.toggle");
@@ -26545,6 +26600,54 @@ mod tests {
                 "{preset} (dark: {dark}): the status bar's items end {}px above its bottom, \
                  expected {bottom}px",
                 bar.y + bar.height - items_bottom
+            );
+        }
+    }
+
+    /// M9b Step 8 I4 (parity): the status bar's padding is rounded on the
+    /// window's own scale factor, as gpui rounds a padding in device pixels
+    /// with a half toward zero: under material-3 (a 14 px font, so 3.5 px
+    /// above and below) the items sit 3 px under the bar's line at a scale
+    /// of 1, 3.5 at 2 (7 device pixels), and 3.2 at 1.25 (4.375 device
+    /// pixels round to 4); a scale the window reports that is no positive,
+    /// finite factor leaves the last one.
+    #[test]
+    fn the_status_bar_padding_rounds_on_the_windows_scale() {
+        for (length, scale, want) in [
+            (3.5, 1.0, 3.0),
+            (-3.5, 1.0, -3.0),
+            (3.6, 1.0, 4.0),
+            (6.5, 1.0, 6.0),
+            (3.25, 2.0, 3.0),
+            (3.5, f32::NAN, 3.5),
+        ] {
+            let got = gpui_rounded(length, scale);
+            assert!(
+                near(got, want),
+                "{length} at a scale of {scale} rounds to {got}, want {want}"
+            );
+        }
+        let mut state = loaded("material-3", false);
+        for (scale, want) in [
+            (1.0, 3.0),
+            (2.0, 3.5),
+            (1.25, 3.2),
+            (0.0, 3.2),
+            (f32::NAN, 3.2),
+        ] {
+            let _ = update(&mut state, Message::WindowRescaled(scale));
+            let (drawn, _) = drawn_frame(&state);
+            let rect = |id: &str| match drawn.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{id} is not drawn"),
+            };
+            let (bar, toggle) = (rect("chrome.status_bar"), rect("chrome.status_bar.toggle"));
+            let under_line =
+                toggle.y - (bar.y + state.current_resolved.status_bar.border.line_width);
+            assert!(
+                (under_line - want).abs() < 0.001,
+                "at a reported scale of {scale} the status bar's items are {under_line}px under \
+                 its line, want {want}px"
             );
         }
     }
