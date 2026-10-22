@@ -12955,12 +12955,34 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 .padding(native_theme_iced::button_padding(resolved)),
         ]
         .spacing(gap.widget);
+        // The title on its controls' labels' centre line, as iced lays both
+        // out at the bar's top (pane_grid/title_bar.rs:275-345): each in a
+        // box as tall as the taller of a control, a button's padding round
+        // one line of its label at iced's own line height
+        // (`LineHeight::default`, the labels set none), and the title's own
+        // line; the title inside the button's padding above and below, so a
+        // padding the theme states unequal (macos-monterey's 1 and 3) moves
+        // it as it moves the labels.
+        let button_pad = native_theme_iced::button_padding(resolved);
+        let label_size = scaled_text_size(resolved.button.font.size, a11y);
+        let control_height =
+            button_pad.y() + f32::from(text::LineHeight::default().to_absolute(label_size.into()));
+        let title_height = scaled_text_size(resolved.defaults.font.size, a11y)
+            * native_theme_iced::line_height(resolved);
+        let bar_line = control_height.max(title_height);
+        let controls = container(controls)
+            .height(Length::Fixed(bar_line))
+            .align_y(iced::Center);
         let controls = match probed(probes::LAYOUT_PANE_CONTROLS) {
             Some(id) => probe(id, Length::Shrink, controls),
             None => controls.into(),
         };
 
-        let title_bar = pane_grid::TitleBar::new(text(title).body(resolved, a11y))
+        let title = container(text(title).body(resolved, a11y))
+            .padding(Padding::ZERO.top(button_pad.top).bottom(button_pad.bottom))
+            .height(Length::Fixed(bar_line))
+            .align_y(iced::Center);
+        let title_bar = pane_grid::TitleBar::new(title)
             .controls(controls)
             .always_show_controls()
             .padding(card_pad)
@@ -21142,6 +21164,46 @@ mod tests {
                         }
                     }
                 }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9b Step 8 m5 (ux): a PaneGrid title is centred against its title
+    /// bar's controls, which iced lays out at the bar's top beside it
+    /// (iced_widget 0.14.2 `src/pane_grid/title_bar.rs:275-345`): under
+    /// every bundled preset in both modes, the first pane's title and its
+    /// controls' labels share a centre line.
+    #[test]
+    fn a_pane_title_is_centred_against_its_controls() {
+        let mut faults = Vec::new();
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            state.side_panel_visible = false;
+            state.active_tab = Tab::Layout;
+            let mut ui = interface(&state);
+            let controls = probe_bounds(&mut ui, probes::LAYOUT_PANE_CONTROLS[0]);
+            let found = texts(&mut ui);
+            let at = |label: &str, within: Option<Rectangle>| {
+                found
+                    .iter()
+                    .find(|(content, at)| {
+                        content == label && within.is_none_or(|r| r.contains(at.center()))
+                    })
+                    .map(|(_, at)| *at)
+            };
+            let (Some(title), Some(close)) = (at("Pane 1", None), at("close", Some(controls)))
+            else {
+                faults.push(format!(
+                    "{preset} (dark: {dark}): the first pane's title bar is not found"
+                ));
+                continue;
+            };
+            let off = title.center_y() - close.center_y();
+            if off.abs() > 0.5 {
+                faults.push(format!(
+                    "{preset} (dark: {dark}): the title's centre is {off}px from its controls'"
+                ));
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
