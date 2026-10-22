@@ -3715,7 +3715,8 @@ pub(crate) struct StepIcons {
     pub down: SampleIcon,
 }
 
-/// A number field over `state`, `width` wide.
+/// A number field over `state`, `width` wide, which a screen reader names
+/// `label`: it draws no text of its own to be named by.
 ///
 /// Under a native theme, gpui-component's `NumberInput` rebuilt over the
 /// unstyled spin button it composes (`gpui_base::NumberInput`,
@@ -3735,11 +3736,13 @@ pub(crate) struct StepIcons {
 /// at `geometry::icon_size_small`, or none where that theme has none.
 /// Without a native theme, upstream's `NumberInput`, which draws its own
 /// Minus and Plus.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn number_input(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     window: &Window,
     id: &'static str,
+    label: &'static str,
     state: &Entity<InputState>,
     width: Pixels,
     steps: &StepIcons,
@@ -3747,6 +3750,7 @@ pub(crate) fn number_input(
     let native = cx.native();
     let Some(n) = native else {
         return NumberInput::new(state)
+            .accessibility_label(label)
             .placeholder("Enter a number")
             .with_size(Size::Medium)
             .w(width)
@@ -3806,6 +3810,7 @@ pub(crate) fn number_input(
             .children(icon)
     };
     let spin = gpui_base::NumberInput::new(state)
+        .accessibility_label(label)
         .size_full()
         .controls_right()
         .increment_button(move |b| step(b, "Increment", up).rounded_tr(radius))
@@ -4070,11 +4075,13 @@ pub(crate) fn switch(
 }
 
 /// A `Slider` over `state` along `axis`, `length` long: its width, or a
-/// vertical one's height. A range state draws a thumb at each end.
+/// vertical one's height, which a screen reader names `label`: it draws no
+/// text of its own to be named by. A range state draws a thumb at each end.
 pub(crate) fn slider(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
+    label: &'static str,
     state: &Entity<SliderState>,
     axis: Axis,
     length: Pixels,
@@ -4084,6 +4091,7 @@ pub(crate) fn slider(
     #[cfg(feature = "widgets")]
     if let Some(r) = cx.native_theme().and_then(|nt| nt.resolved(cx)) {
         return widgets::Slider::new(state)
+            .accessibility_label(label)
             .axis(axis)
             .map(|slider| {
                 if vertical {
@@ -4099,6 +4107,7 @@ pub(crate) fn slider(
             .debug_selector(move || id.into());
     }
     Slider::new(state)
+        .accessibility_label(label)
         .when(vertical, |slider| slider.vertical())
         .map(|slider| {
             if vertical {

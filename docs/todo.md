@@ -3631,6 +3631,13 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `render_field`, `:762-813`).
 - [ ] [upstream] PR: DataTable: `Styled`, or a text-size setter, so the cell size need
       not go through `Size::Size`.
+- [ ] [upstream] a public way to mark an element's accessibility node disabled:
+      gpui-base's `A11yDisabledExt` public (it is `pub(crate)`, gpui-base 0.8.0
+      `a11y_disabled.rs:28`), or a GPUI `aria_disabled`, which neither gpui-pre 0.3.9
+      nor gpui-fast 0.1.10 has. Until then `widgets::Slider` marks its themed root's
+      node disabled through a crate-private copy of gpui-base's wrapper
+      (`A11yDisabled`, native-theme-gpui `src/widgets/mod.rs`), which can go then
+      (G3 T7, 2026-10-22).
 
 ### Connectors: a public theme builder that takes the mode
 

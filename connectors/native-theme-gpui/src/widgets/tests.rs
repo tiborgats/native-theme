@@ -1677,6 +1677,18 @@ fn announced(
     cx: &mut TestAppContext,
     probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
 ) -> Vec<Option<String>> {
+    a11y_nodes(cx, probe)
+        .iter()
+        .map(|node| node.label().map(str::to_owned))
+        .collect()
+}
+
+/// The accessibility nodes `probe` builds while a frame is laid out under
+/// kde-breeze.
+fn a11y_nodes(
+    cx: &mut TestAppContext,
+    probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
+) -> Vec<accesskit::Node> {
     let captured = Rc::new(RefCell::new(Vec::new()));
     let c = captured.clone();
     window_with(
@@ -1692,11 +1704,7 @@ fn announced(
             .into_any_element()
         }),
     );
-    captured
-        .take()
-        .iter()
-        .map(|node| node.label().map(str::to_owned))
-        .collect()
+    captured.take()
 }
 
 /// The node `base`, a control's headless primitive, writes; an empty one
@@ -1712,6 +1720,16 @@ fn a11y_node(
         base.render(window, cx)
             .into_element()
             .write_a11y_info(&mut node);
+    }
+    node
+}
+
+/// The node `element`, a control's theme-drawn root, writes; an empty one
+/// where the control is not theme-drawn (`None`).
+fn a11y_node_of(role: accesskit::Role, element: Option<impl gpui::Element>) -> accesskit::Node {
+    let mut node = accesskit::Node::new(role);
+    if let Some(element) = element {
+        element.write_a11y_info(&mut node);
     }
     node
 }
@@ -1784,6 +1802,91 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
         .to_vec()
     });
     assert_eq!(announced, three_names());
+}
+
+/// G3 T7: a themed slider announces its `accessibility_label`, as
+/// gpui-component's does (slider.rs:126-130, :269-273), and no name without
+/// one.
+#[gpui::test]
+fn a_slider_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        let state = cx.new(|_| SliderState::new());
+        [
+            Slider::new(&state).accessibility_label("Announced"),
+            Slider::new(&state),
+        ]
+        .map(|slider| {
+            let root = slider.themed_root(window, cx).ok();
+            a11y_node_of(accesskit::Role::Slider, root)
+        })
+        .to_vec()
+    });
+    assert_eq!(announced, vec![Some("Announced".to_owned()), None]);
+}
+
+/// G3 T7: a disabled themed slider's node is disabled, as gpui-base marks
+/// its own slider's (a11y_disabled.rs:130-135, slider.rs:558); an enabled
+/// one's is not.
+#[gpui::test]
+fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
+    let nodes = a11y_nodes(cx, |window, cx| {
+        let state = cx.new(|_| SliderState::new());
+        [true, false]
+            .map(|disabled| {
+                let root = Slider::new(&state)
+                    .disabled(disabled)
+                    .themed_root(window, cx)
+                    .ok();
+                a11y_node_of(accesskit::Role::Slider, root)
+            })
+            .to_vec()
+    });
+    // The themed root wrote both nodes: each has the slider's range.
+    assert!(
+        nodes.iter().all(|node| node.max_numeric_value().is_some()),
+        "a slider was not theme-drawn"
+    );
+    let disabled: Vec<bool> = nodes.iter().map(accesskit::Node::is_disabled).collect();
+    assert_eq!(disabled, [true, false]);
+}
+
+/// G3 T7: without a native theme the slider passes its label and its
+/// disabled state on to gpui-component's, whose gpui-base slider registers
+/// them for gpui-kit's test API (gpui-base slider.rs:509-511,
+/// test_support.rs:330-340).
+#[gpui::test]
+fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &mut TestAppContext) {
+    let enabled = cx.new(|_| SliderState::new());
+    let disabled = cx.new(|_| SliderState::new());
+    let (e, d) = (enabled.clone(), disabled.clone());
+    let cx = window_with(
+        cx,
+        None,
+        Box::new(move |_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .child(Slider::new(&e).accessibility_label("Enabled").w(px(100.)))
+                .child(
+                    Slider::new(&d)
+                        .disabled(true)
+                        .accessibility_label("Disabled")
+                        .w(px(100.)),
+                )
+                .into_any_element()
+        }),
+    );
+    cx.update(|window, _| {
+        let find = |state: &Entity<SliderState>| {
+            gpui_kit::test::TestWindowExt::try_find(window, ("slider", state.entity_id()))
+                .expect("gpui-base's slider is registered")
+        };
+        let (enabled, disabled) = (find(&enabled), find(&disabled));
+        assert_eq!(enabled.label(), Some("Enabled"));
+        assert_eq!(enabled.disabled(), None);
+        assert_eq!(disabled.label(), Some("Disabled"));
+        assert_eq!(disabled.disabled(), Some(true));
+    });
 }
 
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the

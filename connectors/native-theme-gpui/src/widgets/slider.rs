@@ -2,17 +2,17 @@
 //! thumb, painted from `SliderTheme`, and made focusable with keyboard steps.
 
 use gpui::{
-    AccessibleAction, AnyElement, App, Axis, ElementId, Entity, Hsla, InteractiveElement,
+    AccessibleAction, AnyElement, App, Axis, Div, ElementId, Entity, Hsla, InteractiveElement,
     IntoElement, KeyDownEvent, Length, MouseButton, Orientation, ParentElement, Pixels, RenderOnce,
-    Role, StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
-    prelude::FluentBuilder as _, px, relative,
+    Role, SharedString, Stateful, StatefulInteractiveElement as _, StyleRefinement, Styled, Window,
+    div, prelude::FluentBuilder as _, px, relative,
 };
 use gpui_base::slider::{SliderEvent, SliderState, SliderValue};
 use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, over, part_bounds};
+use super::{A11yDisabled, Part, PartBounds, color, faded, length, over, part_bounds};
 use crate::ActiveNativeTheme;
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
@@ -135,12 +135,14 @@ impl SliderLook {
 /// gpui-base's parts own the pointer: a press on the rail sets the value, a
 /// drag of the rail or the thumb moves it, and `SliderEvent::Change` /
 /// `Release` are emitted as for gpui-component's slider. It reports itself as
-/// a slider with its value, range and step, and answers AccessKit's
-/// Increment and Decrement. Unlike gpui-component's, it takes keyboard focus:
-/// Left and Down step it down, Right and Up up, Home and End to the ends,
-/// each emitting `SliderEvent::Change`. The thumb's centre travels the
-/// widget's length less one thumb radius at each end, so the thumb stays
-/// inside the widget.
+/// a slider with its value, range and step, its
+/// [`accessibility_label`](Slider::accessibility_label) and, while disabled,
+/// its disabled state, as gpui-component's does, and answers AccessKit's
+/// Increment and Decrement while enabled. Unlike gpui-component's, it takes
+/// keyboard focus: Left and Down step it down, Right and Up up, Home and End
+/// to the ends, each emitting `SliderEvent::Change`. The thumb's centre
+/// travels the widget's length less one thumb radius at each end, so the
+/// thumb stays inside the widget.
 ///
 /// A range state (`SliderState::default_value(20.0..80.0)`) draws a thumb at
 /// each end and the fill between them, as gpui-component's slider does
@@ -160,6 +162,7 @@ pub struct Slider {
     style: StyleRefinement,
     observer: Option<PartBounds>,
     backdrop: Option<Hsla>,
+    accessibility_label: Option<SharedString>,
 }
 
 impl Slider {
@@ -173,6 +176,7 @@ impl Slider {
             style: StyleRefinement::default(),
             observer: None,
             backdrop: None,
+            accessibility_label: None,
         }
     }
 
@@ -201,6 +205,14 @@ impl Slider {
         self
     }
 
+    /// The name a screen reader announces: a slider draws no text of its
+    /// own to be named by.
+    #[must_use]
+    pub fn accessibility_label(mut self, label: impl Into<SharedString>) -> Self {
+        self.accessibility_label = Some(label.into());
+        self
+    }
+
     /// Hands `observer` the bounds of the rail, its fill and the thumbs as
     /// a frame lays them out ([`PartBounds`]).
     #[must_use]
@@ -213,6 +225,9 @@ impl Slider {
         gpui_component::slider::Slider::new(&self.state)
             .when(self.axis == Axis::Vertical, |slider| slider.vertical())
             .disabled(self.disabled)
+            .when_some(self.accessibility_label, |slider, label| {
+                slider.accessibility_label(label)
+            })
             .refine_style(&self.style)
             .into_any_element()
     }
@@ -304,13 +319,23 @@ fn thumb(
         )
 }
 
-impl RenderOnce for Slider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+/// The theme-drawn slider's root, its node marked disabled while the slider
+/// is.
+pub(super) type SliderRoot = A11yDisabled<Stateful<Div>>;
+
+impl Slider {
+    /// The theme-drawn root, or the slider back where gpui-component's
+    /// slider is drawn instead.
+    pub(super) fn themed_root(
+        mut self,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Result<SliderRoot, Box<Self>> {
         let Some(n) = cx.native() else {
-            return self.fallback();
+            return Err(Box::new(self));
         };
         let Some(look) = SliderLook::of(n.resolved, self.disabled) else {
-            return self.fallback();
+            return Err(Box::new(self));
         };
         let look = look.faded_over(
             self.backdrop
@@ -319,6 +344,7 @@ impl RenderOnce for Slider {
         let axis = self.axis;
         let vertical = axis == Axis::Vertical;
         let disabled = self.disabled;
+        let label = self.accessibility_label.take();
         let observer = self.observer.as_ref();
         let state = self.state.clone();
         let entity_id = state.entity_id();
@@ -423,9 +449,10 @@ impl RenderOnce for Slider {
             })
             .child(travel);
 
-        div()
+        let root = div()
             .id(id)
             .role(Role::Slider)
+            .when_some(label, |root, label| root.aria_label(label))
             .aria_numeric_value(f64::from(value))
             .aria_min_numeric_value(f64::from(min))
             .aria_max_numeric_value(f64::from(max))
@@ -472,7 +499,16 @@ impl RenderOnce for Slider {
                         window.listener_for(&state, |state, _, _, cx| state.handle_release(cx)),
                     )
             })
-            .child(track)
-            .into_any_element()
+            .child(track);
+        Ok(A11yDisabled::new(root, disabled))
+    }
+}
+
+impl RenderOnce for Slider {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+        match self.themed_root(window, cx) {
+            Ok(root) => root.into_any_element(),
+            Err(slider) => slider.fallback(),
+        }
     }
 }

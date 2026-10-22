@@ -98,8 +98,9 @@ into_element!(
 use std::rc::Rc;
 
 use gpui::{
-    App, Bounds, FontWeight, Hsla, IntoElement, Pixels, Styled as _, Window, canvas, div, px,
-    relative,
+    A11ySubtreeBuilder, App, Bounds, Element, ElementId, FontWeight, GlobalElementId, Hsla,
+    InspectorElementId, IntoElement, LayoutId, Pixels, Styled as _, Window, accesskit, canvas, div,
+    px, relative,
 };
 use native_theme::color::Rgba;
 use native_theme::theme::ResolvedFontSpec;
@@ -161,6 +162,106 @@ fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoEl
     .left(px(-f32::from(border)))
     .right(px(-f32::from(border)))
     .bottom(px(-f32::from(border)))
+}
+
+/// A control's root element whose accessibility node is marked disabled
+/// while `disabled` is true; every other `Element` method is its inner
+/// element's. GPUI has no `aria_disabled`, and gpui-base's wrapper of this
+/// shape, `A11yDisabled` (gpui-base a11y_disabled.rs:13-144), which its own
+/// controls are marked with, is `pub(crate)` there (:13, :28).
+struct A11yDisabled<E> {
+    inner: E,
+    disabled: bool,
+}
+
+impl<E> A11yDisabled<E> {
+    fn new(inner: E, disabled: bool) -> Self {
+        Self { inner, disabled }
+    }
+}
+
+impl<E: Element> IntoElement for A11yDisabled<E> {
+    type Element = Self;
+
+    fn into_element(self) -> Self {
+        self
+    }
+}
+
+impl<E: Element> Element for A11yDisabled<E> {
+    type RequestLayoutState = E::RequestLayoutState;
+    type PrepaintState = E::PrepaintState;
+
+    fn id(&self) -> Option<ElementId> {
+        self.inner.id()
+    }
+
+    fn source_location(&self) -> Option<&'static std::panic::Location<'static>> {
+        self.inner.source_location()
+    }
+
+    fn request_layout(
+        &mut self,
+        id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> (LayoutId, Self::RequestLayoutState) {
+        self.inner.request_layout(id, inspector_id, window, cx)
+    }
+
+    fn prepaint(
+        &mut self,
+        id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        window: &mut Window,
+        cx: &mut App,
+    ) -> Self::PrepaintState {
+        self.inner
+            .prepaint(id, inspector_id, bounds, request_layout, window, cx)
+    }
+
+    fn paint(
+        &mut self,
+        id: Option<&GlobalElementId>,
+        inspector_id: Option<&InspectorElementId>,
+        bounds: Bounds<Pixels>,
+        request_layout: &mut Self::RequestLayoutState,
+        prepaint: &mut Self::PrepaintState,
+        window: &mut Window,
+        cx: &mut App,
+    ) {
+        self.inner.paint(
+            id,
+            inspector_id,
+            bounds,
+            request_layout,
+            prepaint,
+            window,
+            cx,
+        );
+    }
+
+    fn a11y_role(&self) -> Option<accesskit::Role> {
+        self.inner.a11y_role()
+    }
+
+    fn write_a11y_info(&self, node: &mut accesskit::Node) {
+        self.inner.write_a11y_info(node);
+        if self.disabled {
+            node.set_disabled();
+        }
+    }
+
+    fn a11y_synthetic_children(
+        &mut self,
+        prepaint: &mut Self::PrepaintState,
+        builder: &mut A11ySubtreeBuilder,
+    ) {
+        self.inner.a11y_synthetic_children(prepaint, builder);
+    }
 }
 
 /// A stated colour as gpui's.

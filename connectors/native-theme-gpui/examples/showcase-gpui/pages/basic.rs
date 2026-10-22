@@ -507,6 +507,7 @@ impl Showcase {
                         ui,
                         cx,
                         "basic-slider",
+                        "Sample value",
                         &self.basic_slider_state,
                         Axis::Horizontal,
                         width,
@@ -534,6 +535,7 @@ impl Showcase {
                     cx,
                     window,
                     "basic-number",
+                    "Sample number",
                     &self.basic_number_state,
                     width,
                     &StepIcons {
