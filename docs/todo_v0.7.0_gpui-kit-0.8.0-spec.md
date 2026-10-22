@@ -197,6 +197,8 @@ connectors and showcases (§12).
   gpui-fast issue: in test mode a partly reused frame" closes (fixed in gpui-fast 0.1.9,
   #74/#75; the carry-forward at `GF7/fast/retained.rs:1360-1371` is gone in 0.1.10), not
   filed.
+  *Added 2026-10-22 (G3 T6 fix round 1), on "#74/#75":* the fix is PR #74; the v0.1.9 notes
+  list it with #75, which aligns composited scroll content's bounds.
 - Any fails: the call stays in the failing helper's module with a comment stating the 0.1.10
   cause the failure shows (read in `GF10/fast/retained.rs` / `GF10/window.rs:4119-4144`), and
   the todo entry gets a dated line instead of closing.
@@ -574,6 +576,12 @@ shortens the time M9b is held and M9a's CI stays red.
   `.overflow_y_scroll()` with `.overflow_hidden()`, the clip it gave. Over a box's parts
   that do not scroll (its padding and border, the Settings' heading, sidebar search field
   and resize handle) the page now scrolls too, where the occlusion swallowed the wheel.
+- *Added 2026-10-22 (G3 T6 fix round 1), on the line above:* the frame was already
+  `overflow_hidden` through `demo_frame` (`SC/support.rs`), so Task 6's added
+  `.overflow_hidden()` repeated it, and its fix round removed the call: deleting the dead
+  `.overflow_y_scroll()` alone leaves the same clip (gpui's `Style::overflow_mask` clips a
+  `Hidden` axis as a `Scroll` one, and a `Scroll` axis with no scrollbar width lays out as
+  `Hidden`).
 
 ## 5 -- `TabVariant::Folder` in the showcase (K8)
 
@@ -615,6 +623,9 @@ shortens the time M9b is held and M9a's CI stays red.
   `radius_lg`, capped at a third of the height; `widgets::TabBar` draws the theme's", once
   the field exists.
 - Gate: `python3 scripts/check_widget_coverage.py` stays at gpui `missing 0`.
+- *Added 2026-10-22 (G3 T6 fix round 1):* `SC/info/layout.rs`'s `folder_tab_row` takes
+  `disabled` too, after `selected`, the index `demo::folder_tab_row` disables, so its
+  `.instance` names the disabled tab as well as the selected one.
 
 ## 6 -- The slider's accessibility (K11)
 

@@ -1226,11 +1226,12 @@ fn the_theme_tabs_window_section_names_the_mode() {
 /// M9-082: under server-side decorations the Theme tab's "frame" row names
 /// the platform's frame, the window manager's on Linux and the system's
 /// title bar on macOS and Windows, as the iced showcase's does
-/// (`window_frame` there), and its "decorations" row says the same of who
-/// draws them; the rows the inspector prints are the running platform's.
+/// (`window_frame` there), and its "decorations" and "resize band" rows say
+/// the same of who draws and resizes it; the rows the inspector prints are
+/// the running platform's.
 #[test]
 fn the_window_frame_row_names_the_platforms_frame() {
-    use crate::inspector::{window_decorations, window_frame};
+    use crate::inspector::{resize_band, window_decorations, window_frame};
     let linux = window_frame("linux");
     assert!(
         linux.contains("KWin") && linux.contains("Mutter"),
@@ -1244,10 +1245,17 @@ fn the_window_frame_row_names_the_platforms_frame() {
             "{os}: {row}"
         );
     }
-    assert_ne!(
-        macos, windows,
-        "macOS and Windows draw different title bars"
-    );
+    assert!(macos.contains("traffic-light"), "macos: {macos}");
+    assert!(windows.contains("caption"), "windows: {windows}");
+    let band = resize_band("linux");
+    assert!(band.contains("window manager"), "linux: {band}");
+    for os in ["macos", "windows"] {
+        let band = resize_band(os);
+        assert!(
+            band.contains("system") && !band.contains("window manager"),
+            "{os}: {band}"
+        );
+    }
     let decorations = window_decorations("linux");
     assert!(
         decorations.contains("window manager"),
@@ -1273,8 +1281,66 @@ fn the_window_frame_row_names_the_platforms_frame() {
         "{os}: the frame row is not this platform's: {rows:?}"
     );
     assert!(
-        value("decorations").is_some_and(|v| v.ends_with(window_decorations(os))),
+        value("decorations").is_some_and(|v| v.ends_with(&window_decorations(os))),
         "{os}: the decorations row is not this platform's: {rows:?}"
+    );
+    assert_eq!(
+        value("resize band"),
+        Some(resize_band(os)),
+        "{os}: the resize band row is not this platform's: {rows:?}"
+    );
+}
+
+/// The texts shown under server-side decorations outside the Theme tab's
+/// Window section name who draws the frame per platform, as M9-082's rows
+/// do: the window manager, and a KDE application's menu placement, on Linux
+/// only; the system on macOS and Windows. They are the Layout page's
+/// TitleBar sample (its heading and its info's "sample" line) and the
+/// menu-bar row's info ("window"); the infos show the running platform's.
+#[test]
+fn the_server_side_texts_name_the_platforms_frame_drawer() {
+    use crate::info::chrome::{menu_row_window, sample_window};
+    use crate::pages::layout::title_bar_heading;
+    let texts = |os: &str| {
+        [
+            sample_window(os),
+            menu_row_window(os),
+            title_bar_heading(os),
+        ]
+    };
+    for text in texts("linux") {
+        assert!(text.contains("window manager"), "linux: {text}");
+    }
+    for os in ["macos", "windows"] {
+        for text in texts(os) {
+            assert!(
+                text.contains("system")
+                    && !text.contains("window manager")
+                    && !text.contains("KDE"),
+                "{os}: {text}"
+            );
+        }
+    }
+    let t = Theme::from(&gpui_component::theme::ThemeColor::default());
+    let instance = |info: &WidgetInfo, what: &str| {
+        info.instance
+            .iter()
+            .find(|note| note.what == what)
+            .map(|note| note.text.clone())
+    };
+    let os = std::env::consts::OS;
+    assert_eq!(
+        instance(
+            &crate::info::chrome::title_bar_sample(&t, "title"),
+            "sample"
+        ),
+        Some(sample_window(os)),
+        "{os}: the TitleBar sample's info is not this platform's"
+    );
+    assert_eq!(
+        instance(&crate::info::chrome::menu_bar(&t, None, px(8.)), "window"),
+        Some(menu_row_window(os)),
+        "{os}: the menu-bar row's info is not this platform's"
     );
 }
 
@@ -7047,9 +7113,9 @@ const FOLDER_TAB_SECOND: &str = "layout-folder-tabs-tab-1";
 const FOLDER_TAB_THIRD: &str = "layout-folder-tabs-tab-2";
 const FOLDER_TAB_DISABLED: &str = "layout-folder-tabs-tab-3";
 
-/// The Layout page shows GPUI Kit 0.8.0's Folder TabBar (spec §5), the
-/// first of its tabs selected and the one `LAYOUT_FOLDER_TAB_DISABLED`
-/// names disabled.
+/// The Layout page shows GPUI Kit 0.8.0's Folder TabBar (spec §5), and the
+/// Widget Info it registers names the tab it draws selected, the first, and
+/// the one `LAYOUT_FOLDER_TAB_DISABLED` names disabled.
 #[gpui::test]
 fn the_layout_page_draws_the_folder_tab_bar(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
@@ -7058,15 +7124,26 @@ fn the_layout_page_draws_the_folder_tab_bar(cx: &mut TestAppContext) {
         cx.debug_bounds(LAYOUT_FOLDER_TABS).is_some(),
         "the Layout page renders no `{LAYOUT_FOLDER_TABS}`"
     );
+    let info = settle_on(&mut cx, &showcase, LAYOUT_FOLDER_TABS);
+    let instance = |what: &str| {
+        info.as_ref().and_then(|info| {
+            info.instance
+                .iter()
+                .find(|note| note.what == what)
+                .map(|note| note.text.clone())
+        })
+    };
     assert_eq!(
-        LAYOUT_FOLDER_TAB_LABELS.get(LAYOUT_FOLDER_TAB_DISABLED),
-        Some(&"Disabled"),
-        "the disabled Folder tab is not the one labelled so"
+        instance("selected").as_deref(),
+        LAYOUT_FOLDER_TAB_LABELS.first().copied(),
+        "the Folder TabBar's info does not name its first tab selected: {info:?}"
     );
     assert_eq!(
-        read(&mut cx, &showcase, |this, _| this.folder_tab),
-        0,
-        "the Folder TabBar does not start on its first tab"
+        instance("disabled").as_deref(),
+        LAYOUT_FOLDER_TAB_LABELS
+            .get(LAYOUT_FOLDER_TAB_DISABLED)
+            .copied(),
+        "the Folder TabBar's info does not name the disabled tab: {info:?}"
     );
 }
 

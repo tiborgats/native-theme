@@ -2078,6 +2078,12 @@ pub(crate) fn tab_row(
 /// grows with the text.
 const FOLDER_PANEL_HEIGHT: Rems = rems(4.);
 
+/// A Folder tab's height at the default Size, upstream's px literal, which
+/// it keeps private (tab/tab.rs, `TabVariant::height`, the arm every
+/// variant but Underline takes): its corner radius is capped at a third of
+/// it (tab/tab.rs, `FolderTabMetrics::new`).
+pub(crate) const FOLDER_TAB_HEIGHT: Pixels = px(32.);
+
 /// A `TabBar` of upstream's `TabVariant::Folder` over `labels`, `selected`
 /// the one shown and `disabled` the one that takes no click, above a panel
 /// filled with `tab_active`, the colour the selected tab's shape is painted

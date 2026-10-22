@@ -15,7 +15,9 @@ use super::{
     claim, drawn_font, edge_claim, px_text, stated, stated_claim,
 };
 use crate::Page;
-use crate::demo::{GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind};
+use crate::demo::{
+    FOLDER_TAB_HEIGHT, GroupBoxKind, SEGMENT_PADDING, SeparatorKind, SpacingBox, StepperKind,
+};
 use crate::support::{ChromeIcon, SampleIcon, layout_value};
 
 /// One of the Layout page's two spacing boxes, `kind`, padded by `padding`
@@ -578,8 +580,8 @@ pub fn folder_tab_row(
             t.tab_active_foreground,
             "showcase",
         ))
-        .config("corner radius", format!("radius_lg, {}px{}, at the default size this bar takes, and Theme::radius, {}px{}, at XSmall and Small, either capped at a third of the tab's height (tab/tab.rs, FolderTabMetrics::new)", px_text(t.radius_lg.as_f32()), from("corner_radius_lg"), px_text(t.radius.as_f32()), from("corner_radius")))
-        .not_themeable("one radius", "the selected tab's top corners and its curves out into the panel take the same radius, so a theme cannot give them two (tab/tab.rs, FolderTabMetrics); nor can it reach the curves alone: upstream's Folder has no seam for a theme's tab shape")
+        .config("corner radius", format!("{}px drawn: radius_lg, {}px{}, at the default size this bar takes, capped at a third of its {}px tab height; Theme::radius, {}px{}, at XSmall and Small, capped the same way (tab/tab.rs, FolderTabMetrics::new)", px_text(t.radius_lg.as_f32().min(FOLDER_TAB_HEIGHT.as_f32() / 3.0)), px_text(t.radius_lg.as_f32()), from("corner_radius_lg"), px_text(FOLDER_TAB_HEIGHT.as_f32()), px_text(t.radius.as_f32()), from("corner_radius")))
+        .not_themeable("one radius", "the selected tab's top corners and its curves out into the panel take the same radius, so a theme cannot give them two (tab/tab.rs, FolderTabMetrics); nor can it reach the curves alone: upstream's Folder has no seam for a theme's tab shape. Only on a tab narrower than three radii do the two differ: its top corners shrink to a third of its width, keeping a third of the top flat (tab/tab.rs, folder_tab_shape)")
         .not_themeable("hover", "an inset fill in secondary, a button token, which the connector maps from button.background_color, so tab.hover_background has no receiver (tab/tab.rs, RenderOnce for Tab)")
         .not_themeable("outline", "none: the selected tab's shape is a filled path, stroked by nothing (tab/tab.rs, folder_tab_shape), so the model's tab.border is not drawn")
         .not_themeable("separator", "1px wide in border, a px literal set inside render (tab/tab.rs, RenderOnce for Tab), drawn between two tabs neither of which is selected or hovered (tab/tab_bar.rs, RenderOnce for TabBar)")

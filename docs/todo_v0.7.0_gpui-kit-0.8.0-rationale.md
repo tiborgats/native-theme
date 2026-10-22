@@ -103,6 +103,8 @@ changes, is cited by function name only. Locate by content.
   0.1.8 fixed an unconstrained text measurement answered at another width (content-sized
   boxes); 0.1.10 synced Zed (wgpu 30, an opt-in `hot-reload` feature whose dependencies do
   not enter our lock, source-over compositing of translucent layers).
+  *Added 2026-10-22 (G3 T6 fix round 1), on "#74/#75" above:* the debug-bounds fix is PR
+  #74; the v0.1.9 notes list it with #75, which aligns composited scroll content's bounds.
 - **Floors upstream sets:** gpui-kit, gpui-component and gpui-base 0.8.0 each ask for
   `gpui-fast = "0.1.10"` (`GK8` `Cargo.toml:275-279`, `GC8` `:288-292`, `GB8` `:93-97`) and
   pin `gpui-pre = "=0.3.9"` (`GK8` `:264-266`, `GC8` `:278-280`, `GB8` `:89-91`). No crate of
@@ -438,6 +440,11 @@ also wider than an inner area whose content fits: the occlusions covered whole d
 so the page now scrolls over their parts that do not scroll as well (the frames' padding
 and borders, the Settings' heading, sidebar search field and resize handle), as native
 toolkits do.
+
+*Added 2026-10-22 (G3 T6 fix round 1), on the paragraph above:* the frame was already
+`overflow_hidden` through the showcase's `demo_frame`, so the fix round removed the
+`.overflow_hidden()` Task 6 added: the dead `overflow_y_scroll` deleted alone leaves the same
+clip.
 
 ### K8 — `TabVariant::Folder`: shown in the showcase as upstream's variant
 

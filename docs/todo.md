@@ -2053,7 +2053,8 @@ model, the platform presets and the three connectors
       is the accent colour. KDE and macOS are unaffected (both are the
       selection colour).
 - [ ] [upstream] `TabVariant::Outline` hovers with `tokens.secondary_hover`, the *button*
-      hover (`tab/tab.rs:187`); every preset has a different
+      hover (`tab/tab.rs:233` in gpui-component 0.8.0, `:187` in 0.7.3); every
+      preset has a different
       `tab.hover_background` (Breeze: `#dee0e2` against the button's
       `#93cee9`). The default `Tab` variant has no hover fill and is unaffected.
       G3 T6 (2026-10-22): GPUI Kit 0.8.0's `TabVariant::Folder` hovers with a
@@ -3532,8 +3533,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       DataTable, List, Tree, MessageScroller, Scrollable Area, Settings frame,
       code Editor and Diff), each removed alone behind
       `a_nested_scroller_keeps_the_wheel_to_itself` on both cores. The
-      Settings frame is GPUI's own `overflow_y_scroll` div, but the Settings
-      fills it, so the frame never scrolls; what does is the Settings' page
+      Settings frame was GPUI's own `overflow_y_scroll` div, but the Settings
+      fills it, so the frame never scrolled (its dead `overflow_y_scroll` went
+      in G3 T6); what does is the Settings' page
       list, wrapped at `setting/page.rs:233`. The occlusions covered whole demo
       boxes, so the page now also scrolls over a box's parts that do not
       scroll (its padding and border, the Settings' heading, sidebar search

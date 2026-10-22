@@ -14,7 +14,9 @@ use crate::demo::{
     SidebarSample, SpacingBox, StepperKind,
 };
 use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
-use crate::support::{NativeStyled as _, STEPPER_STEPS, SampleIcon, layout_value, with_gap};
+use crate::support::{
+    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, with_gap,
+};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
     LAYOUT_FOLDER_TAB_DISABLED, LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS,
@@ -97,6 +99,15 @@ pub(crate) fn supported_toolkits() -> String {
     format!(
         "{} toolkits, each through its own connector crate: {named}.",
         CONNECTORS.len()
+    )
+}
+
+/// The heading of the `TitleBar` sample, on the platform `os` names
+/// (`std::env::consts::OS`).
+pub(crate) fn title_bar_heading(os: &str) -> String {
+    format!(
+        "TitleBar (a sample: {} draws this window's frame)",
+        frame_drawer(os)
     )
 }
 
@@ -249,7 +260,7 @@ impl Showcase {
                     ui,
                     cx,
                     "layout-heading-title-bar",
-                    "TitleBar (a sample: the window manager draws this window's frame)",
+                    title_bar_heading(std::env::consts::OS),
                 ))
                 .child(
                     demo::title_bar_sample(ui, cx, LAYOUT_TITLE_BAR, WINDOW_TITLE)
@@ -500,7 +511,6 @@ impl Showcase {
                     .h(px(320.0))
                     .w_full()
                     .demo_frame(cx)
-                    .overflow_hidden()
                     .child(demo::settings(ui, cx, "layout-settings")),
             )
     }

@@ -25,7 +25,7 @@ use crate::app::Showcase;
 use crate::demo::TabBarKind;
 use crate::elements;
 use crate::info::{InfoRegistry, Note, WidgetInfo, as_rgba, leaves, stated};
-use crate::support::{NativeStyled, with_gap, with_padding};
+use crate::support::{NativeStyled, frame_drawer, with_gap, with_padding};
 use crate::{
     INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS, INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, demo,
     probe,
@@ -267,11 +267,8 @@ pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, St
 /// platform `os` names (`std::env::consts::OS`): the window manager on
 /// Linux, the system on macOS and Windows, as the iced showcase's
 /// `window_decorations` says.
-pub(crate) fn window_decorations(os: &str) -> &'static str {
-    match os {
-        "macos" | "windows" => "the system draws the frame",
-        _ => "the window manager draws the frame",
-    }
+pub(crate) fn window_decorations(os: &str) -> String {
+    format!("{} draws the frame", frame_drawer(os))
 }
 
 /// The frame of a window granted server-side decorations, on the platform
@@ -292,12 +289,22 @@ pub(crate) fn window_frame(os: &str) -> &'static str {
     }
 }
 
+/// The resize band of a window granted server-side decorations, on the
+/// platform `os` names (`std::env::consts::OS`): its owner's, the one that
+/// draws the frame ([`frame_drawer`]), since the WindowBorder lays none.
+pub(crate) fn resize_band(os: &str) -> String {
+    format!(
+        "{}'s: the WindowBorder lays none (window_border.rs, WindowBorder)",
+        frame_drawer(os)
+    )
+}
+
 /// The Theme tab's Window section (spec S8): what draws the window's frame
 /// under `decorations`, the decorations the window was granted, with
 /// the client inset and the frame's insets the window reports. Under
-/// server-side decorations the window manager draws the frame; under
-/// client-side ones, gpui-component's client frame and the window's TitleBar
-/// do.
+/// server-side decorations the platform draws the frame (the system on macOS
+/// and Windows, the window manager on Linux); under client-side ones,
+/// gpui-component's client frame and the window's TitleBar do.
 pub(crate) fn window_rows(
     decorations: gpui::Decorations,
     inset: Option<gpui::Pixels>,
@@ -334,11 +341,7 @@ pub(crate) fn window_rows(
             ),
             ("client inset", inset),
             ("frame insets", frame_insets),
-            (
-                "resize band",
-                "the window manager's: the WindowBorder lays none (window_border.rs, WindowBorder)"
-                    .to_string(),
-            ),
+            ("resize band", resize_band(std::env::consts::OS)),
         ],
         gpui::Decorations::Client { tiling } => vec![
             (

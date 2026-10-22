@@ -72,10 +72,7 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
         info
     };
     title_bar_notes(info, false)
-        .instance(
-            "sample",
-            "the window manager draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is where the window manager leaves the frame to the application",
-        )
+        .instance("sample", sample_window(std::env::consts::OS))
         .instance(
             "label",
             format!("\"{label}\", the window's title, which the window's own TitleBar reads"),
@@ -94,6 +91,43 @@ pub fn title_bar_sample(t: &Theme, label: &str) -> WidgetInfo {
                 "none: upstream draws them only in a client-decorated window, and this one is server-decorated (title_bar.rs, WindowControls)"
             },
         )
+}
+
+/// Why the Layout page shows a `TitleBar` sample, on the platform `os` names
+/// (`std::env::consts::OS`): the window's frame is drawn for it, by the
+/// system on macOS and Windows, which report nothing but server-side
+/// decorations (gpui-pre platform.rs, `PlatformWindow::window_decorations`),
+/// and by the window manager on Linux, which may leave it to the
+/// application instead.
+pub fn sample_window(os: &str) -> String {
+    let drawer = crate::support::frame_drawer(os);
+    match os {
+        "macos" | "windows" => format!(
+            "{drawer} draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is under client-side decorations, which gpui grants only on Linux"
+        ),
+        _ => format!(
+            "{drawer} draws this window's frame, so the window has no TitleBar of its own: this one is drawn as the window's title bar is where the window manager leaves the frame to the application"
+        ),
+    }
+}
+
+/// Why the menus sit in a row of their own, on the platform `os` names
+/// (`std::env::consts::OS`): the frame is drawn for the window, by the
+/// window manager on Linux and the system on Windows. On macOS the menus
+/// are in the system's menu bar and no row is drawn (`chrome::window_top`).
+pub fn menu_row_window(os: &str) -> String {
+    let drawer = crate::support::frame_drawer(os);
+    match os {
+        "macos" => format!(
+            "{drawer} draws this window's frame, and the menus are in the system's menu bar, through cx.set_menus, so the window draws no row of them"
+        ),
+        "windows" => format!(
+            "{drawer} draws this window's frame, so the menus sit in a row of their own at the top of the window, under its title bar and above the toolbar"
+        ),
+        _ => format!(
+            "{drawer} draws this window's frame, so the menus sit in a row of their own at the top of the window, above the toolbar, as a KDE application places them"
+        ),
+    }
 }
 
 /// What a `TitleBar` paints: its fill and border, and with `controls` drawn,
@@ -223,10 +257,7 @@ pub fn menu_bar(t: &Theme, margin: Option<Pixels>, own: Pixels) -> WidgetInfo {
             "fill",
             "none of its own: the view's background, which the showcase paints under the whole window, shows through",
         )
-        .instance(
-            "window",
-            "the window manager draws this window's frame, so the menus sit in a row of their own at the top of the window, above the toolbar, as a KDE application places them",
-        )
+        .instance("window", menu_row_window(std::env::consts::OS))
         .instance(
             "padding",
             format!("{sides}; top and bottom none: the menu titles set the row's height"),

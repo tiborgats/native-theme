@@ -122,6 +122,17 @@ fn install(cx: &mut App) -> native_theme::Result<()> {
 }
 "#;
 
+/// Who draws the frame of a window granted server-side decorations, on the
+/// platform `os` names (`std::env::consts::OS`): the system on macOS and
+/// Windows, whose title bar gpui's default window options keep
+/// (`window_options`), and the window manager on Linux.
+pub(crate) fn frame_drawer(os: &str) -> &'static str {
+    match os {
+        "macos" | "windows" => "the system",
+        _ => "the window manager",
+    }
+}
+
 /// The patch the Typography page's `Diff` shows: one Rust file, with
 /// removed, added and context lines.
 pub(crate) const DIFF_SAMPLE: &str = r#"diff --git a/src/install.rs b/src/install.rs
