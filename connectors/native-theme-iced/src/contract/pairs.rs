@@ -717,8 +717,9 @@ pub(super) const EXPANDER_PAIRS: &[StylePair<button::Status>] = &[StylePair {
 // on it to be inherited (`text_color: None`), so the connector does not
 // control both sides of anything either one paints (section 7).
 
-/// An `iced_aw` card states a label for each of its three sections and the
-/// fill under it, so all three are pairs. The close icon is not: `iced_aw`
+/// An `iced_aw` card states a label for each of its three sections, over
+/// the card's one fill, `background`, which shows through the transparent
+/// section fills (`styles::aw::card`), so all three are pairs. The close icon is not: `iced_aw`
 /// paints it with its default class's color, never the one this function
 /// emits (`UNREACHABLE`, `styles::aw::card.close_color`).
 #[cfg(feature = "iced_aw")]
@@ -731,7 +732,7 @@ pub(super) const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
             let style = styles::aw::card(r)(t, s);
             // A card floats on the window, so that is what a translucent fill
             // shows through to.
-            fill(style.head_background).map(|head| {
+            fill(style.background).map(|head| {
                 (
                     style.head_text_color,
                     head,
@@ -753,7 +754,7 @@ pub(super) const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
         statuses: AW_CARD_STATUSES,
         emitted: |t, r, s| {
             let style = styles::aw::card(r)(t, s);
-            fill(style.body_background).map(|body| {
+            fill(style.background).map(|body| {
                 (
                     style.body_text_color,
                     body,
@@ -775,7 +776,7 @@ pub(super) const AW_CARD_PAIRS: &[StylePair<AwStatus>] = &[
         statuses: AW_CARD_STATUSES,
         emitted: |t, r, s| {
             let style = styles::aw::card(r)(t, s);
-            fill(style.foot_background).map(|foot| {
+            fill(style.background).map(|foot| {
                 (
                     style.foot_text_color,
                     foot,

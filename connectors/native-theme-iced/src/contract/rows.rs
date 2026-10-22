@@ -2357,7 +2357,9 @@ pub(super) const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
         field: "styles::aw::card.head_background",
         statuses: AW_CARD_STATUSES,
-        native: |r, _| to_color(r.card.background_color),
+        // Transparent: the card's one fill, `background`, shows through
+        // under its border (`styles::aw::card`).
+        native: |_, _| Color::TRANSPARENT,
         get: |t, r, s| fill(styles::aw::card(r)(t, s).head_background),
     },
     StyleRow {
@@ -2369,7 +2371,9 @@ pub(super) const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
         field: "styles::aw::card.body_background",
         statuses: AW_CARD_STATUSES,
-        native: |r, _| to_color(r.card.background_color),
+        // Transparent: the card's one fill, `background`, shows through
+        // under its border (`styles::aw::card`).
+        native: |_, _| Color::TRANSPARENT,
         get: |t, r, s| fill(styles::aw::card(r)(t, s).body_background),
     },
     StyleRow {
@@ -2381,7 +2385,9 @@ pub(super) const AW_CARD_ROWS: &[StyleRow<AwStatus>] = &[
     StyleRow {
         field: "styles::aw::card.foot_background",
         statuses: AW_CARD_STATUSES,
-        native: |r, _| to_color(r.card.background_color),
+        // Transparent: the card's one fill, `background`, shows through
+        // under its border (`styles::aw::card`).
+        native: |_, _| Color::TRANSPARENT,
         get: |t, r, s| fill(styles::aw::card(r)(t, s).foot_background),
     },
     StyleRow {

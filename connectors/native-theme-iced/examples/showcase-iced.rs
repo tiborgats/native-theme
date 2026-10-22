@@ -8743,11 +8743,8 @@ fn pane_grid_inks(s: &pane_grid::Style) -> Vec<(&'static str, Ink)> {
 fn aw_card_inks(s: &iced_aw::style::card::Style) -> Vec<(&'static str, Ink)> {
     vec![
         ("background", Ink::of(Some(s.background))),
-        ("head_background", Ink::of(Some(s.head_background))),
         ("head_text_color", Ink::Fill(s.head_text_color)),
-        ("body_background", Ink::of(Some(s.body_background))),
         ("body_text_color", Ink::Fill(s.body_text_color)),
-        ("foot_background", Ink::of(Some(s.foot_background))),
         ("foot_text_color", Ink::Fill(s.foot_text_color)),
         (
             "border_color",
@@ -13847,9 +13844,6 @@ fn aw_card_info(state: &State) -> String {
                 AwStatus::Active,
                 &[
                     ("surface", "background"),
-                    ("head", "head_background"),
-                    ("body", "body_background"),
-                    ("foot", "foot_background"),
                     ("head label", "head_text_color"),
                     ("body label", "body_text_color"),
                     ("foot label", "foot_text_color"),
@@ -13860,6 +13854,12 @@ fn aw_card_info(state: &State) -> String {
         ),
         &[
             ("radius", "card.border.corner_radius"),
+            (
+                "head, body, foot",
+                "transparent: the surface shows through them, under the \
+                 border, which iced_aw draws first (widget/card.rs:604-633), \
+                 so no section fill covers the border at the card's sides",
+            ),
             (
                 "section padding",
                 "card.border.padding, where the theme states every side, on \
@@ -24190,6 +24190,54 @@ mod tests {
             ));
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9b Step 8 m6 (theme-data): the Extra page's `Card` shows its border
+    /// all round, as the gpui showcase's card does: no head, body or foot
+    /// fill covers it at the card's sides (`styles::aw::card`'s transparent
+    /// section fills over `iced_aw`'s fill-and-border quad). Under
+    /// kde-breeze, light and dark, with `card.border.color` spliced to a
+    /// colour of its own, the card's outermost column is that colour from
+    /// below its top corner to above its bottom one.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_extra_card_shows_its_border_at_its_sides() {
+        let line = spliced_colour("#13579b");
+        let want = to_color(line);
+        for mode in [AppColorMode::Light, AppColorMode::Dark] {
+            let mut state = extra_state("kde-breeze", mode);
+            state.current_resolved.card.border.color = line;
+            let radius = state.current_resolved.card.border.corner_radius;
+            let card = std::cell::Cell::new(Rectangle::default());
+            let (image, _, scale) =
+                extra_frame(&state, |ui| card.set(probe_bounds(ui, probes::AW_CARD)));
+            let card = card.get();
+            let mut covered = Vec::new();
+            for side in [card.x, card.x + card.width - 0.5] {
+                let x = ((side + 0.25) * scale) as u32;
+                let (top, bottom) = (
+                    ((card.y + radius + 1.0) * scale) as u32,
+                    ((card.y + card.height - radius - 1.0) * scale) as u32,
+                );
+                for y in top..bottom {
+                    let p = image.get_pixel(x, y).0;
+                    let off = [want.r, want.g, want.b]
+                        .iter()
+                        .zip(p)
+                        .map(|(c, v)| ((c * 255.0).round() - f32::from(v)).abs())
+                        .fold(0.0, f32::max);
+                    if off > 8.0 {
+                        covered.push((x, y, p));
+                    }
+                }
+            }
+            assert!(
+                covered.is_empty(),
+                "{mode:?}: {} pixels of the card's side ({card:?}) are not its border, first {:?}",
+                covered.len(),
+                covered.first()
+            );
+        }
     }
 
     /// M9-143 (theme-data): the Extra page's `Card` pads each section inside

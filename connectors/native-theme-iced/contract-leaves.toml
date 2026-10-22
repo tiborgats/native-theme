@@ -134,9 +134,6 @@ moves = [
 [leaves."card.background_color"]
 moves = [
   { row = "styles::aw::card.background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
-  { row = "styles::aw::card.body_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
-  { row = "styles::aw::card.foot_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
-  { row = "styles::aw::card.head_background", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::container_card.background" },
 ]
 
@@ -1177,10 +1174,6 @@ leaves = ["defaults.warning_color"]
 cfg = "iced_aw"
 leaves = ["card.background_color"]
 
-[rows."styles::aw::card.body_background"]
-cfg = "iced_aw"
-leaves = ["card.background_color"]
-
 [rows."styles::aw::card.body_text_color"]
 cfg = "iced_aw"
 leaves = ["defaults.text_color"]
@@ -1189,17 +1182,9 @@ leaves = ["defaults.text_color"]
 cfg = "iced_aw"
 leaves = ["card.border.color"]
 
-[rows."styles::aw::card.foot_background"]
-cfg = "iced_aw"
-leaves = ["card.background_color"]
-
 [rows."styles::aw::card.foot_text_color"]
 cfg = "iced_aw"
 leaves = ["defaults.text_color"]
-
-[rows."styles::aw::card.head_background"]
-cfg = "iced_aw"
-leaves = ["card.background_color"]
 
 [rows."styles::aw::card.head_text_color"]
 cfg = "iced_aw"
