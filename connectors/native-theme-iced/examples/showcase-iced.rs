@@ -5735,11 +5735,30 @@ fn whole_tabs_width(widths: &[f32], gap: f32, room: f32, available: f32, start: 
     Length::Fixed(end - offset)
 }
 
+/// The last first tab a tab row can show whole in `available`, its range's
+/// end, as gpui clamps a strip's scroll offset to its range: the first tab
+/// from which every tab to the row's end fits (each `widths` wide, `gap`
+/// apart after `room`, `room` after the last), the first tab itself where
+/// the whole row fits, and the last tab where none but it does.
+fn last_start(widths: &[f32], gap: f32, room: f32, available: f32) -> usize {
+    let lefts = tab_lefts(widths, gap, room);
+    let end = match (lefts.last(), widths.last()) {
+        (Some(left), Some(width)) => left + width + room,
+        _ => return 0,
+    };
+    (0..widths.len())
+        .find(|&first| end - strip_offset(widths, gap, room, first) <= available)
+        .unwrap_or(widths.len().saturating_sub(1))
+}
+
 /// The first tab a tab row shows whole so its tab `open` shows too, from
-/// the row's first tab shown now, `start`: `start` where `open` fits after
-/// it in `available` (each tab `widths` wide, `gap` apart after `room`),
-/// `open` where it lies before it, and otherwise the nearest after `start`
-/// from which `open` fits, moving as little as the open tab needs.
+/// the row's first tab shown now, `start`, clamped to the row's range
+/// ([`last_start`]), so a row that grows moves back and shows every tab
+/// that fits, all of them from the first where they all do: `start` where
+/// `open` fits after it in `available` (each tab `widths` wide, `gap` apart
+/// after `room`), `open` where it lies before it, and otherwise the nearest
+/// after `start` from which `open` fits, moving as little as the open tab
+/// needs.
 fn reveal_start(
     widths: &[f32],
     gap: f32,
@@ -5753,7 +5772,9 @@ fn reveal_start(
         (Some(left), Some(width)) => left + width,
         _ => return 0,
     };
-    let mut first = start.min(open);
+    let mut first = start
+        .min(open)
+        .min(last_start(widths, gap, room, available));
     while first < open && right - strip_offset(widths, gap, room, first) > available {
         first = first.saturating_add(1);
     }
@@ -5801,6 +5822,16 @@ fn tab_row<'a>(
         if let Some(seen) = room_seen {
             seen.set(size.width);
         }
+        // Clamped to the row's range in the room this layout gives, as
+        // `reveal_start` clamps it, so a strip that grew shows every tab
+        // that fits at once; the strip is scrolled to match on the next
+        // message ([`reveal_open_tab`]).
+        let start = start.min(last_start(
+            &widths,
+            t.item_gap.unwrap_or(0.0),
+            room,
+            size.width,
+        ));
         let row_of = tabs.iter().map(|spec| {
             let tab = tab_button(state, spec.label, spec.open, spec.message.clone());
             match spec.tag {
@@ -28889,6 +28920,64 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9b Step 8 round 5, N1 (ux): the page tab strip's first shown tab is
+    /// clamped to its range, as gpui clamps its strip's scroll offset, so a
+    /// strip that grows moves back: under kde-breeze with the Theme Map open,
+    /// the strip scrolled forward to show it in a window 800 px wide beside
+    /// the side panel, once the window is its default size, the panel is
+    /// hidden and the strip holds every tab, it starts from the first tab
+    /// again, unscrolled, every label whole inside it.
+    #[test]
+    fn the_page_tabs_scroll_back_when_the_strip_grows() {
+        let mut state = loaded("kde-breeze", false);
+        state.active_tab = Tab::ThemeMap;
+        let lay_out = |state: &State, size: Size| {
+            let _ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), size, view(state));
+        };
+        lay_out(&state, Size::new(800.0, WINDOW_SIZE.1));
+        let _ = reveal_open_tab(&mut state);
+        assert!(
+            state.page_tabs_start > 0,
+            "the narrow strip does not scroll to the Theme Map: the case is not met"
+        );
+        state.side_panel_visible = false;
+        lay_out(&state, Size::new(WINDOW_SIZE.0, WINDOW_SIZE.1));
+        let _ = reveal_open_tab(&mut state);
+        assert_eq!(state.page_tabs_start, 0, "the wide strip stays scrolled");
+        assert_eq!(
+            state.page_tabs_offset,
+            Some(0.0),
+            "the wide strip is not scrolled back"
+        );
+        let mut ui: Simulator<'_, Message> =
+            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+        let strip = match ui.find(selector::id(TAB_STRIP_ID)) {
+            Ok(selector::Target::Scrollable { bounds, .. }) => bounds,
+            Ok(other) => panic!("{TAB_STRIP_ID} is not a scrollable: {other:?}"),
+            Err(error) => panic!("{TAB_STRIP_ID}: {error}"),
+        };
+        let found = texts(&mut ui);
+        for tab in Tab::ALL {
+            let label = tab.label();
+            let Some((_, at)) = found.iter().find(|(content, at)| {
+                content == label
+                    && at.center_y() >= strip.y
+                    && at.center_y() <= strip.y + strip.height
+            }) else {
+                panic!("no tab reads {label:?}");
+            };
+            assert!(
+                at.x >= strip.x - 0.01 && at.x + at.width <= strip.x + strip.width + 0.01,
+                "{label:?} runs from {} to {}, outside the strip ({} to {})",
+                at.x,
+                at.x + at.width,
+                strip.x,
+                strip.x + strip.width
+            );
+        }
     }
 
     /// The page tabs scroll sideways with no bar of their own, so no bar
