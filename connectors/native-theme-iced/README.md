@@ -853,7 +853,10 @@ theme switching, a colour map, and an inspector that says which native field
 every part of a widget comes from — and which parts iced still decides. It
 opens on the Basic tab, the controls all three showcases draw, in the same
 order and states, packed onto one screen, so the three showcases' captures
-compare control by control. The elements the three share are listed once, in
+compare control by control. Its menus are a row at the top of the window;
+on macOS they are in the system's menu bar, as the gpui and egui
+showcases' are: the app menu (About, Settings…, Services, Hide, Quit),
+File, View, Theme and Window. The elements the three share are listed once, in
 `docs/showcase-elements.toml`: hovering one shows its leaves in Widget Info,
 each with its value and how iced applies it, and `--dump-layout FILE` writes
 their rectangles for `scripts/check_showcase_parity.py` (with

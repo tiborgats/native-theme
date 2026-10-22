@@ -5908,6 +5908,7 @@ dependencies = [
  "iced_test",
  "iced_widget",
  "image",
+ "muda",
  "native-theme",
  "native-theme-showcase-support",
  "native-theme-test-fixtures",

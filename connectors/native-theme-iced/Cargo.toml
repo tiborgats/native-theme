@@ -129,6 +129,11 @@ native-theme = { workspace = true, features = ["system-icons", "linux"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 native-theme = { workspace = true, features = ["system-icons", "macos"] }
+# The showcase's menus in the macOS system menu bar (`system_menu`), at the
+# version the egui showcase takes. Off: muda's default `libxdo` and `gtk3`
+# are Linux/BSD-only (its `Cargo.toml` lines 45-51, 96-107) and change
+# nothing on macOS.
+muda = { version = "0.20.0", default-features = false }
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
 native-theme = { workspace = true, features = ["system-icons", "windows"] }

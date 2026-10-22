@@ -5,9 +5,10 @@
 //! metric helper, an icon gallery with icon-theme switching and source
 //! tracking, and a theme map showing all palette colors. The chrome is the
 //! gpui and egui showcases', element by element, drawn from the theme data:
-//! a menu bar, a toolbar, a side panel with the theme settings over a
-//! hover-driven inspector, a splitter, the page tabs, a status bar, and the
-//! command palette, Preferences and About dialogs.
+//! a menu bar (on macOS the system's, as the gpui and egui showcases' is),
+//! a toolbar, a side panel with the theme settings over a hover-driven
+//! inspector, a splitter, the page tabs, a status bar, and the command
+//! palette, Preferences and About dialogs.
 //!
 //! # Running
 //!
@@ -973,8 +974,16 @@ static CLI_ARGS: OnceLock<CliArgs> = OnceLock::new();
 const MENU_TITLES: [&str; 4] = ["File", "View", "Theme", "Help"];
 
 /// The index among [`MENU_TITLES`] of the menu `--open-menu` names
-/// (`cli::open_menu`, whose error names the menus).
+/// (`cli::open_menu`, whose error names the menus). Where the menus are the
+/// system menu bar's ([`menus_in_window`]) no menu can be held open, so
+/// every name is an error.
 fn held_menu(name: &str) -> Result<usize, String> {
+    if !menus_in_window() {
+        return Err(format!(
+            "--open-menu {}: the menus are the system menu bar's on macOS",
+            name.to_lowercase()
+        ));
+    }
     let name = cli::open_menu(name, &MENU_TITLES)?;
     MENU_TITLES
         .iter()
@@ -1707,6 +1716,12 @@ struct State {
     /// The menu `--open-menu` holds open from the first frame, by its index
     /// among [`MENU_TITLES`] ([`HeldMenu`]).
     held_menu: Option<usize>,
+    /// The menus in the macOS system menu bar, once installed
+    /// (`system_menu::install`): AppKit's menu bar keeps them while this
+    /// lives. A muda `Menu` holds `Rc`s, so it lives here, on the main
+    /// thread `update` runs on.
+    #[cfg(all(target_os = "macos", not(test)))]
+    system_menu: Option<muda::Menu>,
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
@@ -1967,6 +1982,8 @@ impl State {
             frame_capture: None,
             outputs: Outputs::new(&CliArgs::default()),
             held_menu: None,
+            #[cfg(all(target_os = "macos", not(test)))]
+            system_menu: None,
             error_message: initial_error,
             read_system_theme,
             detect_icon_theme: native_theme::detect::system_icon_theme,
@@ -2438,6 +2455,10 @@ enum Message {
     /// ([`MenuTitles`]).
     MenuTitleOpened(Option<usize>),
     Quit,
+    /// Put the menus into the macOS system menu bar, once the application
+    /// has launched ([`system_menu`]).
+    #[cfg(all(target_os = "macos", not(test)))]
+    InstallSystemMenu,
     ToggleSidePanel,
     /// The desktop's settings are read again and the current theme is
     /// installed from them, as a theme change the watcher saw is.
@@ -2626,6 +2647,15 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
         }
         Message::CaptureFrame(size, scale) => {
             if let Some(path) = state.screenshot_path.clone() {
+                // The macOS runner's check: the menu bar AppKit holds is the
+                // showcase's, or the capture step fails.
+                #[cfg(all(target_os = "macos", not(test)))]
+                if let Err(error) = native_theme_showcase_support::menu::check_main_menu(
+                    APP_NAME,
+                    native_theme_showcase_support::menu::main_menu_titles(),
+                ) {
+                    failed_capture(&path, &error);
+                }
                 let mut pending = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
                     Ok(pending) => pending,
                     Err(error) => failed_capture(&path, &error),
@@ -2701,6 +2731,11 @@ fn update_inner(state: &mut State, message: Message) {
         Message::TabSelected(tab) => {
             state.active_tab = tab;
         }
+        #[cfg(all(target_os = "macos", not(test)))]
+        Message::InstallSystemMenu => match system_menu::install() {
+            Ok(menu) => state.system_menu = Some(menu),
+            Err(error) => eprintln!("ERROR: the macOS menu bar did not install: {error}"),
+        },
         Message::ThemeSelected(choice) => {
             let mode = state.color_mode;
             state.install_in_mode(choice, mode);
@@ -2864,7 +2899,7 @@ fn view(state: &State) -> Element<'_, Message> {
         content.into()
     };
 
-    let window = column![menu_bar(state), toolbar(state)]
+    let window = column![menus_in_window().then(|| menu_bar(state)), toolbar(state)]
         .push(container(body).height(Fill))
         .push(status_bar(state));
     // The window's fill, `window.background_color`, under everything.
@@ -3198,6 +3233,313 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         self.content
             .as_widget_mut()
             .overlay(child, layout, renderer, viewport, translation)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The menus: in the window, or in the macOS system menu bar
+// ---------------------------------------------------------------------------
+
+/// Whether the menus are drawn in the window, as the row [`menu_bar`]: on
+/// every platform but macOS, whose menus are the system menu bar's
+/// (`system_menu`), as the gpui and egui showcases' are. Under test the
+/// row is drawn on every platform, as the egui showcase's is, unless a test
+/// turns it off ([`MENUS_IN_WINDOW`]).
+fn menus_in_window() -> bool {
+    #[cfg(test)]
+    {
+        MENUS_IN_WINDOW.get()
+    }
+    #[cfg(not(test))]
+    {
+        !cfg!(target_os = "macos")
+    }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// What [`menus_in_window`] answers under test: true, the row drawn,
+    /// unless a test sets it false.
+    static MENUS_IN_WINDOW: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+/// The showcase's menus in the macOS system menu bar, as the gpui and egui
+/// showcases put theirs there: Apple's HIG list (*The menu bar*), under the
+/// titles the shared crate gives the three showcases
+/// (`menu::macos_menu_titles`):
+///
+/// - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the
+///   Preferences dialog, the in-window Theme menu's Preferences…),
+///   Services, Hide ⌘H, Hide Others ⌥⌘H, Show All, and Quit ⌘Q, with the
+///   HIG's separators;
+/// - File: Close ⌘W;
+/// - View: the in-window View menu's rows;
+/// - Theme: the in-window Theme menu's rows, less Preferences…;
+/// - Window: Minimize ⌘M, Zoom and Bring All to Front.
+///
+/// The showcase's own rows send what the in-window rows send
+/// (`system_menu::message`, on the subscription's stream,
+/// `system_menu::events`); the rest are muda's predefined
+/// items, which AppKit runs itself, with the keys muda gives them (muda
+/// 0.20.0 `src/items/predefined.rs:617-670`).
+///
+/// iced builds winit's event loop with winit's own default menu on, and
+/// offers no way to turn it off (iced_winit 0.14.0 `src/lib.rs:79-81`, where
+/// the egui showcase turns it off through eframe's `event_loop_builder`);
+/// winit installs that menu when the application has finished launching
+/// (winit 0.30.13 `src/platform_impl/macos/app_state.rs:139-143`), inside
+/// the event loop's run (iced_winit `src/lib.rs:451`), which `boot` comes
+/// before (`:104`), so a menu installed in `boot` would be replaced. The
+/// menus go in from `update`, on the main thread, on the message `boot`'s
+/// task sends (`Message::InstallSystemMenu`), which iced runs once the
+/// window is open (`src/lib.rs:102-108`). That `update` is the first code
+/// of the application's that iced runs after the launch and that may change
+/// anything (what it calls before, `title`, `theme` and `view`, reads the
+/// state), and iced may run it after the window's first frame, so winit's
+/// default menu can stand for that frame (docs/todo.md, *iced showcase: the
+/// macOS system menu goes in after the launch*).
+#[cfg(any(target_os = "macos", test))]
+mod system_menu {
+    use super::{APP_NAME, AppColorMode, Message, Overlay, Tab};
+    use native_theme_showcase_support::menu::macos_menu_titles;
+
+    /// A row of a system menu.
+    pub(super) enum Row {
+        /// One of the showcase's own: its label, which is its muda id, its
+        /// key with ⌘, and the message it sends.
+        Own {
+            label: String,
+            key: Option<Key>,
+            message: Message,
+        },
+        /// A muda predefined item, which AppKit runs.
+        System(SystemItem),
+        Separator,
+    }
+
+    /// The key an own row binds with ⌘: the in-window rows' keys
+    /// ([`super::shortcut`]'s).
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(super) enum Key {
+        Comma,
+        B,
+        K,
+    }
+
+    /// The muda predefined items the menus hold.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    pub(super) enum SystemItem {
+        Services,
+        Hide,
+        HideOthers,
+        ShowAll,
+        Quit,
+        Close,
+        Minimize,
+        Zoom,
+        BringAllToFront,
+    }
+
+    impl SystemItem {
+        /// The text the item is given where muda's own is not the three
+        /// showcases' wording: on macOS muda 0.20.0 names Hide and Quit
+        /// after the running application's `localizedName`
+        /// (`src/items/predefined.rs:464-481`,
+        /// `src/platform_impl/macos/util.rs:9-13`), which need not be
+        /// [`APP_NAME`], and Close "Close Window" (`predefined.rs:441`).
+        /// `None` keeps muda's.
+        pub(super) fn wording(self) -> Option<String> {
+            match self {
+                SystemItem::Hide => Some(format!("Hide {APP_NAME}")),
+                SystemItem::Quit => Some(format!("Quit {APP_NAME}")),
+                SystemItem::Close => Some("Close".to_string()),
+                SystemItem::Services
+                | SystemItem::HideOthers
+                | SystemItem::ShowAll
+                | SystemItem::Minimize
+                | SystemItem::Zoom
+                | SystemItem::BringAllToFront => None,
+            }
+        }
+    }
+
+    /// The five menus, in the menu bar's order, each under its title.
+    pub(super) fn menus() -> [(String, Vec<Row>); 5] {
+        let own = |label: &str, key, message| Row::Own {
+            label: label.to_string(),
+            key,
+            message,
+        };
+        let [app, file, view, theme, window] = macos_menu_titles(APP_NAME);
+        let mut pages: Vec<Row> = Tab::ALL
+            .iter()
+            .map(|&tab| own(tab.label(), None, Message::TabSelected(tab)))
+            .collect();
+        pages.extend([
+            Row::Separator,
+            own("Toggle Side Panel", Some(Key::B), Message::ToggleSidePanel),
+            own(
+                "Command Palette",
+                Some(Key::K),
+                Message::Open(Overlay::CommandPalette),
+            ),
+        ]);
+        [
+            (
+                app,
+                vec![
+                    own(
+                        &format!("About {APP_NAME}"),
+                        None,
+                        Message::Open(Overlay::About),
+                    ),
+                    Row::Separator,
+                    own(
+                        "Settings…",
+                        Some(Key::Comma),
+                        Message::Open(Overlay::Preferences),
+                    ),
+                    Row::Separator,
+                    Row::System(SystemItem::Services),
+                    Row::Separator,
+                    Row::System(SystemItem::Hide),
+                    Row::System(SystemItem::HideOthers),
+                    Row::System(SystemItem::ShowAll),
+                    Row::Separator,
+                    Row::System(SystemItem::Quit),
+                ],
+            ),
+            (file, vec![Row::System(SystemItem::Close)]),
+            (view, pages),
+            (
+                theme,
+                vec![
+                    own("Reload System Theme", None, Message::ReloadSystemTheme),
+                    Row::Separator,
+                    own(
+                        "System",
+                        None,
+                        Message::ColorModeSelected(AppColorMode::System),
+                    ),
+                    own(
+                        "Light",
+                        None,
+                        Message::ColorModeSelected(AppColorMode::Light),
+                    ),
+                    own("Dark", None, Message::ColorModeSelected(AppColorMode::Dark)),
+                ],
+            ),
+            (
+                window,
+                vec![
+                    Row::System(SystemItem::Minimize),
+                    Row::System(SystemItem::Zoom),
+                    Row::Separator,
+                    Row::System(SystemItem::BringAllToFront),
+                ],
+            ),
+        ]
+    }
+
+    /// The message the own row whose muda id is `id` sends, as the
+    /// in-window row of its label does: what the subscription's stream
+    /// (`events`) turns a click into. `None` for an id no own row has.
+    pub(super) fn message(id: &str) -> Option<Message> {
+        menus()
+            .into_iter()
+            .flat_map(|(_, rows)| rows)
+            .find_map(|row| match row {
+                Row::Own { label, message, .. } if label == id => Some(message),
+                Row::Own { .. } | Row::System(_) | Row::Separator => None,
+            })
+    }
+
+    /// [`menus`] built in muda and installed as the application's main
+    /// menu, the last of them as its Window menu, to which AppKit adds its
+    /// window-switching items (muda 0.20.0 `src/items/submenu.rs:334-349`,
+    /// set once the menu is installed). On the main thread, after the
+    /// launch (the module's doc): the menu bar AppKit holds keeps it while
+    /// the returned `Menu` lives.
+    #[cfg(all(target_os = "macos", not(test)))]
+    pub(super) fn install() -> muda::Result<muda::Menu> {
+        use muda::accelerator::{Accelerator, Code, Modifiers};
+        use muda::{IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
+
+        let accelerator = |key: Key| {
+            let code = match key {
+                Key::Comma => Code::Comma,
+                Key::B => Code::KeyB,
+                Key::K => Code::KeyK,
+            };
+            Accelerator::new(Modifiers::META, code)
+        };
+        let predefined = |item: SystemItem| {
+            let text = item.wording();
+            let text = text.as_deref();
+            match item {
+                SystemItem::Services => PredefinedMenuItem::services(text),
+                SystemItem::Hide => PredefinedMenuItem::hide(text),
+                SystemItem::HideOthers => PredefinedMenuItem::hide_others(text),
+                SystemItem::ShowAll => PredefinedMenuItem::show_all(text),
+                SystemItem::Quit => PredefinedMenuItem::quit(text),
+                SystemItem::Close => PredefinedMenuItem::close_window(text),
+                SystemItem::Minimize => PredefinedMenuItem::minimize(text),
+                SystemItem::Zoom => PredefinedMenuItem::zoom(text),
+                SystemItem::BringAllToFront => PredefinedMenuItem::bring_all_to_front(text),
+            }
+        };
+        let menu = Menu::new();
+        let mut window = None;
+        for (title, rows) in menus() {
+            let items: Vec<Box<dyn IsMenuItem>> = rows
+                .into_iter()
+                .map(|row| -> Box<dyn IsMenuItem> {
+                    match row {
+                        Row::Own { label, key, .. } => Box::new(MenuItem::with_id(
+                            label.clone(),
+                            label,
+                            true,
+                            key.map(accelerator),
+                        )),
+                        Row::System(item) => Box::new(predefined(item)),
+                        Row::Separator => Box::new(PredefinedMenuItem::separator()),
+                    }
+                })
+                .collect();
+            let items: Vec<&dyn IsMenuItem> = items.iter().map(AsRef::as_ref).collect();
+            let submenu = Submenu::with_items(title, true, &items)?;
+            menu.append(&submenu)?;
+            window = Some(submenu);
+        }
+        menu.init_for_nsapp();
+        if let Some(window) = window {
+            window.set_as_windows_menu_for_nsapp();
+        }
+        Ok(menu)
+    }
+
+    /// The clicks on the own rows, as their messages ([`message`]). muda
+    /// queues each click on its channel (`MenuEvent::receiver`), whose
+    /// receive blocks, so a thread of the stream's own waits on it and
+    /// hands each id on.
+    #[cfg(all(target_os = "macos", not(test)))]
+    pub(super) fn events() -> impl iced::futures::Stream<Item = Message> {
+        use iced::futures::StreamExt as _;
+
+        let (sender, receiver) = iced::futures::channel::mpsc::unbounded();
+        let waiting = std::thread::Builder::new()
+            .name("system-menu-events".to_string())
+            .spawn(move || {
+                while let Ok(event) = muda::MenuEvent::receiver().recv() {
+                    if sender.unbounded_send(event.id).is_err() {
+                        break;
+                    }
+                }
+            });
+        if let Err(error) = waiting {
+            eprintln!("ERROR: the macOS menu bar's clicks are not received: {error}");
+        }
+        receiver.filter_map(|id| std::future::ready(message(id.as_ref())))
     }
 }
 
@@ -3730,6 +4072,12 @@ const WINDOW_TITLE: &str = concat!(
     " showcase"
 );
 
+/// The application's name in the macOS app menu (`system_menu`): its
+/// title, and its About, Hide and Quit items. The example's binary name,
+/// the name its process runs under.
+#[cfg(any(target_os = "macos", test))]
+const APP_NAME: &str = env!("CARGO_BIN_NAME");
+
 /// This crate's name and version, as the About dialog states them.
 const ABOUT_NAME_VERSION: &str = concat!(env!("CARGO_PKG_NAME"), " ", env!("CARGO_PKG_VERSION"));
 
@@ -3825,7 +4173,10 @@ const TEXT_SCALES: [TextScale; 6] = [
 /// The message a key binding sends: Ctrl (Cmd on macOS) with Q, B, K or the
 /// comma, as the gpui showcase binds `secondary-q`, `-b`, `-k` and `-,`
 /// (`showcase-gpui/app.rs`), and Escape, which closes a dialog. Only keys no
-/// widget took reach here (`keyboard::listen`).
+/// widget took reach here (`keyboard::listen`). Where the menus are the
+/// system menu bar's ([`menus_in_window`]), their keys are its items' and
+/// Escape alone is bound here, so one route owns each key, as in the egui
+/// showcase.
 fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
     use iced::keyboard::{Event, Key, key::Named};
     let Event::KeyPressed { key, modifiers, .. } = event else {
@@ -3833,7 +4184,7 @@ fn shortcut(event: iced::keyboard::Event) -> Option<Message> {
     };
     match key.as_ref() {
         Key::Named(Named::Escape) => Some(Message::CloseOverlay),
-        Key::Character(c) if modifiers.command() => match c {
+        Key::Character(c) if modifiers.command() && menus_in_window() => match c {
             "q" => Some(Message::Quit),
             "b" => Some(Message::ToggleSidePanel),
             "k" => Some(Message::Open(Overlay::CommandPalette)),
@@ -15087,6 +15438,9 @@ fn subscription(state: &State) -> Subscription<Message> {
 
     // The key bindings the menus show, and Escape, which closes a dialog.
     subs.push(iced::keyboard::listen().filter_map(shortcut));
+    // The clicks on the macOS system menu bar's own rows.
+    #[cfg(all(target_os = "macos", not(test)))]
+    subs.push(Subscription::run(system_menu::events));
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
 
     // The OS theme's changes, while the colour mode is System; a watcher that
@@ -15171,12 +15525,14 @@ fn refusal(cli: &CliArgs) -> Option<String> {
 
 /// The showcase as it starts: its state, and the Basic page's focused input
 /// holding the keyboard focus, so its Focused border shows from the first
-/// frame.
+/// frame. On macOS the task also puts the menus into the system menu bar,
+/// from `update`, once the window is open (`system_menu`'s doc says why
+/// not here).
 fn boot() -> (State, iced::Task<Message>) {
-    (
-        State::default(),
-        iced::widget::operation::focus(FOCUSED_INPUT_ID),
-    )
+    let focus = iced::widget::operation::focus(FOCUSED_INPUT_ID);
+    #[cfg(all(target_os = "macos", not(test)))]
+    let focus = iced::Task::batch([focus, iced::Task::done(Message::InstallSystemMenu)]);
+    (State::default(), focus)
 }
 
 /// The window settings of a run that is captured (`--screenshot` or
@@ -16878,6 +17234,222 @@ mod tests {
                 }
             }
         }
+    }
+
+    /// `run`'s result with [`menus_in_window`] answering `in_window`, as on
+    /// a platform whose menus are the window's (`true`) or the system menu
+    /// bar's (`false`, macOS).
+    fn menus_in_window_as<T>(in_window: bool, run: impl FnOnce() -> T) -> T {
+        struct Restore(bool);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                MENUS_IN_WINDOW.set(self.0);
+            }
+        }
+        let _restore = Restore(MENUS_IN_WINDOW.replace(in_window));
+        run()
+    }
+
+    /// Where the menus are the system menu bar's, as on macOS, the window
+    /// draws no menu row: nothing of `chrome.menu_bar` or its menus is
+    /// drawn, the toolbar is the window's first row and the page tabs move
+    /// up by the row's height. Where they are the window's, the row is the
+    /// window's first, the toolbar under it, as before.
+    #[test]
+    fn the_menu_row_is_drawn_only_where_the_menus_are_the_windows() {
+        let rect = |drawn: &ElementRects, id: &str| match drawn.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let shown = menus_in_window_as(true, || drawn_frame(&State::default()).0);
+        let window = rect(&shown, "chrome.window");
+        let bar = rect(&shown, "chrome.menu_bar");
+        let toolbar = rect(&shown, "chrome.toolbar");
+        assert!(
+            near(bar.y, window.y),
+            "the row is not first: {bar:?} in {window:?}"
+        );
+        assert!(
+            near(toolbar.y, bar.y + bar.height),
+            "the toolbar is not under the row: {toolbar:?}, {bar:?}"
+        );
+
+        let hidden = menus_in_window_as(false, || drawn_frame(&State::default()).0);
+        let menus: Vec<&str> = hidden
+            .keys()
+            .copied()
+            .filter(|id| id.starts_with("chrome.menu"))
+            .collect();
+        assert!(
+            menus.is_empty(),
+            "drawn with the system menu bar's menus: {menus:?}"
+        );
+        let toolbar = rect(&hidden, "chrome.toolbar");
+        assert!(
+            near(toolbar.y, rect(&hidden, "chrome.window").y),
+            "the toolbar is not the window's first row: {toolbar:?}"
+        );
+        let tabs = rect(&hidden, "chrome.page_tabs");
+        let tabs_under_row = rect(&shown, "chrome.page_tabs");
+        assert!(
+            near(tabs.y, tabs_under_row.y - bar.height),
+            "the page tabs at {} with no row, {} under a {} row",
+            tabs.y,
+            tabs_under_row.y,
+            bar.height
+        );
+    }
+
+    /// Where the menus are the system menu bar's, no menu can be held open:
+    /// `--open-menu` reports every name and holds none, and the key bindings
+    /// the menus show are the system menu bar's items' (Escape stays the
+    /// window's).
+    #[test]
+    fn the_system_menu_bar_takes_the_open_menu_flag_and_the_keys() {
+        menus_in_window_as(false, || {
+            assert_eq!(
+                held_menu("Theme"),
+                Err("--open-menu theme: the menus are the system menu bar's on macOS".to_string())
+            );
+            let mut state = State::default();
+            apply_cli_args(&mut state, &command_line(&[("--open-menu", "theme")]));
+            assert_eq!(state.held_menu, None, "a menu is held open");
+            for key in ["q", "b", "k", ","] {
+                assert!(
+                    shortcut(key_press(Some(key))).is_none(),
+                    "the window binds ⌘{key}"
+                );
+            }
+            assert!(matches!(
+                shortcut(key_press(None)),
+                Some(Message::CloseOverlay)
+            ));
+        });
+    }
+
+    /// The messages the in-window menu row reading `label` sends when its
+    /// menu, titled `title`, is opened by a click and the row clicked, less
+    /// the bar's own. The row is the text the open menu adds, drawn over
+    /// the window, so the last reading `label`.
+    fn in_window_row(title: &str, label: &str) -> Vec<Message> {
+        let mut state = State::default();
+        let count = |ui: &mut Simulator<'_, Message>| {
+            texts(ui).iter().filter(|(text, _)| text == label).count()
+        };
+        drive(&mut state, |ui| {
+            let closed = count(ui);
+            click_text(ui, title);
+            assert_eq!(
+                count(ui),
+                closed + 1,
+                "the {title} menu did not open on {label}"
+            );
+            click_last_text(ui, label);
+        })
+        .into_iter()
+        .filter(|message| !matches!(message, Message::MenuOpened | Message::MenuTitleOpened(_)))
+        .collect()
+    }
+
+    /// The macOS system menu bar holds the shared crate's titles, in order.
+    /// Each of the showcase's own rows sends, through the subscription's
+    /// mapping (`system_menu::message`, fed the row's muda id), what the
+    /// in-window row of its label sends when clicked: About as the Help
+    /// menu's About, Settings… as the Theme menu's Preferences…. Its key
+    /// is the one the window binds to that message. The predefined items
+    /// carry the showcases' wording where muda's differs.
+    #[test]
+    fn the_system_menus_rows_send_the_in_window_rows_messages() {
+        use native_theme_showcase_support::menu::macos_menu_titles;
+        use system_menu::{Key, Row, SystemItem};
+
+        let menus = system_menu::menus();
+        let titles: Vec<&str> = menus.iter().map(|(title, _)| title.as_str()).collect();
+        assert_eq!(titles, macos_menu_titles(APP_NAME));
+        // The HIG's rows and separators ("-") in the app, File and Window
+        // menus, AppKit's items by their kind.
+        let shape = |rows: &[Row]| -> Vec<String> {
+            rows.iter()
+                .map(|row| match row {
+                    Row::Own { label, .. } => label.clone(),
+                    Row::System(item) => format!("{item:?}"),
+                    Row::Separator => "-".to_string(),
+                })
+                .collect()
+        };
+        let [(_, app), (_, file), _, _, (_, window)] = &menus;
+        assert_eq!(
+            shape(app),
+            [
+                &format!("About {APP_NAME}"),
+                "-",
+                "Settings…",
+                "-",
+                "Services",
+                "-",
+                "Hide",
+                "HideOthers",
+                "ShowAll",
+                "-",
+                "Quit"
+            ]
+        );
+        assert_eq!(shape(file), ["Close"]);
+        assert_eq!(shape(window), ["Minimize", "Zoom", "-", "BringAllToFront"]);
+        let about = format!("About {APP_NAME}");
+        let mut labels = BTreeSet::new();
+        for (title, rows) in &menus {
+            for row in rows {
+                let Row::Own {
+                    label,
+                    key,
+                    message,
+                } = row
+                else {
+                    continue;
+                };
+                assert!(
+                    labels.insert(label.clone()),
+                    "two rows are {label}: one muda id"
+                );
+                let sent = format!("{message:?}");
+                assert_eq!(
+                    format!("{:?}", system_menu::message(label)),
+                    format!("Some({sent})"),
+                    "{label}: the subscription's mapping"
+                );
+                let (menu, in_window) = match label.as_str() {
+                    label if label == about => ("Help", "About"),
+                    "Settings…" => ("Theme", "Preferences…"),
+                    label => (title.as_str(), label),
+                };
+                let clicked: Vec<String> = in_window_row(menu, in_window)
+                    .iter()
+                    .map(|message| format!("{message:?}"))
+                    .collect();
+                assert_eq!(
+                    clicked,
+                    std::slice::from_ref(&sent),
+                    "{label}: the in-window {menu} menu's {in_window}"
+                );
+                if let Some(key) = key {
+                    let key = match key {
+                        Key::Comma => ",",
+                        Key::B => "b",
+                        Key::K => "k",
+                    };
+                    assert_eq!(
+                        format!("{:?}", shortcut(key_press(Some(key)))),
+                        format!("Some({sent})"),
+                        "{label}: ⌘{key}"
+                    );
+                }
+            }
+        }
+        assert!(system_menu::message("no such row").is_none());
+        assert_eq!(SystemItem::Hide.wording(), Some(format!("Hide {APP_NAME}")));
+        assert_eq!(SystemItem::Quit.wording(), Some(format!("Quit {APP_NAME}")));
+        assert_eq!(SystemItem::Close.wording(), Some("Close".to_string()));
     }
 
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
