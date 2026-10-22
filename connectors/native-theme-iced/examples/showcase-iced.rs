@@ -16119,12 +16119,12 @@ mod tests {
     /// padding (`pick_list.rs:724`) and a `combo_box` its menu's rows with its
     /// (`combo_box.rs:917`). Some pickers carry their own padding
     /// (`combo_box_padding`: the side panel's rows, the Preferences dialog's
-    /// and the Basic page's drop-down); the others keep iced's default, `button::DEFAULT_PADDING` for a `pick_list`
-    /// (`pick_list.rs:204`) and `text_input::DEFAULT_PADDING` for a
-    /// `combo_box` (`combo_box.rs:190`), which is as tall as a `pick_list`'s
-    /// today but is not the same constant and need not stay equal. The caller
-    /// passes the padding the picker is given, read rather than copied as a
-    /// number.
+    /// and the Basic page's drop-down); the others keep iced's default,
+    /// `button::DEFAULT_PADDING` for a `pick_list` (`pick_list.rs:204`) and
+    /// `text_input::DEFAULT_PADDING` for a `combo_box` (`combo_box.rs:190`),
+    /// which is as tall as a `pick_list`'s today but is not the same constant
+    /// and need not stay equal. The caller passes the padding the picker is
+    /// given, read rather than copied as a number.
     fn pick_option(
         ui: &mut Simulator<'_, Message>,
         id: &'static str,
@@ -22810,13 +22810,14 @@ mod tests {
     /// `menu.font.color` moves; under the pointer a fill of
     /// `menu.hover_background` and a label `menu.hover_text_color` moves. The
     /// File menu's panel reaches [`aw_menu_padding`] round its rows, which
-    /// a splice of `popover.border.padding` moves, and lies `AW_MENU_GAP` below
-    /// its title's foot; the Recent submenu's panel lies `AW_MENU_GAP` right of
-    /// its row. The panels' padding is `popover.border.padding` inside
-    /// `menu.border`'s line, the line they draw ([`aw_menu_padding`]):
-    /// under kde-breeze the context entry is `popover.border.padding` plus
-    /// `menu.border.line_width` in from its popup's corner, read from the
-    /// leaves (12 px), where the popover's own line made it 13. The context menu's popup is the menu's panel:
+    /// a splice of `popover.border.padding` moves, and lies [`AW_MENU_GAP`]
+    /// below its title's foot; the Recent submenu's panel lies
+    /// [`AW_MENU_GAP`] right of its row. The panels' padding is
+    /// `popover.border.padding` inside `menu.border`'s line, the line they
+    /// draw ([`aw_menu_padding`]): under kde-breeze the context entry is
+    /// `popover.border.padding` plus `menu.border.line_width` in from its
+    /// popup's corner, read from the leaves (12 px), where the popover's own
+    /// line made it 13. The context menu's popup is the menu's panel:
     /// `menu.background_color`, framed by `menu.border`, its first entry
     /// that padding in from its corner.
     #[cfg(feature = "iced_aw")]
