@@ -166,7 +166,10 @@ fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoEl
 
 /// A control's root element whose accessibility node is marked disabled
 /// while `disabled` is true; every other `Element` method is its inner
-/// element's. GPUI has no `aria_disabled`, and gpui-base's wrapper of this
+/// element's, and so is its `InteractiveElement` interactivity, so a
+/// registration or a focus binding made on the wrapper lands on the inner
+/// element (as gpui-base's forwards it, a11y_disabled.rs:71-75). GPUI has no
+/// `aria_disabled`, and gpui-base's wrapper of this
 /// shape, `A11yDisabled` (gpui-base a11y_disabled.rs:13-144), which its own
 /// controls are marked with, is `pub(crate)` there (:13, :28).
 struct A11yDisabled<E> {
