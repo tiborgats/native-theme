@@ -390,12 +390,19 @@ infer.
 For any other widget the theme states a padding for, `padding_or(&stated,
 default)` does the same over a default you name — a menu item drawn as a
 button takes `padding_or(&resolved.menu.border.padding,
-button::DEFAULT_PADDING)`, a card drawn as a container
-`padding_or(&resolved.card.border.padding, Padding::ZERO)`. Where the
-widget's default is not public, `stated_padding(&stated)` returns the
-padding only when every side is stated: `iced_aw`'s `Card` and `TabBar` keep
-theirs private, so pass `Some` to their `padding` setter and leave them
-alone on `None`.
+button::DEFAULT_PADDING)`. Where the widget paints its border over its
+padded box, as a container does, `padding_inside_border(&border, default)`
+adds the border's line width to each stated side, so the content sits
+where the platform puts it inside the line: a card drawn as a container
+takes `padding_inside_border(&resolved.card.border,
+Padding::from(container_margin))`, with the layout's `container_margin`
+(none where the theme states none) on a side the card leaves unstated.
+Where the widget's default is not public, `stated_padding(&stated)` returns
+the padding only when every side is stated: `iced_aw`'s `TabBar` keeps its
+own private, so pass `Some` to its `padding` setter and leave it alone on
+`None`; `iced_aw`'s `Card` takes a whole padding per section
+(`padding_head`, `padding_body`, `padding_foot`), which can take the same
+rule as a card drawn as a container.
 
 ## Fonts
 

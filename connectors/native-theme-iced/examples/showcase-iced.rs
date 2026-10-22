@@ -412,19 +412,27 @@ fn layout_value(stated: Option<f32>) -> String {
 }
 
 /// The padding of every surface a page draws as a card
-/// (`styles::container_card`), by one rule: a side `card.border.padding`
-/// states lies inside the card's border, which iced paints over the padded
-/// box, so it reaches iced plus the line width (`padding_inside_border`); a
-/// side it leaves unstated -- every side on the twelve presets that state no
-/// card padding, material-3 and the catppuccins among them -- is
-/// `layout.container_margin`, the theme's padding inside a container, as
-/// the gpui showcase's card and GroupBox fall back on it (`demo::card`,
-/// `demo::group_box`), and none where that is unstated too.
+/// (`styles::container_card`, and the Extra page's `iced_aw` `Card` through
+/// [`aw_card_padding`]), by one rule: each side is `card.border.padding`'s,
+/// or where it leaves the side unstated -- every side on the thirteen
+/// presets that state no card padding, all but kde-breeze, windows-11 and
+/// the two macOS presets -- `layout.container_margin`, the theme's padding
+/// inside a container, none where that is unstated too; plus
+/// `card.border.line_width`, as the padding lies inside the card's border,
+/// which iced paints over the padded box. So the content sits where the
+/// gpui showcase's card and GroupBox put it, inside their border by the
+/// stated side or the margin (`demo::card`, `demo::group_box`, through
+/// `padded`).
 fn card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Padding {
-    native_theme_iced::padding_inside_border(
-        &resolved.card.border,
-        Padding::from(Gaps::from_layout(layout).container),
-    )
+    let border = &resolved.card.border;
+    let margin = Gaps::from_layout(layout).container;
+    let side = |stated: Option<f32>| stated.unwrap_or(margin) + border.line_width;
+    Padding {
+        top: side(border.padding.top),
+        right: side(border.padding.right),
+        bottom: side(border.padding.bottom),
+        left: side(border.padding.left),
+    }
 }
 
 /// The menu-bar row's side padding where the theme states no
@@ -10305,10 +10313,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     );
 
     // The Layout page's card, a container in `styles::container_card`, not
-    // `iced_aw`'s `Card`: a card with no title has no head, and iced_aw's
-    // squares a card's lower corners under its head or body fill
-    // (`widget/card.rs`, `draw_head`, `draw_body`), where the theme rounds all
-    // four.
+    // `iced_aw`'s `Card`: a card with no title has no head.
     let card_group = group(
         "basic.card.heading",
         "Card",
@@ -13779,23 +13784,24 @@ fn menu_panel(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style +
 }
 
 /// The padding of the Extra page's `iced_aw` `Card`'s head, body and foot,
-/// where `card.border.padding` states every side. The model's padding lies
-/// inside the border, and the Card paints its border over its whole bounds,
-/// its sections inside them with no inset (iced_aw 0.14.1
+/// by the one rule every card takes ([`card_padding`]): iced_aw takes a
+/// padding per section, whole (`Card::padding_head`, `padding_body`,
+/// `padding_foot`), and paints the card's border over its whole bounds, its
+/// sections inside them with no inset (iced_aw 0.14.1
 /// `src/widget/card.rs:604-633`), so a side that meets the card's edge (the
-/// head's top, each section's left and right, the foot's bottom) is the
-/// stated side plus `card.border.line_width`, as the Basic and Display
-/// cards are padded ([`native_theme_iced::padding_inside_border`]), and a
-/// side between two sections the stated side alone. `None` where the theme
-/// leaves a side unstated: the Card then keeps iced_aw's own padding, which
-/// it keeps private (`widget/card.rs:21`).
+/// head's top, each section's left and right, the foot's bottom) is
+/// [`card_padding`]'s side, the line width with it, and a side between two
+/// sections the stated side or `layout.container_margin` alone. iced_aw's
+/// own padding, which it keeps private (`widget/card.rs:21`), is set aside
+/// on every side.
 #[cfg(feature = "iced_aw")]
-fn aw_card_padding(
-    border: &native_theme::theme::ResolvedWidgetBorder,
-) -> Option<(Padding, Padding, Padding)> {
-    let inside = native_theme_iced::stated_padding(&border.padding)?;
-    let edge = native_theme_iced::stated_padding(&border.padding_outside())?;
-    Some((
+fn aw_card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> (Padding, Padding, Padding) {
+    let edge = card_padding(resolved, layout);
+    let inside = native_theme_iced::padding_or(
+        &resolved.card.border.padding,
+        Padding::from(Gaps::from_layout(layout).container),
+    );
+    (
         Padding {
             bottom: inside.bottom,
             ..edge
@@ -13809,7 +13815,7 @@ fn aw_card_padding(
             top: inside.top,
             ..edge
         },
-    ))
+    )
 }
 
 /// The status `iced_aw` asks its widgets' style functions for.
@@ -13873,12 +13879,12 @@ fn aw_card_info(state: &State) -> String {
             ),
             (
                 "section padding",
-                "card.border.padding, where the theme states every side, on \
-                 the head, the body and the foot alike, inside \
-                 card.border.line_width: a side at the card's edge is the \
-                 stated side plus the line width, a side between two \
-                 sections the stated side; otherwise iced_aw's own, which it \
-                 keeps private (widget/card.rs:21)",
+                "card.border.padding, layout.container_margin on a side it \
+                 leaves unstated, as every card (card_padding), on the head, \
+                 the body and the foot alike: a side at the card's edge is \
+                 that side plus card.border.line_width, a side between two \
+                 sections the side alone; iced_aw's own (widget/card.rs:21) \
+                 is set aside",
             ),
             ("Dismiss padding", "button_padding"),
             (
@@ -14224,7 +14230,6 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
-    let card_t = &resolved.card;
     let menu_t = &resolved.menu;
     let tab_t = &resolved.tab;
     let side_t = &resolved.sidebar;
@@ -14266,13 +14271,11 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         ))
         .width(Length::Fixed(420.0))
         .style(styles::aw::card(resolved));
-        let card = match aw_card_padding(&card_t.border) {
-            Some((head, body, foot)) => card
-                .padding_head(head)
-                .padding_body(body)
-                .padding_foot(foot),
-            None => card,
-        };
+        let (head, body, foot) = aw_card_padding(resolved, &state.layout);
+        let card = card
+            .padding_head(head)
+            .padding_body(body)
+            .padding_foot(foot);
         probe(probes::AW_CARD, Length::Shrink, card)
     } else {
         button(text("Show the card again").typeset(&resolved.button.font, a11y))
@@ -19484,12 +19487,16 @@ mod tests {
     fn card_and_tab_padding_come_from_the_theme() {
         let source = strip_comments_and_strings(SHOWCASE);
         // The Extra page's Card pads its sections from `aw_card_padding`, the
-        // three it returns from `card_t.border`, in the one match that reads
-        // them; no other call sets a section's padding.
-        let from_border = source.find("aw_card_padding(&card_t.border)");
-        // The match that reads it, to its closing `};`.
-        let within =
-            from_border.and_then(|from| source[from..].find("};").map(|end| from..from + end));
+        // three it returns by the one card rule, bound in the one `let` that
+        // reads them; no other call sets a section's padding.
+        let from_rule =
+            source.find("let (head, body, foot) = aw_card_padding(resolved, &state.layout);");
+        // From that `let` to the Card's probe, where the three are set.
+        let within = from_rule.and_then(|from| {
+            source[from..]
+                .find("probe(probes::AW_CARD")
+                .map(|end| from..from + end)
+        });
         for (per_section, argument) in [
             (".padding_head(", ".padding_head(head)"),
             (".padding_body(", ".padding_body(body)"),
@@ -19507,9 +19514,9 @@ mod tests {
             }
         }
         for call in [
-            "aw_card_padding(&card_t.border)",
+            "aw_card_padding(resolved, &state.layout)",
             "stated_padding(&tab_t.border.padding)",
-            "Padding::from(Gaps::from_layout(layout).container)",
+            "let margin = Gaps::from_layout(layout).container;",
             "card_padding(resolved, &state.layout)",
         ] {
             assert!(
@@ -21080,11 +21087,15 @@ mod tests {
     /// page's Styled Containers, Theme Information and Spacing & Layout box,
     /// the Graphics page's Markdown view, the Layout page's first two panes
     /// (their title bars and bodies), an Icons cell and, with `iced_aw`, the
-    /// Extra page's two panels lie at least a pixel in from each of its edges.
+    /// Extra page's two panels and its `Card` lie at least a pixel in from
+    /// each of its edges.
     #[test]
     fn nothing_inside_a_card_touches_its_edge() {
         #[cfg(feature = "iced_aw")]
-        let extra = Some((Tab::Extra, probes::AW_PANELS.to_vec()));
+        let extra = Some((
+            Tab::Extra,
+            [probes::AW_PANELS.as_slice(), &[probes::AW_CARD]].concat(),
+        ));
         #[cfg(not(feature = "iced_aw"))]
         let extra = None;
         let pages: Vec<(Tab, Vec<&str>)> = [
@@ -24315,29 +24326,30 @@ mod tests {
         }
     }
 
-    /// M9-143 (theme-data): the Extra page's `Card` pads each section inside
-    /// its border, as the Basic and Display cards are padded: under
-    /// kde-breeze, which states every side of `card.border.padding`, the
-    /// head's title and the body's caption start
+    /// M9-143, as M9b Step 8 N1 rules it (theme-data): the Extra page's
+    /// `Card` pads each section by the one card rule ([`card_padding`]):
+    /// under kde-breeze, which states every side of `card.border.padding`,
+    /// the head's title and the body's caption start
     /// `card.border.padding.left + card.border.line_width` in from the
     /// card's left edge, and the title `.top` plus the line width below its
-    /// top edge, where the stated side alone stood; under adwaita, which
-    /// states none, iced_aw's own padding stands, 10 px (`DEFAULT_PADDING`,
-    /// iced_aw 0.14.1 `src/widget/card.rs:21`, which it keeps private).
+    /// top edge; under adwaita and material-3, which state none,
+    /// `layout.container_margin` plus the line width (12 and 6), where
+    /// iced_aw's own 10 px stood (`DEFAULT_PADDING`, iced_aw 0.14.1
+    /// `src/widget/card.rs:21`).
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_card_pads_inside_its_border() {
         let mut faults = Vec::new();
-        for preset in ["kde-breeze", "adwaita"] {
+        for preset in ["kde-breeze", "adwaita", "material-3"] {
             let state = extra_state(preset, AppColorMode::Light);
             let border = &state.current_resolved.card.border;
-            let stated = native_theme_iced::stated_padding(&border.padding);
-            let (left, top) = match stated {
-                Some(p) => (p.left + border.line_width, p.top + border.line_width),
-                None => (10.0, 10.0),
-            };
+            let margin = state.layout.container_margin.unwrap_or_default();
+            let (left, top) = (
+                border.padding.left.unwrap_or(margin) + border.line_width,
+                border.padding.top.unwrap_or(margin) + border.line_width,
+            );
             assert_eq!(
-                stated.is_some(),
+                native_theme_iced::stated_padding(&border.padding).is_some(),
                 preset == "kde-breeze",
                 "{preset}: card.border.padding is {:?}",
                 border.padding
