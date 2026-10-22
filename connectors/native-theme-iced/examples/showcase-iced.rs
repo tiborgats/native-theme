@@ -657,8 +657,8 @@ thread_local! {
     /// Whether the elements record their rectangles, into [`DRAWING`] as
     /// they are drawn and into [`SURVEYED`] as they are operated on, and
     /// shape their text parts to do so: set by `main` for `--dump-layout`
-    /// ([`records_layout`]), whose settle and write run where it is set and
-    /// read the two, and by the tests that read them (`recording`). A plain
+    /// ([`records_layout`]), whose settle ([`settles_layout`]) and write
+    /// run where it is set and read the two, and by the tests that read them (`recording`). A plain
     /// run records nothing; the hover target ([`UNDER_POINTER`]) needs no
     /// record.
     static RECORDING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
@@ -671,6 +671,27 @@ thread_local! {
     /// The rectangles [`record_rect`] has recorded on this thread, into the
     /// frame being drawn or the survey.
     static RECTS_RECORDED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Whether the layout dump's settle runs under test ([`settles_layout`]):
+    /// only where a test of the settle sets it.
+    static SETTLES: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Whether the root element runs the layout dump's settle, which publishes
+/// [`Message::LayoutSettled`] once the frames have stood
+/// [`LAYOUT_SETTLES_AFTER`]: in a recording run ([`RECORDING`], a
+/// `--dump-layout` run's). Under test only where a test of the settle turns
+/// it on ([`SETTLES`]): a test that records the layout (`recording`) then
+/// gets no `LayoutSettled` among its messages, however long its host takes
+/// between frames.
+fn settles_layout() -> bool {
+    #[cfg(test)]
+    {
+        RECORDING.get() && SETTLES.get()
+    }
+    #[cfg(not(test))]
+    {
+        RECORDING.get()
+    }
 }
 
 /// Records into the frame being drawn ([`DRAWING`]) while [`RECORDING`] is
@@ -890,7 +911,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
             }
         }
         if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event
-            && RECORDING.get()
+            && settles_layout()
         {
             let first = *FIRST_FRAME.get().get_or_insert(*now);
             FIRST_FRAME.set(Some(first));
@@ -3298,15 +3319,24 @@ thread_local! {
 /// winit installs that menu when the application has finished launching
 /// (winit 0.30.13 `src/platform_impl/macos/app_state.rs:139-143`), inside
 /// the event loop's run (iced_winit `src/lib.rs:451`), which `boot` comes
-/// before (`:104`), so a menu installed in `boot` would be replaced. The
+/// before (`:105`), so a menu installed in `boot` would be replaced. The
 /// menus go in from `update`, on the main thread, on the message `boot`'s
-/// task sends (`Message::InstallSystemMenu`), which iced runs once the
-/// window is open (`src/lib.rs:102-108`). That `update` is the first code
-/// of the application's that iced runs after the launch and that may change
-/// anything (what it calls before, `title`, `theme` and `view`, reads the
-/// state), and iced may run it after the window's first frame, so winit's
-/// default menu can stand for that frame (docs/todo.md, *iced showcase: the
-/// macOS system menu goes in after the launch*).
+/// task sends (`Message::InstallSystemMenu`), which an `iced::application`
+/// runs once its window is open (`src/lib.rs:108-113`), and so possibly
+/// after the window's first frame: winit's default menu can stand for that
+/// frame.
+///
+/// `iced::daemon` would put the menus in before the first frame: a daemon
+/// opens no window of its own (iced 0.14.0 `src/daemon.rs:76-78`), so its
+/// boot task runs at once (iced_winit `src/lib.rs:108-119`), and an
+/// `update` on its message could install the menus, then open the window.
+/// The showcase does not use it: a daemon opens and closes its window
+/// itself, which changes the start, the exit and the window settings on
+/// every platform, for one frame of winit's menu on macOS that no capture
+/// shows (docs/todo.md, *iced showcase: the macOS system menu goes in after
+/// the window opens*). A side effect in `title`, which iced calls on the
+/// main thread before it creates the window (`src/lib.rs:1387-1390`), would
+/// do it too, and is not taken: `title` reads the state.
 #[cfg(any(target_os = "macos", test))]
 mod system_menu {
     use super::{APP_NAME, AppColorMode, Message, Overlay, Tab};
@@ -15778,7 +15808,8 @@ mod tests {
     /// `run`'s result, with the elements recording their rectangles while it
     /// runs ([`RECORDING`]), as a `--dump-layout` run's do: what a test that
     /// reads [`drawn_layout`] or [`surveyed_layout`] draws and operates on
-    /// goes through this.
+    /// goes through this. The dump's settle stays off ([`settles_layout`]),
+    /// so the run's messages hold no `LayoutSettled`.
     fn recording<T>(run: impl FnOnce() -> T) -> T {
         struct Restore(bool);
         impl Drop for Restore {
@@ -17653,6 +17684,59 @@ mod tests {
         assert_eq!(SystemItem::Hide.wording(), Some(format!("Hide {APP_NAME}")));
         assert_eq!(SystemItem::Quit.wording(), Some(format!("Quit {APP_NAME}")));
         assert_eq!(SystemItem::Close.wording(), Some("Close".to_string()));
+    }
+
+    /// The labels of the in-window menu titled `title`'s rows, in order:
+    /// the texts its open menu adds over the window, less the key bindings
+    /// they show.
+    fn in_window_menu(title: &str) -> Vec<String> {
+        let state = State::default();
+        let mut ui = interface(&state);
+        let closed: Vec<String> = texts(&mut ui).into_iter().map(|(text, _)| text).collect();
+        click_text(&mut ui, title);
+        let open: Vec<String> = texts(&mut ui).into_iter().map(|(text, _)| text).collect();
+        assert!(
+            open.len() > closed.len() && open.starts_with(&closed),
+            "the {title} menu did not open over the window"
+        );
+        let bindings: Vec<String> = ["Q", "B", "K", ","].map(binding).into();
+        open.into_iter()
+            .skip(closed.len())
+            .filter(|text| !bindings.contains(text))
+            .collect()
+    }
+
+    /// The other direction of
+    /// `the_system_menus_rows_send_the_in_window_rows_messages`: every row
+    /// of the in-window menus is in the macOS system menu bar, in its order.
+    /// View's and Theme's rows are the system View's and Theme's own rows,
+    /// Theme's Preferences… the app menu's Settings…; File's Quit is the app
+    /// menu's Quit, and Help's About its About.
+    #[test]
+    fn every_in_window_menu_row_is_in_the_system_menu_bar() {
+        use system_menu::{Row, SystemItem};
+
+        let [(_, app), _, (_, view), (_, theme), _] = system_menu::menus();
+        let own = |rows: &[Row]| -> Vec<String> {
+            rows.iter()
+                .filter_map(|row| match row {
+                    Row::Own { label, .. } => Some(label.clone()),
+                    Row::System(_) | Row::Separator => None,
+                })
+                .collect()
+        };
+        assert_eq!(in_window_menu("View"), own(&view), "View");
+        let mut theme_rows = in_window_menu("Theme");
+        assert_eq!(theme_rows.pop().as_deref(), Some("Preferences…"), "Theme");
+        assert_eq!(theme_rows, own(&theme), "Theme");
+        assert!(own(&app).iter().any(|label| label == "Settings…"));
+        assert_eq!(in_window_menu("File"), ["Quit"], "File");
+        assert!(
+            app.iter()
+                .any(|row| matches!(row, Row::System(SystemItem::Quit)))
+        );
+        assert_eq!(in_window_menu("Help"), ["About"], "Help");
+        assert!(own(&app).contains(&format!("About {APP_NAME}")));
     }
 
     /// A freedesktop icon theme's spinner is that theme's own, and a theme
@@ -23779,6 +23863,51 @@ mod tests {
                 !records
             );
         }
+    }
+
+    /// A test that records the layout (`recording`) gets no
+    /// `LayoutSettled`, however long after its first frame it draws one:
+    /// the frames' own clock, a `RedrawRequested` [`LAYOUT_SETTLES_AFTER`]
+    /// after the first, publishes none. With the settle on, as in a
+    /// `--dump-layout` run, the same frames publish it.
+    #[test]
+    fn a_recording_test_gets_no_layout_settled() {
+        let settled = |settles: bool| -> bool {
+            struct Restore(bool);
+            impl Drop for Restore {
+                fn drop(&mut self) {
+                    SETTLES.set(self.0);
+                    FIRST_FRAME.set(None);
+                    DUMPED.set(None);
+                }
+            }
+            let _restore = Restore(SETTLES.replace(settles));
+            FIRST_FRAME.set(None);
+            DUMPED.set(None);
+            DRAWN.set(ElementRects::new());
+            recording(|| {
+                let state = State::default();
+                let theme = theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                let first = Instant::now();
+                let _ = ui.simulate([Event::Window(iced::window::Event::RedrawRequested(first))]);
+                // Two draws: the second hands the first's record to the
+                // frame the settle reads ([`DRAWN`]).
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
+                }
+                let _ = ui.simulate([Event::Window(iced::window::Event::RedrawRequested(
+                    first + LAYOUT_SETTLES_AFTER,
+                ))]);
+                ui.into_messages()
+                    .any(|message| matches!(message, Message::LayoutSettled))
+            })
+        };
+        assert!(!settled(false), "a recording test got LayoutSettled");
+        assert!(settled(true), "the settle published nothing");
     }
 
     /// The pointer over an element shows that element in Widget Info: over

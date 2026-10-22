@@ -860,7 +860,9 @@ File, View, Theme and Window. The elements the three share are listed once, in
 `docs/showcase-elements.toml`: hovering one shows its leaves in Widget Info,
 each with its value and how iced applies it, and `--dump-layout FILE` writes
 their rectangles for `scripts/check_showcase_parity.py` (with
-`--open-menu theme`, the Theme menu open and its rows among them). Add
+`--open-menu theme`, the Theme menu open and its rows among them; on macOS,
+where the menus are the system menu bar's, the flag is reported and
+ignored). Add
 `--features watch` to have it follow the OS theme's changes while its colour
 mode is System, and `--features iced_aw` for the tab with the `iced_aw`
 widgets and the Basic tab's number input:
