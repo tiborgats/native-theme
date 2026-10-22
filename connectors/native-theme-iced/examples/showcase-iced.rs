@@ -5970,6 +5970,13 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             tip: tooltip::Position::Top,
         },
     );
+    // The bar's text on the theme's line box rounded to a whole pixel, as
+    // gpui lays a line of text out (gpui-pre 0.3.9 `src/style.rs:553-556`,
+    // `TextStyle::line_height_in_pixels`), so it lies on the pixels gpui's
+    // does: catppuccin-mocha's 14 x 1.2 = 16.8 is 17.
+    let status_line = iced::Pixels(
+        (scaled_text_size(s.font.size, a11y) * native_theme_iced::line_height(resolved)).round(),
+    );
     // The environment on one line, in the room the toggle and the shown
     // title leave it, cut at its edge where it is wider, as the gpui
     // showcase's is cut short (`truncate`): iced 0.14's text wraps by default
@@ -5981,6 +5988,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
         "chrome.status_bar.environment",
         text(status_environment(state).join(" · "))
             .themed(&s.font, resolved, a11y)
+            .line_height(status_line)
             .wrapping(text::Wrapping::None),
     ))
     .width(Fill)
@@ -5991,7 +5999,9 @@ fn status_bar(state: &State) -> Element<'_, Message> {
     if let Some(title) = shown_title(state) {
         items = items.push(tagged(
             "chrome.status_bar.shown",
-            text(title).themed(&s.font, resolved, a11y),
+            text(title)
+                .themed(&s.font, resolved, a11y)
+                .line_height(status_line),
         ));
     }
     // Each side rounded as gpui rounds its bar's, so the items land on the
@@ -7713,6 +7723,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("layout", "window_margin_px") => "the page's padding".into(),
         ("layout", "section_gap_px") => "Column::spacing between the groups".into(),
         // ---- defaults, text scale, icons ----
+        ("defaults", "line_height") if under("chrome.status_bar") => {
+            "the text's LineHeight, the font size times it rounded to a whole pixel, as gpui \
+             rounds a line of text (gpui-pre style.rs:553-556)"
+                .into()
+        }
         ("defaults", "line_height") => {
             "the text's LineHeight::Relative (native_theme_iced::line_height)".into()
         }
@@ -27019,6 +27034,40 @@ mod tests {
                  its line, want {want}px"
             );
         }
+    }
+
+    /// M9b Step 8 round 4, A1 (parity): the status bar's text lies on a
+    /// line box rounded to a whole pixel, as gpui lays a line of text out
+    /// one `line_height` tall rounded to the nearest pixel (gpui-pre 0.3.9
+    /// `src/style.rs:553-556`, `TextStyle::line_height_in_pixels`): under
+    /// every bundled preset in both modes the environment is
+    /// `(status_bar.font.size × defaults.line_height).round()` tall, and
+    /// under catppuccin-mocha (14 × 1.2 = 16.8) 17, gpui's.
+    #[test]
+    fn the_status_bar_text_takes_gpuis_whole_pixel_line() {
+        let mut faults = Vec::new();
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            let r = &state.current_resolved;
+            let want = (scaled_text_size(r.status_bar.font.size, &state.accessibility)
+                * r.defaults.line_height)
+                .round();
+            let (drawn, _) = drawn_frame(&state);
+            match drawn.get("chrome.status_bar.environment") {
+                Some(at) if near(at.height, want) => {}
+                Some(at) => faults.push(format!(
+                    "{preset} (dark: {dark}): the environment is {}px tall, want {want}px",
+                    at.height
+                )),
+                None => faults.push(format!("{preset} (dark: {dark}): no environment drawn")),
+            }
+            if preset == "catppuccin-mocha" && !near(want, 17.0) {
+                faults.push(format!(
+                    "catppuccin-mocha (dark: {dark}): the line is {want}px, not 17"
+                ));
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// The status bar stays one line high at the window's default size
