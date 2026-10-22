@@ -426,6 +426,9 @@ keys = [
     "menu@catppuccin-mocha:chrome.side_panel.settings.theme.border",
     "menu@kde-breeze:chrome.side_panel.settings.mode.border",
     "menu@material-3:chrome.side_panel.settings.mode.border",
+    # 2026-10-22 (M9b Step 8): undecided: the after batch has no --open-menu theme run and no
+    # adwaita entry; M9c decides these two on a current menu= run of all three showcases under
+    # adwaita light and material-3 light.
     "menu@adwaita/light:chrome.page_tabs.basic.fill",
     "menu@material-3/light:chrome.page_tabs.basic.fill",
 ]
@@ -484,6 +487,8 @@ reason = "gpui's text metrics are whole pixels: a line of text is laid out one l
 keys = [
     "adwaita:chrome.side_panel.inspector_tabs.theme.w",
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.theme.w",
+    # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
+    # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
     "catppuccin-mocha:basic.switches.disabled.label.w",
 ]
 
@@ -561,12 +566,6 @@ keys = [
     "adwaita:chrome.status_bar.environment.x",
     "catppuccin-mocha:chrome.status_bar.environment.x",
     "catppuccin-mocha:chrome.status_bar.environment.y",
-]
-
-[[parity.group]]
-reason = "the theme states no button.border.padding_* on material-3 and catppuccin-mocha (the side-panel toggle is a flat button): each toolkit keeps its own default (iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs); iced pads the status bar as gpui's where the theme states no status_bar.border.padding_* (gpui-component's StatusBar py_1 / px_2, status_bar.rs:89-90)"
-keys = [
-    "catppuccin-mocha:chrome.status_bar.environment.h",
 ]
 
 [[parity.group]]
@@ -703,9 +702,13 @@ keys = [
 [[parity.group]]
 reason = "gpui's text metrics are whole pixels: a line of text is laid out one line_height tall rounded to the nearest pixel (gpui-pre src/style.rs:554-556, TextStyle::line_height_in_pixels) and as wide as its shaped run rounded up (src/elements/text.rs:765), and every box's edges are then rounded in absolute device pixels, half toward zero (src/taffy.rs:366-374); so a control sized by its label is up to one pixel wider than iced's fractional one, the box after it one pixel further on, and a label centred in a box (a button's, or a check box row's on catppuccin-mocha's 16.8 px line box) sits up to half a pixel left of or above iced's and egui's fraction, which R-snap can round the other way | sized by, or centred on, a line of text whose own width differs within R-shape (each toolkit's shaper hints and kerns the theme font on its own: iced cosmic-text 0.15.0, egui epaint, gpui the platform text system): the difference moves the control's far edge, the box after it, or a centred label's left edge by a fraction of a pixel that R-snap can round either way"
 keys = [
+    # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
+    # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
     "catppuccin-mocha:basic.checkboxes.unchecked.w",
     "kde-breeze:basic.checkboxes.unchecked.w",
     "adwaita:basic.radios.option_a.w",
+    # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
+    # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
     "catppuccin-mocha:basic.radios.option_a.w",
     "kde-breeze:basic.radios.option_a.w",
 ]
@@ -750,7 +753,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence, material-3: checkbox.border.padding and check_mark_stroke_width are unstated there; gpui's check mark then fills the indicator inside its border ('checkmark fills indicator', docs/platform-facts.md:1237), gpui-component's Check icon 16 px across in an 18 px box rounded 12 px, so the glyph sample over the mark's box reaches the page beyond the rounded corners"
+reason = "theme silence, catppuccin-mocha: checkbox.border.padding and check_mark_stroke_width are unstated there, so each toolkit sizes the box its dump records as the mark its own way: gpui's 16 px inside the 18 px indicator, iced's the whole indicator (iced draws its own glyph centred in the box, iced_widget 0.14.2 src/checkbox.rs:420-436), egui's 8 px (CheckboxStyle::check_size, egui-0.36.2/src/widget_style.rs:174-190); the glyph sample's ground is the most frequent colour of a box's outer ring, which in gpui's and iced's boxes is #1e1e2e, both the page beyond the indicator's rounded corners and catppuccin-mocha's dark tick, so they read the indicator's accent fill, while egui's box lies inside the fill and reads the tick: iced equals gpui, egui differs"
 keys = [
     "catppuccin-mocha:basic.checkboxes.checked.mark.mark",
 ]
