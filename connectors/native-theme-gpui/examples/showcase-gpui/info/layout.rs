@@ -819,38 +819,38 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:208",
+            "native-theme-gpui/widgets/tab_bar.rs:217",
         ))
         .color(claim(
             "unselected tab",
             "background_color",
             stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:209",
+            "native-theme-gpui/widgets/tab_bar.rs:218",
         ))
         .color(claim(
             "label",
             "font",
             stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:214",
+            "native-theme-gpui/widgets/tab_bar.rs:223",
         ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:217",
+            "native-theme-gpui/widgets/tab_bar.rs:226",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:218",
+            "native-theme-gpui/widgets/tab_bar.rs:227",
         ))
         .colors(edge_claim(
             "selected tab's outline",
             "border",
             Some(t.border.color),
             Some(t.border.line_width),
-            "native-theme-gpui/widgets/tab_bar.rs:219",
+            "native-theme-gpui/widgets/tab_bar.rs:228",
         ))
         .color(claim(
             "rule under the bar",
@@ -863,20 +863,20 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             t.hover_background,
-            "native-theme-gpui/widgets/tab_bar.rs:215",
+            "native-theme-gpui/widgets/tab_bar.rs:224",
         ))
         .color(claim(
             "hovered label",
             "hover_text_color",
             stated(t.hover_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:216",
+            "native-theme-gpui/widgets/tab_bar.rs:225",
         ))
         // Only where the look has the line: TabBar draws none otherwise.
         .colors(stated_claim(
             "selected tab's line",
             "active_indicator_color",
             indicator.and(t.active_indicator_color),
-            "native-theme-gpui/widgets/tab_bar.rs:230",
+            "native-theme-gpui/widgets/tab_bar.rs:239",
         ));
     let padding = t.border.padding;
     let side = |v: Option<f32>| {

@@ -5563,8 +5563,9 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
     }
 }
 
-/// The light `windows-11` theme, resolved as the connector resolves a
-/// preset, with `tab.active_outward_corner_radius` set on it to 4: no
+/// The `windows-11` theme, light or, with `is_dark`, dark, resolved as the
+/// connector resolves a preset, with `tab.active_outward_corner_radius` set
+/// on it to 4: no
 /// bundled preset states the radius yet, so the tests set it on the
 /// resolved theme, whose fields are public.
 fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedTheme) {
@@ -5579,7 +5580,9 @@ fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedT
 /// flares: under windows-11, whose widest fixed-width control is the two
 /// tabs, a page whose fifth holds the two tabs and 4px more lays out five
 /// columns, and four once the theme states an outward corner radius of 4,
-/// whose two flares need 8.
+/// whose two flares need 8; five again for a radius `widgets::TabBar` draws
+/// no flares for, 0, negative or not finite.
+#[cfg(feature = "widgets")]
 #[test]
 fn the_basic_page_makes_room_for_both_flares() {
     use crate::pages::basic::basic_column_count;
@@ -5610,6 +5613,16 @@ fn the_basic_page_makes_room_for_both_flares() {
         4,
         "the two tabs and both flares do not fit a fifth"
     );
+    // A radius the bar does not take draws no flares, and takes no room.
+    for radius in [0.0, -1.0, f32::NAN] {
+        let mut undrawn = stated.clone();
+        undrawn.tab.active_outward_corner_radius = Some(radius);
+        assert_eq!(
+            basic_column_count(&undrawn, &layout, content),
+            5,
+            "a radius of {radius} keeps room for flares the bar does not draw"
+        );
+    }
 }
 
 /// The Basic page lays its groups out as the three showcases do: under

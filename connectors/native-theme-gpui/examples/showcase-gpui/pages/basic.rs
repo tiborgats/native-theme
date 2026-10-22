@@ -218,8 +218,9 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// widest fixed-width control the theme states on the page --
 /// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
 /// apart with room for both of the selected tab's flares,
-/// `2 * tab.active_outward_corner_radius` where the theme states one,
-/// `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is
+/// `2 * tab.active_outward_corner_radius` where `widgets::TabBar` draws them
+/// (`TabLook::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` -- where
+/// `page` is
 /// `content_width` less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
 /// scrolling page keeps free. Three where not even three do: the page is then
@@ -239,7 +240,7 @@ pub(crate) fn basic_column_count(
     };
     let page = content_width - margin - margin - gutter;
     let t = &resolved.tab;
-    let flare = t.active_outward_corner_radius.unwrap_or_default();
+    let flare = outward_radius(resolved);
     let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + flare + flare;
     let widest = resolved
         .combo_box
@@ -254,6 +255,24 @@ pub(crate) fn basic_column_count(
             (page - (n - 1.0) * gap) / n >= widest
         })
         .unwrap_or(MIN_COLUMNS)
+}
+
+/// The radius of the selected tab's flares as `widgets::TabBar` draws them,
+/// 0 where it draws none: a radius the theme leaves unstated, states as 0,
+/// or states as a length the bar does not take, or a build without the
+/// `widgets` feature, whose Basic tabs are gpui-component's.
+fn outward_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    #[cfg(feature = "widgets")]
+    {
+        native_theme_gpui::widgets::TabLook::of(resolved)
+            .and_then(|look| look.outward_radius)
+            .map_or(0.0, f32::from)
+    }
+    #[cfg(not(feature = "widgets"))]
+    {
+        let _ = resolved;
+        0.0
+    }
 }
 
 /// The elements of docs/showcase-elements.toml the page and its columns

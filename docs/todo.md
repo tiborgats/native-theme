@@ -3650,6 +3650,10 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`A11yDisabled`, native-theme-gpui `src/widgets/mod.rs`), which can go then
       (G3 T7, 2026-10-22).
 
+### gpui: a tab scrolled into view loses its outer flare
+
+- [ ] [1.0] Found 2026-10-22 in the G3 Task 12 review. Where the theme states `tab.active_outward_corner_radius`, `widgets::TabBar` pads its scrolling row by the radius at both ends, so the end tabs' flares show (`connectors/native-theme-gpui/src/widgets/tab_bar.rs`, `RenderOnce for TabBar`). But a click on a tab the row's edge cuts asks `ScrollHandle::scroll_to_item`, which aligns the tab's own box with the row's edge: gpui-pre 0.3.9 `src/elements/div.rs:4373-4383`, gpui-fast 0.1.10 `:4426-4435`, `scroll_to_active_item`. On an overflowing row, a selected tab revealed that way, the last one included, then shows with its outer flare cut off by the row's clip. Upstream's Folder pads its row the same way (gpui-component 0.8.0 `tab/tab_bar.rs:686-687`) and reveals through the same call. To fix: have the click's reveal keep the radius free beyond the tab, for example by setting the handle's offset from the tab's bounds widened by the radius instead of calling `scroll_to_item`.
+
 ### Connectors: a public theme builder that takes the mode
 
 - [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.

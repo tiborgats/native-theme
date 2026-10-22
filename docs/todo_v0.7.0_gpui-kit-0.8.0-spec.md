@@ -1064,6 +1064,12 @@ leaves" → "512 …" (`src/mapping_tests.rs:239-243`).
   `:1084-1101`, `:1078-1101`, `:1084` and `:934-966`, are the base's numbers, each 10 short
   of the lines after the insertion; Task 11's commit (`bd8f5756`) wrote the true lines,
   `:644`, `:1094-1111`, `:1088-1111`, `:1094` and `:944-976`.
+- *Added 2026-10-22 (G3 T12 fix round 1), correcting the first line above:* the cells are
+  not quite in "the form §2.11's other 'no such thing' cells take". No other cell of
+  `docs/platform-facts.md` pairs a source tag with `**(none)**`: the untagged cells write
+  `**(none)**`, and the tagged ones write "none" plainly (`**(M3 token)** none.`). The KDE
+  and Material cells keep their tags, as the carry asked, so they take the bold
+  `**(none)**` with a tag in front, a pairing of their own.
 
 ### 12.2 What is drawn, in every connector
 
@@ -1120,6 +1126,24 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   `windows-11` theme with `tab.active_outward_corner_radius = Some(4.0)` set on it (a
   resolved theme's fields are public), installed through each showcase's own seam (§12.3,
   §12.4, §12.5); no test writes a preset or a theme file.
+- *Added 2026-10-22 (G3 T12 fix round 1), the controller's ruling on the Task 12 review's
+  Important 1, for all three connectors:* the fill annulus runs from `max(r − w, 0)`, the
+  outline's inner radius, to `R`, not from `r`; the outline annulus is unchanged and is
+  painted after the fill, over the band where the two overlap. What shows is the same
+  shape: the square less the quarter disc of radius `r` in `tab.active_background`, the
+  band in `tab.border.color`. The reason: gpui snaps a quad's bounds and border widths to
+  device pixels but not its corner radius (gpui-pre `src/window.rs:4684-4696`,
+  `snap_bounds` and `snap_border_widths` at `:3289-3310`; gpui-fast 0.1.10 `:4760-4772`,
+  `:3333-3354`), so two annuli that only meet at `r` part along the curve at a fractional
+  scale, by up to about 0.6 logical px at 125 % (the review's model), and the bar shows
+  through. The overlap keeps them closed at any scale, and where nothing snaps it draws
+  the same pixels. gpui also widens each content mask outward to whole device pixels
+  (`snapped_content_mask`, `cover_bounds`, gpui-pre `src/window.rs:3312-3331`, gpui-fast
+  `:3356-3375`), the limit the "toolkit limit" bullet above states for iced and egui:
+  there too up to a pixel of the fill can show beside a square at a fractional scale. The
+  numbers the tests share change with it: the fill annulus runs from `3` to `R` (width
+  `R − (r − w) ≈ 3.657`), and where `w` is 0 from `r` (width `R − r ≈ 2.657`). Tasks 13 and
+  14 draw the fill annulus the same way, from `max(r − w, 0)`, and use these numbers.
 
 ### 12.3 gpui: `widgets::TabBar` (Task 12)
 
@@ -1192,6 +1216,12 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   stated, its outward bottom corners, the outline following them".
 - `CHANGELOG.md` *Added*: "**native-theme-gpui**: `widgets::TabBar` draws the selected tab's
   outward corners where the theme states them (`TabLook::outward_radius`)".
+- *Added 2026-10-22 (G3 T12 fix round 1), on the `HOW` lines above:* Task 12 does not
+  write them; Task 15 does, with the leaf's listing (`g3-T15-carry.md` carries the exact
+  lines). Rationale K16's "an unlisted route is unused, and no test rejects one" is not
+  true for gpui: `every_how_entry_is_shown` (`CN/src/showcase.rs`) fails on a `HOW` entry
+  that no listed element's leaf takes, and the shared list names the leaf only in Task 15.
+  Committing the lines in Task 12 would have turned the branch red.
 
 ### 12.4 iced: `tab_flares` (Task 13)
 

@@ -106,14 +106,22 @@ pub(crate) struct FlareQuad {
 /// WinUI's outline lies just outside its fill (docs/platform-facts.md
 /// §2.11): the left one's right edge at `x0 + w`, the right one's left edge
 /// at `x1 - w`. About the square's upper outer corner, clipped to the
-/// square, an annulus from `r` out to `r * sqrt(2) + 1`, past the square's
-/// far corner, in `tab.active_background` -- the square less the quarter
-/// disc of radius `r` -- and, where `w` is positive, one from `r - w` (or 0)
-/// to `r` in `tab.border.color`, the outline continued down the curve on the
-/// disc's side to the bar's bottom edge. At the square's top that band
-/// covers the side edge's own column, so the two are one line; below it, the
-/// fill covers the side edge's foot. The fills come first, then the
-/// outlines.
+/// square, an annulus from `r - w` (or 0) out to `r * sqrt(2) + 1`, past the
+/// square's far corner, in `tab.active_background`, and, where `w` is
+/// positive, one from `r - w` (or 0) to `r` in `tab.border.color`, the
+/// outline continued down the curve on the disc's side to the bar's bottom
+/// edge. The outline is painted after the fill and over it, so what shows is
+/// the square less the quarter disc of radius `r` in the fill and the band
+/// in the outline. The fill reaches under the band, not only to `r`, because
+/// gpui snaps each quad's bounds and border width to device pixels but not
+/// its corner radius (gpui-pre `src/window.rs:4684-4696`, `snap_bounds`,
+/// `snap_border_widths`): two annuli that only met at `r` would part along
+/// the curve at a fractional scale, while the overlap stays closed at any.
+/// At the square's top the band covers the side edge's own column, so the
+/// two are one line; below it, the fill covers the side edge's foot. Each
+/// square is the quads' content mask, which gpui widens to whole device
+/// pixels (`snapped_content_mask`, `cover_bounds`, `:3312-3331`). The fills
+/// come first, then the outlines.
 pub(crate) fn flare_quads(tab: Bounds<Pixels>, look: &TabLook) -> Vec<FlareQuad> {
     let Some(r) = look.outward_radius else {
         return Vec::new();
@@ -135,9 +143,10 @@ pub(crate) fn flare_quads(tab: Bounds<Pixels>, look: &TabLook) -> Vec<FlareQuad>
         width: px(width),
         color,
     };
-    let fills = feet.map(|foot| ring(foot, far, far - r, look.active));
-    let outlines =
-        (w > 0.0).then(|| feet.map(|foot| ring(foot, r, r - (r - w).max(0.0), look.border)));
+    // The outline's inner radius, where the fill begins too.
+    let inner = (r - w).max(0.0);
+    let fills = feet.map(|foot| ring(foot, far, far - inner, look.active));
+    let outlines = (w > 0.0).then(|| feet.map(|foot| ring(foot, r, r - inner, look.border)));
     fills
         .into_iter()
         .chain(outlines.into_iter().flatten())

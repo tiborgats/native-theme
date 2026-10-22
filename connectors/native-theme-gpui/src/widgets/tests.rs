@@ -768,6 +768,18 @@ fn folder_window(
     edit: impl FnOnce(&mut ResolvedTheme),
     parts: Reported,
 ) -> (&mut VisualTestContext, ResolvedTheme) {
+    folder_window_counted(cx, radius, edit, parts, Rc::new(Cell::new(0)))
+}
+
+/// [`folder_window`], counting in `renders` each time the window's view
+/// renders the bar.
+fn folder_window_counted(
+    cx: &mut TestAppContext,
+    radius: Option<f32>,
+    edit: impl FnOnce(&mut ResolvedTheme),
+    parts: Reported,
+    renders: Rc<Cell<usize>>,
+) -> (&mut VisualTestContext, ResolvedTheme) {
     let r = windows_11(radius, edit);
     cx.update(|cx| {
         gpui_component::init(cx);
@@ -776,6 +788,7 @@ fn folder_window(
         crate::apply(theme, &r, &prefs, cx);
     });
     let build: Build = Box::new(move |_, _| {
+        renders.set(renders.get() + 1);
         let parts = parts.clone();
         TabBar::new("t")
             .w(px(320.))
@@ -802,9 +815,10 @@ fn near(a: f32, b: f32) -> bool {
 /// connector's test shares -- the left curve about `(x0 - 3, y1 - 4)` in the
 /// square `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right one about
 /// `(x1 + 3, y1 - 4)` in `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the
-/// fill an annulus from 4 to `4 * sqrt(2) + 1` in `tab.active_background`
-/// and the outline one from 3 to 4 in `tab.border.color` -- with the top
-/// corners at 8.
+/// fill an annulus from 3 to `4 * sqrt(2) + 1` in `tab.active_background`
+/// and the outline one from 3 to 4 in `tab.border.color`, painted over the
+/// fill's inner band -- with the top corners at 8. Without an outline the
+/// fill begins at 4.
 #[test]
 fn the_flares_are_the_shapes_geometry() {
     let r = windows_11(Some(4.), |_| {});
@@ -819,8 +833,8 @@ fn the_flares_are_the_shapes_geometry() {
     let far = 4. * std::f32::consts::SQRT_2 + 1.;
     // (square's left edge, centre's x, outer radius, width, colour)
     let expected = [
-        (x0 - 3., x0 - 3., far, far - 4., look.active),
-        (x1 - 1., x1 + 3., far, far - 4., look.active),
+        (x0 - 3., x0 - 3., far, far - 3., look.active),
+        (x1 - 1., x1 + 3., far, far - 3., look.active),
         (x0 - 3., x0 - 3., 4., 1., look.border),
         (x1 - 1., x1 + 3., 4., 1., look.border),
     ];
@@ -860,6 +874,10 @@ fn the_flares_are_the_shapes_geometry() {
     let quads = tab_bar::flare_quads(tab, &thin);
     assert_eq!(quads.len(), 2, "{quads:?}");
     assert!(quads.iter().all(|q| q.color == thin.active));
+    assert!(
+        quads.iter().all(|q| near(f32::from(q.width), far - 4.)),
+        "without an outline the fill begins at the radius: {quads:?}"
+    );
     // Unstated or 0: today's shape, no flare.
     for radius in [None, Some(0.)] {
         let look = TabLook::of(&windows_11(radius, |_| {})).expect("finite");
@@ -918,6 +936,14 @@ fn assert_flares_painted(cx: &mut VisualTestContext, flares: &[tab_bar::FlareQua
                 q.corner_radii.top_left.0,
                 f32::from(flare.radius) * s,
                 "{when}"
+            );
+            let e = q.border_widths;
+            let width = f32::from(flare.width) * s;
+            assert!(
+                [e.top.0, e.right.0, e.bottom.0, e.left.0]
+                    .iter()
+                    .all(|b| (b - width).abs() <= 0.5),
+                "{when}: {q:?} is not {width} wide"
             );
         }
     }
@@ -1032,15 +1058,198 @@ fn the_flares_are_painted_after_every_tab(cx: &mut TestAppContext) {
 
 /// A frame drawn after the first with nothing changed, without
 /// `window.refresh()`, still paints the flares: GPUI Fast's reuse of an
-/// unchanged view keeps them.
+/// unchanged view keeps them. On GPUI Fast the view does not render again
+/// for that frame, so the frame is the reuse.
 #[gpui::test]
 fn the_flares_outlast_a_frame_with_nothing_changed(cx: &mut TestAppContext) {
-    let (cx, r) = folder_window(cx, Some(4.), |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let renders = Rc::new(Cell::new(0));
+    let (cx, r) = folder_window_counted(
+        cx,
+        Some(4.),
+        |_| {},
+        Rc::new(RefCell::new(Vec::new())),
+        renders.clone(),
+    );
     let look = TabLook::of(&r).expect("finite");
     let flares = tab_bar::flare_quads(bounds(cx, "two"), &look);
     assert_flares_painted(cx, &flares, "the first frame");
+    let before = renders.get();
+    assert!(before > 0, "the view rendered the bar");
     cx.update(|w, cx| w.draw(cx).clear(cx));
+    #[cfg(feature = "gpui-fast")]
+    assert_eq!(
+        renders.get(),
+        before,
+        "the second frame rendered the view again, so it was no reuse"
+    );
     assert_flares_painted(cx, &flares, "a second frame with nothing changed");
+}
+
+/// The selected tab's label does not move when the tab curves out: with
+/// `tab.min_height` 0, so the label's line box and padding set the tab's
+/// height, the selected tab is as tall with the radius stated as without,
+/// its missing bottom edge made up in its bottom padding.
+#[gpui::test]
+fn a_tab_that_curves_out_keeps_its_labels_place(cx: &mut TestAppContext) {
+    let height = |cx: &mut TestAppContext, radius| {
+        let (cx, _) = folder_window(
+            cx,
+            radius,
+            |r| r.tab.min_height = 0.,
+            Rc::new(RefCell::new(Vec::new())),
+        );
+        bounds(cx, "two").size.height
+    };
+    let square = height(cx, None);
+    let curved = height(cx, Some(4.));
+    assert_eq!(curved, square, "the selected tab's height moved");
+}
+
+/// The quads the last frame painted in `flare`'s colour about its centre,
+/// with its radius, found without its mask, which gpui widens to whole
+/// device pixels at a fractional scale.
+fn painted_about(cx: &mut VisualTestContext, flare: &tab_bar::FlareQuad) -> Vec<gpui::Quad> {
+    cx.update(|window, _| {
+        let s = window.scale_factor();
+        let b = flare.bounds.scale(s);
+        let want = (
+            b.origin.x.0 + b.size.width.0 / 2.,
+            b.origin.y.0 + b.size.height.0 / 2.,
+        );
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                let got = (
+                    q.bounds.origin.x.0 + q.bounds.size.width.0 / 2.,
+                    q.bounds.origin.y.0 + q.bounds.size.height.0 / 2.,
+                );
+                q.border_color == flare.color
+                    && q.background.is_transparent()
+                    && (q.corner_radii.top_left.0 - f32::from(flare.radius) * s).abs() < 1e-3
+                    && (got.0 - want.0).abs() <= 1.
+                    && (got.1 - want.1).abs() <= 1.
+            })
+            .collect()
+    })
+}
+
+/// The signed distance of the device point `p` from the border of `q`, a
+/// quad of one corner radius and one border width all round, as gpui's quad
+/// shader computes it (gpui-pre-wgpu 0.3.9 `src/shaders.wgsl`, `fs_quad`,
+/// `quad_sdf_impl`): negative inside the border, so a pixel whose centre
+/// lies at or below 0 is at least half painted in the border's colour.
+fn border_sdf(q: &gpui::Quad, p: (f32, f32)) -> f32 {
+    let half = (q.bounds.size.width.0 / 2., q.bounds.size.height.0 / 2.);
+    let centre_to_point = (
+        p.0 - q.bounds.origin.x.0 - half.0,
+        p.1 - q.bounds.origin.y.0 - half.1,
+    );
+    let radius = q.corner_radii.top_left.0;
+    let border = q.border_widths.top.0;
+    let corner_to_point = (
+        centre_to_point.0.abs() - half.0,
+        centre_to_point.1.abs() - half.1,
+    );
+    let corner_centre_to_point = (corner_to_point.0 + radius, corner_to_point.1 + radius);
+    let outer = if radius == 0. {
+        corner_centre_to_point.0.max(corner_centre_to_point.1)
+    } else {
+        corner_centre_to_point
+            .0
+            .max(0.)
+            .hypot(corner_centre_to_point.1.max(0.))
+            + corner_centre_to_point
+                .0
+                .max(corner_centre_to_point.1)
+                .min(0.)
+            - radius
+    };
+    let inner = if corner_centre_to_point.0 <= 0. || corner_centre_to_point.1 <= 0. {
+        -(corner_to_point.0 + border).max(corner_to_point.1 + border)
+    } else if corner_to_point.0 + border > 0. || corner_to_point.1 + border > 0. {
+        -1.
+    } else {
+        -(outer + border)
+    };
+    inner.max(outer)
+}
+
+/// At fractional scales, where gpui snaps each quad's bounds and border width
+/// to device pixels but not its corner radius, every device pixel of a
+/// flare's square outside the curve, from a pixel beyond the outline's outer
+/// edge at `r - w` on, is painted by the fill or the outline: no seam opens
+/// between them. Read from the painted quads through the shader's distance.
+#[gpui::test]
+fn at_a_fractional_scale_no_seam_opens_between_fill_and_outline(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(cx, Some(4.), |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let look = TabLook::of(&r).expect("finite");
+    let (rr, w) = (4., f32::from(look.border_width));
+    for scale in [1.25, 1.5, 1.75] {
+        cx.simulate_scale_factor_change(scale);
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        let s = cx.update(|window, _| window.scale_factor());
+        assert_eq!(s, scale, "the window took the scale");
+        let flares = tab_bar::flare_quads(bounds(cx, "two"), &look);
+        assert_eq!(flares.len(), 4, "{scale}");
+        let (fills, outlines) = flares.split_at(2);
+        for (fill, outline) in fills.iter().zip(outlines) {
+            let painted: Vec<gpui::Quad> = [fill, outline]
+                .into_iter()
+                .flat_map(|f| {
+                    let quads = painted_about(cx, f);
+                    assert_eq!(quads.len(), 1, "{scale}: {f:?} painted as {quads:?}");
+                    quads
+                })
+                .collect();
+            for q in &painted {
+                let e = q.border_widths;
+                assert!(
+                    e.top == e.right && e.top == e.bottom && e.top == e.left,
+                    "{scale}: {q:?}"
+                );
+            }
+            let square = fill.clip.scale(s);
+            let b = fill.bounds.scale(s);
+            let centre = (
+                b.origin.x.0 + b.size.width.0 / 2.,
+                b.origin.y.0 + b.size.height.0 / 2.,
+            );
+            let mut bare = Vec::new();
+            let (x0, y0) = (square.origin.x.0.floor(), square.origin.y.0.floor());
+            let (x1, y1) = (
+                (square.origin.x.0 + square.size.width.0).ceil(),
+                (square.origin.y.0 + square.size.height.0).ceil(),
+            );
+            let mut y = y0 + 0.5;
+            while y < y1 {
+                let mut x = x0 + 0.5;
+                while x < x1 {
+                    let inside = x > square.origin.x.0
+                        && x < square.origin.x.0 + square.size.width.0
+                        && y > square.origin.y.0
+                        && y < square.origin.y.0 + square.size.height.0;
+                    let d = (x - centre.0).hypot(y - centre.1);
+                    if inside && d >= (rr - w) * s + 1. {
+                        let painted_here = painted.iter().any(|q| {
+                            q.content_mask
+                                .bounds
+                                .contains(&point(gpui::ScaledPixels(x), gpui::ScaledPixels(y)))
+                                && border_sdf(q, (x, y)) <= 0.
+                        });
+                        if !painted_here {
+                            bare.push((x, y, d / s));
+                        }
+                    }
+                    x += 1.;
+                }
+                y += 1.;
+            }
+            assert!(
+                bare.is_empty(),
+                "{scale}: pixels of {fill:?} painted by neither ring (x, y, distance): {bare:?}"
+            );
+        }
+    }
 }
 
 /// With a bottom indicator and the radius both stated: the line spans the
