@@ -2561,6 +2561,71 @@ fn the_dragged_width_survives_the_toggle(cx: &mut TestAppContext) {
     );
 }
 
+/// The side panel keeps its width when the window resizes, as the iced and
+/// egui showcases' does: the width it opened at, the width it was dragged
+/// to, and the width it comes back at once hidden and shown again, which a
+/// fresh state lays out (app.rs, `Showcase::rearrange`).
+///
+/// A group rescales its panels in proportion when its container resizes,
+/// once every panel has a measured size (gpui-base resizable/mod.rs,
+/// `ResizableState::adjust_to_container_size`); a fixed panel keeps its own
+/// (resizable/panel.rs, `ResizablePanel::fixed`). Every width the window
+/// takes here fits the side panel and a page.
+#[gpui::test]
+fn the_side_panel_keeps_its_width_when_the_window_resizes(cx: &mut TestAppContext) {
+    let opened = size(WINDOW_SIZE.width + px(160.), WINDOW_SIZE.height);
+    let wider = size(opened.width + px(160.), opened.height);
+    let (_showcase, _root, mut cx) = open(cx, opened);
+    let resize_keeps = |cx: &mut VisualTestContext, case: &str| {
+        let width = bounds_of(cx, CHROME_SIDE_PANEL).size.width;
+        for window in [wider, WINDOW_SIZE] {
+            cx.simulate_resize(window);
+            // The group's rescale lands in a frame of its own (gpui-base
+            // resizable/panel.rs, the group's `on_prepaint`).
+            cx.run_until_parked();
+            draw(cx);
+            cx.run_until_parked();
+            draw(cx);
+            assert_eq!(
+                bounds_of(cx, CHROME_SIDE_PANEL).size.width,
+                width,
+                "{case}: the side panel did not keep its width in a {:?} wide window",
+                window.width
+            );
+        }
+        cx.simulate_resize(opened);
+        cx.run_until_parked();
+        draw(cx);
+        cx.run_until_parked();
+        draw(cx);
+        width
+    };
+    assert_eq!(
+        resize_keeps(&mut cx, "as opened"),
+        LEFT_PANEL_WIDTH,
+        "the side panel did not open at LEFT_PANEL_WIDTH"
+    );
+    let content = bounds_of(&mut cx, CONTENT_PANEL);
+    drag_handle(&mut cx, boundary(content), content.center().y, px(30.));
+    let dragged = resize_keeps(&mut cx, "dragged");
+    assert!(
+        (dragged - LEFT_PANEL_WIDTH - px(30.)).abs() <= px(1.),
+        "dragging the side panel's handle 30px right made it {dragged:?}"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
+    assert_eq!(
+        cx.debug_bounds(CHROME_SIDE_PANEL),
+        None,
+        "View > Toggle Side Panel did not hide the side panel"
+    );
+    run_menu_item(&mut cx, "View", "Toggle Side Panel");
+    assert_eq!(
+        resize_keeps(&mut cx, "hidden and shown again"),
+        dragged,
+        "the side panel came back at another width than it was dragged to"
+    );
+}
+
 /// Hiding the side panel in the middle of a drag of its handle, then moving
 /// the pointer, leaves nothing holding the dragged handle's index.
 ///

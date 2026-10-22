@@ -2116,12 +2116,15 @@ impl Render for Showcase {
             // strip the panel keeps clear for it (`demo::splitter_reserve`).
             // As wide as the side panel and the strip it keeps clear for the
             // splitter's line, so the side panel keeps its width whatever
-            // the line's.
+            // the line's; fixed, so a window resize goes to the content
+            // panel, as the iced and egui showcases' does (gpui-base
+            // resizable/panel.rs, `ResizablePanel::fixed`).
             let reserve = demo::splitter_reserve(cx).unwrap_or_default();
             resizable_panel()
                 .size(gpui::px(
                     f32::from(self.side_panel_width) + f32::from(reserve),
                 ))
+                .fixed()
                 .flex_none()
                 .child(
                     div()
