@@ -90,7 +90,8 @@ use native_theme_showcase_support::elements::{self, ShowcaseElement};
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::status::DrawnFamily as FontDrawing;
 use native_theme_showcase_support::{
-    DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows, status, values,
+    CAPTURE_WAIT, DIALOG_PADDING_PX, INFO_SETTLE, Kind, WINDOW_SIZE_PX, capture, dump, rows,
+    status, values,
 };
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -728,19 +729,11 @@ fn surveyed_layout() -> ElementRects {
 /// the start (`HELD_PRESS_AFTER`'s note), so the dump is written before.
 const LAYOUT_SETTLES_AFTER: Duration = Duration::from_secs(1);
 
-/// How long a `--dump-layout` run waits for its dump before it gives the
-/// dump up as failed, so a run whose frames record no element of the list,
-/// or whose window's scale factor is never read, fails (exit 1) rather than
-/// stay open, `--screenshot` written or not: 20 s, the gpui showcase's bound
-/// (`DUMP_MAX_READINGS` readings `DUMP_POLL` apart, 80 × 250 ms,
-/// showcase-gpui/main.rs) and the time `scripts/capture_window.sh` waits for
-/// a dump before it fails the capture (`wait_for_dump`,
-/// `SHOWCASE_WINDOW_TIMEOUT`). The showcase's own bound; the model states
-/// none.
-const DUMP_GIVE_UP_AFTER: Duration = Duration::from_secs(20);
-
 /// Why `--dump-layout` to `path` failed, where `outputs` still waits for the
-/// dump once [`DUMP_GIVE_UP_AFTER`] has passed; `None` once it is written,
+/// dump once [`CAPTURE_WAIT`] has passed, the shared crate's bound, so a run
+/// whose frames record no element of the list, or whose window's scale
+/// factor is never read, fails (exit 1) rather than stay open, `--screenshot`
+/// written or not; `None` once it is written,
 /// or where the run asked for none.
 fn dump_given_up(outputs: &Outputs, path: &str) -> Option<String> {
     outputs.pending(Output::Dump).then(|| {
@@ -749,7 +742,7 @@ fn dump_given_up(outputs: &Outputs, path: &str) -> Option<String> {
             &format!(
                 "no layout was written within {} s: no frame recorded an element of the \
                  list, or the window's scale factor was not read",
-                DUMP_GIVE_UP_AFTER.as_secs()
+                CAPTURE_WAIT.as_secs()
             ),
         )
     })
@@ -2450,7 +2443,7 @@ enum Message {
     LayoutSettled,
     /// The window's scale factor, read for the layout dump.
     LayoutScaled(f32),
-    /// [`DUMP_GIVE_UP_AFTER`] has passed since the start of a `--dump-layout`
+    /// [`CAPTURE_WAIT`] has passed since the start of a `--dump-layout`
     /// run whose dump is not written yet.
     DumpTimedOut,
 
@@ -15813,7 +15806,7 @@ fn subscription(state: &State) -> Subscription<Message> {
 
     // The layout dump's give-up bound, while the dump is not written.
     if state.outputs.pending(Output::Dump) {
-        subs.push(iced::time::every(DUMP_GIVE_UP_AFTER).map(|_| Message::DumpTimedOut));
+        subs.push(iced::time::every(CAPTURE_WAIT).map(|_| Message::DumpTimedOut));
     }
 
     // The screenshot's countdown, then its capture's polls.
@@ -26172,9 +26165,9 @@ mod tests {
     }
 
     /// A `--dump-layout` run whose dump is not written after
-    /// [`DUMP_GIVE_UP_AFTER`] fails naming the flag and the path, the dump
-    /// written or none asked for gives nothing up, and the bound is the time
-    /// `scripts/capture_window.sh` waits for a dump.
+    /// [`CAPTURE_WAIT`] fails naming the flag and the path, and the dump
+    /// written or none asked for gives nothing up; the shared crate holds the
+    /// bound to the time `scripts/capture_window.sh` waits for a dump.
     #[test]
     fn a_dump_that_is_never_written_fails_after_its_bound() {
         let cli = CliArgs {
@@ -26199,12 +26192,6 @@ mod tests {
         let _ = state.outputs.written(Output::Dump);
         assert_eq!(dump_given_up(&state.outputs, "f.json"), None);
         assert_eq!(dump_given_up(&State::default().outputs, "f.json"), None);
-        let script = include_str!("../../../scripts/capture_window.sh");
-        let timeout = script
-            .lines()
-            .find_map(|line| line.strip_prefix("SHOWCASE_WINDOW_TIMEOUT="))
-            .and_then(|value| value.trim().parse::<u64>().ok());
-        assert_eq!(timeout, Some(DUMP_GIVE_UP_AFTER.as_secs()));
     }
 
     /// A Widget Info line of a page's widget shows a swatch where it ends in

@@ -736,9 +736,10 @@ const DUMP_SETTLED_READINGS: usize = 4;
 
 /// How many readings `dump_layout` takes at most before it gives the dump
 /// up as failed, so a layout that never settles fails the run (exit 1)
-/// rather than hold it open: 80 readings `DUMP_POLL` apart, 20 s, the time
-/// `scripts/capture_window.sh` waits for a dump before it fails the capture
-/// (`wait_for_dump`, `SHOWCASE_WINDOW_TIMEOUT=20`). The showcase's own
+/// rather than hold it open: 80 readings `DUMP_POLL` apart, the shared
+/// crate's `CAPTURE_WAIT`, 20 s, the time `scripts/capture_window.sh` waits
+/// for a dump before it fails the capture (`wait_for_dump`), which
+/// `the_dump_readings_take_the_capture_wait` holds. The showcase's own
 /// bound; the model states none.
 const DUMP_MAX_READINGS: usize = 80;
 

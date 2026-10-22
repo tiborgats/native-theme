@@ -14159,6 +14159,18 @@ fn a_layout_that_never_settles_fails_the_dump() {
     );
 }
 
+/// The dump's readings, `DUMP_POLL` apart, last the shared crate's
+/// `CAPTURE_WAIT`, which it holds to the time `scripts/capture_window.sh`
+/// waits for a dump.
+#[test]
+fn the_dump_readings_take_the_capture_wait() {
+    let readings = u32::try_from(crate::DUMP_MAX_READINGS).unwrap_or(u32::MAX);
+    assert_eq!(
+        crate::DUMP_POLL.saturating_mul(readings),
+        native_theme_showcase_support::CAPTURE_WAIT
+    );
+}
+
 /// Every bundled preset in both modes, resolved as the tests resolve a
 /// preset, named `<preset> <mode>`, with the gpui theme the connector
 /// builds from it: what an info built under each one reads.

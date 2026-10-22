@@ -119,16 +119,9 @@ pub fn check_frame_capture(
 #[cfg(target_os = "windows")]
 const FIND_WINDOW_OF: &str = "--find-window-of";
 
-/// How long [`FrameCapture::poll`] waits for the second run that finds the
-/// window on Windows before it gives the capture up: 20 s, the time the
-/// capture scripts wait for a showcase's window (`scripts/capture_window.sh`,
-/// `SHOWCASE_WINDOW_TIMEOUT`), which the showcases' layout dumps wait too.
-/// The crate's own bound; the model states none.
-pub const FIND_WINDOW_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20);
-
 /// Whether the window finder `finder`, started at `started`, has exited by
 /// `now`: `Ok(true)` once it has, `Ok(false)` while it runs within
-/// [`FIND_WINDOW_TIMEOUT`], and an error once it has run that long, the
+/// [`crate::CAPTURE_WAIT`], and an error once it has run that long, the
 /// finder killed, so a finder that never finds the window cannot keep the
 /// showcase open.
 #[cfg(any(target_os = "windows", test))]
@@ -139,13 +132,13 @@ fn finder_exited(
 ) -> Result<bool, String> {
     match finder.try_wait() {
         Ok(Some(_)) => Ok(true),
-        Ok(None) if now.saturating_duration_since(started) < FIND_WINDOW_TIMEOUT => Ok(false),
+        Ok(None) if now.saturating_duration_since(started) < crate::CAPTURE_WAIT => Ok(false),
         Ok(None) => {
             let _ = finder.kill();
             let _ = finder.wait();
             Err(format!(
                 "the window finder found no window within {} s",
-                FIND_WINDOW_TIMEOUT.as_secs()
+                crate::CAPTURE_WAIT.as_secs()
             ))
         }
         Err(e) => Err(format!("waiting for the window finder: {e}")),
@@ -164,7 +157,7 @@ pub struct FrameCapture {
     title: String,
     #[cfg(target_os = "windows")]
     finder: Option<std::process::Child>,
-    /// When the finder run was started ([`FIND_WINDOW_TIMEOUT`]).
+    /// When the finder run was started ([`crate::CAPTURE_WAIT`]).
     #[cfg(target_os = "windows")]
     started: std::time::Instant,
 }
@@ -208,7 +201,7 @@ impl FrameCapture {
     /// written and passed [`check_frame_capture`], with the content size and
     /// scale `content` gives at that moment. A capture that fails the check
     /// is not left at the path, and on Windows a finder run that has not
-    /// found the window within [`FIND_WINDOW_TIMEOUT`] fails it. Poll until it
+    /// found the window within [`crate::CAPTURE_WAIT`] fails it. Poll until it
     /// returns `Some`, then stop: on Windows a later poll returns `None`
     /// again, as the finder run is gone.
     pub fn poll(
@@ -548,9 +541,8 @@ mod tests {
         }
     }
 
-    /// A window finder that runs past [`FIND_WINDOW_TIMEOUT`] is killed and
-    /// fails the capture, one that exits ends the wait, and the bound is the
-    /// time `scripts/capture_window.sh` waits for a window.
+    /// A window finder that runs past [`crate::CAPTURE_WAIT`] is killed and
+    /// fails the capture, and one that exits ends the wait.
     #[cfg(unix)]
     #[test]
     fn a_window_finder_that_never_finds_is_given_up() {
@@ -560,12 +552,12 @@ mod tests {
             .spawn()
             .unwrap();
         assert_eq!(finder_exited(&mut hung, started, started), Ok(false));
-        let overdue = finder_exited(&mut hung, started, started + FIND_WINDOW_TIMEOUT);
+        let overdue = finder_exited(&mut hung, started, started + crate::CAPTURE_WAIT);
         assert_eq!(
             overdue,
             Err(format!(
                 "the window finder found no window within {} s",
-                FIND_WINDOW_TIMEOUT.as_secs()
+                crate::CAPTURE_WAIT.as_secs()
             ))
         );
         assert!(
@@ -576,16 +568,9 @@ mod tests {
         let mut done = std::process::Command::new("true").spawn().unwrap();
         let _ = done.wait();
         assert_eq!(
-            finder_exited(&mut done, started, started + FIND_WINDOW_TIMEOUT),
+            finder_exited(&mut done, started, started + crate::CAPTURE_WAIT),
             Ok(true)
         );
-
-        let script = include_str!("../../../scripts/capture_window.sh");
-        let timeout = script
-            .lines()
-            .find_map(|line| line.strip_prefix("SHOWCASE_WINDOW_TIMEOUT="))
-            .and_then(|seconds| seconds.trim().parse::<u64>().ok());
-        assert_eq!(timeout, Some(FIND_WINDOW_TIMEOUT.as_secs()));
     }
 
     /// Where the frame cannot be captured, the capture does not start.

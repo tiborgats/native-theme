@@ -86,6 +86,15 @@ pub const WINDOW_SIZE_PX: (u32, u32) = (1280, 720);
 /// `INFO_SETTLE`), which the egui showcase copied.
 pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 
+/// How long a showcase's window and its layout dump are waited for before
+/// the run that waits gives them up: 20 s, the time the capture scripts wait
+/// for a showcase's window and its dump (`scripts/capture_window.sh`,
+/// `SHOWCASE_WINDOW_TIMEOUT`), which `the_capture_wait_is_the_scripts` holds.
+/// The Windows capture's window finder ([`capture::FrameCapture::poll`]),
+/// the iced showcase's `--dump-layout` and the gpui showcase's dump readings
+/// wait as long. The showcases' own bound; the model states none.
+pub const CAPTURE_WAIT: Duration = Duration::from_secs(20);
+
 /// A dialog's padding on a side the theme's `dialog.border.padding` leaves
 /// unstated, inside the dialog's border line: gpui-component's `Dialog`'s
 /// own, `Edges::all(px(16.))`, which each stated side replaces
@@ -99,6 +108,17 @@ pub const DIALOG_PADDING_PX: f32 = 16.0;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The showcases wait as long as the capture scripts do.
+    #[test]
+    fn the_capture_wait_is_the_scripts() {
+        let script = include_str!("../../../scripts/capture_window.sh");
+        let timeout = script
+            .lines()
+            .find_map(|line| line.strip_prefix("SHOWCASE_WINDOW_TIMEOUT="))
+            .and_then(|seconds| seconds.trim().parse::<u64>().ok());
+        assert_eq!(timeout, Some(CAPTURE_WAIT.as_secs()));
+    }
 
     /// The script a kind names is in the repository, under the kind's name.
     #[test]
