@@ -1196,10 +1196,41 @@ struct LoadedIcon {
 }
 
 /// An icon as the Icons page hands it to iced: an SVG or an RGBA image.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 enum IconHandle {
     Svg(iced_core::svg::Handle),
     Image(iced_core::image::Handle),
+}
+
+/// Two handles of one icon: SVGs by their handles, which iced identifies
+/// by a hash of the document (`iced_core` 0.14.0 `svg.rs:89-98`), images by
+/// their size and pixels, since iced gives every image handle an id of its
+/// own (`image.rs:147-156`), so that two of one image differ by iced's
+/// equality.
+#[cfg(test)]
+impl PartialEq for IconHandle {
+    fn eq(&self, other: &Self) -> bool {
+        use iced_core::image::Handle::Rgba;
+        match (self, other) {
+            (Self::Svg(svg), Self::Svg(other)) => svg == other,
+            (
+                Self::Image(Rgba {
+                    width,
+                    height,
+                    pixels,
+                    ..
+                }),
+                Self::Image(Rgba {
+                    width: other_width,
+                    height: other_height,
+                    pixels: other_pixels,
+                    ..
+                }),
+            ) => (width, height, pixels) == (other_width, other_height, other_pixels),
+            (Self::Image(image), Self::Image(other)) => image == other,
+            _ => false,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -16895,36 +16926,54 @@ mod tests {
     /// built, so a view converts none, where every view (twenty a second
     /// while the page's indicators animate) re-coloured each bundled SVG
     /// into a new handle and copied each RGBA image; a reload builds each
-    /// loaded icon's handle once.
+    /// loaded icon's handle once, a bundled set's coloured in the text
+    /// colour. Checked on the Material set, which every host has; a system
+    /// set's icon, which its loader coloured, and an RGBA icon are checked
+    /// on fixtures, an image by its size and pixels.
     #[test]
     fn the_icons_page_draws_the_handles_its_load_built() {
         let conversions = || ICON_CONVERSIONS.with(std::cell::Cell::get);
         let mut state = State {
             active_tab: Tab::Icons,
+            icon_set_choice: IconSetChoice::Material,
             ..State::default()
         };
-        let loaded = state.loaded_icons.iter().filter(|icon| icon.data.is_some());
-        let loaded = loaded.count();
-        assert!(loaded > 0, "no icon loaded");
+        state.reload_icons();
         ICON_CONVERSIONS.with(|conversions| conversions.set(0));
         let _ = view(&state);
         assert_eq!(conversions(), 0, "a view of the Icons page converted icons");
         state.reload_icons();
         assert_eq!(
             conversions(),
-            loaded,
-            "a reload converts each loaded icon once"
+            IconRole::ALL.len(),
+            "one conversion per icon"
         );
         let text = state.current_theme.palette().text;
         for icon in &state.loaded_icons {
-            let color = (icon.source != IconSource::System).then_some(text);
-            let want = icon.data.as_ref().and_then(|data| icon_handle(data, color));
-            assert_eq!(
-                icon.handle, want,
-                "{:?}: not the page's colouring",
-                icon.role
-            );
+            let want = icon
+                .data
+                .as_ref()
+                .and_then(|data| icon_handle(data, Some(text)));
+            assert_eq!(icon.handle, want, "{:?}: not in the text colour", icon.role);
         }
+        let symbolic = IconData::Svg(Cow::Borrowed(b"<svg><path fill=\"currentColor\"/></svg>"));
+        let as_loaded = to_svg_handle(&symbolic, None).map(IconHandle::Svg);
+        assert_eq!(
+            icon_handle(&symbolic, None),
+            as_loaded,
+            "a system SVG recoloured"
+        );
+        let pixels = vec![1, 2, 3, 4, 5, 6, 7, 8];
+        let Some(rgba) = IconData::rgba(2, 1, pixels.clone()) else {
+            panic!("a 2 by 1 image of 8 bytes is not an RGBA icon");
+        };
+        let image = iced_core::image::Handle::from_rgba(2, 1, pixels);
+        let image = Some(IconHandle::Image(image));
+        assert_eq!(
+            icon_handle(&rgba, None),
+            image,
+            "an RGBA icon not as loaded"
+        );
     }
 
     /// The Icons page draws a freedesktop indicator as `Spinner` does, in its
