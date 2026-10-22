@@ -98,35 +98,6 @@ use std::num::NonZeroU32;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 use std::time::{Duration, Instant};
 
-// ---------------------------------------------------------------------------
-// UI spacing scale (local constants, not a theme property)
-// ---------------------------------------------------------------------------
-
-/// Fixed spacing scale for showcase UI layout.
-///
-/// These are UI constants used by this example application for layout spacing.
-/// They are NOT theme-driven values -- they are design choices for this showcase.
-struct Spacing {
-    xxs: f32,
-    xs: f32,
-    s: f32,
-    m: f32,
-}
-
-impl Spacing {
-    const fn new() -> Self {
-        Self {
-            xxs: 2.0,
-            xs: 4.0,
-            s: 8.0,
-            m: 12.0,
-        }
-    }
-}
-
-/// Showcase UI spacing constants.
-const SP: Spacing = Spacing::new();
-
 /// The window `main` opens, and the viewport `every_tab_renders` lays out in:
 /// the shared crate's `WINDOW_SIZE_PX`, the maintainer's default for every
 /// showcase, in iced's logical pixels.
@@ -10961,7 +10932,6 @@ fn disabled_buttons_info(state: &State) -> String {
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -10975,7 +10945,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let primary_row = hoverable(
@@ -11057,7 +11027,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ),
             text(counter_text).body(resolved, a11y),
         ]
-        .spacing(sp.m)
+        .spacing(gap.widget)
         .align_y(iced::Center),
     ]
     .spacing(gap.widget);
@@ -11207,7 +11177,6 @@ fn text_editor_info(state: &State) -> String {
 
 fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -11220,7 +11189,7 @@ fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let single_line = {
@@ -11596,7 +11565,6 @@ fn combo_box_info(state: &State) -> String {
 
 fn view_selection(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -11610,7 +11578,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let checkboxes = hoverable(
@@ -11980,7 +11948,6 @@ fn vertical_slider_info(state: &State) -> String {
 
 fn view_range(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -11992,7 +11959,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let horiz_slider =
@@ -12012,7 +11979,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                         .body(resolved, a11y)
                         .width(Length::Fixed(50.0)),
                 ]
-                .spacing(sp.m)
+                .spacing(gap.widget)
                 .align_y(iced::Center),
                 text("Drag to change value. This slider drives the first progress bar below.")
                     .role(&ts.caption, resolved, a11y),
@@ -12034,7 +12001,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     .body(resolved, a11y)
                     .width(Length::Fixed(50.0)),
             ]
-            .spacing(sp.m)
+            .spacing(gap.widget)
             .align_y(iced::Center),
         ]
         .spacing(gap.widget)
@@ -12058,11 +12025,10 @@ fn view_range(state: &State) -> Element<'_, Message> {
                 ),
                 column![
                     text(format!("Value: {:.1}", state.vslider_value)).body(resolved, a11y),
-                    space().height(Length::Fixed(8.0)),
                     text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.")
                         .role(&ts.caption, resolved, a11y),
                 ]
-                .spacing(sp.xs),
+                .spacing(gap.widget),
             ]
             .spacing(gap.widget),
         ]
@@ -12078,7 +12044,6 @@ fn view_range(state: &State) -> Element<'_, Message> {
             progress_bar(0.0..=100.0, state.slider_value)
                 .girth(Length::Fixed(pb.track_height))
                 .style(styles::progress_bar(resolved)),
-            space().height(Length::Fixed(4.0)),
             text("Separate progress control:").body(resolved, a11y),
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged)
@@ -12088,7 +12053,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
                     .body(resolved, a11y)
                     .width(Length::Fixed(50.0)),
             ]
-            .spacing(sp.m)
+            .spacing(gap.widget)
             .align_y(iced::Center),
             progress_bar(0.0..=100.0, state.progress_value)
                 .girth(Length::Fixed(pb.track_height))
@@ -12211,7 +12176,6 @@ fn tooltip_info(state: &State) -> String {
 
 fn view_display(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -12230,7 +12194,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let containers = hoverable(
@@ -12246,7 +12210,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     ))
                     .role(&ts.caption, resolved, a11y),
                 ]
-                .spacing(sp.xs),
+                .spacing(gap.widget),
             )
             .padding(card_pad)
             .style(styles::container_card(resolved))
@@ -12262,7 +12226,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             .style(styles::container_card(resolved))
             .width(Fill),
         ]
-        .spacing(sp.m)
+        .spacing(gap.widget)
         .into(),
     );
 
@@ -12342,7 +12306,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         UnlistedKey::Tooltip,
         column![
             text("Tooltips").role(section_title(ts), resolved, a11y),
-            row(tips).spacing(sp.m),
+            row(tips).spacing(gap.widget),
         ]
         .spacing(gap.widget)
         .into(),
@@ -12393,7 +12357,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
             ))
             .role(&ts.caption, resolved, a11y),
         ]
-        .spacing(sp.xs),
+        .spacing(gap.widget),
     )
     .padding(Padding::from(gap.container))
     .style(styles::container_card(resolved))
@@ -12489,6 +12453,7 @@ fn grid_info(state: &State) -> String {
                  (grid.rs:13-19)",
             ),
             ("columns", columns.as_str()),
+            SWATCHES_LINE,
         ],
     )
 }
@@ -12515,6 +12480,13 @@ fn pane_grid_info(state: &State) -> String {
             ("split width", &divider_width_s),
             ("pane surface", "styles::container_card"),
             ("title bar", "styles::container_card"),
+            (
+                "padding",
+                "the pane's and its title bar's: card.border.padding inside \
+                 card.border.line_width, as the page's cards, none on a side it leaves \
+                 unstated",
+            ),
+            ("controls gap", "layout.widget_gap, none where unstated"),
             (
                 "title",
                 font_row("defaults.font", &resolved.defaults.font).as_str(),
@@ -12667,12 +12639,14 @@ fn table_info(state: &State) -> String {
 /// other widgets rather than paint a control.
 fn view_layout(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
     let sp_th = &resolved.splitter;
+    // The panes and their title bars are drawn as cards, and padded as the
+    // page's cards are (M9-099): inside the border, none on a side unstated.
+    let card_pad = native_theme_iced::padding_inside_border(&resolved.card.border, Padding::ZERO);
 
     let header = section_header(
         "Layout Widgets",
@@ -12680,7 +12654,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     // ---- Grid: the platform's own colors, four to a row ----
@@ -12694,9 +12668,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
         radius: swatch_r.into(),
     };
     let caption = &ts.caption;
-    let xxs_sp = sp.xxs;
     let cell = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_frame, caption, resolved, a11y, xxs_sp)
+        color_swatch(label, color, swatch_frame, caption, resolved, a11y)
     };
     let d = &resolved.defaults;
 
@@ -12752,12 +12725,12 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 .style(styles::button_danger(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
         ]
-        .spacing(sp.xs);
+        .spacing(gap.widget);
 
         let title_bar = pane_grid::TitleBar::new(text(title).body(resolved, a11y))
             .controls(Element::from(controls))
             .always_show_controls()
-            .padding(Padding::from([sp.xs, sp.s]))
+            .padding(card_pad)
             .style(styles::container_card(resolved));
 
         let body = column![
@@ -12768,8 +12741,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             })
             .role(&ts.caption, resolved, a11y),
         ]
-        .spacing(sp.xs)
-        .padding(Padding::from(sp.s));
+        .spacing(gap.widget)
+        .padding(card_pad);
 
         pane_grid::Content::new(body)
             .title_bar(title_bar)
@@ -13195,7 +13168,6 @@ fn markdown_info(state: &State) -> String {
 /// application supplies rather than a control.
 fn view_graphics(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -13208,7 +13180,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     // ---- Canvas ----
@@ -13397,6 +13369,15 @@ fn menu_width<'a>(
 /// application sets none: `Padding::new(5.0)` in `Menu::new` (iced_aw 0.14.1
 /// `src/widget/menu/menu_tree.rs:161`), which it keeps in no constant.
 const AW_MENU_PADDING: f32 = 5.0;
+
+/// How far the Extra page's menu panels lie from the item that opens them,
+/// and their rows and the context menu's entries from one another (spec
+/// §3.1): the showcase's own, 2 px, as the model states no menu offset and
+/// no row gap, so a drop-down's panel stands clear of the foot of its title,
+/// which iced_aw's offset of the rows alone would cover. The menus' Widget
+/// Info names it.
+#[cfg(feature = "iced_aw")]
+const AW_MENU_GAP: f32 = 2.0;
 
 /// The padding of the window's menus' panels round their rows: the popup's,
 /// `popover.border.padding` (platform-facts §2.6: the popup border is
@@ -13654,6 +13635,11 @@ fn aw_menu_info(state: &State) -> String {
                  where unstated",
             ),
             (
+                "bar padding",
+                "menu.border.line_width all round: the titles inside the bar's \
+                 line, side by side with no gap, as the window's menu bar's",
+            ),
+            (
                 "context menu",
                 "our own popup, drawn as the panel (styles::aw::menu's \
                  menu_background, menu_border and menu_shadow): \
@@ -13668,8 +13654,9 @@ fn aw_menu_info(state: &State) -> String {
             ),
             (
                 "panel offset",
-                "the showcase's sp.xxs (2 px): a menu's panel lies that far \
-                 from the item that opens it, and its rows that far apart",
+                "AW_MENU_GAP, 2px, the showcase's own: a menu's panel lies that far \
+                 from the item that opens it, and its rows and the context menu's \
+                 entries that far apart",
             ),
             (
                 "menu width",
@@ -13844,7 +13831,9 @@ fn aw_selection_list_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let row_height_s = match resolved.list.row_height {
         Some(h) => format!("{h:.0}px"),
-        None => "not stated: the showcase's own padding".to_string(),
+        None => "not stated: the label's and list.border.padding's, iced_aw's own 5px on \
+                 a side it leaves unstated"
+            .to_string(),
     };
     widget_tooltip(
         "SelectionList",
@@ -13901,7 +13890,6 @@ fn aw_selection_list_info(state: &State) -> String {
 #[cfg(feature = "iced_aw")]
 fn view_extra(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -13919,7 +13907,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     // ---- Card ----
@@ -13935,7 +13923,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 )
                 .role(&ts.caption, resolved, a11y),
             ]
-            .spacing(sp.xs),
+            .spacing(gap.widget),
         )
         .foot(Element::from(
             row![
@@ -13944,7 +13932,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                     .style(styles::button(resolved))
                     .padding(native_theme_iced::button_padding(resolved)),
             ]
-            .spacing(sp.xs),
+            .spacing(gap.widget),
         ))
         .width(Length::Fixed(420.0))
         .style(styles::aw::card(resolved));
@@ -14043,7 +14031,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // A menu of the rows `entries`, each with the menu it opens where it
     // opens one, as wide as its widest row. Its panel's side `facing` the
     // item that opens it (`popup_pad.top` under a title, `.left` beside a
-    // row) lies `sp.xxs` from that item.
+    // row) lies [`AW_MENU_GAP`] from that item.
     let drop = |entries: Vec<(&'static str, Option<_>)>, facing: f32| {
         let width = menu_width(
             entries.iter().map(|&(label, _)| (label, None)),
@@ -14059,7 +14047,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 None => Item::new(menu_entry(label)),
             })
             .collect();
-        aw_menu(items, width, sp.xxs, facing, popup_pad)
+        aw_menu(items, width, AW_MENU_GAP, facing, popup_pad)
     };
 
     let menu_bar = MenuBar::new(vec![
@@ -14088,8 +14076,11 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ),
         ),
     ])
-    .padding(Padding::from(sp.xxs))
-    .spacing(sp.xs)
+    // The titles inside the bar's line, `menu.border` (`styles::aw::menu`'s
+    // `bar_border`), which iced_aw paints over the bar's padding; side by
+    // side with no gap, as the window's menu bar's titles are (iced_aw's
+    // own `spacing`, none).
+    .padding(Padding::new(menu_t.border.line_width))
     .style(styles::aw::menu(resolved));
 
     let menu_demo = hoverable(
@@ -14115,7 +14106,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             )
             .role(&ts.caption, resolved, a11y),
         ]
-        .spacing(sp.xs),
+        .spacing(gap.widget),
     )
     .padding(Padding::from(gap.container))
     .style(styles::container_card(resolved))
@@ -14125,10 +14116,12 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         let entry = |label: &'static str| menu_item(label, format!("Context menu: {label}"));
         drawn_probe(
             probes::AW_CONTEXT_MENU,
-            container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(sp.xxs))
-                .padding(popup_pad)
-                .style(menu_panel(resolved))
-                .width(Length::Fixed(180.0)),
+            container(
+                column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(AW_MENU_GAP),
+            )
+            .padding(popup_pad)
+            .style(menu_panel(resolved))
+            .width(Length::Fixed(180.0)),
         )
     });
 
@@ -14173,7 +14166,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 text("Tabs owns its content and forwards the bar's style to the TabBar it holds.")
                     .role(&ts.caption, resolved, a11y),
             )
-            .padding(Padding::from(sp.s)),
+            .padding(Padding::from(gap.container)),
         )
         .push(
             1usize,
@@ -14185,7 +14178,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 ))
                 .role(&ts.caption, resolved, a11y),
             )
-            .padding(Padding::from(sp.s)),
+            .padding(Padding::from(gap.container)),
         )
         .set_active_tab(&state.aw_tabs_active)
         .text_size(scaled_text_size(tab_t.font.size, a11y))
@@ -14305,21 +14298,21 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // that makes the sum come out. `padding.y()` is top plus bottom, so each
     // side takes half of what the label leaves. A theme that states no row
     // height, or one that does not clear its own label size, leaves the
-    // showcase's own padding standing, rather than a negative inset.
+    // list's row padding standing, `list.border.padding`, iced_aw's own
+    // ([`AW_LIST_PADDING`]) on a side it leaves unstated, as the Basic list's
+    // rows take it, rather than a negative inset.
     let row_label = scaled_text_size(list_t.item_font.size, a11y);
     let row_inset = list_t.row_height.map_or(0.0, |h| h - row_label);
+    let row_pad =
+        native_theme_iced::padding_or(&list_t.border.padding, Padding::from(AW_LIST_PADDING));
     let list_padding = if row_inset > 0.0 {
         // Only the vertical half is the platform's: the label is drawn at the
         // row's own `bounds.x` (`selection_list/list.rs:274`), so horizontal
         // padding never reaches it, and the list's intrinsic width does read
         // `padding.x()` (`selection_list.rs:237`, `:244`).
-        Padding::ZERO
-            .top(row_inset / 2.0)
-            .bottom(row_inset / 2.0)
-            .left(sp.xs)
-            .right(sp.xs)
+        row_pad.top(row_inset / 2.0).bottom(row_inset / 2.0)
     } else {
-        Padding::from(sp.xs)
+        row_pad
     };
 
     // `SelectionList::new_with` is the only constructor that gives the rows a
@@ -14385,7 +14378,6 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
 fn view_icons(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -14410,15 +14402,16 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         .body(resolved, a11y),
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
-    .spacing(sp.xs);
+    .spacing(gap.widget);
 
     let icon_set_info = column![
         text(format!("Active icon set: {}", state.icon_set_choice)).body(resolved, a11y),
         text(state.system_icon_theme_label()).role(&ts.caption, resolved, a11y),
     ]
-    .spacing(sp.xs);
+    .spacing(gap.widget);
 
-    // Build grid rows of 6 icons each
+    // The grid: rows of 6 icons each, its cells and its rows
+    // `layout.widget_gap` apart, as a row of widgets is spaced.
     let icons_per_row = 6;
     let grid_rows: Vec<Element<'_, Message>> = state
         .loaded_icons
@@ -14426,28 +14419,26 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         .map(|icons| {
             let row_icons: Vec<Element<'_, Message>> = icons
                 .iter()
-                .map(|loaded| build_icon_cell(loaded, resolved, &ts.caption, a11y, sp.xxs))
+                .map(|loaded| build_icon_cell(loaded, resolved, &ts.caption, a11y))
                 .collect();
             row(row_icons).spacing(gap.widget).into()
         })
         .collect();
 
     let animated_section = view_animated_icons(state);
-    let mut content = column![
+    column![
         header,
         icon_set_info,
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         animated_section,
-        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved))
+        rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
+        column(grid_rows).spacing(gap.widget),
     ]
-    // Header, icon-set summary and animated section are major sections of the
-    // tab, the same role the other tab roots give `gap.section`.
-    .spacing(gap.section);
-    for r in grid_rows {
-        content = content.push(r);
-    }
-
-    content.width(Fill).into()
+    // Header, icon-set summary, animated section and grid are the sections
+    // of the tab, the same role the other tab roots give `gap.section`.
+    .spacing(gap.section)
+    .width(Fill)
+    .into()
 }
 
 /// The Icons page's indicator section: the icon set's indicator at
@@ -14455,7 +14446,6 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 /// motion, drawn by the connector's `Spinner` (`Indicator`).
 fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -14478,7 +14468,9 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
                 Playback::Spin { period_ms } => format!("{set_name} - Spin ({period_ms}ms)"),
             };
             let label = text(label).role(&ts.caption, resolved, a11y);
-            column![icon, label].spacing(sp.xs).align_x(iced::Center)
+            column![icon, label]
+                .spacing(gap.widget)
+                .align_x(iced::Center)
         });
 
     let mut content = column![title, divider].spacing(gap.widget);
@@ -14505,16 +14497,21 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     content.into()
 }
 
+/// The space between an Icons page cell's icon, its role and its source
+/// (spec §3.1): the showcase's own, 2 px, as the theme states no icon grid
+/// and a cell is a gallery's, not a row of widgets. The cell's Widget Info
+/// names it.
+const ICON_CELL_GAP: f32 = 2.0;
+
 /// An Icons page cell: the icon loaded for its role, its role and its
-/// source, on a card (`styles::container_card`) padded as the page's cards
-/// are, by `card.border.padding` inside `card.border.line_width`, none on a
-/// side it leaves unstated.
+/// source, [`ICON_CELL_GAP`] apart, on a card (`styles::container_card`)
+/// padded as the page's cards are, by `card.border.padding` inside
+/// `card.border.line_width`, none on a side it leaves unstated.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     resolved: &ResolvedTheme,
     caption: &ResolvedTextScaleEntry,
     a11y: &AccessibilityPreferences,
-    xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
     let source_label = loaded.source.label();
@@ -14546,7 +14543,7 @@ fn build_icon_cell<'a>(
                     text(role_name.clone()).role(caption, resolved, a11y),
                     text(source_label).role(caption, resolved, a11y),
                 ]
-                .spacing(xxs_spacing)
+                .spacing(ICON_CELL_GAP)
                 .align_x(iced::Center),
             )
             .padding(native_theme_iced::padding_inside_border(
@@ -14575,7 +14572,9 @@ fn icon_info(state: &State, role: IconRole) -> String {
             format!(
                 "{role:?}\nicon: {}\nsource: {}\npadding: top {}px, right {}px, bottom {}px, \
                  left {}px: card.border.padding inside card.border.line_width, as the page's \
-                 cards, none on a side it leaves unstated",
+                 cards, none on a side it leaves unstated\ngap: ICON_CELL_GAP, \
+                 {ICON_CELL_GAP}px between the icon, the role and the source, the showcase's \
+                 own: the theme states no icon grid",
                 loaded.name.unwrap_or("(unmapped)"),
                 loaded.source.label(),
                 pad.top,
@@ -14618,13 +14617,12 @@ fn base_palette_info(state: &State) -> String {
             Paint::leaf("danger", "danger", palette.danger),
         ],
         &[],
-        &[],
+        &[SWATCHES_LINE],
     )
 }
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
     let a11y = &state.accessibility;
-    let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
@@ -14634,7 +14632,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         resolved,
         ts,
         a11y,
-        sp,
+        gap.widget,
     );
 
     let palette = state.current_theme.palette();
@@ -14649,9 +14647,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     };
     // Local closure for concise swatch calls
     let caption = &ts.caption;
-    let xxs_sp = sp.xxs;
     let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_frame, caption, resolved, a11y, xxs_sp)
+        color_swatch(label, color, swatch_frame, caption, resolved, a11y)
     };
 
     let swatch_style = SwatchStyle {
@@ -14662,9 +14659,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         caption: &ts.caption,
         resolved,
         a11y,
-        xxs_spacing: sp.xxs,
-        swatch_spacing: sp.m,
-        column_spacing: sp.s,
+        widget_gap: gap.widget,
     };
 
     // Base palette (6 colors)
@@ -14680,7 +14675,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                 cs("warning", palette.warning),
                 cs("danger", palette.danger),
             ]
-            .spacing(sp.m),
+            .spacing(COLOR_SWATCH_GAP),
         ]
         .spacing(gap.widget)
         .into(),
@@ -14753,11 +14748,10 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                         &ts.caption,
                         resolved,
                         a11y,
-                        sp.xxs,
                     )
                 })
                 .collect();
-            rows.push(row(row_items).spacing(sp.m).into());
+            rows.push(row(row_items).spacing(COLOR_SWATCH_GAP).into());
         }
 
         let mut col = column![text("Resolved Theme Colors (defaults + per-widget)").role(
@@ -14801,6 +14795,37 @@ fn color_to_hex(c: Color) -> String {
     native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a).to_string()
 }
 
+/// The padding round a colour swatch's hex (spec §3.1): the showcase's own,
+/// 6 px above and below and 4 at the sides, as the theme states no swatch.
+/// The Widget Info of each swatch table says so ([`SWATCHES_LINE`]).
+const COLOR_SWATCH_PADDING: Padding = Padding {
+    top: 6.0,
+    right: 4.0,
+    bottom: 6.0,
+    left: 4.0,
+};
+
+/// The space between a colour swatch and its label (spec §3.1): the
+/// showcase's own, 2 px, as the theme states no swatch ([`SWATCHES_LINE`]).
+const COLOR_SWATCH_LABEL_GAP: f32 = 2.0;
+
+/// The space between two swatches of a Theme Map row (spec §3.1): the
+/// showcase's own, 12 px, as the theme states no swatch table, and a row of
+/// swatches is a table's, not a row of widgets ([`SWATCHES_LINE`]).
+const COLOR_SWATCH_GAP: f32 = 12.0;
+
+/// The Widget Info line of a table of colour swatches, the Theme Map's and
+/// the Layout page's Grid: the showcase's own distances it draws them at.
+const SWATCHES_LINE: (&str, &str) = (
+    "swatches",
+    "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), their \
+     label COLOR_SWATCH_LABEL_GAP (2px) below, and on the Theme Map COLOR_SWATCH_GAP \
+     (12px) apart: the showcase's own, as the theme states no swatch table",
+);
+
+/// A colour swatch: `color`'s hex on a box of it framed by `border`,
+/// padded [`COLOR_SWATCH_PADDING`], over its `label`,
+/// [`COLOR_SWATCH_LABEL_GAP`] below.
 fn color_swatch<'a>(
     label: &'a str,
     color: Color,
@@ -14808,7 +14833,6 @@ fn color_swatch<'a>(
     caption: &ResolvedTextScaleEntry,
     resolved: &ResolvedTheme,
     a11y: &AccessibilityPreferences,
-    xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let hex = color_to_hex(color);
     // Determine if text should be light or dark for contrast
@@ -14819,22 +14843,13 @@ fn color_swatch<'a>(
         Color::WHITE
     };
 
-    // Derive swatch padding from the theme spacing scale (xxs ~= 2px).
-    // Vertical uses 3×xxs, horizontal uses 2×xxs — keeps the swatch compact
-    // while scaling proportionally with the theme.
-    let swatch_pad = Padding::new(0.0)
-        .top(xxs_spacing * 3.0)
-        .bottom(xxs_spacing * 3.0)
-        .left(xxs_spacing * 2.0)
-        .right(xxs_spacing * 2.0);
-
     column![
         container(
             text(hex.clone())
                 .role(caption, resolved, a11y)
                 .color(text_color)
         )
-        .padding(swatch_pad)
+        .padding(COLOR_SWATCH_PADDING)
         .style(move |_theme: &Theme| container::Style {
             background: Some(color.into()),
             border,
@@ -14844,7 +14859,7 @@ fn color_swatch<'a>(
         .center_y(Length::Fixed(32.0)),
         text(label).role(caption, resolved, a11y),
     ]
-    .spacing(xxs_spacing)
+    .spacing(COLOR_SWATCH_LABEL_GAP)
     .align_x(iced::Center)
     .into()
 }
@@ -14862,9 +14877,8 @@ struct SwatchStyle<'s> {
     caption: &'s ResolvedTextScaleEntry,
     resolved: &'s ResolvedTheme,
     a11y: &'s AccessibilityPreferences,
-    xxs_spacing: f32,
-    swatch_spacing: f32,
-    column_spacing: f32,
+    /// `layout.widget_gap`, between a section's heading and its swatches.
+    widget_gap: f32,
 }
 
 /// One of the six families of iced's extended palette the Theme Map shows.
@@ -14937,7 +14951,7 @@ fn palette_section_info(state: &State, section: PaletteSection) -> String {
             Paint::leaf("strong.text", "strong.text", strong.text),
         ],
         &[],
-        &[],
+        &[SWATCHES_LINE],
     )
 }
 
@@ -14959,9 +14973,7 @@ fn hoverable_ext_section<'a>(
         caption,
         resolved,
         a11y,
-        xxs_spacing,
-        swatch_spacing,
-        column_spacing,
+        widget_gap,
     } = *style;
     let cs = |field: &'static str, color: Color| -> Element<'_, Message> {
         color_swatch(
@@ -14975,7 +14987,6 @@ fn hoverable_ext_section<'a>(
             caption,
             resolved,
             a11y,
-            xxs_spacing,
         )
     };
     let content: Element<'a, Message> = column![
@@ -14988,9 +14999,9 @@ fn hoverable_ext_section<'a>(
             cs("strong.color", strong.color),
             cs("strong.text", strong.text),
         ]
-        .spacing(swatch_spacing),
+        .spacing(COLOR_SWATCH_GAP),
     ]
-    .spacing(column_spacing)
+    .spacing(widget_gap)
     .into();
     hoverable(UnlistedKey::ThemeMapPalette(section), content)
 }
@@ -15725,14 +15736,14 @@ fn section_header<'a>(
     resolved: &ResolvedTheme,
     ts: &ResolvedTextScale,
     a11y: &AccessibilityPreferences,
-    sp: &Spacing,
+    widget_gap: f32,
 ) -> Element<'a, Message> {
     column![
         text(title).role(page_title(ts), resolved, a11y),
         text(description).body(resolved, a11y),
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
     ]
-    .spacing(sp.xs)
+    .spacing(widget_gap)
     .into()
 }
 
@@ -16604,7 +16615,7 @@ mod tests {
                 Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)),
                 Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Right)),
             ]);
-            let entry = Point::new(at.x + popup_pad.left + SP.s, at.y + popup_pad.top + SP.xxs);
+            let entry = Point::new(at.x + popup_pad.left + 8.0, at.y + popup_pad.top + 2.0);
             ui.point_at(entry);
             let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: entry })]);
             let _ = ui.simulate(iced_test::simulator::click());
@@ -19189,6 +19200,113 @@ mod tests {
         );
     }
 
+    /// No page, and nothing else the showcase draws, spaces or pads anything
+    /// by a bare number or by the showcase's old spacing scale (`SP`, `sp.*`),
+    /// which stand for no value of the theme's (Addendum F row 1, as the gpui
+    /// showcase's `no_page_spaces_by_a_bare_rem_multiple`): a page's sections
+    /// take `layout.section_gap`, its rows `layout.widget_gap` and its
+    /// containers `layout.container_margin` ([`Gaps`]), each none where the
+    /// theme states none, a widget its own stated padding, and a distance of
+    /// another role is a named constant of the showcase's, with its comment
+    /// and its Widget Info line (spec §3.1). A zero passes: it spaces nothing.
+    #[test]
+    fn nothing_is_spaced_by_a_bare_number() {
+        const CALLS: [&str; 8] = [
+            ".spacing(",
+            ".padding(",
+            ".padding_x(",
+            ".padding_y(",
+            "Padding::from(",
+            "Padding::from([",
+            "Padding::new(",
+            "space().height(Length::Fixed(",
+        ];
+        let source = strip_comments_and_strings(SHOWCASE);
+        let app = match source.find("mod tests {") {
+            Some(end) => &source[..end],
+            None => panic!("the test module is gone"),
+        };
+        let ident = |c: char| c.is_ascii_alphanumeric() || c == '_';
+        // The name of the last `fn` item that starts before `at`.
+        let enclosing = |at: usize| -> &str {
+            let before = &app[..at];
+            let mut end = before.len();
+            while let Some(ix) = before[..end].rfind("fn ") {
+                if ix == 0 || before[..ix].ends_with(|c: char| c.is_whitespace()) {
+                    let name = &before[ix + 3..];
+                    let len = name.find(|c: char| !ident(c)).unwrap_or(name.len());
+                    return &name[..len];
+                }
+                end = ix;
+            }
+            ""
+        };
+        let mut found = Vec::new();
+        for call in CALLS
+            .iter()
+            .copied()
+            .chain([".width(Length::Fixed("].iter().copied())
+        {
+            for (at, _) in app.match_indices(call) {
+                if call == ".width(Length::Fixed(" && !app[..at].ends_with("space()") {
+                    continue;
+                }
+                let rest = app[at + call.len()..].trim_start();
+                let literal = rest
+                    .find(|c: char| !(c.is_ascii_digit() || c == '.' || c == '_'))
+                    .map_or(rest, |len| &rest[..len]);
+                let zero = literal.chars().all(|c| c == '0' || c == '.' || c == '_');
+                if literal.is_empty() || zero || rest[literal.len()..].starts_with(ident) {
+                    continue;
+                }
+                found.push(format!(
+                    "showcase-iced.rs:{}: {call}{literal} in {}",
+                    line_at(&source, at),
+                    enclosing(at)
+                ));
+            }
+        }
+        for (at, _) in app.match_indices("SP") {
+            let before = app[..at].chars().next_back();
+            let after = app[at + 2..].chars().next();
+            if before.is_some_and(ident) || after.is_some_and(ident) {
+                continue;
+            }
+            found.push(format!(
+                "showcase-iced.rs:{}: SP in {}",
+                line_at(&source, at),
+                enclosing(at)
+            ));
+        }
+        for field in ["xxs", "xs", "s", "m"] {
+            let read = format!("sp.{field}");
+            for (at, _) in app.match_indices(read.as_str()) {
+                let before = app[..at].chars().next_back();
+                let after = app[at + read.len()..].chars().next();
+                if before.is_some_and(ident) || after.is_some_and(ident) {
+                    continue;
+                }
+                found.push(format!(
+                    "showcase-iced.rs:{}: {read} in {}",
+                    line_at(&source, at),
+                    enclosing(at)
+                ));
+            }
+        }
+        found.sort_by_key(|site| {
+            site.split(':')
+                .nth(1)
+                .and_then(|line| line.parse::<usize>().ok())
+        });
+        println!("spaced by a bare number or the old scale: {found:#?}");
+        assert!(
+            found.is_empty(),
+            "these sites space or pad by a bare number or by the showcase's old spacing \
+             scale, not by the theme's layout or a named showcase constant:\n{}",
+            found.join("\n")
+        );
+    }
+
     /// The height iced lays one line of text out in, at `size`.
     fn line_of(size: f32) -> f32 {
         f32::from(iced_core::text::LineHeight::default().to_absolute(iced::Pixels(size)))
@@ -20276,7 +20394,7 @@ mod tests {
                 None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
             };
             let (role_at, source_at) = (at(&role), at(&source));
-            let top = role_at.y - cell.y - box_px - SP.xxs;
+            let top = role_at.y - cell.y - box_px - ICON_CELL_GAP;
             assert!(
                 near(top, pad.top),
                 "{preset} (dark: {dark}): the cell's content starts {top}px down, want {}px",
@@ -22539,8 +22657,8 @@ mod tests {
     /// `menu.font.color` moves; under the pointer a fill of
     /// `menu.hover_background` and a label `menu.hover_text_color` moves. The
     /// File menu's panel reaches [`aw_menu_padding`] round its rows, which
-    /// a splice of `popover.border.padding` moves, and lies `SP.xxs` below
-    /// its title's foot; the Recent submenu's panel lies `SP.xxs` right of
+    /// a splice of `popover.border.padding` moves, and lies `AW_MENU_GAP` below
+    /// its title's foot; the Recent submenu's panel lies `AW_MENU_GAP` right of
     /// its row. The panels' padding is `popover.border.padding` inside
     /// `menu.border`'s line, the line they draw ([`aw_menu_padding`]):
     /// under kde-breeze the context entry is `popover.border.padding` plus
@@ -22628,10 +22746,10 @@ mod tests {
             ));
         }
         let clear = (row.y - pad.top) - (title.y + title.height);
-        if (clear - SP.xxs).abs() > 0.5 {
+        if (clear - AW_MENU_GAP).abs() > 0.5 {
             faults.push(format!(
                 "the File menu's panel starts {clear} px below its title's foot, want {}",
-                SP.xxs
+                AW_MENU_GAP
             ));
         }
 
@@ -22649,10 +22767,10 @@ mod tests {
         );
         let pad = aw_menu_padding(&theirs);
         let clear = (sub.x - pad.left) - (recent.x + recent.width);
-        if (clear - SP.xxs).abs() > 0.5 {
+        if (clear - AW_MENU_GAP).abs() > 0.5 {
             faults.push(format!(
                 "the Recent submenu's panel starts {clear} px right of its row, want {}",
-                SP.xxs
+                AW_MENU_GAP
             ));
         }
 
@@ -22991,7 +23109,7 @@ mod tests {
                     "menu.border.line_width",
                 ][..],
             ),
-            (&menu, "panel offset", &["sp.xxs"][..]),
+            (&menu, "panel offset", &["AW_MENU_GAP"][..]),
             (
                 &menu,
                 "context menu",
