@@ -15,24 +15,24 @@
 # Do not edit by hand.
 
 [native-theme-gpui]
-commit = "44e1a07acbc1a4ff292f9a7c7df148fe307fc494"
-generated = "2026-10-14"
-sources = "f387372b45360ffaba2ed4fb5ff1056c79c9277fc4ee03a696c8cba675da8962"
+commit = "da9e7dc48974796ad9d283f251002090a1d0c2d7"
+generated = "2026-10-22"
+sources = "7e79f785cc98ef4ba5b419a09eb819ee982c68fe5de37af0099b5facf87ada76"
 
 [native-theme-gpui.verified]
-gpui-base = "0.7.3"
-gpui-component = "0.7.3"
-gpui-fast = "0.1.8"
-gpui-fast-apple = "0.1.8"
-gpui-fast-linux = "0.1.8"
-gpui-fast-macos = "0.1.8"
-gpui-fast-macros = "0.1.8"
-gpui-fast-platform = "0.1.8"
-gpui-fast-web = "0.1.8"
-gpui-fast-wgpu = "0.1.8"
-gpui-fast-windows = "0.1.8"
-gpui-kit = "0.7.3"
-gpui-kit-assets = "0.7.3"
+gpui-base = "0.8.0"
+gpui-component = "0.8.0"
+gpui-fast = "0.1.10"
+gpui-fast-apple = "0.1.10"
+gpui-fast-linux = "0.1.10"
+gpui-fast-macos = "0.1.10"
+gpui-fast-macros = "0.1.10"
+gpui-fast-platform = "0.1.10"
+gpui-fast-web = "0.1.10"
+gpui-fast-wgpu = "0.1.10"
+gpui-fast-windows = "0.1.10"
+gpui-kit = "0.8.0"
+gpui-kit-assets = "0.8.0"
 gpui-pre = "0.3.9"
 
 [native-theme-iced]
