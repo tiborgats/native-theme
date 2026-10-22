@@ -241,11 +241,6 @@ mod probes {
     pub const ICON_CELL: &str = "probe-icon-cell";
     /// The Icons page's second role cell, beside the first.
     pub const ICON_CELL_SECOND: &str = "probe-icon-cell-second";
-    /// Each row of the Icons page's grid but the second; a search finds the
-    /// first.
-    pub const ICON_GRID_ROW: &str = "probe-icon-grid-row";
-    /// The Icons page's second grid row, under the first.
-    pub const ICON_GRID_ROW_SECOND: &str = "probe-icon-grid-row-second";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
     /// The Display page's two Styled Containers and its Theme Information
@@ -14853,35 +14848,28 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget);
 
-    // The grid: rows of 6 icons each, its cells and its rows a gallery's,
-    // `ICON_GRID_GAP_REMS` of the gpui rem apart, as the gpui showcase's.
+    // The grid: the cells, each sized to its content, wrapping onto as many
+    // lines as the page's width needs, its cells and its lines a gallery's,
+    // `ICON_GRID_GAP_REMS` of the gpui rem apart, as the gpui showcase's
+    // `flex_wrap` of cells (`pages/icons.rs`).
     let grid_gap = gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y);
-    let icons_per_row = 6;
-    let grid_rows: Vec<Element<'_, Message>> = state
+    let cells: Vec<Element<'_, Message>> = state
         .loaded_icons
-        .chunks(icons_per_row)
+        .iter()
         .enumerate()
-        .map(|(row_index, icons)| {
-            let row_icons: Vec<Element<'_, Message>> = icons
-                .iter()
-                .enumerate()
-                .map(|(index, loaded)| {
-                    let id = if row_index == 0 && index == 1 {
-                        probes::ICON_CELL_SECOND
-                    } else {
-                        probes::ICON_CELL
-                    };
-                    build_icon_cell(loaded, id, resolved, &ts.caption, a11y)
-                })
-                .collect();
-            let id = if row_index == 1 {
-                probes::ICON_GRID_ROW_SECOND
+        .map(|(index, loaded)| {
+            let id = if index == 1 {
+                probes::ICON_CELL_SECOND
             } else {
-                probes::ICON_GRID_ROW
+                probes::ICON_CELL
             };
-            probe(id, Length::Shrink, row(row_icons).spacing(grid_gap))
+            build_icon_cell(loaded, id, resolved, &ts.caption, a11y)
         })
         .collect();
+    let grid = row(cells)
+        .spacing(grid_gap)
+        .wrap()
+        .vertical_spacing(grid_gap);
 
     let animated_section = view_animated_icons(state);
     column![
@@ -14890,7 +14878,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         animated_section,
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-        column(grid_rows).spacing(grid_gap),
+        grid,
     ]
     // Header, icon-set summary, animated section and grid are the sections
     // of the tab, the same role the other tab roots give `gap.section`.
@@ -14977,9 +14965,10 @@ const ICON_CELL_GAP_REMS: f32 = 0.25;
 const ICON_CELL_PADDING_REMS: f32 = 0.5;
 
 /// An Icons page cell: the icon loaded for its role, its role and its
-/// source, [`ICON_CELL_GAP_REMS`] apart and centred in the cell, on a card's
-/// fill (`styles::container_card`), padded [`ICON_CELL_PADDING_REMS`] round
-/// them, as the gpui showcase's gallery cell.
+/// source, [`ICON_CELL_GAP_REMS`] apart and centred on one another, on a
+/// card's fill (`styles::container_card`), padded [`ICON_CELL_PADDING_REMS`]
+/// round them and as wide as the widest of them, as the gpui showcase's
+/// gallery cell is sized to its content (`demo::icon_cell`).
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     probe_id: &'static str,
@@ -15021,8 +15010,7 @@ fn build_icon_cell<'a>(
                 .align_x(iced::Center),
             )
             .padding(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y))
-            .style(styles::container_card(resolved))
-            .center_x(Length::Fixed(100.0)),
+            .style(styles::container_card(resolved)),
         ),
     )
 }
@@ -21128,7 +21116,8 @@ mod tests {
     }
 
     /// Addendum F row 1, "a gallery's grid": the Icons page's cells, and
-    /// its grid's rows, are [`ICON_GRID_GAP_REMS`] of the gpui rem apart,
+    /// the lines its grid wraps onto, are [`ICON_GRID_GAP_REMS`] of the gpui
+    /// rem apart,
     /// the gpui showcase's `ICON_GRID_GAP` (`rems(0.5)`), a half of the
     /// scaled `defaults.font.size`, as the cells are a gallery's, not a row
     /// of widgets: under every bundled preset in both modes, read from the
@@ -21144,16 +21133,22 @@ mod tests {
                 .scaled(state.current_resolved.defaults.font.size)
                 * 0.5;
             let mut ui = interface(&state);
-            let [first, second, row, next_row] = [
-                probes::ICON_CELL,
-                probes::ICON_CELL_SECOND,
-                probes::ICON_GRID_ROW,
-                probes::ICON_GRID_ROW_SECOND,
-            ]
-            .map(|id| probe_bounds(&mut ui, id));
+            let [first, second] =
+                [probes::ICON_CELL, probes::ICON_CELL_SECOND].map(|id| probe_bounds(&mut ui, id));
+            // The grid's first line, and the first cell of its second.
+            let cells = every_probe(&mut ui, probes::ICON_CELL);
+            let line_foot = cells
+                .iter()
+                .chain([&second])
+                .filter(|cell| (cell.y - first.y).abs() < 0.5)
+                .map(|cell| cell.y + cell.height)
+                .fold(first.y + first.height, f32::max);
+            let Some(next_line) = cells.iter().find(|cell| cell.y > first.y + 0.5) else {
+                panic!("{preset} (dark: {dark}): the icon grid has one line");
+            };
             for (what, drawn) in [
                 ("two cells", second.x - (first.x + first.width)),
-                ("two rows", next_row.y - (row.y + row.height)),
+                ("two lines", next_line.y - line_foot),
             ] {
                 assert!(
                     near(drawn, want),
@@ -21320,6 +21315,94 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// Every container the tests tagged `id` ([`probe`]), by its bounds, in
+    /// the order the interface lays them out.
+    fn every_probe(ui: &mut Simulator<'_, Message>, id: &'static str) -> Vec<Rectangle> {
+        let wanted = iced::widget::Id::new(id);
+        let mut found = Vec::new();
+        {
+            let sink = &mut found;
+            let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
+                if let Candidate::Container {
+                    id: Some(at),
+                    bounds,
+                    ..
+                } = candidate
+                    && *at == wanted
+                {
+                    sink.push(bounds);
+                }
+                None
+            });
+        }
+        found
+    }
+
+    /// M9b Step 8 round 4, A2 (theme-data, ux): the Icons page's cells take
+    /// their size from their content, as the gpui showcase's gallery cells
+    /// do (a `flex_wrap` of cells sized to their icon and name,
+    /// `showcase-gpui/pages/icons.rs`, `demo::icon_cell`), so no label runs
+    /// past its cell's padding: under every bundled preset in both modes,
+    /// each role and source label, as iced shapes it on one line, lies
+    /// inside its cell's [`ICON_CELL_PADDING_REMS`] and is centred in it.
+    #[test]
+    fn every_icon_label_lies_inside_its_cell() {
+        let mut faults = Vec::new();
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            state.reload_icons();
+            state.active_tab = Tab::Icons;
+            let r = &state.current_resolved;
+            let a11y = &state.accessibility;
+            let caption = &r.text_scale.caption;
+            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, a11y);
+            let (size, line) = (
+                scaled_text_size(caption.size, a11y),
+                scaled_text_size(caption.line_height, a11y),
+            );
+            let mut ui = interface(&state);
+            let cells: Vec<Rectangle> = [probes::ICON_CELL, probes::ICON_CELL_SECOND]
+                .into_iter()
+                .flat_map(|id| every_probe(&mut ui, id))
+                .collect();
+            let found = texts(&mut ui);
+            let mut labels: Vec<String> = state
+                .loaded_icons
+                .iter()
+                .flat_map(|icon| [format!("{:?}", icon.role), icon.source.label().to_owned()])
+                .collect();
+            labels.sort();
+            labels.dedup();
+            for label in labels {
+                let width = MeasuredText::new(label.clone(), size, line, role_font(caption, r))
+                    .extent()
+                    .width;
+                for (_, at) in found.iter().filter(|(content, _)| *content == label) {
+                    let Some(cell) = cells.iter().find(|cell| cell.contains(at.center())) else {
+                        continue;
+                    };
+                    let centre = at.center_x();
+                    let (left, right) = (centre - width / 2.0, centre + width / 2.0);
+                    if left + 0.01 < cell.x + pad || right > cell.x + cell.width - pad + 0.01 {
+                        faults.push(format!(
+                            "{preset} (dark: {dark}): {label} spans {left}..{right} in a cell \
+                             {}..{} padded {pad}",
+                            cell.x,
+                            cell.x + cell.width
+                        ));
+                    }
+                    if (centre - cell.center_x()).abs() > 0.5 {
+                        faults.push(format!(
+                            "{preset} (dark: {dark}): {label} is centred at {centre}, its cell at {}",
+                            cell.center_x()
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{} faults: {faults:#?}", faults.len());
     }
 
     /// M9-154, as M9b Step 8 I1 rules it (theme-data): the Icons page's
