@@ -17,6 +17,7 @@ use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
 use crate::support::{NativeStyled as _, STEPPER_STEPS, SampleIcon, layout_value, with_gap};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    LAYOUT_FOLDER_TAB_DISABLED, LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
     LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, PROBE_STEPPER, Page, WINDOW_TITLE, probe,
@@ -144,6 +145,10 @@ impl Showcase {
         });
         let pick_step_vertical = cx.listener(|this, step: &usize, _w, cx| {
             this.step = *step;
+            cx.notify();
+        });
+        let pick_folder_tab = cx.listener(|this, ix: &usize, _w, cx| {
+            this.folder_tab = *ix;
             cx.notify();
         });
         let spacing_row = demo::spacing_box(
@@ -466,6 +471,21 @@ impl Showcase {
                 "layout-form",
                 ("layout-form-name", &self.form_name_state),
                 ("layout-form-email", &self.form_email_state),
+            ))
+            .child(demo::heading(
+                ui,
+                cx,
+                "layout-heading-folder-tabs",
+                "TabBar (Folder variant)",
+            ))
+            .child(demo::folder_tab_row(
+                ui,
+                cx,
+                LAYOUT_FOLDER_TABS,
+                &LAYOUT_FOLDER_TAB_LABELS,
+                self.folder_tab,
+                LAYOUT_FOLDER_TAB_DISABLED,
+                pick_folder_tab,
             ))
             .child(demo::heading(
                 ui,

@@ -44,7 +44,8 @@ use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
     INPUTS_FIELD_HEIGHT_ONLY, INPUTS_TEXTAREA, INSPECTOR_COPY, INSPECTOR_PANEL, INSPECTOR_TABS,
     INSPECTOR_TITLE, INSPECTOR_TOKENS_NOTE, LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE,
-    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_GROUP_BOX_NORMAL,
+    LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE, LAYOUT_FOLDER_TAB_DISABLED,
+    LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS, LAYOUT_GROUP_BOX_NORMAL,
     LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED, LAYOUT_SEPARATOR_SOLID,
     LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED, LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR,
     LEFT_PANEL_WIDTH, LIST_DEMO, OVERLAY_ABOUT_LINK, OVERLAY_ABOUT_NAME, OVERLAY_ABOUT_TEXT,
@@ -6980,6 +6981,123 @@ fn a_solid_separator_and_a_dashed_one_show_different_infos(cx: &mut TestAppConte
     assert!(
         texts.first() != texts.get(1),
         "the solid and the dashed Separator show the same info: {texts:?}"
+    );
+}
+
+/// Two unselected Folder tabs side by side, the second and the third
+/// (`demo::folder_tab_row` tags each tab `{id}-tab-{ix}`; the first is
+/// selected), and the disabled one.
+const FOLDER_TAB_SECOND: &str = "layout-folder-tabs-tab-1";
+const FOLDER_TAB_THIRD: &str = "layout-folder-tabs-tab-2";
+const FOLDER_TAB_DISABLED: &str = "layout-folder-tabs-tab-3";
+
+/// The Layout page shows GPUI Kit 0.8.0's Folder TabBar (spec §5), the
+/// first of its tabs selected and the one `LAYOUT_FOLDER_TAB_DISABLED`
+/// names disabled.
+#[gpui::test]
+fn the_layout_page_draws_the_folder_tab_bar(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    assert!(
+        cx.debug_bounds(LAYOUT_FOLDER_TABS).is_some(),
+        "the Layout page renders no `{LAYOUT_FOLDER_TABS}`"
+    );
+    assert_eq!(
+        LAYOUT_FOLDER_TAB_LABELS.get(LAYOUT_FOLDER_TAB_DISABLED),
+        Some(&"Disabled"),
+        "the disabled Folder tab is not the one labelled so"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.folder_tab),
+        0,
+        "the Folder TabBar does not start on its first tab"
+    );
+}
+
+/// The Folder TabBar paints its bar in `tab_bar` (gpui-component
+/// `tab/tab_bar.rs:424`) and the 1px separator between two unselected tabs
+/// in `border` (`tab/tab.rs:1025`), the colours its Widget Info claims, read
+/// off the painted scene under the first two bundled presets whose mapped
+/// `tab_bar` and `border` are opaque. The pointer is kept off the bar: a
+/// hovered tab hides the separators beside it (`tab/tab_bar.rs:499-528`).
+#[gpui::test]
+fn the_folder_tab_bar_paints_its_bar_and_separators_in_their_claims(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let mut checked = Vec::new();
+    for preset in native_theme::theme::Theme::list_presets() {
+        if checked.len() == 2 {
+            break;
+        }
+        use_preset(&mut cx, &showcase, preset.key);
+        let (bar, border) = cx.update(|_window, cx| {
+            let t = Theme::global(cx);
+            (t.tab_bar, t.border)
+        });
+        if bar.a < 1.0 || border.a < 1.0 {
+            continue;
+        }
+        hover(&mut cx, point(px(4.), px(4.)));
+        draw(&mut cx);
+        let row = bounds_of(&mut cx, LAYOUT_FOLDER_TABS);
+        let second = bounds_of(&mut cx, FOLDER_TAB_SECOND);
+        let third = bounds_of(&mut cx, FOLDER_TAB_THIRD);
+        let (bar_painted, separator_painted) = cx.update(|window, _cx| {
+            let scale = window.scale_factor();
+            let (row, second, third) = (row.scale(scale), second.scale(scale), third.scale(scale));
+            let quads = scene_quads(window);
+            let bar_painted = quads.iter().any(|q| {
+                q.background.as_solid() == Some(bar)
+                    && (q.bounds.top().0 - row.top().0).abs() < 0.5
+                    && (q.bounds.bottom().0 - second.bottom().0).abs() < 0.5
+                    && q.bounds.left() <= second.left()
+                    && q.bounds.right() >= third.right()
+            });
+            let separator_painted = quads.iter().any(|q| {
+                q.background.as_solid() == Some(border)
+                    && (q.bounds.size.width.0 - scale).abs() < 0.01
+                    && q.bounds.left() >= second.right()
+                    && q.bounds.right() <= third.left()
+            });
+            (bar_painted, separator_painted)
+        });
+        assert!(
+            bar_painted,
+            "{}: no quad under the Folder tabs is painted in tab_bar {bar:?}",
+            preset.key
+        );
+        assert!(
+            separator_painted,
+            "{}: no 1px quad between two unselected Folder tabs is painted in border {border:?}",
+            preset.key
+        );
+        checked.push(preset.key);
+    }
+    assert_eq!(
+        checked.len(),
+        2,
+        "fewer than two bundled presets map an opaque tab_bar and border: {checked:?}"
+    );
+}
+
+/// A click on a Folder tab selects it, the showcase keeping the state; a
+/// click on the disabled one selects nothing (gpui-base `tabs.rs:174-179`
+/// drops a disabled tab's click handler).
+#[gpui::test]
+fn a_click_selects_a_folder_tab_and_not_the_disabled_one(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    click(&mut cx, FOLDER_TAB_SECOND);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.folder_tab),
+        1,
+        "a click on the second Folder tab did not select it"
+    );
+    click(&mut cx, FOLDER_TAB_DISABLED);
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.folder_tab),
+        1,
+        "a click on the disabled Folder tab changed the selection"
     );
 }
 

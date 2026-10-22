@@ -395,6 +395,8 @@ pub(crate) struct Showcase {
     pub(crate) carousel_state: Entity<CarouselState>,
     /// The `Stepper`'s current step, written by its `on_click`.
     pub(crate) step: usize,
+    /// The selected tab of the Folder TabBar, written by its `on_click`.
+    pub(crate) folder_tab: usize,
 
     // Typography page
     pub(crate) editor_state: Entity<EditorState>,
@@ -1545,6 +1547,7 @@ impl Showcase {
             collapsible_open: true,
             carousel_state,
             step: 1,
+            folder_tab: 0,
             editor_state,
             diff_state,
             table_state,

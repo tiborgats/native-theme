@@ -2056,6 +2056,12 @@ model, the platform presets and the three connectors
       hover (`tab/tab.rs:187`); every preset has a different
       `tab.hover_background` (Breeze: `#dee0e2` against the button's
       `#93cee9`). The default `Tab` variant has no hover fill and is unaffected.
+      G3 T6 (2026-10-22): GPUI Kit 0.8.0's `TabVariant::Folder` hovers with a
+      button token the same way, an inset fill in `tokens.secondary`
+      (gpui-component 0.8.0 `tab/tab.rs:1012`), which the connector maps from
+      `button.background_color` (native-theme-gpui `src/colors.rs:205`), so
+      `tab.hover_background` reaches neither; the gpui showcase's Layout page
+      shows the Folder bar, its Widget Info noting the hover so.
 - [ ] [upstream] `InputGroupButton` should hover with the platform's button hover, not
       `muted`: `render_in_group` hardcodes `cx.theme().muted` (halved in dark)
       for an in-group addon button (`input/group.rs:544-583`), which is the

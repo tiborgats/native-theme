@@ -506,6 +506,101 @@ pub fn tab_row(
         .instance("click", "selects the tab; the showcase keeps the state. A tab the bar clips is scrolled into view, the next one peeking past it (tab/tab_bar.rs, TabReveal)")
 }
 
+/// A `TabBar` of the Folder variant over `labels`, the one at `selected`
+/// shown and the one at `disabled` taking no click, above the showcase's
+/// panel, its per-call seams taken from `native` where a native theme is
+/// installed (`demo::folder_tab_row`).
+pub fn folder_tab_row(
+    t: &Theme,
+    labels: &[&'static str],
+    selected: usize,
+    disabled: usize,
+    native: Option<&ResolvedTheme>,
+) -> WidgetInfo {
+    let from = |field: &str| match native {
+        Some(_) => format!(", from defaults.border.{field}"),
+        None => String::new(),
+    };
+    let info = WidgetInfo::new("TabBar")
+        .variant("Folder")
+        .color(claim(
+            "bar",
+            "tab_bar",
+            t.tab_bar,
+            "gpui-component/tab/tab_bar.rs:424",
+        ))
+        .color(claim(
+            "label",
+            "tab_foreground",
+            t.tab_foreground,
+            "gpui-component/tab/tab.rs:211",
+        ))
+        .color(claim(
+            "hovered label",
+            "tab_active_foreground",
+            t.tab_active_foreground,
+            "gpui-component/tab/tab.rs:266",
+        ))
+        .color(claim(
+            "selected label",
+            "tab_active_foreground",
+            t.tab_active_foreground,
+            "gpui-component/tab/tab.rs:317",
+        ))
+        .color(claim(
+            "disabled label",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/tab/tab.rs:390",
+        ))
+        .color(claim(
+            "selected tab",
+            "tab_active",
+            t.tab_active,
+            "gpui-component/tab/tab.rs:998",
+        ))
+        .color(claim(
+            "hovered tab",
+            "secondary",
+            t.secondary,
+            "gpui-component/tab/tab.rs:1012",
+        ))
+        .color(claim(
+            "separator",
+            "border",
+            t.border,
+            "gpui-component/tab/tab.rs:1025",
+        ))
+        .color(claim("panel", "tab_active", t.tab_active, "showcase"))
+        .color(claim(
+            "panel text",
+            "tab_active_foreground",
+            t.tab_active_foreground,
+            "showcase",
+        ))
+        .config("corner radius", format!("radius_lg, {}px{}, at the default size this bar takes, and Theme::radius, {}px{}, at XSmall and Small, either capped at a third of the tab's height (tab/tab.rs, FolderTabMetrics::new)", px_text(t.radius_lg.as_f32()), from("corner_radius_lg"), px_text(t.radius.as_f32()), from("corner_radius")))
+        .not_themeable("one radius", "the selected tab's top corners and its curves out into the panel take the same radius, so a theme cannot give them two (tab/tab.rs, FolderTabMetrics); nor can it reach the curves alone: upstream's Folder has no seam for a theme's tab shape")
+        .not_themeable("hover", "an inset fill in secondary, a button token, which the connector maps from button.background_color, so tab.hover_background has no receiver (tab/tab.rs, RenderOnce for Tab)")
+        .not_themeable("outline", "none: the selected tab's shape is a filled path, stroked by nothing (tab/tab.rs, folder_tab_shape), so the model's tab.border is not drawn")
+        .not_themeable("separator", "1px wide in border, a px literal set inside render (tab/tab.rs, RenderOnce for Tab), drawn between two tabs neither of which is selected or hovered (tab/tab_bar.rs, RenderOnce for TabBar)")
+        .not_themeable("padding", "px literals per Size (tab/tab.rs, FolderTabMetrics::new): the bar's space above the tabs is 2, 4, 4 and 8px at XSmall, Small, the default size and Large, the tab's side padding 8, 8, 12 and 16px and the separator 12, 12, 16 and 16px tall, so the model's tab.border.padding is not applied")
+        .not_themeable("gap", "4px between two tabs, holding their separator: FOLDER_TAB_GAP, a px literal (tab/tab.rs)")
+        .not_themeable("height", "32px at the default size (20, 24 and 36px at XSmall, Small and Large), its content 24px tall (16, 18 and 28px), as Segmented's: px literals per Size (tab/tab.rs, TabVariant::height and TabVariant::inner_height)");
+    let info = match native {
+        Some(r) => info
+            .config("font", format!("tab.font: {}, on each label, a child over the text_sm the Tab sets on itself (tab/tab.rs, RenderOnce for Tab)", drawn_font(&r.tab.font)))
+            .config("size", format!("at least tab.min_width, {}px, by tab.min_height, {}px, through the Tab's style, which its own h does not clear (tab/tab.rs, RenderOnce for Tab)", px_text(r.tab.min_width), px_text(r.tab.min_height))),
+        None => info.not_themeable("font", "text_sm, the Tab's own: no native theme is installed (tab/tab.rs, RenderOnce for Tab)"),
+    };
+    let shown = labels.get(selected).copied().unwrap_or("none");
+    let inert = labels.get(disabled).copied().unwrap_or("none");
+    info.instance("tabs", labels.join(", "))
+        .instance("selected", shown)
+        .instance("disabled", inert)
+        .instance("click", "selects the tab; the showcase keeps the state. The disabled tab takes none (gpui-base tabs.rs, RenderOnce for Tab)")
+        .instance("panel", "the showcase's own, under the bar, filled with tab_active, the colour of the selected tab's shape, so the tab joins it, and labelled in tab_active_foreground, the selected label's colour")
+}
+
 /// The expanders the showcase draws as `r`'s `expander.*` states them
 /// (`demo::native_expander`), reading `titles`, each `open` or not, their
 /// arrow `arrow`, of the chosen icon theme, and `gap`, the

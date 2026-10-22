@@ -2073,6 +2073,75 @@ pub(crate) fn tab_row(
         .debug_selector(move || id.into())
 }
 
+/// The height of the panel under the Folder TabBar. The model states none,
+/// so this is the showcase's own: room for its one line, in rems, so it
+/// grows with the text.
+const FOLDER_PANEL_HEIGHT: Rems = rems(4.);
+
+/// A `TabBar` of upstream's `TabVariant::Folder` over `labels`, `selected`
+/// the one shown and `disabled` the one that takes no click, above a panel
+/// filled with `tab_active`, the colour the selected tab's shape is painted
+/// in (tab/tab.rs, `folder_tab_shape`), so the tab joins it as the variant
+/// is meant to sit; a click hands `on_click` the index of the tab clicked.
+/// Each tab is tagged `{id}-tab-{ix}` for the tests.
+///
+/// What the theme states reaches it per call as [`tab_row`]'s upstream
+/// path takes it: each label a child in `tab.font` ([`text_in`]), each tab
+/// at least `tab.min_width` wide and `tab.min_height` tall. Upstream's
+/// Folder has no seam for the theme's tab shape; `widgets::TabBar` draws
+/// that.
+pub(crate) fn folder_tab_row(
+    ui: &Entity<InfoRegistry>,
+    cx: &App,
+    id: &'static str,
+    labels: &[&'static str],
+    selected: usize,
+    disabled: usize,
+    on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
+) -> Stateful<Div> {
+    let native = cx.native();
+    let row_info = info::layout::folder_tab_row(
+        cx.theme(),
+        labels,
+        selected,
+        disabled,
+        native.as_ref().map(|n| n.resolved),
+    );
+    let tabs = labels.iter().enumerate().map(|(ix, &label)| {
+        let tab = match &native {
+            Some(n) => {
+                let t = &n.resolved.tab;
+                Tab::new()
+                    .child(text_in(n, &t.font, label))
+                    .min_w(px(t.min_width))
+                    .min_h(px(t.min_height))
+            }
+            None => Tab::new().label(label),
+        };
+        tab.disabled(ix == disabled)
+            .debug_selector(move || format!("{id}-tab-{ix}"))
+    });
+    let shown = labels.get(selected).copied().unwrap_or("none");
+    v_flex()
+        .child(
+            TabBar::new(id)
+                .folder()
+                .children(tabs)
+                .selected_index(selected)
+                .on_click(on_click),
+        )
+        .child(
+            h_flex()
+                .h(FOLDER_PANEL_HEIGHT)
+                .justify_center()
+                .bg(cx.theme().tab_active)
+                .text_color(cx.theme().tab_active_foreground)
+                .child(format!("{shown}: the selected tab's panel")),
+        )
+        .info(ui, id, row_info)
+        .debug_selector(move || id.into())
+}
+
 /// A segment's side padding where `segmented_control.border` states none:
 /// upstream's own for a segment at the default Size (tab/tab.rs:113-118,
 /// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.

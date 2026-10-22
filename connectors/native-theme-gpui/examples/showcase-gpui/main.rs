@@ -525,6 +525,13 @@ pub(crate) const LAYOUT_BREADCRUMB: &str = "layout-breadcrumb";
 pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
 pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
 pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
+/// The id and debug selector of the Layout page's Folder TabBar, its tabs'
+/// labels and the one of them disabled, which
+/// `the_folder_tab_bar_paints_its_bar_and_separators_in_their_claims` and
+/// `a_click_selects_a_folder_tab_and_not_the_disabled_one` measure and click.
+pub(crate) const LAYOUT_FOLDER_TABS: &str = "layout-folder-tabs";
+pub(crate) const LAYOUT_FOLDER_TAB_LABELS: [&str; 4] = ["One", "Two", "Three", "Disabled"];
+pub(crate) const LAYOUT_FOLDER_TAB_DISABLED: usize = 3;
 /// The id and debug selector of the Layout page's TitleBar sample, drawn
 /// while the window manager draws the window's own frame (spec S8).
 pub(crate) const LAYOUT_TITLE_BAR: &str = "layout-title-bar";
