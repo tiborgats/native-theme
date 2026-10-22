@@ -1188,14 +1188,39 @@ impl IconSource {
 struct LoadedIcon {
     role: IconRole,
     data: Option<IconData>,
+    /// What the Icons page draws `data` with ([`icon_handle`]), built with
+    /// it.
+    handle: Option<IconHandle>,
     name: Option<&'static str>,
     source: IconSource,
+}
+
+/// An icon as the Icons page hands it to iced: an SVG or an RGBA image.
+#[derive(Clone, Debug, PartialEq)]
+enum IconHandle {
+    Svg(iced_core::svg::Handle),
+    Image(iced_core::image::Handle),
 }
 
 #[cfg(test)]
 thread_local! {
     /// The Material icons [`load_material`] has loaded on this thread.
     static MATERIAL_LOADS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// The icons [`icon_handle`] has converted on this thread.
+    static ICON_CONVERSIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// `data` as the Icons page draws it, an SVG coloured in `color` where it
+/// is `Some` (the connector's `to_svg_handle`), counted in
+/// [`ICON_CONVERSIONS`] under test. `None` for data iced draws neither way.
+fn icon_handle(data: &IconData, color: Option<Color>) -> Option<IconHandle> {
+    #[cfg(test)]
+    ICON_CONVERSIONS.with(|conversions| conversions.set(conversions.get() + 1));
+    match data {
+        IconData::Svg(_) => to_svg_handle(data, color).map(IconHandle::Svg),
+        IconData::Rgba(_) => native_theme_iced::icons::to_image_handle(data).map(IconHandle::Image),
+        _ => None,
+    }
 }
 
 /// `role`'s Material icon, as the Icons page loads it, counted in
@@ -1206,7 +1231,8 @@ fn load_material(role: IconRole) -> Option<IconData> {
     MaterialLoader::new(role).load()
 }
 
-/// Pre-load all 42 icons for the given choice, tracking source.
+/// Pre-load all 42 icons for the given choice, tracking source, each with
+/// the handle the Icons page draws it with.
 fn load_all_icons(
     choice: &IconSetChoice,
     resolved: &native_theme::theme::ResolvedTheme,
@@ -1222,6 +1248,9 @@ fn load_all_icons(
     // Foreground color for GTK symbolic icons (Adwaita, Yaru, etc.), SF Symbols, Segoe glyphs
     let tc = resolved.defaults.text_color;
     let fg = Some(tc);
+    // A bundled monochrome set's SVG is coloured in the same colour as it
+    // becomes a handle; a system set's loader has coloured its icon.
+    let color = (!is_system_set).then(|| to_color(tc));
 
     IconRole::ALL
         .iter()
@@ -1248,6 +1277,7 @@ fn load_all_icons(
             };
             LoadedIcon {
                 role,
+                handle: data.as_ref().and_then(|data| icon_handle(data, color)),
                 data,
                 name,
                 source,
@@ -13610,9 +13640,6 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     ]
     .spacing(sp.xs);
 
-    // Use the theme's foreground color for colorizing icons
-    let fg_color = state.current_theme.palette().text;
-
     // Build grid rows of 6 icons each
     let icons_per_row = 6;
     let grid_rows: Vec<Element<'_, Message>> = state
@@ -13621,14 +13648,14 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         .map(|icons| {
             let row_icons: Vec<Element<'_, Message>> = icons
                 .iter()
-                .map(|loaded| {
-                    build_icon_cell(loaded, resolved, fg_color, &ts.caption, a11y, sp.xxs)
-                })
+                .map(|loaded| build_icon_cell(loaded, resolved, &ts.caption, a11y, sp.xxs))
                 .collect();
             row(row_icons).spacing(gap.widget).into()
         })
         .collect();
 
+    // The theme's foreground colour, which the animated icons are tinted in.
+    let fg_color = state.current_theme.palette().text;
     let animated_section = view_animated_icons(state, fg_color);
     let mut content = column![
         header,
@@ -13766,7 +13793,6 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     resolved: &ResolvedTheme,
-    fg_color: Color,
     caption: &ResolvedTextScaleEntry,
     a11y: &AccessibilityPreferences,
     xxs_spacing: f32,
@@ -13776,38 +13802,16 @@ fn build_icon_cell<'a>(
     let icon_px = resolved.defaults.icon_sizes.toolbar;
     let cell_px = resolved.defaults.icon_sizes.large;
 
-    let icon_element: Element<'a, Message> = match &loaded.data {
-        Some(data @ IconData::Svg(_)) => {
-            if loaded.source == IconSource::System {
-                // System icons: render as-is without colorization
-                match native_theme_iced::icons::to_svg_handle(data, None) {
-                    Some(handle) => svg(handle)
-                        .width(Length::Fixed(icon_px))
-                        .height(Length::Fixed(icon_px))
-                        .into(),
-                    None => placeholder_icon(icon_px),
-                }
-            } else {
-                // Bundled: colorize with theme foreground
-                match native_theme_iced::icons::to_svg_handle(data, Some(fg_color)) {
-                    Some(handle) => svg(handle)
-                        .width(Length::Fixed(icon_px))
-                        .height(Length::Fixed(icon_px))
-                        .into(),
-                    None => placeholder_icon(icon_px),
-                }
-            }
-        }
-        Some(data @ IconData::Rgba { .. }) => {
-            match native_theme_iced::icons::to_image_handle(data) {
-                Some(handle) => iced::widget::image(handle)
-                    .width(Length::Fixed(icon_px))
-                    .height(Length::Fixed(icon_px))
-                    .into(),
-                None => placeholder_icon(icon_px),
-            }
-        }
-        _ => placeholder_icon(icon_px),
+    let icon_element: Element<'a, Message> = match loaded.handle.clone() {
+        Some(IconHandle::Svg(handle)) => svg(handle)
+            .width(Length::Fixed(icon_px))
+            .height(Length::Fixed(icon_px))
+            .into(),
+        Some(IconHandle::Image(handle)) => iced::widget::image(handle)
+            .width(Length::Fixed(icon_px))
+            .height(Length::Fixed(icon_px))
+            .into(),
+        None => placeholder_icon(icon_px),
     };
 
     hoverable(
@@ -16844,6 +16848,42 @@ mod tests {
             assert_eq!(loads(set), 0, "{set:?}: Material loaded with its icons");
         }
         assert_eq!(loads(Material), IconRole::ALL.len(), "Material's own");
+    }
+
+    /// M9-094: the Icons page draws each icon from the handle its load
+    /// built, so a view converts none, where every view (twenty a second
+    /// while the page's indicators animate) re-coloured each bundled SVG
+    /// into a new handle and copied each RGBA image; a reload builds each
+    /// loaded icon's handle once.
+    #[test]
+    fn the_icons_page_draws_the_handles_its_load_built() {
+        let conversions = || ICON_CONVERSIONS.with(std::cell::Cell::get);
+        let mut state = State {
+            active_tab: Tab::Icons,
+            ..State::default()
+        };
+        let loaded = state.loaded_icons.iter().filter(|icon| icon.data.is_some());
+        let loaded = loaded.count();
+        assert!(loaded > 0, "no icon loaded");
+        ICON_CONVERSIONS.with(|conversions| conversions.set(0));
+        let _ = view(&state);
+        assert_eq!(conversions(), 0, "a view of the Icons page converted icons");
+        state.reload_icons();
+        assert_eq!(
+            conversions(),
+            loaded,
+            "a reload converts each loaded icon once"
+        );
+        let text = state.current_theme.palette().text;
+        for icon in &state.loaded_icons {
+            let color = (icon.source != IconSource::System).then_some(text);
+            let want = icon.data.as_ref().and_then(|data| icon_handle(data, color));
+            assert_eq!(
+                icon.handle, want,
+                "{:?}: not the page's colouring",
+                icon.role
+            );
+        }
     }
 
     /// The Icons page draws a freedesktop indicator as `Spinner` does, in its
