@@ -20344,6 +20344,73 @@ mod tests {
         }
     }
 
+    /// Addendum F row 1: on the pages other than Basic the controls of a row
+    /// are `layout.widget_gap` apart ([`Gaps`]), none where it is unstated,
+    /// as on the Basic page, where the showcase's own 12 px stood: under
+    /// every bundled preset in both modes, the Buttons page's Click me!
+    /// button and its counter, the Range page's slider and its value, and
+    /// the Display page's first two tooltip buttons.
+    #[test]
+    fn the_pages_rows_are_a_widget_gap_apart() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            let r = &state.current_resolved;
+            let gap = state.layout.widget_gap.unwrap_or_default();
+            let pad = native_theme_iced::button_padding(r);
+            let mut gaps = Vec::new();
+
+            state.active_tab = Tab::Buttons;
+            let mut ui = interface(&state);
+            let found = texts(&mut ui);
+            let at = |label: &str| {
+                found
+                    .iter()
+                    .find(|(content, _)| content.starts_with(label))
+                    .map(|(_, bounds)| *bounds)
+            };
+            if let (Some(click), Some(counter)) =
+                (at("Click me!"), at("Button presses this session"))
+            {
+                let end = click.x + click.width + pad.right;
+                gaps.push(("Click me! and its counter", counter.x - end));
+            } else {
+                panic!("{preset} (dark: {dark}): the Buttons page's demo row is not drawn");
+            }
+            drop(ui);
+
+            state.active_tab = Tab::Range;
+            let mut ui = interface(&state);
+            let slider = probe_bounds(&mut ui, probes::SLIDER);
+            let value = format!("{:.1}", state.slider_value);
+            let Some((_, shown)) = texts(&mut ui).into_iter().find(|(text, _)| *text == value)
+            else {
+                panic!("{preset} (dark: {dark}): the slider's value is not drawn");
+            };
+            gaps.push((
+                "the slider and its value",
+                shown.x - (slider.x + slider.width),
+            ));
+            drop(ui);
+
+            state.active_tab = Tab::Display;
+            let mut ui = interface(&state);
+            let [top, bottom, ..] = probes::DISPLAY_TOOLTIPS;
+            let (first, second) = (probe_bounds(&mut ui, top), probe_bounds(&mut ui, bottom));
+            gaps.push((
+                "the first two tooltip buttons",
+                second.x - (first.x + first.width),
+            ));
+
+            for (what, drawn) in gaps {
+                assert!(
+                    near(drawn, gap),
+                    "{preset} (dark: {dark}): {what} are {drawn}px apart, want \
+                     layout.widget_gap's {gap}px"
+                );
+            }
+        }
+    }
+
     /// M9-153 (theme-data): the Layout page's table pads its cells by
     /// `list.border.padding`, as the Basic table does, and by
     /// [`LAYOUT_CELL_PAD`] only on a side the theme leaves unstated: under
