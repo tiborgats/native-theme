@@ -5730,8 +5730,9 @@ fn info_title(info: &str) -> Option<&str> {
 }
 
 /// The window's status bar (spec §2.7, platform-facts §2.14): at its left
-/// the side-panel toggle, then the environment joined by " · "; at its right
-/// the title of what Widget Info shows. Filled with
+/// the side-panel toggle, then the environment joined by " · ", on one line
+/// cut at the room the rest leaves it; at its right the title of what Widget
+/// Info shows. Filled with
 /// `status_bar.background_color`, lettered in `status_bar.font`, padded by
 /// `status_bar.border.padding` ([`status_bar_padding`] on a side it leaves
 /// unstated), its items `layout.widget_gap` apart (none where that is
@@ -5761,16 +5762,24 @@ fn status_bar(state: &State) -> Element<'_, Message> {
             tip: tooltip::Position::Top,
         },
     );
-    let mut items = row![
-        toggle,
-        tagged(
-            "chrome.status_bar.environment",
-            text(status_environment(state).join(" · ")).themed(&s.font, resolved, a11y)
-        ),
-        space().width(Fill),
-    ]
-    .spacing(gap.widget)
-    .align_y(iced::Center);
+    // The environment on one line, in the room the toggle and the shown
+    // title leave it, cut at its edge where it is wider, as the gpui
+    // showcase's is cut short (`truncate`): iced 0.14's text wraps by default
+    // (iced_core 0.14.0 `src/text.rs:186-188`) and has no ellipsis, and a row
+    // lays its other items out first and gives a `Fill` item what they leave
+    // (`src/layout/flex.rs:98-140`), so the bar keeps one line and the title
+    // its width. Its Widget Info gives the whole text.
+    let environment = container(tagged(
+        "chrome.status_bar.environment",
+        text(status_environment(state).join(" · "))
+            .themed(&s.font, resolved, a11y)
+            .wrapping(text::Wrapping::None),
+    ))
+    .width(Fill)
+    .clip(true);
+    let mut items = row![toggle, environment]
+        .spacing(gap.widget)
+        .align_y(iced::Center);
     if let Some(title) = shown_title(state) {
         items = items.push(tagged(
             "chrome.status_bar.shown",
@@ -7541,6 +7550,14 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
         ],
         "Menu shortcut" => vec!["shortcut colour: the row's label colour".into()],
         "Tooltip" => vec![tooltip_gap_line(state).into()],
+        "Status text" if element.id == "chrome.status_bar.environment" => vec![
+            format!(
+                "the text, on one line, cut at the room the toggle and the shown title \
+                 leave it, iced's text having no ellipsis (status_bar): {}",
+                status_environment(state).join(" · ")
+            )
+            .into(),
+        ],
         "Number input" => vec!["step buttons: iced_aw's, in the field's text colour".into()],
         _ => Vec::new(),
     }
@@ -25209,6 +25226,76 @@ mod tests {
                 bar.y + bar.height - items_bottom
             );
         }
+    }
+
+    /// The status bar stays one line high at the window's default size
+    /// whatever its environment text: a font label far wider than the bar
+    /// (a made-up family no system has, so the label names the family iced
+    /// draws instead, on any host) is cut at the room the toggle and the
+    /// shown title leave it, as the gpui showcase's is (c0d6d530), where it
+    /// wrapped the bar to a second line and squeezed the shown title. The
+    /// title keeps the width it has beside a short environment, the
+    /// environment ends before it, and its Widget Info gives the whole text.
+    #[test]
+    fn a_long_environment_keeps_the_status_bar_one_line_high() {
+        let bar_with = |family: Option<&str>| {
+            let mut state = loaded("kde-breeze", false);
+            if let Some(family) = family {
+                state.current_resolved.defaults.font.family = family.into();
+            }
+            state.shown_info = Some(ShownInfo::Unlisted("Button · Normal".to_owned()));
+            let environment = status_environment(&state).join(" · ");
+            let (drawn, _) = drawn_frame(&state);
+            let rect = |id: &str| match drawn.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{id} is not drawn"),
+            };
+            (
+                environment,
+                rect("chrome.status_bar"),
+                rect("chrome.status_bar.environment"),
+                rect("chrome.status_bar.shown"),
+            )
+        };
+        let (_, short_bar, _, short_title) = bar_with(None);
+        let family = "No Such Family For The Status Bar Test ".repeat(6);
+        let (environment, bar, drawn_environment, title) = bar_with(Some(family.trim_end()));
+        assert!(
+            environment.chars().count() > 300,
+            "the environment is not long: {environment}"
+        );
+        assert!(
+            near(bar.height, short_bar.height),
+            "the status bar is {}px high beside a long environment, {}px beside a short one",
+            bar.height,
+            short_bar.height
+        );
+        assert!(
+            near(title.width, short_title.width) && near(title.height, short_title.height),
+            "the shown title is {title:?} beside a long environment, {short_title:?} beside a \
+             short one"
+        );
+        assert!(
+            drawn_environment.x + drawn_environment.width <= title.x + 0.01,
+            "the environment {drawn_environment:?} runs under the shown title {title:?}"
+        );
+        assert!(
+            title.x + title.width <= bar.x + bar.width + 0.01,
+            "the shown title {title:?} runs past the bar {bar:?}"
+        );
+        let mut state = loaded("kde-breeze", false);
+        state.current_resolved.defaults.font.family = family.trim_end().into();
+        let info = match elements::element("chrome.status_bar.environment") {
+            Some(element) => element_info(&state, element),
+            None => panic!("chrome.status_bar.environment is not in the list"),
+        };
+        assert!(
+            info.not_themeable
+                .iter()
+                .any(|line| line.ends_with(&environment)),
+            "the environment's Widget Info does not give the whole text: {:?}",
+            info.not_themeable
+        );
     }
 
     /// M9-134, F row 3: the chrome's Widget Info names the constants and the
