@@ -7415,7 +7415,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "font.color") => "tab_style: a tab's text colour at rest".into(),
         #[cfg(feature = "iced_aw")]
         ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
-            "TabBar::tab_width and height, fixed: iced_aw takes no minimum".into()
+            "TabBar::tab_width, tab.min_width or the wider label inside iced_aw's \
+             paddings (aw_tab_width), and height, fixed: iced_aw takes no minimum"
+                .into()
         }
         ("tab", "min_width_px" | "min_height_px") => {
             "at_least(label, ..): the minimum less the padding".into()
@@ -9171,13 +9173,24 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
     #[cfg(feature = "iced_aw")]
     let tab_row: Element<'_, Message> = {
         let [one, two] = BASIC_TABS;
+        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
+        // and takes a padding whole.
+        let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
+        // Every tab one width that fits the wider label, never below
+        // tab.min_width, as the Extra page's bar ([`aw_tab_width`]), so no
+        // label wraps.
+        let tab_width = aw_tab_width(
+            state,
+            &BASIC_TABS,
+            tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING)),
+        );
         let bar = TabBar::new(Message::BasicTabSelected)
             .push(0, TabLabel::Text(one.to_string()))
             .push(1, TabLabel::Text(two.to_string()))
             .set_active_tab(&state.basic_tab)
             .text_size(scaled_text_size(tab_t.font.size, &state.accessibility))
             .text_font(theme_font(&tab_t.font))
-            .tab_width(Length::Fixed(tab_t.min_width))
+            .tab_width(Length::Fixed(tab_width))
             .height(Length::Fixed(tab_t.min_height))
             .width(Length::Shrink)
             .style(styles::aw::tab_bar(resolved));
@@ -9186,18 +9199,16 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
         // `layout`), so the bar cannot wrap as the page's other rows do; the
         // page's column rule leaves every column room for the two tabs at
-        // `tab.min_width`, `tab.item_gap` apart, which is their width here.
+        // `tab.min_width`, `tab.item_gap` apart, which is their width here
+        // wherever "One" and "Two" fit in it.
         let bar = match tab_t.item_gap {
             Some(gap) => bar.spacing(gap),
             None => bar,
         };
-        // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41)
-        // and takes a padding whole.
-        let bar: Element<'_, Message> =
-            match native_theme_iced::stated_padding(&tab_t.border.padding) {
-                Some(padding) => bar.padding(padding).into(),
-                None => bar.into(),
-            };
+        let bar: Element<'_, Message> = match tab_padding {
+            Some(padding) => bar.padding(padding).into(),
+            None => bar.into(),
+        };
         // The tabs are the bar's row's nodes, one per label
         // (iced_aw 0.14.1 `src/widget/tab_bar.rs:406-409`).
         let bar: Element<'_, Message> = tagged("basic.tabs.bar", bar)
@@ -9213,7 +9224,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
                 .then(|| native_theme_iced::tab_indicator_line(resolved))
                 .flatten();
             container(line.unwrap_or_else(|| iced::widget::Space::new().into()))
-                .width(Length::Fixed(tab_t.min_width))
+                .width(Length::Fixed(tab_width))
                 .height(Fill)
                 .into()
         });
@@ -24079,6 +24090,70 @@ mod tests {
                             "{preset} {mode:?}: the {label} tab is {}px wide, tab.min_width {}",
                             tab.width, t.min_width
                         ));
+                    }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9b Step 8, round 2 (ux): the Basic page's `iced_aw` `TabBar` takes
+    /// the Extra page's rule ([`aw_tab_width`]): both tabs one width that
+    /// fits the wider label, never below `tab.min_width`, so no label wraps.
+    /// iced_aw lays a label out at its text size plus one inside a `Column`
+    /// padded [`AW_TAB_LABEL_PADDING`] inside the tab's padding (iced_aw
+    /// 0.14.1 `src/widget/tab_bar.rs:398-417`, `:490-495`), so a label stays
+    /// on one line where its tab holds its one-line width and those
+    /// paddings. Under kde-breeze and catppuccin-mocha, in both modes, at
+    /// the stated `tab.min_width` and with it spliced to 20 px, narrower
+    /// than "One", each tab, as the layout dump records it, holds its label
+    /// so and is at least `tab.min_width` wide.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_basic_tab_labels_are_one_whole_line() {
+        let mut faults = Vec::new();
+        for preset in ["kde-breeze", "catppuccin-mocha"] {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                for narrow in [false, true] {
+                    let mut state = page_state(preset, Tab::Basic);
+                    assert!(
+                        state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode),
+                        "{preset} does not install"
+                    );
+                    if narrow {
+                        state.current_resolved.tab.min_width = 20.0;
+                    }
+                    let t = &state.current_resolved.tab;
+                    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+                    let padding = native_theme_iced::stated_padding(&t.border.padding)
+                        .unwrap_or(Padding::new(AW_TAB_PADDING));
+                    let (drawn, _) = drawn_frame(&state);
+                    for (label, tab_id) in BASIC_TABS
+                        .into_iter()
+                        .zip(["basic.tabs.one", "basic.tabs.two"])
+                    {
+                        let what = format!("{preset} {mode:?} (narrow: {narrow}): {label}");
+                        let Some(tab) = drawn.get(tab_id) else {
+                            faults.push(format!("{what}: not drawn"));
+                            continue;
+                        };
+                        let one_line =
+                            MeasuredText::new(label.to_owned(), size, size, theme_font(&t.font))
+                                .extent()
+                                .width;
+                        let holds = one_line + 2.0 * AW_TAB_LABEL_PADDING + padding.x();
+                        if tab.width + 0.01 < holds {
+                            faults.push(format!(
+                                "{what}: the tab is {}px wide, its label on one line needs {holds}",
+                                tab.width
+                            ));
+                        }
+                        if tab.width + 0.01 < t.min_width {
+                            faults.push(format!(
+                                "{what}: the tab is {}px wide, tab.min_width {}",
+                                tab.width, t.min_width
+                            ));
+                        }
                     }
                 }
             }
