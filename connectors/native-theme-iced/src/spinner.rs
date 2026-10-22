@@ -323,6 +323,7 @@ mod tests {
     use super::*;
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     use crate::icon_fixture::Child;
+    #[cfg(feature = "material-icons")]
     use crate::icons::to_svg_handle;
 
     #[test]

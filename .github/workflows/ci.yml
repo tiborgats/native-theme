@@ -56,6 +56,9 @@ jobs:
       - name: Clippy (iced connector, iced_aw, watch, native)
         if: matrix.package == 'native-theme-iced'
         run: cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
+      - name: Clippy (iced connector, the showcase's required features)
+        if: matrix.package == 'native-theme-iced'
+        run: cargo clippy -p native-theme-iced --all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping
       - name: Clippy (egui connector, all features)
         if: matrix.package == 'native-theme-egui'
         run: cargo clippy -p native-theme-egui --all-targets --all-features

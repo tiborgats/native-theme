@@ -706,6 +706,11 @@ run_tests "test (native-theme-iced, iced_aw, watch, native)" \
     cargo test -p native-theme-iced --features iced_aw,watch,native
 run_check "clippy (native-theme-iced, iced_aw, watch, native)" \
     cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native -- -D warnings
+# The `Spinner` without the bundled icon sets: the showcase's required
+# features alone, which leave the `material-icons`-gated tests out, so an
+# import only they use warns where no other run sees it.
+run_check "clippy (native-theme-iced, the showcase's required features)" \
+    cargo clippy -p native-theme-iced --all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: egui connector configurations

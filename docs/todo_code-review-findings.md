@@ -12599,6 +12599,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Status:** fixed — the commit that files this entry (M9b T12 fix round 1): `menu_item` builds both menus' rows; `the_extra_menus_hold_their_text_at_every_text_scale` expects the context entry at the drop-downs' row height and fails on the old code (material-3 at 1: 30.02 tall, want 48), and `the_extra_menu_rows_centre_their_label` fails on it (each label moves 0 px in a row 20 px taller, want 10); both pass on the new.
 *Source:* m9b-T12-review.md; m9b-T12-fix1-brief.md.
 
+#### M9-152 · M9b · bug · S4 · connectors/native-theme-iced/src/spinner.rs:326
+**Claim:** The iced connector's lib tests warn `unused import: crate::icons::to_svg_handle` wherever the `spinner` feature is on and `material-icons` is off, as in the showcase's required features alone (`--no-default-features --features widgets,spinner,system-fonts,advanced-shaping`), and no check builds that configuration, so the warning reached the branch unseen.
+**Evidence:** at `dd79fdf9` the spinner's test module imports `crate::icons::to_svg_handle` unconditionally (`spinner.rs:326`), and its one user is the `#[cfg(feature = "material-icons")]` test (`:419`, `:428`). `cargo check -p native-theme-iced --all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping` warns at `:326`. check_release's iced runs (`clippy ($crate)` with the defaults, `--no-default-features`, which compiles no spinner, and `iced_aw,watch,native`) and ci.yml's iced legs each turn `material-icons` on or `spinner` off. The import dates from d0110e91 (M8 T9a).
+**Fix proposed:** Gate the import on `material-icons`, as its user is, and lint that configuration in check_release.sh and ci.yml.
+**Verdict:** CONFIRMED by the M9b T17 review (`m9b-T17-review.md`, Minor 5).
+**Triage:** fix — CONFIRMED (M9b T17 fix round 1, the controller's ruling).
+**Status:** fixed — the commit that files this entry (M9b T17 fix round 1): the import is `#[cfg(feature = "material-icons")]`; check_release.sh and ci.yml's iced clippy gain `--all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping` (`-D warnings`), which fails on the old import and passes on the new.
+*Source:* m9b-T17-review.md; m9b-T17-fix1-brief.md.
+
 
 ### Rejected
 
