@@ -2562,7 +2562,7 @@ fn the_dragged_width_survives_the_toggle(cx: &mut TestAppContext) {
 }
 
 /// The side panel keeps its width when the window resizes, as the iced and
-/// egui showcases' does: the width it opened at, the width it was dragged
+/// egui showcases' do: the width it opened at, the width it was dragged
 /// to, and the width it comes back at once hidden and shown again, which a
 /// fresh state lays out (app.rs, `Showcase::rearrange`).
 ///
@@ -16147,7 +16147,7 @@ fn the_native_tab_rows_info_gives_its_outward_corners() {
 }
 
 /// `tab.active_outward_corner_radius_px` has its route on each element the
-/// shared list will give it: the three selected tabs draw the outward
+/// shared list gives it: the three selected tabs draw the outward
 /// corners, the three bars inset their tabs by it, and the Basic page's
 /// column rule makes room for both flares.
 #[test]

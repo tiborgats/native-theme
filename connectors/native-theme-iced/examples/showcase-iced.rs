@@ -23964,10 +23964,10 @@ mod tests {
     /// and the open tab's fill set apart, in each bar the open first tab's
     /// fill reaches 1.5 to 3 further out on each side in its bottom row than
     /// at its middle (the flares, about 2; a flare about another node lies
-    /// elsewhere), and with the radius unstated not at all. With `tab.bar_background` set apart too, the
-    /// room beside each bar, 3.5 left of the open tab at its middle, is the
-    /// bar's colour, as the bar is, and beside the `Tabs`' content panel,
-    /// below its bar, it is not.
+    /// elsewhere), and with the radius unstated not at all. With
+    /// `tab.bar_background` set apart too, the room beside each bar, 3.5
+    /// left of the open tab at its middle, is the bar's colour, as the bar
+    /// is, and beside the `Tabs`' content panel, below its bar, it is not.
     #[cfg(feature = "iced_aw")]
     #[test]
     fn the_extra_tab_bars_curve_out_at_the_open_tabs_feet() {
@@ -26951,8 +26951,10 @@ mod tests {
     /// sides), none where that is unstated. The page tabs' sides are
     /// `container_margin`, none where unstated. Both tab rows' first tabs
     /// start the room for the open tab's flares further in, where the theme
-    /// states them ([`flare_room`], windows-11's 4). Under the spliced
-    /// padding the panel's route says so.
+    /// states them: windows-11's 4, the one bundled preset's, a literal here
+    /// rather than [`flare_room`]'s, so the test does not take its room from
+    /// the code it checks. Under the spliced padding the panel's route says
+    /// so.
     #[test]
     fn the_side_panel_is_padded_as_gpuis() {
         let spliced = {
@@ -27020,8 +27022,13 @@ mod tests {
                  {left} + {content} left, {top} + {content} top, {right} + {content} right"
             );
             // The tab rows keep the room for the open tab's flares at their
-            // ends, where the theme states them.
-            let flares = flare_room(&state.current_resolved);
+            // ends, where the theme states them: windows-11's
+            // `tab.active_outward_corner_radius_px`, 4 in both variants.
+            let flares = if case.starts_with("windows-11 ") {
+                4.0
+            } else {
+                0.0
+            };
             let tab = rect("chrome.side_panel.inspector_tabs.widget");
             assert!(
                 near(tab.x - panel.x, left + content + flares),
