@@ -13080,3 +13080,21 @@ docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothi
     registry made while drawing (gpui-fast `src/fast/dependencies.rs:757-797`). The reuse kept is
     little, so `docs/todo.md` gains "**The gpui showcase keeps little of GPUI Fast's reuse.**"
     (`[1.0]`, beside the stale-dump entry).
+  - *Correction (2026-10-22, G3 T10, from the Task 9 review):* taffy 0.13.0 computes the
+    `justify-content` offset from the free space at `src/compute/flexbox.rs:1750`
+    (`compute_alignment_offset(free_space, ..)`); `:1746`, cited above, is the
+    `apply_alignment_fallback` line just before it. The `docs/todo.md` entry Task 10 adds
+    ("**File the gpui-kit issue: on gpui-pre a labelled `Separator`**") cites `:1750`.
+- **Task 10, the documents and the stamps (2026-10-22).** The Folder sample's look was
+  checked by its three tests alone, on both cores: no capture flag scrolls the Layout page
+  to it, so none of Task 9's captures shows it, and the maintainer's next
+  `generate_assets_release.sh` run will not either. Task 9's two gpui-pre differences are
+  `[upstream]` entries in `docs/todo.md` with an issue text each for the maintainer to file
+  (the taffy 0.13 Separator label; gpui-pre's rectangular clip of a rounded box). The
+  compatibility stamps: Task 10 runs `scripts/update_compatibility.sh run gpui` (its own
+  commit, after the connector's last source change). The iced stamp is left to M9b, whose
+  close runs `scripts/update_compatibility.sh run iced` after its last change to the iced
+  connector's sources (G3's Tasks 11, 13 and 15 changed them too, and Task 10 the iced
+  showcase's tests); the egui stamp is left to M9c, whose close runs `run egui` (G3's
+  Tasks 11, 13, 14 and 15 changed the egui connector's sources). Until then `scripts/check_release.sh` reports both stamps stale,
+  one of spec §11's expected items.

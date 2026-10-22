@@ -720,3 +720,33 @@ them, in the table's columns:
 | tooltip | **show_delay** (`tooltip.show_delay_ms`) | `apply` installs it as gpui-base's `TooltipDefaults` show delay, keeping the grace period, and the observer installs it again after an upstream rebuild; `tooltip_show_delay` for GPUI's own `.tooltip()` | GPUI's `.tooltip()` waits its own 500 ms unless the element is given the delay (gpui-pre `src/elements/div.rs:53`, `:1708`) | delivered for every tooltip gpui-component's overlay shows (`Button::tooltip` among them) |
 | dialog | **entrance** (`dialog.entrance`) | `geometry::dialog_entrance` for `Dialog::entrance` and `AlertDialog::entrance` | gpui-component has no scaling and no rising entrance (`dialog/entrance.rs:12-25`): `scale_fade` and `fade_rise` are both drawn as `DialogEntrance::Fade` | delivered as an approximation; a scaling entrance is on the v0.7.2 list |
 | list | **header_height** (`list.header_height_px`) | `geometry::list_header_height` for `DataTable::header_row_height` | none | delivered; `None` where the theme states none, and the header keeps the body rows' height |
+
+## Note: gpui-component 0.8.0
+
+Appended 2026-10-22 (G3); the text above is left as written. In v0.7.0 the
+connector moves on to gpui-component, gpui-base and gpui-kit 0.8.0, on
+gpui-pre 0.3.9 or GPUI Fast 0.1.10, and the citations below are at 0.8.0.
+
+- **The theme is unchanged.** gpui-component 0.8.0's `src/theme/` is 0.7.3's
+  file for file, so `ThemeColor` keeps its 139 fields and the base-palette
+  fields of `ThemeConfigColors` are still private (`theme/schema.rs:643-677`).
+  The rows above stand.
+- **`TabVariant::Folder`** is new (`TabBar::folder`, `tab/tab.rs:681`): a
+  selected tab drawn as a folder tab, its shape in `tokens.tab_active`
+  (`folder_tab_shape`, `:445`), its hover an inset fill in
+  `tokens.secondary`, a button token (`:1012`). The gpui showcase's Layout
+  page shows it, its Widget Info claiming each colour and noting the
+  literals. It is not the receiver of a theme's folder shape: the theme's
+  outward tab corners, `tab.active_outward_corner_radius` (stated by
+  `windows-11`), are drawn by the connector's own `widgets::TabBar`
+  (`TabLook::outward_radius`), which paints them after the tabs.
+- **Scroll bounce is not modelled.** gpui-base's `ScrollBounce` bounces by
+  build target, on macOS, iOS and Android (`scroll_bounce.rs:170-178`), and
+  never under reduce motion (`:551`), which the connector forwards from the
+  OS; no platform documents a user setting for it, and neither egui nor iced
+  has a receiver. The README's *What gets mapped* says so.
+- **One v0.7.2 item is resolved upstream:** gpui-kit 0.8.0's `GPUI_FAST`
+  (`src/lib.rs:122`) is the gpui-fast marker constant the list asked for, and
+  `ROADMAP.md` drops it. The others were re-read at 0.8.0 and re-cited where
+  their lines moved (`Tab`'s height, radius and text size at
+  `tab/tab.rs:958-966`, the TextView rule at gpui-base `text/node.rs:4296`).

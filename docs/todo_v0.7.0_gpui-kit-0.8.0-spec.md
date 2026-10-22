@@ -1523,6 +1523,15 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
 - When: at an M9b boundary where M9b's T19 (the shared list's header) is done or not begun
   and no M9b task is open on the iced `src/contract.rs` test it re-words; should M9c have
   started, no M9c task open on egui's `src/style/variants.rs` (rationale K16).
+- *Added 2026-10-22 (G3 T10), correcting the CHANGELOG's Added line above (the G3 T15
+  review's Important I1):* "in the three connectors' tab bars" said more than the connectors
+  draw. Only gpui's `widgets::TabBar` draws the shape (gpui-component's own `TabBar` does
+  not); iced draws it in a bar an application wraps in `tab_flares`, not through its tab
+  styles; the egui connector ships no tab bar, and an application reads the radius from the
+  resolved theme, as the egui showcase does (rationale K15). The line reads: "…so its
+  selected tab takes WinUI 3's folder shape in gpui's `widgets::TabBar` and in the bars
+  iced's `tab_flares` wraps (an egui application reads it from the resolved theme: the egui
+  connector ships no tab bar); the three showcases' tab rows draw it".
 
 ### 12.7 Documents, by task
 

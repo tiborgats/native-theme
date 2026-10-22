@@ -1814,6 +1814,8 @@ model, the platform presets and the three connectors
       has no text support and does not reach it). Once a gpui-fast-web
       release drops the exact pin, `cargo update -p unicode-properties` and
       check the lockfile is back on 0.1.4.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* gpui-fast-web 0.1.10 still pins
+      `unicode-properties = "=0.1.3"`, so the lockfile stays on 0.1.3.
 
 - [ ] [upstream] **File the gpui-fast issue: `Window::painted_quads()` omits
       what a rounded clip and a scroll layer paint.** For the maintainer to
@@ -1884,6 +1886,94 @@ model, the platform presets and the three connectors
       so that drawing writes nothing gpui tracks, and the frame's end
       notifying only where the frame changed what the registry decides, as
       it does now. Found 2026-10-22 (G3 Task 9).
+      G3 T9 review (2026-10-22): two views depend on the entity for their
+      rebuilds: `Showcase` records into it while it draws (`app.rs`,
+      `elements::record(&self.info_ui, ..)`), and `Inspector` observes it
+      and reads what it shows (`inspector.rs`, `cx.observe(&ui, ..)`,
+      `InfoRegistry::shown`). With the records outside the entity, the
+      `Inspector` still needs the frame's-end notification, through its
+      observation, and the `Showcase` is no longer built again for its own
+      records.
+
+- [ ] [upstream] **File the gpui-kit issue: on gpui-pre a labelled `Separator`
+      draws its label at the line's end.** For the maintainer to file on
+      longbridge/gpui-kit (an agent files nothing). gpui-component 0.8.0's
+      `Separator` lays its label out in a `justify_center` row, the label
+      `mx_auto` and the line an absolute child (`src/separator.rs:79-80`,
+      `:136`, `:147`). gpui-pre 0.3.9 takes taffy `0.13.0`, whose
+      `distribute_remaining_free_space` gives the free space to the auto
+      margins (`src/compute/flexbox.rs:1721`) and then offsets the item by the
+      same free space for `justify-content` (`:1750`), so the label moves by
+      the free space twice. taffy 0.14.0, which gpui-fast 0.1.10 pins
+      (`=0.14.0`), sets the free space to zero once the margins have taken it
+      (`:2140`), as CSS does, so GPUI Fast centres the label. gpui-component
+      pins `gpui-pre = "=0.3.9"`, so no gpui-pre build can take taffy 0.14.
+      Our repro: the gpui showcase's Layout page, at rest on gpui-pre, draws
+      "Section Break" at content x 1169–1249 on a 938 px line that starts at
+      311, where GPUI Fast draws it at 740–820 (G3 Task 9's captures,
+      `docs/todo_code-review-findings.md`, *G3*). The screenshot scripts
+      build the showcase on gpui-pre, so its screenshots show the label at
+      the end. Found 2026-10-22 (G3 Task 9). The issue, ready to paste:
+
+      > **Title:** Separator: on gpui-pre the label is drawn at the line's
+      > end, not centred
+      >
+      > gpui-component 0.8.0 on its default core, gpui-pre 0.3.9 (taffy
+      > 0.13.0), Linux.
+      >
+      > `Separator::horizontal().label("Section Break")` draws the label
+      > flush with the line's right end. With the `gpui-fast` feature
+      > (gpui-fast 0.1.10, taffy `=0.14.0`) the same separator centres it.
+      >
+      > The separator's row is `justify_center()` and the label `mx_auto()`
+      > (`src/separator.rs:136`, `:147`). taffy 0.13.0's
+      > `distribute_remaining_free_space` (`src/compute/flexbox.rs`) gives
+      > the line's free space to the auto margins (`:1721`) and then, for
+      > `justify-content`, offsets the item by the same free space again
+      > (`:1750`): on a 938 px line with an 80 px label the label starts
+      > 858 px in, where centred it starts 429 px in. taffy 0.14.0 sets the
+      > free space to zero once auto margins have taken it (`:2140`), as CSS
+      > does.
+      >
+      > Either change fixes it on gpui-pre: gpui-pre on taffy 0.14, or the
+      > label without `mx_auto()`, which `justify_center()` centres on both
+      > cores.
+- [ ] [upstream] **File the gpui-kit issue: gpui-pre clips a rounded box's
+      children to a rectangle.** For the maintainer to file on
+      longbridge/gpui-kit (an agent files nothing). gpui-pre 0.3.9's content
+      mask is a rectangle (`ContentMask`, `src/window.rs:2226-2234`: "only
+      rectangular content masks are supported"), so in a box with rounded
+      corners that clips both axes a child's square corner shows past the
+      curve. gpui-fast 0.1.10 clips such a box's children to its curved
+      padding edge (`src/fast/rounded_clip.rs`, from `src/style.rs:743`; only
+      where both axes clip, `:68-70`, as CSS does; zed#37480), which 0.1.7
+      and 0.1.8 did not. Our repro: on the gpui showcase's Basic page on
+      gpui-pre, the selected Table row's fill is square over the Table
+      frame's rounded bottom corners (adwaita dark: up to 190 levels at a
+      pixel), and so are the Progress fill's start in its track, the List
+      frame's right corners, the segmented control's bottom-left under a
+      divider and the Expander's bottom-left under its body's text; on GPUI
+      Fast each follows the curve (G3 Task 9's captures). The screenshot
+      scripts build on gpui-pre, so the README screenshots show the square
+      corners. Found 2026-10-22 (G3 Task 9). The issue, ready to paste:
+
+      > **Title:** gpui-pre: a rounded `overflow_hidden` box does not clip
+      > its children to its corners
+      >
+      > gpui-component 0.8.0 on its default core, gpui-pre 0.3.9, Linux.
+      >
+      > A box with `rounded(..)` and `overflow_hidden()` clips its children
+      > to its bounds' rectangle, so a child that fills to the box's edge
+      > (a `Table`'s selected last row, a `Progress` fill) shows its square
+      > corners past the box's rounded ones. gpui-pre's content mask is a
+      > rectangle (`src/window.rs:2226-2234`, "only rectangular content
+      > masks are supported").
+      >
+      > gpui-fast 0.1.10 clips such a box's children to its curved padding
+      > edge where both axes clip (`src/fast/rounded_clip.rs`, called from
+      > `src/style.rs:743`; zed#37480), so the same tree on the `gpui-fast`
+      > feature draws the corners round. Could gpui-pre take the same clip,
+      > so both cores draw a rounded box alike?
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -1930,6 +2020,10 @@ model, the platform presets and the three connectors
       `input/input.rs:99-103`), so a carried colour would displace it. For
       that reason `geometry::checkbox` and `geometry::combobox` carry no text
       colour; a guard test fails, saying so, the day a preset states one.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so; in gpui-component 0.8.0 the label
+      wrapper is `checkbox.rs:336-343` and the disabled colour before the
+      caller's refinement `:253-259` (the refinement at `:265`);
+      `combobox.rs:990-997` and `input/input.rs:99-103` are unchanged.
 - [ ] [upstream] `WindowBorder`'s frame colour is a literal (`window_border.rs:152-166`)
       and so is the shadow it draws below it in the same `render`; no theme
       value reaches either.
@@ -2051,7 +2145,13 @@ model, the platform presets and the three connectors
       is still `2 × inset` shorter than its share of the track (13 px on
       kde-breeze, 11 px on windows-11). A cross-axis inset alone would centre
       the thumb without shortening it.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so at gpui-base 0.8.0: the thumb is
+      drawn `2 × inset` shorter (`scrollbar.rs:1225`) than its length, now
+      `viewport / content × track` clamped to `min_length` and the track
+      (`:1219-1220`).
 - [ ] [upstream] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so; the lines are `tab/tab.rs:958-966`
+      in gpui-component 0.8.0 (`.h(height)` … `.rounded(radius)`).
 - [ ] [upstream] `Theme.shadow` honoured beyond `Button`; `tokens.shadow` consumed
       M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
       "**`Theme::shadow` has one reader.**" (*native-theme-gpui connector*,
@@ -2133,6 +2233,9 @@ model, the platform presets and the three connectors
       showcase's, which the rows' Widget Info names; gpui-component 0.7.3
       still lays the Tree's bar over its rows (`tree.rs:119`,
       `vertical_scrollbar`).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so. The Settings page body's padded
+      row is `setting/page.rs:241-245`, its scrollbar `:257`; the `Tree` lays
+      its bar over its rows at `tree.rs:132`, the rows now in a `ScrollBounce`.
 - [ ] [upstream] a right-clicked `Tree` row shows the hover text colour without the
       hover fill: gpui-component 0.7.3 marks the row right-clicked after the
       application's `render_item` closure built it
@@ -2155,6 +2258,11 @@ model, the platform presets and the three connectors
       `gpui_base::Tree` instead, at the cost of re-adding what the wrapper
       adds: the disabled, selected and right-clicked marks (gpui-component
       `tree.rs:90-92`), the context menu (`:96`) and the scrollbar (`:119`).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so. gpui-component's wrapper hands
+      `render_item` the selection alone (`tree.rs:98`) and marks the row after
+      it (`:99-101`); its context menu is `:105` and its scrollbar `:132`.
+      gpui-base's `Tree` is unchanged at `tree.rs:183`, `:188`, `:196` and
+      `:458`, and `list/list_item.rs:190`, `:227-233` are unchanged.
 - [ ] [upstream] element hooks on the surfaces upstream builds itself, so an
       application can attach an id, a hover handler or a debug selector to
       them (found 2026-09-23 by v0.5.9 Task 12). A `SettingGroup` is not an
@@ -2172,6 +2280,10 @@ model, the platform presets and the three connectors
       and a `Dialog`'s surface is built at `dialog/dialog.rs:716-802` and then
       wrapped for its entrance animation (`:803-841`); neither offers a hook.
       `sheet.rs` is unchanged.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still no hook. The padded div round a
+      `SettingGroup` is `setting/page.rs:239-253`; a `Dialog`'s surface is
+      built at `dialog/dialog.rs:718-804` and wrapped for its entrance at
+      `:805-843`; `sheet.rs` and `setting/group.rs` are unchanged.
 - [ ] [v0.7.0] the gpui connector reads `AccessibilityPreferences::high_contrast`
       nowhere but its accessor (`native-theme-gpui` `lib.rs:615-617`,
       `is_high_contrast`): `to_theme` and `apply` build the same theme with it
@@ -3405,6 +3517,14 @@ the gap — closing it is a change, and each wants its own decision.
       showcase captures itself through OS tools on macOS (`screencapture -l`)
       and Windows (`BitBlt` on its own window), which the screenshots
       workflow runs, and Linux screenshots need external spectacle capture.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* at gpui-pre 0.3.9 and gpui-fast 0.1.10 a window
+      renders to an image only through the test-support `render_to_image`
+      (gpui-pre `src/window.rs:2871`, gpui-fast `src/window.rs:2915`, both
+      `#[cfg(any(test, feature = "test-support"))]`). The showcases capture
+      through `tools/showcase-support`'s `capture::FrameCapture` on macOS and
+      Windows and through `scripts/capture_window.sh` (spectacle) on Linux,
+      so the blade-graphics and `BitBlt` wording above is history. The ask
+      stands (handed to G3 by M9b T2).
 - [ ] [upstream] PR: let an application drop the SVGs a window has drawn, so the icons
       gpui-component's widgets build for themselves can follow a theme
       switch. Measured in the v0.5.9 pre-merge fixes (Task 6's spike,
@@ -3573,6 +3693,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`src/diff/mod.rs:993`, `:1000`, `:1006-1010`), ChevronRight or
       ChevronDown on a file's collapse button (`:1194-1198`), and Plus on the
       add-annotation button (`:1546`).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* `Diff`'s icons are at `src/diff/mod.rs:998`,
+      `:1005`, `:1011-1015` (the folded hunk's buttons), `:1199-1203` (the
+      file's collapse button) and `:1551` (Plus), the same icons.
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -3669,6 +3792,10 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 
 ### gpui: the base-palette repair writes colours without their tokens
 - [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still harmless: no gpui-component or gpui-base
+      0.8.0 source reads `tokens.red` … `tokens.cyan_light` outside `theme/`
+      (`grep -rnE 'tokens\.(red|green|blue|yellow|magenta|cyan)'` over both
+      crates' `src` finds none).
 
 ### gpui: the theme-drawn widgets' focus ring
 - [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
@@ -3820,6 +3947,11 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 
 ### gpui: Settings and dock splitters draw upstream's renderer
 - [ ] [upstream] gpui-component 0.7.0's `Settings` divider and the dock's edges install gpui-component's own resize-handle renderer internally (`setting/settings.rs:416`, `dock/dock.rs:143`), so the splitter colours `base_layer::resizable_theme` writes do not reach them. Ask upstream for a handle-appearance setter on `Settings` (and the dock), then route the splitter colours through it.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so. `Settings` builds its divider with
+      gpui-component's `h_resizable` (`setting/settings.rs:416`), which installs
+      `resize_handle_appearance` (`resizable.rs:30`); the dock's edge handle is
+      gpui-component's `resize_handle` (`dock/dock.rs:144`, `resizable.rs:46`)
+      and its splits draw `render_resize_handle` (`dock/dock.rs:58`).
 
 ### Popover arrow
 - [ ] [1.0] Record per platform whether a popover draws an arrow (`docs/platform-facts.md`, sources first), then model it.
@@ -3836,15 +3968,33 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
       the locked registry sources (the showcase's colour claims have one,
       `every_colour_claim_is_read_at_the_line_it_cites`); the 0.7.1 review
       mapped 1237 of them by script (v0.6.1 spec, Appendix A).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* the 0.8.0 bump renumbered by script 582
+      citation chains, 723 digit runs in 33 files of the connector's crate,
+      `docs/showcase-exceptions.toml` and `tools/showcase-support/src`
+      (Task 2, 901918a1); by hand Task 3b re-pointed 100 of the 188 chains
+      the script set aside, 5 more it found outside that list and
+      `scripts/connector_parity_exceptions.toml:461` (ea7de303); Task 3
+      read 5 of them with the panels whose claims 0.8.0 changed (60ebf586).
+      The 0.7.0 bump had re-read about 200 by hand.
 
 ### gpui: the splitter renderer into the connector
 - [ ] [1.0] The gpui showcase paints its splitters with a renderer of its own that follows `splitter.divider_width`, `divider_color` and `hover_color` (`examples/showcase-gpui/demo.rs`, `resize_handles`); gpui-base's own line is 1px. Move it into the connector as a public renderer an application can install.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* the handle API is public: gpui-base 0.8.0's
+      crate root exports the `ResizeHandle` type beside `resize_handle`,
+      `ResizeHandleContext` and `ResizeHandleRenderer` (`lib.rs:161-165`,
+      `resizable/mod.rs:10-13`), where 0.7.3 re-exported the handle module
+      `#[doc(hidden)]` and left `ResizeHandle` out of the root, so a
+      connector renderer is installed on public API:
+      `ResizablePanelGroup::with_handle_appearance` (`resizable/panel.rs:56`)
+      or `ResizeHandle::with_appearance` (`resizable/resize_handle.rs:181`).
 
 ### Showcases: a toolbar role and arrow-key roving for the chrome toolbar
 - [ ] [1.0] The chrome toolbar of all three showcases is a plain row: no toolbar role for assistive technology and no arrow-key roving between its buttons. gpui-base's `Toolbar` offers both; egui and iced need their own.
 
 ### gpui: Questionnaire needs an infallible state constructor
 - [ ] [upstream] `QuestionnaireState::new` returns a `Result` (gpui-base 0.7.3 `questionnaire/state.rs:48-51`) while gpui builds entities infallibly, so the showcase cannot hold one without a panic path. Ask upstream for an infallible constructor (or schema validation at a later step), then show `Questionnaire` and drop its nine exceptions (`docs/showcase-exceptions.toml`).
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* unchanged at gpui-base 0.8.0
+      (`questionnaire/state.rs:48-51`).
 
 ### gpui showcase: the Basic tooltip's bubble is never recorded
 - [ ] [1.0] The gpui showcase records no `basic.buttons.tooltip.bubble` (`connectors/native-theme-gpui/examples/showcase-gpui/elements.rs` maps `basic-button-tooltip` to the Button and its label only, `:166`, `:362`), so the parity comparator sees the bubble in the iced and egui dumps alone, and no gpui panel shows the bubble's leaves. Hovering the Tooltip button shows the Button's listed panel, which keeps only the info's `not_themeable` notes and drops its `config` lines (`examples/showcase-gpui/inspector.rs:562-565`): where a preset states the bubble's fill, border, padding, `max_width` or (since G2) `show_delay_ms`, the panel says nothing of them. Recording the bubble from the content element `Tooltip::element` builds (`demo::built_tooltip_button`) would give it a dump entry and a listed panel of its own.

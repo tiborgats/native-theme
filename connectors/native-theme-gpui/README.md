@@ -79,7 +79,7 @@ crate sits.
 | `gpui-kit` (GPUI as the code names it; the showcase) | 0.8.0 |
 | `rust-version` | 1.95.0 |
 
-Each is a floor and nothing more. It is not an open-ended `0.7.x`, because a
+Each is a floor and nothing more. It is not an open-ended `0.8.x`, because a
 *patch* release of these crates has broken this connector before: gpui-component
 0.6.2 removed `ThemeColor::tiles`, which the published 0.5.8 wrote, and 0.5.8
 stopped compiling on a fresh dependency resolution. gpui-component 0.7.1 did it
@@ -437,7 +437,7 @@ role, and paints every part from the theme leaf that states it:
 |---|---|---|
 | `Checkbox`, `Radio`, `RadioGroup` | `checkbox.*`: indicator size, fills per state, border, radius, mark and its stroke (`check_mark_stroke_width`), the radio's dot (`radio_dot_diameter`), label gap and font | an indicator sized in rems per `Size`; a check glyph as the radio's mark |
 | `Switch` | `switch.*`: track and thumb sizes, radius, fills per state, hover | pixel literals per `Size` |
-| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`); a screen reader's name (`Slider::accessibility_label`) | a rail of its fill at 20% alpha, a thumb of its own size |
+| `Slider` | `slider.*`: rail, fill, thumb, hover; keyboard steps; horizontal or vertical (`Slider::axis`) | a rail of its fill at 20% alpha, a thumb of its own size |
 | `ProgressBar` | `progress_bar.*`: track, fill, frame, height, minimum width; indeterminate with `ProgressBar::loading`, its fill sweeping on gpui-component's motion | a track of its fill at 20% alpha |
 | `Spinner` | the icon set's own loading indicator (Breeze's `process-working`, Material's and Lucide's), `spinner.diameter` across at `Size::Medium` and × 0.75 / × 0.875 / × 1.5 at XSmall / Small / Large -- gpui-component's own spinner's ratios to its Medium (`icon.rs`, `Icon::with_size`) -- never below `spinner.min_diameter`, the bundled sets tinted `spinner.fill_color`; a 240° arc in `spinner.fill_color` at `spinner.stroke_width` only for a set without one | a turning icon of its own |
 | `TabBar`, `Tab` | `tab.*`: the bar, an unselected tab's fill and label, the hover in place of that fill, the selected tab's fill, label and `tab.border` outline (the selected tab only, rounded on its top corners) and, where `tab.active_outward_corner_radius` is stated, its outward bottom corners, the outline following them, sizes, padding, the gap between tabs (`item_gap`) and font | an idle tab painted transparent, and a primary underline or a frame of its own on the selected one |
@@ -570,6 +570,11 @@ Non-finite or non-positive scaling factors count as 1.0.
 Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
 focus ring in `defaults.focus_ring_color` while focused (the `Switch` since
 gpui-component 0.7.0, whose own switch gained one).
+
+Assistive technology: the theme-drawn `Slider` takes an `accessibility_label`,
+the name a screen reader announces, since a slider draws no text of its own,
+and reports its disabled state while disabled, as gpui-component's `Slider`
+does.
 
 ## Common recipes
 
@@ -816,7 +821,8 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 GPUI Kit 0.8.0 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
-rendering and layout), which its `gpui-fast` feature selects. The two cores'
+rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
+Fast 0.1.10 or later (gpui-kit 0.8.0's `gpui-fast = "0.1.10"`). The two cores'
 types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
 across the build graph: once a crate's `gpui-fast` feature is on, it is on for
 every user of that crate. gpui-kit, gpui-component and gpui-base each have
@@ -885,6 +891,11 @@ dependency wanting a later snapshot.
   is substituted. 31 of the 42 `IconRole` variants map to `IconName`
   (`icons::icon_name`); a role's icon in the theme's own set is
   `SystemTheme::icon` (see [Role icons](#role-icons)).
+- **Not mapped: scroll bounce.** It is a platform behaviour, not theme data:
+  gpui-base's `ScrollBounce` bounces by build target, on macOS, iOS and
+  Android, whose own scroll views do (`ScrollBounce::enabled_by_default`), and
+  never under reduce motion, which the connector forwards from the OS. We found
+  no documented OS setting for it to read.
 
 ## Showcase
 
