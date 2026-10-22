@@ -1006,7 +1006,7 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// toolbar role strokes it as the top panel's separator
 /// (native-theme-egui `src/style/roles.rs:128-141`), and the iced showcase
 /// draws a `toolbar.border.line_width` line under its toolbar
-/// (`examples/showcase-iced.rs:4443`).
+/// (`examples/showcase-iced.rs:4550`).
 ///
 /// The text colour displaces nothing: neither gpui-component's `Toolbar`
 /// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today
