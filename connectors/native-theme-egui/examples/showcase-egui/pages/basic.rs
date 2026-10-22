@@ -130,10 +130,11 @@ pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// iced pages count them: the most, of five, four and three, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
 /// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH` — where `page` is `content_width` less
-/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the
-/// `scrollbar.groove_width` a scrolling page keeps free. Three where not even three do: the
-/// page is then wider than its area.
+/// apart with room for both of the selected tab's flares, `2 * tab.active_outward_corner_radius`
+/// where `demo::tab_bar` draws them (`demo::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` —
+/// where `page` is `content_width` less `layout.window_margin` on both sides and, where
+/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a scrolling page keeps free.
+/// Three where not even three do: the page is then wider than its area.
 pub(crate) fn column_count(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
@@ -148,7 +149,9 @@ pub(crate) fn column_count(
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let tabs = t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default();
+    let flare = demo::outward_radius(t).unwrap_or_default();
+    let tabs =
+        t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default() + flare + flare;
     let widest = t
         .combo_box
         .min_width

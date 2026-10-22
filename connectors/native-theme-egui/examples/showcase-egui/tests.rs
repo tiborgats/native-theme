@@ -2662,6 +2662,488 @@ fn the_basic_page_fits_the_window_across() {
     }
 }
 
+// ---------------------------------------------------------------------------
+// The selected tab's outward corners: tab.active_outward_corner_radius
+// ---------------------------------------------------------------------------
+
+/// windows-11's atlas, built as `from_preset` builds it, from its two resolved variants with
+/// `tab.active_outward_corner_radius` set on each to `radius` and `edit` applied: no bundled
+/// preset states the radius yet, so the test sets it on the resolved themes, whose fields are
+/// public.
+fn windows_11_atlas(
+    radius: Option<f32>,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (preset, _) = from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+    let [mut light, mut dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+    for resolved in [&mut light, &mut dark] {
+        resolved.tab.active_outward_corner_radius = radius;
+        edit(resolved);
+    }
+    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
+        .layout(preset.layout())
+        .accessibility(preset.accessibility())
+        .icon_set(preset.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = preset.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// The showcase on its Basic page in `theme`, with [`windows_11_atlas`]'s atlas installed in
+/// place of the one it opened with, as the app installs one, at rest: windows-11 is a preset of
+/// another platform, which `--theme` does not take here.
+fn open_curving_out(
+    theme: egui::Theme,
+    radius: Option<f32>,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> Harness<'static, App> {
+    let mut harness = open(theme, cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]));
+    harness.run_steps(4);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    app.atlas = windows_11_atlas(radius, edit);
+    app.atlas.install(&ctx);
+    app.semibold.register(&ctx, &app.atlas);
+    app.json = crate::info::JsonCache::default();
+    app.registry.screen_changed();
+    harness.run_steps(4);
+    harness.remove_cursor();
+    harness.run_steps(2);
+    harness
+}
+
+/// The three tab bars `demo::tab_bar` draws: each bar's element, its first tab's, which is the
+/// selected one at start, and its second tab's.
+const TAB_BARS: [[&str; 3]; 3] = [
+    ["basic.tabs.bar", "basic.tabs.one", "basic.tabs.two"],
+    [
+        "chrome.page_tabs",
+        "chrome.page_tabs.basic",
+        "chrome.page_tabs.buttons",
+    ],
+    [
+        "chrome.side_panel.inspector_tabs",
+        "chrome.side_panel.inspector_tabs.widget",
+        "chrome.side_panel.inspector_tabs.theme",
+    ],
+];
+
+fn near(a: f32, b: f32) -> bool {
+    (a - b).abs() < 1e-3
+}
+
+fn near_rect(a: egui::Rect, b: egui::Rect) -> bool {
+    near(a.min.x, b.min.x)
+        && near(a.min.y, b.min.y)
+        && near(a.max.x, b.max.x)
+        && near(a.max.y, b.max.y)
+}
+
+/// The circles of the frame clipped to `square`, with their places in its paint order.
+fn circles_in(
+    shapes: &[egui::epaint::ClippedShape],
+    square: egui::Rect,
+) -> Vec<(usize, egui::epaint::CircleShape)> {
+    shapes
+        .iter()
+        .enumerate()
+        .filter_map(|(ix, clipped)| match &clipped.shape {
+            egui::Shape::Circle(circle) if near_rect(clipped.clip_rect, square) => {
+                Some((ix, *circle))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// The nearest and the farthest of `centre` that epaint tessellates the shapes clipped to
+/// `square` at, the anti-aliasing fringe included.
+fn tessellated_extent(
+    harness: &Harness<'_, App>,
+    square: egui::Rect,
+    centre: egui::Pos2,
+) -> (f32, f32) {
+    let clipped: Vec<_> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter(|s| near_rect(s.clip_rect, square))
+        .cloned()
+        .collect();
+    let ppp = harness.ctx.pixels_per_point();
+    let distances: Vec<f32> = harness
+        .ctx
+        .tessellate(clipped, ppp)
+        .into_iter()
+        .filter_map(|p| match p.primitive {
+            egui::epaint::Primitive::Mesh(mesh) => Some(mesh),
+            egui::epaint::Primitive::Callback(_) => None,
+        })
+        .flat_map(|mesh| mesh.vertices.into_iter().map(|v| v.pos.distance(centre)))
+        .collect();
+    assert!(!distances.is_empty(), "nothing tessellated in {square:?}");
+    (
+        distances.iter().copied().fold(f32::INFINITY, f32::min),
+        distances.iter().copied().fold(0.0, f32::max),
+    )
+}
+
+/// docs/platform-facts.md §2.11 `active_outward_corner_radius`: under windows-11 with a radius
+/// of 4 and its outline of 1, each of the three tab bars draws the selected tab's two flares
+/// with the numbers every connector's test shares (spec §12.2) -- the left about
+/// `(x0 - 3, y1 - 4)`, clipped to `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right about
+/// `(x1 + 3, y1 - 4)`, clipped to `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the fill an
+/// annulus from 3 to `4 * sqrt(2) + 1` in `tab.active_background`, then the outline one from 3
+/// to 4 in `tab.border.color`. epaint strokes a circle outside its radius
+/// (`epaint-0.36.2` `src/tessellator.rs:1531`), so each annulus is a circle of its inner radius
+/// stroked as wide as the annulus, and tessellated it reaches from 3 to `4 * sqrt(2) + 1`. Under
+/// them, after every tab, the strip `tab.active_background` lays over the selected tab's bottom
+/// edge, `[x0 + 1, x1 - 1] x [y1 - 1, y1]`. The first tab starts 4 further in than with the radius
+/// unstated, and the Basic bar, as wide as its tabs, ends 4 after its last; the bar's info reads
+/// the radius.
+#[test]
+fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let square_feet = open_curving_out(theme, None, |_| {});
+        let harness = open_curving_out(theme, Some(4.0), |_| {});
+        let state = harness.state();
+        let t = state.atlas.resolved_for(theme).clone();
+        assert_eq!(t.tab.border.line_width, 1.0, "windows-11's outline");
+        assert_eq!(t.tab.active_outward_corner_radius, Some(4.0));
+        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+        let outline = native_theme_egui::convert::to_color32(t.tab.border.color);
+        let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
+        let shapes = &harness.output().shapes;
+        let places = state.registry.places();
+        let place = |places: &std::collections::BTreeMap<String, egui::Rect>, id: &str| {
+            places
+                .get(id)
+                .copied()
+                .unwrap_or_else(|| panic!("{theme:?}: {id} is not placed"))
+        };
+        for [bar_id, one_id, two_id] in TAB_BARS {
+            let (bar, one, two) = (
+                place(places, bar_id),
+                place(places, one_id),
+                place(places, two_id),
+            );
+            let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+            // (the square's left edge, the centre's x)
+            let feet = [(x0 - 3.0, x0 - 3.0), (x1 - 1.0, x1 + 3.0)];
+            let mut flares = Vec::new();
+            for (left, cx) in feet {
+                let square = egui::Rect::from_min_max(
+                    egui::pos2(left, y1 - 4.0),
+                    egui::pos2(left + 4.0, y1),
+                );
+                let centre = egui::pos2(cx, y1 - 4.0);
+                let circles = circles_in(shapes, square);
+                let expected = [(far - 3.0, fill), (1.0, outline)];
+                assert_eq!(
+                    circles.len(),
+                    expected.len(),
+                    "{theme:?} {one_id}: the flare in {square:?} is {circles:?}"
+                );
+                for ((ix, circle), (width, colour)) in circles.into_iter().zip(expected) {
+                    assert!(
+                        circle.center.distance(centre) < 1e-3
+                            && near(circle.radius, 3.0)
+                            && near(circle.stroke.width, width)
+                            && circle.stroke.color == colour
+                            && circle.fill == egui::Color32::TRANSPARENT,
+                        "{theme:?} {one_id}: {circle:?} is not a ring from 3, {width} wide in \
+                         {colour:?}, about {centre:?}"
+                    );
+                    flares.push(ix);
+                }
+                let (nearest, farthest) = tessellated_extent(&harness, square, centre);
+                assert!(
+                    (2.0..=3.5).contains(&nearest) && (far - 0.5..=far + 1.0).contains(&farthest),
+                    "{theme:?} {one_id}: the flare is drawn from {nearest} to {farthest}, not \
+                     from 3 to {far}"
+                );
+            }
+            let strip =
+                egui::Rect::from_min_max(egui::pos2(x0 + 1.0, y1 - 1.0), egui::pos2(x1 - 1.0, y1));
+            let strips: Vec<usize> = shapes
+                .iter()
+                .enumerate()
+                .filter_map(|(ix, clipped)| match &clipped.shape {
+                    egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip) => Some(ix),
+                    _ => None,
+                })
+                .collect();
+            let [strip_ix] = strips[..] else {
+                panic!("{theme:?} {one_id}: the strip over its bottom edge is {strips:?}");
+            };
+            // Everything drawn within a tab, the strip and the flares aside.
+            let in_tabs: Vec<usize> = shapes
+                .iter()
+                .enumerate()
+                .filter(|(ix, clipped)| {
+                    let at = clipped.shape.visual_bounding_rect();
+                    *ix != strip_ix
+                        && !flares.contains(ix)
+                        && at.is_positive()
+                        && [one, two]
+                            .iter()
+                            .any(|tab| tab.expand(0.5).contains_rect(at))
+                })
+                .map(|(ix, _)| ix)
+                .collect();
+            for tab in [one, two] {
+                assert!(
+                    shapes.iter().any(|c| {
+                        let at = c.shape.visual_bounding_rect();
+                        at.is_positive() && tab.expand(0.5).contains_rect(at)
+                    }),
+                    "{theme:?} {bar_id}: nothing drawn in the tab at {tab:?}"
+                );
+            }
+            let first_flare = flares.iter().copied().min().unwrap_or_default();
+            assert!(
+                in_tabs.iter().all(|ix| *ix < strip_ix) && strip_ix < first_flare,
+                "{theme:?} {bar_id}: the tabs at {in_tabs:?}, the strip at {strip_ix}, the \
+                 flares at {flares:?}"
+            );
+            let before = square_feet.state().registry.places();
+            let (bar_before, one_before) = (place(before, bar_id), place(before, one_id));
+            assert!(
+                near(
+                    (one.min.x - bar.min.x) - (one_before.min.x - bar_before.min.x),
+                    4.0
+                ),
+                "{theme:?} {one_id}: the first tab starts {} in, {} with the radius unstated",
+                one.min.x - bar.min.x,
+                one_before.min.x - bar_before.min.x
+            );
+        }
+        let (bar, two) = (
+            place(places, "basic.tabs.bar"),
+            place(places, "basic.tabs.two"),
+        );
+        assert!(
+            near(bar.max.x - two.max.x, 4.0),
+            "{theme:?}: the Basic bar ends {} after its last tab",
+            bar.max.x - two.max.x
+        );
+        let read = |h: &Harness<'_, App>| {
+            h.state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == "TabBar · Basic")
+                .and_then(|r| {
+                    r.info
+                        .read
+                        .iter()
+                        .find(|(leaf, _)| *leaf == "tab.active_outward_corner_radius")
+                        .map(|(_, value)| value.clone())
+                })
+        };
+        assert_eq!(read(&harness).as_deref(), Some("4"), "{theme:?}");
+        assert_eq!(
+            read(&square_feet).as_deref(),
+            Some("not stated: square feet"),
+            "{theme:?}"
+        );
+    }
+}
+
+/// Without an outline (`tab.border.line_width` 0), each flare is the fill alone, an annulus from
+/// the radius, 4, to `4 * sqrt(2) + 1`, in a square at the tab's outer edge, and no strip covers
+/// a bottom edge the tab does not have.
+#[test]
+fn without_an_outline_the_fill_begins_at_the_radius() {
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.tab.border.line_width = 0.0;
+    });
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+    let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
+    let shapes = &harness.output().shapes;
+    for [_, one_id, _] in TAB_BARS {
+        let one = harness.state().registry.places()[one_id];
+        let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+        for (left, cx) in [(x0 - 4.0, x0 - 4.0), (x1, x1 + 4.0)] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let centre = egui::pos2(cx, y1 - 4.0);
+            let circles = circles_in(shapes, square);
+            assert!(
+                matches!(circles[..], [(_, circle)] if circle.center.distance(centre) < 1e-3
+                    && near(circle.radius, 4.0)
+                    && near(circle.stroke.width, far - 4.0)
+                    && circle.stroke.color == fill),
+                "{one_id}: the flare in {square:?} is {circles:?}"
+            );
+        }
+        assert!(
+            !shapes.iter().any(|c| matches!(&c.shape,
+                egui::Shape::Rect(r) if r.fill == fill && near(r.rect.max.y, y1)
+                    && near(r.rect.height(), 0.0))),
+            "{one_id}: a strip over a bottom edge of no width"
+        );
+    }
+}
+
+/// With the radius unstated, or stated as one no tab bar draws (0, not finite), no circle is
+/// drawn and no strip: the selected tab keeps its bottom edge.
+#[test]
+fn without_the_radius_the_tab_bars_draw_no_flares() {
+    for radius in [None, Some(0.0), Some(f32::NAN)] {
+        let harness = open_curving_out(egui::Theme::Light, radius, |_| {});
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+        let shapes = &harness.output().shapes;
+        let circles: Vec<_> = shapes
+            .iter()
+            .filter(|c| match &c.shape {
+                egui::Shape::Circle(circle) => TAB_BARS.iter().any(|[bar, ..]| {
+                    harness
+                        .state()
+                        .registry
+                        .places()
+                        .get(*bar)
+                        .is_some_and(|b| b.expand(8.0).contains(circle.center))
+                }),
+                _ => false,
+            })
+            .collect();
+        assert!(circles.is_empty(), "{radius:?}: circles drawn: {circles:?}");
+        for [_, one_id, _] in TAB_BARS {
+            let one = harness.state().registry.places()[one_id];
+            let strip = egui::Rect::from_min_max(
+                egui::pos2(one.min.x + 1.0, one.max.y - 1.0),
+                egui::pos2(one.max.x - 1.0, one.max.y),
+            );
+            assert!(
+                !shapes.iter().any(|c| matches!(&c.shape,
+                    egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip))),
+                "{radius:?} {one_id}: a strip over the bottom edge"
+            );
+        }
+    }
+}
+
+/// With a bottom indicator and the radius both stated, no strip is painted, since the line
+/// covers the bottom edge, and the flares are painted over the line as without it.
+#[test]
+fn a_bottom_indicator_lies_under_the_flares() {
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.tab.active_indicator_color = Some(r.defaults.accent_color);
+        r.tab.active_indicator_width = Some(2.0);
+        r.tab.active_indicator_side = Some(native_theme::theme::TabIndicatorSide::Bottom);
+    });
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+    let accent = native_theme_egui::convert::to_color32(t.defaults.accent_color);
+    let shapes = &harness.output().shapes;
+    for [_, one_id, _] in TAB_BARS {
+        let one = harness.state().registry.places()[one_id];
+        let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+        let strip =
+            egui::Rect::from_min_max(egui::pos2(x0 + 1.0, y1 - 1.0), egui::pos2(x1 - 1.0, y1));
+        assert!(
+            !shapes.iter().any(|c| matches!(&c.shape,
+                egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip))),
+            "{one_id}: a strip under the bottom line"
+        );
+        let line = egui::Rect::from_min_max(egui::pos2(x0, y1 - 2.0), one.max);
+        let lines: Vec<usize> = shapes
+            .iter()
+            .enumerate()
+            .filter_map(|(ix, c)| match &c.shape {
+                egui::Shape::Rect(r) if r.fill == accent && near_rect(r.rect, line) => Some(ix),
+                _ => None,
+            })
+            .collect();
+        let [line_ix] = lines[..] else {
+            panic!("{one_id}: the bottom line is {lines:?}");
+        };
+        for left in [x0 - 3.0, x1 - 1.0] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let circles = circles_in(shapes, square);
+            assert_eq!(
+                circles.len(),
+                2,
+                "{one_id}: the flare in {square:?} is {circles:?}"
+            );
+            assert!(
+                circles.iter().all(|(ix, _)| line_ix < *ix),
+                "{one_id}: the line at {line_ix} over the flares at {circles:?}"
+            );
+        }
+    }
+}
+
+/// The Basic page's column rule makes room for both of the selected tab's flares, as the gpui
+/// page's does: under windows-11, whose widest fixed-width control is the two tabs, a page
+/// whose fifth holds the two tabs and 4px more lays out five columns, and four once the theme
+/// states an outward corner radius of 4, whose two flares need 8; five again for a radius
+/// `demo::tab_bar` draws no flares for, 0, negative or not finite.
+#[test]
+fn the_basic_page_makes_room_for_both_flares() {
+    use crate::pages::basic::column_count;
+    let atlas = windows_11_atlas(Some(4.0), |_| {});
+    let stated = atlas.resolved_for(egui::Theme::Light).clone();
+    let layout = atlas.layout();
+    let mut unstated = stated.clone();
+    unstated.tab.active_outward_corner_radius = None;
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &stated.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let t = &stated.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
+    assert_eq!(
+        column_count(&unstated, layout, content),
+        5,
+        "without outward corners the two tabs fit a fifth"
+    );
+    assert_eq!(
+        column_count(&stated, layout, content),
+        4,
+        "the two tabs and both flares do not fit a fifth"
+    );
+    for radius in [0.0, -1.0, f32::NAN] {
+        let mut undrawn = stated.clone();
+        undrawn.tab.active_outward_corner_radius = Some(radius);
+        assert_eq!(
+            column_count(&undrawn, layout, content),
+            5,
+            "a radius of {radius} keeps room for flares the bar does not draw"
+        );
+    }
+}
+
 /// A page's section headings are set in the theme's section-heading role
 /// (`text_scale.section_heading`), as the iced showcase's section titles are: its size and line
 /// height, and at the body's weight in the proportional family (kde-breeze states 400 for both);
