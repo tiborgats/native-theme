@@ -1681,6 +1681,10 @@ struct State {
     /// the status bar's padding is rounded on ([`gpui_rounded`]): 1 until
     /// the window reports its own.
     scale_factor: f32,
+    /// The tab labels' widths as iced shapes them, kept between views
+    /// ([`LabelWidths`]) and dropped at every install and every change of
+    /// the accessibility preferences.
+    label_widths: LabelWidths,
     /// The dialog open over the window, if any.
     overlay: Option<Overlay>,
     /// The command palette's query.
@@ -2001,6 +2005,7 @@ impl State {
             menu_title_open: None,
             window_width: WINDOW_SIZE.0,
             scale_factor: 1.0,
+            label_widths: LabelWidths::default(),
             overlay: None,
             palette_query: String::new(),
             chrome_icons,
@@ -2316,6 +2321,7 @@ impl State {
         self.accessibility = self
             .preference_overrides
             .over(self.os_accessibility.clone());
+        self.label_widths.clear();
     }
 
     /// Load `choice` in the mode `is_dark` names into the theme fields.
@@ -2351,6 +2357,7 @@ impl State {
                 self.current_icon_theme = icon_theme;
                 self.theme_json = theme_json(&resolved);
                 self.current_resolved = resolved;
+                self.label_widths.clear();
                 self.current_theme = theme;
                 self.error_message = None;
                 Ok(self.current_icon_theme.clone())
@@ -2370,6 +2377,7 @@ impl State {
                 self.current_icon_set = r.icon_set;
                 self.theme_json = theme_json(&r.variant);
                 self.current_resolved = r.variant;
+                self.label_widths.clear();
                 self.layout = nt.layout.clone();
                 self.current_theme =
                     native_theme_iced::to_theme_in(&self.current_resolved, &nt.name, r.mode);
@@ -5562,16 +5570,60 @@ fn flare_room(resolved: &ResolvedTheme) -> f32 {
         .unwrap_or(0.0)
 }
 
+#[cfg(test)]
+thread_local! {
+    /// The tab labels [`LabelWidths`] has shaped on this thread.
+    static LABEL_SHAPES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// The widths of the tab labels the tab rows are sized by ([`tab_width`],
+/// [`aw_tab_width`]), each as iced shapes it ([`MeasuredText`]) in a font at
+/// a size, shaped the first time a view asks for it and kept: the view is
+/// rebuilt on every message, twenty times a second while the Basic page's
+/// spinner turns, and a label's width changes only with the theme's tab
+/// font or the text scale, so [`State`] drops the widths at every install
+/// and every change of the accessibility preferences. Counted in
+/// [`LABEL_SHAPES`] under test.
+#[derive(Default)]
+struct LabelWidths(std::cell::Cell<Vec<(&'static str, iced::Font, f32, f32)>>);
+
+impl LabelWidths {
+    /// `label`'s width in `font` at `size`.
+    fn width(&self, label: &'static str, font: iced::Font, size: f32) -> f32 {
+        let mut known = self.0.take();
+        let width = match known
+            .iter()
+            .find(|(l, f, s, _)| *l == label && *f == font && *s == size)
+        {
+            Some(&(.., width)) => width,
+            None => {
+                #[cfg(test)]
+                LABEL_SHAPES.with(|shapes| shapes.set(shapes.get() + 1));
+                let width = MeasuredText::new(label.to_owned(), size, size, font)
+                    .extent()
+                    .width;
+                known.push((label, font, size, width));
+                width
+            }
+        };
+        self.0.set(known);
+        width
+    }
+
+    /// Forgets every width.
+    fn clear(&self) {
+        self.0.take();
+    }
+}
+
 /// The width [`tab_button`] lays a tab reading `label` out at: the label as
-/// iced shapes it in `tab.font`, at least `tab.min_width` less the padding,
-/// inside the padding.
-fn tab_width(state: &State, label: &str) -> f32 {
+/// iced shapes it in `tab.font` ([`LabelWidths`]), at least `tab.min_width`
+/// less the padding, inside the padding.
+fn tab_width(state: &State, label: &'static str) -> f32 {
     let t = &state.current_resolved.tab;
     let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
     let size = scaled_text_size(t.font.size, &state.accessibility);
-    let text = MeasuredText::new(label.to_owned(), size, size, theme_font(&t.font))
-        .extent()
-        .width;
+    let text = state.label_widths.width(label, theme_font(&t.font), size);
     pad.x() + text.max((t.min_width - pad.x()).max(0.0))
 }
 
@@ -8936,15 +8988,33 @@ fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
     }
 }
 
+/// The two Basic tabs' widths together, as the Basic page's tab row lays
+/// them out: with `iced_aw` one width each, [`aw_tab_width`], which fits the
+/// wider label and is never below `tab.min_width`; without it each
+/// [`tab_button`]'s own, [`tab_width`].
+fn basic_tabs_width(state: &State) -> f32 {
+    #[cfg(feature = "iced_aw")]
+    {
+        let padding = native_theme_iced::stated_padding(&state.current_resolved.tab.border.padding)
+            .unwrap_or(Padding::new(AW_TAB_PADDING));
+        aw_tab_width(state, &BASIC_TABS, padding) * BASIC_TABS.len() as f32
+    }
+    #[cfg(not(feature = "iced_aw"))]
+    {
+        BASIC_TABS.iter().map(|label| tab_width(state, label)).sum()
+    }
+}
+
 /// The widest fixed-width control the theme states on the Basic page:
-/// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart with the room for the open tab's flares at both ends
-/// (`2 * tab.active_outward_corner_radius`, [`flare_room`]), `BASIC_WIDE`
-/// and `BASIC_WIDTH`.
-fn basic_widest(resolved: &ResolvedTheme) -> f32 {
+/// `combo_box.min_width`, the two tabs, `tabs` wide together
+/// ([`basic_tabs_width`], their labels fitted, never below
+/// `tab.min_width`), `tab.item_gap` apart with the room for the open tab's
+/// flares at both ends (`2 * tab.active_outward_corner_radius`,
+/// [`flare_room`]), `BASIC_WIDE` and `BASIC_WIDTH`.
+fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
     let t = &resolved.tab;
     let room = flare_room(resolved);
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + room + room;
+    let tabs = tabs + t.item_gap.unwrap_or_default() + room + room;
     resolved
         .combo_box
         .min_width
@@ -8961,7 +9031,12 @@ fn basic_widest(resolved: &ResolvedTheme) -> f32 {
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
 /// scrolling page keeps free. Three where not even three do: the page is then
 /// wider than its area.
-fn basic_column_count(resolved: &ResolvedTheme, layout: &LayoutTheme, content_width: f32) -> usize {
+fn basic_column_count(
+    resolved: &ResolvedTheme,
+    layout: &LayoutTheme,
+    tabs: f32,
+    content_width: f32,
+) -> usize {
     let margin = layout.window_margin.unwrap_or_default();
     let gap = layout.section_gap.unwrap_or_default();
     let bar = &resolved.scrollbar;
@@ -8971,7 +9046,7 @@ fn basic_column_count(resolved: &ResolvedTheme, layout: &LayoutTheme, content_wi
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let widest = basic_widest(resolved);
+    let widest = basic_widest(resolved, tabs);
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -10501,7 +10576,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     .into_iter()
     .map(Some)
     .collect();
-    let count = basic_column_count(resolved, &state.layout, content_width(state));
+    let count = basic_column_count(
+        resolved,
+        &state.layout,
+        basic_tabs_width(state),
+        content_width(state),
+    );
     let columns: Vec<Element<'a, Message>> = basic_arrangement(count)
         .iter()
         .zip(BASIC_COLUMN_IDS)
@@ -13678,16 +13758,12 @@ const AW_TAB_LABEL_PADDING: f32 = 5.0;
 /// clips; `Length::Shrink`, the other sizing it offers, would drop the
 /// theme's minimum (material-3's 90, windows-11's 100).
 #[cfg(feature = "iced_aw")]
-fn aw_tab_width(state: &State, labels: &[&str], padding: Padding) -> f32 {
+fn aw_tab_width(state: &State, labels: &[&'static str], padding: Padding) -> f32 {
     let t = &state.current_resolved.tab;
     let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
     let widest = labels
         .iter()
-        .map(|label| {
-            MeasuredText::new((*label).to_owned(), size, size, theme_font(&t.font))
-                .extent()
-                .width
-        })
+        .map(|label| state.label_widths.width(label, theme_font(&t.font), size))
         .fold(0.0, f32::max);
     t.min_width
         .max((widest + 2.0 * AW_TAB_LABEL_PADDING + padding.x()).ceil())
@@ -21734,7 +21810,12 @@ mod tests {
             let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), false);
             assert!(loaded.is_ok(), "{preset}: {loaded:?}");
             assert_eq!(
-                basic_column_count(&state.current_resolved, &state.layout, content),
+                basic_column_count(
+                    &state.current_resolved,
+                    &state.layout,
+                    basic_tabs_width(&state),
+                    content
+                ),
                 columns,
                 "{preset} in {content}px"
             );
@@ -21771,6 +21852,7 @@ mod tests {
         let count = basic_column_count(
             &state.current_resolved,
             &state.layout,
+            basic_tabs_width(&state),
             content_width(&state),
         );
         let columns: Vec<Vec<&str>> = basic_arrangement(count)
@@ -23363,7 +23445,8 @@ mod tests {
         } else {
             bar.groove_width
         };
-        assert_eq!(basic_widest(&state.current_resolved), 200.0);
+        let tabs = basic_tabs_width(&state);
+        assert_eq!(basic_widest(&state.current_resolved, tabs), 200.0);
         let content = 5.0 * 204.0 + 4.0 * gap + margin + margin + gutter;
         for (radius, columns) in [
             (None, 5),
@@ -23375,7 +23458,7 @@ mod tests {
             let mut r = state.current_resolved.clone();
             r.tab.active_outward_corner_radius = radius;
             assert_eq!(
-                basic_column_count(&r, layout, content),
+                basic_column_count(&r, layout, tabs, content),
                 columns,
                 "radius {radius:?}"
             );
@@ -24170,6 +24253,93 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9b Step 8, round 3 (perf, the re-review's n7): the tab labels the
+    /// tab rows are sized by are shaped once per install, not once per
+    /// view: under kde-breeze, building the view again shapes no label;
+    /// a new text scale, from the Preferences dialog, shapes them again
+    /// once, and so does a new install; a third view after each shapes
+    /// none.
+    #[test]
+    fn the_tab_labels_are_shaped_once_per_install() {
+        let shapes = || LABEL_SHAPES.with(std::cell::Cell::get);
+        let mut state = loaded("kde-breeze", false);
+        let views = |state: &State| {
+            for _ in 0..3 {
+                drop(view(state));
+            }
+        };
+        let before = shapes();
+        drop(view(&state));
+        let first = shapes() - before;
+        assert!(first > 0, "the first view shaped no tab label");
+        views(&state);
+        assert_eq!(
+            shapes() - before,
+            first,
+            "a view after the first shaped a label again"
+        );
+        let _ = update(&mut state, Message::TextScaleSelected(TextScale(1.5)));
+        drop(view(&state));
+        let rescaled = shapes() - before;
+        assert!(rescaled > first, "a new text scale shaped no label");
+        views(&state);
+        assert_eq!(
+            shapes() - before,
+            rescaled,
+            "a view after the new scale shaped a label again"
+        );
+        let loaded = state.load_theme(&ThemeChoice::Preset("adwaita".to_owned()), false);
+        assert!(loaded.is_ok(), "adwaita: {loaded:?}");
+        drop(view(&state));
+        let installed = shapes() - before;
+        assert!(installed > rescaled, "a new install shaped no label");
+        views(&state);
+        assert_eq!(
+            shapes() - before,
+            installed,
+            "a view after the install shaped a label again"
+        );
+    }
+
+    /// M9b Step 8, round 3 (the re-review's n8): the Basic page's column rule
+    /// reserves the tabs as its tab row draws them, their labels fitted
+    /// ([`basic_tabs_width`]), not two `tab.min_width`s: under kde-breeze
+    /// with `tab.font.size` spliced to 40 px, where each label needs more
+    /// than the minimum and the tab row is the page's widest control, the
+    /// widest control the rule counts with holds the drawn tab row and the
+    /// room for its flares.
+    #[test]
+    fn the_basic_column_rule_reserves_the_fitted_tabs() {
+        let mut state = page_state("kde-breeze", Tab::Basic);
+        state.current_resolved.tab.font.size = 40.0;
+        let t = &state.current_resolved.tab;
+        let (drawn, _) = drawn_frame(&state);
+        let (Some(one), Some(two)) = (drawn.get("basic.tabs.one"), drawn.get("basic.tabs.two"))
+        else {
+            panic!("the Basic tabs are not drawn");
+        };
+        let row = (two.x + two.width) - one.x;
+        let others = state
+            .current_resolved
+            .combo_box
+            .min_width
+            .max(BASIC_WIDE)
+            .max(BASIC_WIDTH);
+        assert!(
+            row > (2.0 * t.min_width + t.item_gap.unwrap_or_default()).max(others) + 0.01,
+            "the tab row is {row}px, no wider than two tab.min_width ({}) or the page's other \
+             widest control ({others}): the case is not met",
+            t.min_width
+        );
+        let room = flare_room(&state.current_resolved);
+        let widest = basic_widest(&state.current_resolved, basic_tabs_width(&state));
+        assert!(
+            widest + 0.01 >= row + room + room,
+            "the column rule counts {widest}px, the tab row is {row}px and its flares' room {}px",
+            2.0 * room
+        );
     }
 
     /// M9-097 (theme-data): the Extra page's `TabBar` spaces its tabs
@@ -26551,6 +26721,7 @@ mod tests {
                         let count = basic_column_count(
                             &state.current_resolved,
                             &state.layout,
+                            basic_tabs_width(&state),
                             content_width(&state),
                         );
                         assert_eq!(
@@ -26605,7 +26776,8 @@ mod tests {
                         }
                         // The columns the count chose hold the widest control it
                         // counted with: a column narrower squeezes that control.
-                        let widest = basic_widest(&state.current_resolved);
+                        let widest =
+                            basic_widest(&state.current_resolved, basic_tabs_width(&state));
                         for (id, r) in laid
                             .iter()
                             .filter(|(id, _)| id.starts_with("basic.column_"))
