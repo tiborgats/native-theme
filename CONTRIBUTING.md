@@ -218,6 +218,12 @@ their names, and the index table in
 [`docs/archive/README.md`](docs/archive/README.md) gains their row;
 `scripts/check_release.sh` warns about an archived file the table does not name.
 
+A non-trivial GitHub issue gets a rationale before it is answered:
+`docs/issues/<NNNN>_<topic>-rationale.md`, the issue number zero-padded to four
+digits. It holds the facts checked, the options weighed, the decision and the
+reply as posted, and it stays in `docs/issues/`: it is the issue's record, not a
+plan, so it is not archived. A plan the issue leads to follows the rule above.
+
 Do not invent platform-native values. When the authoritative reference is
 silent, flag it explicitly rather than guessing.
 

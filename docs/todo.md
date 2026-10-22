@@ -1725,6 +1725,20 @@ model, the platform presets and the three connectors
       model gains hover outline fields (and the KDE reader derives them from
       `DecorationHover`) and a disabled thumb outline.
 
+### KDE: Union, the Application Style that is data (issue #4)
+
+- [ ] [upstream] **Read the user's Union style.** KDE's Union styles are folders
+      of CSS, so native-theme could follow a KDE Application Style other than
+      Breeze (today the KDE reader states Breeze's sizes under every style,
+      `src/kde/metrics.rs`). Rationale, and the reply posted on the issue:
+      `docs/issues/0004_kde-union-rationale.md`. Start when both hold, checked
+      at each Plasma feature release (6.9, 6.10, …): KDE enables Union by
+      default (Plasma 6.8 ships it as an opt-in beta, "not quite ready to be
+      used by default"), and at least one non-Breeze Union style is published
+      (on 2026-10-22 the Union repository's `breeze`, `breeze-rtl` and
+      `breeze-mobile` were the only ones, and store.kde.org had none). Then
+      write the spec; the rationale's §5 sketches the reader.
+
 ---
 
 ## Toolkit Connectors
