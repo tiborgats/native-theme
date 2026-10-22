@@ -425,14 +425,14 @@ sample = { line = [0.5, 0.5] }
 id = "chrome.side_panel.inspector_tabs"
 name = "Tab bar"
 parent = "chrome.side_panel.separator"
-leaves = ["tab.bar_background", "tab.item_gap_px", "layout.container_margin_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
 states = ["Normal"]
 
 [[element]]
 id = "chrome.side_panel.inspector_tabs.widget"
 name = "Tab"
 parent = "chrome.side_panel.inspector_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -554,14 +554,14 @@ clip = true
 id = "chrome.page_tabs"
 name = "Tab bar"
 parent = "chrome.content"
-leaves = ["tab.bar_background", "tab.item_gap_px", "layout.container_margin_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
 states = ["Normal"]
 
 [[element]]
 id = "chrome.page_tabs.basic"
 name = "Tab"
 parent = "chrome.page_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -646,10 +646,11 @@ sample = { text = "glyph" }
 # The Basic page (v6): columns, each a stack of groups; a group is its heading over its rows.
 # The column count n is the theme's, never measured text's: the largest n of 5, 4 and 3 whose
 # column, (page width - (n - 1) * layout.section_gap) / n, holds the widest fixed-width control
-# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap,
-# BASIC_WIDE, BASIC_WIDTH); the page width is the content area's less twice
-# layout.window_margin and, where scrollbar.overlay_mode is false, scrollbar.groove_width. The
-# page scrolls vertically where it is taller than its area (at rest at the top), never sideways.
+# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap +
+# 2 * tab.active_outward_corner_radius, BASIC_WIDE, BASIC_WIDTH); the page width is the
+# content area's less twice layout.window_margin and, where scrollbar.overlay_mode is false,
+# scrollbar.groove_width. The page scrolls vertically where it is taller than its area (at
+# rest at the top), never sideways.
 # n = 5: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text
 # area, Slider. Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4:
 # Typography, Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
@@ -667,7 +668,7 @@ sample = { text = "glyph" }
 id = "basic.page"
 name = "Basic page"
 parent = "chrome.content"
-leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "combo_box.min_width_px"]
+leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "combo_box.min_width_px"]
 states = ["Normal"]
 
 [[element]]
@@ -1400,14 +1401,14 @@ sample = { text = "glyph" }
 id = "basic.tabs.bar"
 name = "Tab bar"
 parent = "basic.tabs.heading"
-leaves = ["tab.bar_background", "tab.item_gap_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.tabs.one"
 name = "Tab"
 parent = "basic.tabs.bar"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], border = [0.0, 0.5, 0.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 

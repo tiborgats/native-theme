@@ -746,8 +746,9 @@ fn selected_tab_carries_the_stated_indicator(
 
 /// The light `windows-11` theme, resolved, with
 /// `tab.active_outward_corner_radius` set on it to `radius` and `edit`
-/// applied: no bundled preset states the radius yet, so the tests set it on
-/// the resolved theme, whose fields are public.
+/// applied: the preset states 4 (G3 T15), and the tests set the radius on
+/// the resolved theme, whose fields are public, to try it unstated and at
+/// other values too.
 fn windows_11(radius: Option<f32>, edit: impl FnOnce(&mut ResolvedTheme)) -> ResolvedTheme {
     let prefs = AccessibilityPreferences::default();
     let (_, mut r) = crate::from_preset("windows-11", false, &prefs).expect("windows-11 loads");

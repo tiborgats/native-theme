@@ -2705,9 +2705,9 @@ fn the_basic_page_fits_the_window_across() {
 // ---------------------------------------------------------------------------
 
 /// windows-11's atlas, built as `from_preset` builds it, from its two resolved variants with
-/// `tab.active_outward_corner_radius` set on each to `radius` and `edit` applied: no bundled
-/// preset states the radius yet, so the test sets it on the resolved themes, whose fields are
-/// public.
+/// `tab.active_outward_corner_radius` set on each to `radius` and `edit` applied: the preset
+/// states 4 (G3 T15), and the tests set the radius on the resolved themes, whose fields are
+/// public, to try it unstated and at other values too.
 fn windows_11_atlas(
     radius: Option<f32>,
     edit: impl Fn(&mut native_theme_egui::ResolvedTheme),

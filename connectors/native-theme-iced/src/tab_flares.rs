@@ -345,7 +345,8 @@ mod tests {
     use native_theme::theme::{ColorMode, ResolvedTheme};
 
     /// `windows-11` light, resolved, with `tab.active_outward_corner_radius`
-    /// set to 4 on it (no bundled preset states it yet): spec §12.2's theme.
+    /// set to 4 on it, as the preset states it (G3 T15): spec §12.2's theme,
+    /// whatever the preset says.
     fn curving_out() -> ResolvedTheme {
         let mut r = native_theme::theme::Theme::preset("windows-11")
             .unwrap()

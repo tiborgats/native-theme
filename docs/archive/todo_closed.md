@@ -780,6 +780,88 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the three `tab.active_indicator_*` fields, their §2.11 facts rows for
       all five platforms and their receivers.
 
+### windows-11: what WinUI 3 draws, or what Win32 reports
+
+- [x] [v0.7.0] M2b Step 7b (`docs/todo_code-review-findings.md`, M2b) has
+      windows-11 state what WinUI 3 draws. Where a Windows cell of
+      `docs/platform-facts.md` names a Win32 or `UISettings` API whose value
+      differs (the base font size, the window background, text, the button's
+      fill and text, the input's text, the tooltip), the cell now gives the
+      WinUI brush beside the API, and the preset states the brush. On a live
+      system the Windows reader reads the Win32 and `UISettings` values and
+      merges them over the preset (`native-theme/src/pipeline.rs:42-43`),
+      so a live Windows theme mixes the two. For M3 (the model) and M4 (the
+      reader): decide which one the Windows platform theme means, and make
+      the reader and the preset agree. Two preset values still follow Win32
+      or the window rather than WinUI: `input.background_color` `#ffffff`
+      (`COLOR_WINDOW`; WinUI's `TextControlBackground` is
+      `ControlFillColorDefault`, `#B3FFFFFF`, TextBox_themeresources.xaml:130)
+      and `tab.active_background` `#f3f3f3` / `#202020` (WinUI's
+      `TabViewItemHeaderBackgroundSelected` is
+      `SolidBackgroundFillColorTertiary`, `#F9F9F9` / `#282828`,
+      TabView_themeresources.xaml:7, :85; Common_themeresources_any.xaml:274,
+      :70). `button.checked_background` states the accent, `#0078d4`, for
+      `AccentFillColorDefault` (`docs/platform-facts.md:1194`), but that brush
+      is `SystemAccentColorDark1` light and `SystemAccentColorLight2` dark
+      (Common_themeresources_any.xaml:329, :125), `#0067c0` / `#4cc2ff` for
+      the default accent on Windows 11 25H2
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:755`, `:758`).
+      *M2b fix round 2 (2026-10-11):* `input.background_color` now states
+      `TextControlBackground` = `ControlFillColorDefault` as the resource
+      gives it, `#ffffffb3` / `#ffffff0f` (TextBox_themeresources.xaml:130,
+      :23), and `docs/platform-facts.md:1203` gives the brush beside
+      `COLOR_WINDOW`; the old dark `#2d2d2d` had no source.
+      `tab.active_background` and `button.checked_background` are still open.
+      *M2 final review (2026-10-11, I1), for M4:* the mix shows in dark mode.
+      `apply_sys_colors` (`native-theme/src/windows.rs:268-281`) writes the
+      `GetSysColor` values over whichever variant `build_theme` fills
+      (`:449-452`), the dark one included: the button's rest fill and text
+      become `COLOR_BTNFACE` and `COLOR_BTNTEXT`, `#f0f0f0` and `#000000` on
+      the probe's runner
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-windows-11-arm/probe.toml:398`,
+      `:413`). That runner was in light mode (`AppsUseLightTheme = 1`,
+      `:768`); the review reads these colours as not following dark mode,
+      which no dark-mode probe has checked yet. Since M2b the dark preset's
+      `button.hover_background` is WinUI's opaque, flattened `#323232`
+      (`windows-11.toml` `[dark.button] hover_background`), where it was a near-invisible translucent
+      layer, so hovering such a light button turns it dark grey. The code
+      predates M2; M4 decides with the rest of this entry whether the reader
+      writes Win32 colours into the dark variant at all.
+      I1 fixed by 8c133614 (M4 T22, 2026-10-13): the reader writes no
+      `GetSysColor` colour outside high contrast, in either variant, nor the
+      DWM colorization, `UISettings`' foreground and background, the accent
+      focus ring and selection or `SM_CXFOCUSBORDER`; outside high contrast
+      it writes light or dark, the accent colours, the text scale, the
+      non-client fonts and the accessibility flags, and the preset states
+      the rest. Under high contrast it maps WinUI 3's HighContrast
+      dictionaries (8463f45) to the system colours, cited per field in
+      `apply_sys_colors` (`native-theme/src/windows.rs`). Still open here:
+      the preset's `tab.active_background` and `button.checked_background`;
+      the reader's `button.primary_background` and `checked_background`
+      from AccentDark1 / AccentLight1 outside high contrast, against
+      `AccentFillColorDefault` = `SystemAccentColorDark1` /
+      `SystemAccentColorLight2` (M4-38's related note).
+      M4 Step 8 (2026-10-13): the reader's accent fills are
+      `AccentFillColorDefault` since 8ccdbed0 (`SystemAccentColorDark1` /
+      `Light2` of the user's accent; under high contrast `COLOR_HIGHLIGHT`), so
+      the "AccentDark1 / AccentLight1" half above is fixed. The preset states
+      `button.checked_background` as `AccentFillColorDefault`, `#0067c0` /
+      `#4cc2ff` (9284f52b); its `primary_background` stays on the accent until
+      M5 (ee75ad7e; the entry *For M5: iced's primary hover from
+      `primary_background`*, now in `docs/archive/todo_closed.md`). Still open: `tab.active_background`, `#f3f3f3` /
+      `#202020` (`native-theme/src/presets/windows-11.toml` `[light.tab] active_background`,
+      `[dark.tab] active_background`).
+      M5 T9: the preset's `primary_background` is `AccentFillColorDefault`
+      since cc9e933e.
+      Closed 2026-10-22 (G3 T15): the last open item is met by the commit
+      `feat(windows-11): the selected tab curves out by 4 at its feet and is
+      filled SolidBackgroundFillColorTertiary, …` (G3 T15): the preset's
+      `tab.active_background` is `TabViewItemHeaderBackgroundSelected` =
+      `SolidBackgroundFillColorTertiary`, `#f9f9f9` / `#282828`
+      (TabView_themeresources.xaml:7, :85; Common_themeresources_any.xaml:274,
+      :70 at microsoft-ui-xaml 8463f45), and `docs/platform-facts.md:1347`'s
+      Windows cell gives the brush in place of "← `defaults.background_color`".
+
 ---
 
 ## Toolkit Connectors

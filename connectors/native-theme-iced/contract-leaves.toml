@@ -962,6 +962,7 @@ moves = [
 
 [leaves."tab.active_background"]
 moves = [
+  { row = "crate::tab_flares (fill)", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::aw::tab_bar.tab_label_background", statuses = ["Active"] },
 ]
 
@@ -989,6 +990,7 @@ moves = [
 
 [leaves."tab.border.color"]
 moves = [
+  { row = "crate::tab_flares (outline)", except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
   { row = "styles::aw::tab_bar.tab_label_border_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
 ]
 
@@ -1113,6 +1115,12 @@ leaves = ["defaults.link_color"]
 
 [rows."crate::selection_background"]
 leaves = ["defaults.selection_background"]
+
+[rows."crate::tab_flares (fill)"]
+leaves = ["tab.active_background"]
+
+[rows."crate::tab_flares (outline)"]
+leaves = ["tab.border.color"]
 
 [rows."crate::tab_indicator_line"]
 leaves = ["tab.active_indicator_color"]

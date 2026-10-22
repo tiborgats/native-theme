@@ -230,8 +230,9 @@ Steps:
    `docs/platform-facts.md`. Where the platform documents none, leave it
    unstated only if it is a gated size (a padding side, a menu or list
    `row_height`, the list `header_height`, the toolbar `bar_height` and
-   `item_gap`, the tab `item_gap` and `active_indicator_width`, the combobox
-   `arrow_area_width`, the expander `arrow_gap` and `content_indent`, the
+   `item_gap`, the tab `item_gap`, `active_indicator_width` and
+   `active_outward_corner_radius`, the combobox `arrow_area_width`, the
+   expander `arrow_gap` and `content_indent`, the
    checkbox `radio_indicator_width`, `radio_dot_diameter` and
    `check_mark_stroke_width`, the switch `unchecked_thumb_diameter`;
    `native-theme/src/presets/documented_sizes.rs` checks them). The switch's

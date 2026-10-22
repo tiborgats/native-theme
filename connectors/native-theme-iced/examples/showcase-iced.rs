@@ -22437,7 +22437,7 @@ mod tests {
 
     /// G3 T13 (D1): a state showing the Basic page under windows-11 light,
     /// at a text scale of 1, with `tab.active_outward_corner_radius` set to
-    /// `radius` on the resolved theme, as no bundled preset states it yet
+    /// `radius` on the resolved theme, the preset's 4 (G3 T15) or another
     /// (spec §12.2's seam: `State::current_resolved`, a resolved theme's
     /// fields being public).
     fn curving_out(radius: Option<f32>) -> State {
@@ -22580,7 +22580,7 @@ mod tests {
 
     /// G3 T13 (D1): the routes of `tab.active_outward_corner_radius_px`, the
     /// leaf the shared list names on the three open tabs, the three bars and
-    /// `basic.page` from Task 15 on, name what draws it: `tab_flares` on
+    /// `basic.page` (since G3 T15), name what draws it: `tab_flares` on
     /// the open tabs (and, under iced_aw, its hovered-tab limit), the row's
     /// padding or the container's outside an iced_aw bar on the bars, the
     /// column rule on the page; a closed tab draws none, and an unstated
@@ -25933,8 +25933,10 @@ mod tests {
     /// inspector's tab row and its content add none; where it states no
     /// side, those three are padded by `container_margin` (the tab row at its
     /// sides), none where that is unstated. The page tabs' sides are
-    /// `container_margin`, none where unstated. Under the spliced padding the
-    /// panel's route says so.
+    /// `container_margin`, none where unstated. Both tab rows' first tabs
+    /// start the room for the open tab's flares further in, where the theme
+    /// states them ([`flare_room`], windows-11's 4). Under the spliced
+    /// padding the panel's route says so.
     #[test]
     fn the_side_panel_is_padded_as_gpuis() {
         let spliced = {
@@ -26001,10 +26003,14 @@ mod tests {
                 "{case}: the settings at {settings:?} in the panel at {panel:?}, expected \
                  {left} + {content} left, {top} + {content} top, {right} + {content} right"
             );
+            // The tab rows keep the room for the open tab's flares at their
+            // ends, where the theme states them.
+            let flares = flare_room(&state.current_resolved);
             let tab = rect("chrome.side_panel.inspector_tabs.widget");
             assert!(
-                near(tab.x - panel.x, left + content),
-                "{case}: the inspector's first tab is {}px in, expected {left} + {content}",
+                near(tab.x - panel.x, left + content + flares),
+                "{case}: the inspector's first tab is {}px in, expected {left} + {content} + \
+                 {flares}",
                 tab.x - panel.x
             );
             let heading = match found.iter().find(|(text, _)| text == "Theme config") {
@@ -26027,7 +26033,7 @@ mod tests {
             );
             let strip = rect("chrome.page_tabs");
             let first = rect("chrome.page_tabs.basic");
-            let inset = margin.unwrap_or(0.0);
+            let inset = margin.unwrap_or(0.0) + flares;
             assert!(
                 near(first.x - strip.x, inset),
                 "{case}: the first page tab is {}px in, expected {inset}px",

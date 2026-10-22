@@ -23,10 +23,11 @@ running platform instead, under the OS's live colours, fonts and
 accessibility.
 
 Gated sizes (padding sides, menu and list row heights, `list.header_height`,
-toolbar `bar_height` and `item_gap`, tab `item_gap` and
-`active_indicator_width`, combobox `arrow_area_width`, expander `arrow_gap`
-and `content_indent`, checkbox `radio_indicator_width`, `radio_dot_diameter`
-and `check_mark_stroke_width`, switch `unchecked_thumb_diameter`): a native
+toolbar `bar_height` and `item_gap`, tab `item_gap`, `active_indicator_width`
+and `active_outward_corner_radius`, combobox `arrow_area_width`, expander
+`arrow_gap` and `content_indent`, checkbox `radio_indicator_width`,
+`radio_dot_diameter` and `check_mark_stroke_width`, switch
+`unchecked_thumb_diameter`): a native
 preset states one only where `docs/platform-facts.md` gives it for its
 platform: KDE, GNOME, macOS, Windows or Material, whose column counts a
 material-web or Compose implementation constant cited at a pinned line as

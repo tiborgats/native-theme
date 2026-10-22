@@ -5565,9 +5565,9 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
 
 /// The `windows-11` theme, light or, with `is_dark`, dark, resolved as the
 /// connector resolves a preset, with `tab.active_outward_corner_radius` set
-/// on it to 4: no
-/// bundled preset states the radius yet, so the tests set it on the
-/// resolved theme, whose fields are public.
+/// on it to 4, the value the preset states (G3 T15), so the tests hold
+/// spec §12.2's numbers whatever the preset says; a resolved theme's fields
+/// are public.
 fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedTheme) {
     let prefs = native_theme_gpui::AccessibilityPreferences::default();
     let (theme, mut r) =
@@ -16144,6 +16144,36 @@ fn the_native_tab_rows_info_gives_its_outward_corners() {
         !outline.contains("no bottom edge"),
         "unstated, the outline has no bottom edge: {outline:?}"
     );
+}
+
+/// `tab.active_outward_corner_radius_px` has its route on each element the
+/// shared list will give it: the three selected tabs draw the outward
+/// corners, the three bars inset their tabs by it, and the Basic page's
+/// column rule makes room for both flares.
+#[test]
+fn the_outward_corner_routes_name_what_draws_them() {
+    let leaf = "tab.active_outward_corner_radius_px";
+    for (element, says) in [
+        ("basic.tabs.one", "painted after the tabs"),
+        ("chrome.page_tabs.basic", "painted after the tabs"),
+        (
+            "chrome.side_panel.inspector_tabs.widget",
+            "painted after the tabs",
+        ),
+        ("basic.tabs.bar", "inset at the row's ends"),
+        ("chrome.page_tabs", "inset at the row's ends"),
+        (
+            "chrome.side_panel.inspector_tabs",
+            "inset at the row's ends",
+        ),
+        ("basic.page", "column rule (basic_column_count)"),
+    ] {
+        let line = crate::info::leaves::how(element, leaf).unwrap_or_default();
+        assert!(
+            line.contains(says) && line.starts_with("gpui: "),
+            "{element}: {line:?}"
+        );
+    }
 }
 
 /// The shapes of `button.border.padding` no bundled preset states, spliced

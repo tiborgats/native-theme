@@ -963,11 +963,12 @@ fn every_accessor_returns_its_native_leaf() -> native_theme::Result<()> {
 }
 
 /// `tab_flares`' two rows draw where the theme states
-/// `tab.active_outward_corner_radius`, which no bundled combination does yet,
-/// so `every_accessor_returns_its_native_leaf` holds them only at `None`:
-/// here they hold on `windows-11` in both modes with the radius set, its
-/// fill and outline drawn, the outline gone where the line width is 0, and
-/// both gone where the radius is 0 or not finite.
+/// `tab.active_outward_corner_radius`, which of the bundled combinations
+/// only `windows-11`'s two do (4, G3 T15), so
+/// `every_accessor_returns_its_native_leaf` holds them at `None` elsewhere
+/// and at 4 there: here they hold on `windows-11` in both modes with the
+/// radius set, its fill and outline drawn, the outline gone where the line
+/// width is 0, and both gone where the radius is 0 or not finite.
 #[cfg(feature = "widgets")]
 #[test]
 fn the_tab_flares_rows_hold_where_the_theme_curves_out() -> native_theme::Result<()> {
@@ -4215,12 +4216,16 @@ fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
 #[cfg(feature = "iced_aw")]
 #[test]
 fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> {
-    // The entry in the table above runs on windows-11, where `tab` states the
-    // same color for an idle and for a selected tab, so a fallback onto the
-    // wrong one of the two would pass it. No bundled preset states them
-    // differently any more (material-3's active tab is marked by an indicator,
-    // not a fill: docs/platform-facts.md §2.11), so the selected fill is set
-    // apart here, to the preset's accent, and the copy is proved on that.
+    // The entry in the table above runs on windows-11, where `tab` stated the
+    // same color for an idle and for a selected tab until G3 T15, so a
+    // fallback onto the wrong one of the two passed it. Since G3 T15
+    // windows-11 states them apart, its selected tab WinUI's
+    // SolidBackgroundFillColorTertiary over the window's idle fill (#f9f9f9
+    // over #f3f3f3, dark #282828 over #202020), so that entry now tells them
+    // apart too, and this test could run on windows-11 again. It keeps
+    // material-3, whose active tab is marked by an indicator, not a fill
+    // (docs/platform-facts.md §2.11), with the selected fill set apart here,
+    // to the preset's accent, and the copy is proved on that.
     let mut resolved = native_theme::theme::Theme::preset("material-3")?
         .into_variant(ColorMode::Light)?
         .into_resolved(&native_theme::ResolutionContext::for_tests())?;

@@ -831,6 +831,15 @@ tests read it (§1.5), so a leaf listed before the last showcase routes it turns
 test red; each of Tasks 12–14 adds its showcase's route ahead (an unlisted route is unused,
 and no test rejects one), and Task 15 lists the leaf.
 
+*Added 2026-10-22 (G3 T15), correcting "an unlisted route is unused, and no test rejects one"
+above for gpui:* gpui's `every_how_entry_is_shown` (`connectors/native-theme-gpui/src/showcase.rs`)
+fails on a `HOW` entry that no listed element's leaf takes, so the gpui showcase's seven
+routes for `tab.active_outward_corner_radius_px` were not committed in Task 12 and land in
+Task 15 with the listing (spec §12.3's G3 T12 line). iced's and egui's route tests do not
+reject an unused route (iced's `iced_route` is a `match` the tests walk over the listed
+leaves; egui's lines come from its `mapping.toml` row), so Tasks 13 and 14 committed theirs
+ahead, as planned.
+
 ### K17 — The Basic page and `docs/showcase-elements.toml`: the existing tab elements take the shape; upstream's Folder stays off
 
 K8 kept Folder off the Basic page because egui and iced lacked the variant. Re-decided with

@@ -2003,6 +2003,42 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the off track's outline, track_border_line_width wide, where stated (SwitchLook)",
     ),
     // --- tab: widgets::TabBar ----------------------------------------------------
+    // The selected tabs before their bars, whose ids are prefixes of theirs.
+    (
+        "basic.tabs.one",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.page_tabs.basic",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.side_panel.inspector_tabs.widget",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "basic.tabs.bar",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.page_tabs",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.side_panel.inspector_tabs",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "basic.page",
+        "tab.active_outward_corner_radius_px",
+        "gpui: room for both flares in the column rule (basic_column_count)",
+    ),
     (
         "",
         "tab.active_background",
