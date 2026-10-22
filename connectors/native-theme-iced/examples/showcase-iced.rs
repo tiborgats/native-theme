@@ -23361,6 +23361,8 @@ mod tests {
             macos, windows,
             "macOS and Windows draw different title bars"
         );
+        assert!(macos.contains("traffic-light"), "macos: {macos}");
+        assert!(windows.contains("caption"), "windows: {windows}");
         let decorations = window_decorations("linux");
         assert!(
             decorations.contains("window manager"),
