@@ -14668,7 +14668,7 @@ fn font_from_database(spec: &ResolvedFontSpec, mono: bool) -> Drawn {
             _ => first,
         };
         match first.family.clone() {
-            Some(drawing) if file(raw.db_mut(), &*drawing) => {
+            Some(drawing) if file(raw.db_mut(), &drawing) => {
                 drawable_font(raw.db(), fallbacks, asked, own, mono)
             }
             _ => first,
