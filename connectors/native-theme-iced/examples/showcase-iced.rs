@@ -1549,6 +1549,10 @@ struct State {
     /// `default` row names ([`State::default_label`]); updated at each read
     /// of the OS theme.
     default_preset: String,
+    /// The Theme row's combo box ([`theme_picker`]): its rows,
+    /// [`theme_choices`] of `default_preset`, rebuilt where that changes
+    /// ([`State::keep_os_theme`]), and what is typed into it.
+    theme_combo: combo_box::State<ThemeChoice>,
 
     // Navigation
     active_tab: Tab,
@@ -1892,6 +1896,7 @@ impl State {
             system,
             current_icon_set: init_icon_set,
             current_icon_theme: init_icon_theme,
+            theme_combo: combo_box::State::new(theme_choices(&system_preset)),
             default_preset: system_preset,
             active_tab: Tab::Basic,
             hovered: None,
@@ -2194,10 +2199,14 @@ impl State {
 
     /// Keep `system`, a new read of the OS theme, with its accessibility
     /// preferences as the OS's and its platform preset as the one the theme
-    /// picker's `default` row names.
+    /// picker's `default` row names, the picker's rows rebuilt where that
+    /// preset changes.
     fn keep_os_theme(&mut self, system: native_theme::SystemTheme) -> &native_theme::SystemTheme {
         self.os_accessibility = system.accessibility.clone();
-        self.default_preset = system.preset.clone();
+        if self.default_preset != system.preset {
+            self.default_preset = system.preset.clone();
+            self.theme_combo = combo_box::State::new(theme_choices(&self.default_preset));
+        }
         self.system.insert(system)
     }
 
@@ -5153,6 +5162,99 @@ where
         .into()
 }
 
+/// The Theme row's drop-down: a `combo_box` over [`theme_choices`]
+/// (`State::theme_combo`), searchable as the gpui showcase's preset switch
+/// is, dressed as [`setting_picker`] dresses the other rows' -- the model's
+/// combo box at the same padding, line box, font and arrow, in
+/// [`theme_picker_style`] -- so it is as wide and as tall as they are.
+///
+/// Typing filters the rows by the name each shows. gpui's also matches the
+/// preset's key (`showcase-gpui/support.rs`, `PresetItem::matches`); iced's
+/// `combo_box` matches the text a row shows and nothing else (iced_widget
+/// 0.14.2 `src/combo_box.rs:970-1013`, `search` over the matchers built
+/// from the option's `Display`, which `overlay/menu.rs:559` draws as the
+/// row's label), so a key's word missing from the name finds nothing here:
+/// `3` of material-3 (Material), `13` of ios-13 (iOS), `monterey` of
+/// macos-monterey (macOS Sonoma). Its placeholder, shown while the field is
+/// empty, says so.
+///
+/// The arrow is the field's icon: [`arrow_handle`]'s chevron at its size,
+/// right-aligned at the right padding's inner edge as the drop-down's is
+/// (`text_input.rs:363-369`; `pick_list.rs:654-657`), no gap before it, as a
+/// drop-down's label runs to that padding (`pick_list.rs:675-684`).
+fn theme_picker(state: &State) -> Element<'_, Message> {
+    let resolved = &state.current_resolved;
+    let size = scaled_text_size(resolved.combo_box.font.size, &state.accessibility);
+    let pad = combo_box_padding(resolved);
+    let field = combo_box(
+        &state.theme_combo,
+        "Filter by name\u{2026}",
+        Some(&state.current_choice),
+        Message::ThemeSelected,
+    )
+    .padding(pad)
+    .line_height(control_line_height(
+        resolved,
+        size,
+        resolved.combo_box.min_height,
+        pad,
+    ))
+    .size(size)
+    .font(theme_font(&resolved.combo_box.font))
+    .input_style(theme_picker_style(
+        styles::pick_list(resolved),
+        styles::text_input(resolved),
+    ))
+    .menu_style(styles::menu(resolved))
+    .width(Fill);
+    match arrow_handle(resolved) {
+        pick_list::Handle::Static(arrow) => field.icon(text_input::Icon {
+            font: arrow.font,
+            code_point: arrow.code_point,
+            size: arrow.size,
+            spacing: 0.0,
+            side: text_input::Side::Right,
+        }),
+        _ => field,
+    }
+    .into()
+}
+
+/// The Theme row's field in the model's combo box: in each status the look
+/// `picker`, `styles::pick_list`, gives the other rows' drop-downs in the
+/// matching one -- hovered as hovered, focused, its menu open, as open --
+/// its arrow in the drop-down's `handle_color`, and the selection in what is
+/// typed `field`'s, `styles::text_input`, the text field's. The field always
+/// takes input, so it is never drawn disabled; that status is the
+/// drop-down's at rest.
+fn theme_picker_style(
+    picker: impl Fn(&Theme, pick_list::Status) -> pick_list::Style,
+    field: impl Fn(&Theme, text_input::Status) -> text_input::Style,
+) -> impl Fn(&Theme, text_input::Status) -> text_input::Style {
+    move |theme, status| {
+        let look = picker(
+            theme,
+            match status {
+                text_input::Status::Active | text_input::Status::Disabled => {
+                    pick_list::Status::Active
+                }
+                text_input::Status::Hovered => pick_list::Status::Hovered,
+                text_input::Status::Focused { is_hovered } => {
+                    pick_list::Status::Opened { is_hovered }
+                }
+            },
+        );
+        text_input::Style {
+            background: look.background,
+            border: look.border,
+            icon: look.handle_color,
+            placeholder: look.placeholder_color,
+            value: look.text_color,
+            selection: field(theme, status).selection,
+        }
+    }
+}
+
 /// The inspector's tab row, Widget and Theme, the shown view's tab open.
 fn inspector_tabs(state: &State) -> Element<'_, Message> {
     // The inspector's two tabs, Widget and Theme, first and second.
@@ -5203,16 +5305,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
                 "chrome.side_panel.settings.theme"
             ),
             "Theme",
-            probe(
-                probes::THEME,
-                Fill,
-                setting_picker(
-                    state,
-                    theme_choices(&state.default_preset),
-                    Some(state.current_choice.clone()),
-                    Message::ThemeSelected,
-                ),
-            ),
+            probe(probes::THEME, Fill, theme_picker(state)),
         ),
         setting(
             state,
@@ -6657,9 +6750,14 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 (native_theme_iced::Spinner)"
             .to_owned();
     }
+    let theme_row = id == "chrome.side_panel.settings.theme";
     let installed = state.installed_combination();
     if let Some(line) = colour_route(element, leaf, Shown::of(state), installed.as_deref()) {
-        return line;
+        return if theme_row && line.starts_with("iced: ") {
+            format!("{line}; the field's text_input::Style (theme_picker_style)")
+        } else {
+            line
+        };
     }
     let under = |prefix: &str| id.starts_with(prefix);
     // The flat buttons, drawn in `ghost_button`: the toolbar's, the Basic
@@ -6876,6 +6974,29 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "styles::toggler: the Disabled colours' alpha times it; the label faded alike".into()
         }
         // ---- combo box (drop-down) ----
+        // The side panel's Theme row is a `combo_box` (`theme_picker`).
+        ("combo_box", "font") if theme_row => "ComboBox size and font (theme_font)".into(),
+        ("combo_box", "min_height_px") if theme_row => {
+            "control_line_height: ComboBox::line_height, the line box that fills it inside \
+             combo_box_padding"
+                .into()
+        }
+        ("combo_box", "min_width_px") if theme_row => {
+            "not reachable: ComboBox takes a width, not a minimum; the side panel's width".into()
+        }
+        ("combo_box", "arrow_icon_size_px") if theme_row => {
+            "theme_picker: the field's text_input::Icon, pick_list_handle's chevron at its size"
+                .into()
+        }
+        ("combo_box", "border.corner_radius_px") if theme_row => {
+            "theme_picker_style: styles::pick_list's border.radius, the field's".into()
+        }
+        ("combo_box", "border.line_width_px") if theme_row => {
+            "theme_picker_style: styles::pick_list's border.width, the field's".into()
+        }
+        ("combo_box", f) if side(f).is_some() && theme_row => {
+            "combo_box_padding: ComboBox::padding, the side plus the line width".into()
+        }
         ("combo_box", "font") => "PickList text_size and font (theme_font)".into(),
         ("combo_box", "min_height_px") => {
             "control_line_height: the line box that fills it inside combo_box_padding".into()
@@ -15755,23 +15876,19 @@ mod tests {
 
     /// Opens the `combo_box` tagged `id` and chooses its `nth` option.
     ///
-    /// A `combo_box` pads its menu with `text_input::DEFAULT_PADDING`
-    /// (`combo_box.rs:190`), which is as tall as a `pick_list`'s today but is
-    /// not the same constant and need not stay equal; `text_size` is the one
-    /// the showcase gives it.
+    /// A `combo_box` pads its menu's rows with its own padding
+    /// (`combo_box.rs:917`), `padding`: the one the showcase gives it, or
+    /// `text_input::DEFAULT_PADDING` where it gives none (`combo_box.rs:190`),
+    /// which is as tall as a `pick_list`'s today but is not the same constant
+    /// and need not stay equal; `text_size` is the one the showcase gives it.
     fn combo_box_option(
         ui: &mut Simulator<'_, Message>,
         id: &'static str,
         nth: usize,
         text_size: f32,
+        padding: Padding,
     ) {
-        pick_option(
-            ui,
-            id,
-            nth,
-            text_size,
-            iced::widget::text_input::DEFAULT_PADDING,
-        );
+        pick_option(ui, id, nth, text_size, padding);
     }
 
     /// Opens the picker tagged `id` and chooses its `nth` option, counting
@@ -16105,7 +16222,13 @@ mod tests {
             &state.accessibility,
         );
         let messages = drive(&mut state, |ui| {
-            combo_box_option(ui, probes::COMBO_BOX, 1, size)
+            combo_box_option(
+                ui,
+                probes::COMBO_BOX,
+                1,
+                size,
+                iced::widget::text_input::DEFAULT_PADDING,
+            )
         });
         let picked = match messages.as_slice() {
             [Message::ComboBoxSelected(value)] => value.clone(),
@@ -16356,7 +16479,8 @@ mod tests {
     }
 
     /// The two sidebar selectors, asserted against what the state held before
-    /// the click rather than against this host's desktop.
+    /// the click rather than against this host's desktop, and the Theme row's
+    /// search: what is typed into it filters the presets it offers.
     fn theme_selectors_respond(state: &mut State) {
         // Colour mode. `AppColorMode::System` resolves to whichever mode this
         // desktop is in, so the test asks for the opposite of what is on
@@ -16423,7 +16547,10 @@ mod tests {
             state.current_resolved.combo_box.font.size,
             &state.accessibility,
         );
-        let messages = drive(state, |ui| pick_list_option(ui, probes::THEME, nth, size));
+        let pad = combo_box_padding(&state.current_resolved);
+        let messages = drive(state, |ui| {
+            combo_box_option(ui, probes::THEME, nth, size, pad)
+        });
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
             "theme preset: {messages:?}"
@@ -16448,6 +16575,82 @@ mod tests {
             expected.extended_palette().background.base.color,
             "theme preset: the installed theme did not follow the choice"
         );
+
+        // Typing filters the presets: `nord` leaves the Nord preset alone on
+        // offer, and Enter installs the row highlighted. ArrowDown moves the
+        // highlight to the next row offered, back to the first after the
+        // last (`combo_box.rs:706-730`), so Enter after it picks the first
+        // row again only where that row is the one offered.
+        let nord = ThemeChoice::Preset("nord".to_string());
+        assert_ne!(
+            state.current_choice, nord,
+            "the theme picker shows Nord already"
+        );
+        let expected = native_theme_iced::from_preset("nord", state.is_dark)
+            .map(|(theme, _)| theme.to_string())
+            .map_err(|error| error.to_string());
+        let messages = drive(state, |ui| {
+            click_probe(ui, probes::THEME);
+            let _ = ui.typewrite("nord");
+            let _ = ui.tap_key(iced::keyboard::key::Named::ArrowDown);
+            let _ = ui.tap_key(iced::keyboard::key::Named::Enter);
+        });
+        assert!(
+            matches!(messages.as_slice(), [Message::ThemeSelected(choice)] if *choice == nord),
+            "typing nord: {messages:?}"
+        );
+        assert_eq!(
+            state.current_choice, nord,
+            "typing nord: the choice did not reach the state"
+        );
+        assert_eq!(
+            Ok(theme(state).to_string()),
+            expected,
+            "typing nord: another theme is installed"
+        );
+    }
+
+    /// The Theme row's combo box lays out as the Mode row's drop-down, both
+    /// in the model's combo box: the rectangle the element list names
+    /// `chrome.side_panel.settings.theme` is as wide and as tall as the Mode
+    /// row's under every bundled preset in both modes.
+    #[test]
+    fn the_theme_combo_box_lays_out_as_the_mode_drop_down() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            let mut ui = interface(&state);
+            let theme = probe_bounds(&mut ui, probes::THEME);
+            let mode = probe_bounds(&mut ui, probes::COLOR_MODE);
+            assert!(
+                (theme.height - mode.height).abs() < 0.01
+                    && (theme.width - mode.width).abs() < 0.01,
+                "{preset} dark={dark}: the Theme row is {}x{}px, the Mode row {}x{}px",
+                theme.width,
+                theme.height,
+                mode.width,
+                mode.height
+            );
+        }
+    }
+
+    /// The Theme row's Widget Info names the combo box that draws it, and
+    /// the Mode row's the drop-down: its font, its padding, its arrow and its
+    /// colours, these through the field's style.
+    #[test]
+    fn the_theme_rows_routes_name_its_combo_box() {
+        let state = loaded("kde-breeze", false);
+        for (leaf, named) in [
+            ("combo_box.font", "ComboBox size"),
+            ("combo_box.min_height_px", "ComboBox::line_height"),
+            ("combo_box.border.padding_left_px", "ComboBox::padding"),
+            ("combo_box.arrow_icon_size_px", "text_input::Icon"),
+            ("combo_box.background_color", "theme_picker_style"),
+        ] {
+            let theme = route_of(&state, "chrome.side_panel.settings.theme", leaf);
+            assert!(theme.contains(named), "the Theme row's {leaf}: {theme}");
+            let mode = route_of(&state, "chrome.side_panel.settings.mode", leaf);
+            assert!(!mode.contains(named), "the Mode row's {leaf}: {mode}");
+        }
     }
 
     // -----------------------------------------------------------------------
