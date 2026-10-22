@@ -12588,6 +12588,7 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Triage:** fix — CONFIRMED (M9b T11 fix round 1, the controller's ruling).
 **Status:** fixed — the commit that files this entry (M9b T11 fix round 1): the Basic list's rows and the window's menu rows take `rows::scaled_height(stated, prefs, font size, defaults.line_height, padding, 0)`; `stated_list_and_menu_rows_hold_their_text_at_every_text_scale` fails on the old code (macos-tahoe and macos-monterey list rows 24 tall, want 41 and 39; macos-monterey's menu row 22, want 37) and passes on the new. The Extra page's `iced_aw` menu rows and `SelectionList` are not changed.
 *Source:* m9b-T11-review.md; m9b-T11-fix1-brief.md.
+**Status (M9b T12, 2026-10-22):** the Extra page's `iced_aw` menu rows are covered (77484992): a row of a stated `menu.row_height` grows above a text scale of 1 through `rows::scaled_height`, and the menus' titles, rows and context entries draw at `defaults.line_height`, where they took iced's 1.3; `the_extra_menus_hold_their_text_at_every_text_scale` fails on the old code (macos-monterey's row 22 tall at 1.5, want 37; each title and context entry at iced's line height) and passes on the new. The `SelectionList` is not changed.
 
 
 ### Rejected
