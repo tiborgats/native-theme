@@ -1676,6 +1676,15 @@ struct State {
     /// the status bar's padding is rounded on ([`gpui_rounded`]): 1 until
     /// the window reports its own.
     scale_factor: f32,
+    /// The page tab strip's first tab shown whole, which the strip is
+    /// scrolled to so the open tab shows ([`reveal_open_tab`]).
+    page_tabs_start: usize,
+    /// The offset the page tab strip was last scrolled to, `None` where it
+    /// is to be scrolled again: before the first, and after a tab is chosen.
+    page_tabs_offset: Option<f32>,
+    /// The page tab strip's room at its last layout, which
+    /// [`reveal_open_tab`] fits the tabs into; 0 before the first.
+    page_tabs_room: std::cell::Cell<f32>,
     /// The tab labels' widths as iced shapes them, kept between views
     /// ([`LabelWidths`]) and dropped at every install and every change of
     /// the accessibility preferences.
@@ -2001,6 +2010,9 @@ impl State {
             window_width: WINDOW_SIZE.0,
             scale_factor: 1.0,
             label_widths: LabelWidths::default(),
+            page_tabs_start: 0,
+            page_tabs_offset: None,
+            page_tabs_room: std::cell::Cell::new(0.0),
             overlay: None,
             palette_query: String::new(),
             chrome_icons,
@@ -2723,7 +2735,47 @@ fn physical_content(size: iced::Size, scale: f32) -> capture::Content {
 }
 
 fn update(state: &mut State, message: Message) -> iced::Task<Message> {
-    update_at(state, message, Instant::now())
+    let task = update_at(state, message, Instant::now());
+    iced::Task::batch([task, reveal_open_tab(state)])
+}
+
+/// Scrolls the page tab strip so the open tab shows whole, as the gpui
+/// showcase's strip scrolls a clicked tab into view: where the strip's room
+/// at its last layout holds the open tab from the first tab it shows, that
+/// tab stays first; otherwise the first moves to the open tab, or as far
+/// towards it as the open tab needs ([`reveal_start`]). The strip is
+/// scrolled only when its first tab or its offset changes, or a tab was
+/// chosen since, so a sideways scroll of the user's own stands until then.
+fn reveal_open_tab(state: &mut State) -> iced::Task<Message> {
+    let available = state.page_tabs_room.get();
+    if !(available.is_finite() && available > 0.0) {
+        return iced::Task::none();
+    }
+    let resolved = &state.current_resolved;
+    let gap = resolved.tab.item_gap.unwrap_or(0.0);
+    let room = flare_room(resolved);
+    let widths: Vec<f32> = Tab::ALL
+        .iter()
+        .map(|tab| tab_width(state, tab.label()))
+        .collect();
+    let open = Tab::ALL
+        .iter()
+        .position(|&tab| tab == state.active_tab)
+        .unwrap_or(0);
+    let start = reveal_start(&widths, gap, room, available, open, state.page_tabs_start);
+    let offset = strip_offset(&widths, gap, room, start);
+    if start == state.page_tabs_start && state.page_tabs_offset == Some(offset) {
+        return iced::Task::none();
+    }
+    state.page_tabs_start = start;
+    state.page_tabs_offset = Some(offset);
+    iced::widget::operation::scroll_to(
+        TAB_STRIP_ID,
+        scrollable::AbsoluteOffset {
+            x: Some(offset),
+            y: None,
+        },
+    )
 }
 
 /// [`update`] at `now` on the showcase's clock, which the tests set.
@@ -2841,6 +2893,7 @@ fn update_inner(state: &mut State, message: Message) {
     match message {
         Message::TabSelected(tab) => {
             state.active_tab = tab;
+            state.page_tabs_offset = None;
         }
         #[cfg(all(target_os = "macos", not(test)))]
         Message::InstallSystemMenu => match system_menu::install() {
@@ -5418,6 +5471,7 @@ fn inspector_tabs(state: &State) -> Element<'_, Message> {
             .collect(),
         side_panel_content_margin(&state.current_resolved, &state.layout),
         None,
+        None,
     )
 }
 
@@ -5624,26 +5678,86 @@ fn tab_width(state: &State, label: &'static str) -> f32 {
     pad.x() + text.max((t.min_width - pad.x()).max(0.0))
 }
 
+/// The left edges of tabs `widths` wide, laid `gap` apart after `room`, in
+/// the row's own coordinates.
+fn tab_lefts(widths: &[f32], gap: f32, room: f32) -> Vec<f32> {
+    widths
+        .iter()
+        .scan(room, |left, width| {
+            let at = *left;
+            *left += width + gap;
+            Some(at)
+        })
+        .collect()
+}
+
+/// The offset a tab row is scrolled to so tab `start` is the first it
+/// shows: none for the first tab, which `room` precedes; for another, its
+/// left edge less as much of the gap before it as the open tab's flare
+/// needs, no more than the gap, so no part of the tab before it shows.
+fn strip_offset(widths: &[f32], gap: f32, room: f32, start: usize) -> f32 {
+    if start == 0 {
+        return 0.0;
+    }
+    tab_lefts(widths, gap, room)
+        .get(start)
+        .map_or(0.0, |left| left - gap.min(room))
+}
+
 /// How wide a tab row's scrolled view is where `available` is the room for
-/// it: the whole row where it fits; otherwise as far as the end of the last
-/// tab that fits whole from the row's start, `widths` laid `gap` apart after
-/// `room`, and on into the gap after it by no more than `room`, the open
-/// tab's flare, so no part of the next tab shows. A tab that does not fit
-/// whole is out of the view, not cut by its edge, and the row scrolls to it.
-fn whole_tabs_width(widths: &[f32], gap: f32, room: f32, available: f32) -> Length {
+/// it and the row shows tab `start` first ([`strip_offset`]): the whole row
+/// where it fits from its first tab; otherwise as far as the end of the
+/// last tab that fits whole, `widths` laid `gap` apart after `room`, and on
+/// into the gap after it by no more than `room`, the open tab's flare (past
+/// the last tab, `room` itself), so no part of the next tab shows. A tab
+/// that does not fit whole is out of the view, not cut by its edge, and the
+/// row scrolls to it.
+fn whole_tabs_width(widths: &[f32], gap: f32, room: f32, available: f32, start: usize) -> Length {
     let row = widths.iter().sum::<f32>() + gap * widths.len().saturating_sub(1) as f32;
-    if room + row + room <= available {
+    if start == 0 && room + row + room <= available {
         return Fill;
     }
-    let mut end = room;
-    for (n, width) in widths.iter().enumerate() {
-        let next = if n == 0 { end } else { end + gap } + width;
-        if next > available {
+    let offset = strip_offset(widths, gap, room, start);
+    let lefts = tab_lefts(widths, gap, room);
+    let mut end = offset + if start == 0 { room } else { gap.min(room) };
+    for (n, (left, width)) in lefts.iter().zip(widths).enumerate().skip(start) {
+        let right = left + width;
+        if right - offset > available {
             break;
         }
-        end = next;
+        let tail = if Some(n) == widths.len().checked_sub(1) {
+            room
+        } else {
+            gap.min(room)
+        };
+        end = (right + tail).min(offset + available);
     }
-    Length::Fixed(end + gap.min(room))
+    Length::Fixed(end - offset)
+}
+
+/// The first tab a tab row shows whole so its tab `open` shows too, from
+/// the row's first tab shown now, `start`: `start` where `open` fits after
+/// it in `available` (each tab `widths` wide, `gap` apart after `room`),
+/// `open` where it lies before it, and otherwise the nearest after `start`
+/// from which `open` fits, moving as little as the open tab needs.
+fn reveal_start(
+    widths: &[f32],
+    gap: f32,
+    room: f32,
+    available: f32,
+    open: usize,
+    start: usize,
+) -> usize {
+    let lefts = tab_lefts(widths, gap, room);
+    let right = match (lefts.get(open), widths.get(open)) {
+        (Some(left), Some(width)) => left + width,
+        _ => return 0,
+    };
+    let mut first = start.min(open);
+    while first < open && right - strip_offset(widths, gap, room, first) > available {
+        first = first.saturating_add(1);
+    }
+    first
 }
 
 /// A tab row, the page tabs' and the inspector's: each tab a
@@ -5667,6 +5781,7 @@ fn tab_row<'a>(
     tabs: Vec<TabSpec>,
     margin: f32,
     trailing: Option<Element<'a, Message>>,
+    strip: Option<(usize, &'a std::cell::Cell<f32>)>,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let t = &resolved.tab;
@@ -5678,7 +5793,14 @@ fn tab_row<'a>(
         .collect();
     // The room the strip has is known once it is laid out, so the tabs are
     // built there.
+    // The first tab the strip shows and where it records its room, the page
+    // tabs' ([`reveal_open_tab`]); the first tab and nowhere otherwise.
+    let (start, room_seen) = strip.map_or((0, None), |(start, seen)| (start, Some(seen)));
+    let start = start.min(tabs.len().saturating_sub(1));
     let strip = iced::widget::responsive(move |size| {
+        if let Some(seen) = room_seen {
+            seen.set(size.width);
+        }
         let row_of = tabs.iter().map(|spec| {
             let tab = tab_button(state, spec.label, spec.open, spec.message.clone());
             match spec.tag {
@@ -5711,6 +5833,7 @@ fn tab_row<'a>(
                 t.item_gap.unwrap_or(0.0),
                 room,
                 size.width,
+                start,
             ))
             .into()
     })
@@ -5753,6 +5876,7 @@ fn page_tabs(state: &State) -> Element<'_, Message> {
         tabs,
         state.layout.container_margin.unwrap_or(0.0),
         Some(page_menu(state)),
+        Some((state.page_tabs_start, &state.page_tabs_room)),
     )
 }
 
@@ -24412,9 +24536,10 @@ mod tests {
     #[test]
     fn a_view_after_the_first_shapes_no_text() {
         let shaped = || TEXT_SHAPES.with(std::cell::Cell::get);
-        let mut tabs = vec![Tab::Basic];
         #[cfg(feature = "iced_aw")]
-        tabs.push(Tab::Extra);
+        let tabs = [Tab::Basic, Tab::Extra];
+        #[cfg(not(feature = "iced_aw"))]
+        let tabs = [Tab::Basic];
         for tab in tabs {
             let mut state = loaded("kde-breeze", false);
             state.active_tab = tab;
@@ -28670,6 +28795,100 @@ mod tests {
             overflowed > 0,
             "no tab overflowed the strip, so none was checked"
         );
+    }
+
+    /// M9b Step 8 round 4, B1 (ux): the page tab strip scrolls so the open
+    /// tab shows whole, as the gpui showcase's strip scrolls a clicked tab
+    /// into view, and still shows whole tabs alone: under kde-breeze,
+    /// material-3 and catppuccin-mocha, with the side panel shown, at the
+    /// window's default size, the Theme Map and the Icons pages open, once
+    /// the strip has been laid out and scrolled where [`reveal_open_tab`]
+    /// asks, the open tab's label lies whole inside the strip and every
+    /// other label whole inside or whole outside it; the Basic page needs
+    /// no scroll.
+    #[test]
+    fn the_page_tabs_show_the_open_tab() {
+        let mut faults = Vec::new();
+        for (preset, dark) in [
+            ("kde-breeze", false),
+            ("material-3", false),
+            ("catppuccin-mocha", true),
+        ] {
+            for open in [Tab::ThemeMap, Tab::Icons, Tab::Basic] {
+                let mut state = loaded(preset, dark);
+                state.active_tab = open;
+                {
+                    // The first layout, which records the strip's room.
+                    let _ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                }
+                let _ = reveal_open_tab(&mut state);
+                let offset = state.page_tabs_offset.unwrap_or(0.0);
+                if open == Tab::Basic && offset != 0.0 {
+                    faults.push(format!(
+                        "{preset}: Basic open scrolls the strip by {offset}"
+                    ));
+                }
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                let strip = match ui.find(selector::id(TAB_STRIP_ID)) {
+                    Ok(selector::Target::Scrollable { bounds, .. }) => bounds,
+                    Ok(other) => panic!("{preset}: {TAB_STRIP_ID} is not a scrollable: {other:?}"),
+                    Err(error) => panic!("{preset}: {TAB_STRIP_ID}: {error}"),
+                };
+                // The scroll `reveal_open_tab` asks for, as a wheel would.
+                if offset > 0.0 {
+                    let at = strip.center();
+                    ui.point_at(at);
+                    let _ = ui.simulate([
+                        Event::Mouse(mouse::Event::CursorMoved { position: at }),
+                        Event::Mouse(mouse::Event::WheelScrolled {
+                            delta: mouse::ScrollDelta::Pixels { x: -offset, y: 0.0 },
+                        }),
+                    ]);
+                }
+                // A selector reports the row's texts where the row lays them
+                // out, before the strip's scroll moves them.
+                let scrolled = match ui.find(selector::id(TAB_STRIP_ID)) {
+                    Ok(selector::Target::Scrollable { translation, .. }) => translation.x,
+                    _ => 0.0,
+                };
+                if (scrolled - offset).abs() > 0.01 {
+                    faults.push(format!(
+                        "{preset} {open:?}: the strip is scrolled {scrolled}, asked {offset}"
+                    ));
+                }
+                let found = texts(&mut ui);
+                let (start, end) = (strip.x, strip.x + strip.width);
+                for tab in Tab::ALL {
+                    let label = tab.label();
+                    let Some((_, at)) = found.iter().find(|(content, at)| {
+                        content == label
+                            && at.center_y() >= strip.y
+                            && at.center_y() <= strip.y + strip.height
+                    }) else {
+                        faults.push(format!("{preset} {open:?}: no tab reads {label:?}"));
+                        continue;
+                    };
+                    let (left, right) = (at.x - scrolled, at.x + at.width - scrolled);
+                    let inside = left >= start - 0.01 && right <= end + 0.01;
+                    let outside = left >= end - 0.01 || right <= start + 0.01;
+                    if *tab == open && !inside {
+                        faults.push(format!(
+                            "{preset} {open:?}: the open tab runs from {left} to {right}, the \
+                             strip from {start} to {end}"
+                        ));
+                    }
+                    if !inside && !outside {
+                        faults.push(format!(
+                            "{preset} {open:?}: {label:?} runs from {left} to {right}, across \
+                             the strip's edge ({start} to {end})"
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// The page tabs scroll sideways with no bar of their own, so no bar
