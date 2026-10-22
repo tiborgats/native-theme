@@ -2065,8 +2065,16 @@ impl State {
         self.icon_set_choices =
             rows::icon_rows(self.current_icon_set, it_opt, &self.installed_themes);
 
-        // Always reload icons — the resolved text_color may have changed (light↔dark)
-        // even when the icon set choice is the same.
+        // Every install reloads the icons, a colour-mode switch too. Each
+        // icon is coloured in `defaults.text_color` as it loads: a
+        // freedesktop, SF Symbols or Segoe Fluent icon by its loader
+        // (`color_opt`), which no public step recolours afterwards, and a
+        // Material or Lucide icon as its handle is built (`load_all_icons`);
+        // and every bundled preset states another `defaults.text_color` in
+        // each mode. A theme switch between two presets of one icon set and
+        // text colour (catppuccin-frappe and catppuccin-latte light) needs it
+        // too: the Basic page's Spinner takes `spinner.fill_color`, from the
+        // accent, which differs there.
         self.reload_icons();
         true
     }
