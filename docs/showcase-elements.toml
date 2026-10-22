@@ -45,7 +45,9 @@
 # no showcase drew it.
 #
 # Sample points, for the comparator (all relative to the element's rectangle):
-#   name = [fx, fy]            the pixel at fraction (fx, fy) of the rectangle
+#   name = [fx, fy]            the pixel at fraction (fx, fy) of the rectangle; where that lies
+#                              on a text part of the element (a descendant whose name is a text
+#                              run), the nearest pixel of its row beside the text parts
 #   name = [fx, fy, dx, dy]    the same, moved (dx, dy) logical px; an edge is sampled half a
 #                              pixel inside, e.g. the left border at [0.0, 0.5, 0.5, 0.0]
 #   name = "glyph"             the text colour: the pixel of the rectangle farthest in colour

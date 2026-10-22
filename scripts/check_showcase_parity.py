@@ -92,9 +92,14 @@ For each preset and variant, across the three kinds:
   page's panel does), each rectangle from the same dump. Elsewhere its value
   is `not visible`: the sample is left out of the comparison for that
   showcase, not a difference, and the run counts the element samples it left
-  out so under "not visible". Geometry is compared wherever the dumps hold
-  the element, visible or not, so every showcase dumps off-screen elements
-  too.
+  out so under "not visible". A point sample (a fill, a border, a line)
+  is kept off the element's text parts, its descendants the list names a
+  text run (TEXT_RUNS below): where its point lies on one of their
+  rectangles in a dump, it is read at the nearest pixel of its row, inside
+  the element and the visible area, that none of them covers, so a bar's
+  fill is not read on the glyph of a label that happens to reach its
+  point. Geometry is compared wherever the dumps hold the element, visible
+  or not, so every showcase dumps off-screen elements too.
 
 Numbers are compared under the rules below, colours too; what no rule covers
 is compared exactly (numbers at 1/100 of a logical pixel: the dumps are f32
@@ -780,12 +785,49 @@ def visible_area(ident, elements, rects, scale):
     return left, top, right, bottom
 
 
-def sample_colour(capture, scale, rect, spec, area=None):
+def text_parts(elements):
+    """For each element, its descendants the list names a text run
+    (TEXT_RUNS): the text parts its point samples are kept off."""
+    parts = {ident: [] for ident in elements}
+    for ident, element in elements.items():
+        if element["name"] not in TEXT_RUNS:
+            continue
+        parent = element["parent"]
+        while parent != WINDOW:
+            parts[parent].append(ident)
+            parent = elements[parent]["parent"]
+    return parts
+
+
+def off_text(px, py, row, avoid):
+    """The device pixel of the row `py` nearest to `px` that none of the
+    `avoid` boxes (left, top, right, bottom, device pixels, right and bottom
+    excluded) covers, searched within `row` (start, end, end excluded), the
+    nearer side first and the right one on a tie; `px` where no box covers
+    it, and where every pixel of the row is covered."""
+    def covered(x):
+        return any(l <= x < r and t <= py < b for l, t, r, b in avoid)
+
+    if not covered(px):
+        return px
+    start, end = row
+    for d in range(1, max(px - start, end - px) + 1):
+        for x in (px + d, px - d):
+            if start <= x < end and not covered(x):
+                return x
+    return px
+
+
+def sample_colour(capture, scale, rect, spec, area=None, avoid=()):
     """The colour a sample point shows, or a note saying why there is none:
     `not visible` where the point, or a glyph box, is not all inside `area`
     (logical left, top, right, bottom; `visible_area`). Fractions are taken
     of the rectangle's R-snap edges, where it is painted, not of the dump's
-    fractional ones."""
+    fractional ones. A point that lies on one of the `avoid` rectangles (the
+    element's text parts, `text_parts`, from the same dump) is taken at the
+    nearest pixel of its row inside the rectangle and `area` that none of
+    them covers (`off_text`), so a fill is read beside a label that happens
+    to reach its point, not on the label's glyphs."""
     image, pixels, (ox, oy) = capture["image"], capture["pixels"], capture["offset"]
     content_w = round(WINDOW_SIZE[0] * scale)
     content_h = round(WINDOW_SIZE[1] * scale)
@@ -800,6 +842,9 @@ def sample_colour(capture, scale, rect, spec, area=None):
         py = math.floor((top + fy * h + dy) * scale)
         if not (a_left <= px < a_right and a_top <= py < a_bottom):
             return NOT_VISIBLE
+        boxes = [tuple(round(v * scale) for v in snapped_edges(part, scale)) for part in avoid]
+        row = (max(round(left * scale), a_left), min(round(right * scale), a_right))
+        px = off_text(px, py, row, boxes)
         if not (0 <= px < content_w and 0 <= py < content_h):
             return "outside"
         return hex_colour(pixels[ox + px, oy + py])
@@ -944,6 +989,7 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
     many differences each rule covered, and every (group, "<id>.<property>")
     compared."""
     rows, used, unseen, ruled_out, compared = [], set(), {}, {}, set()
+    parts = text_parts(elements)
     by_target = {}
     for key, entry in exceptions.items():
         by_target.setdefault(entry["target"], {})[key] = entry
@@ -990,8 +1036,9 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                 snapped[k] = geometry(element, rects, scale, True)
                 if dumps[k]["capture"] is not None:
                     area = visible_area(ident, elements, rects, scale)
+                    avoid = [rects[part] for part in parts[ident] if part in rects]
                     for name, spec in element["samples"].items():
-                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec, area)
+                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec, area, avoid)
                 measured[k] = values
             for prop in ("x", "y", "w", "h", *element["samples"]):
                 if any(v.get(prop) == NOT_VISIBLE for v in measured.values()):
@@ -1361,16 +1408,17 @@ def self_test():
         )
         report(name, ok, rows)
 
-    def sampled(name, rect, spec, ground, boxes, expect):
+    def sampled(name, rect, spec, ground, boxes, expect, avoid=()):
         """`spec` sampled on `rect` in a capture of `ground` with each
         (x0, y0, x1, y1, colour) of `boxes` painted over it, inclusive device
-        pixels at scale 1, must show `expect`."""
+        pixels at scale 1, kept off the text parts `avoid`, must show
+        `expect`."""
         image = Image.new("RGB", WINDOW_SIZE, ground)
         draw = ImageDraw.Draw(image)
         for *box, colour in boxes:
             draw.rectangle(box, fill=colour)
         capture = {"image": image, "pixels": image.load(), "offset": (0, 0)}
-        got = sample_colour(capture, 1.0, rect, parse_sample(name, "sample", spec))
+        got = sample_colour(capture, 1.0, rect, parse_sample(name, "sample", spec), None, avoid)
         report(name, got == expect)
         if got != expect:
             print(f"    expected {expect}\n    got      {got}")
@@ -1472,6 +1520,13 @@ def self_test():
         if kind == "iced":
             rects["t.panel.label"]["x"] += 1.2
 
+    def label_on_fill(kind, rects, *_):
+        # The label reaches the panel's fill point (120, 60) in every kind,
+        # its stem on it; iced's ink is 5 per channel off, which R-glyph's 8
+        # covers for the glyph and a fill's 1 would not.
+        rects["t.panel.label"]["x"], rects["t.panel.label"]["y"] = 118.0, 52.0
+        return {"ink": tuple(c + 5 for c in INK)} if kind == "iced" else None
+
     def ink_off(by):
         def change(kind, rects, *_):
             return {"ink": tuple(c + by for c in INK)} if kind == "gpui" else None
@@ -1568,6 +1623,44 @@ def self_test():
         "a sample outside a `clip` ancestor is not visible, and not a difference",
         False,
         change=label_clipped,
+    )
+    scenario(
+        "a fill sample is taken beside a text part that reaches its point, not on its glyph",
+        False,
+        change=label_on_fill,
+        absent_keys=("t.panel.fill",),
+    )
+    # A label box from x 100 to 140 over the panel's fill point (120, 60),
+    # its glyph a solid block: the fill is read at the nearest pixel of the
+    # row the box leaves free, 140 on its right (99 on its left is a pixel
+    # farther).
+    on_fill = ((20, 30, 219, 89, FILL), (100, 50, 139, 69, INK))
+    label_box = {"x": 100.0, "y": 50.0, "w": 40.0, "h": 20.0}
+    sampled(
+        "a point sample on a text part's box reads the nearest pixel beside it",
+        {"x": 20.0, "y": 30.0, "w": 200.0, "h": 60.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(FILL),
+        avoid=(label_box,),
+    )
+    sampled(
+        "a point sample with no text part on it is read where it lies",
+        {"x": 20.0, "y": 30.0, "w": 200.0, "h": 60.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(INK),
+    )
+    sampled(
+        "a point sample whose whole row a text part covers is read where it lies",
+        {"x": 100.0, "y": 50.0, "w": 40.0, "h": 20.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(INK),
+        avoid=(label_box,),
     )
     # A row highlight painted on rows 40 to 55 (y = 39.6, h = 16 rounded)
     # over a darker ground, a glyph stem in it: a floor of 39.6 would take in
