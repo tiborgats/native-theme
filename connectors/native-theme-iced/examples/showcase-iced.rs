@@ -17139,75 +17139,112 @@ mod tests {
     /// `defaults.icon_sizes.large` and `spinner.fill_color` at
     /// `defaults.text_color`, the values the page draws its icons with, at
     /// every moment and under reduced motion: for the bundled sets' frame
-    /// lists, and for the first installed freedesktop theme whose indicator
-    /// is a frame list and the first whose indicator turns, where the host
-    /// has one.
+    /// lists here, and for a freedesktop frame list and spin in
+    /// [`the_icons_page_draws_a_freedesktop_spinner_of_its_drawing_values`].
     #[test]
     fn the_icons_page_draws_the_spinner_of_its_drawing_values() {
         let snapshots = Snapshots::new("indicator-spinner");
-        let state = State::default();
-        let mut cases = vec![
-            (IconSetChoice::Material, IconSet::Material, None),
-            (IconSetChoice::Lucide, IconSet::Lucide, None),
-        ];
-        let mut frames_seen = false;
-        let mut spin_seen = false;
-        for name in &state.installed_themes {
-            let playback = load_icon_indicator(IconSet::Freedesktop, Some(name))
-                .as_ref()
-                .and_then(Playback::of);
-            let seen = match playback {
-                Some(Playback::Frames { .. }) => &mut frames_seen,
-                Some(Playback::Spin { .. }) => &mut spin_seen,
-                None => continue,
-            };
-            if !*seen {
-                *seen = true;
-                cases.push((
-                    IconSetChoice::Freedesktop(name.clone()),
+        for (choice, set) in [
+            (IconSetChoice::Material, IconSet::Material),
+            (IconSetChoice::Lucide, IconSet::Lucide),
+        ] {
+            assert_the_page_draws_the_spinner(&snapshots, choice, set, None);
+        }
+    }
+
+    /// The freedesktop half of
+    /// [`the_icons_page_draws_the_spinner_of_its_drawing_values`], on two
+    /// fixture themes, so on every Linux host: one whose indicator is a
+    /// sprite sheet of two frames, played as a frame list, and one whose
+    /// indicator is a single image, turned.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn the_icons_page_draws_a_freedesktop_spinner_of_its_drawing_values() -> std::io::Result<()> {
+        const NAME: &str =
+            "tests::the_icons_page_draws_a_freedesktop_spinner_of_its_drawing_values";
+        // Each frame marks one corner, so a frame and a turn are told apart.
+        const FRAMED: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 44"><path fill="currentColor" d="M2 2h8v6H2z"/><path fill="currentColor" d="M12 36h8v6h-8z"/></svg>"#;
+        const TURNING: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 22 22"><path fill="currentColor" d="M2 2h8v6H2z"/></svg>"#;
+        if native_theme_test_fixtures::in_child() {
+            let snapshots = Snapshots::new("indicator-spinner-freedesktop");
+            for (theme, frames) in [("framed", true), ("turning", false)] {
+                let playback = load_icon_indicator(IconSet::Freedesktop, Some(theme))
+                    .as_ref()
+                    .and_then(Playback::of);
+                assert!(
+                    match playback {
+                        Some(Playback::Frames { count, .. }) => frames && count == 2,
+                        Some(Playback::Spin { .. }) => !frames,
+                        None => false,
+                    },
+                    "{theme}: the fixture's indicator plays as {playback:?}"
+                );
+                assert_the_page_draws_the_spinner(
+                    &snapshots,
+                    IconSetChoice::Freedesktop(theme.to_owned()),
                     IconSet::Freedesktop,
-                    Some(name.clone()),
-                ));
+                    Some(theme),
+                );
             }
+            return Ok(());
         }
-        if !frames_seen || !spin_seen {
-            eprintln!(
-                "the_icons_page_draws_the_spinner_of_its_drawing_values: this host has no \
-                 freedesktop indicator that is {}",
-                match (frames_seen, spin_seen) {
-                    (false, false) => "a frame list or a spin",
-                    (false, true) => "a frame list",
-                    _ => "a spin",
-                }
-            );
+        native_theme_test_fixtures::run(
+            NAME,
+            native_theme_test_fixtures::Child::kde("framed"),
+            |icons| {
+                native_theme_test_fixtures::write_indicator_theme(icons, "framed", FRAMED)?;
+                native_theme_test_fixtures::write_indicator_theme(icons, "turning", TURNING)
+            },
+        )
+    }
+
+    /// The Icons page under `choice`, an icon set of `set` (of the
+    /// freedesktop `theme`), draws the connector's `Spinner` of its drawing
+    /// values at every moment, under reduced motion too: at fixed times, a
+    /// day in among them, and for a frame list at its second, its last and
+    /// its first frame again.
+    fn assert_the_page_draws_the_spinner(
+        snapshots: &Snapshots,
+        choice: IconSetChoice,
+        set: IconSet,
+        theme: Option<&str>,
+    ) {
+        let mut state = State {
+            active_tab: Tab::Icons,
+            icon_set_choice: choice,
+            ..State::default()
+        };
+        state.reload_icons();
+        let resolved = &state.current_resolved;
+        let size = resolved.defaults.icon_sizes.large;
+        let mut drawn = resolved.clone();
+        drawn.spinner.diameter = size;
+        drawn.spinner.fill_color = resolved.defaults.text_color;
+        let spinner = native_theme_iced::Spinner::new(&drawn, set, theme);
+        let mut times = vec![0, 41, 42, 500, 1_000, 86_400_007];
+        match state.indicator.as_ref().map(|indicator| indicator.playback) {
+            Some(Playback::Frames { count, frame_ms }) => {
+                let frame_ms = u64::from(frame_ms.get());
+                let count = u64::try_from(count).unwrap_or(u64::MAX);
+                times.extend(
+                    [1, count.saturating_sub(1), count].map(|n| n.saturating_mul(frame_ms)),
+                );
+            }
+            Some(Playback::Spin { .. }) => {}
+            None => panic!("{set:?} {theme:?}: the page has no indicator"),
         }
-        for (choice, set, theme) in cases {
-            let mut state = State {
-                active_tab: Tab::Icons,
-                icon_set_choice: choice,
-                ..State::default()
-            };
-            state.reload_icons();
-            let resolved = &state.current_resolved;
-            let size = resolved.defaults.icon_sizes.large;
-            let mut drawn = resolved.clone();
-            drawn.spinner.diameter = size;
-            drawn.spinner.fill_color = resolved.defaults.text_color;
-            let spinner = native_theme_iced::Spinner::new(&drawn, set, theme.as_deref());
-            for ms in [0, 41, 42, 500, 1_000, 86_400_007] {
-                for reduced in [false, true] {
-                    let elapsed = Duration::from_millis(ms);
-                    let Some((_, page)) =
-                        state.indicator_at(state.animation_start + elapsed, reduced)
-                    else {
-                        panic!("{set:?} {theme:?}: the page draws no indicator");
-                    };
-                    assert!(
-                        snapshots.alike(spinner.view(elapsed, reduced), page, size),
-                        "{set:?} {theme:?} at {ms} ms (reduced motion {reduced}): the page \
-                         does not draw the Spinner"
-                    );
-                }
+        for ms in times {
+            for reduced in [false, true] {
+                let elapsed = Duration::from_millis(ms);
+                let Some((_, page)) = state.indicator_at(state.animation_start + elapsed, reduced)
+                else {
+                    panic!("{set:?} {theme:?}: the page draws no indicator");
+                };
+                assert!(
+                    snapshots.alike(spinner.view(elapsed, reduced), page, size),
+                    "{set:?} {theme:?} at {ms} ms (reduced motion {reduced}): the page \
+                     does not draw the Spinner"
+                );
             }
         }
     }

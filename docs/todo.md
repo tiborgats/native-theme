@@ -3654,7 +3654,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 - [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.
 
-
 ---
 
 ## This cycle (v0.7.0)
