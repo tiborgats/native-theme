@@ -1390,7 +1390,9 @@ impl Indicator {
     /// The frame shown `elapsed` into the animation and its rotation: the
     /// frame the clock gives, one per frame duration, looping, as the
     /// connector's `Spinner` plays one; the first frame, unturned, where
-    /// `reduce_motion`.
+    /// `reduce_motion`. A copy of the `Spinner`'s rule, which offers no
+    /// public seam for it (docs/todo.md, *iced: a public indicator-frames
+    /// seam*), held to it by `the_icons_page_plays_its_indicator_as_the_spinner_does`.
     fn frame(
         &self,
         elapsed: Duration,
@@ -2292,14 +2294,19 @@ impl State {
         self.os_accessibility.reduce_motion || self.accessibility.reduce_motion
     }
 
-    /// The Icons page's indicator frame at `now` and its rotation, from the
-    /// time since `animation_start` (`Indicator::frame`); `None` where the
+    /// The Icons page's indicator with its frame at `now` and the frame's
+    /// rotation, from the time since `animation_start` (`Indicator::frame`),
+    /// the first frame, unturned, where `reduce_motion`; `None` where the
     /// icon set has no indicator.
-    fn indicator_frame(&self, now: Instant) -> Option<(&iced_core::svg::Handle, iced::Radians)> {
+    fn indicator_frame(
+        &self,
+        now: Instant,
+        reduce_motion: bool,
+    ) -> Option<(&Indicator, &iced_core::svg::Handle, iced::Radians)> {
         let elapsed = now.saturating_duration_since(self.animation_start);
-        self.indicator
-            .as_ref()?
-            .frame(elapsed, self.motion_reduced())
+        let indicator = self.indicator.as_ref()?;
+        let (handle, angle) = indicator.frame(elapsed, reduce_motion)?;
+        Some((indicator, handle, angle))
     }
 
     /// The pointer entered `choice` at `now`. A choice other than the shown
@@ -13699,28 +13706,31 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
         .effective_icon_set(state.current_icon_set)
         .name();
 
-    let spinner = match (&state.indicator, state.indicator_frame(Instant::now())) {
-        (Some(indicator), Some((handle, angle))) => {
-            let icon = svg(handle.clone())
-                .width(Length::Fixed(icon_px))
-                .height(Length::Fixed(icon_px))
-                .rotation(iced::Rotation::Floating(angle));
-            let label = match indicator {
-                _ if state.motion_reduced() => format!("{set_name} - Static (reduced motion)"),
-                Indicator::Frames { handles, frame_ms } => {
-                    format!("{set_name} - Frames: {} ({frame_ms}ms)", handles.len())
-                }
-                Indicator::Spin { period_ms, .. } => format!("{set_name} - Spin ({period_ms}ms)"),
-            };
-            let label = text(label).role(&ts.caption, resolved, a11y);
-            Some(column![icon, label].spacing(sp.xs).align_x(iced::Center))
-        }
-        _ => None,
-    };
+    let reduced = state.motion_reduced();
+    let spinner =
+        state
+            .indicator_frame(Instant::now(), reduced)
+            .map(|(indicator, handle, angle)| {
+                let icon = svg(handle.clone())
+                    .width(Length::Fixed(icon_px))
+                    .height(Length::Fixed(icon_px))
+                    .rotation(iced::Rotation::Floating(angle));
+                let label = match indicator {
+                    _ if reduced => format!("{set_name} - Static (reduced motion)"),
+                    Indicator::Frames { handles, frame_ms } => {
+                        format!("{set_name} - Frames: {} ({frame_ms}ms)", handles.len())
+                    }
+                    Indicator::Spin { period_ms, .. } => {
+                        format!("{set_name} - Spin ({period_ms}ms)")
+                    }
+                };
+                let label = text(label).role(&ts.caption, resolved, a11y);
+                column![icon, label].spacing(sp.xs).align_x(iced::Center)
+            });
 
     let mut content = column![title, divider].spacing(gap.widget);
 
-    if state.motion_reduced() {
+    if reduced {
         content = content.push(text("prefers-reduced-motion: showing static frames").role(
             &ts.caption,
             resolved,
@@ -16898,7 +16908,7 @@ mod tests {
     /// fixtures, a frame list and a spin, whose `currentColor` is the text
     /// colour.
     #[test]
-    fn the_icons_page_colours_an_indicator_as_the_spinner_does() {
+    fn the_icons_page_colours_an_indicator_as_the_connector_colours_one() {
         for (choice, set) in [
             (IconSetChoice::Material, IconSet::Material),
             (IconSetChoice::Lucide, IconSet::Lucide),
@@ -16970,7 +16980,10 @@ mod tests {
     /// `n % count` at `n` frame durations in, so frame 0 again a turn in
     /// (1 008 ms for the bundled sets' 24 frames of 42 ms), and twenty 50 ms
     /// ticks to 1 000 ms show frame `1000 / frame_ms % count` (23), where
-    /// each tick advanced one frame (frame 20, a turn 19 % slow).
+    /// each tick advanced one frame (frame 20, a turn 19 % slow). Under
+    /// reduced motion it shows frame 0 throughout. Reduced motion is cleared
+    /// in the OS's read and in the user's preference, so the host's setting
+    /// does not decide the outcome.
     #[test]
     fn the_icons_page_indicator_keeps_its_sets_frame_rate() {
         for choice in [IconSetChoice::Material, IconSetChoice::Lucide] {
@@ -16979,17 +16992,22 @@ mod tests {
                 icon_set_choice: choice.clone(),
                 ..State::default()
             };
+            state.os_accessibility.reduce_motion = false;
+            state.accessibility.reduce_motion = false;
+            assert!(!state.motion_reduced(), "{choice:?}: motion is reduced");
             state.reload_icons();
             let Some((handles, frame_ms)) = indicator_frames(&state) else {
                 panic!("{choice:?}: the page draws no frame list");
             };
             let start = Instant::now();
             state.animation_start = start;
-            let shown = |state: &State, at: Duration| {
+            let shown_reduced = |state: &State, at: Duration, reduced: bool| {
                 state
-                    .indicator_frame(start + at)
-                    .map(|(handle, _)| handle.clone())
+                    .indicator_frame(start + at, reduced)
+                    .map(|(_, handle, _)| handle.clone())
             };
+            let shown =
+                |state: &State, at: Duration| shown_reduced(state, at, state.motion_reduced());
             let frame = Duration::from_millis(u64::from(frame_ms.get()));
             let count = handles.len();
             for n in 0..=count * 2 {
@@ -16999,6 +17017,11 @@ mod tests {
                     "{choice:?}: {} ms in, not frame {}",
                     at.as_millis(),
                     n % count
+                );
+                assert!(
+                    shown_reduced(&state, at, true).as_ref() == handles.first(),
+                    "{choice:?}: {} ms in under reduced motion, not frame 0",
+                    at.as_millis()
                 );
             }
             for tick in 1..=20 {
@@ -17014,6 +17037,109 @@ mod tests {
                 at.as_millis()
             );
         }
+    }
+
+    /// The Icons page plays its indicator by a copy of the rule the
+    /// connector's `Spinner` plays one by (the frame the time since the
+    /// start gives, looping), because the `Spinner` draws only at
+    /// `spinner.diameter` in `spinner.fill_color` and does not expose its
+    /// frames (docs/todo.md, *iced: a public indicator-frames seam*). This
+    /// test fails if the two copies drift. For each bundled set with an
+    /// indicator, it builds the page's indicator in the `Spinner`'s colour and
+    /// draws it at the `Spinner`'s size, so the two draw the same bytes. At
+    /// each of a series of elapsed times, the page's frame must give the
+    /// `Spinner`'s snapshot pixel for pixel. The next frame must not, which
+    /// shows that the comparison tells frames apart.
+    #[test]
+    fn the_icons_page_plays_its_indicator_as_the_spinner_does() {
+        let root =
+            std::env::temp_dir().join(format!("showcase-iced-indicator-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let resolved = match native_theme_iced::from_preset("material-3", false) {
+            Ok((_, resolved)) => resolved,
+            Err(error) => panic!("material-3: {error}"),
+        };
+        let diameter = resolved.spinner.diameter;
+        let snapshot = |element: Element<'_, Message>| {
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), Size::new(diameter, diameter), element);
+            match ui.snapshot(&Theme::Light) {
+                Ok(snapshot) => snapshot,
+                Err(error) => panic!("a snapshot: {error}"),
+            }
+        };
+        let page = |indicator: &Indicator, elapsed: Duration| -> Element<'_, Message> {
+            let Some((handle, angle)) = indicator.frame(elapsed, false) else {
+                panic!("the page's indicator has no frame at {elapsed:?}");
+            };
+            svg(handle.clone())
+                .width(Length::Fixed(diameter))
+                .height(Length::Fixed(diameter))
+                .rotation(iced::Rotation::Floating(angle))
+                .into()
+        };
+        for set in [IconSet::Material, IconSet::Lucide] {
+            let spinner = native_theme_iced::Spinner::new(&resolved, set, None);
+            assert!(spinner.is_indicator(), "{set:?}: the Spinner draws the arc");
+            let Some(anim) = load_icon_indicator(set, None) else {
+                panic!("{set:?} has no indicator");
+            };
+            let Some(indicator) = Indicator::of(set, &anim, resolved.spinner.fill_color) else {
+                panic!("{set:?}: the page draws no indicator");
+            };
+            let Some(frame_ms) = anim.frame_duration_ms() else {
+                panic!("{set:?}: the indicator is no frame list");
+            };
+            let frame = u64::from(frame_ms.get());
+            let count = anim.frame_list().map_or(0, |frames| frames.len()) as u64;
+            let cycle = frame * count;
+            let times = [
+                0,
+                frame - 1,
+                frame,
+                frame + 1,
+                5 * frame + frame / 2,
+                cycle - 1,
+                cycle,
+                cycle + 1,
+                1_000,
+                86_400_000 + 7 * frame,
+            ];
+            for (n, ms) in times.into_iter().enumerate() {
+                let elapsed = Duration::from_millis(ms);
+                let path = root.join(format!("{set:?}-{n}")).join("frame.png");
+                let theirs = snapshot(spinner.view(elapsed, false));
+                if let Err(error) = theirs.matches_image(&path) {
+                    panic!("{set:?} at {ms} ms: {error}");
+                }
+                match snapshot(page(&indicator, elapsed)).matches_image(&path) {
+                    Ok(same) => assert!(
+                        same,
+                        "{set:?} at {ms} ms: the page shows another frame than the Spinner"
+                    ),
+                    Err(error) => panic!("{set:?} at {ms} ms: {error}"),
+                }
+                if n == 0 {
+                    let Indicator::Frames { handles, .. } = &indicator else {
+                        panic!("{set:?}: the page's indicator is no frame list");
+                    };
+                    let Some(second) = handles.get(1) else {
+                        panic!("{set:?}: the indicator has one frame");
+                    };
+                    let second = svg(second.clone())
+                        .width(Length::Fixed(diameter))
+                        .height(Length::Fixed(diameter));
+                    match snapshot(second.into()).matches_image(&path) {
+                        Ok(same) => assert!(
+                            !same,
+                            "{set:?}: frames 0 and 1 draw alike, so the comparison sees no frame"
+                        ),
+                        Err(error) => panic!("{set:?}, frame 1: {error}"),
+                    }
+                }
+            }
+        }
+        let _ = std::fs::remove_dir_all(&root);
     }
 
     /// M9-101: the Icons page reads its indicator's frame from the clock,
@@ -17046,7 +17172,7 @@ mod tests {
             "view_animated_icons indexes: {indexed:?}"
         );
         assert!(
-            body.contains("state.indicator_frame("),
+            body.contains(".indicator_frame("),
             "view_animated_icons does not read the clock's frame"
         );
         assert!(
