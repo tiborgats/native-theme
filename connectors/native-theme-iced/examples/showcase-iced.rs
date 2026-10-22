@@ -11716,9 +11716,15 @@ fn view_display(state: &State) -> Element<'_, Message> {
 /// `Clone` and carries the formatted strings rather than a borrow.
 type ScaleRow = (&'static str, String, String, String);
 
+/// The Layout page's grid's column count, the showcase's own: the model
+/// states none.
+const LAYOUT_GRID_COLUMNS: usize = 4;
+
 /// The Widget Info of the Layout page's grid.
 fn grid_info(state: &State) -> String {
     let d = &state.current_resolved.defaults;
+    let columns =
+        format!("{LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count");
     widget_tooltip(
         "Grid",
         &[Paint::leaf(
@@ -11740,10 +11746,7 @@ fn grid_info(state: &State) -> String {
                 "grid has no Catalog and no Style — it only places its children \
                  (grid.rs:13-19)",
             ),
-            (
-                "columns",
-                "4, the showcase's own: the model states no column count",
-            ),
+            ("columns", columns.as_str()),
         ],
     )
 }
@@ -11956,7 +11959,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 cell("muted_color", to_color(d.muted_color)),
                 cell("surface_color", to_color(d.surface_color)),
             ])
-            .columns(4)
+            .columns(LAYOUT_GRID_COLUMNS)
             .spacing(gap.widget)
             // `Grid::height` sets the height of the whole grid, not of a cell
             // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
@@ -18545,6 +18548,32 @@ mod tests {
                 .iter()
                 .any(|(content, _)| content.contains("eight of the colours ResolvedDefaults names")),
             "the Grid's caption does not say \"eight of the colours\""
+        );
+    }
+
+    /// The Grid's column count is the showcase's own, so its Widget Info
+    /// lists it under Not themeable, not under Theme config, with the count
+    /// the grid is built with (M9b T11 re-review, Minor 5).
+    #[test]
+    fn the_grid_lists_its_columns_as_not_themeable() {
+        let info = grid_info(&page_state("kde-breeze", Tab::Layout));
+        let want = format!(
+            "columns: {LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count"
+        );
+        let lines: Vec<&str> = info.lines().map(str::trim).collect();
+        let heading = lines.iter().position(|line| *line == "Not themeable:");
+        let row = lines.iter().position(|line| *line == want);
+        assert!(
+            matches!((heading, row), (Some(heading), Some(row)) if heading < row),
+            "the Grid's info does not list {want:?} under Not themeable:\n{info}"
+        );
+        assert_eq!(
+            lines
+                .iter()
+                .filter(|line| line.starts_with("columns:"))
+                .count(),
+            1,
+            "the Grid's info lists its columns more than once:\n{info}"
         );
     }
 
