@@ -215,6 +215,10 @@ mod probes {
     pub const ICON_CELL: &str = "probe-icon-cell";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
+    /// The Graphics page's canvas, QR code and Markdown view.
+    pub const GRAPHICS_CANVAS: &str = "probe-graphics-canvas";
+    pub const GRAPHICS_QR_CODE: &str = "probe-graphics-qr-code";
+    pub const GRAPHICS_MARKDOWN: &str = "probe-graphics-markdown";
     /// The Display page's four tooltips' buttons, Top, Bottom, Left and
     /// Right, and their tips ([`super::drawn_probe`]).
     pub const DISPLAY_TOOLTIPS: [&str; 4] = [
@@ -13206,9 +13210,13 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                  captured when the program is built."
             )
             .body(resolved, a11y),
-            canvas(sketch)
-                .width(Length::Fixed(280.0))
-                .height(Length::Fixed(120.0)),
+            probe(
+                probes::GRAPHICS_CANVAS,
+                Length::Shrink,
+                canvas(sketch)
+                    .width(Length::Fixed(280.0))
+                    .height(Length::Fixed(120.0)),
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -13236,7 +13244,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
             text("QRCode").role(section_title(ts), resolved, a11y),
             text("Its two-colour Style is the platform's foreground on its background:")
                 .body(resolved, a11y),
-            qr_demo,
+            probe(probes::GRAPHICS_QR_CODE, Length::Shrink, qr_demo),
         ]
         .spacing(gap.widget)
         .into(),
@@ -13276,17 +13284,21 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
         UnlistedKey::Markdown,
         column![
             text("Markdown").role(section_title(ts), resolved, a11y),
-            container(markdown::view_with(
-                state.markdown_content.items(),
-                md_settings,
-                &RoleHeadings {
-                    h1: role_font(page_title(ts), resolved),
-                    h2: role_font(section_title(ts), resolved),
-                },
-            ))
-            .padding(Padding::from(gap.container))
-            .style(styles::container_card(resolved))
-            .width(Fill),
+            probe(
+                probes::GRAPHICS_MARKDOWN,
+                Fill,
+                container(markdown::view_with(
+                    state.markdown_content.items(),
+                    md_settings,
+                    &RoleHeadings {
+                        h1: role_font(page_title(ts), resolved),
+                        h2: role_font(section_title(ts), resolved),
+                    },
+                ))
+                .padding(Padding::from(gap.container))
+                .style(styles::container_card(resolved))
+                .width(Fill),
+            ),
             text(link_line).role(&ts.caption, resolved, a11y),
         ]
         .spacing(gap.widget)
@@ -20408,6 +20420,128 @@ mod tests {
                 pad.bottom
             );
         }
+    }
+
+    /// The Graphics page's colour lines that are not a style function's
+    /// (`Paint::leaf`, which `colour_row_faults` passes by: the hex is read
+    /// from the leaf the line names, so it agrees with the line by
+    /// construction) are each held to the widget they describe: a splice of
+    /// the leaf into the resolved theme moves what that widget draws. Every
+    /// colour line of the Canvas's, the QR code's and the Markdown's Widget
+    /// Info has a row here, so a new one needs its own.
+    #[test]
+    fn the_graphics_colour_lines_are_what_their_widgets_draw() {
+        type Splice = fn(&mut ResolvedTheme, native_theme::color::Rgba);
+        let rows: [(&str, fn(&State) -> String, &'static str, &str, Splice); 8] = [
+            (
+                "Canvas",
+                canvas_info,
+                probes::GRAPHICS_CANVAS,
+                "card.background_color",
+                |r, c| r.card.background_color = c,
+            ),
+            (
+                "Canvas",
+                canvas_info,
+                probes::GRAPHICS_CANVAS,
+                "separator.line_color",
+                |r, c| r.separator.line_color = c,
+            ),
+            (
+                "Canvas",
+                canvas_info,
+                probes::GRAPHICS_CANVAS,
+                "defaults.text_color",
+                |r, c| r.defaults.text_color = c,
+            ),
+            (
+                "Canvas",
+                canvas_info,
+                probes::GRAPHICS_CANVAS,
+                "defaults.accent_color",
+                |r, c| r.defaults.accent_color = c,
+            ),
+            (
+                "QRCode",
+                qr_code_info,
+                probes::GRAPHICS_QR_CODE,
+                "defaults.text_color",
+                |r, c| r.defaults.text_color = c,
+            ),
+            (
+                "QRCode",
+                qr_code_info,
+                probes::GRAPHICS_QR_CODE,
+                "defaults.background_color",
+                |r, c| r.defaults.background_color = c,
+            ),
+            (
+                "Markdown",
+                markdown_info,
+                probes::GRAPHICS_MARKDOWN,
+                "link.font.color",
+                |r, c| r.link.font.color = c,
+            ),
+            (
+                "Markdown",
+                markdown_info,
+                probes::GRAPHICS_MARKDOWN,
+                "extended.background.base.text, from defaults.text_color",
+                |r, c| r.defaults.text_color = c,
+            ),
+        ];
+        let state = page_state("kde-breeze", Tab::Graphics);
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut faults = Vec::new();
+        for info in [canvas_info, qr_code_info, markdown_info] {
+            let text = info(&state);
+            let title = text.lines().next().unwrap_or_default().to_owned();
+            let sources = text
+                .lines()
+                .skip_while(|line| line.trim() != "Theme colors:")
+                .skip(1)
+                .take_while(|line| line.starts_with("  "))
+                .filter_map(|line| {
+                    let (_, rest) = line.trim().split_once(": ")?;
+                    Some(
+                        rest.rsplit_once(" #")
+                            .map_or(rest, |(source, _)| source)
+                            .to_owned(),
+                    )
+                });
+            for source in sources {
+                if !rows
+                    .iter()
+                    .any(|(widget, _, _, leaf, _)| *widget == title && *leaf == source)
+                {
+                    faults.push(format!("{title}: the colour line of {source} has no row"));
+                }
+            }
+        }
+        let mut probed = None;
+        let (base, ..) = frame_after(&state, view(&state), size, |_| {});
+        for (widget, info, id, leaf, splice) in rows {
+            if !info(&state).contains(leaf) {
+                faults.push(format!("{widget}: its Widget Info names no {leaf}"));
+            }
+            let mut spliced = page_state("kde-breeze", Tab::Graphics);
+            splice(&mut spliced.current_resolved, spliced_colour("#13579b"));
+            spliced.current_theme = native_theme_iced::to_theme_in(
+                &spliced.current_resolved,
+                "spliced",
+                native_theme_iced::ColorMode::Light,
+            );
+            let (image, _, scale) = frame_after(&spliced, view(&spliced), size, |ui| {
+                probed = Some(probe_bounds(ui, id));
+            });
+            let Some(rect) = probed.take() else {
+                panic!("{widget} is not laid out");
+            };
+            if pixels_in(&image, rect, scale) == pixels_in(&base, rect, scale) {
+                faults.push(format!("{widget}: a splice of {leaf} does not move it"));
+            }
+        }
+        assert!(faults.is_empty(), "the Graphics colour lines: {faults:#?}");
     }
 
     /// M9-091 (theme-data): the Layout page's table draws its header in
