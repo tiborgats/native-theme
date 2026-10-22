@@ -12096,6 +12096,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#12.
+**Status (M9b batch fix, 2026-10-22):** the rule in the code: the Extra page's stand-alone TabBar and its Tabs space their tabs `tab.item_gap` apart where stated, iced_aw's own none otherwise, as this entry asked; the TabBar's tabs are no longer `tab.min_width` wide but one width, `aw_tab_width`, `tab.min_width` or the widest label inside iced_aw's paddings where that is wider (55f52f22), and the Basic page's iced_aw TabBar takes the same width (b977a635), so no label wraps; `the_extra_tab_bars_take_the_tab_gap` measures the gap against that width.
 
 #### M9-098 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10158
 **Claim:** The Layout page's Grid info says its spacing is 'the showcase's own scale' though it is layout.widget_gap wherever the platform states one, shows 'cell fill: each cell's own color' with the accent's hex, and its caption calls the eight swatches 'the eight colors ResolvedDefaults names' though ResolvedDefaults names more (the Theme Map lists 22 of its colours).
@@ -12115,6 +12116,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#14.
+**Status (M9b batch fix, 2026-10-22):** the card padding that M9b T11 filed under this entry (`card_pad`, `padding_inside_border(&card.border, Padding::ZERO)`, cited by M9-154 and the showcase's tests) is replaced by one rule for every surface a page draws as a card, `card_padding`: a side `card.border.padding` states, inside `card.border.line_width`, and `layout.container_margin` on a side it leaves unstated, none where that is unstated too, as gpui's `demo::card` and `group_box` fall back (1429b18b, the controller's ruling I1); the presets line this entry names still counts `list_presets_for_platform()`.
 
 #### M9-100 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8919
 **Claim:** The Text Inputs page builds both single-line inputs with `let mut input` and a bare block `{ input = input.padding(inp_pad); }`, a leftover of a removed condition.
@@ -12626,6 +12628,7 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Triage:** fix — CONFIRMED (M9b final fix, the controller's ruling I3).
 **Status:** fixed — the commit that files this entry (M9b final fix): the cells are padded by `padding_inside_border(&card.border, Padding::ZERO)` and their Widget Info prints the padding; `the_icon_cells_are_padded_as_cards`, over every bundled preset in both modes, fails on the old code (kde-breeze: the content 4 px down, want 8) and passes on the new.
 *Source:* m9b-final-review.md; m9b-final-fix-brief.md.
+**Status (M9b batch fix, 2026-10-22):** the rule in the code: the Icons page's cells follow the gpui showcase's gallery cell, not the card rule (the controller's ruling I1: a gpui counterpart that pads differently is followed): padded `ICON_CELL_PADDING_REMS` 0.5 of the gpui rem (gpui's `ICON_CELL_PADDING`, `rems(0.5)`, a half of the scaled `defaults.font.size`), their icon, role and source centred in the cell, the card fill kept; `the_icon_cells_are_padded_as_gpuis_gallery_cells` (renamed from `the_icon_cells_are_padded_as_cards`) holds it over every bundled preset in both modes (1429b18b).
 
 
 ### Rejected
