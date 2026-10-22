@@ -19332,16 +19332,6 @@ mod tests {
     /// and its Widget Info line (spec §3.1). A zero passes: it spaces nothing.
     #[test]
     fn nothing_is_spaced_by_a_bare_number() {
-        const CALLS: [&str; 8] = [
-            ".spacing(",
-            ".padding(",
-            ".padding_x(",
-            ".padding_y(",
-            "Padding::from(",
-            "Padding::from([",
-            "Padding::new(",
-            "space().height(Length::Fixed(",
-        ];
         let source = strip_comments_and_strings(SHOWCASE);
         let app = match source.find("mod tests {") {
             Some(end) => &source[..end],
@@ -19362,63 +19352,16 @@ mod tests {
             }
             ""
         };
-        let mut found = Vec::new();
-        for call in CALLS
-            .iter()
-            .copied()
-            .chain([".width(Length::Fixed("].iter().copied())
-        {
-            for (at, _) in app.match_indices(call) {
-                if call == ".width(Length::Fixed(" && !app[..at].ends_with("space()") {
-                    continue;
-                }
-                let rest = app[at + call.len()..].trim_start();
-                let literal = rest
-                    .find(|c: char| !(c.is_ascii_digit() || c == '.' || c == '_'))
-                    .map_or(rest, |len| &rest[..len]);
-                let zero = literal.chars().all(|c| c == '0' || c == '.' || c == '_');
-                if literal.is_empty() || zero || rest[literal.len()..].starts_with(ident) {
-                    continue;
-                }
-                found.push(format!(
-                    "showcase-iced.rs:{}: {call}{literal} in {}",
+        let found: Vec<String> = bare_spacing_sites(app)
+            .into_iter()
+            .map(|(at, what)| {
+                format!(
+                    "showcase-iced.rs:{}: {what} in {}",
                     line_at(&source, at),
                     enclosing(at)
-                ));
-            }
-        }
-        for (at, _) in app.match_indices("SP") {
-            let before = app[..at].chars().next_back();
-            let after = app[at + 2..].chars().next();
-            if before.is_some_and(ident) || after.is_some_and(ident) {
-                continue;
-            }
-            found.push(format!(
-                "showcase-iced.rs:{}: SP in {}",
-                line_at(&source, at),
-                enclosing(at)
-            ));
-        }
-        for field in ["xxs", "xs", "s", "m"] {
-            let read = format!("sp.{field}");
-            for (at, _) in app.match_indices(read.as_str()) {
-                let before = app[..at].chars().next_back();
-                let after = app[at + read.len()..].chars().next();
-                if before.is_some_and(ident) || after.is_some_and(ident) {
-                    continue;
-                }
-                found.push(format!(
-                    "showcase-iced.rs:{}: {read} in {}",
-                    line_at(&source, at),
-                    enclosing(at)
-                ));
-            }
-        }
-        found.sort_by_key(|site| {
-            site.split(':')
-                .nth(1)
-                .and_then(|line| line.parse::<usize>().ok())
-        });
+                )
+            })
+            .collect();
         println!("spaced by a bare number or the old scale: {found:#?}");
         assert!(
             found.is_empty(),
@@ -19426,6 +19369,197 @@ mod tests {
              scale, not by the theme's layout or a named showcase constant:\n{}",
             found.join("\n")
         );
+    }
+
+    /// The gate's scanner, [`bare_spacing_sites`], finds each form a bare
+    /// spacing can take, and passes a zero, a named constant and a value
+    /// worked out from the theme.
+    #[test]
+    fn the_spacing_gate_catches_every_form() {
+        let caught = [
+            "row![a].spacing(8.0)",
+            "column![a].spacing(8)",
+            "container(a).padding(4.0)",
+            "container(a).padding([4.0, 8.0])",
+            "container(a).padding([gap, 8.0])",
+            "container(a).padding_x(2.0)",
+            "container(a).padding_y(2.0)",
+            "Padding::from(4.0)",
+            "Padding::from([4.0, 8.0])",
+            "Padding::new(5.0)",
+            "Padding::ZERO.top(4.0)",
+            "Padding::ZERO.bottom(4.0)",
+            "Padding::ZERO.left(4.0)",
+            "Padding::ZERO.right(4.0)",
+            "tooltip(a, b, p).gap(6.0)",
+            "Menu::new(items).offset(2.0)",
+            "space().height(Length::Fixed(8.0))",
+            "space().width(Length::Fixed(8.0))",
+            "space().height(8.0)",
+            "space().width(8)",
+            "row![a].spacing(8.0_f32)",
+            "row![a].spacing(8f32)",
+            "let p = Padding { top: 4.0, right: gap, bottom: 0.0, left: 0.0 };",
+            "let sp = &SP;",
+            "row![a].spacing(sp.m)",
+        ];
+        for code in caught {
+            assert!(
+                !bare_spacing_sites(code).is_empty(),
+                "the gate passes {code:?}"
+            );
+        }
+        let passed = [
+            "row![a].spacing(0.0)",
+            "row![a].spacing(gap.widget)",
+            "container(a).padding(Padding::ZERO)",
+            "container(a).padding([0.0, 0.0])",
+            "Padding::new(AW_MENU_PADDING)",
+            "Padding::ZERO.top(row_inset / 2.0)",
+            "row![a].spacing(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y))",
+            "space().width(Fill)",
+            "container(a).width(Length::Fixed(80.0))",
+            "const PAD: Padding = Padding { top: 4.0, right: 8.0, bottom: 4.0, left: 8.0 };",
+            "Padding { top: rem / 4.0, right: rem / 2.0, bottom: rem / 4.0, left: rem / 2.0 }",
+            "let sp = &resolved.splitter; sp.divider_width",
+        ];
+        for code in passed {
+            assert_eq!(
+                bare_spacing_sites(code),
+                Vec::new(),
+                "the gate stops {code:?}"
+            );
+        }
+    }
+
+    /// Where `code` (Rust with comments and strings stripped) spaces or pads
+    /// by a bare number or the showcase's old spacing scale, as byte offsets
+    /// with what was found: a non-zero numeric literal (typed or not) as a
+    /// whole argument, or a whole element of an array argument, of a
+    /// spacing or padding call, of `space()`'s size or of a `Padding`
+    /// builder side, a non-zero literal side of a `Padding { .. }` that is
+    /// not a named `const`, and the `SP` and `sp.{xxs,xs,s,m}` tokens.
+    fn bare_spacing_sites(code: &str) -> Vec<(usize, String)> {
+        const CALLS: [&str; 12] = [
+            ".spacing(",
+            ".padding(",
+            ".padding_x(",
+            ".padding_y(",
+            "Padding::from(",
+            "Padding::new(",
+            ".gap(",
+            ".offset(",
+            ".top(",
+            ".bottom(",
+            ".left(",
+            ".right(",
+        ];
+        const SIZES: [&str; 2] = ["space().height(", "space().width("];
+        const SUFFIXES: [&str; 12] = [
+            "f32", "f64", "u8", "u16", "u32", "u64", "usize", "i8", "i16", "i32", "i64", "isize",
+        ];
+        let ident = |c: char| c.is_ascii_alphanumeric() || c == '_';
+        // A whole element that is a non-zero numeric literal, typed or not.
+        let bare = |element: &str| -> bool {
+            let element = element.trim();
+            let element = element
+                .strip_prefix("Length::Fixed(")
+                .and_then(|inner| inner.strip_suffix(')'))
+                .unwrap_or(element)
+                .trim();
+            let number = element.trim_start_matches('-');
+            let len = number
+                .find(|c: char| !(c.is_ascii_digit() || c == '.' || c == '_'))
+                .unwrap_or(number.len());
+            let (digits, suffix) = number.split_at(len);
+            digits.starts_with(|c: char| c.is_ascii_digit())
+                && (suffix.is_empty() || SUFFIXES.contains(&suffix))
+                && digits.chars().any(|c| ('1'..='9').contains(&c))
+        };
+        // The argument text of the call whose `(` ends at `open`.
+        let argument = |open: usize| -> &str {
+            let rest = &code[open..];
+            let mut depth = 0usize;
+            for (ix, c) in rest.char_indices() {
+                match c {
+                    '(' | '[' | '{' => depth = depth.saturating_add(1),
+                    ')' | ']' | '}' if depth == 0 => return &rest[..ix],
+                    ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                    _ => {}
+                }
+            }
+            rest
+        };
+        // The elements of an argument split at its top-level commas, an
+        // array's brackets taken off.
+        let elements = |argument: &str| -> Vec<String> {
+            let argument = argument.trim();
+            let argument = argument
+                .strip_prefix('[')
+                .and_then(|inner| inner.strip_suffix(']'))
+                .unwrap_or(argument);
+            let mut parts = Vec::new();
+            let mut depth = 0usize;
+            let mut part = String::new();
+            for c in argument.chars() {
+                match c {
+                    '(' | '[' | '{' => depth = depth.saturating_add(1),
+                    ')' | ']' | '}' => depth = depth.saturating_sub(1),
+                    _ => {}
+                }
+                if c == ',' && depth == 0 {
+                    parts.push(std::mem::take(&mut part));
+                } else {
+                    part.push(c);
+                }
+            }
+            parts.push(part);
+            parts
+        };
+        let mut found = Vec::new();
+        for call in CALLS.iter().chain(SIZES.iter()) {
+            for (at, _) in code.match_indices(call) {
+                let parts = elements(argument(at + call.len()));
+                if let Some(part) = parts.iter().find(|part| bare(part)) {
+                    found.push((at, format!("{call}{}", part.trim())));
+                }
+            }
+        }
+        for (at, _) in code.match_indices("Padding {") {
+            let line_start = code[..at].rfind('\n').map_or(0, |ix| ix + 1);
+            let statement = &code[line_start..at];
+            if statement.contains("const ") && statement.contains(": Padding =") {
+                continue;
+            }
+            let fields = argument(at + "Padding {".len());
+            for part in elements(fields) {
+                if let Some((_, value)) = part.split_once(':')
+                    && bare(value)
+                {
+                    found.push((at, format!("Padding {{ {} }}", part.trim())));
+                }
+            }
+        }
+        let token = |at: usize, len: usize| {
+            let before = code[..at].chars().next_back();
+            let after = code[at + len..].chars().next();
+            !(before.is_some_and(ident) || after.is_some_and(ident))
+        };
+        for (at, _) in code.match_indices("SP") {
+            if token(at, 2) {
+                found.push((at, "SP".to_owned()));
+            }
+        }
+        for field in ["xxs", "xs", "s", "m"] {
+            let read = format!("sp.{field}");
+            for (at, _) in code.match_indices(read.as_str()) {
+                if token(at, read.len()) {
+                    found.push((at, read.clone()));
+                }
+            }
+        }
+        found.sort();
+        found
     }
 
     /// Each constant of the iced showcase that names the same distance as a
