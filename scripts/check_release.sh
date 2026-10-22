@@ -687,17 +687,17 @@ fi
 # Section: iced connector configurations
 #
 # The per-crate loops above run the connector with its default features only.
-# Its other two supported configurations are gated here: `--no-default-features`
-# (no icon or system-font support) and `--features iced_aw,watch,native`: the
+# Its other three supported configurations are gated here: `--no-default-features`
+# (no icon or system-font support); `--features iced_aw,watch,native`: the
 # optional widget set the showcase's `iced_aw` tab renders, `theme_changes()`
 # with its tests and the showcase's `watch` code, and the OS readers. Each is
 # additive, so the one leg covers `iced_aw` alone too. The `watch` tests start
 # no OS watcher, and on Linux the tests read the OS theme with or without
 # `native` (the dev-dependencies turn on native-theme's `linux`), a read that
-# cannot fail there: with no reader it is the platform preset. Same hard class
-# as the connector's default test and clippy checks. .github/workflows/ci.yml
-# runs the same two commands, so no configuration reaches a release that CI
-# never saw.
+# cannot fail there: with no reader it is the platform preset; and the
+# showcase's required features alone, linted (below). Same hard class as the
+# connector's default test and clippy checks. .github/workflows/ci.yml runs the
+# same four commands, so no configuration reaches a release that CI never saw.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \

@@ -657,10 +657,10 @@ thread_local! {
     /// Whether the elements record their rectangles, into [`DRAWING`] as
     /// they are drawn and into [`SURVEYED`] as they are operated on, and
     /// shape their text parts to do so: set by `main` for `--dump-layout`
-    /// ([`records_layout`]), whose settle ([`settles_layout`]) and write
-    /// run where it is set and read the two, and by the tests that read them (`recording`). A plain
-    /// run records nothing; the hover target ([`UNDER_POINTER`]) needs no
-    /// record.
+    /// ([`records_layout`]), whose settle ([`settles_layout`]) and write run
+    /// where it is set and read the two, and by the tests that read them
+    /// (`recording`). A plain run records nothing; the hover target
+    /// ([`UNDER_POINTER`]) needs no record.
     static RECORDING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
@@ -5203,10 +5203,11 @@ where
 /// `combo_box` matches the text a row shows and nothing else (iced_widget
 /// 0.14.2 `src/combo_box.rs:970-1013`, `search` over the matchers built
 /// from the option's `Display`, which `overlay/menu.rs:559` draws as the
-/// row's label), so a key's word missing from the name finds nothing here:
-/// `3` of material-3 (Material), `13` of ios-13 (iOS), `monterey` of
-/// macos-monterey (macOS Sonoma). Its placeholder, shown while the field is
-/// empty, says so.
+/// row's label), so a key's word missing from the name finds no row of that
+/// preset here: `3` of material-3 (Material), `13` of ios-13 (iOS),
+/// `monterey` of macos-monterey (macOS Sonoma), though the `default (..)`
+/// row, which names the default preset's key, is found by its words. Its
+/// placeholder, shown while the field is empty, says so.
 ///
 /// The arrow is the field's icon: [`arrow_handle`]'s chevron at its size,
 /// right-aligned at the right padding's inner edge as the drop-down's is
@@ -5245,6 +5246,10 @@ fn theme_picker(state: &State) -> Element<'_, Message> {
             spacing: 0.0,
             side: text_input::Side::Right,
         }),
+        // `pick_list_handle` builds a `Handle::Static` (the connector's
+        // `lib.rs`); another kind carries no glyph a `text_input::Icon` can
+        // take, so the field would go without its arrow, which
+        // `the_theme_rows_arrow_is_a_glyph` rules out under every preset.
         _ => field,
     }
     .into()
@@ -15886,56 +15891,27 @@ mod tests {
         }
     }
 
-    /// Opens the `pick_list` tagged `id` and chooses its `nth` option.
-    ///
-    /// A `pick_list` pads its menu with `button::DEFAULT_PADDING`
-    /// (`pick_list.rs:204`); `text_size` is the one the showcase gives it.
-    fn pick_list_option(
-        ui: &mut Simulator<'_, Message>,
-        id: &'static str,
-        nth: usize,
-        text_size: f32,
-    ) {
-        pick_option(
-            ui,
-            id,
-            nth,
-            text_size,
-            iced::widget::button::DEFAULT_PADDING,
-        );
-    }
-
-    /// Opens the `combo_box` tagged `id` and chooses its `nth` option.
-    ///
-    /// A `combo_box` pads its menu's rows with its own padding
-    /// (`combo_box.rs:917`), `padding`: the one the showcase gives it, or
-    /// `text_input::DEFAULT_PADDING` where it gives none (`combo_box.rs:190`),
-    /// which is as tall as a `pick_list`'s today but is not the same constant
-    /// and need not stay equal; `text_size` is the one the showcase gives it.
-    fn combo_box_option(
-        ui: &mut Simulator<'_, Message>,
-        id: &'static str,
-        nth: usize,
-        text_size: f32,
-        padding: Padding,
-    ) {
-        pick_option(ui, id, nth, text_size, padding);
-    }
-
-    /// Opens the picker tagged `id` and chooses its `nth` option, counting
-    /// from the top of the menu.
+    /// Opens the picker tagged `id`, a `pick_list` or a `combo_box`, and
+    /// chooses its `nth` option, counting from the top of the menu.
     ///
     /// The menu is an overlay whose list implements no `Widget::operate`
     /// (`overlay/menu.rs`), so no selector reaches its rows. What iced does
     /// state publicly is where they are: the menu is laid out directly under
     /// the widget that opened it (`overlay/menu.rs:241-262`), one row per
     /// option, each `line_height + padding.y()` tall
-    /// (`overlay/menu.rs:375-397`), where the padding is the one the picker
-    /// gives it and the line is the picker's text size: the theme's
-    /// `combo_box.font.size` times the text-scaling factor, which the showcase
-    /// gives every picker. The
-    /// padding is iced's own default, which the showcase overrides for none of
-    /// its pickers, read rather than copied as a number.
+    /// (`overlay/menu.rs:375-397`), where the line is the picker's text size,
+    /// `text_size` (the theme's `combo_box.font.size` times the text-scaling
+    /// factor, which the showcase gives every picker), and the padding is the
+    /// picker's own, `menu_padding`: a `pick_list` pads its menu with its
+    /// padding (`pick_list.rs:724`) and a `combo_box` its menu's rows with its
+    /// (`combo_box.rs:917`). Some pickers carry their own padding
+    /// (`combo_box_padding`: the side panel's rows, the Preferences dialog's
+    /// and the Basic page's drop-down); the others keep iced's default, `button::DEFAULT_PADDING` for a `pick_list`
+    /// (`pick_list.rs:204`) and `text_input::DEFAULT_PADDING` for a
+    /// `combo_box` (`combo_box.rs:190`), which is as tall as a `pick_list`'s
+    /// today but is not the same constant and need not stay equal. The caller
+    /// passes the padding the picker is given, read rather than copied as a
+    /// number.
     fn pick_option(
         ui: &mut Simulator<'_, Message>,
         id: &'static str,
@@ -16234,7 +16210,13 @@ mod tests {
             &state.accessibility,
         );
         let messages = drive(&mut state, |ui| {
-            pick_list_option(ui, probes::PICK_LIST, 1, size)
+            pick_option(
+                ui,
+                probes::PICK_LIST,
+                1,
+                size,
+                iced::widget::button::DEFAULT_PADDING,
+            )
         });
         let picked = match messages.as_slice() {
             [Message::PickListSelected(value)] => value.clone(),
@@ -16253,7 +16235,7 @@ mod tests {
             &state.accessibility,
         );
         let messages = drive(&mut state, |ui| {
-            combo_box_option(
+            pick_option(
                 ui,
                 probes::COMBO_BOX,
                 1,
@@ -16532,8 +16514,9 @@ mod tests {
             state.current_resolved.combo_box.font.size,
             &state.accessibility,
         );
+        let pad = combo_box_padding(&state.current_resolved);
         let messages = drive(state, |ui| {
-            pick_list_option(ui, probes::COLOR_MODE, nth, size)
+            pick_option(ui, probes::COLOR_MODE, nth, size, pad)
         });
         assert!(
             matches!(messages.as_slice(), [Message::ColorModeSelected(mode)] if *mode == wanted),
@@ -16580,7 +16563,7 @@ mod tests {
         );
         let pad = combo_box_padding(&state.current_resolved);
         let messages = drive(state, |ui| {
-            combo_box_option(ui, probes::THEME, nth, size, pad)
+            pick_option(ui, probes::THEME, nth, size, pad)
         });
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
@@ -16660,6 +16643,67 @@ mod tests {
                 theme.height,
                 mode.width,
                 mode.height
+            );
+        }
+    }
+
+    /// The Theme row's rows follow the OS read's platform preset: a read
+    /// whose preset differs from the one the rows were built on rebuilds the
+    /// combo box's options (`State::keep_os_theme`), so the `default (..)`
+    /// row names the new preset.
+    #[test]
+    fn a_new_default_preset_rebuilds_the_theme_rows() {
+        let mut state = loaded("kde-breeze", false);
+        let Some(other) = native_theme::theme::Theme::list_presets_for_platform()
+            .iter()
+            .map(|info| info.key)
+            .find(|key| *key != state.default_preset)
+        else {
+            panic!("this platform offers no preset but {}", state.default_preset);
+        };
+        let read = match os_read_with(|system| system.preset = other.to_owned()) {
+            Ok(read) => read,
+            Err(error) if !cfg!(target_os = "linux") => {
+                eprintln!(
+                    "a_new_default_preset_rebuilds_the_theme_rows: skipped, nothing asserted: \
+                     the OS theme failed to read on this platform at run time ({error})"
+                );
+                return;
+            }
+            Err(error) => panic!("the OS theme failed to read on Linux: {error}"),
+        };
+        let labels = |choices: &[ThemeChoice]| -> Vec<String> {
+            choices.iter().map(ToString::to_string).collect()
+        };
+        let wanted = labels(&theme_choices(other));
+        assert_ne!(
+            labels(state.theme_combo.options()),
+            wanted,
+            "the rows were built on {other} already"
+        );
+        let _ = state.keep_os_theme(read);
+        assert_eq!(state.default_preset, other);
+        assert_eq!(
+            labels(state.theme_combo.options()),
+            wanted,
+            "the Theme row's rows after a read whose preset is {other}"
+        );
+    }
+
+    /// The Theme row's field carries its arrow: `arrow_handle` gives a
+    /// `Handle::Static`, the one kind `theme_picker` turns into the field's
+    /// icon, under every bundled preset in both modes, so the row's
+    /// `combo_box.arrow_icon_size_px` route names an icon that is drawn.
+    #[test]
+    fn the_theme_rows_arrow_is_a_glyph() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            assert!(
+                matches!(
+                    arrow_handle(&state.current_resolved),
+                    pick_list::Handle::Static(_)
+                ),
+                "{preset} dark={dark}: the drop-down's arrow is no glyph the Theme row can carry"
             );
         }
     }
