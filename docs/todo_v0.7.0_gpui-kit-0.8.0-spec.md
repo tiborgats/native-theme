@@ -1160,6 +1160,25 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   accepted cost of a shape that stays closed under device-pixel snapping: a seam at a
   fractional scale is visible, a few levels in a 1 px band are not. The overlap stays, in all
   three connectors.
+- *Added 2026-10-22 (G3 T15), correcting the "toolkit limit" bullet above (the G3 T14
+  review's Minors 1 and 2, the G3 T13 review's Minor 7):* iced and egui round each edge of
+  a clip to the nearest physical pixel, not outward: iced through `Rectangle::snap`
+  (`iced_core-0.14.0` `src/rectangle.rs:249-266`, `src/point.rs:133-138`), which
+  `iced_wgpu-0.14.0` `src/lib.rs:479` calls, egui's backends in their scissor rectangles
+  (`egui-wgpu-0.36.2` `src/renderer.rs:1143-1151`, `egui_glow-0.36.2`
+  `src/painter.rs:771-780`). So at a fractional scale at most half a physical pixel of
+  `tab.active_background` can show beside a square there, not up to a pixel; gpui widens a
+  content mask outward (the line above of G3 T12's fix round 1), where up to a pixel stays
+  true. Two limits of placement complete the bullet. In iced the tab's quads snap to the
+  pixel grid under `crisp` and the annulus quads do not (`snap: false`, §12.4), so at a
+  fractional scale the curve can lie up to half a physical pixel off the side edge it
+  continues; `tab_flares`' doc says so. egui's showcase places the flares from the
+  selected tab's rectangle rounded to physical pixels (`Rect::round_to_pixels`,
+  `emath-0.36.2` `src/gui_rounding.rs:175`), the rectangle epaint strokes the `Button`'s
+  frame on (`StrokeKind::Inside`, `egui-0.36.2` `src/containers/frame.rs:435-441`;
+  `epaint-0.36.2` `src/tessellator.rs:1830-1846`), while it draws a circle where it is
+  given, so there the curve meets the side edge; a test at 1.25 physical pixels per point
+  holds it (Task 15's first commit).
 
 ### 12.3 gpui: `widgets::TabBar` (Task 12)
 
@@ -1372,6 +1391,20 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   as the sentences say ("as fontdb implements it"); they are true and do not move with the
   iced `lib.rs`, so Task 13 leaves them. `docs/todo.md`'s stale `:1253` is at `:423` of that
   file at Task 13's base, not `:412`.
+- *Added 2026-10-22 (G3 T15), from the G3 T13 review's Minor 6:* Task 13's seven-line doc
+  in `connectors/native-theme-iced/src/styles/aw.rs` moved the lines this section cites
+  there: the selected tab under the pointer's "no outline and square corners", given above
+  as `styles/aw.rs:234-237`, is at `:241-244` since `2e7dffcd`, as the route reads.
+- *Added 2026-10-22 (G3 T15), from the G3 T13 review's Minors 1, 3 and 4:* `tab_flares`' doc
+  also says that an empty path names the wrapped element itself and that inside a
+  scrollable the row is wrapped, not the scrollable; a connector test holds the `&[0, i]`
+  path over a column of a bar and a panel, and a showcase test the Extra page's two
+  wrappers at its open tab's feet. The room outside an iced_aw bar is filled
+  `tab.bar_background`, as the bar is, so an end flare lies over the bar's colour as in gpui
+  and egui, whose room is inside the bar: the Basic page's and the Extra `TabBar`'s
+  container is styled so (`surface(.., Surface::TabStrip)`); the Extra `Tabs`' room takes a
+  band of that fill as tall as its bar under it (`Stack::push_under`), so its content
+  panel's sides stay the page's.
 
 ### 12.5 egui: the showcase's `tab_bar` (Task 14)
 

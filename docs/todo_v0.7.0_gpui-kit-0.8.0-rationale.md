@@ -769,6 +769,15 @@ the radius (§1.5), and `scripts/check_widget_coverage.py`, since no upstream wi
 new rows move `tab.active_background` and `tab.border.color` only where a bundled preset
 states the radius, so the export changes when `windows-11` does (Task 15), not before.
 
+*Added 2026-10-22 (G3 T15), from the G3 T13 and T14 reviews:* iced and egui round a clip's
+edges to the nearest physical pixel (spec §12.2's G3 T15 line), so "up to a pixel of fill"
+above is at most half a physical pixel in those two; gpui's outward mask keeps up to a pixel.
+The selected tab's iced_aw citations above moved with Task 13's doc in
+`connectors/native-theme-iced/src/styles/aw.rs`: `styles::aw::tab_bar`, given in §1.5 as
+`aw.rs:204`, is at `:211`, and "no outline and square corners", given as `:234-237`, at
+`:241-244` (both since `2e7dffcd`). The room outside an iced_aw bar is filled
+`tab.bar_background`, as the bar is (spec §12.4's G3 T15 line).
+
 ### K16 — Where the D1 work runs: five G3 tasks after the unit, each one writer at an M9b boundary
 
 M9b is mid-way (on 2026-10-21 T1–T6 of 19 done, T6's fix round 1 open with T5's two tab

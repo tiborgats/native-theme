@@ -1329,9 +1329,13 @@ pub(crate) fn tab_indicator_strip(
 /// index at each level: `&[i]` for the `i`-th tab of a `row` of tabs or of
 /// an `iced_aw` `TabBar`, `&[0, i]` for an `iced_aw` `Tabs` with its bar on
 /// top, whose layout is the bar and then the content (iced_aw 0.14.1
-/// `src/widget/tabs.rs:386-394`). A path that names no node draws nothing
-/// more. The wrapper hands `tabs` its tree, its layout and every event as
-/// they are, so wrapping keeps its state and its place.
+/// `src/widget/tabs.rs:386-394`); an empty path names `tabs` itself. A path
+/// that names no node draws nothing more. The wrapper hands `tabs` its tree,
+/// its layout and every event as they are, so wrapping keeps its state and
+/// its place. Inside a scrollable, wrap its row, not the scrollable: the
+/// wrapper draws in the place it is laid out in, so over a scrollable it
+/// would reach the tabs' unscrolled layout and draw outside the scrollable's
+/// translation and clip.
 ///
 /// With `r` the radius and `w` `tab.border.line_width`, after `tabs` it
 /// draws:
@@ -1353,9 +1357,14 @@ pub(crate) fn tab_indicator_strip(
 /// `iced_aw` bar, which takes none around itself. iced's layers do not nest
 /// their clips, so each flare is clipped to its square cut by the viewport
 /// the wrapper is drawn in (a scrollable's visible area): a scrolled-away
-/// tab's flares go with it. iced clips to whole physical pixels
-/// (iced_wgpu 0.14.0 `src/lib.rs:479`), so at a fractional scale up to a
-/// pixel of the fill can show beside a square.
+/// tab's flares go with it. iced clips to whole physical pixels, rounding
+/// each edge of a clip to the nearest (iced_wgpu 0.14.0 `src/lib.rs:479`,
+/// iced_core 0.14.0 `src/rectangle.rs:249-266`, `src/point.rs:133-138`), so
+/// at a fractional scale at most half a physical pixel of the fill can show
+/// beside a square; and the flares are not snapped to the pixel grid while
+/// the tab is (iced_core 0.14.0 `src/renderer.rs:89-100`, the `crisp`
+/// feature), so there the curve can lie up to half a physical pixel off the
+/// side edge it continues.
 ///
 /// It is the counterpart of [`tab_indicator_line()`]: iced draws nothing
 /// outside a widget's bounds but in a widget of its own, and the flares lie

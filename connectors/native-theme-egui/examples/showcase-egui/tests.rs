@@ -24,9 +24,16 @@ pub(crate) const TEST_PRESET: &str = "catppuccin-mocha";
 /// The showcase under a named preset, never the desktop's theme (§13 T11), in a window of the
 /// size `main` opens (the harness's own default is 800 × 600, `egui_kittest/src/builder.rs:34`).
 pub(crate) fn open(theme: egui::Theme, cli: CliArgs) -> Harness<'static, App> {
+    open_at(theme, cli, 1.0)
+}
+
+/// [`open`] at `pixels_per_point` physical pixels per point (the harness's own is 1,
+/// `egui_kittest/src/builder.rs:35`).
+fn open_at(theme: egui::Theme, cli: CliArgs, pixels_per_point: f32) -> Harness<'static, App> {
     Harness::builder()
         .with_theme(theme)
         .with_size(crate::WINDOW_SIZE)
+        .with_pixels_per_point(pixels_per_point)
         .build_eframe(move |cc| {
             App::new(cc, &cli).expect("the showcase starts under a bundled preset")
         })
@@ -2737,7 +2744,21 @@ fn open_curving_out(
     radius: Option<f32>,
     edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
 ) -> Harness<'static, App> {
-    let mut harness = open(theme, cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]));
+    open_curving_out_at(theme, radius, 1.0, edit)
+}
+
+/// [`open_curving_out`] at `pixels_per_point` physical pixels per point.
+fn open_curving_out_at(
+    theme: egui::Theme,
+    radius: Option<f32>,
+    pixels_per_point: f32,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> Harness<'static, App> {
+    let mut harness = open_at(
+        theme,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+        pixels_per_point,
+    );
     harness.run_steps(4);
     let ctx = harness.ctx.clone();
     let app = harness.state_mut();
@@ -2988,6 +3009,51 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
             "{theme:?}"
         );
     }
+}
+
+/// At a fractional scale, 1.25 physical pixels per point, each flare is placed from the selected
+/// tab's rectangle rounded to physical pixels, the one epaint strokes the tab's frame on, so the
+/// curve meets the side edge it continues: in each of the three bars the two flares' circles lie
+/// about `(x0 - 3, y1 - 4)` and `(x1 + 3, y1 - 4)` of the rounded rectangle, clipped to their
+/// squares about it; and some selected tab lies off the pixel grid, so the rounding shows.
+#[test]
+fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() {
+    use egui::emath::GuiRounding as _;
+    let ppp = 1.25;
+    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {});
+    assert!(near(harness.ctx.pixels_per_point(), ppp));
+    let shapes = &harness.output().shapes;
+    let places = harness.state().registry.places();
+    let mut off_grid = Vec::new();
+    for [_, one_id, _] in TAB_BARS {
+        let Some(one) = places.get(one_id).copied() else {
+            panic!("{one_id} is not placed");
+        };
+        let tab = one.round_to_pixels(ppp);
+        if !near_rect(tab, one) {
+            off_grid.push(one_id);
+        }
+        let (x0, x1, y1) = (tab.min.x, tab.max.x, tab.max.y);
+        // (the square's left edge, the centre's x)
+        for (left, cx) in [(x0 - 3.0, x0 - 3.0), (x1 - 1.0, x1 + 3.0)] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let centre = egui::pos2(cx, y1 - 4.0);
+            let circles = circles_in(shapes, square);
+            assert!(
+                circles.len() == 2
+                    && circles
+                        .iter()
+                        .all(|(_, circle)| circle.center.distance(centre) < 1e-3),
+                "{one_id} at {one:?}, {tab:?} rounded: the flare in {square:?} is {circles:?}, \
+                 not two rings about {centre:?}"
+            );
+        }
+    }
+    assert!(
+        !off_grid.is_empty(),
+        "no selected tab lies off the pixel grid at {ppp}, so the rounding is not seen"
+    );
 }
 
 /// Without an outline (`tab.border.line_width` 0), each flare is the fill alone, an annulus from

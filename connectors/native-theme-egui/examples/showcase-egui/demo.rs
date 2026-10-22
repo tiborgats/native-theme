@@ -1208,14 +1208,22 @@ pub(crate) fn outward_radius(t: &native_theme::theme::ResolvedTheme) -> Option<f
 /// edge's own column, so the two are one line, and below it the fill covers the side edge's
 /// foot. epaint strokes a circle outside its radius (`epaint-0.36.2`
 /// `src/tessellator.rs:1531`), so each annulus is a circle of its inner radius stroked as wide
-/// as the annulus, and one from 0 is a disc. egui clips to whole physical pixels, so at a
-/// fractional scale up to a pixel of the fill can show beside a square.
+/// as the annulus, and one from 0 is a disc. The flares are placed from `tab` rounded to
+/// physical pixels, the rectangle epaint strokes the `Button`'s frame on (its stroke
+/// `StrokeKind::Inside`, `egui-0.36.2` `src/containers/frame.rs:435-441`; `epaint-0.36.2`
+/// `src/tessellator.rs:1830-1846`), as epaint draws a circle where it is given, so the curve
+/// meets the side edge it continues. egui clips to whole physical pixels, rounding each edge of
+/// a clip to the nearest (`egui-wgpu-0.36.2` `src/renderer.rs:1143-1151`, `egui_glow-0.36.2`
+/// `src/painter.rs:771-780`), so at a fractional scale at most half a physical pixel of the
+/// fill can show beside a square.
 fn tab_flares(
     painter: &egui::Painter,
     tab: egui::Rect,
     r: f32,
     t: &native_theme::theme::ResolvedTheme,
 ) {
+    use egui::emath::GuiRounding as _;
+    let tab = tab.round_to_pixels(painter.pixels_per_point());
     let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
     let outline = native_theme_egui::convert::to_color32(t.tab.border.color);
     let width = t.tab.border.line_width;

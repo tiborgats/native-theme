@@ -977,10 +977,12 @@ fn the_tab_flares_rows_hold_where_the_theme_curves_out() -> native_theme::Result
         .collect();
     assert_eq!(rows.len(), 2, "the fill row and the outline row");
     let mut failures = Vec::new();
-    for c in combinations()?
+    let windows: Vec<_> = combinations()?
         .into_iter()
         .filter(|c| c.key == "windows-11")
-    {
+        .collect();
+    assert_eq!(windows.len(), 2, "windows-11 in its two modes");
+    for c in windows {
         for (radius, width, fill, outline) in [
             (Some(4.0), None, true, true),
             (Some(4.0), Some(0.0), true, false),

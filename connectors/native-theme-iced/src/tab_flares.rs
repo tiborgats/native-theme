@@ -405,6 +405,11 @@ mod tests {
     /// apart, padded 4 at both ends, wrapped in `tab_flares` with
     /// `selected`, drawn in `viewport`: what it drew, in order.
     fn drawn(resolved: &ResolvedTheme, selected: &[usize], viewport: Rectangle) -> Vec<Drawn> {
+        draw(crate::tab_flares(resolved, tab_row(), selected), viewport)
+    }
+
+    /// The row of three tabs [`drawn`] draws.
+    fn tab_row() -> Row<'static, (), Theme, Recorder> {
         let tabs = (0..3).map(|_| {
             container(Space::new())
                 .width(100.0)
@@ -415,10 +420,14 @@ mod tests {
                 })
                 .into()
         });
-        let tabs: Row<'_, (), Theme, Recorder> = Row::with_children(tabs)
+        Row::with_children(tabs)
             .spacing(10.0)
-            .padding(iced_core::Padding::ZERO.left(4.0).right(4.0));
-        let mut element = crate::tab_flares(resolved, tabs, selected);
+            .padding(iced_core::Padding::ZERO.left(4.0).right(4.0))
+    }
+
+    /// `element` laid out in 1000 by 100 and drawn in `viewport`: what it
+    /// drew, in order.
+    fn draw(mut element: Element<'_, (), Theme, Recorder>, viewport: Rectangle) -> Vec<Drawn> {
         let mut tree = Tree::new(&element);
         let mut recorder = Recorder::default();
         let node = element.as_widget_mut().layout(
@@ -536,6 +545,12 @@ mod tests {
             let (quad, background) = flare.fill.quad();
             assert!(!quad.snap, "the rings are not snapped");
             assert!(close(quad.bounds.x, x - far) && close(quad.bounds.width, 2.0 * far));
+            assert!(
+                close(quad.bounds.y, 38.0 - far) && close(quad.bounds.height, 2.0 * far),
+                "{:?}",
+                quad.bounds
+            );
+            assert_eq!(quad.border.radius, far.into(), "a circle of radius R");
             assert!(close(quad.border.width, far - 3.0), "{}", quad.border.width);
             assert_eq!(quad.border.color, look.fill);
             assert_eq!(background, Background::Color(Color::TRANSPARENT));
@@ -621,6 +636,39 @@ mod tests {
             rings.clone().count() == 4 && rings.clone().all(|q| !q.snap),
             "no ring snaps"
         );
+    }
+
+    /// The path `&[0, i]` an `iced_aw` `Tabs` with its bar on top takes,
+    /// whose layout is the bar and then the content (iced_aw 0.14.1
+    /// `src/widget/tabs.rs:386-394`): over a column of a row of tabs and a
+    /// panel below it, `&[0, 1]` names the row's second tab, and the empty
+    /// path the whole column (its left flare cut by the window).
+    #[test]
+    fn a_nested_path_names_the_tab_in_its_bar() {
+        let r = curving_out();
+        let look = tab_flares_look(&r.tab).expect("a radius");
+        let squares = |path: &[usize]| -> Vec<Rectangle> {
+            let bar_and_panel = iced_widget::Column::new()
+                .push(tab_row())
+                .push(container(Space::new()).width(100.0).height(50.0));
+            draw(crate::tab_flares(&r, bar_and_panel, path), WINDOW)
+                .into_iter()
+                .filter_map(|d| match d {
+                    Drawn::Layer(bounds) => Some(bounds),
+                    _ => None,
+                })
+                .collect()
+        };
+        let second = Rectangle::new(Point::new(114.0, 0.0), Size::new(100.0, 32.0));
+        let column = Rectangle::new(Point::ORIGIN, Size::new(328.0, 82.0));
+        for (path, tab) in [(&[0, 1][..], second), (&[], column)] {
+            let want: Vec<Rectangle> = look
+                .flares(tab)
+                .iter()
+                .filter_map(|f| f.square.intersection(&WINDOW))
+                .collect();
+            assert_eq!(squares(path), want, "{path:?}");
+        }
     }
 
     /// Nothing more is drawn with the radius unstated, or about a path that

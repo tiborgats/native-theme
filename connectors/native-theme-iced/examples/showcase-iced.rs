@@ -7186,8 +7186,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
         }
         ("tab", "active_outward_corner_radius_px") if flare_room(resolved) == 0.0 => {
-            "not drawn: unstated, or not a positive length; tab_flares draws no flares and the \
-             row keeps no room for them"
+            "not drawn: unstated, or not a positive, finite length; tab_flares draws no flares \
+             and the row keeps no room for them"
                 .into()
         }
         ("tab", "active_outward_corner_radius_px") if id == "basic.page" => {
@@ -7195,7 +7195,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         #[cfg(feature = "iced_aw")]
         ("tab", "active_outward_corner_radius_px") if id == "basic.tabs.bar" => {
-            "a container's padding outside the bar at both ends".into()
+            "a container's padding outside the bar at both ends, filled tab.bar_background as \
+             the bar is"
+                .into()
         }
         ("tab", "active_outward_corner_radius_px")
             if ["basic.tabs.bar", "chrome.page_tabs", "chrome.side_panel.inspector_tabs"]
@@ -7236,7 +7238,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         ("tab", "border.color") => {
             "tab_style: the open tab's border colour; and native_theme_iced::tab_flares's \
-             flares, where tab.active_outward_corner_radius is stated"
+             flares, where tab.active_outward_corner_radius is stated and \
+             tab.border.line_width is positive"
                 .into()
         }
         ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
@@ -9036,7 +9039,8 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         // The open tab's flares over the bar and the slots, its node the
         // bar's (the stack's layer 0, which `tagged` passes through); iced_aw
         // takes no padding around its bar, so the room for the end tabs'
-        // flares is a container's, outside it.
+        // flares is a container's, outside it, filled tab.bar_background as
+        // the bar is, so the end flares lie over the bar's colour.
         let room = flare_room(resolved);
         container(native_theme_iced::tab_flares(
             resolved,
@@ -9044,6 +9048,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
             &[0, state.basic_tab],
         ))
         .padding(Padding::ZERO.left(room).right(room))
+        .style(surface(resolved, Surface::TabStrip))
         .into()
     };
     // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
@@ -13699,7 +13704,8 @@ fn aw_tab_bar_info(state: &State) -> String {
             "tab.active_outward_corner_radius, {}: native_theme_iced::tab_flares curves the \
              selected tab out into the bar at both feet, over each bar; a container pads each \
              bar by it at both ends, outside it, as iced_aw takes no padding around a bar, \
-             which on this sample insets the Tabs' content panel by it as well",
+             filled tab.bar_background beside the bar, which on this sample insets the Tabs' \
+             content panel by it as well",
             px_text(room)
         )
     } else {
@@ -14220,7 +14226,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // The room for the open tab's flares at both ends of each bar: iced_aw
     // takes no padding around a bar, so a container's, outside it, which
-    // insets the Tabs' content panel by as much.
+    // insets the Tabs' content panel by as much. The room beside a bar is
+    // filled tab.bar_background as the bar is: the TabBar's container
+    // whole, the Tabs' through a band as tall as its bar under it, so the
+    // content panel's sides stay the page's.
     let room = flare_room(resolved);
     let flared = |bar| container(bar).padding(Padding::ZERO.left(room).right(room));
     let tab_demo = hoverable(
@@ -14235,13 +14244,21 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 resolved,
                 tab_bar.style(styles::aw::tab_bar(resolved)),
                 &[state.aw_tab_bar_active],
-            )),
+            ))
+            .style(surface(resolved, Surface::TabStrip)),
             tab_bar_body,
-            flared(native_theme_iced::tab_flares(
-                resolved,
-                drawn_probe(probes::AW_TABS, tabs),
-                &[0, state.aw_tabs_active],
-            )),
+            iced::widget::Stack::new()
+                .push(flared(native_theme_iced::tab_flares(
+                    resolved,
+                    drawn_probe(probes::AW_TABS, tabs),
+                    &[0, state.aw_tabs_active],
+                )))
+                .push_under(
+                    container(iced::widget::Space::new())
+                        .width(Fill)
+                        .height(Length::Fixed(tab_t.min_height))
+                        .style(surface(resolved, Surface::TabStrip)),
+                ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -22610,7 +22627,8 @@ mod tests {
             (
                 "basic.tabs.bar",
                 if aw {
-                    "a container's padding outside the bar at both ends"
+                    "a container's padding outside the bar at both ends, filled \
+                     tab.bar_background as the bar is"
                 } else {
                     "the row's padding at both ends"
                 },
@@ -23144,6 +23162,91 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// G3 T15 (the G3 T13 review's Minors 3 and 4): the Extra page's two
+    /// iced_aw wrappers curve the open tab out at its feet, the `TabBar`'s
+    /// through the path `&[i]`, the `Tabs`' through `&[0, i]`, its bar on
+    /// top. Under windows-11 light with `tab.active_outward_corner_radius` 4
+    /// and the open tab's fill set apart, in each bar the open first tab's
+    /// fill reaches 1.5 to 3 further out on each side in its bottom row than
+    /// at its middle (the flares, about 2; a flare about another node lies
+    /// elsewhere), and with the radius unstated not at all. With `tab.bar_background` set apart too, the
+    /// room beside each bar, 3.5 left of the open tab at its middle, is the
+    /// bar's colour, as the bar is, and beside the `Tabs`' content panel,
+    /// below its bar, it is not.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_extra_tab_bars_curve_out_at_the_open_tabs_feet() {
+        let [open_fill, bar_fill] = ["#13579b", "#579b13"].map(spliced_colour);
+        let is = |image: &image::RgbaImage, x: u32, y: u32, colour| {
+            let want = to_color(colour).into_rgba8();
+            image
+                .get_pixel_checked(x, y)
+                .is_some_and(|p| p.0.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2))
+        };
+        for radius in [Some(4.0), None] {
+            let mut state = extra_state("windows-11", AppColorMode::Light);
+            state.current_resolved.tab.active_outward_corner_radius = radius;
+            state.current_resolved.tab.active_background = open_fill;
+            state.current_resolved.tab.bar_background = bar_fill;
+            let bar_height = state.current_resolved.tab.min_height;
+            let (image, rects, scale) = extra_frame(&state, |_| {});
+            let Some(tabs) = rects.get(probes::AW_TABS).copied() else {
+                panic!("the Tabs are not drawn");
+            };
+            let page_tabs = listed(&rects, "chrome.page_tabs");
+            let px = |y: f32| (y * scale).round() as u32;
+            for (bar, rows) in [
+                ("TabBar", px(page_tabs.y + page_tabs.height)..px(tabs.y)),
+                ("Tabs", px(tabs.y)..px(tabs.y + bar_height + 1.0)),
+            ] {
+                // Each pixel row's leftmost and rightmost open-fill pixel.
+                let spans: Vec<(u32, u32, u32)> = rows
+                    .filter_map(|y| {
+                        let xs = (0..image.width()).filter(|&x| is(&image, x, y, open_fill));
+                        let left = xs.clone().min()?;
+                        let right = xs.max()?;
+                        Some((y, left, right))
+                    })
+                    .collect();
+                let (Some(&(_, mid_left, mid_right)), Some(&(_, foot_left, foot_right))) =
+                    (spans.get(spans.len() / 2), spans.last())
+                else {
+                    panic!("{bar}, radius {radius:?}: its open tab is not drawn in its fill");
+                };
+                let out = |a: u32, b: u32| (f64::from(a) - f64::from(b)) as f32 / scale;
+                let (left, right) = (out(mid_left, foot_left), out(foot_right, mid_right));
+                let curved = (1.5..=3.0).contains(&left) && (1.5..=3.0).contains(&right);
+                let square = left.abs() <= 0.5 && right.abs() <= 0.5;
+                assert!(
+                    if radius.is_some() { curved } else { square },
+                    "{bar}, radius {radius:?}: the open tab's foot reaches {left} and {right} \
+                     further out than its middle"
+                );
+                if radius.is_none() {
+                    continue;
+                }
+                let Some(&(mid_y, _, _)) = spans.get(spans.len() / 2) else {
+                    continue;
+                };
+                // The tab's outer left edge, its fill's being a line width in.
+                let x0 = mid_left as f32 / scale - state.current_resolved.tab.border.line_width;
+                let room = ((x0 - 3.5) * scale).floor() as u32;
+                assert!(
+                    is(&image, room, mid_y, bar_fill),
+                    "{bar}: the room beside the bar is {:?}, not tab.bar_background",
+                    image.get_pixel_checked(room, mid_y).map(|p| p.0)
+                );
+                if bar == "Tabs" {
+                    let below = px(tabs.y + bar_height + 10.0);
+                    assert!(
+                        !is(&image, room, below, bar_fill),
+                        "the Tabs' content panel is flanked by tab.bar_background"
+                    );
+                }
+            }
+        }
     }
 
     /// M9-097 (theme-data): the Extra page's `TabBar` spaces its tabs
