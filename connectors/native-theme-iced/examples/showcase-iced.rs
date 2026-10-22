@@ -1434,7 +1434,9 @@ struct State {
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
     /// `current_resolved` as a listed element's Widget Info reads its values
-    /// ([`theme_json`]), serialised once per install.
+    /// ([`theme_json`]), serialised once per install. Written only with
+    /// `current_resolved`, in `load_theme`: a test that sets
+    /// `current_resolved` sets this too.
     theme_json: serde_json::Value,
     /// The current theme's layout spacing. Not part of `ResolvedTheme`: it is
     /// shared between the light and the dark variant, so it sits on the
@@ -2309,7 +2311,10 @@ impl State {
     /// and the side panel's visibility ([`iced_route`], [`unlisted_info`]),
     /// so [`update_inner`] calls this after each message it handles: every
     /// message but the hover, tick, capture, layout-dump and Copy messages,
-    /// which change none of them. A view only lays it out.
+    /// which change none of them. It also runs after the messages that change
+    /// none of what it reads (a splitter drag, a window resize, typing, a
+    /// slider): that costs less than the build at each view it replaces, and
+    /// serialises no theme. A view only lays it out.
     fn rebuild_info(&mut self) {
         self.shown_info = self.hovered.and_then(|hovered| shown_info(self, hovered));
     }
@@ -17233,6 +17238,8 @@ mod tests {
             Some(Playback::Spin { .. }) => {}
             None => panic!("{set:?} {theme:?}: the page has no indicator"),
         }
+        times.sort_unstable();
+        times.dedup();
         for ms in times {
             for reduced in [false, true] {
                 let elapsed = Duration::from_millis(ms);
