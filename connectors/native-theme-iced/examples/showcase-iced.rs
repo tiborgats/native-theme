@@ -17488,6 +17488,7 @@ mod tests {
     /// [`counted_read`] counts, its text scale the number of the read: the
     /// first read in Light, every later one in Dark, as an OS switched to
     /// Dark after the showcase started reads.
+    #[cfg(feature = "watch")]
     fn read_turning_dark() -> native_theme::Result<native_theme::SystemTheme> {
         let read = OS_READS.with(|reads| {
             reads.set(reads.get() + 1);
@@ -20491,7 +20492,7 @@ mod tests {
                 Some((_, bounds)) => *bounds,
                 None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
             };
-            let (role_at, source_at) = (at(&role), at(&source));
+            let (role_at, source_at) = (at(&role), at(source));
             let top = role_at.y - cell.y - box_px - ICON_CELL_GAP;
             assert!(
                 near(top, pad.top),
@@ -20518,7 +20519,16 @@ mod tests {
     #[test]
     fn the_graphics_colour_lines_are_what_their_widgets_draw() {
         type Splice = fn(&mut ResolvedTheme, native_theme::color::Rgba);
-        let rows: [(&str, fn(&State) -> String, &'static str, &str, Splice); 8] = [
+        /// The widget's info title, its info, its probe, the colour line's
+        /// source and the splice of the leaf it reads.
+        type Row = (
+            &'static str,
+            fn(&State) -> String,
+            &'static str,
+            &'static str,
+            Splice,
+        );
+        let rows: [Row; 8] = [
             (
                 "Canvas",
                 canvas_info,
