@@ -4985,6 +4985,7 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
     // from the rows, starts at the title's foot.
     let drop = |entries: Vec<MenuEntry>| {
         let width = menu_width(
+            &state.label_widths,
             entries.iter().filter_map(MenuEntry::texts),
             theme_font(&m.font),
             scaled_text_size(m.font.size, a11y),
@@ -5567,37 +5568,38 @@ fn flare_room(resolved: &ResolvedTheme) -> f32 {
 
 #[cfg(test)]
 thread_local! {
-    /// The tab labels [`LabelWidths`] has shaped on this thread.
+    /// The tab labels and menu rows [`LabelWidths`] has shaped on this
+    /// thread.
     static LABEL_SHAPES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
-/// The widths of the tab labels the tab rows are sized by ([`tab_width`],
-/// [`aw_tab_width`]), each as iced shapes it ([`MeasuredText`]) in a font at
-/// a size, shaped the first time a view asks for it and kept: the view is
-/// rebuilt on every message, twenty times a second while the Basic page's
-/// spinner turns, and a label's width changes only with the theme's tab
-/// font or the text scale, so [`State`] drops the widths at every install
-/// and every change of the accessibility preferences. Counted in
-/// [`LABEL_SHAPES`] under test.
+/// The widths of the texts the tab rows and the menus are sized by
+/// ([`tab_width`], [`aw_tab_width`], [`menu_width`]), each as iced shapes it
+/// ([`MeasuredText`]) in a font at a size, shaped the first time a view asks
+/// for it and kept: the view is rebuilt on every message, twenty times a
+/// second while the Basic page's spinner turns, and a text's width changes
+/// only with the theme's fonts or the text scale, so [`State`] drops the
+/// widths at every install and every change of the accessibility
+/// preferences. Counted in [`LABEL_SHAPES`] under test.
 #[derive(Default)]
-struct LabelWidths(std::cell::Cell<Vec<(&'static str, iced::Font, f32, f32)>>);
+struct LabelWidths(std::cell::Cell<Vec<(String, iced::Font, f32, f32)>>);
 
 impl LabelWidths {
     /// `label`'s width in `font` at `size`.
-    fn width(&self, label: &'static str, font: iced::Font, size: f32) -> f32 {
+    fn width(&self, label: &str, font: iced::Font, size: f32) -> f32 {
         let mut known = self.0.take();
         let width = match known
             .iter()
-            .find(|(l, f, s, _)| *l == label && *f == font && *s == size)
+            .find(|(l, f, s, _)| l == label && *f == font && *s == size)
         {
-            Some(&(.., width)) => width,
+            Some(&(_, _, _, width)) => width,
             None => {
                 #[cfg(test)]
                 LABEL_SHAPES.with(|shapes| shapes.set(shapes.get() + 1));
                 let width = MeasuredText::new(label.to_owned(), size, size, font)
                     .extent()
                     .width;
-                known.push((label, font, size, width));
+                known.push((label.to_owned(), font, size, width));
                 width
             }
         };
@@ -5801,6 +5803,7 @@ fn page_menu(state: &State) -> Element<'_, Message> {
         })
         .collect();
     let width = menu_width(
+        &state.label_widths,
         Tab::ALL.iter().map(|tab| (tab.label(), None)),
         theme_font(&m.font),
         scaled_text_size(m.font.size, a11y),
@@ -9292,8 +9295,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         // its tabs out in one `Row` it builds itself (`src/widget/tab_bar.rs`,
         // `layout`), so the bar cannot wrap as the page's other rows do; the
         // page's column rule leaves every column room for the two tabs at
-        // `tab.min_width`, `tab.item_gap` apart, which is their width here
-        // wherever "One" and "Two" fit in it.
+        // this width, `tab.item_gap` apart ([`basic_tabs_width`]).
         let bar = match tab_t.item_gap {
             Some(gap) => bar.spacing(gap),
             None => bar,
@@ -13709,24 +13711,22 @@ impl MenuEntry {
 /// How wide a drop-down menu of a `MenuBar` is, as the gpui and egui
 /// showcases size theirs: its widest row -- the label, then `gap` and the
 /// shortcut where the row has one -- inside the row's padding `pad`. Each
-/// text is measured as iced shapes it in `font` at `size`.
+/// text is measured as iced shapes it in `font` at `size`, once per install
+/// ([`LabelWidths`]).
 ///
 /// `MenuTheme` states no menu width, and iced_aw lays a menu's rows out at
 /// one width, the `Menu`'s (`Menu::new` fills the width its limits give,
 /// iced_aw 0.14.1 `src/widget/menu/menu_tree.rs:151-165`), which the
 /// showcase sets to this.
 fn menu_width<'a>(
+    widths: &LabelWidths,
     rows: impl IntoIterator<Item = (&'a str, Option<String>)>,
     font: iced::Font,
     size: f32,
     pad: Padding,
     gap: f32,
 ) -> f32 {
-    let width = |content: &str| {
-        MeasuredText::new(content.to_owned(), size, size, font)
-            .extent()
-            .width
-    };
+    let width = |content: &str| widths.width(content, font, size);
     let widest = rows
         .into_iter()
         .map(|(label, shortcut)| match shortcut {
@@ -14453,6 +14453,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // row) lies [`AW_MENU_GAP`] from that item.
     let drop = |entries: Vec<(&'static str, Option<_>)>, facing: f32| {
         let width = menu_width(
+            &state.label_widths,
             entries.iter().map(|&(label, _)| (label, None)),
             theme_font(&menu_t.font),
             scaled_text_size(menu_t.font.size, a11y),
@@ -24399,6 +24400,47 @@ mod tests {
             installed,
             "a view after the install shaped a label again"
         );
+    }
+
+    /// M9b Step 8 round 4 (perf, the step-8 notes' `menu_width`): the menus
+    /// are sized from their rows' widths shaped once per install, as the
+    /// tab rows are ([`LabelWidths`]), so a view after the first shapes no
+    /// text at all: under kde-breeze, on the Basic page and, with
+    /// `iced_aw`, the Extra page with its menus, three views after the
+    /// first shape none ([`TEXT_SHAPES`], every text [`MeasuredText`]
+    /// shapes), and a new text scale shapes the rows again once.
+    #[test]
+    fn a_view_after_the_first_shapes_no_text() {
+        let shaped = || TEXT_SHAPES.with(std::cell::Cell::get);
+        let mut tabs = vec![Tab::Basic];
+        #[cfg(feature = "iced_aw")]
+        tabs.push(Tab::Extra);
+        for tab in tabs {
+            let mut state = loaded("kde-breeze", false);
+            state.active_tab = tab;
+            drop(view(&state));
+            let first = shaped();
+            for _ in 0..3 {
+                drop(view(&state));
+            }
+            assert_eq!(
+                shaped(),
+                first,
+                "{tab:?}: a view after the first shaped text again"
+            );
+            let _ = update(&mut state, Message::TextScaleSelected(TextScale(1.5)));
+            drop(view(&state));
+            let rescaled = shaped();
+            assert!(rescaled > first, "{tab:?}: a new text scale shaped nothing");
+            for _ in 0..3 {
+                drop(view(&state));
+            }
+            assert_eq!(
+                shaped(),
+                rescaled,
+                "{tab:?}: a view after the new scale shaped text again"
+            );
+        }
     }
 
     /// M9b Step 8, round 3 (the re-review's n8): the Basic page's column rule
