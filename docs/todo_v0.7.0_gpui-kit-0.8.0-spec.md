@@ -1144,6 +1144,22 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   numbers the tests share change with it: the fill annulus runs from `3` to `R` (width
   `R − (r − w) ≈ 3.657`), and where `w` is 0 from `r` (width `R − r ≈ 2.657`). Tasks 13 and
   14 draw the fill annulus the same way, from `max(r − w, 0)`, and use these numbers.
+- *Added 2026-10-22 (G3 T13), correcting the line above (the G3 T12 re-review's Important A
+  and Minor A), the controller's ruling:* "where nothing snaps it draws the same pixels" is
+  not true of a translucent outline. With the fill annulus from `max(r − w, 0)`, the
+  outline in the band from `max(r − w, 0)` to `r` is composited over
+  `tab.active_background`, not over the bar as WinUI's border, which lies outside its fill,
+  is. Source-over in sRGB values, the band differs from WinUI's by
+  `(active − bar) · (1 − α)` per channel: for `windows-11` after Task 15, light `#0000000f`
+  over `#f9f9f9` where WinUI's lies over the `#f3f3f3` bar, `6 · 240/255 ≈ 5.6` levels
+  lighter; dark `#00000019` over `#282828` where WinUI's lies over `#202020`,
+  `8 · 230/255 ≈ 7.2` levels lighter (before Task 15 the two fills are the same colour, and
+  the band is the same). The anti-aliased pixels at the outline's inner edge, radius
+  `max(r − w, 0)`, are covered twice, by the fill's inner edge and the outline's, so they
+  carry a share of the fill under the outline where WinUI's carry the bar. Both are the
+  accepted cost of a shape that stays closed under device-pixel snapping: a seam at a
+  fractional scale is visible, a few levels in a 1 px band are not. The overlap stays, in all
+  three connectors.
 
 ### 12.3 gpui: `widgets::TabBar` (Task 12)
 
@@ -1350,6 +1366,12 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
   iced `basic_column_count`), T10 (the Extra page's `TabBar`) and T19 (the page list
   `page_tabs` draws) is open, each done or not begun, nor an M9b fix round carrying tab items
   (rationale K16).
+- *Added 2026-10-22 (G3 T13), on the citations above:* the iced showcase's two doc
+  comments citing `lib.rs:1278-1336` (`drawable_font`'s and `nearest_weight`'s) cite fontdb
+  0.23's `src/lib.rs`, whose lines `:1278-1336` are its CSS matching's font-weight step (4c),
+  as the sentences say ("as fontdb implements it"); they are true and do not move with the
+  iced `lib.rs`, so Task 13 leaves them. `docs/todo.md`'s stale `:1253` is at `:423` of that
+  file at Task 13's base, not `:412`.
 
 ### 12.5 egui: the showcase's `tab_bar` (Task 14)
 
@@ -1378,6 +1400,14 @@ showcase's `tab_bar` — and not for upstream's own variants, which take no such
 - The connector itself gains nothing more: its mapping row is Task 11's.
 - When: should M9c have started, at an M9c boundary where its T7 (the egui `column_count`)
   is done or not begun (rationale K16).
+- *Added 2026-10-22 (G3 T13), from Task 14, correcting the drawing call above:* epaint
+  0.36.2 strokes a circle wholly outside its radius (`epaint-0.36.2` `src/tessellator.rs:1531`,
+  `PathStroke::from(stroke).outside()`, applied at `:981-985`), not centred on it, so each
+  annulus is `circle_stroke(centre, inner, Stroke::new(outer − inner, colour))`: the fill
+  from `inner = max(r − w, 0)` to `R`, the outline from `inner` to `r`; and one whose inner
+  radius is 0 is a filled disc, `circle_filled(centre, outer, colour)`, since
+  `tessellate_circle` draws nothing for a radius of 0 or less (`:1494`). Task 14 draws them
+  so (`b7fad4a0`).
 
 ### 12.6 The switch-on (Task 15)
 
