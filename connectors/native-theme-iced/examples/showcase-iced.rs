@@ -12860,7 +12860,9 @@ fn aw_menu_info(state: &State) -> String {
         &[
             (
                 "item height",
-                "menu.row_height where the theme states one, on the item button",
+                "menu.row_height where the theme states one, on the item button, \
+                 grown above a text scale of 1 to hold its line and padding \
+                 (rows::scaled_height)",
             ),
             (
                 "item padding",
@@ -13204,12 +13206,25 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // the titles `menu_title`), padded like the platform's menu items: the
     // sides menu.border.padding states, a button's own elsewhere. A theme
     // that states no row height (KDE's items size to their font) leaves the
-    // item its own height.
+    // item its own height; a stated one grows above a text scale of 1 to
+    // hold the row's line and padding, as the window's menu rows do
+    // (`rows::scaled_height`). The text is drawn at the theme's line height,
+    // as the window's menus' is.
     let item_pad = native_theme_iced::padding_or(&menu_t.border.padding, button::DEFAULT_PADDING);
+    let row_height = menu_t.row_height.map(|h| {
+        rows::scaled_height(
+            h,
+            a11y,
+            menu_t.font.size,
+            resolved.defaults.line_height,
+            item_pad.y(),
+            0.0,
+        )
+    });
     let menu_entry = move |label: &'static str| -> Element<'_, Message> {
         let entry = button(
             text(label)
-                .typeset(&menu_t.font, a11y)
+                .themed(&menu_t.font, resolved, a11y)
                 .wrapping(text::Wrapping::None),
         )
         .on_press(Message::AwActionChosen(format!("Menu: {label}")))
@@ -13218,7 +13233,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .padding(item_pad);
         aw_menu_probe(
             label,
-            match menu_t.row_height {
+            match row_height {
                 Some(h) => entry.height(Length::Fixed(h)),
                 None => entry,
             },
@@ -13230,7 +13245,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     let menu_root = move |label: &'static str| {
         aw_menu_probe(
             label,
-            button(text(label).typeset(&menu_t.font, a11y))
+            button(text(label).themed(&menu_t.font, resolved, a11y))
                 .on_press(Message::AwActionChosen(format!("Menu: {label}")))
                 .style(menu_title(resolved, false))
                 .padding(item_pad),
@@ -13322,7 +13337,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         let entry = |label: &'static str| -> Element<'_, Message> {
             aw_menu_probe(
                 label,
-                button(text(label).typeset(&menu_t.font, a11y))
+                button(text(label).themed(&menu_t.font, resolved, a11y))
                     .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
                     .style(menu_row(resolved))
                     .width(Fill)
@@ -20223,6 +20238,70 @@ mod tests {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Right)),
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Right)),
         ]);
+    }
+
+    /// M9-150's class on the Extra page (theme-data): the `iced_aw` menus'
+    /// text is drawn at `defaults.line_height`, as the window's menus' is,
+    /// where iced's own is 1.3 times the size, and a row of a stated
+    /// `menu.row_height` grows above a text scale of 1 to hold its line and
+    /// padding, as the window's rows do (`rows::scaled_height`). At 1 and at
+    /// 1.5 the File title is the line box of `menu.font` at its scaled size
+    /// and `defaults.line_height` plus `menu.border.padding` above and below;
+    /// the File menu's first row is `menu.row_height` at 1 and at least that
+    /// line box, rounded up, plus the padding at 1.5 (adwaita,
+    /// macos-monterey, material-3), and the line box plus the padding where
+    /// the theme states no row height (kde-breeze); the context menu's first
+    /// entry, which takes no row height, is the line box plus the padding.
+    /// Each is computed from the theme at test time.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_extra_menus_hold_their_text_at_every_text_scale() {
+        let mut faults = Vec::new();
+        for (preset, factor) in ["kde-breeze", "adwaita", "macos-monterey", "material-3"]
+            .into_iter()
+            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+        {
+            let mut state = extra_state(preset, AppColorMode::Light);
+            state.accessibility.text_scaling_factor = factor;
+            let r = state.current_resolved.clone();
+            let m = &r.menu;
+            assert!(
+                (r.defaults.line_height - 1.3).abs() > 0.01,
+                "{preset}: defaults.line_height is iced's own 1.3, which tells nothing"
+            );
+            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+            let line = scaled_text_size(m.font.size, &state.accessibility) * r.defaults.line_height;
+            let row = match m.row_height {
+                Some(h) if factor > 1.0 => h.max(line.ceil() + pad.y()),
+                Some(h) => h,
+                None => line + pad.y(),
+            };
+            let (_, rects, _) = extra_frame(&state, open_extra_file_menu);
+            let (_, context, _) = extra_frame(&state, open_extra_context_menu);
+            for (what, at, want) in [
+                ("the File title", rects.get(probes::AW_FILE), line + pad.y()),
+                (
+                    "the File menu's first row",
+                    rects.get(probes::AW_NEW_WINDOW),
+                    row,
+                ),
+                (
+                    "the context menu's first entry",
+                    context.get(probes::AW_COPY),
+                    line + pad.y(),
+                ),
+            ] {
+                match at {
+                    Some(rect) if (rect.height - want).abs() < 0.01 => {}
+                    Some(rect) => faults.push(format!(
+                        "{preset} at {factor}: {what} is {} tall, want {want}",
+                        rect.height
+                    )),
+                    None => faults.push(format!("{preset} at {factor}: {what} is not drawn")),
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// M9-090 (theme-data): the Extra page's menus are drawn as the theme's
