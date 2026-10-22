@@ -562,9 +562,10 @@ run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
-# The macOS and Windows code, with each platform's features, and the
-# showcases' shared crate's capture code; CI's clippy job runs the same six.
-# The targets are the cross-target clippy section's.
+# The macOS and Windows code, with each platform's features, the showcases'
+# shared crate's capture code and the iced showcase's own; CI's clippy job
+# runs the first six, its iced job the iced showcase's two. The targets are
+# the cross-target clippy section's.
 NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
@@ -582,6 +583,11 @@ for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
         bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --no-default-features
     run_check "strict-panic (native-theme-showcase-support, $target)" \
         bash scripts/check_strict_panic.sh --target "$target" -p native-theme-showcase-support --lib
+    # The iced showcase's macOS and Windows code (its capture through the
+    # shared crate, the system icon sets, and on macOS the system menu bar),
+    # with iced_aw as the screenshot workflow builds it.
+    run_check "strict-panic (showcase-iced, iced_aw, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw
 done
 run_check "strict-panic (native-theme-derive)" \
     bash scripts/check_strict_panic.sh -p native-theme-derive --lib
@@ -591,9 +597,12 @@ run_check "strict-panic (native-theme-build)" \
 # `watch.rs` are linted too; nothing in the library is compiled only without one.
 run_check "strict-panic (native-theme-iced, iced_aw, watch, native)" \
     bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
-# Its showcase, with the connector's features.
+# Its showcase, with the connector's features, and in its default build,
+# whose code without iced_aw the first run never compiles.
 run_check "strict-panic (showcase-iced, iced_aw, watch, native)" \
     bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
+run_check "strict-panic (showcase-iced, default features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced
 # The gpui connector with `native` and `watch` too, so `watch.rs` is linted.
 run_check "strict-panic (native-theme-gpui, native, watch)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
@@ -687,17 +696,18 @@ fi
 # Section: iced connector configurations
 #
 # The per-crate loops above run the connector with its default features only.
-# Its other three supported configurations are gated here: `--no-default-features`
-# (no icon or system-font support); `--features iced_aw,watch,native`: the
-# optional widget set the showcase's `iced_aw` tab renders, `theme_changes()`
-# with its tests and the showcase's `watch` code, and the OS readers. Each is
-# additive, so the one leg covers `iced_aw` alone too. The `watch` tests start
-# no OS watcher, and on Linux the tests read the OS theme with or without
-# `native` (the dev-dependencies turn on native-theme's `linux`), a read that
-# cannot fail there: with no reader it is the platform preset; and the
-# showcase's required features alone, linted (below). Same hard class as the
-# connector's default test and clippy checks. .github/workflows/ci.yml runs the
-# same four commands, so no configuration reaches a release that CI never saw.
+# Its other three supported configurations are gated here:
+# `--no-default-features` (no icon or system-font support);
+# `--features iced_aw,watch,native`; and the showcase's required features
+# alone, linted (below). The second is the optional widget set the showcase's
+# `iced_aw` tab renders, `theme_changes()` with its tests and the showcase's
+# `watch` code, and the OS readers. Each is additive, so the one leg covers
+# `iced_aw` alone too. The `watch` tests start no OS watcher, and on Linux the
+# tests read the OS theme with or without `native` (the dev-dependencies turn
+# on native-theme's `linux`), a read that cannot fail there: with no reader it
+# is the platform preset. Same hard class as the connector's default test and
+# clippy checks. .github/workflows/ci.yml runs the same four commands, so no
+# configuration reaches a release that CI never saw.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \
