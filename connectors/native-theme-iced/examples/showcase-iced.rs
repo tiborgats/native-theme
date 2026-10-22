@@ -16,8 +16,8 @@
 //! cargo run -p native-theme-iced --example showcase-iced
 //! ```
 //!
-//! To have it follow the OS theme's changes while its colour mode is System,
-//! add the `watch` feature, which `native_theme_iced::theme_changes` needs:
+//! To have it follow the OS theme's changes, in every colour mode, add the
+//! `watch` feature, which `native_theme_iced::theme_changes` needs:
 //!
 //! ```sh
 //! cargo run -p native-theme-iced --example showcase-iced --features watch
@@ -1761,7 +1761,7 @@ struct State {
     detect_icon_theme: fn() -> native_theme::Result<String>,
 
     /// Whether `subscription` watches the OS theme
-    /// (`native_theme_iced::theme_changes`) while the colour mode is System.
+    /// (`native_theme_iced::theme_changes`), in every colour mode.
     #[cfg(feature = "watch")]
     watch_os_theme: bool,
 }
@@ -15716,10 +15716,13 @@ fn subscription(state: &State) -> Subscription<Message> {
     subs.push(Subscription::run(system_menu::events));
     subs.push(iced::window::resize_events().map(|(_, size)| Message::WindowResized(size)));
 
-    // The OS theme's changes, while the colour mode is System; a watcher that
-    // cannot start yields its error, which leaves the theme as it is.
+    // The OS theme's changes, in every colour mode, as the gpui showcase
+    // follows them: under a picked Light or Dark the OS still owns the
+    // accent, the fonts and the icon theme `default` shows, and the read a
+    // switch back to System draws is kept current. A watcher that cannot
+    // start yields its error, which leaves the theme as it is.
     #[cfg(feature = "watch")]
-    if matches!(state.color_mode, AppColorMode::System) && state.watch_os_theme {
+    if state.watch_os_theme {
         subs.push(
             native_theme_iced::theme_changes()
                 .filter_map(|changed| changed.ok().map(|_| Message::ReloadSystemTheme)),
@@ -17385,6 +17388,67 @@ mod tests {
         assert_eq!(
             state.accessibility.text_scaling_factor, 3.0,
             "the preset's preferences after the reload are the new read's"
+        );
+    }
+
+    /// The OS theme as this host reads it, counted in [`OS_READS`] as
+    /// [`counted_read`] counts, its text scale the number of the read: the
+    /// first read in Light, every later one in Dark, as an OS switched to
+    /// Dark after the showcase started reads.
+    fn read_turning_dark() -> native_theme::Result<native_theme::SystemTheme> {
+        let read = OS_READS.with(|reads| {
+            reads.set(reads.get() + 1);
+            reads.get()
+        });
+        os_read_with(|system| {
+            system.accessibility.text_scaling_factor = read as f32;
+            system.mode = if read == 1 {
+                native_theme_iced::ColorMode::Light
+            } else {
+                native_theme_iced::ColorMode::Dark
+            };
+        })
+    }
+
+    /// The OS theme is watched in every colour mode, as the gpui showcase's
+    /// is (`on_os_theme_change`): under a picked Light or Dark the OS still
+    /// owns the accent, the fonts and the icon theme `default` shows, so the
+    /// watcher's event, Reload System Theme, reads the OS again there too,
+    /// and a switch back to System draws that read, in its own mode, where
+    /// it drew the read the showcase kept from before the pick.
+    #[cfg(feature = "watch")]
+    #[test]
+    fn the_os_theme_is_watched_in_every_colour_mode() {
+        let reads = || OS_READS.with(std::cell::Cell::get);
+        OS_READS.with(|reads| reads.set(0));
+        let Some(mut state) = started_with_os(
+            "the_os_theme_is_watched_in_every_colour_mode",
+            read_turning_dark,
+        ) else {
+            return;
+        };
+        assert!(!state.is_dark, "startup in the first read's mode, Light");
+        for mode in AppColorMode::ALL {
+            let _ = update(&mut state, Message::ColorModeSelected(mode));
+            state.watch_os_theme = false;
+            let unwatched = subscription(&state).units();
+            state.watch_os_theme = true;
+            assert_eq!(
+                subscription(&state).units(),
+                unwatched + 1,
+                "the OS theme's changes are not watched under {mode}"
+            );
+        }
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::Dark));
+        assert_eq!(reads(), 1, "startup only, before the watcher's event");
+        let _ = update(&mut state, Message::ReloadSystemTheme);
+        assert_eq!(reads(), 2, "the watcher's event under Dark reads the OS");
+        let _ = update(&mut state, Message::ColorModeSelected(AppColorMode::System));
+        assert_eq!(reads(), 2, "the switch back to System picks from the read");
+        assert!(state.is_dark, "System draws the new read's mode, Dark");
+        assert_eq!(
+            state.accessibility.text_scaling_factor, 2.0,
+            "System draws the new read's preferences"
         );
     }
 
