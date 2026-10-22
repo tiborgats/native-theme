@@ -263,14 +263,43 @@ pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, St
     ]
 }
 
+/// Who draws the frame of a window granted server-side decorations, on the
+/// platform `os` names (`std::env::consts::OS`): the window manager on
+/// Linux, the system on macOS and Windows, as the iced showcase's
+/// `window_decorations` says.
+pub(crate) fn window_decorations(os: &str) -> &'static str {
+    match os {
+        "macos" | "windows" => "the system draws the frame",
+        _ => "the window manager draws the frame",
+    }
+}
+
+/// The frame of a window granted server-side decorations, on the platform
+/// `os` names (`std::env::consts::OS`), as the iced showcase's
+/// `window_frame` names it. gpui's default options keep the system's title
+/// bar on macOS and Windows (`window_options`); on Linux the window manager
+/// draws the frame where it grants server-side decorations, and where a
+/// Wayland compositor grants none the window is client-side, which
+/// `window_rows`' other arm says.
+pub(crate) fn window_frame(os: &str) -> &'static str {
+    match os {
+        "macos" => "the system's title bar: the window's own, with its traffic-light controls",
+        "windows" => "the system's title bar: the window's own caption, controls and border",
+        _ => {
+            "the window manager's (KWin: Breeze's title bar, controls, corners and shadow; \
+             Mutter under X11: the desktop's decoration)"
+        }
+    }
+}
+
 /// The Theme tab's Window section (spec S8): what draws the window's frame
-/// under `window_decorations`, the decorations the window was granted, with
+/// under `decorations`, the decorations the window was granted, with
 /// the client inset and the frame's insets the window reports. Under
 /// server-side decorations the window manager draws the frame; under
 /// client-side ones, gpui-component's client frame and the window's TitleBar
 /// do.
 pub(crate) fn window_rows(
-    window_decorations: gpui::Decorations,
+    decorations: gpui::Decorations,
     inset: Option<gpui::Pixels>,
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
@@ -290,16 +319,18 @@ pub(crate) fn window_rows(
         paddings.bottom.as_f32(),
         paddings.left.as_f32(),
     );
-    match window_decorations {
+    match decorations {
         gpui::Decorations::Server => vec![
             (
                 "decorations",
-                "server-side: the window manager draws the frame".to_string(),
+                format!("server-side: {}", window_decorations(std::env::consts::OS)),
             ),
             (
                 "frame",
-                "whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow). The WindowBorder gpui-component wraps the window in draws nothing (window_border.rs, WindowBorder)"
-                    .to_string(),
+                format!(
+                    "{}. The WindowBorder gpui-component wraps the window in draws nothing (window_border.rs, WindowBorder)",
+                    window_frame(std::env::consts::OS)
+                ),
             ),
             ("client inset", inset),
             ("frame insets", frame_insets),

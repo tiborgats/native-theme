@@ -1194,8 +1194,9 @@ fn the_theme_tabs_window_section_names_the_mode() {
         "the server-side rows do not name the mode: {server:?}"
     );
     assert!(
-        value(&server, "frame").is_some_and(|v| v.starts_with("whatever the window manager draws")),
-        "the server-side rows do not say the window manager draws the frame: {server:?}"
+        value(&server, "frame")
+            .is_some_and(|v| v.starts_with(crate::inspector::window_frame(std::env::consts::OS))),
+        "the server-side rows do not name this platform's frame: {server:?}"
     );
     for client_only in ["frame fill", "frame colour", "frame shadow"] {
         assert_eq!(
@@ -1220,6 +1221,61 @@ fn the_theme_tabs_window_section_names_the_mode() {
             "the client-side rows do not state {client_only}"
         );
     }
+}
+
+/// M9-082: under server-side decorations the Theme tab's "frame" row names
+/// the platform's frame, the window manager's on Linux and the system's
+/// title bar on macOS and Windows, as the iced showcase's does
+/// (`window_frame` there), and its "decorations" row says the same of who
+/// draws them; the rows the inspector prints are the running platform's.
+#[test]
+fn the_window_frame_row_names_the_platforms_frame() {
+    use crate::inspector::{window_decorations, window_frame};
+    let linux = window_frame("linux");
+    assert!(
+        linux.contains("KWin") && linux.contains("Mutter"),
+        "linux: {linux}"
+    );
+    let macos = window_frame("macos");
+    let windows = window_frame("windows");
+    for (os, row) in [("macos", macos), ("windows", windows)] {
+        assert!(
+            row.contains("title bar") && !row.contains("KWin") && !row.contains("Mutter"),
+            "{os}: {row}"
+        );
+    }
+    assert_ne!(
+        macos, windows,
+        "macOS and Windows draw different title bars"
+    );
+    let decorations = window_decorations("linux");
+    assert!(
+        decorations.contains("window manager"),
+        "linux: {decorations}"
+    );
+    for os in ["macos", "windows"] {
+        let decorations = window_decorations(os);
+        assert!(
+            decorations.contains("system") && !decorations.contains("window manager"),
+            "{os}: {decorations}"
+        );
+    }
+    let rows =
+        crate::inspector::window_rows(gpui::Decorations::Server, None, gpui::Edges::all(px(0.)));
+    let value = |what: &str| {
+        rows.iter()
+            .find(|(w, _)| *w == what)
+            .map(|(_, v)| v.clone())
+    };
+    let os = std::env::consts::OS;
+    assert!(
+        value("frame").is_some_and(|v| v.starts_with(window_frame(os))),
+        "{os}: the frame row is not this platform's: {rows:?}"
+    );
+    assert!(
+        value("decorations").is_some_and(|v| v.ends_with(window_decorations(os))),
+        "{os}: the decorations row is not this platform's: {rows:?}"
+    );
 }
 
 /// The window is titled with this crate's name and version (spec §3.4): the
