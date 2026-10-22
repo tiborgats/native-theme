@@ -5448,11 +5448,27 @@ fn tab_button<'a>(
     native_theme_iced::tab_indicator(resolved, tab, open)
 }
 
+/// The room a row of tabs keeps free at both ends, inside its clip, for the
+/// selected tab's outward corners ([`native_theme_iced::tab_flares`]):
+/// `tab.active_outward_corner_radius` where it is a positive, finite length,
+/// the one `tab_flares` draws; none otherwise.
+fn flare_room(resolved: &ResolvedTheme) -> f32 {
+    resolved
+        .tab
+        .active_outward_corner_radius
+        .filter(|r| r.is_finite() && *r > 0.0)
+        .unwrap_or(0.0)
+}
+
 /// A tab row, the page tabs' and the inspector's: each tab a
 /// [`tab_button`], on a strip of `tab.bar_background` whose sides are
 /// `margin`, as the gpui showcase's tab bars are inset: the page tabs'
 /// `layout.container_margin`, the inspector's
-/// [`side_panel_content_margin`].
+/// [`side_panel_content_margin`]. Where the theme states
+/// `tab.active_outward_corner_radius`, the open tab curves out into the bar
+/// at both feet ([`native_theme_iced::tab_flares`], over the row), and the
+/// row keeps that radius free at both ends ([`flare_room`]), inside the
+/// scrollable, so the end tabs' flares show and scroll with them.
 /// More tabs than the strip is wide scroll sideways, with no bar of their
 /// own; `trailing`, where given, stays at the strip's right end. `tag` is the
 /// strip's id in the list, `id` its scrollable's widget id.
@@ -5465,6 +5481,7 @@ fn tab_row<'a>(
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let t = &resolved.tab;
+    let open = tabs.iter().position(|spec| spec.open);
     let tabs = tabs.into_iter().map(|spec| {
         let tab = tab_button(state, spec.label, spec.open, spec.message);
         match spec.tag {
@@ -5472,20 +5489,27 @@ fn tab_row<'a>(
             None => tab,
         }
     });
+    // tab.item_gap between the tabs, where stated; a row's own none otherwise.
+    let room = flare_room(resolved);
+    let tabs = match t.item_gap {
+        Some(gap) => row(tabs).spacing(gap),
+        None => row(tabs),
+    }
+    .padding(Padding::ZERO.left(room).right(room));
+    let tabs: Element<'a, Message> = match open {
+        Some(open) => native_theme_iced::tab_flares(resolved, tabs, &[open]),
+        None => tabs.into(),
+    };
     // The strip scrolls sideways with no bar: a bar laid out under tabs no
     // taller than their labels would cover them, and the page tabs' menu
     // reaches every tab.
-    // tab.item_gap between the tabs, where stated; a row's own none otherwise.
-    let strip = scrollable(match t.item_gap {
-        Some(gap) => row(tabs).spacing(gap),
-        None => row(tabs),
-    })
-    .id(id)
-    .direction(scrollable::Direction::Horizontal(
-        styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
-    ))
-    .style(styles::scrollable(resolved))
-    .width(Fill);
+    let strip = scrollable(tabs)
+        .id(id)
+        .direction(scrollable::Direction::Horizontal(
+            styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
+        ))
+        .style(styles::scrollable(resolved))
+        .width(Fill);
     let mut bar = row![strip].align_y(iced::Center);
     if let Some(trailing) = trailing {
         bar = bar.push(trailing);
@@ -6323,7 +6347,11 @@ const CHECKBOX: &[&str] = &["styles::checkbox."];
 const SEGMENT: &[&str] = &["styles::segment.", "styles::segmented_control."];
 const PALETTE: &[&str] = &["palette.", "extended."];
 #[cfg(feature = "iced_aw")]
-const AW_TAB_BAR: &[&str] = &["styles::aw::tab_bar.", "crate::tab_indicator_line"];
+const AW_TAB_BAR: &[&str] = &[
+    "styles::aw::tab_bar.",
+    "crate::tab_indicator_line",
+    "crate::tab_flares",
+];
 
 /// What the drawing of a listed element depends on in the state shown: the
 /// resolved theme, and, where iced_aw's `TabBar` draws the Basic page's
@@ -6729,6 +6757,9 @@ fn shown_tab_route(id: &str, leaf: &str, open: bool) -> Option<&'static str> {
             if !open =>
         {
             Some("not drawn: only the open tab is framed, and this one is closed")
+        }
+        "tab.active_outward_corner_radius_px" if !open => {
+            Some("not drawn: only the open tab curves out at its feet, and this one is closed")
         }
         "tab.active_background" | "tab.active_text_color" if !open && by_tab_style => {
             Some("not drawn: this tab is closed; tab_style gives the open one these")
@@ -7157,7 +7188,39 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "active_indicator_width_px" | "active_indicator_side") => {
             "native_theme_iced::tab_indicator: the line stacked over the open tab".into()
         }
-        ("tab", "active_background") => "tab_style: the open tab's background".into(),
+        ("tab", "active_outward_corner_radius_px") if flare_room(resolved) == 0.0 => {
+            "not drawn: unstated, or not a positive length; tab_flares draws no flares and the \
+             row keeps no room for them"
+                .into()
+        }
+        ("tab", "active_outward_corner_radius_px") if id == "basic.page" => {
+            "room for both flares in basic_column_count".into()
+        }
+        #[cfg(feature = "iced_aw")]
+        ("tab", "active_outward_corner_radius_px") if id == "basic.tabs.bar" => {
+            "a container's padding outside the bar at both ends".into()
+        }
+        ("tab", "active_outward_corner_radius_px")
+            if ["basic.tabs.bar", "chrome.page_tabs", "chrome.side_panel.inspector_tabs"]
+                .contains(&id) =>
+        {
+            "the row's padding at both ends".into()
+        }
+        #[cfg(feature = "iced_aw")]
+        ("tab", "active_outward_corner_radius_px") if under("basic.tabs.") => {
+            "native_theme_iced::tab_flares, over the bar (the selected tab under the pointer is \
+             iced_aw's Hovered, drawn with no outline and square corners, styles/aw.rs:241-244, \
+             while its flares, their arcs and the strip stay)"
+                .into()
+        }
+        ("tab", "active_outward_corner_radius_px") => {
+            "native_theme_iced::tab_flares, over the row".into()
+        }
+        ("tab", "active_background") => {
+            "tab_style: the open tab's background; and native_theme_iced::tab_flares's flares, \
+             where tab.active_outward_corner_radius is stated"
+                .into()
+        }
         ("tab", "active_text_color") => "tab_style: the open tab's text colour".into(),
         ("tab", "background_color") => "tab_style: a tab's background at rest".into(),
         ("tab", "hover_background") if resolved.tab.hover_background.is_none() => {
@@ -7174,7 +7237,11 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("tab", "min_width_px" | "min_height_px") => {
             "at_least(label, ..): the minimum less the padding".into()
         }
-        ("tab", "border.color") => "tab_style: the open tab's border colour".into(),
+        ("tab", "border.color") => {
+            "tab_style: the open tab's border colour; and native_theme_iced::tab_flares's \
+             flares, where tab.active_outward_corner_radius is stated"
+                .into()
+        }
         ("tab", "border.corner_radius_px") => "the open tab's top corners".into(),
         ("tab", "border.line_width_px") => "the open tab's border width".into(),
         #[cfg(feature = "iced_aw")]
@@ -8672,10 +8739,13 @@ fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 
 /// The widest fixed-width control the theme states on the Basic page:
 /// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH`.
+/// apart with the room for the open tab's flares at both ends
+/// (`2 * tab.active_outward_corner_radius`, [`flare_room`]), `BASIC_WIDE`
+/// and `BASIC_WIDTH`.
 fn basic_widest(resolved: &ResolvedTheme) -> f32 {
     let t = &resolved.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let room = flare_room(resolved);
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + room + room;
     resolved
         .combo_box
         .min_width
@@ -8892,7 +8962,11 @@ fn px_text(px: f32) -> String {
 }
 
 /// The Basic page's tab row: `iced_aw`'s `TabBar` in the `iced_aw` build,
-/// the page tab strip's tabs ([`tab_button`]) otherwise, `basic_tab` open.
+/// the page tab strip's tabs ([`tab_button`]) otherwise, `basic_tab` open,
+/// with its outward corners where the theme states them
+/// ([`native_theme_iced::tab_flares`]) and the room for them at both ends
+/// ([`flare_room`]): inside the strip without `iced_aw`, outside the bar,
+/// which takes no padding of its own, with it.
 fn basic_tab_row(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let tab_t = &resolved.tab;
@@ -8951,10 +9025,21 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
             Some(gap) => row(slots).spacing(gap),
             None => row(slots),
         };
-        iced::widget::Stack::new()
+        let stack = iced::widget::Stack::new()
             .push(bar)
-            .push(slots.height(Fill))
-            .into()
+            .push(slots.height(Fill));
+        // The open tab's flares over the bar and the slots, its node the
+        // bar's (the stack's layer 0, which `tagged` passes through); iced_aw
+        // takes no padding around its bar, so the room for the end tabs'
+        // flares is a container's, outside it.
+        let room = flare_room(resolved);
+        container(native_theme_iced::tab_flares(
+            resolved,
+            stack,
+            &[0, state.basic_tab],
+        ))
+        .padding(Padding::ZERO.left(room).right(room))
+        .into()
     };
     // Without iced_aw, the page tab strip's tabs ([`tab_button`]), the
     // chosen one open, tab.item_gap apart where stated (a row's own none
@@ -8969,13 +9054,18 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
                 Message::BasicTabSelected(i),
             )
         });
+        let room = flare_room(resolved);
         let tabs = match tab_t.item_gap {
             Some(gap) => row(tabs).spacing(gap),
             None => row(tabs),
-        };
+        }
+        .padding(Padding::ZERO.left(room).right(room));
+        // The open tab's flares over the row, which `tab_flares` passes
+        // through, so `[0, i]` still names the container's tabs.
+        let tabs = native_theme_iced::tab_flares(resolved, tabs.wrap(), &[state.basic_tab]);
         tagged(
             "basic.tabs.bar",
-            container(tabs.wrap()).style(surface(resolved, Surface::TabStrip)),
+            container(tabs).style(surface(resolved, Surface::TabStrip)),
         )
         .loose()
         .node("basic.tabs.one", &[0, 0])
@@ -13555,6 +13645,19 @@ fn aw_menu_info(state: &State) -> String {
 /// The Widget Info of the Extra page's iced_aw TabBar and Tabs.
 fn aw_tab_bar_info(state: &State) -> String {
     let resolved = &state.current_resolved;
+    let room = flare_room(resolved);
+    let outward = if room > 0.0 {
+        format!(
+            "tab.active_outward_corner_radius, {}: native_theme_iced::tab_flares curves the \
+             selected tab out into the bar at both feet, over each bar; a container pads each \
+             bar by it at both ends, outside it, as iced_aw takes no padding around a bar, \
+             which on this sample insets the Tabs' content panel by it as well",
+            px_text(room)
+        )
+    } else {
+        "none: the theme states no outward corners, so the selected tab's feet are square"
+            .to_owned()
+    };
     widget_tooltip(
         "TabBar / Tabs",
         &aw_paints(
@@ -13605,6 +13708,7 @@ fn aw_tab_bar_info(state: &State) -> String {
                  otherwise iced_aw's own, which it keeps private \
                  (widget/tab_bar.rs:41)",
             ),
+            ("outward corners", outward.as_str()),
         ],
         &[(
             "min_width / min_height",
@@ -14060,6 +14164,11 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         None => tabs,
     };
 
+    // The room for the open tab's flares at both ends of each bar: iced_aw
+    // takes no padding around a bar, so a container's, outside it, which
+    // insets the Tabs' content panel by as much.
+    let room = flare_room(resolved);
+    let flared = |bar| container(bar).padding(Padding::ZERO.left(room).right(room));
     let tab_demo = hoverable(
         UnlistedKey::AwTabBar,
         column![
@@ -14068,9 +14177,17 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 resolved,
                 a11y
             ),
-            tab_bar.style(styles::aw::tab_bar(resolved)),
+            flared(native_theme_iced::tab_flares(
+                resolved,
+                tab_bar.style(styles::aw::tab_bar(resolved)),
+                &[state.aw_tab_bar_active],
+            )),
             tab_bar_body,
-            drawn_probe(probes::AW_TABS, tabs),
+            flared(native_theme_iced::tab_flares(
+                resolved,
+                drawn_probe(probes::AW_TABS, tabs),
+                &[0, state.aw_tabs_active],
+            )),
         ]
         .spacing(gap.widget)
         .into(),
@@ -21729,6 +21846,247 @@ mod tests {
             Ok(colour) => colour,
             Err(error) => panic!("{hex}: {error}"),
         }
+    }
+
+    /// G3 T13 (D1): a state showing the Basic page under windows-11 light,
+    /// at a text scale of 1, with `tab.active_outward_corner_radius` set to
+    /// `radius` on the resolved theme, as no bundled preset states it yet
+    /// (spec §12.2's seam: `State::current_resolved`, a resolved theme's
+    /// fields being public).
+    fn curving_out(radius: Option<f32>) -> State {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            ..State::default()
+        };
+        assert!(
+            state.install_in_mode(
+                ThemeChoice::Preset("windows-11".to_owned()),
+                AppColorMode::Light
+            ),
+            "windows-11: {:?}",
+            state.error_message
+        );
+        state.current_resolved.tab.active_outward_corner_radius = radius;
+        state
+    }
+
+    /// The rectangle of the listed element `id` in `rects`.
+    fn listed(rects: &ElementRects, id: &str) -> Rectangle {
+        match rects.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        }
+    }
+
+    /// G3 T13 (D1): where the theme states `tab.active_outward_corner_radius`
+    /// the three tab rows keep it free at both ends for the open tab's
+    /// flares: the page tabs' and the inspector's first tab, and without
+    /// `iced_aw` the Basic page's, start `r` further into their strip than
+    /// with it unstated; with `iced_aw` the Basic page's bar, which takes no
+    /// padding around itself, starts `r` further in, its tabs where they were
+    /// in it.
+    #[test]
+    fn the_tab_rows_make_room_for_the_open_tabs_flares() {
+        let into = |rects: &ElementRects, tab: &str, bar: &str| {
+            listed(rects, tab).x - listed(rects, bar).x
+        };
+        let (_, flat, _) = tab_rows_frame(&curving_out(None));
+        let (_, curved, _) = tab_rows_frame(&curving_out(Some(4.0)));
+        for (tab, bar) in [
+            ("chrome.page_tabs.basic", "chrome.page_tabs"),
+            (
+                "chrome.side_panel.inspector_tabs.widget",
+                "chrome.side_panel.inspector_tabs",
+            ),
+        ] {
+            let moved = into(&curved, tab, bar) - into(&flat, tab, bar);
+            assert!((moved - 4.0).abs() < 0.01, "{tab}: {moved}px further in");
+        }
+        let moved = into(&curved, "basic.tabs.one", "basic.tabs.bar")
+            - into(&flat, "basic.tabs.one", "basic.tabs.bar");
+        let bar = listed(&curved, "basic.tabs.bar").x - listed(&flat, "basic.tabs.bar").x;
+        let (want_tab, want_bar) = if cfg!(feature = "iced_aw") {
+            (0.0, 4.0)
+        } else {
+            (4.0, 0.0)
+        };
+        assert!(
+            (moved - want_tab).abs() < 0.01 && (bar - want_bar).abs() < 0.01,
+            "the Basic tabs moved {moved}px into their bar, the bar {bar}px"
+        );
+    }
+
+    /// G3 T13 (D1): the Basic page's tabs curve out at the open tab's feet,
+    /// in this build (the default one, and `--features iced_aw`, the one the
+    /// Windows runners capture): with `tab.active_background` set apart from
+    /// the bar's fill, the pixel centred at `(x0 - 0.25, y1 - 0.25)` of the
+    /// open tab's rectangle and its mirror `(x1 + 0.25, y1 - 0.25)`, 4.65
+    /// from each flare's centre, past the outline's band, are
+    /// `tab.active_background` (each channel within 2), and with the radius
+    /// unstated they are not; the second tab open, its own are, the left one
+    /// over the first tab's fill.
+    #[test]
+    fn the_basic_tabs_curve_out_at_the_open_tabs_feet() {
+        let fill = spliced_colour("#13579b");
+        let want = to_color(fill).into_rgba8();
+        for (open, id) in [(0, "basic.tabs.one"), (1, "basic.tabs.two")] {
+            for radius in [Some(4.0), None] {
+                let mut state = curving_out(radius);
+                state.current_resolved.tab.active_background = fill;
+                state.basic_tab = open;
+                let (image, rects, scale) = tab_rows_frame(&state);
+                let tab = listed(&rects, id);
+                let bottom = tab.y + tab.height - 0.25;
+                for x in [tab.x - 0.25, tab.x + tab.width + 0.25] {
+                    let at = ((x * scale).floor() as u32, (bottom * scale).floor() as u32);
+                    let Some(pixel) = image.get_pixel_checked(at.0, at.1) else {
+                        panic!("{id}: ({x}, {bottom}) is outside the frame");
+                    };
+                    let filled = pixel.0.iter().zip(want).all(|(a, b)| a.abs_diff(b) <= 2);
+                    assert_eq!(
+                        filled,
+                        radius.is_some(),
+                        "{id} open, radius {radius:?}: the pixel at ({x}, {bottom}) is {:?}",
+                        pixel.0
+                    );
+                }
+            }
+        }
+    }
+
+    /// G3 T13 (D1): the Basic page's column rule makes room for both
+    /// flares: under windows-11, whose widest fixed-width control is its two
+    /// tabs, 200 wide, a content panel five 204-wide columns wide holds five
+    /// columns with the radius unstated and four with 4 stated (208), and
+    /// five again for a radius of 0, a negative or a non-finite one, which
+    /// `tab_flares` does not draw.
+    #[test]
+    fn the_basic_page_makes_room_for_both_flares() {
+        let state = curving_out(None);
+        let layout = &state.layout;
+        let margin = layout.window_margin.unwrap_or_default();
+        let gap = layout.section_gap.unwrap_or_default();
+        let bar = &state.current_resolved.scrollbar;
+        let gutter = if bar.overlay_mode {
+            0.0
+        } else {
+            bar.groove_width
+        };
+        assert_eq!(basic_widest(&state.current_resolved), 200.0);
+        let content = 5.0 * 204.0 + 4.0 * gap + margin + margin + gutter;
+        for (radius, columns) in [
+            (None, 5),
+            (Some(4.0), 4),
+            (Some(0.0), 5),
+            (Some(-1.0), 5),
+            (Some(f32::NAN), 5),
+        ] {
+            let mut r = state.current_resolved.clone();
+            r.tab.active_outward_corner_radius = radius;
+            assert_eq!(
+                basic_column_count(&r, layout, content),
+                columns,
+                "radius {radius:?}"
+            );
+        }
+    }
+
+    /// G3 T13 (D1): the routes of `tab.active_outward_corner_radius_px`, the
+    /// leaf the shared list names on the three open tabs, the three bars and
+    /// `basic.page` from Task 15 on, name what draws it: `tab_flares` on
+    /// the open tabs (and, under iced_aw, its hovered-tab limit), the row's
+    /// padding or the container's outside an iced_aw bar on the bars, the
+    /// column rule on the page; a closed tab draws none, and an unstated
+    /// radius nothing. The colour routes of `tab.active_background` and
+    /// `tab.border.color` name `tab_flares` too: by hand on the tabs
+    /// `tab_style` draws, through the drawing's rows under iced_aw.
+    #[test]
+    fn the_outward_corner_routes_name_what_draws_them() {
+        const LEAF: &str = "tab.active_outward_corner_radius_px";
+        // The line Widget Info shows, without its toolkit's name.
+        let route = |state: &State, id: &str, leaf: &str| match elements::element(id) {
+            Some(element) => {
+                let line = iced_route(state, element, leaf);
+                line.strip_prefix("iced: ").unwrap_or(&line).to_owned()
+            }
+            None => panic!("{id} is not listed"),
+        };
+        let mut state = curving_out(Some(4.0));
+        let aw = cfg!(feature = "iced_aw");
+        for (id, want) in [
+            (
+                "chrome.page_tabs.basic",
+                "native_theme_iced::tab_flares, over the row",
+            ),
+            (
+                "chrome.side_panel.inspector_tabs.widget",
+                "native_theme_iced::tab_flares, over the row",
+            ),
+            (
+                "basic.tabs.one",
+                if aw {
+                    "native_theme_iced::tab_flares, over the bar (the selected tab under the \
+                     pointer is iced_aw's Hovered, drawn with no outline and square corners, \
+                     styles/aw.rs:241-244, while its flares, their arcs and the strip stay)"
+                } else {
+                    "native_theme_iced::tab_flares, over the row"
+                },
+            ),
+            ("chrome.page_tabs", "the row's padding at both ends"),
+            (
+                "chrome.side_panel.inspector_tabs",
+                "the row's padding at both ends",
+            ),
+            (
+                "basic.tabs.bar",
+                if aw {
+                    "a container's padding outside the bar at both ends"
+                } else {
+                    "the row's padding at both ends"
+                },
+            ),
+            ("basic.page", "room for both flares in basic_column_count"),
+        ] {
+            assert_eq!(route(&state, id, LEAF), want, "{id}");
+        }
+        for id in [
+            "chrome.page_tabs.basic",
+            "chrome.side_panel.inspector_tabs.widget",
+        ] {
+            for leaf in ["tab.active_background", "tab.border.color"] {
+                let line = route(&state, id, leaf);
+                assert!(
+                    line.contains("native_theme_iced::tab_flares's flares"),
+                    "{id}: {leaf}: {line}"
+                );
+            }
+        }
+        assert_eq!(
+            cfg!(feature = "iced_aw"),
+            drawing_rows("basic.tabs.one").is_some_and(|rows| rows.contains(&"crate::tab_flares")),
+            "the iced_aw tabs' colours reach tab_flares' rows"
+        );
+        state.basic_tab = 1;
+        assert!(
+            route(&state, "basic.tabs.one", LEAF).starts_with("not drawn: only the open tab"),
+            "a closed tab"
+        );
+        let state = curving_out(None);
+        for id in ["chrome.page_tabs.basic", "chrome.page_tabs", "basic.page"] {
+            assert!(
+                route(&state, id, LEAF).starts_with("not drawn: unstated"),
+                "{id}: {}",
+                route(&state, id, LEAF)
+            );
+        }
+    }
+
+    /// The rows of the drawing of the listed element `id`'s
+    /// `tab.active_background`, as the showcase opens.
+    fn drawing_rows(id: &str) -> Option<&'static [&'static str]> {
+        let element = elements::element(id)?;
+        let r = curving_out(Some(4.0)).current_resolved;
+        drawing(element, "tab.active_background", Shown::opening(&r)).map(|d| d.rows)
     }
 
     /// How many of `image`'s pixels inside `rect`, a rectangle in logical

@@ -2921,7 +2921,7 @@ mod t13_accessibility {
     }
 
     /// T13 (d): the three connectors' `scaled_text_size` agree on a degenerate factor (§4.7);
-    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:2081-2094`).
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:2781-2787`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {

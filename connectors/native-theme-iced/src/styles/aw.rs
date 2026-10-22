@@ -193,6 +193,13 @@ pub fn menu(
 /// label colors in `Pressed`, `Focused` and `Selected`, three statuses a
 /// `TabBar` never asks for and the model describes no tab in.
 ///
+/// Where the theme states `tab.active_outward_corner_radius`, the selected
+/// tab curves out into the bar at its feet: wrap the bar, or the `Tabs`, in
+/// [`crate::tab_flares()`], which draws the flares and covers the selected
+/// tab's bottom edge after the bar, with the room for them in a container's
+/// padding outside it. The selected tab under the pointer is `Hovered` here,
+/// so it loses its outline and its top corners while the flares stay.
+///
 /// `tab.min_width` and `.min_height` have no receiver in the `Style`, and no
 /// faithful one anywhere: they are **minima**, and every `iced_aw` receiver
 /// that could carry them takes a fixed extent -- `TabBar::tab_width(Length)`

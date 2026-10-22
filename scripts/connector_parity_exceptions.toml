@@ -456,6 +456,18 @@ reason = "iced's helpers lay the indicator over a tab built from iced widgets (c
 
 [[exception]]
 connector = "gpui"
+name = "tab_flares"
+kind = "absent"
+reason = "iced draws nothing outside a widget's bounds but in a widget of its own, and the selected tab's outward corners lie outside its bounds, so the connector wraps the application's row of tabs (connectors/native-theme-iced/src/lib.rs, `tab_flares`' doc); gpui's `widgets::TabBar` draws them itself, after its tabs (src/widgets/tab_bar.rs, `TabLook::outward_radius`, `flare_quads`)"
+
+[[exception]]
+connector = "egui"
+name = "tab_flares"
+kind = "absent"
+reason = "iced's wrapper draws the selected tab's outward corners over a row of tabs built from iced widgets (connectors/native-theme-iced/src/lib.rs, `tab_flares`' doc); an egui application that draws a tab bar reads `tab.active_outward_corner_radius` itself from `ThemeAtlas::resolved_for` and paints them after its tabs (src/mapping.md: DERIVED → T18(a))"
+
+[[exception]]
+connector = "gpui"
 name = "pick_list_handle"
 kind = "absent"
 reason = "a widget part iced takes per call, `PickList::handle` (connectors/native-theme-iced/src/lib.rs, `pick_list_handle`'s doc); gpui-component's `Select` draws its own caret, sized inside the trigger, which no style reaches (examples/showcase-gpui/info/leaves.rs, `combo_box.arrow_icon_size_px`: gpui-component `select.rs:626-627`)"

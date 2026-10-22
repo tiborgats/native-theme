@@ -308,8 +308,18 @@ table header's height),
 `selection_background`, `info_color`, `info_text_color`,
 `warning_text_color`, `icon_sizes`, `text_scale`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
-`pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `switch` /
-`switch_over` and `radio` (all feature `widgets`).
+`pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares`,
+`switch` / `switch_over` and `radio` (all feature `widgets`).
+
+`tab_indicator_line` is the line that marks the active tab, to lay over a
+tab or over its place in a bar that takes no per-tab content. `tab_flares`
+wraps a row of tabs, an `iced_aw` `TabBar` or `Tabs`, and draws after it,
+where the theme states `tab.active_outward_corner_radius` (WinUI 3's folder
+tabs), the selected tab's outward bottom corners: a flare at each foot in
+`tab.active_background`, the outline running on down the curve in
+`tab.border.color`, and its bottom edge covered. Give the row
+`tab.active_outward_corner_radius` of room at both ends, a row's own padding
+or a container's outside an `iced_aw` bar, so the end tabs' flares show.
 
 `button_padding`, `input_padding`, `text_area_padding` and `combo_box_padding`
 need the `widgets` feature (on by default). Each side is the theme's where it states that side,
@@ -463,8 +473,8 @@ unnecessary once iced draws with it.
 `widgets` (default) enables `styles`, the `button_padding`,
 `input_padding`, `text_area_padding`, `combo_box_padding`,
 `button_content_min_size` and `at_least` helpers, and the `switch`,
-`switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and
-`tab_indicator_line` widgets; `spinner` (default, implies `widgets`) enables
+`switch_over`, `radio`, `pick_list_handle`, `tab_indicator`,
+`tab_indicator_line` and `tab_flares` widgets; `spinner` (default, implies `widgets`) enables
 `Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon

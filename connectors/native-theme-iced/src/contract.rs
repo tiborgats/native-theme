@@ -962,6 +962,58 @@ fn every_accessor_returns_its_native_leaf() -> native_theme::Result<()> {
     Ok(())
 }
 
+/// `tab_flares`' two rows draw where the theme states
+/// `tab.active_outward_corner_radius`, which no bundled combination does yet,
+/// so `every_accessor_returns_its_native_leaf` holds them only at `None`:
+/// here they hold on `windows-11` in both modes with the radius set, its
+/// fill and outline drawn, the outline gone where the line width is 0, and
+/// both gone where the radius is 0 or not finite.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_tab_flares_rows_hold_where_the_theme_curves_out() -> native_theme::Result<()> {
+    let rows: Vec<&AccessorRow> = ACCESSOR_ROWS
+        .iter()
+        .filter(|row| row.accessor.starts_with("crate::tab_flares"))
+        .collect();
+    assert_eq!(rows.len(), 2, "the fill row and the outline row");
+    let mut failures = Vec::new();
+    for c in combinations()?
+        .into_iter()
+        .filter(|c| c.key == "windows-11")
+    {
+        for (radius, width, fill, outline) in [
+            (Some(4.0), None, true, true),
+            (Some(4.0), Some(0.0), true, false),
+            (Some(0.0), None, false, false),
+            (Some(f32::NAN), None, false, false),
+        ] {
+            let mut r = c.resolved.clone();
+            r.tab.active_outward_corner_radius = radius;
+            if let Some(width) = width {
+                r.tab.border.line_width = width;
+            }
+            for row in &rows {
+                let (native, got) = ((row.native)(&r), (row.get)(&r));
+                let drawn = if row.accessor.ends_with("(fill)") {
+                    fill
+                } else {
+                    outline
+                };
+                if native != got || native.is_some() != drawn {
+                    failures.push(format!(
+                        "{} on {} at {radius:?}, width {width:?}: {got:?}, the native leaf is \
+                         {native:?}",
+                        row.accessor,
+                        c.label()
+                    ));
+                }
+            }
+        }
+    }
+    assert!(failures.is_empty(), "{failures:#?}");
+    Ok(())
+}
+
 #[test]
 fn palette_contrast_report() -> native_theme::Result<()> {
     let combinations = combinations()?;

@@ -183,6 +183,40 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         },
         get: |r| crate::tab_indicator_strip(&r.tab).map(|(color, _, _)| color),
     },
+    #[cfg(feature = "widgets")]
+    AccessorRow {
+        // The selected tab's flares and the strip over its bottom edge, drawn
+        // only where the theme states a positive, finite outward radius.
+        accessor: "crate::tab_flares (fill)",
+        native: |r| {
+            let t = &r.tab;
+            let drawn = t
+                .active_outward_corner_radius
+                .is_some_and(|radius| radius.is_finite() && radius > 0.0);
+            drawn.then(|| to_color(t.active_background))
+        },
+        get: |r| crate::tab_flares::tab_flares_look(&r.tab).map(|look| look.fill),
+    },
+    #[cfg(feature = "widgets")]
+    AccessorRow {
+        // The outline continued down each flare's curve, where the radius is
+        // drawn and the outline has a positive, finite width.
+        accessor: "crate::tab_flares (outline)",
+        native: |r| {
+            let t = &r.tab;
+            let drawn = t
+                .active_outward_corner_radius
+                .is_some_and(|radius| radius.is_finite() && radius > 0.0)
+                && t.border.line_width.is_finite()
+                && t.border.line_width > 0.0;
+            drawn.then(|| to_color(t.border.color))
+        },
+        get: |r| {
+            crate::tab_flares::tab_flares_look(&r.tab)
+                .filter(|look| look.width > 0.0)
+                .map(|look| look.outline)
+        },
+    },
     #[cfg(feature = "spinner")]
     AccessorRow {
         // The connector's own widget: the arc, and a Material or Lucide

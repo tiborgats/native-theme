@@ -90,7 +90,7 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and `tab_indicator_line`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`, `tab_indicator_line` and `tab_flares`, through `iced_widget` |
 //! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
@@ -284,6 +284,8 @@ pub mod palette;
 pub mod spinner;
 #[cfg(feature = "widgets")]
 pub mod styles;
+#[cfg(feature = "widgets")]
+mod tab_flares;
 #[cfg(feature = "watch")]
 mod watch;
 
@@ -1315,6 +1317,71 @@ pub(crate) fn tab_indicator_strip(
         return None;
     };
     (width.is_finite() && width > 0.0).then(|| (palette::to_color(color), width, side))
+}
+
+/// `tabs`, a row of tabs, with the selected tab's outward bottom corners
+/// drawn over it, as WinUI 3's `TabView` draws its selected tab, where the
+/// theme states `tab.active_outward_corner_radius` (docs/platform-facts.md
+/// §2.11, `active_outward_corner_radius`); `tabs` as it is where the theme
+/// states none, or one that is not a positive, finite length.
+///
+/// `selected` is the layout path from `tabs` to the selected tab, a child
+/// index at each level: `&[i]` for the `i`-th tab of a `row` of tabs or of
+/// an `iced_aw` `TabBar`, `&[0, i]` for an `iced_aw` `Tabs` with its bar on
+/// top, whose layout is the bar and then the content (iced_aw 0.14.1
+/// `src/widget/tabs.rs:386-394`). A path that names no node draws nothing
+/// more. The wrapper hands `tabs` its tree, its layout and every event as
+/// they are, so wrapping keeps its state and its place.
+///
+/// With `r` the radius and `w` `tab.border.line_width`, after `tabs` it
+/// draws:
+/// - a strip `tab.active_background` over the selected tab's bottom edge
+///   between its side edges, `w` tall, since iced's `Border` takes one width
+///   for all four sides: the tab's outline has no bottom edge (none where a
+///   bottom-side indicator, [`tab_indicator_line()`], covers that edge
+///   already);
+/// - at each of its feet a flare, in an `r` by `r` square at its bottom set
+///   `w` in from its outer edge: the square less the quarter disc of radius
+///   `r` about its upper outer corner, filled `tab.active_background`, and,
+///   where `w` is positive, the outline continued down the curve on the
+///   disc's side to the bar's bottom edge, `w` wide, in `tab.border.color`.
+///
+/// They are drawn after every tab of the row, over a hovered neighbour too.
+/// Each flare reaches `r - w` past the tab, so give the row room of `r` at
+/// both ends, inside its clip, or the end tabs' flares are cut: a `row`'s
+/// own padding, or a container's padding outside the wrapper for an
+/// `iced_aw` bar, which takes none around itself. iced's layers do not nest
+/// their clips, so each flare is clipped to its square cut by the viewport
+/// the wrapper is drawn in (a scrollable's visible area): a scrolled-away
+/// tab's flares go with it. iced clips to whole physical pixels
+/// (iced_wgpu 0.14.0 `src/lib.rs:479`), so at a fractional scale up to a
+/// pixel of the fill can show beside a square.
+///
+/// It is the counterpart of [`tab_indicator_line()`]: iced draws nothing
+/// outside a widget's bounds but in a widget of its own, and the flares lie
+/// outside the selected tab's. An application drawing its own tab bar wraps
+/// it in this, as it lays the indicator line. Under `iced_aw` the selected
+/// tab under the pointer arrives as `Hovered`, which `styles::aw::tab_bar`
+/// draws with no outline and square corners, as iced_aw does not say it is
+/// the selected one; its flares, their outline and the strip stay.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn tab_flares<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    tabs: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    selected: &[usize],
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let tabs = tabs.into();
+    match tab_flares::tab_flares_look(&resolved.tab) {
+        Some(look) => tab_flares::TabFlares::new(tabs, look, selected).into(),
+        None => tabs,
+    }
 }
 
 /// Returns the standard border radius from the resolved theme.
