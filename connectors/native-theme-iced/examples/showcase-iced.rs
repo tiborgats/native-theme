@@ -5496,6 +5496,41 @@ fn flare_room(resolved: &ResolvedTheme) -> f32 {
         .unwrap_or(0.0)
 }
 
+/// The width [`tab_button`] lays a tab reading `label` out at: the label as
+/// iced shapes it in `tab.font`, at least `tab.min_width` less the padding,
+/// inside the padding.
+fn tab_width(state: &State, label: &str) -> f32 {
+    let t = &state.current_resolved.tab;
+    let pad = native_theme_iced::padding_inside_border(&t.border, button::DEFAULT_PADDING);
+    let size = scaled_text_size(t.font.size, &state.accessibility);
+    let text = MeasuredText::new(label.to_owned(), size, size, theme_font(&t.font))
+        .extent()
+        .width;
+    pad.x() + text.max((t.min_width - pad.x()).max(0.0))
+}
+
+/// How wide a tab row's scrolled view is where `available` is the room for
+/// it: the whole row where it fits; otherwise as far as the end of the last
+/// tab that fits whole from the row's start, `widths` laid `gap` apart after
+/// `room`, and on into the gap after it by no more than `room`, the open
+/// tab's flare, so no part of the next tab shows. A tab that does not fit
+/// whole is out of the view, not cut by its edge, and the row scrolls to it.
+fn whole_tabs_width(widths: &[f32], gap: f32, room: f32, available: f32) -> Length {
+    let row = widths.iter().sum::<f32>() + gap * widths.len().saturating_sub(1) as f32;
+    if room + row + room <= available {
+        return Fill;
+    }
+    let mut end = room;
+    for (n, width) in widths.iter().enumerate() {
+        let next = if n == 0 { end } else { end + gap } + width;
+        if next > available {
+            break;
+        }
+        end = next;
+    }
+    Length::Fixed(end + gap.min(room))
+}
+
 /// A tab row, the page tabs' and the inspector's: each tab a
 /// [`tab_button`], on a strip of `tab.bar_background` whose sides are
 /// `margin`, as the gpui showcase's tab bars are inset: the page tabs'
@@ -5506,8 +5541,11 @@ fn flare_room(resolved: &ResolvedTheme) -> f32 {
 /// row keeps that radius free at both ends ([`flare_room`]), inside the
 /// scrollable, so the end tabs' flares show and scroll with them.
 /// More tabs than the strip is wide scroll sideways, with no bar of their
-/// own; `trailing`, where given, stays at the strip's right end. `tag` is the
-/// strip's id in the list, `id` its scrollable's widget id.
+/// own, as the gpui showcase's do, and the strip shows whole tabs alone
+/// ([`whole_tabs_width`]), so no label is cut at its edge whatever the
+/// theme's tab sizes; `trailing`, where given, stays at the strip's right
+/// end. `tag` is the strip's id in the list, `id` its scrollable's widget
+/// id.
 fn tab_row<'a>(
     state: &'a State,
     (tag, id): (&'static str, &'static str),
@@ -5518,34 +5556,50 @@ fn tab_row<'a>(
     let resolved = &state.current_resolved;
     let t = &resolved.tab;
     let open = tabs.iter().position(|spec| spec.open);
-    let tabs = tabs.into_iter().map(|spec| {
-        let tab = tab_button(state, spec.label, spec.open, spec.message);
-        match spec.tag {
-            Some(tag) => tagged(tag, tab).into(),
-            None => tab,
-        }
-    });
-    // tab.item_gap between the tabs, where stated; a row's own none otherwise.
     let room = flare_room(resolved);
-    let tabs = match t.item_gap {
-        Some(gap) => row(tabs).spacing(gap),
-        None => row(tabs),
-    }
-    .padding(Padding::ZERO.left(room).right(room));
-    let tabs: Element<'a, Message> = match open {
-        Some(open) => native_theme_iced::tab_flares(resolved, tabs, &[open]),
-        None => tabs.into(),
-    };
-    // The strip scrolls sideways with no bar: a bar laid out under tabs no
-    // taller than their labels would cover them, and the page tabs' menu
-    // reaches every tab.
-    let strip = scrollable(tabs)
-        .id(id)
-        .direction(scrollable::Direction::Horizontal(
-            styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
-        ))
-        .style(styles::scrollable(resolved))
-        .width(Fill);
+    let widths: Vec<f32> = tabs
+        .iter()
+        .map(|spec| tab_width(state, spec.label))
+        .collect();
+    // The room the strip has is known once it is laid out, so the tabs are
+    // built there.
+    let strip = iced::widget::responsive(move |size| {
+        let row_of = tabs.iter().map(|spec| {
+            let tab = tab_button(state, spec.label, spec.open, spec.message.clone());
+            match spec.tag {
+                Some(tag) => tagged(tag, tab).into(),
+                None => tab,
+            }
+        });
+        // tab.item_gap between the tabs, where stated; a row's own none
+        // otherwise.
+        let row_of = match t.item_gap {
+            Some(gap) => row(row_of).spacing(gap),
+            None => row(row_of),
+        }
+        .padding(Padding::ZERO.left(room).right(room));
+        let row_of: Element<'a, Message> = match open {
+            Some(open) => native_theme_iced::tab_flares(resolved, row_of, &[open]),
+            None => row_of.into(),
+        };
+        // The strip scrolls sideways with no bar: a bar laid out under tabs
+        // no taller than their labels would cover them, and the page tabs'
+        // menu reaches every tab.
+        scrollable(row_of)
+            .id(id)
+            .direction(scrollable::Direction::Horizontal(
+                styles::scrollbar(resolved).width(0.0).scroller_width(0.0),
+            ))
+            .style(styles::scrollable(resolved))
+            .width(whole_tabs_width(
+                &widths,
+                t.item_gap.unwrap_or(0.0),
+                room,
+                size.width,
+            ))
+            .into()
+    })
+    .height(Length::Shrink);
     let mut bar = row![strip].align_y(iced::Center);
     if let Some(trailing) = trailing {
         bar = bar.push(trailing);
@@ -27755,6 +27809,63 @@ mod tests {
         assert!(
             frameless.as_ref().is_err_and(|e| e.contains("title bar")),
             "{frameless:?}"
+        );
+    }
+
+    /// M9b Step 8 I2 (ux): the page tab strip overflows one way under every
+    /// preset, as the gpui showcase's: the tabs scroll sideways and the
+    /// Pages menu reaches every page, and the strip shows whole tabs alone,
+    /// so no tab label is drawn in part. In the window at its default size,
+    /// the side panel shown, under kde-breeze, material-3 and
+    /// catppuccin-mocha, each tab's label lies whole inside the strip or
+    /// whole outside it, and under one of them at least a tab lies outside.
+    #[test]
+    fn the_page_tabs_cut_no_label() {
+        let mut overflowed = 0;
+        let mut faults = Vec::new();
+        for (preset, dark) in [
+            ("kde-breeze", false),
+            ("material-3", false),
+            ("catppuccin-mocha", true),
+        ] {
+            let state = loaded(preset, dark);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            let strip = match ui.find(selector::id(TAB_STRIP_ID)) {
+                Ok(selector::Target::Scrollable { bounds, .. }) => bounds,
+                Ok(other) => panic!("{preset}: {TAB_STRIP_ID} is not a scrollable: {other:?}"),
+                Err(error) => panic!("{preset}: {TAB_STRIP_ID}: {error}"),
+            };
+            let labels: Vec<&str> = Tab::ALL.iter().map(|tab| tab.label()).collect();
+            let found = texts(&mut ui);
+            for label in &labels {
+                let Some((_, at)) = found.iter().find(|(content, at)| {
+                    content == label
+                        && at.center_y() >= strip.y
+                        && at.center_y() <= strip.y + strip.height
+                }) else {
+                    faults.push(format!("{preset}: no tab reads {label:?}"));
+                    continue;
+                };
+                let (left, right) = (at.x, at.x + at.width);
+                let (start, end) = (strip.x, strip.x + strip.width);
+                let inside = left >= start - 0.01 && right <= end + 0.01;
+                let outside = left >= end - 0.01 || right <= start + 0.01;
+                if outside {
+                    overflowed += 1;
+                }
+                if !inside && !outside {
+                    faults.push(format!(
+                        "{preset}: {label:?} runs from {left} to {right}, across the strip's \
+                         edge ({start} to {end})"
+                    ));
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+        assert!(
+            overflowed > 0,
+            "no tab overflowed the strip, so none was checked"
         );
     }
 
