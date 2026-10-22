@@ -12590,6 +12590,15 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 *Source:* m9b-T11-review.md; m9b-T11-fix1-brief.md.
 **Status (M9b T12, 2026-10-22):** the Extra page's `iced_aw` menu rows are covered (77484992): a row of a stated `menu.row_height` grows above a text scale of 1 through `rows::scaled_height`, and the menus' titles, rows and context entries draw at `defaults.line_height`, where they took iced's 1.3; `the_extra_menus_hold_their_text_at_every_text_scale` fails on the old code (macos-monterey's row 22 tall at 1.5, want 37; each title and context entry at iced's line height) and passes on the new. The `SelectionList` is not changed.
 
+#### M9-151 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:13340
+**Claim:** In the `iced_aw` build the Extra page's context-menu entries take no `menu.row_height`, so on the presets that state one they are shorter than the page's drop-down rows and than gpui's context menu's, and a menu row of a stated height draws its label at the row's top, where the window's menu rows and gpui's centre it.
+**Evidence:** at `c41ec977` the context `entry` sets no height (`showcase-iced.rs:13340-13349`), and `menu_entry` (`:13227-13244`) gives its `button(text(..))` a `Length::Fixed` height, which iced lays out from the top; gpui's context menu is a `PopupMenu` (gpui-component 0.8.0 `src/menu/context_menu.rs:14`, `:25`), whose rows are `h_flex().min_h(item_height).items_center()` (`popup_menu.rs:1309-1312`, `:1386-1389`); the window's menu rows centre their line in a stated row (`row![..].align_y(Center).height(Fill)`, `showcase-iced.rs:4354-4370`). Under material-3 a context entry is 30 px tall where the theme states 48.
+**Fix proposed:** One row builder for the page's drop-downs and context menu: `menu.row_height` through `rows::scaled_height`, the label in a row `.align_y(Center).height(Fill)` where the height is stated.
+**Verdict:** CONFIRMED by the M9b T12 review (`m9b-T12-review.md`, Importants 1 and 2).
+**Triage:** fix — CONFIRMED (M9b T12 fix round 1, the controller's ruling).
+**Status:** fixed — the commit that files this entry (M9b T12 fix round 1): `menu_item` builds both menus' rows; `the_extra_menus_hold_their_text_at_every_text_scale` expects the context entry at the drop-downs' row height and fails on the old code (material-3 at 1: 30.02 tall, want 48), and `the_extra_menu_rows_centre_their_label` fails on it (each label moves 0 px in a row 20 px taller, want 10); both pass on the new.
+*Source:* m9b-T12-review.md; m9b-T12-fix1-brief.md.
+
 
 ### Rejected
 

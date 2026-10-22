@@ -12852,9 +12852,10 @@ fn aw_menu_info(state: &State) -> String {
         &[
             (
                 "item height",
-                "menu.row_height where the theme states one, on the item button, \
-                 grown above a text scale of 1 to hold its line and padding \
-                 (rows::scaled_height)",
+                "menu.row_height where the theme states one, on the item button \
+                 of the drop-downs and the context menu alike, its label centred \
+                 in it, grown above a text scale of 1 to hold its line and \
+                 padding (rows::scaled_height)",
             ),
             (
                 "item padding",
@@ -13213,13 +13214,26 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             0.0,
         )
     });
-    let menu_entry = move |label: &'static str| -> Element<'_, Message> {
+    // A row of the page's menus, the drop-downs' and the context menu's
+    // alike, as gpui's context menu is a `PopupMenu` whose rows its
+    // drop-downs share (gpui-component 0.8.0 `menu/context_menu.rs`). A row
+    // of a stated height holds its label in the middle of it, as the
+    // window's menu rows do and gpui's (`popup_menu.rs`, `items_center`).
+    let menu_item = move |label: &'static str, chosen: String| -> Element<'_, Message> {
+        let line = match row_height {
+            Some(_) => Fill,
+            None => Length::Shrink,
+        };
         let entry = button(
-            text(label)
-                .themed(&menu_t.font, resolved, a11y)
-                .wrapping(text::Wrapping::None),
+            row![
+                text(label)
+                    .themed(&menu_t.font, resolved, a11y)
+                    .wrapping(text::Wrapping::None)
+            ]
+            .align_y(iced::Center)
+            .height(line),
         )
-        .on_press(Message::AwActionChosen(format!("Menu: {label}")))
+        .on_press(Message::AwActionChosen(chosen))
         .style(menu_row(resolved))
         .width(Fill)
         .padding(item_pad);
@@ -13231,6 +13245,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             },
         )
     };
+    let menu_entry = move |label: &'static str| menu_item(label, format!("Menu: {label}"));
     // A title is never held open here, as the window's are (`HeldMenu`):
     // iced_aw marks the title whose menu is open itself, handing it a
     // pointer at its centre (`menu_title`).
@@ -13326,16 +13341,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     .width(Fill);
 
     let context_demo = ContextMenu::new(context_underlay, move || {
-        let entry = |label: &'static str| -> Element<'_, Message> {
-            aw_menu_probe(
-                label,
-                button(text(label).themed(&menu_t.font, resolved, a11y))
-                    .on_press(Message::AwActionChosen(format!("Context menu: {label}")))
-                    .style(menu_row(resolved))
-                    .width(Fill)
-                    .padding(item_pad),
-            )
-        };
+        let entry = |label: &'static str| menu_item(label, format!("Context menu: {label}"));
         drawn_probe(
             probes::AW_CONTEXT_MENU,
             container(column![entry("Copy"), entry("Paste"), entry("Select all")].spacing(sp.xxs))
@@ -20349,8 +20355,9 @@ mod tests {
     /// the File menu's first row is `menu.row_height` at 1 and at least that
     /// line box, rounded up, plus the padding at 1.5 (adwaita,
     /// macos-monterey, material-3), and the line box plus the padding where
-    /// the theme states no row height (kde-breeze); the context menu's first
-    /// entry, which takes no row height, is the line box plus the padding.
+    /// the theme states no row height (kde-breeze), and so is the context
+    /// menu's first entry, as gpui's context menu is a `PopupMenu` whose rows
+    /// its drop-downs share (gpui-component 0.8.0 `menu/context_menu.rs`).
     /// Each is computed from the theme at test time.
     #[cfg(feature = "iced_aw")]
     #[test]
@@ -20387,7 +20394,7 @@ mod tests {
                 (
                     "the context menu's first entry",
                     context.get(probes::AW_COPY),
-                    line + pad.y(),
+                    row,
                 ),
             ] {
                 match at {
@@ -20398,6 +20405,77 @@ mod tests {
                     )),
                     None => faults.push(format!("{preset} at {factor}: {what} is not drawn")),
                 }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// The Extra page's menu rows of a stated `menu.row_height` hold their
+    /// label in the middle of the row, as the window's menu rows and gpui's
+    /// (`popup_menu.rs`'s `items_center`) do: under material-3, with its
+    /// stated row height and that height 20 px taller, the label of the File
+    /// menu's first row and of the context menu's first entry sits 10 px
+    /// lower in the taller row, where a label laid out from the row's top
+    /// stays put. The label is found by its ink in a spliced
+    /// `menu.font.color`.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_extra_menu_rows_centre_their_label() {
+        let state = extra_state("material-3", AppColorMode::Light);
+        // The label's first line below the top of `id`'s row, in logical
+        // pixels, with the stated row height `height`: the first line whose
+        // pixels a change of `menu.font.color` changes.
+        let label_top = |height: f32, open: fn(&mut Simulator<'_, Message>), id: &str| {
+            let drawn = |label: &str| {
+                let mut state = State {
+                    current_resolved: state.current_resolved.clone(),
+                    ..extra_state("material-3", AppColorMode::Light)
+                };
+                state.current_resolved.menu.row_height = Some(height);
+                state.current_resolved.menu.font.color = spliced_colour(label);
+                extra_frame(&state, open)
+            };
+            let (first, rects, scale) = drawn("#9b1357");
+            let (second, _, _) = drawn("#13579b");
+            let row = match rects.get(id) {
+                Some(row) => *row,
+                None => panic!("{id} is not drawn at a row height of {height}"),
+            };
+            let (x0, x1) = (
+                (row.x * scale).ceil() as u32,
+                (((row.x + row.width) * scale).floor() as u32).min(first.width()),
+            );
+            let (y0, y1) = (
+                (row.y * scale).ceil() as u32,
+                (((row.y + row.height) * scale).floor() as u32).min(first.height()),
+            );
+            (y0..y1)
+                .find(|&y| (x0..x1).any(|x| first.get_pixel(x, y) != second.get_pixel(x, y)))
+                .map(|y| (y - y0) as f32 / scale)
+                .unwrap_or_else(|| panic!("{id}'s label is not drawn in its row"))
+        };
+        let stated = match state.current_resolved.menu.row_height {
+            Some(height) => height,
+            None => panic!("material-3 states no menu.row_height"),
+        };
+        let mut faults = Vec::new();
+        for (what, open, id) in [
+            (
+                "the File menu's first row",
+                open_extra_file_menu as fn(&mut Simulator<'_, Message>),
+                probes::AW_NEW_WINDOW,
+            ),
+            (
+                "the context menu's first entry",
+                open_extra_context_menu,
+                probes::AW_COPY,
+            ),
+        ] {
+            let moved = label_top(stated + 20.0, open, id) - label_top(stated, open, id);
+            if (moved - 10.0).abs() > 1.0 {
+                faults.push(format!(
+                    "{what}: its label moves {moved} px down in a row 20 px taller, want 10"
+                ));
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
