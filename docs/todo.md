@@ -3716,6 +3716,14 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       of *Follow-up plan: the other sizing fields a platform leaves
       unstated*; the preset keeps them, as they pad all three showcases'
       chrome.
+      G3 T12 (2026-10-22): two pairs re-pointed by content, from the G3 Task 11
+      review: the toolbar's `font.size` comments (`[light.toolbar.font]`,
+      `[dark.toolbar.font]`) cited `:1384`, §2.13's table rule, and now cite
+      `:1386`, the `font.size` row; the toolbar's `border` comments
+      (`[light.toolbar.border]`, `[dark.toolbar.border]`) cited `:1394`,
+      `background_color`, and now cite `:1397-1399`, the
+      `border.corner_radius`, `border.line_width` and `border.shadow_enabled`
+      rows. The rest of the entry stays open.
 
 ### GPUI Kit 0.7.3 (G1, G2): review minors left for M9a, M9b and M9c
 Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at

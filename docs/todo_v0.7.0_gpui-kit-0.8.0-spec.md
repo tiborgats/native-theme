@@ -1053,6 +1053,17 @@ leaves" → "512 …" (`src/mapping_tests.rs:239-243`).
   `check_section_refs.py`, the registry test, egui's mapping tests among it); the
   renumbering's gates (G1)–(G4); the GPUI Fast suite (Task 11 moves a digit in gpui's
   `src/geometry.rs`).
+- *Added 2026-10-22 (G3 T12), from the Task 11 review:* the facts row's empty cells are
+  written in the file's own form, `**(none)**`, the form §2.11's other "no such thing" cells
+  take, and not as the plain `(none)` the KDE, GNOME and Material cells above give: KDE
+  `**(Breeze src)** **(none)** — …`, GNOME `**(none)** — …`, Material
+  `**(M3 token)** **(none)** — …`, the source tag kept where the cell has one (Task 12's
+  first commit; Task 11, `bd8f5756`, wrote the cells as above).
+- *Added 2026-10-22 (G3 T12), from the Task 11 review:* the targets this section gives as
+  "read after the insertion" for the six re-pointed model citations, `:634`,
+  `:1084-1101`, `:1078-1101`, `:1084` and `:934-966`, are the base's numbers, each 10 short
+  of the lines after the insertion; Task 11's commit (`bd8f5756`) wrote the true lines,
+  `:644`, `:1094-1111`, `:1088-1111`, `:1094` and `:944-976`.
 
 ### 12.2 What is drawn, in every connector
 

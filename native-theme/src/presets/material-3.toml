@@ -337,11 +337,11 @@ padding_horizontal_px = 16.0
 bar_height_px = 64.0
 
 [light.toolbar.font]
-# platform-facts.md:1384 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+# platform-facts.md:1386 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
 size_px = 22.0
 
 [light.toolbar.border]
-# platform-facts.md:1394 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+# platform-facts.md:1397-1399 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
 corner_radius_px = 0.0
 shadow_enabled = false
 line_width_px = 0.0
@@ -856,11 +856,11 @@ padding_horizontal_px = 16.0
 bar_height_px = 64.0
 
 [dark.toolbar.font]
-# platform-facts.md:1384 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+# platform-facts.md:1386 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
 size_px = 22.0
 
 [dark.toolbar.border]
-# platform-facts.md:1394 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+# platform-facts.md:1397-1399 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
 corner_radius_px = 0.0
 shadow_enabled = false
 line_width_px = 0.0
