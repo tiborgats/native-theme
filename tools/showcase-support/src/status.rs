@@ -75,9 +75,10 @@ pub enum DrawnFamily<'a> {
         /// one.
         family: Option<&'a str>,
         /// `None` where the system has no face of the stated family;
-        /// otherwise the weights of the faces it has, none of which the
-        /// toolkit can ask for (empty where it has no face the toolkit can
-        /// match at all).
+        /// otherwise the weights of its faces at the normal width, the only
+        /// width the toolkit's text is drawn in, none of which the toolkit
+        /// can ask for (empty where it has no face at the normal width, so
+        /// none the toolkit can match at all).
         held_weights: Option<&'a [u16]>,
     },
     /// `family`, the first family of the text library's common fallback
@@ -160,7 +161,8 @@ fn held(toolkit: &str, held_weights: Option<&[u16]>) -> String {
         Some(weights) => {
             let weights: Vec<String> = weights.iter().map(u16::to_string).collect();
             format!(
-                "on this system only at weights {toolkit} cannot ask for ({})",
+                "on this system, its normal-width faces only at weights {toolkit} cannot \
+                 ask for ({})",
                 weights.join(", ")
             )
         }
@@ -278,8 +280,8 @@ mod tests {
         );
         assert_eq!(
             generic(Some("Open Sans"), Some(&[350, 650])).label("Theme Sans"),
-            "Theme Sans (on this system only at weights iced cannot ask for (350, 650); \
-             drawn in iced's generic sans-serif, Open Sans)"
+            "Theme Sans (on this system, its normal-width faces only at weights iced cannot \
+             ask for (350, 650); drawn in iced's generic sans-serif, Open Sans)"
         );
         assert_eq!(
             generic(Some("Open Sans"), Some(&[])).label("Theme Sans"),
@@ -298,8 +300,8 @@ mod tests {
         );
         assert_eq!(
             fallback(Some(&[350])).label("Theme Sans"),
-            "Theme Sans (on this system only at weights iced cannot ask for (350); drawn in \
-             cosmic-text's common fallback, Noto Sans)"
+            "Theme Sans (on this system, its normal-width faces only at weights iced cannot \
+             ask for (350); drawn in cosmic-text's common fallback, Noto Sans)"
         );
         assert_eq!(DrawnFamily::Stated.label("Noto Sans"), "Noto Sans");
         assert_eq!(

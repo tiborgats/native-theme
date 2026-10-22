@@ -24112,8 +24112,10 @@ mod tests {
     }
 
     /// No label claims what does not hold (M9b T12 fix round 1): a family
-    /// the system has only at weights iced cannot ask for is not "not on
-    /// this system", and the family drawn in its place is named as iced's
+    /// the system has at the normal width only at weights iced cannot ask
+    /// for, beside a condensed face at one it can, is not "not on this
+    /// system", nor on it only at those weights, and the family drawn in its
+    /// place is named as iced's
     /// generic family's or, as here, cosmic-text's fallback, not as the
     /// platform's substitute; a style or weight the family has only
     /// at weights iced cannot ask for says so, where the label said the
@@ -24121,16 +24123,27 @@ mod tests {
     #[test]
     fn labels_say_only_what_holds() {
         let fallbacks = ["System Sans"];
-        let db = database(&[
+        let mut db = database(&[
             ("Theme Sans", 350, false),
             ("Theme Sans", 650, false),
             ("System Sans", 400, false),
         ]);
+        db.push_face_info(fontdb::FaceInfo {
+            id: fontdb::ID::dummy(),
+            source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
+            index: 0,
+            families: vec![("Theme Sans".into(), fontdb::Language::English_UnitedStates)],
+            post_script_name: "Theme Sans Condensed Bold".into(),
+            style: fontdb::Style::Normal,
+            weight: fontdb::Weight(700),
+            stretch: fontdb::Stretch::Condensed,
+            monospaced: false,
+        });
         let drawn = drawable_font(&db, &fallbacks, asked("Theme Sans", 700), true, false);
         assert_eq!(
             family_label("Theme Sans", &drawn),
-            "Theme Sans (on this system only at weights iced cannot ask for (350, 650); \
-             drawn in cosmic-text's common fallback, System Sans)"
+            "Theme Sans (on this system, its normal-width faces only at weights iced cannot \
+             ask for (350, 650); drawn in cosmic-text's common fallback, System Sans)"
         );
     }
 
