@@ -1170,9 +1170,8 @@ enum IconSource {
     System,
     /// Bundled icon set (material or lucide) used directly.
     Bundled,
-    /// System lookup failed; fell back to bundled Material SVGs.
-    Fallback,
-    /// No icon data available at all.
+    /// The set has no icon for it. No other set's icon stands in: the
+    /// loaders return `None` rather than substitute one.
     NotFound,
 }
 
@@ -1181,7 +1180,6 @@ impl IconSource {
         match self {
             IconSource::System => "System",
             IconSource::Bundled => "Bundled",
-            IconSource::Fallback => "Fallback",
             IconSource::NotFound => "Not Found",
         }
     }
@@ -1192,6 +1190,20 @@ struct LoadedIcon {
     data: Option<IconData>,
     name: Option<&'static str>,
     source: IconSource,
+}
+
+#[cfg(test)]
+thread_local! {
+    /// The Material icons [`load_material`] has loaded on this thread.
+    static MATERIAL_LOADS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// `role`'s Material icon, as the Icons page loads it, counted in
+/// [`MATERIAL_LOADS`] under test.
+fn load_material(role: IconRole) -> Option<IconData> {
+    #[cfg(test)]
+    MATERIAL_LOADS.with(|loads| loads.set(loads.get() + 1));
+    MaterialLoader::new(role).load()
 }
 
 /// Pre-load all 42 icons for the given choice, tracking source.
@@ -1211,20 +1223,9 @@ fn load_all_icons(
     let tc = resolved.defaults.text_color;
     let fg = Some(tc);
 
-    // For system icon sets, pre-load the Material set so we can detect fallbacks
-    let material_icons: Vec<Option<IconData>> = if is_system_set {
-        IconRole::ALL
-            .iter()
-            .map(|role| MaterialLoader::new(*role).load())
-            .collect()
-    } else {
-        vec![]
-    };
-
     IconRole::ALL
         .iter()
-        .enumerate()
-        .map(|(i, &role)| {
+        .map(|&role| {
             let data = match set {
                 IconSet::Freedesktop => {
                     let mut l = FreedesktopLoader::new(role).color_opt(fg);
@@ -1233,7 +1234,7 @@ fn load_all_icons(
                     }
                     l.load()
                 }
-                IconSet::Material => MaterialLoader::new(role).load(),
+                IconSet::Material => load_material(role),
                 IconSet::Lucide => LucideLoader::new(role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(role).color_opt(fg).load(),
                 IconSet::SegoeFluent => SegoeFluentLoader::new(role).color_opt(fg).load(),
@@ -1243,22 +1244,7 @@ fn load_all_icons(
             let source = match (&data, is_system_set) {
                 (None, _) => IconSource::NotFound,
                 (Some(_), false) => IconSource::Bundled,
-                (Some(IconData::Svg(loaded)), true) => {
-                    // Compare with Material to detect fallback
-                    if let Some(Some(IconData::Svg(mat))) = material_icons.get(i) {
-                        if loaded == mat {
-                            IconSource::Fallback
-                        } else {
-                            IconSource::System
-                        }
-                    } else {
-                        IconSource::System
-                    }
-                }
-                (Some(_), true) => {
-                    // RGBA or other data comes from native APIs, always system
-                    IconSource::System
-                }
+                (Some(_), true) => IconSource::System,
             };
             LoadedIcon {
                 role,
@@ -13605,18 +13591,13 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         .iter()
         .filter(|i| i.source == IconSource::System)
         .count();
-    let fallback_count = state
-        .loaded_icons
-        .iter()
-        .filter(|i| i.source == IconSource::Fallback)
-        .count();
     let total_count = state.loaded_icons.len();
 
     let header = column![
         text("Icons").role(page_title(ts), resolved, a11y),
         text(format!(
             "All {total_count} IconRole variants — \
-             {loaded_count} loaded, {system_count} system, {fallback_count} fallback"
+             {loaded_count} loaded, {system_count} system"
         ))
         .body(resolved, a11y),
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
@@ -13807,7 +13788,7 @@ fn build_icon_cell<'a>(
                     None => placeholder_icon(icon_px),
                 }
             } else {
-                // Bundled/fallback: colorize with theme foreground
+                // Bundled: colorize with theme foreground
                 match native_theme_iced::icons::to_svg_handle(data, Some(fg_color)) {
                     Some(handle) => svg(handle)
                         .width(Length::Fixed(icon_px))
@@ -16844,6 +16825,25 @@ mod tests {
             spins.len(),
             statics.len()
         );
+    }
+
+    /// M9-077: a system set's icons load no Material icon. No loader puts
+    /// another set's icon in place of one the set lacks (it returns `None`),
+    /// so there is no substitute to tell a system icon from.
+    #[test]
+    fn a_system_set_loads_no_material_icon() {
+        let resolved = State::default().current_resolved;
+        let choice = IconSetChoice::Default("no-such-icon-theme".to_owned());
+        let loads = |set| {
+            MATERIAL_LOADS.with(|loads| loads.set(0));
+            let _ = load_all_icons(&choice, &resolved, set);
+            MATERIAL_LOADS.with(std::cell::Cell::get)
+        };
+        use IconSet::{Freedesktop, Material, SegoeFluent, SfSymbols};
+        for set in [Freedesktop, SfSymbols, SegoeFluent] {
+            assert_eq!(loads(set), 0, "{set:?}: Material loaded with its icons");
+        }
+        assert_eq!(loads(Material), IconRole::ALL.len(), "Material's own");
     }
 
     /// The Icons page draws a freedesktop indicator as `Spinner` does, in its
