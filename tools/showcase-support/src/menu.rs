@@ -7,9 +7,9 @@
 //! Window ("Provide a Window menu even if your app has only one window");
 //! no Help menu, which the HIG describes as access to help documentation,
 //! and the showcases have none. Each showcase builds the menus' items
-//! itself, in one wording: the app menu's About <name>, Settings…,
-//! Services, Hide <name>, Hide Others, Show All and Quit <name>; File's
-//! Close; Window's Minimize, Zoom and Bring All to Front.
+//! itself, in one wording: the app menu's `About <name>`, `Settings…`,
+//! `Services`, `Hide <name>`, `Hide Others`, `Show All` and `Quit <name>`;
+//! File's `Close`; Window's `Minimize`, `Zoom` and `Bring All to Front`.
 
 /// The macOS menu bar's titles, in order: `app`, the app menu's title as the
 /// showcase gives it, then File, View, Theme and Window.
