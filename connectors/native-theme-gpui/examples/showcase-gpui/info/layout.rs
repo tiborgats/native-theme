@@ -581,6 +581,7 @@ pub fn folder_tab_row(
             "showcase",
         ))
         .config("corner radius", format!("{}px drawn: radius_lg, {}px{}, at the default size this bar takes, capped at a third of its {}px tab height; Theme::radius, {}px{}, at XSmall and Small, capped the same way (tab/tab.rs, FolderTabMetrics::new)", px_text(t.radius_lg.as_f32().min(FOLDER_TAB_HEIGHT.as_f32() / 3.0)), px_text(t.radius_lg.as_f32()), from("corner_radius_lg"), px_text(FOLDER_TAB_HEIGHT.as_f32()), px_text(t.radius.as_f32()), from("corner_radius")))
+        .not_themeable("outward corners", "the theme's tab.active_outward_corner_radius: upstream's Folder curves at Theme::radius / radius_lg, capped at a third of the height (tab/tab.rs, FolderTabMetrics::new); widgets::TabBar draws the theme's")
         .not_themeable("one radius", "the selected tab's top corners and its curves out into the panel take the same radius, so a theme cannot give them two (tab/tab.rs, FolderTabMetrics); nor can it reach the curves alone: upstream's Folder has no seam for a theme's tab shape. Only on a tab narrower than three radii do the two differ: its top corners shrink to a third of its width, keeping a third of the top flat (tab/tab.rs, folder_tab_shape)")
         .not_themeable("hover", "an inset fill in secondary, a button token, which the connector maps from button.background_color, so tab.hover_background has no receiver (tab/tab.rs, RenderOnce for Tab)")
         .not_themeable("outline", "none: the selected tab's shape is a filled path, stroked by nothing (tab/tab.rs, folder_tab_shape), so the model's tab.border is not drawn")
@@ -810,44 +811,46 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
     let look = TabLook::of(r);
     // The line that marks the selected tab, as widgets::TabBar draws it.
     let indicator = look.and_then(|look| look.indicator);
+    // The selected tab's outward corners, as widgets::TabBar draws them.
+    let outward = look.and_then(|look| look.outward_radius);
     let info = WidgetInfo::new("TabBar")
         .variant(variant)
         .color(claim(
             "bar",
             "bar_background",
             stated(t.bar_background),
-            "native-theme-gpui/widgets/tab_bar.rs:104",
+            "native-theme-gpui/widgets/tab_bar.rs:208",
         ))
         .color(claim(
             "unselected tab",
             "background_color",
             stated(t.background_color),
-            "native-theme-gpui/widgets/tab_bar.rs:105",
+            "native-theme-gpui/widgets/tab_bar.rs:209",
         ))
         .color(claim(
             "label",
             "font",
             stated(t.font.color),
-            "native-theme-gpui/widgets/tab_bar.rs:110",
+            "native-theme-gpui/widgets/tab_bar.rs:214",
         ))
         .color(claim(
             "selected tab",
             "active_background",
             stated(t.active_background),
-            "native-theme-gpui/widgets/tab_bar.rs:113",
+            "native-theme-gpui/widgets/tab_bar.rs:217",
         ))
         .color(claim(
             "selected label",
             "active_text_color",
             stated(t.active_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:114",
+            "native-theme-gpui/widgets/tab_bar.rs:218",
         ))
         .colors(edge_claim(
             "selected tab's outline",
             "border",
             Some(t.border.color),
             Some(t.border.line_width),
-            "native-theme-gpui/widgets/tab_bar.rs:115",
+            "native-theme-gpui/widgets/tab_bar.rs:219",
         ))
         .color(claim(
             "rule under the bar",
@@ -860,20 +863,20 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
             "hovered unselected tab, in place of its fill, over the bar",
             "hover_background",
             t.hover_background,
-            "native-theme-gpui/widgets/tab_bar.rs:111",
+            "native-theme-gpui/widgets/tab_bar.rs:215",
         ))
         .color(claim(
             "hovered label",
             "hover_text_color",
             stated(t.hover_text_color),
-            "native-theme-gpui/widgets/tab_bar.rs:112",
+            "native-theme-gpui/widgets/tab_bar.rs:216",
         ))
         // Only where the look has the line: TabBar draws none otherwise.
         .colors(stated_claim(
             "selected tab's line",
             "active_indicator_color",
             indicator.and(t.active_indicator_color),
-            "native-theme-gpui/widgets/tab_bar.rs:126",
+            "native-theme-gpui/widgets/tab_bar.rs:230",
         ));
     let padding = t.border.padding;
     let side = |v: Option<f32>| {
@@ -885,7 +888,15 @@ pub fn native_tab_row(r: &ResolvedTheme, variant: &'static str) -> WidgetInfo {
     info.config("size", format!("each tab at least tab.min_width, {}px, by tab.min_height, {}px", px_text(t.min_width), px_text(t.min_height)))
         .config("font", format!("tab.font: {}", drawn_font(&t.font)))
         .config("padding", format!("tab.border.padding: left {}, right {}; top and bottom {} and {}", side(padding.left), side(padding.right), padding.top.map_or("unstated".to_string(), |v| format!("{}px", px_text(v))), padding.bottom.map_or("unstated".to_string(), |v| format!("{}px", px_text(v)))))
-        .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11)", px_text(t.border.line_width), px_text(t.border.corner_radius)))
+        .config("outline", format!("tab.border on the selected tab only: {}px, radius {}px on its top corners, as Breeze and Windows draw it (docs/platform-facts.md §2.11){}", px_text(t.border.line_width), px_text(t.border.corner_radius), if outward.is_some() { "; no bottom edge: it runs on down the outward corners instead" } else { "" }))
+        .config("outward corners", match (look, outward) {
+            (_, Some(r)) => format!(
+                "tab.active_outward_corner_radius, {}px: the selected tab curves out into the bar's bottom edge at both feet, its outline following, with no bottom edge (native-theme-gpui/widgets/tab_bar.rs, TabLook::outward_radius)",
+                px_text(f32::from(r))
+            ),
+            (Some(_), None) => "none: the theme states no outward corners, so the selected tab's feet are square".to_string(),
+            (None, None) => "none: a tab length the theme states is not finite, so widgets::TabBar draws gpui-component's TabBar in its place (native-theme-gpui/widgets/tab_bar.rs, TabLook::of)".to_string(),
+        })
         .config("selection mark", match (look, indicator) {
             (_, Some(line)) => format!(
                 "a line tab.active_indicator_width, {}px, thick along the selected tab's {} edge, tab.active_indicator_side, in tab.active_indicator_color, over its outline (native-theme-gpui/widgets/tab_bar.rs, TabIndicator)",

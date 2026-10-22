@@ -740,6 +740,363 @@ fn selected_tab_carries_the_stated_indicator(
     }
 }
 
+// ---------------------------------------------------------------------------
+// The selected tab's outward corners: tab.active_outward_corner_radius
+// ---------------------------------------------------------------------------
+
+/// The light `windows-11` theme, resolved, with
+/// `tab.active_outward_corner_radius` set on it to `radius` and `edit`
+/// applied: no bundled preset states the radius yet, so the tests set it on
+/// the resolved theme, whose fields are public.
+fn windows_11(radius: Option<f32>, edit: impl FnOnce(&mut ResolvedTheme)) -> ResolvedTheme {
+    let prefs = AccessibilityPreferences::default();
+    let (_, mut r) = crate::from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+    r.tab.active_outward_corner_radius = radius;
+    edit(&mut r);
+    r
+}
+
+/// Each part's bounds, as a bar hands them to its observer, in order.
+type Reported = Rc<RefCell<Vec<(Part, Bounds<Pixels>)>>>;
+
+/// A window drawing three tabs, `two` selected, in a 320px bar under
+/// [`windows_11`]'s theme, installed as `crate::apply` installs one; the bar
+/// hands `parts` each tab's bounds.
+fn folder_window(
+    cx: &mut TestAppContext,
+    radius: Option<f32>,
+    edit: impl FnOnce(&mut ResolvedTheme),
+    parts: Reported,
+) -> (&mut VisualTestContext, ResolvedTheme) {
+    let r = windows_11(radius, edit);
+    cx.update(|cx| {
+        gpui_component::init(cx);
+        let prefs = AccessibilityPreferences::default();
+        let (theme, _) = crate::from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+        crate::apply(theme, &r, &prefs, cx);
+    });
+    let build: Build = Box::new(move |_, _| {
+        let parts = parts.clone();
+        TabBar::new("t")
+            .w(px(320.))
+            .child(Tab::new("One").debug_selector(|| "one".into()))
+            .child(Tab::new("Two").debug_selector(|| "two".into()))
+            .child(Tab::new("Three").debug_selector(|| "three".into()))
+            .selected_index(1)
+            .on_part_bounds(Rc::new(move |part, b, _, _| {
+                parts.borrow_mut().push((part, b))
+            }))
+            .into_any_element()
+    });
+    let (_, cx) = cx.add_window_view(|_, _| Harness { build });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    (cx, r)
+}
+
+fn near(a: f32, b: f32) -> bool {
+    (a - b).abs() < 1e-4
+}
+
+/// docs/platform-facts.md §2.11 `active_outward_corner_radius`: windows-11
+/// with a radius of 4 and its outline of 1 gives the numbers every
+/// connector's test shares -- the left curve about `(x0 - 3, y1 - 4)` in the
+/// square `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right one about
+/// `(x1 + 3, y1 - 4)` in `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the
+/// fill an annulus from 4 to `4 * sqrt(2) + 1` in `tab.active_background`
+/// and the outline one from 3 to 4 in `tab.border.color` -- with the top
+/// corners at 8.
+#[test]
+fn the_flares_are_the_shapes_geometry() {
+    let r = windows_11(Some(4.), |_| {});
+    assert_eq!(r.tab.border.line_width, 1., "windows-11's outline");
+    let look = TabLook::of(&r).expect("finite");
+    assert_eq!(look.outward_radius, Some(px(4.)));
+    assert_eq!(look.radius, px(8.), "the top corners");
+    assert_eq!(look.active, c(r.tab.active_background));
+    assert_eq!(look.border, c(r.tab.border.color));
+    let (x0, x1, y1) = (20., 120., 42.);
+    let tab = Bounds::new(point(px(x0), px(10.)), gpui::size(px(x1 - x0), px(32.)));
+    let far = 4. * std::f32::consts::SQRT_2 + 1.;
+    // (square's left edge, centre's x, outer radius, width, colour)
+    let expected = [
+        (x0 - 3., x0 - 3., far, far - 4., look.active),
+        (x1 - 1., x1 + 3., far, far - 4., look.active),
+        (x0 - 3., x0 - 3., 4., 1., look.border),
+        (x1 - 1., x1 + 3., 4., 1., look.border),
+    ];
+    let quads = tab_bar::flare_quads(tab, &look);
+    assert_eq!(quads.len(), expected.len(), "{quads:?}");
+    for (q, (left, centre, outer, width, colour)) in quads.iter().zip(expected) {
+        let at = |b: Bounds<Pixels>| {
+            [
+                f32::from(b.left()),
+                f32::from(b.top()),
+                f32::from(b.right()),
+                f32::from(b.bottom()),
+            ]
+        };
+        let square = [left, y1 - 4., left + 4., y1];
+        let ring = [
+            centre - outer,
+            y1 - 4. - outer,
+            centre + outer,
+            y1 - 4. + outer,
+        ];
+        assert!(
+            at(q.clip).iter().zip(square).all(|(a, b)| near(*a, b)),
+            "{q:?}: the square {square:?}"
+        );
+        assert!(
+            at(q.bounds).iter().zip(ring).all(|(a, b)| near(*a, b)),
+            "{q:?}: the ring {ring:?}"
+        );
+        assert!(near(f32::from(q.radius), outer), "{q:?}");
+        assert!(near(f32::from(q.width), width), "{q:?}");
+        assert_eq!(q.color, colour, "{q:?}");
+    }
+    // No outline: the fills alone.
+    let thin =
+        TabLook::of(&windows_11(Some(4.), |r| r.tab.border.line_width = 0.)).expect("finite");
+    let quads = tab_bar::flare_quads(tab, &thin);
+    assert_eq!(quads.len(), 2, "{quads:?}");
+    assert!(quads.iter().all(|q| q.color == thin.active));
+    // Unstated or 0: today's shape, no flare.
+    for radius in [None, Some(0.)] {
+        let look = TabLook::of(&windows_11(radius, |_| {})).expect("finite");
+        assert_eq!(look.outward_radius, None, "{radius:?}");
+        assert!(tab_bar::flare_quads(tab, &look).is_empty(), "{radius:?}");
+    }
+    // Not finite: no look, so the bar is gpui-component's.
+    for radius in [f32::NAN, f32::INFINITY, -1.] {
+        assert!(
+            TabLook::of(&windows_11(Some(radius), |_| {})).is_none(),
+            "{radius}"
+        );
+    }
+}
+
+/// The quads the last frame painted in `flare`'s colour clipped to its
+/// square, which only the flare's own two quads are clipped to.
+fn painted_in(cx: &mut VisualTestContext, flare: &tab_bar::FlareQuad) -> Vec<gpui::Quad> {
+    cx.update(|window, _| {
+        let clip = flare.clip.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.content_mask.bounds == clip && q.border_color == flare.color)
+            .collect()
+    })
+}
+
+/// Each of `flares` painted once, as `flare_quads` gives it: an annulus
+/// drawn as a transparent quad's border in its colour, about its centre,
+/// clipped to its square.
+fn assert_flares_painted(cx: &mut VisualTestContext, flares: &[tab_bar::FlareQuad], when: &str) {
+    assert_eq!(
+        flares.len(),
+        4,
+        "{when}: two flares, each a fill and an outline"
+    );
+    let s = cx.update(|window, _| window.scale_factor());
+    for flare in flares {
+        let painted = painted_in(cx, flare);
+        assert_eq!(painted.len(), 1, "{when}: {flare:?} painted as {painted:?}");
+        for q in painted {
+            let centre = |b: Bounds<gpui::ScaledPixels>| {
+                (
+                    b.origin.x.0 + b.size.width.0 / 2.,
+                    b.origin.y.0 + b.size.height.0 / 2.,
+                )
+            };
+            let (want, got) = (centre(flare.bounds.scale(s)), centre(q.bounds));
+            assert!(
+                (want.0 - got.0).abs() <= 0.5 && (want.1 - got.1).abs() <= 0.5,
+                "{when}: {flare:?} centred at {got:?}, not {want:?}"
+            );
+            assert!(q.background.is_transparent(), "{when}: {q:?}");
+            assert_eq!(q.border_color, flare.color, "{when}: {q:?}");
+            assert_eq!(
+                q.corner_radii.top_left.0,
+                f32::from(flare.radius) * s,
+                "{when}"
+            );
+        }
+    }
+}
+
+/// The selected tab's outline quads, found by its bounds and colour: its
+/// border widths, top, right, bottom and left, in scaled pixels.
+fn selected_outline(
+    cx: &mut VisualTestContext,
+    tab: Bounds<Pixels>,
+    look: &TabLook,
+) -> Vec<[f32; 4]> {
+    cx.update(|window, _| {
+        let b = tab.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.bounds == b && q.border_color == look.border)
+            .map(|q| {
+                let e = q.border_widths;
+                [e.top.0, e.right.0, e.bottom.0, e.left.0]
+            })
+            .collect()
+    })
+}
+
+/// Under windows-11 with a radius of 4: the selected tab's two flares are
+/// painted, each clipped to its square inside the row; the selected tab's
+/// outline has no bottom edge and its other sides are `w`; the first tab
+/// starts `r` inside the row, and the bar reports the selected tab's bounds
+/// to its bottom edge, which has no border.
+#[gpui::test]
+fn the_selected_tab_curves_out_at_its_feet(cx: &mut TestAppContext) {
+    let parts = Rc::new(RefCell::new(Vec::new()));
+    let (cx, r) = folder_window(cx, Some(4.), |_| {}, parts.clone());
+    let look = TabLook::of(&r).expect("finite");
+    let (bar, one, two) = (
+        bounds(cx, "native-tab-bar"),
+        bounds(cx, "one"),
+        bounds(cx, "two"),
+    );
+    assert_eq!(
+        one.left() - bar.left(),
+        px(4.),
+        "the room at the row's start"
+    );
+    let flares = tab_bar::flare_quads(two, &look);
+    assert_eq!(flares.len(), 4);
+    assert!(
+        flares.iter().all(|f| bar.contains(&f.clip.origin)
+            && bar.contains(&point(f.clip.right() - px(0.5), f.clip.bottom() - px(0.5)))),
+        "the squares lie inside the row"
+    );
+    assert_flares_painted(cx, &flares, "the first frame");
+    let s = cx.update(|window, _| window.scale_factor());
+    let w = f32::from(look.border_width) * s;
+    let outline = selected_outline(cx, two, &look);
+    assert!(!outline.is_empty(), "the selected tab's outline is painted");
+    assert!(
+        outline.iter().all(|e| *e == [w, w, 0., w]),
+        "the outline has no bottom edge: {outline:?}"
+    );
+    assert_eq!(
+        parts
+            .borrow()
+            .iter()
+            .rev()
+            .find(|(part, _)| *part == Part::Tab(1))
+            .map(|(_, b)| *b),
+        Some(two),
+        "Part::Tab reaches the selected tab's bottom, which has no border"
+    );
+}
+
+/// On gpui-pre, whose `painted_quads()` is the scene in paint order: every
+/// quad of a tab, its indicator's included, comes before the flares' first.
+#[cfg(not(feature = "gpui-fast"))]
+#[gpui::test]
+fn the_flares_are_painted_after_every_tab(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(
+        cx,
+        Some(4.),
+        |r| {
+            r.tab.active_indicator_color = Some(r.defaults.accent_color);
+            r.tab.active_indicator_width = Some(2.);
+            r.tab.active_indicator_side = Some(TabIndicatorSide::Bottom);
+        },
+        Rc::new(RefCell::new(Vec::new())),
+    );
+    let look = TabLook::of(&r).expect("finite");
+    let tabs = ["one", "two", "three", "native-tab-indicator"].map(|name| bounds(cx, name));
+    let flares = tab_bar::flare_quads(tabs[1], &look);
+    let order = cx.update(|window, _| {
+        let s = window.scale_factor();
+        let quads = window.painted_quads();
+        let tabs = tabs.map(|b| b.scale(s));
+        let clips: Vec<_> = flares.iter().map(|f| f.clip.scale(s)).collect();
+        (
+            quads.iter().rposition(|q| tabs.contains(&q.bounds)),
+            quads
+                .iter()
+                .position(|q| clips.contains(&q.content_mask.bounds)),
+        )
+    });
+    match order {
+        (Some(last_tab), Some(first_flare)) => assert!(
+            last_tab < first_flare,
+            "a tab's quad at {last_tab} after a flare's at {first_flare}"
+        ),
+        _ => panic!("tabs and flares are not both painted: {order:?}"),
+    }
+}
+
+/// A frame drawn after the first with nothing changed, without
+/// `window.refresh()`, still paints the flares: GPUI Fast's reuse of an
+/// unchanged view keeps them.
+#[gpui::test]
+fn the_flares_outlast_a_frame_with_nothing_changed(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(cx, Some(4.), |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let look = TabLook::of(&r).expect("finite");
+    let flares = tab_bar::flare_quads(bounds(cx, "two"), &look);
+    assert_flares_painted(cx, &flares, "the first frame");
+    cx.update(|w, cx| w.draw(cx).clear(cx));
+    assert_flares_painted(cx, &flares, "a second frame with nothing changed");
+}
+
+/// With a bottom indicator and the radius both stated: the line spans the
+/// tab's outer width at its bottom, which has no border to inset it by, and
+/// the flares are painted over its ends as without it.
+#[gpui::test]
+fn a_bottom_indicator_reaches_the_bottom_of_a_tab_that_curves_out(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(
+        cx,
+        Some(4.),
+        |r| {
+            r.tab.active_indicator_color = Some(r.defaults.accent_color);
+            r.tab.active_indicator_width = Some(2.);
+            r.tab.active_indicator_side = Some(TabIndicatorSide::Bottom);
+        },
+        Rc::new(RefCell::new(Vec::new())),
+    );
+    let look = TabLook::of(&r).expect("finite");
+    let (two, line) = (bounds(cx, "two"), bounds(cx, "native-tab-indicator"));
+    assert_eq!(line.bottom(), two.bottom(), "along the tab's bottom edge");
+    assert_eq!(
+        (line.left(), line.right()),
+        (two.left(), two.right()),
+        "across the tab"
+    );
+    assert_flares_painted(cx, &tab_bar::flare_quads(two, &look), "with a bottom line");
+}
+
+/// With the radius unstated: no flare, the selected tab's outline has its
+/// bottom edge `w` wide, and the first tab starts at the row's start.
+#[gpui::test]
+fn without_the_radius_the_selected_tab_keeps_its_bottom_edge(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(cx, None, |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let look = TabLook::of(&r).expect("finite");
+    let (bar, one, two) = (
+        bounds(cx, "native-tab-bar"),
+        bounds(cx, "one"),
+        bounds(cx, "two"),
+    );
+    assert_eq!(one.left(), bar.left(), "no room at the row's start");
+    let mut stated = look;
+    stated.outward_radius = Some(px(4.));
+    for flare in tab_bar::flare_quads(two, &stated) {
+        let painted = painted_in(cx, &flare);
+        assert!(painted.is_empty(), "a flare painted: {painted:?}");
+    }
+    let s = cx.update(|window, _| window.scale_factor());
+    let w = f32::from(look.border_width) * s;
+    let outline = selected_outline(cx, two, &look);
+    assert!(!outline.is_empty(), "the selected tab's outline is painted");
+    assert!(
+        outline.iter().all(|e| *e == [w, w, w, w]),
+        "the outline keeps its bottom edge: {outline:?}"
+    );
+}
+
 #[gpui::test]
 fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
     let cx = window_with(

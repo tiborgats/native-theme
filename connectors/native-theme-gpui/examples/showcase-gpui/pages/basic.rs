@@ -217,7 +217,9 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
 /// widest fixed-width control the theme states on the page --
 /// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is
+/// apart with room for both of the selected tab's flares,
+/// `2 * tab.active_outward_corner_radius` where the theme states one,
+/// `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is
 /// `content_width` less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
 /// scrolling page keeps free. Three where not even three do: the page is then
@@ -237,7 +239,8 @@ pub(crate) fn basic_column_count(
     };
     let page = content_width - margin - margin - gutter;
     let t = &resolved.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let flare = t.active_outward_corner_radius.unwrap_or_default();
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + flare + flare;
     let widest = resolved
         .combo_box
         .min_width

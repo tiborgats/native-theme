@@ -3489,6 +3489,63 @@ fn the_tab_rows_draw_what_tab_states(cx: &mut TestAppContext) {
     }
 }
 
+/// Under windows-11 with an outward corner radius of 4 set on it, installed
+/// as the connector installs a theme, after the showcase opens: the selected
+/// page tab curves out at both feet. At each, about the centre 4 outside and
+/// 4 above the foot, set the outline's width in, a flare is painted clipped
+/// to its 4px square: its fill in tab.active_background and its outline in
+/// tab.border.color, as `widgets::TabBar` draws them.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_selected_page_tab_curves_out_where_the_theme_states_it(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    show(&mut cx, &showcase, Page::Basic);
+    let is_dark = read(&mut cx, &showcase, |this, _| this.is_dark);
+    let (theme, r) = windows_11_curving_out(is_dark);
+    cx.update(|_window, cx| {
+        let prefs = native_theme_gpui::AccessibilityPreferences::default();
+        native_theme_gpui::apply(theme, &r, &prefs, cx);
+    });
+    cx.run_until_parked();
+    draw(&mut cx);
+    let look = native_theme_gpui::widgets::TabLook::of(&r).expect("windows-11's tab look builds");
+    let tab = bounds_of(&mut cx, Page::Basic.tab());
+    let w = f32::from(look.border_width);
+    let feet = [
+        f32::from(tab.left()) + w - 4.0,
+        f32::from(tab.right()) - w + 4.0,
+    ];
+    let y = f32::from(tab.bottom()) - 4.0;
+    let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
+    let missing = cx.update(|window, _| {
+        let s = window.scale_factor();
+        let quads = scene_quads(window);
+        let mut missing = Vec::new();
+        for x in feet {
+            for (colour, radius) in [(look.active, far), (look.border, 4.0)] {
+                let painted = quads.iter().any(|q| {
+                    let centre = (
+                        q.bounds.origin.x.0 + q.bounds.size.width.0 / 2.0,
+                        q.bounds.origin.y.0 + q.bounds.size.height.0 / 2.0,
+                    );
+                    q.background.is_transparent()
+                        && q.border_color == colour
+                        && (q.corner_radii.top_left.0 - radius * s).abs() < 1e-3
+                        && (centre.0 - x * s).abs() <= 1.0
+                        && (centre.1 - y * s).abs() <= 1.0
+                        && q.content_mask.bounds.size.width.0 <= 4.0 * s + 2.0
+                        && q.content_mask.bounds.size.height.0 <= 4.0 * s + 2.0
+                });
+                if !painted {
+                    missing.push((x, colour, radius));
+                }
+            }
+        }
+        missing
+    });
+    assert!(missing.is_empty(), "no flare quad at {missing:?}");
+}
+
 /// The smallest box that hovering `at` paints and that was not painted
 /// before, and that holds `at`: the hovered element's hover fill.
 fn hover_box(cx: &mut VisualTestContext, at: Point<Pixels>) -> Option<Bounds<Pixels>> {
@@ -5504,6 +5561,55 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
         all.sort_unstable();
         assert_eq!(all, (0..20).collect::<Vec<_>>(), "{count} columns");
     }
+}
+
+/// The light `windows-11` theme, resolved as the connector resolves a
+/// preset, with `tab.active_outward_corner_radius` set on it to 4: no
+/// bundled preset states the radius yet, so the tests set it on the
+/// resolved theme, whose fields are public.
+fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedTheme) {
+    let prefs = native_theme_gpui::AccessibilityPreferences::default();
+    let (theme, mut r) =
+        native_theme_gpui::from_preset("windows-11", is_dark, &prefs).expect("windows-11 loads");
+    r.tab.active_outward_corner_radius = Some(4.0);
+    (theme, r)
+}
+
+/// The Basic page's column rule makes room for both of the selected tab's
+/// flares: under windows-11, whose widest fixed-width control is the two
+/// tabs, a page whose fifth holds the two tabs and 4px more lays out five
+/// columns, and four once the theme states an outward corner radius of 4,
+/// whose two flares need 8.
+#[test]
+fn the_basic_page_makes_room_for_both_flares() {
+    use crate::pages::basic::basic_column_count;
+    let (_, stated) = windows_11_curving_out(false);
+    let mut unstated = stated.clone();
+    unstated.tab.active_outward_corner_radius = None;
+    let layout = native_theme::theme::Theme::preset("windows-11")
+        .map(|t| t.layout)
+        .unwrap_or_default();
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &stated.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let t = &stated.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
+    assert_eq!(
+        basic_column_count(&unstated, &layout, content),
+        5,
+        "without outward corners the two tabs fit a fifth"
+    );
+    assert_eq!(
+        basic_column_count(&stated, &layout, content),
+        4,
+        "the two tabs and both flares do not fit a fifth"
+    );
 }
 
 /// The Basic page lays its groups out as the three showcases do: under
@@ -15953,6 +16059,42 @@ fn every_native_tab_rows_selection_mark_is_the_looks() {
             .iter()
             .all(|c| c.field != "active_indicator_color"),
         "{name}, a non-finite length: an indicator colour is claimed that no look draws"
+    );
+}
+
+/// A theme-drawn tab row's info gives the selected tab's outward corners as
+/// `widgets::TabBar` draws them, from `TabLook::outward_radius`: the radius
+/// and the outline with no bottom edge where the theme states one, square
+/// feet and the outline as before where it does not.
+#[cfg(feature = "widgets")]
+#[test]
+fn the_native_tab_rows_info_gives_its_outward_corners() {
+    let (_, stated) = windows_11_curving_out(false);
+    let mut unstated = stated.clone();
+    unstated.tab.active_outward_corner_radius = None;
+    let info = crate::info::layout::native_tab_row(&stated, "widgets::TabBar");
+    let corners = shown_note(Some(&info), "outward corners").unwrap_or_default();
+    assert!(
+        corners.starts_with("tab.active_outward_corner_radius, 4px")
+            && corners.contains("no bottom edge")
+            && corners.contains("TabLook::outward_radius"),
+        "the stated radius is not given: {corners:?}"
+    );
+    let outline = shown_note(Some(&info), "outline").unwrap_or_default();
+    assert!(
+        outline.contains("no bottom edge"),
+        "the outline keeps a bottom edge: {outline:?}"
+    );
+    let info = crate::info::layout::native_tab_row(&unstated, "widgets::TabBar");
+    let corners = shown_note(Some(&info), "outward corners").unwrap_or_default();
+    assert!(
+        corners.starts_with("none: the theme states no outward corners"),
+        "unstated: {corners:?}"
+    );
+    let outline = shown_note(Some(&info), "outline").unwrap_or_default();
+    assert!(
+        !outline.contains("no bottom edge"),
+        "unstated, the outline has no bottom edge: {outline:?}"
     );
 }
 

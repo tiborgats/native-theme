@@ -152,16 +152,37 @@ pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut Window, &mut App)>;
 /// out inside its parent's border, so its insets go out by the border's
 /// width. It hands `observer` its bounds, the part's.
 fn part_bounds(part: Part, observer: &PartBounds, border: Pixels) -> impl IntoElement + use<> {
+    part_bounds_above(part, observer, border, border)
+}
+
+/// [`part_bounds`] over a part whose bottom border is `bottom` wide and its
+/// other sides' `border`.
+fn part_bounds_above(
+    part: Part,
+    observer: &PartBounds,
+    border: Pixels,
+    bottom: Pixels,
+) -> impl IntoElement + use<> {
     let observer = observer.clone();
-    canvas(
-        move |bounds, window: &mut Window, cx: &mut App| observer(part, bounds, window, cx),
-        |_, (), _, _| {},
-    )
-    .absolute()
-    .top(px(-f32::from(border)))
-    .left(px(-f32::from(border)))
-    .right(px(-f32::from(border)))
-    .bottom(px(-f32::from(border)))
+    outer_edge(border, bottom, move |bounds, window, cx| {
+        observer(part, bounds, window, cx)
+    })
+}
+
+/// An absolute, invisible box laid over an element whose border is `border`
+/// wide on its top, left and right and `bottom` on its bottom, reaching out
+/// to the border's outer edge, that hands `record` its bounds, the
+/// element's, while the frame is laid out (prepainted).
+fn outer_edge<F>(border: Pixels, bottom: Pixels, record: F) -> impl IntoElement + use<F>
+where
+    F: FnOnce(Bounds<Pixels>, &mut Window, &mut App) + 'static,
+{
+    canvas(record, |_, (), _, _| {})
+        .absolute()
+        .top(px(-f32::from(border)))
+        .left(px(-f32::from(border)))
+        .right(px(-f32::from(border)))
+        .bottom(px(-f32::from(bottom)))
 }
 
 /// A control's root element whose accessibility node is marked disabled
