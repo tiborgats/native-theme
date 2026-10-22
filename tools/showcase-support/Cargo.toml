@@ -20,13 +20,16 @@ serde_json = "1.0.151"
 # dependency.
 toml = { workspace = true }
 
-# The Retina nudge's AppKit calls (`capture::nudge_content_size`), at the
-# versions native-theme requires; only the classes it calls.
+# The Retina nudge's AppKit calls (`capture::nudge_content_size`) and the
+# menu bar's read-back (`menu::main_menu_titles`), at the versions
+# native-theme requires; only the classes they call.
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6.4"
 objc2-app-kit = { version = "0.3.2", default-features = false, features = [
     "std",
     "NSApplication",
+    "NSMenu",
+    "NSMenuItem",
     "NSResponder",
     "NSView",
     "NSWindow",

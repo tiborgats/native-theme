@@ -16,6 +16,8 @@
 //! - [`elements`]: the element list, parsed once;
 //! - [`values`]: a leaf's value in the text the three showcases agreed;
 //! - [`info`]: a listed element's Widget Info rows and Copy text;
+//! - [`menu`]: the menus' titles in the macOS system menu bar, and the
+//!   check that AppKit holds them;
 //! - [`rows`]: the preset and icon-theme pickers' rows, and a table row's
 //!   height under the OS text scale;
 //! - [`status`]: the status bar's environment items.
@@ -31,6 +33,7 @@ pub mod cli;
 pub mod dump;
 pub mod elements;
 pub mod info;
+pub mod menu;
 pub mod rows;
 pub mod status;
 pub mod values;
