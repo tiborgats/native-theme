@@ -3654,9 +3654,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 - [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.
 
-### iced: a public indicator-frames seam
-
-- [ ] [1.0] An application that draws an icon set's animated indicator at a size or in a colour of its own cannot use the connector's `Spinner`: `Spinner::new(resolved, icon_set, icon_theme)` draws at `spinner.diameter`, tints a Material or Lucide indicator in `spinner.fill_color` (`connectors/native-theme-iced/src/spinner.rs`, `Spinner::new`, `Look::of`), and keeps its frames and its playback private (`Drawn`, `frame_index`). So the iced showcase's Icons page, which draws the indicator at `defaults.icon_sizes.large` in `defaults.text_color` and labels its frame count and durations, plays it with a copy of the Spinner's rule (`Indicator` in `connectors/native-theme-iced/examples/showcase-iced.rs`). The test `the_icons_page_plays_its_indicator_as_the_spinner_does` holds the copy to the rule (M9b T14 fix round 1, 2026-10-22). Decide on a public seam that would retire the copy: a `Spinner` built with a given size and colour, or a public indicator-frames type with `frame(elapsed, reduce_motion)` that the `Spinner` itself draws through. Either is an api-add with a native-theme-iced CHANGELOG line.
 
 ---
 
