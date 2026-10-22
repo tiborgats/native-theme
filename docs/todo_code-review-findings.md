@@ -12608,6 +12608,24 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Status:** fixed — the commit that files this entry (M9b T17 fix round 1): the import is `#[cfg(feature = "material-icons")]`; check_release.sh and ci.yml's iced clippy gain `--all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping` (`-D warnings`), which fails on the old import and passes on the new.
 *Source:* m9b-T17-review.md; m9b-T17-fix1-brief.md.
 
+#### M9-153 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:12529
+**Claim:** The iced showcase's Layout page table pads its cells by the showcase's own scale (`LAYOUT_CELL_PAD`, 4 px above and below, 8 at the sides) on every preset, where the theme states the list's row padding, `list.border.padding`, which the Basic table's cells take; its Widget Info says "cell padding: the showcase's own scale", with no value.
+**Evidence:** at `2e7dffcd` the table's header and body cells are containers padded by `LAYOUT_CELL_PAD` (`showcase-iced.rs:12529-12534`, built of `SP.xs` and `SP.s`), and `layout_header_height` adds its `y()` to a stated `list.header_height`; the Basic table pads its cells by `padding_or(&l.border.padding, ..)` (`fn basic_table`). Since c2a33775 (M9b T11) the Layout table's cells pad themselves, so the constant's reason, "iced's `table` takes no list padding here", no longer holds. Under kde-breeze (`list.border.padding` 2 px across, 1 above and below) the first header cell is 176 px wide where its 160 px text and the list's padding make 164.
+**Fix proposed:** Pad each cell by `list.border.padding`, `LAYOUT_CELL_PAD` named as the showcase's own on a side the theme leaves unstated, the header height holding that padding, and print the padding's values in the Table info.
+**Verdict:** CONFIRMED by the M9b final review (`m9b-final-review.md`, Important 3, which the T11 review's Minor 3 had named).
+**Triage:** fix — CONFIRMED (M9b final fix, the controller's ruling I3).
+**Status:** fixed — the commit that files this entry (M9b final fix): `layout_cell_padding` is `padding_or(&list.border.padding, LAYOUT_CELL_PAD)`, the cells, the column widths and `layout_header_height` take it, and the Table info prints it; `the_layout_table_pads_its_cells_by_the_lists_padding`, over every bundled preset in both modes, fails on the old code (kde-breeze: the first header cell 176 px wide, want 164) and passes on the new. The table draws no `list.border` line round its cells, only iced's separators, so no line width is added (the Basic table's cells likewise take the padding alone, its frame the line).
+*Source:* m9b-final-review.md; m9b-final-fix-brief.md.
+
+#### M9-154 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:14507
+**Claim:** The iced showcase's Icons page cells, drawn as cards (`styles::container_card`), are padded 4 px on every side by the showcase's own scale, where the page's other cards are padded by `card.border.padding` inside `card.border.line_width`.
+**Evidence:** at `2e7dffcd` `build_icon_cell` pads its `styles::container_card` container by `Padding::from(SP.xs)` (`showcase-iced.rs:14507`); M9-099 (M9b T11) ruled that a widget drawn as a card is padded as the page's cards are, by `padding_inside_border(&card.border, Padding::ZERO)` (`card_pad`), and this cell was missed. Under kde-breeze a cell's content starts 4 px down where its card padding and line make 8.
+**Fix proposed:** Pad each cell by `card_pad`, and name the padding in the cell's Widget Info.
+**Verdict:** CONFIRMED by the M9b final review (`m9b-final-review.md`, Important 3).
+**Triage:** fix — CONFIRMED (M9b final fix, the controller's ruling I3).
+**Status:** fixed — the commit that files this entry (M9b final fix): the cells are padded by `padding_inside_border(&card.border, Padding::ZERO)` and their Widget Info prints the padding; `the_icon_cells_are_padded_as_cards`, over every bundled preset in both modes, fails on the old code (kde-breeze: the content 4 px down, want 8) and passes on the new.
+*Source:* m9b-final-review.md; m9b-final-fix-brief.md.
+
 
 ### Rejected
 

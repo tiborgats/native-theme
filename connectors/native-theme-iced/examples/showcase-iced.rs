@@ -240,6 +240,8 @@ mod probes {
     pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
     /// The Layout page's table, whole.
     pub const LAYOUT_TABLE: &str = "probe-layout-table";
+    /// Each of the Icons page's role cells; a search finds the first.
+    pub const ICON_CELL: &str = "probe-icon-cell";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
     /// The Display page's four tooltips' buttons, Top, Bottom, Left and
@@ -12536,24 +12538,36 @@ fn pane_grid_info(state: &State) -> String {
 }
 
 /// The four columns' text widths on the Layout page's table: role, size,
-/// weight and line height, the showcase's own; each cell adds
-/// [`LAYOUT_CELL_PAD`].
+/// weight and line height, the showcase's own; each cell adds its padding
+/// ([`layout_cell_padding`]).
 const LAYOUT_TEXT_WIDTHS: [f32; 4] = [160.0, 90.0, 90.0, 110.0];
 
-/// The padding each cell of the Layout page's table holds: the showcase's
-/// own scale. iced's `table` takes no list padding here (the Basic table,
-/// built of containers, pads its cells by `list.border.padding`).
+/// The padding of a Layout page table cell on a side `list.border.padding`
+/// leaves unstated (spec §3.1): the showcase's own, 4 px above and below and
+/// 8 at the sides, as the theme states nothing there and iced's `table`
+/// pads its cells by nothing a cell draws (iced_widget 0.14.2
+/// `src/table.rs:259`, `:312`). The Table's Widget Info prints the padding
+/// drawn.
 const LAYOUT_CELL_PAD: Padding = Padding {
-    top: SP.xs,
-    right: SP.s,
-    bottom: SP.xs,
-    left: SP.s,
+    top: 4.0,
+    right: 8.0,
+    bottom: 4.0,
+    left: 8.0,
 };
+
+/// The padding each cell of the Layout page's table holds: the list's row
+/// padding, `list.border.padding`, as the Basic table's cells hold it, and
+/// [`LAYOUT_CELL_PAD`] on a side it leaves unstated. The table draws no
+/// `list.border` line round its cells, only iced's separators between
+/// them, so no line width lies inside the padding.
+fn layout_cell_padding(resolved: &ResolvedTheme) -> Padding {
+    native_theme_iced::padding_or(&resolved.list.border.padding, LAYOUT_CELL_PAD)
+}
 
 /// The Layout page's table header cells' height where the theme states
 /// `list.header_height`: that height, holding the cell's padding
-/// ([`LAYOUT_CELL_PAD`]) and no rule, grown above a text scale of 1 to hold
-/// its label in `list.header_font` at `defaults.line_height`, as gpui's
+/// ([`layout_cell_padding`]) and no rule, grown above a text scale of 1 to
+/// hold its label in `list.header_font` at `defaults.line_height`, as gpui's
 /// table rows grow (`rows::scaled_height`).
 fn layout_header_height(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Option<f32> {
     native_theme_iced::list_header_height(resolved).map(|h| {
@@ -12562,7 +12576,7 @@ fn layout_header_height(resolved: &ResolvedTheme, a11y: &AccessibilityPreference
             a11y,
             resolved.list.header_font.size,
             resolved.defaults.line_height,
-            LAYOUT_CELL_PAD.y(),
+            layout_cell_padding(resolved).y(),
             0.0,
         )
     })
@@ -12584,6 +12598,12 @@ fn table_info(state: &State) -> String {
         (None, _) => "its text's and the cell padding's (list.header_height unstated)".to_string(),
     };
     let l = &resolved.list;
+    let pad = layout_cell_padding(resolved);
+    let pad_s = format!(
+        "top {}px, right {}px, bottom {}px, left {}px: list.border.padding, as the Basic \
+         table's cells; LAYOUT_CELL_PAD, the showcase's own, on a side it leaves unstated",
+        pad.top, pad.right, pad.bottom, pad.left
+    );
     widget_tooltip(
         "Table",
         &[
@@ -12615,7 +12635,7 @@ fn table_info(state: &State) -> String {
         ],
         &[
             ("separator_x / separator_y", &line_width_s),
-            ("cell padding", "the showcase's own scale"),
+            ("cell padding", &pad_s),
             (
                 "header",
                 font_row("list.header_font", &resolved.list.header_font).as_str(),
@@ -12815,7 +12835,8 @@ fn view_layout(state: &State) -> Element<'_, Message> {
 
     // iced pads a table's cells outside them (iced_widget 0.14.2
     // `src/table.rs:259`, `:312`), where nothing a cell draws reaches, so the
-    // table pads nothing and each cell pads itself, `cell_pad`: a header cell
+    // table pads nothing and each cell pads itself by the list's row padding
+    // (`layout_cell_padding`), as the Basic table's cells do: a header cell
     // is filled with `list.header_background` to its edges, as the Basic
     // table's header row is. A header cell is `list.header_height` tall
     // where the theme states one, and its text's height and padding where it
@@ -12823,7 +12844,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     // iced's `separator_y`, which it draws between two rows (`:535-557`): it
     // lies outside `list.header_height`, where the Basic table draws its
     // header's line inside it.
-    let cell_pad = LAYOUT_CELL_PAD;
+    let cell_pad = layout_cell_padding(resolved);
     let l = &resolved.list;
     let header_height = layout_header_height(resolved, a11y);
     let (head_ink, head_fill) = (to_color(l.header_font.color), to_color(l.header_background));
@@ -14484,6 +14505,10 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     content.into()
 }
 
+/// An Icons page cell: the icon loaded for its role, its role and its
+/// source, on a card (`styles::container_card`) padded as the page's cards
+/// are, by `card.border.padding` inside `card.border.line_width`, none on a
+/// side it leaves unstated.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     resolved: &ResolvedTheme,
@@ -14510,36 +14535,53 @@ fn build_icon_cell<'a>(
 
     hoverable(
         UnlistedKey::Icon(loaded.role),
-        container(
-            column![
-                container(icon_element)
-                    .center_x(Length::Fixed(cell_px))
-                    .center_y(Length::Fixed(cell_px)),
-                text(role_name.clone()).role(caption, resolved, a11y),
-                text(source_label).role(caption, resolved, a11y),
-            ]
-            .spacing(xxs_spacing)
-            .align_x(iced::Center),
-        )
-        .padding(Padding::from(SP.xs))
-        .style(styles::container_card(resolved))
-        .width(Length::Fixed(100.0))
-        .into(),
+        probe(
+            probes::ICON_CELL,
+            Length::Shrink,
+            container(
+                column![
+                    container(icon_element)
+                        .center_x(Length::Fixed(cell_px))
+                        .center_y(Length::Fixed(cell_px)),
+                    text(role_name.clone()).role(caption, resolved, a11y),
+                    text(source_label).role(caption, resolved, a11y),
+                ]
+                .spacing(xxs_spacing)
+                .align_x(iced::Center),
+            )
+            .padding(native_theme_iced::padding_inside_border(
+                &resolved.card.border,
+                Padding::ZERO,
+            ))
+            .style(styles::container_card(resolved))
+            .width(Length::Fixed(100.0)),
+        ),
     )
 }
 
 /// The Widget Info of the Icons page's cell for `role`: the icon loaded for
-/// it now, and where it came from; empty where none is loaded for the role.
+/// it now, where it came from, and the padding the cell, drawn as a card,
+/// takes; empty where none is loaded for the role.
 fn icon_info(state: &State, role: IconRole) -> String {
+    let pad = native_theme_iced::padding_inside_border(
+        &state.current_resolved.card.border,
+        Padding::ZERO,
+    );
     state
         .loaded_icons
         .iter()
         .find(|loaded| loaded.role == role)
         .map(|loaded| {
             format!(
-                "{role:?}\nicon: {}\nsource: {}",
+                "{role:?}\nicon: {}\nsource: {}\npadding: top {}px, right {}px, bottom {}px, \
+                 left {}px: card.border.padding inside card.border.line_width, as the page's \
+                 cards, none on a side it leaves unstated",
                 loaded.name.unwrap_or("(unmapped)"),
-                loaded.source.label()
+                loaded.source.label(),
+                pad.top,
+                pad.right,
+                pad.bottom,
+                pad.left
             )
         })
         .unwrap_or_default()
@@ -19995,9 +20037,10 @@ mod tests {
                 state.active_tab = Tab::Layout;
                 let mut ui = interface(&state);
                 let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+                let cell_pad = layout_cell_padding(&state.current_resolved).y();
                 let want = match stated {
-                    Some(h) => grown(h, l.header_font.size, 2.0 * SP.xs, 0.0),
-                    None => line_box(l.header_font.size) + 2.0 * SP.xs,
+                    Some(h) => grown(h, l.header_font.size, cell_pad, 0.0),
+                    None => line_box(l.header_font.size) + cell_pad,
                 };
                 assert!(
                     (cell.height - want).abs() < 0.01,
@@ -20152,6 +20195,103 @@ mod tests {
         }
     }
 
+    /// M9-153 (theme-data): the Layout page's table pads its cells by
+    /// `list.border.padding`, as the Basic table does, and by
+    /// [`LAYOUT_CELL_PAD`] only on a side the theme leaves unstated: under
+    /// every bundled preset in both modes, the first header cell is its
+    /// column's text width plus that padding wide, its label and the
+    /// `section_heading` cell's text that padding's left side in from the
+    /// table's left edge, and the Table info prints the padding.
+    #[test]
+    fn the_layout_table_pads_its_cells_by_the_lists_padding() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            state.active_tab = Tab::Layout;
+            let pad = native_theme_iced::padding_or(
+                &state.current_resolved.list.border.padding,
+                LAYOUT_CELL_PAD,
+            );
+            let mut ui = interface(&state);
+            let table = probe_bounds(&mut ui, probes::LAYOUT_TABLE);
+            let header = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+            let found = texts(&mut ui);
+            let at = |label: &str| match found.iter().find(|(content, _)| content == label) {
+                Some((_, bounds)) => *bounds,
+                None => panic!("{preset} (dark: {dark}): {label:?} is not drawn"),
+            };
+            let column = LAYOUT_TEXT_WIDTHS.first().copied().unwrap_or_default() + pad.x();
+            assert!(
+                near(header.width, column),
+                "{preset} (dark: {dark}): the first header cell is {}px wide, want {column}px",
+                header.width
+            );
+            for label in ["text_scale role", "section_heading"] {
+                let inset = at(label).x - table.x;
+                assert!(
+                    near(inset, pad.left),
+                    "{preset} (dark: {dark}): {label:?} is {inset}px in, want {}px",
+                    pad.left
+                );
+            }
+            let row = format!(
+                "cell padding: top {}px, right {}px, bottom {}px, left {}px",
+                pad.top, pad.right, pad.bottom, pad.left
+            );
+            let info = table_info(&state);
+            assert!(
+                info.lines().any(|line| line.trim().starts_with(&row)),
+                "{preset} (dark: {dark}): the Table info gives no \"{row}\":\n{info}"
+            );
+        }
+    }
+
+    /// M9-154 (theme-data): the Icons page's cells, drawn as cards
+    /// (`styles::container_card`), are padded as the page's cards are, by
+    /// `card.border.padding` inside `card.border.line_width`, none on a side
+    /// it leaves unstated (`padding_inside_border`, M9-099): under every
+    /// bundled preset in both modes, the first cell's role name lies the
+    /// padding's top, the icon's box and the cell's gap below the cell's top,
+    /// and its source the padding's bottom above the cell's bottom.
+    #[test]
+    fn the_icon_cells_are_padded_as_cards() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            state.reload_icons();
+            state.active_tab = Tab::Icons;
+            let r = &state.current_resolved;
+            let pad = native_theme_iced::padding_inside_border(&r.card.border, Padding::ZERO);
+            let Some(first) = state.loaded_icons.first() else {
+                panic!("{preset} (dark: {dark}): no icon role is listed");
+            };
+            let (role, source) = (format!("{:?}", first.role), first.source.label());
+            let box_px = r.defaults.icon_sizes.large;
+            let mut ui = interface(&state);
+            let cell = probe_bounds(&mut ui, probes::ICON_CELL);
+            let found = texts(&mut ui);
+            let at = |label: &str| match found
+                .iter()
+                .find(|(content, bounds)| content == label && cell.contains(bounds.center()))
+            {
+                Some((_, bounds)) => *bounds,
+                None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
+            };
+            let (role_at, source_at) = (at(&role), at(&source));
+            let top = role_at.y - cell.y - box_px - SP.xxs;
+            assert!(
+                near(top, pad.top),
+                "{preset} (dark: {dark}): the cell's content starts {top}px down, want {}px",
+                pad.top
+            );
+            let bottom = cell.y + cell.height - (source_at.y + source_at.height);
+            assert!(
+                near(bottom, pad.bottom),
+                "{preset} (dark: {dark}): the cell's content ends {bottom}px above its foot, \
+                 want {}px",
+                pad.bottom
+            );
+        }
+    }
+
     /// M9-091 (theme-data): the Layout page's table draws its header in
     /// `list.header_font.color` on `list.header_background` and its cells
     /// in `list.item_font.color`, as the Basic table does. Under material-3
@@ -20169,7 +20309,8 @@ mod tests {
         // The first header cell, its fill, spans its column from the table's
         // left edge: the cell holds its padding, which iced's own table
         // padding would leave unfilled outside it.
-        let column = LAYOUT_TEXT_WIDTHS.first().copied().unwrap_or_default() + LAYOUT_CELL_PAD.x();
+        let column = LAYOUT_TEXT_WIDTHS.first().copied().unwrap_or_default()
+            + layout_cell_padding(&state.current_resolved).x();
         if (header.x - table.x).abs() > 0.01 || (header.width - column).abs() > 0.01 {
             faults.push(format!(
                 "the first header cell is {header:?}, not the {column} px column at the \
