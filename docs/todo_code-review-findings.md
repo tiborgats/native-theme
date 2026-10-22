@@ -12105,6 +12105,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#13.
+**Status (M9b final fix, residuals, 2026-10-22):** the Grid's spacing is no longer `layout.widget_gap`: the controller ruled that the Grid and the Theme Map lay out their colour swatches by one rule, gpui's swatch table, so the Grid's one spacing (iced's `grid` takes one, `grid.rs:63`) is `SWATCH_GAP_Y` between two rows, its columns splitting its width evenly, and its Widget Info says so; `the_grid_says_what_it_draws` holds the line.
 
 #### M9-099 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10029
 **Claim:** The Display page's 'Available presets' count is every platform's preset list, while the theme picker and --theme offer only this platform's (on Linux it says 17 where fewer are selectable).

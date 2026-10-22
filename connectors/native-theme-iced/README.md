@@ -874,10 +874,13 @@ their rectangles for `scripts/check_showcase_parity.py` (with
 where the menus are the system menu bar's, the flag is reported and
 ignored). Add
 `--features watch` to have it follow the OS theme's changes in every colour
-mode, as the gpui showcase does (under a chosen Light or Dark the OS still
-gives the accent, the fonts and the icon theme, and a return to System shows
-the OS theme as it is then), and `--features iced_aw` for the tab with the
-`iced_aw` widgets and the Basic tab's number input:
+mode, as the gpui showcase does: under the OS theme (`default`) each change
+reads the OS theme again, so its accent, fonts, icon theme and accessibility
+preferences follow the OS under a chosen Light or Dark too, and a return to
+System shows the OS theme as it is then, in its mode; under a preset each
+change brings the OS's accessibility preferences, and in System mode its
+light or dark mode. Add `--features iced_aw` for the tab with the `iced_aw`
+widgets and the Basic tab's number input:
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced --features iced_aw

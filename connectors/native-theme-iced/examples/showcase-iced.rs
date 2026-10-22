@@ -212,10 +212,20 @@ mod probes {
     pub const LAYOUT_TABLE_HEADER: &str = "probe-layout-table-header";
     /// The Layout page's table, whole.
     pub const LAYOUT_TABLE: &str = "probe-layout-table";
-    /// Each of the Icons page's role cells; a search finds the first.
+    /// Each of the Icons page's role cells but the second; a search finds
+    /// the first.
     pub const ICON_CELL: &str = "probe-icon-cell";
+    /// The Icons page's second role cell, beside the first.
+    pub const ICON_CELL_SECOND: &str = "probe-icon-cell-second";
+    /// Each row of the Icons page's grid but the second; a search finds the
+    /// first.
+    pub const ICON_GRID_ROW: &str = "probe-icon-grid-row";
+    /// The Icons page's second grid row, under the first.
+    pub const ICON_GRID_ROW_SECOND: &str = "probe-icon-grid-row-second";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
+    /// The Layout page's Grid.
+    pub const LAYOUT_GRID: &str = "probe-layout-grid";
     /// The Graphics page's canvas, QR code and Markdown view.
     pub const GRAPHICS_CANVAS: &str = "probe-graphics-canvas";
     pub const GRAPHICS_QR_CODE: &str = "probe-graphics-qr-code";
@@ -8943,7 +8953,16 @@ const TOOLTIP_GAP_REMS: f32 = 0.75;
 /// `src/tooltip.rs:509-516`), not off it as gpui's, so iced's tooltips keep
 /// the gpui bubble's distance from their control rather than the pointer.
 fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
-    a11y.scaled(resolved.defaults.font.size) * TOOLTIP_GAP_REMS
+    gpui_rems(TOOLTIP_GAP_REMS, resolved, a11y)
+}
+
+/// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
+/// 0.8.0 `src/root.rs:538`), which the gpui connector fills with the scaled
+/// `defaults.font.size` (`native-theme-gpui/src/lib.rs`, `to_theme`): the
+/// size a gpui showcase constant of `rems(..)` stands for under the
+/// installed theme (Addendum F's rem rule).
+fn gpui_rems(rems: f32, resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32 {
+    a11y.scaled(resolved.defaults.font.size) * rems
 }
 
 /// What Widget Info says of a tooltip's gap to its control, which the theme
@@ -12449,6 +12468,7 @@ const LAYOUT_GRID_COLUMNS: usize = 4;
 /// The Widget Info of the Layout page's grid.
 fn grid_info(state: &State) -> String {
     let d = &state.current_resolved.defaults;
+    let swatches = swatches_line(state);
     let columns =
         format!("{LAYOUT_GRID_COLUMNS}, the showcase's own: the model states no column count");
     widget_tooltip(
@@ -12464,7 +12484,6 @@ fn grid_info(state: &State) -> String {
                 "each cell's own: the ResolvedDefaults colour its caption names",
             ),
             ("cell radius", "defaults.border.corner_radius"),
-            ("spacing", "layout.widget_gap, none where unstated"),
         ],
         &[
             (
@@ -12473,7 +12492,11 @@ fn grid_info(state: &State) -> String {
                  (grid.rs:13-19)",
             ),
             ("columns", columns.as_str()),
-            SWATCHES_LINE,
+            (
+                "spacing",
+                "SWATCH_GAP_Y, 4px, the swatch table's, between two rows",
+            ),
+            ("swatches", swatches.as_str()),
         ],
     )
 }
@@ -12538,8 +12561,8 @@ const LAYOUT_TEXT_WIDTHS: [f32; 4] = [160.0, 90.0, 90.0, 110.0];
 /// leaves unstated (spec §3.1): the showcase's own, 4 px above and below and
 /// 8 at the sides, as the theme states nothing there and iced's `table`
 /// pads its cells by nothing a cell draws (iced_widget 0.14.2
-/// `src/table.rs:259`, `:312`). The Table's Widget Info prints the padding
-/// drawn.
+/// `src/table.rs:259`, `:312`). The gpui showcase has no constant of this
+/// role. The Table's Widget Info prints the padding drawn.
 const LAYOUT_CELL_PAD: Padding = Padding {
     top: 4.0,
     right: 8.0,
@@ -12702,25 +12725,31 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                  columns. Here: eight of the colours ResolvedDefaults names."
             )
             .body(resolved, a11y),
-            grid([
-                cell("accent_color", to_color(d.accent_color)),
-                cell("danger_color", to_color(d.danger_color)),
-                cell("warning_color", to_color(d.warning_color)),
-                cell("success_color", to_color(d.success_color)),
-                cell("info_color", to_color(d.info_color)),
-                cell("link_color", to_color(d.link_color)),
-                cell("muted_color", to_color(d.muted_color)),
-                cell("surface_color", to_color(d.surface_color)),
-            ])
-            .columns(LAYOUT_GRID_COLUMNS)
-            .spacing(gap.widget)
-            // `Grid::height` sets the height of the whole grid, not of a cell
-            // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
-            // here divides that number between the rows, and the swatch plus
-            // its caption did not fit in the share. `Shrink` is the one
-            // `Sizing` that lets each row be as tall as its content
-            // (`grid.rs:207-211`).
-            .height(Length::Shrink),
+            probe(
+                probes::LAYOUT_GRID,
+                Fill,
+                grid([
+                    cell("accent_color", to_color(d.accent_color)),
+                    cell("danger_color", to_color(d.danger_color)),
+                    cell("warning_color", to_color(d.warning_color)),
+                    cell("success_color", to_color(d.success_color)),
+                    cell("info_color", to_color(d.info_color)),
+                    cell("link_color", to_color(d.link_color)),
+                    cell("muted_color", to_color(d.muted_color)),
+                    cell("surface_color", to_color(d.surface_color)),
+                ])
+                .columns(LAYOUT_GRID_COLUMNS)
+                // The swatch table's rule (`swatches_line`): its rows
+                // `SWATCH_GAP_Y` apart; its columns split its width evenly.
+                .spacing(SWATCH_GAP_Y)
+                // `Grid::height` sets the height of the whole grid, not of a cell
+                // (`grid.rs:78-84`, `Sizing::EvenlyDistribute`): a fixed number
+                // here divides that number between the rows, and the swatch plus
+                // its caption did not fit in the share. `Shrink` is the one
+                // `Sizing` that lets each row be as tall as its content
+                // (`grid.rs:207-211`).
+                .height(Length::Shrink),
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -13402,8 +13431,9 @@ const AW_MENU_PADDING: f32 = 5.0;
 /// and their rows and the context menu's entries from one another (spec
 /// §3.1): the showcase's own, 2 px, as the model states no menu offset and
 /// no row gap, so a drop-down's panel stands clear of the foot of its title,
-/// which iced_aw's offset of the rows alone would cover. The menus' Widget
-/// Info names it.
+/// which iced_aw's offset of the rows alone would cover. The gpui showcase
+/// has no constant of this role: its menus are gpui-component's, placed by
+/// upstream. The menus' Widget Info names it.
 #[cfg(feature = "iced_aw")]
 const AW_MENU_GAP: f32 = 2.0;
 
@@ -14450,18 +14480,33 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     ]
     .spacing(gap.widget);
 
-    // The grid: rows of 6 icons each, its cells and its rows
-    // `layout.widget_gap` apart, as a row of widgets is spaced.
+    // The grid: rows of 6 icons each, its cells and its rows a gallery's,
+    // `ICON_GRID_GAP_REMS` of the gpui rem apart, as the gpui showcase's.
+    let grid_gap = gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y);
     let icons_per_row = 6;
     let grid_rows: Vec<Element<'_, Message>> = state
         .loaded_icons
         .chunks(icons_per_row)
-        .map(|icons| {
+        .enumerate()
+        .map(|(row_index, icons)| {
             let row_icons: Vec<Element<'_, Message>> = icons
                 .iter()
-                .map(|loaded| build_icon_cell(loaded, resolved, &ts.caption, a11y))
+                .enumerate()
+                .map(|(index, loaded)| {
+                    let id = if row_index == 0 && index == 1 {
+                        probes::ICON_CELL_SECOND
+                    } else {
+                        probes::ICON_CELL
+                    };
+                    build_icon_cell(loaded, id, resolved, &ts.caption, a11y)
+                })
                 .collect();
-            row(row_icons).spacing(gap.widget).into()
+            let id = if row_index == 1 {
+                probes::ICON_GRID_ROW_SECOND
+            } else {
+                probes::ICON_GRID_ROW
+            };
+            probe(id, Length::Shrink, row(row_icons).spacing(grid_gap))
         })
         .collect();
 
@@ -14472,7 +14517,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
         animated_section,
         rule::horizontal(resolved.separator.line_width).style(styles::rule(resolved)),
-        column(grid_rows).spacing(gap.widget),
+        column(grid_rows).spacing(grid_gap),
     ]
     // Header, icon-set summary, animated section and grid are the sections
     // of the tab, the same role the other tab roots give `gap.section`.
@@ -14537,18 +14582,26 @@ fn view_animated_icons<'a>(state: &'a State) -> Element<'a, Message> {
     content.into()
 }
 
-/// The space between an Icons page cell's icon, its role and its source
-/// (spec §3.1): the showcase's own, 2 px, as the theme states no icon grid
-/// and a cell is a gallery's, not a row of widgets. The cell's Widget Info
-/// names it.
-const ICON_CELL_GAP: f32 = 2.0;
+/// The space between two cells of the Icons page's grid, and between two of
+/// its rows, in gpui rems ([`gpui_rems`]) (spec §3.1): the gpui showcase's
+/// `ICON_GRID_GAP`, `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme
+/// states no icon grid and the cells are a gallery's, not a row of widgets
+/// (Addendum F row 1). The cell's Widget Info names it.
+const ICON_GRID_GAP_REMS: f32 = 0.5;
+
+/// The space between an Icons page cell's icon, its role and its source,
+/// in gpui rems (spec §3.1): the gpui showcase's `ICON_CELL_GAP`,
+/// `rems(0.25)` (`showcase-gpui/demo.rs`), between a cell's icon and its
+/// name, as the theme states no icon grid. The cell's Widget Info names it.
+const ICON_CELL_GAP_REMS: f32 = 0.25;
 
 /// An Icons page cell: the icon loaded for its role, its role and its
-/// source, [`ICON_CELL_GAP`] apart, on a card (`styles::container_card`)
+/// source, [`ICON_CELL_GAP_REMS`] apart, on a card (`styles::container_card`)
 /// padded as the page's cards are, by `card.border.padding` inside
 /// `card.border.line_width`, none on a side it leaves unstated.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
+    probe_id: &'static str,
     resolved: &ResolvedTheme,
     caption: &ResolvedTextScaleEntry,
     a11y: &AccessibilityPreferences,
@@ -14573,7 +14626,7 @@ fn build_icon_cell<'a>(
     hoverable(
         UnlistedKey::Icon(loaded.role),
         probe(
-            probes::ICON_CELL,
+            probe_id,
             Length::Shrink,
             container(
                 column![
@@ -14583,7 +14636,7 @@ fn build_icon_cell<'a>(
                     text(role_name.clone()).role(caption, resolved, a11y),
                     text(source_label).role(caption, resolved, a11y),
                 ]
-                .spacing(ICON_CELL_GAP)
+                .spacing(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y))
                 .align_x(iced::Center),
             )
             .padding(native_theme_iced::padding_inside_border(
@@ -14600,10 +14653,10 @@ fn build_icon_cell<'a>(
 /// it now, where it came from, and the padding the cell, drawn as a card,
 /// takes; empty where none is loaded for the role.
 fn icon_info(state: &State, role: IconRole) -> String {
-    let pad = native_theme_iced::padding_inside_border(
-        &state.current_resolved.card.border,
-        Padding::ZERO,
-    );
+    let (resolved, a11y) = (&state.current_resolved, &state.accessibility);
+    let pad = native_theme_iced::padding_inside_border(&resolved.card.border, Padding::ZERO);
+    let cell_gap = px_text(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y));
+    let grid_gap = px_text(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y));
     state
         .loaded_icons
         .iter()
@@ -14612,9 +14665,11 @@ fn icon_info(state: &State, role: IconRole) -> String {
             format!(
                 "{role:?}\nicon: {}\nsource: {}\npadding: top {}px, right {}px, bottom {}px, \
                  left {}px: card.border.padding inside card.border.line_width, as the page's \
-                 cards, none on a side it leaves unstated\ngap: ICON_CELL_GAP, \
-                 {ICON_CELL_GAP}px between the icon, the role and the source, the showcase's \
-                 own: the theme states no icon grid",
+                 cards, none on a side it leaves unstated\ngap: {cell_gap} between the icon, \
+                 the role and the source, ICON_CELL_GAP_REMS (gpui's ICON_CELL_GAP, a quarter \
+                 of the scaled defaults.font.size)\ngrid gap: {grid_gap} between two cells and \
+                 two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of the scaled \
+                 defaults.font.size): the showcase's own, as the theme states no icon grid",
                 loaded.name.unwrap_or("(unmapped)"),
                 loaded.source.label(),
                 pad.top,
@@ -14657,7 +14712,7 @@ fn base_palette_info(state: &State) -> String {
             Paint::leaf("danger", "danger", palette.danger),
         ],
         &[],
-        &[SWATCHES_LINE],
+        &[("swatches", swatches_line(state).as_str())],
     )
 }
 
@@ -14715,7 +14770,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                 cs("warning", palette.warning),
                 cs("danger", palette.danger),
             ]
-            .spacing(COLOR_SWATCH_GAP),
+            .spacing(SWATCH_GAP_X),
         ]
         .spacing(gap.widget)
         .into(),
@@ -14791,19 +14846,18 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                     )
                 })
                 .collect();
-            rows.push(row(row_items).spacing(COLOR_SWATCH_GAP).into());
+            rows.push(row(row_items).spacing(SWATCH_GAP_X).into());
         }
 
-        let mut col = column![text("Resolved Theme Colors (defaults + per-widget)").role(
-            section_title(ts),
-            resolved,
-            a11y
-        )]
-        .spacing(gap.widget);
-        for r in rows {
-            col = col.push(r);
-        }
-        col
+        column![
+            text("Resolved Theme Colors (defaults + per-widget)").role(
+                section_title(ts),
+                resolved,
+                a11y
+            ),
+            column(rows).spacing(SWATCH_GAP_Y),
+        ]
+        .spacing(gap.widget)
     };
 
     column![
@@ -14837,7 +14891,9 @@ fn color_to_hex(c: Color) -> String {
 
 /// The padding round a colour swatch's hex (spec §3.1): the showcase's own,
 /// 6 px above and below and 4 at the sides, as the theme states no swatch.
-/// The Widget Info of each swatch table says so ([`SWATCHES_LINE`]).
+/// The gpui showcase has no constant of this role: its swatch is a bare
+/// square, which holds no text (`demo::swatch`, `showcase-gpui/demo.rs`).
+/// The Widget Info of each swatch table says so ([`swatches_line`]).
 const COLOR_SWATCH_PADDING: Padding = Padding {
     top: 6.0,
     right: 4.0,
@@ -14845,27 +14901,43 @@ const COLOR_SWATCH_PADDING: Padding = Padding {
     left: 4.0,
 };
 
-/// The space between a colour swatch and its label (spec §3.1): the
-/// showcase's own, 2 px, as the theme states no swatch ([`SWATCHES_LINE`]).
-const COLOR_SWATCH_LABEL_GAP: f32 = 2.0;
+/// The space between a colour swatch and its label, in gpui rems
+/// ([`gpui_rems`]) (spec §3.1): the gpui showcase's `SWATCH_LABEL_GAP`,
+/// `rems(0.5)` (`showcase-gpui/pages/mod.rs`), as the theme states no
+/// swatch ([`swatches_line`]).
+const SWATCH_LABEL_GAP_REMS: f32 = 0.5;
 
-/// The space between two swatches of a Theme Map row (spec §3.1): the
-/// showcase's own, 12 px, as the theme states no swatch table, and a row of
-/// swatches is a table's, not a row of widgets ([`SWATCHES_LINE`]).
-const COLOR_SWATCH_GAP: f32 = 12.0;
+/// The space between two swatches of a row of a swatch table, and between
+/// two of its rows (spec §3.1): the gpui showcase's `SWATCH_GAP_X` and
+/// `SWATCH_GAP_Y`, 16 and 4 px (`showcase-gpui/pages/mod.rs`), as the theme
+/// states no swatch table, and a row of swatches is a table's, not a row of
+/// widgets (Addendum F row 1, "a swatch row") ([`swatches_line`]).
+const SWATCH_GAP_X: f32 = 16.0;
+const SWATCH_GAP_Y: f32 = 4.0;
 
 /// The Widget Info line of a table of colour swatches, the Theme Map's and
-/// the Layout page's Grid: the showcase's own distances it draws them at.
-const SWATCHES_LINE: (&str, &str) = (
-    "swatches",
-    "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), their \
-     label COLOR_SWATCH_LABEL_GAP (2px) below, and on the Theme Map COLOR_SWATCH_GAP \
-     (12px) apart: the showcase's own, as the theme states no swatch table",
-);
+/// the Layout page's Grid, which lay their swatches out by one rule: the
+/// showcase's own distances it draws them at, under the installed theme.
+fn swatches_line(state: &State) -> String {
+    let label_gap = gpui_rems(
+        SWATCH_LABEL_GAP_REMS,
+        &state.current_resolved,
+        &state.accessibility,
+    );
+    format!(
+        "padded COLOR_SWATCH_PADDING (6px above and below, 4px at the sides), its label \
+         {} below (SWATCH_LABEL_GAP_REMS, gpui's SWATCH_LABEL_GAP, a half of the scaled \
+         defaults.font.size); two rows SWATCH_GAP_Y (4px) apart, and on a Theme Map row two \
+         swatches SWATCH_GAP_X (16px) apart, the Grid's columns splitting its width evenly \
+         (iced's grid takes one spacing, grid.rs:63, :203-205): gpui's, as the theme states \
+         no swatch table",
+        px_text(label_gap)
+    )
+}
 
 /// A colour swatch: `color`'s hex on a box of it framed by `border`,
 /// padded [`COLOR_SWATCH_PADDING`], over its `label`,
-/// [`COLOR_SWATCH_LABEL_GAP`] below.
+/// [`SWATCH_LABEL_GAP_REMS`] below.
 fn color_swatch<'a>(
     label: &'a str,
     color: Color,
@@ -14899,7 +14971,7 @@ fn color_swatch<'a>(
         .center_y(Length::Fixed(32.0)),
         text(label).role(caption, resolved, a11y),
     ]
-    .spacing(COLOR_SWATCH_LABEL_GAP)
+    .spacing(gpui_rems(SWATCH_LABEL_GAP_REMS, resolved, a11y))
     .align_x(iced::Center)
     .into()
 }
@@ -14991,7 +15063,7 @@ fn palette_section_info(state: &State, section: PaletteSection) -> String {
             Paint::leaf("strong.text", "strong.text", strong.text),
         ],
         &[],
-        &[SWATCHES_LINE],
+        &[("swatches", swatches_line(state).as_str())],
     )
 }
 
@@ -15039,7 +15111,7 @@ fn hoverable_ext_section<'a>(
             cs("strong.color", strong.color),
             cs("strong.text", strong.text),
         ]
-        .spacing(COLOR_SWATCH_GAP),
+        .spacing(SWATCH_GAP_X),
     ]
     .spacing(widget_gap)
     .into();
@@ -19356,6 +19428,57 @@ mod tests {
         );
     }
 
+    /// Each constant of the iced showcase that names the same distance as a
+    /// gpui showcase constant has gpui's value, the chrome-parity rule, read
+    /// from the gpui showcase's source (`showcase-gpui/demo.rs` and
+    /// `pages/mod.rs`): a `px(..)` constant in logical pixels, a `rems(..)`
+    /// one as iced's `_REMS` constant of [`gpui_rems`]. The constants with no
+    /// gpui counterpart (`COLOR_SWATCH_PADDING`, `LAYOUT_CELL_PAD`,
+    /// `AW_MENU_GAP`) say so in their docs.
+    #[test]
+    fn the_paired_constants_are_gpuis() {
+        const GPUI: [&str; 2] = [
+            include_str!("../../native-theme-gpui/examples/showcase-gpui/demo.rs"),
+            include_str!("../../native-theme-gpui/examples/showcase-gpui/pages/mod.rs"),
+        ];
+        // The number a gpui constant `name` is defined as, and whether it is
+        // in rems.
+        let gpui = |name: &str| -> Option<(f32, bool)> {
+            let definition = format!(" const {name}: ");
+            GPUI.iter().find_map(|source| {
+                let at = source.find(&definition)?;
+                let rest = &source[at + definition.len()..];
+                let value = &rest[rest.find('=')? + 1..rest.find(';')?];
+                let value = value.trim();
+                let (inner, rems) = match value.strip_prefix("rems(") {
+                    Some(inner) => (inner, true),
+                    None => (value.strip_prefix("px(")?, false),
+                };
+                let number = inner.strip_suffix(')')?.trim_end_matches('.');
+                Some((number.parse().ok()?, rems))
+            })
+        };
+        let pairs: [(&str, f32, bool); 9] = [
+            ("MENU_BAR_PADDING", MENU_BAR_PADDING, false),
+            ("TOOLBAR_PADDING", TOOLBAR_PADDING, false),
+            ("TOOLBAR_GAP", TOOLBAR_GAP, false),
+            ("THEME_SETTINGS_GAP", THEME_SETTINGS_GAP, false),
+            ("SWATCH_GAP_X", SWATCH_GAP_X, false),
+            ("SWATCH_GAP_Y", SWATCH_GAP_Y, false),
+            ("SWATCH_LABEL_GAP", SWATCH_LABEL_GAP_REMS, true),
+            ("ICON_GRID_GAP", ICON_GRID_GAP_REMS, true),
+            ("ICON_CELL_GAP", ICON_CELL_GAP_REMS, true),
+        ];
+        for (name, ours, rems) in pairs {
+            assert_eq!(
+                gpui(name),
+                Some((ours, rems)),
+                "{name}: the iced showcase's is {ours} ({}), not the gpui showcase's",
+                if rems { "rems" } else { "px" }
+            );
+        }
+    }
+
     /// The height iced lays one line of text out in, at `size`.
     fn line_of(size: f32) -> f32 {
         f32::from(iced_core::text::LineHeight::default().to_absolute(iced::Pixels(size)))
@@ -20479,6 +20602,49 @@ mod tests {
         }
     }
 
+    /// Addendum F row 1, "a gallery's grid": the Icons page's cells, and
+    /// its grid's rows, are [`ICON_GRID_GAP_REMS`] of the gpui rem apart,
+    /// the gpui showcase's `ICON_GRID_GAP` (`rems(0.5)`), a half of the
+    /// scaled `defaults.font.size`, as the cells are a gallery's, not a row
+    /// of widgets: under every bundled preset in both modes, read from the
+    /// theme at test time, and named in a cell's Widget Info.
+    #[test]
+    fn the_icon_grid_is_spaced_as_gpuis_gallery() {
+        for (preset, dark) in every_preset_in_both_modes() {
+            let mut state = loaded(preset, dark);
+            state.reload_icons();
+            state.active_tab = Tab::Icons;
+            let want = state
+                .accessibility
+                .scaled(state.current_resolved.defaults.font.size)
+                * 0.5;
+            let mut ui = interface(&state);
+            let [first, second, row, next_row] = [
+                probes::ICON_CELL,
+                probes::ICON_CELL_SECOND,
+                probes::ICON_GRID_ROW,
+                probes::ICON_GRID_ROW_SECOND,
+            ]
+            .map(|id| probe_bounds(&mut ui, id));
+            for (what, drawn) in [
+                ("two cells", second.x - (first.x + first.width)),
+                ("two rows", next_row.y - (row.y + row.height)),
+            ] {
+                assert!(
+                    near(drawn, want),
+                    "{preset} (dark: {dark}): {what} of the icon grid are {drawn}px apart, \
+                     want {want}px"
+                );
+            }
+            let role = state.loaded_icons.first().map(|icon| icon.role);
+            let info = role.map(|role| icon_info(&state, role)).unwrap_or_default();
+            assert!(
+                info.contains("ICON_GRID_GAP"),
+                "{preset} (dark: {dark}): the cell's Widget Info names no ICON_GRID_GAP:\n{info}"
+            );
+        }
+    }
+
     /// M9-154 (theme-data): the Icons page's cells, drawn as cards
     /// (`styles::container_card`), are padded as the page's cards are, by
     /// `card.border.padding` inside `card.border.line_width`, none on a side
@@ -20510,7 +20676,10 @@ mod tests {
                 None => panic!("{preset} (dark: {dark}): {label:?} is not drawn in the cell"),
             };
             let (role_at, source_at) = (at(&role), at(source));
-            let top = role_at.y - cell.y - box_px - ICON_CELL_GAP;
+            let top = role_at.y
+                - cell.y
+                - box_px
+                - gpui_rems(ICON_CELL_GAP_REMS, r, &state.accessibility);
             assert!(
                 near(top, pad.top),
                 "{preset} (dark: {dark}): the cell's content starts {top}px down, want {}px",
@@ -20533,6 +20702,14 @@ mod tests {
     /// the leaf into the resolved theme moves what that widget draws. Every
     /// colour line of the Canvas's, the QR code's and the Markdown's Widget
     /// Info has a row here, so a new one needs its own.
+    ///
+    /// The Layout page's Grid's one line, its swatches' frame
+    /// (`defaults.border.color`), is held here too. The other 16
+    /// `Paint::leaf` lines are held elsewhere or need no splice: the Layout
+    /// table's three by `the_layout_table_takes_the_lists_colours` (M9b
+    /// T11); the table's "separators" line reads iced's `background.strong`
+    /// live, so no leaf moves it; and the Theme Map's twelve print the
+    /// palette fields their swatches are drawn from, read in the same call.
     #[test]
     fn the_graphics_colour_lines_are_what_their_widgets_draw() {
         type Splice = fn(&mut ResolvedTheme, native_theme::color::Rgba);
@@ -20654,7 +20831,38 @@ mod tests {
                 faults.push(format!("{widget}: a splice of {leaf} does not move it"));
             }
         }
-        assert!(faults.is_empty(), "the Graphics colour lines: {faults:#?}");
+        // The Layout page's Grid: its one colour line, its swatches' frame.
+        let state = page_state("kde-breeze", Tab::Layout);
+        let info = grid_info(&state);
+        let lines: Vec<&str> = info
+            .lines()
+            .skip_while(|line| line.trim() != "Theme colors:")
+            .skip(1)
+            .take_while(|line| line.starts_with("  "))
+            .collect();
+        if lines.len() != 1
+            || !lines
+                .iter()
+                .all(|line| line.contains("defaults.border.color"))
+        {
+            faults.push(format!(
+                "Grid: its colour lines are not its one row: {lines:?}"
+            ));
+        }
+        let (base, ..) = frame_after(&state, view(&state), size, |_| {});
+        let mut spliced = page_state("kde-breeze", Tab::Layout);
+        spliced.current_resolved.defaults.border.color = spliced_colour("#13579b");
+        let (image, _, scale) = frame_after(&spliced, view(&spliced), size, |ui| {
+            probed = Some(probe_bounds(ui, probes::LAYOUT_GRID));
+        });
+        match probed.take() {
+            Some(rect) if pixels_in(&image, rect, scale) == pixels_in(&base, rect, scale) => {
+                faults.push("Grid: a splice of defaults.border.color does not move it".to_owned())
+            }
+            Some(_) => {}
+            None => panic!("the Grid is not laid out"),
+        }
+        assert!(faults.is_empty(), "the colour lines: {faults:#?}");
     }
 
     /// M9-091 (theme-data): the Layout page's table draws its header in
@@ -20762,7 +20970,9 @@ mod tests {
     }
 
     /// M9-098 (info-truth): the Grid's Widget Info names what spaces it,
-    /// `layout.widget_gap` (none where unstated: `Gaps`), shows no single
+    /// the swatch table's `SWATCH_GAP_Y` between two rows (the M9b final
+    /// fix's residuals: the Grid and the Theme Map lay their swatches out by
+    /// one rule, where it was `layout.widget_gap`), shows no single
     /// hex for its cells, each of which is its own colour, and the page's
     /// caption claims eight of the colours `ResolvedDefaults` names, not all
     /// of them.
@@ -20771,9 +20981,9 @@ mod tests {
         let state = page_state("kde-breeze", Tab::Layout);
         let info = grid_info(&state);
         assert!(
-            info.lines()
-                .any(|line| line.trim() == "spacing: layout.widget_gap, none where unstated"),
-            "the Grid's info does not name layout.widget_gap:\n{info}"
+            info.lines().any(|line| line.trim()
+                == "spacing: SWATCH_GAP_Y, 4px, the swatch table's, between two rows"),
+            "the Grid's info does not name SWATCH_GAP_Y:\n{info}"
         );
         let fill = info
             .lines()
