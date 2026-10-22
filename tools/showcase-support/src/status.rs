@@ -48,17 +48,90 @@ pub fn defined_size(font: &ResolvedFontSpec) -> String {
 /// toolkit draws, `drawn` (`None` where the toolkit does not say): the
 /// stated name alone where it is drawn; the system UI font's note where gpui
 /// draws `.SystemUIFont`; else the substitute the platform draws in its
-/// place.
+/// place ([`DrawnFamily::label`] of [`DrawnFamily::from`] `drawn`).
 #[must_use]
 pub fn family_label(stated: &str, drawn: Option<&str>) -> String {
-    match drawn {
-        None => stated.to_string(),
-        Some(drawn) if drawn == stated => stated.to_string(),
-        Some(".SystemUIFont") => {
-            format!("{stated} (drawn as the system UI font, .SystemUIFont)")
-        }
-        Some(drawn) => {
-            format!("{stated} (not on this system; drawn in the platform's substitute, {drawn})")
+    DrawnFamily::from(drawn).label(stated)
+}
+
+/// What a toolkit draws text of a theme's stated family in.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DrawnFamily<'a> {
+    /// The stated family, under whatever name the font database files it,
+    /// or the toolkit does not say.
+    Stated,
+    /// The family named: the platform's substitute for a family the system
+    /// lacks, or gpui's `.SystemUIFont` alias for the system UI font.
+    Named(&'a str),
+    /// The toolkit's generic family `kind` (`sans-serif`, `monospace`),
+    /// which resolves to `family` where the font database names one for it,
+    /// drawn because the toolkit draws no face of the family it asked for.
+    Generic {
+        /// The toolkit, as the label names it (`iced`).
+        toolkit: &'a str,
+        /// The generic family.
+        kind: &'a str,
+        /// The family the generic one resolves to, where the database names
+        /// one.
+        family: Option<&'a str>,
+        /// `None` where the system has no face of the stated family;
+        /// otherwise the weights of the faces it has, none of which the
+        /// toolkit can ask for (empty where it has no face the toolkit can
+        /// match at all).
+        held_weights: Option<&'a [u16]>,
+    },
+}
+
+impl<'a> From<Option<&'a str>> for DrawnFamily<'a> {
+    /// `None`, where the toolkit does not say, is [`DrawnFamily::Stated`];
+    /// a name is [`DrawnFamily::Named`].
+    fn from(drawn: Option<&'a str>) -> Self {
+        drawn.map_or(Self::Stated, Self::Named)
+    }
+}
+
+impl DrawnFamily<'_> {
+    /// `stated` as a label that says what is drawn: the stated name alone
+    /// where it is drawn; the system UI font's note for `.SystemUIFont`; the
+    /// platform's substitute named otherwise; and, for a generic family,
+    /// whether the system has the stated family, at which weights where its
+    /// faces lie only at weights the toolkit cannot ask for, and the generic
+    /// family drawn with what it resolves to.
+    #[must_use]
+    pub fn label(&self, stated: &str) -> String {
+        match *self {
+            Self::Stated => stated.to_string(),
+            Self::Named(drawn) if drawn == stated => stated.to_string(),
+            Self::Named(".SystemUIFont") => {
+                format!("{stated} (drawn as the system UI font, .SystemUIFont)")
+            }
+            Self::Named(drawn) => format!(
+                "{stated} (not on this system; drawn in the platform's substitute, {drawn})"
+            ),
+            Self::Generic {
+                toolkit,
+                kind,
+                family,
+                held_weights,
+            } => {
+                let held = match held_weights {
+                    None => "not on this system".to_string(),
+                    Some([]) => format!("on this system, in no face {toolkit} can draw"),
+                    Some(weights) => {
+                        let weights: Vec<String> = weights.iter().map(u16::to_string).collect();
+                        format!(
+                            "on this system only at weights {toolkit} cannot ask for ({})",
+                            weights.join(", ")
+                        )
+                    }
+                };
+                match family {
+                    Some(family) => {
+                        format!("{stated} ({held}; drawn in {toolkit}'s generic {kind}, {family})")
+                    }
+                    None => format!("{stated} ({held}; drawn in {toolkit}'s generic {kind})"),
+                }
+            }
         }
     }
 }
@@ -77,14 +150,28 @@ pub fn environment(
     drawn_family: Option<&str>,
     prefs: Option<&AccessibilityPreferences>,
 ) -> Vec<String> {
+    environment_drawn(
+        preset_label,
+        mode,
+        font,
+        DrawnFamily::from(drawn_family),
+        prefs,
+    )
+}
+
+/// [`environment`], the font named by [`DrawnFamily::label`] of `drawn`.
+#[must_use]
+pub fn environment_drawn(
+    preset_label: &str,
+    mode: &str,
+    font: &ResolvedFontSpec,
+    drawn: DrawnFamily<'_>,
+    prefs: Option<&AccessibilityPreferences>,
+) -> Vec<String> {
     let mut items = vec![
         desktop(),
         format!("{preset_label} {mode}"),
-        format!(
-            "{} {}",
-            family_label(&font.family, drawn_family),
-            defined_size(font)
-        ),
+        format!("{} {}", drawn.label(&font.family), defined_size(font)),
     ];
     if let Some(prefs) = prefs {
         items.push(format!("text ×{}", prefs.text_scaling_factor));
@@ -135,6 +222,64 @@ mod tests {
         assert_eq!(
             family_label("Segoe UI", Some("Adwaita Sans")),
             "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans)"
+        );
+    }
+
+    /// A generic family says whether the system has the stated one: not at
+    /// all, only at weights the toolkit cannot ask for (listed), or in no
+    /// face it can match; and what the generic family resolves to, where
+    /// the font database names it.
+    #[test]
+    fn a_generic_family_says_why_it_is_drawn() {
+        let generic = |family, held_weights| DrawnFamily::Generic {
+            toolkit: "iced",
+            kind: "sans-serif",
+            family,
+            held_weights,
+        };
+        assert_eq!(
+            generic(Some("Open Sans"), None).label("Segoe UI"),
+            "Segoe UI (not on this system; drawn in iced's generic sans-serif, Open Sans)"
+        );
+        assert_eq!(
+            generic(None, None).label("Segoe UI"),
+            "Segoe UI (not on this system; drawn in iced's generic sans-serif)"
+        );
+        assert_eq!(
+            generic(Some("Open Sans"), Some(&[350, 650])).label("Theme Sans"),
+            "Theme Sans (on this system only at weights iced cannot ask for (350, 650); \
+             drawn in iced's generic sans-serif, Open Sans)"
+        );
+        assert_eq!(
+            generic(Some("Open Sans"), Some(&[])).label("Theme Sans"),
+            "Theme Sans (on this system, in no face iced can draw; drawn in iced's generic \
+             sans-serif, Open Sans)"
+        );
+        assert_eq!(DrawnFamily::Stated.label("Noto Sans"), "Noto Sans");
+        assert_eq!(
+            DrawnFamily::from(Some("Adwaita Sans")).label("Segoe UI"),
+            family_label("Segoe UI", Some("Adwaita Sans"))
+        );
+    }
+
+    /// The environment names the font by the label of what is drawn.
+    #[test]
+    fn the_environment_names_a_generic_family() {
+        let font = font();
+        let drawn = DrawnFamily::Generic {
+            toolkit: "iced",
+            kind: "sans-serif",
+            family: None,
+            held_weights: None,
+        };
+        let items = environment_drawn("kde-breeze", "light", &font, drawn, None);
+        assert_eq!(
+            items.get(2),
+            Some(&format!(
+                "{} {}",
+                drawn.label(&font.family),
+                defined_size(&font)
+            ))
         );
     }
 
