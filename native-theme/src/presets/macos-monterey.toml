@@ -283,29 +283,29 @@ padding_vertical_px = 4.0
 # platform-facts.md:1428 (§2.15): headerTextColor, probe :318
 color = "#000000d8"
 [light.toolbar]
-# platform-facts.md:1389 (§2.13): NSToolbar 38
+# platform-facts.md:1390 (§2.13): NSToolbar 38
 bar_height_px = 38.0
-# platform-facts.md:1390 (§2.13): AppKit 8
+# platform-facts.md:1391 (§2.13): AppKit 8
 item_gap_px = 8.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1391-1392 (§2.13): NSToolbar 8 (measured); 0
+# platform-facts.md:1392-1393 (§2.13): NSToolbar 8 (measured); 0
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-# no source: a material (platform-facts.md:1369, §2.12: NSVisualEffectView.Material.sidebar, no
+# no source: a material (platform-facts.md:1370, §2.12: NSVisualEffectView.Material.sidebar, no
 # colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#e8e8ed"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1378 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the accent at alpha 0x18
 hover_background = "#007aff18"
 
 
 [light.sidebar.font]
-# platform-facts.md:1371 (§2.12): ← defaults.font.color, labelColor (probe :308)
+# platform-facts.md:1372 (§2.12): ← defaults.font.color, labelColor (probe :308)
 color = "#000000d8"
 [light.popover]
 # background_color and font.color inherit defaults.background_color and defaults.font.color
@@ -750,29 +750,29 @@ padding_vertical_px = 4.0
 # platform-facts.md:1428 (§2.15): headerTextColor, probe :392
 color = "#ffffff"
 [dark.toolbar]
-# platform-facts.md:1389 (§2.13): NSToolbar 38
+# platform-facts.md:1390 (§2.13): NSToolbar 38
 bar_height_px = 38.0
-# platform-facts.md:1390 (§2.13): AppKit 8
+# platform-facts.md:1391 (§2.13): AppKit 8
 item_gap_px = 8.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1391-1392 (§2.13): NSToolbar 8 (measured); 0
+# platform-facts.md:1392-1393 (§2.13): NSToolbar 8 (measured); 0
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-# no source: a material (platform-facts.md:1369, §2.12: NSVisualEffectView.Material.sidebar, no
+# no source: a material (platform-facts.md:1370, §2.12: NSVisualEffectView.Material.sidebar, no
 # colour); the colour it renders under Reduce Transparency was not probed
 background_color = "#262626"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1378 names selectedContentBackgroundColor at reduced opacity and
+# no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
 hover_background = "#0a84ff18"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1371 (§2.12): ← defaults.font.color, labelColor (probe :382)
+# platform-facts.md:1372 (§2.12): ← defaults.font.color, labelColor (probe :382)
 color = "#ffffffd8"
 [dark.popover]
 # background_color and font.color inherit defaults.background_color and defaults.font.color

@@ -99,7 +99,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     border.padding_bottom = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
-    // platform-facts.md:1390 (§2.13)
+    // platform-facts.md:1391 (§2.13)
     variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing
 
     // Splitter

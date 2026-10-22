@@ -841,7 +841,7 @@ pub fn checkbox_over(
 /// transparent circle outlined in the palette's primary family.
 ///
 /// The model states one `CheckboxTheme` for both controls
-/// (`widgets/mod.rs:138-140`), so this reads exactly the sources [`checkbox`]
+/// (`widgets/mod.rs:176-183`), so this reads exactly the sources [`checkbox`]
 /// reads, with `is_selected` where the checkbox has `is_checked` and the check
 /// mark serving as the dot -- `checkbox.hover_background` included, which is
 /// the hover of the *unselected* circle only, so a hovered selected radio is

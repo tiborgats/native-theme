@@ -333,32 +333,32 @@ color = "#49454f"
 padding_horizontal_px = 16.0
 
 [light.toolbar]
-# platform-facts.md:1389 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
+# platform-facts.md:1390 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
 bar_height_px = 64.0
 
 [light.toolbar.font]
-# platform-facts.md:1383 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+# platform-facts.md:1384 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
 size_px = 22.0
 
 [light.toolbar.border]
-# platform-facts.md:1393 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+# platform-facts.md:1394 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
 corner_radius_px = 0.0
 shadow_enabled = false
 line_width_px = 0.0
 
 [light.sidebar]
-# platform-facts.md:1378 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+# platform-facts.md:1379 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
 hover_background = "#1d1b2014"
 
 
 [light.sidebar.font]
-# platform-facts.md:1370-1371 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+# platform-facts.md:1371-1372 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#49454f"
 weight = 500
 
 
 [light.sidebar.border]
-# platform-facts.md:1379 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1380), so it is unstated
+# platform-facts.md:1380 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1381), so it is unstated
 padding_horizontal_px = 12.0
 [light.popover]
 # platform-facts.md:1452 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)
@@ -852,32 +852,32 @@ color = "#cac4d0"
 padding_horizontal_px = 16.0
 
 [dark.toolbar]
-# platform-facts.md:1389 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
+# platform-facts.md:1390 (§2.13): md.comp.top-app-bar-small container-height 64 (material-web cbd34a8, tokens/versions/v0_192/_md-comp-top-app-bar-small.scss:36)
 bar_height_px = 64.0
 
 [dark.toolbar.font]
-# platform-facts.md:1383 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
+# platform-facts.md:1384 (§2.13): headline-size = title-large-size 22 (_md-comp-top-app-bar-small.scss:42)
 size_px = 22.0
 
 [dark.toolbar.border]
-# platform-facts.md:1393 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
+# platform-facts.md:1394 (§2.13): the small top app bar: container-shape corner-none, container-elevation level0, no outline (_md-comp-top-app-bar-small.scss:35-37)
 corner_radius_px = 0.0
 shadow_enabled = false
 line_width_px = 0.0
 
 [dark.sidebar]
-# platform-facts.md:1378 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
+# platform-facts.md:1379 (§2.12): inactive-hover-state-layer-color = on-surface at 0.08 (_md-comp-navigation-drawer.scss:92, :103)
 hover_background = "#e6e0e914"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1370-1371 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
+# platform-facts.md:1371-1372 (§2.12): inactive-label-text-color = on-surface-variant (_md-comp-navigation-drawer.scss:106); label-text = label-large, weight 500 (:131)
 color = "#cac4d0"
 weight = 500
 
 
 [dark.sidebar.border]
-# platform-facts.md:1379 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1380), so it is unstated
+# platform-facts.md:1380 (§2.12): (impl) Compose 12, NavigationDrawerItemDefaults.ItemPadding = PaddingValues(horizontal = 12.dp) (androidx 1e677685, compose/NavigationDrawer.kt:1239-1243); the vertical is app-defined (:1381), so it is unstated
 padding_horizontal_px = 12.0
 [dark.popover]
 # platform-facts.md:1452 (§2.16): comp.menu container-color = surface-container (_md-comp-menu.scss:31)

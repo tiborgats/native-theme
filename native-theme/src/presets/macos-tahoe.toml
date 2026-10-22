@@ -257,7 +257,7 @@ header_height_px = 28.0
 color = "#000000d8"
 
 [light.sidebar]
-# no macOS 26 source (platform-facts.md:1369: a material with no colour): macos-monterey's value;
+# no macOS 26 source (platform-facts.md:1370: a material with no colour): macos-monterey's value;
 # the inherited window background would be the wrong kind, and the colour the material renders
 # under Reduce Transparency was not probed
 background_color = "#e8e8ed"
@@ -644,7 +644,7 @@ header_height_px = 28.0
 color = "#ffffff"
 
 [dark.sidebar]
-# no macOS 26 source (platform-facts.md:1369: a material with no colour): macos-monterey's value;
+# no macOS 26 source (platform-facts.md:1370: a material with no colour): macos-monterey's value;
 # the inherited window background would be the wrong kind, and the colour the material renders
 # under Reduce Transparency was not probed
 background_color = "#262626"

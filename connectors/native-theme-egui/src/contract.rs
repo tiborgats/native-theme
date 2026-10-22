@@ -116,7 +116,7 @@ fn combinations() -> Vec<Combination> {
 
 /// `json` with the four `layout.` leaves under the manifest's names, as T3's `leaf_paths` adds
 /// them: they are the builder's `LayoutTheme`, not `ResolvedTheme` fields, and `LayoutTheme`
-/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:1025-1045`).
+/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:1088-1111`).
 fn with_layout(mut json: serde_json::Value, layout: &crate::LayoutTheme) -> serde_json::Value {
     if let Some(object) = json.as_object_mut() {
         object.insert(

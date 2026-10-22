@@ -331,6 +331,7 @@ item_gap_px                  = "f32"
 active_indicator_color       = "color"
 active_indicator_width_px    = "f32"
 active_indicator_side        = "enum"   # Top | Bottom
+active_outward_corner_radius_px = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
 font                         = "font"

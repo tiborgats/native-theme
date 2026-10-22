@@ -337,13 +337,13 @@ color = "#232629"
 # (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
 # as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
 background_color = "#dee0e2"
-# bar_height not stated: platform-facts.md:1389 (§2.13), (none), sizes to content
-# platform-facts.md:1390 (§2.13): ToolBar_ItemSpacing = 0
+# bar_height not stated: platform-facts.md:1390 (§2.13), (none), sizes to content
+# platform-facts.md:1391 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1391-1392 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+# platform-facts.md:1392-1393 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 # platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
@@ -363,13 +363,13 @@ padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [light.sidebar]
-# ❓ platform-facts.md:1369 (§2.12): no source for #dee0e2, [Colors:Header] BackgroundNormal (BreezeLight.colors:59); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
+# ❓ platform-facts.md:1370 (§2.12): no source for #dee0e2, [Colors:Header] BackgroundNormal (BreezeLight.colors:59); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
 background_color = "#dee0e2"
 hover_background = "#93cee9"
 
 
 [light.sidebar.font]
-# platform-facts.md:1371 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:137, :123, breeze v6.7.5)
+# platform-facts.md:1372 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:137, :123, breeze v6.7.5)
 color = "#232629"
 [light.popover]
 # background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color
@@ -877,13 +877,13 @@ color = "#fcfcfc"
 # (both Breeze schemes, BreezeLight.colors:57) and the decoration's border size is automatic, None or NoSides: the default,
 # as BorderSizeAuto reads true when kwinrc does not set it (breezehelper.cpp:1913)
 background_color = "#292c30"
-# bar_height not stated: platform-facts.md:1389 (§2.13), (none), sizes to content
-# platform-facts.md:1390 (§2.13): ToolBar_ItemSpacing = 0
+# bar_height not stated: platform-facts.md:1390 (§2.13), (none), sizes to content
+# platform-facts.md:1391 (§2.13): ToolBar_ItemSpacing = 0
 item_gap_px = 0.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1391-1392 (§2.13): ToolBar_ItemMargin = 6 on all four sides
+# platform-facts.md:1392-1393 (§2.13): ToolBar_ItemMargin = 6 on all four sides
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
 # platform-facts.md §2.13 border.color, border.line_width: no frame round the toolbar (ToolBar_FrameWidth = 0), but a 1px
@@ -903,13 +903,13 @@ padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [dark.sidebar]
-# ❓ platform-facts.md:1369 (§2.12): no source for #272c31, [WM] activeBackground (BreezeDark.colors:204); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
+# ❓ platform-facts.md:1370 (§2.12): no source for #272c31, [WM] activeBackground (BreezeDark.colors:204); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
 background_color = "#272c31"
 hover_background = "#2e4a5e"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1371 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:138, :124, breeze v6.7.5)
+# platform-facts.md:1372 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:138, :124, breeze v6.7.5)
 color = "#fcfcfc"
 [dark.popover]
 # background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color

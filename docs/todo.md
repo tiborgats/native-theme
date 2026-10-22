@@ -53,8 +53,8 @@ cannot tell which file a bare number continues, so it does not look for one.
 - [ ] [1.0] Research a checked checkbox's hover appearance on each platform in
       `docs/platform-facts.md` **first**, cited to authoritative sources, then
       add a `checkbox` checked-hover `soft_option` to the theme model.
-      `CheckboxTheme` (`native-theme/src/model/widgets/mod.rs:146-188`) has one
-      `hover_background` (`:170-172`), with no checked counterpart. All 16
+      `CheckboxTheme` (`native-theme/src/model/widgets/mod.rs:178-249`) has one
+      `hover_background` (`:230-232`), with no checked counterpart. All 16
       presets that state colours state it, in both modes (the four `*-live`
       presets, removed since in M1-T4-01, carried geometry only), yet §2.5
       of platform-facts has no hover row at all, so none of those 32 values
@@ -109,25 +109,36 @@ cannot tell which file a bare number continues, so it does not look for one.
       values the M8 T15 platform-facts rows disagree with* links, and *Hover
       fills: a layer or a replacement*'s fix round 1 line.
 
-### Tab: an active-tab indicator
+### Tab: WinUI 3's tab separators and its tab bar's bottom rule
 
-- [ ] [1.0] Research in `docs/platform-facts.md` **first**, cited to authoritative
-      sources, which platforms mark the active tab with an indicator line
-      (underline or similar) and at what thickness and colour, then add a `tab`
-      field for it. `TabTheme` (`native-theme/src/model/widgets/mod.rs:373-405`)
-      has no such field, so no connector paints an indicator until the model
-      states one — the egui connector marks the active tab only by the
-      `selection.*` colours of its `Tab` scope's `Normal` cell
-      (`tab.active_background`, `tab.active_text_color`; connector spec §6.2); no thickness is to be invented in the meantime.
-      Found 2026-09-28 for KDE: Breeze fills a 3px `QPalette::Highlight`
-      strip along the selected North tab's top edge (the bottom edge for
-      South tabs), with no pen, rounded `Frame_FrameRadius` = 5 on the
-      selected tab's corners — `TabBar_ActiveEffectSize` = 3
-      ([breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137)),
-      painted after the tab's frame in `Helper::renderTabBarTab`
-      ([breezehelper.cpp:1471-1487](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1471-L1487));
-      recorded in `docs/platform-facts.md:1354` (§2.11). The other three
-      platforms are still to be researched before the field is added.
+- [ ] [1.0] WinUI 3's `TabView` draws two lines around its tabs that the model
+      does not state, read at microsoft-ui-xaml 8463f45 (G3 rationale K14 (e),
+      (f), `docs/todo_v0.7.0_gpui-kit-0.8.0-rationale.md`). The separator: each
+      tab draws a 1px `TabSeparator` at its right edge
+      ([TabView.xaml:553](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView.xaml#L553)) in `TabViewItemSeparator`
+      = `DividerStrokeColorDefaultBrush`
+      ([TabView_themeresources.xaml:46](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView_themeresources.xaml#L46)),
+      `#0F000000` light and `#15FFFFFF` dark
+      ([Common_themeresources_any.xaml:257, :53](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/CommonStyles/Common_themeresources_any.xaml#L257)),
+      inset `TabViewItemSeparatorMargin` `0,8,0,8` (TabView_themeresources.xaml:266),
+      hidden on the selected tab and on the one left of it
+      (`SetTabSeparatorOpacity`, [TabView.cpp:217-231](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView.cpp#L217-L231))
+      and under the pointer (TabView.xaml:322, :332). The bar's bottom rule: a
+      1px line in `TabViewBorderBrush` = `CardStrokeColorDefault`
+      (TabView_themeresources.xaml:68, :146) under every tab (`BottomBorderLine`,
+      TabView.xaml:546) and beside the tabs, under the strip's header, add
+      button and footer (`LeftBottomBorderLine`, `RightBottomBorderLine`,
+      :36-37), collapsed under the selected tab (:337).
+      Modelling the separator needs a colour, a width, an inset and when it
+      hides, in the three connectors (a gpui `TabLook` field, an iced contract
+      row with its `contract-leaves.toml` entries, an egui mapping row); the
+      rule needs no new field, since its brush is `tab.border.color`'s, but it
+      gives `tab.border`, the selected tab's outline, a second meaning (a rule
+      under the whole bar) and meets the showcases' own `separator.*` rule under
+      their page tabs. The selected tab's outward corners, the same `TabView`'s,
+      are `tab.active_outward_corner_radius` (`docs/platform-facts.md` §2.11),
+      which leaves both lines out; §2.11's `item_gap` row records the separator
+      as one "which no `tab` field models".
 
 ### Tab: the border is the selected tab's, and KDE's live tab colours
 
@@ -164,7 +175,7 @@ cannot tell which file a bare number continues, so it does not look for one.
       one outline around the row, and whether a segment's corners that meet a
       divider are rounded — and the colour of the divider line between
       segments, then add what the platforms state to `SegmentedControlTheme`
-      (`native-theme/src/model/widgets/mod.rs:773-803`), which states the
+      (`native-theme/src/model/widgets/mod.rs:944-976`), which states the
       divider's width, `separator_width` (`docs/platform-facts.md:991`), and
       no colour or join. Until the model states them, the egui widgets crate
       draws its segments `separator_width` apart as separate segments, with no
@@ -991,7 +1002,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.0] `docs/platform-facts.md` §2.12 gave KDE's sidebar
       `[Colors:Complementary]`, which no sidebar uses at KF 6.31.0; since M2e
-      fix round 1 the cells (`:1369`, `:1371`) are ❓. A non-modal Kirigami
+      fix round 1 the cells (`:1370`, `:1372`) are ❓. A non-modal Kirigami
       drawer takes the `Window` set (kirigami v6.31.0
       `src/templates/OverlayDrawer.qml:244`), a non-modal `GlobalDrawer` the
       `View` set (`src/controls/GlobalDrawer.qml:337`), and KIO's places
@@ -1033,7 +1044,7 @@ model, the platform presets and the three connectors
 
 - [ ] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar
       is `NSVisualEffectView.Material.sidebar`, a material with no colour
-      (`docs/platform-facts.md:1369`), yet `macos-monterey` and `macos-tahoe`
+      (`docs/platform-facts.md:1370`), yet `macos-monterey` and `macos-tahoe`
       state `#e8e8ed` / `#262626`. The OS probe resolves its colours with
       Reduce Transparency on and renders no material. Have it render a
       sidebar-material `NSVisualEffectView` with Reduce Transparency on and
@@ -1605,7 +1616,7 @@ model, the platform presets and the three connectors
       15 %, a translucent replacement of the rest fill, #dcdcde / #434347 over
       the window).
       M9a T17 (2026-10-18): the sidebar padding is stated from §2.12's rows
-      (`docs/platform-facts.md:1379-1380`): adwaita 6 across, 6 top and 4
+      (`docs/platform-facts.md:1380-1381`): adwaita 6 across, 6 top and 4
       bottom (`adwaita.toml`
       `[light.sidebar.border] padding_horizontal_px, padding_top_px, padding_bottom_px`,
       the same in `[dark.sidebar.border]`); windows-11 3 across
@@ -2335,7 +2346,7 @@ What is still open on the iced side:
       modes and `list.hover_background` and `sidebar.hover_background` in
       light; dark's list and sidebar hover is `#2e4a5e`. The facts cells
       give no colour: "`[Colors:View] DecorationHover` blend"
-      (`docs/platform-facts.md:1378`, `:1435`), "(Breeze src) thumb hover"
+      (`docs/platform-facts.md:1379`, `:1435`), "(Breeze src) thumb hover"
       (`:1306`). `segmented_control.hover_background` and
       `expander.hover_background` (`#dee0e2`, dark `#31363b`, which is no
       BreezeDark colour) have no facts row. Values unchanged until a source

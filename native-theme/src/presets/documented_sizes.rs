@@ -186,14 +186,14 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "progress_bar", all(0.0), &[1341, 1342], "0; 0, the contents span the groove"),
     row(KdeBreeze, "tab", axes(4.0, 8.0), &[1352, 1353], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(KdeBreeze, "sidebar", NONE, &[1379, 1380], "❓: no one sidebar"),
+    row(KdeBreeze, "sidebar", NONE, &[1380, 1381], "❓: no one sidebar"),
     Row {
         preset: KdeBreeze,
         widget: "toolbar",
         padding: all(6.0),
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: "ToolBar_ItemMargin = 6 on all four sides (qtoolbarlayout.cpp:87-89)",
-        extra: &[("bar_height", None, 1389), ("item_gap", Some(0.0), 1390)],
+        extra: &[("bar_height", None, 1390), ("item_gap", Some(0.0), 1391)],
     },
     row(KdeBreeze, "status_bar", trbl(3.0, 14.0, 2.0, 2.0), &[1414, 1415], "QStatusBar: 2 left, 3 top / 2 bottom; 14 right, the 1 + 13px size grip Breeze paints as nothing (not maximized)"),
     row(KdeBreeze, "list", axes(1.0, 2.0), &[1433, 1434], "2; 1")
@@ -218,14 +218,14 @@ const ROWS: &[Row] = &[
     row(Adwaita, "progress_bar", all(0.0), &[1341, 1342], "0; 0, the progress fills the trough"),
     row(Adwaita, "tab", axes(3.0, 12.0), &[1352, 1353], "12; 3")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(Adwaita, "sidebar", trbl(6.0, 6.0, 4.0, 6.0), &[1379, 1380], ".navigation-sidebar > row margin 0 $menu_margin, 6; padding-top 6, padding-bottom $menu_margin - 2px, 4"),
+    row(Adwaita, "sidebar", trbl(6.0, 6.0, 4.0, 6.0), &[1380, 1381], ".navigation-sidebar > row margin 0 $menu_margin, 6; padding-top 6, padding-bottom $menu_margin - 2px, 4"),
     Row {
         preset: Adwaita,
         widget: "toolbar",
         padding: all(6.0),
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: ".toolbar { padding: 6px }",
-        extra: &[("bar_height", None, 1389), ("item_gap", Some(6.0), 1390)],
+        extra: &[("bar_height", None, 1390), ("item_gap", Some(6.0), 1391)],
     },
     row(Adwaita, "status_bar", axes(6.0, 10.0), &[1414, 1415], "statusbar { padding: 6px 10px }"),
     row(Adwaita, "list", all(2.0), &[1433, 1434], "plain list context: 2")
@@ -250,14 +250,14 @@ const ROWS: &[Row] = &[
     row(MacosMonterey, "progress_bar", all(0.0), &[1341, 1342], "0; 0 (measured, macOS 14.8.9 and 15.7.9)"),
     row(MacosMonterey, "tab", axes(4.0, 12.0), &[1352, 1353], "12; 4 (measured)")
         .with(&[("item_gap", None, 1360)]),
-    row(MacosMonterey, "sidebar", NONE, &[1379, 1380], "❓"),
+    row(MacosMonterey, "sidebar", NONE, &[1380, 1381], "❓"),
     Row {
         preset: MacosMonterey,
         widget: "toolbar",
         padding: axes(0.0, 8.0),
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: "8 (measured); 0",
-        extra: &[("bar_height", Some(38.0), 1389), ("item_gap", Some(8.0), 1390)],
+        extra: &[("bar_height", Some(38.0), 1390), ("item_gap", Some(8.0), 1391)],
     },
     row(MacosMonterey, "status_bar", NONE, &[1414, 1415], "(none): no window status bar"),
     row(MacosMonterey, "list", all(4.0), &[1433, 1434], "4; 4 (measured)")
@@ -282,14 +282,14 @@ const ROWS: &[Row] = &[
     row(MacosTahoe, "progress_bar", all(0.0), &[1341, 1342], "macOS 26: 0; 0 (measured, macOS 26.6.2)"),
     row(MacosTahoe, "tab", NONE, &[1352, 1353], "macOS 26 ❓")
         .with(&[("item_gap", None, 1360)]),
-    row(MacosTahoe, "sidebar", NONE, &[1379, 1380], "macOS 26 ❓"),
+    row(MacosTahoe, "sidebar", NONE, &[1380, 1381], "macOS 26 ❓"),
     Row {
         preset: MacosTahoe,
         widget: "toolbar",
         padding: NONE,
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: "macOS 26 ❓",
-        extra: &[("bar_height", None, 1389), ("item_gap", None, 1390)],
+        extra: &[("bar_height", None, 1390), ("item_gap", None, 1391)],
     },
     row(MacosTahoe, "status_bar", NONE, &[1414, 1415], "(none): no window status bar"),
     row(MacosTahoe, "list", NONE, &[1433, 1434], "macOS 26 ❓")
@@ -314,14 +314,14 @@ const ROWS: &[Row] = &[
     row(Windows11, "progress_bar", all(0.0), &[1341, 1342], "Control.Padding's default 0; 0"),
     row(Windows11, "tab", axes(3.0, 8.0), &[1352, 1353], "without-close-button context: TabViewItemHeaderPaddingWithoutCloseButton=8,3,8,3")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(Windows11, "sidebar", [None, Some(3.0), None, Some(3.0)], &[1379, 1380], "(derived) 3 across, -1 + 4; the vertical ❓, no one value"),
+    row(Windows11, "sidebar", [None, Some(3.0), None, Some(3.0)], &[1380, 1381], "(derived) 3 across, -1 + 4; the vertical ❓, no one value"),
     Row {
         preset: Windows11,
         widget: "toolbar",
         padding: trbl(0.0, 0.0, 0.0, 4.0),
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: "Padding=\"4,0,0,0\"",
-        extra: &[("bar_height", Some(48.0), 1389), ("item_gap", Some(0.0), 1390)],
+        extra: &[("bar_height", Some(48.0), 1390), ("item_gap", Some(0.0), 1391)],
     },
     row(Windows11, "status_bar", NONE, &[1414, 1415], "(none): not specified"),
     row(Windows11, "list", trbl(0.0, 12.0, 0.0, 16.0), &[1433, 1434], "Padding=16,0,12,0")
@@ -346,14 +346,14 @@ const ROWS: &[Row] = &[
     row(Material3, "progress_bar", NONE, &[1329], "§2.10's padding rows give 0, which the preset does not state yet (docs/todo.md, *Presets: values the M8 T15 platform-facts rows disagree with*)"),
     row(Material3, "tab", [None, Some(16.0), None, Some(16.0)], &[1352, 1353], "material-web padding: 0 16px; vertical (derived) from the fixed height, not stated")
         .with(&[("item_gap", None, 1360)]),
-    row(Material3, "sidebar", [None, Some(12.0), None, Some(12.0)], &[1379, 1380], "Compose NavigationDrawerItemDefaults.ItemPadding horizontal 12; the vertical app-defined, not stated"),
+    row(Material3, "sidebar", [None, Some(12.0), None, Some(12.0)], &[1380, 1381], "Compose NavigationDrawerItemDefaults.ItemPadding horizontal 12; the vertical app-defined, not stated"),
     Row {
         preset: Material3,
         widget: "toolbar",
         padding: NONE,
-        lines: &[1391, 1392],
+        lines: &[1392, 1393],
         note: "v0_192 has no app-bar space token (latest's 4 not taken); none",
-        extra: &[("bar_height", Some(64.0), 1389), ("item_gap", None, 1390)],
+        extra: &[("bar_height", Some(64.0), 1390), ("item_gap", None, 1391)],
     },
     row(Material3, "status_bar", NONE, &[1414, 1415], "(none): M3 has no status bar"),
     row(Material3, "list", [None, Some(16.0), None, Some(16.0)], &[1433, 1434], "list-item-leading/trailing-space 16; vertical 12 (list item) or 10 (latest), a list or a data table: not stated")
@@ -1227,8 +1227,8 @@ fn native_presets_state_no_text_scale_line_height() {
 }
 
 /// The expander's structure per platform, from platform-facts §2.27: the
-/// arrow's side (`:1670`) and whether a frame holds header and content
-/// (`:1673`); `None` where the cell states none.
+/// arrow's side (`platform-facts.md:1683`) and whether a frame holds header and content
+/// (`:1686`); `None` where the cell states none.
 #[rustfmt::skip]
 const EXPANDER_STRUCTURE: [(NativePreset, Option<crate::model::ArrowSide>, Option<bool>); 6] = [
     (KdeBreeze, Some(crate::model::ArrowSide::Leading), Some(false)),
@@ -1329,7 +1329,7 @@ fn soft_field_failures<T: Copy + PartialEq + std::fmt::Debug>(
 }
 
 /// The tooltip's show delay per platform, in milliseconds, from
-/// platform-facts §2.7 (`:1277`); `None` where the cell states none.
+/// platform-facts §2.7 (`platform-facts.md:1290`); `None` where the cell states none.
 #[rustfmt::skip]
 const TOOLTIP_SHOW_DELAY: [(NativePreset, Option<u16>); 6] = [
     (KdeBreeze, Some(700)),
@@ -1356,7 +1356,7 @@ fn native_themes_state_the_tooltip_show_delay() {
     assert!(failures.is_empty(), "{}", failures.join("\n"));
 }
 
-/// The dialog's entrance per platform, from platform-facts §2.22 (`:1556`);
+/// The dialog's entrance per platform, from platform-facts §2.22 (`platform-facts.md:1569`);
 /// `None` where the cell states none.
 #[rustfmt::skip]
 const DIALOG_ENTRANCE: [(NativePreset, Option<crate::model::DialogEntranceStyle>); 6] = [

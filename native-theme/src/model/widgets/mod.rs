@@ -484,6 +484,16 @@ pub struct TabTheme {
     /// (docs/platform-facts.md §2.11).
     #[theme(category = "soft_option")]
     pub active_indicator_side: Option<TabIndicatorSide>,
+    /// Radius of the outward curves at the selected tab's two bottom corners,
+    /// which spread its fill into the bar's bottom edge, as WinUI 3's `TabView`
+    /// draws its selected tab (4, against 8 on its top corners). Where it is
+    /// stated, the selected tab's outline (`border`) has no bottom edge and
+    /// runs on down the curves. `None` where the platform's selected tab does
+    /// not curve out at its feet: all but Windows; macOS publishes no shape
+    /// (docs/platform-facts.md §2.11).
+    #[serde(rename = "active_outward_corner_radius_px")]
+    #[theme(category = "soft_option", check = "non_negative")]
+    pub active_outward_corner_radius: Option<f32>,
     /// Tab text color on hover.
     pub hover_text_color: Option<Rgba>,
     /// Tab background on hover.

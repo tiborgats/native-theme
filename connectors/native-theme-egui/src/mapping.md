@@ -13,8 +13,8 @@ One row per native leaf (spec §5, §13.1). A `§N` that names no document cites
 | Buttons (button, link, switch, checkbox, segmented control) | 113 | 11 | 46 | 31 | 25 |
 | Inputs (input, text area, combo box, list) | 87 | 4 | 35 | 36 | 12 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 5 | 17 | 9 | 9 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 99 | 0 | 54 | 26 | 19 |
-| **TOTAL** | **515** | **46** | **208** | **170** | **91** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 100 | 0 | 54 | 27 | 19 |
+| **TOTAL** | **516** | **46** | **208** | **171** | **91** |
 
 UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void` 1, `widgets-crate` 22.
 
@@ -524,6 +524,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `tab.active_indicator_color` | DERIVED | → T18(a) |  |
 | `tab.active_indicator_side` | DERIVED | → T18(a) |  |
 | `tab.active_indicator_width` | DERIVED | → T18(a) |  |
+| `tab.active_outward_corner_radius` | DERIVED | → T18(a) | probe `4.0` |
 | `tab.active_text_color` | SCOPED | «tab» `visuals.selection.stroke.color` |  |
 | `tab.background_color` | SCOPED | «tab» `visuals.widgets.inactive.weak_bg_fill`; «tab» `visuals.widgets.open.weak_bg_fill`; «tab» `visuals.widgets.hovered.weak_bg_fill` (when: tab.hover_background is None, §6.4); «tab» `visuals.widgets.active.weak_bg_fill` (when: tab.hover_background is None, §6.4) |  |
 | `tab.bar_background` | SCOPED | «tab» `visuals.panel_fill` |  |

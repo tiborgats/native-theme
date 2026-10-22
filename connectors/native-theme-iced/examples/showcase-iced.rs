@@ -318,7 +318,7 @@ const INSPECTOR_TABS_ID: &str = "showcase-inspector-tabs";
 ///
 /// `LayoutTheme` is the one theme struct that is not per-variant, so it lives
 /// on the native `Theme` and on `SystemTheme` rather than on `ResolvedTheme`
-/// (`native-theme/src/model/widgets/mod.rs:884`). The showcase therefore keeps
+/// (`native-theme/src/model/widgets/mod.rs:1094`). The showcase therefore keeps
 /// a copy of it beside the resolved theme and refreshes it whenever the theme
 /// is rebuilt.
 ///

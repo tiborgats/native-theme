@@ -16,7 +16,7 @@
 # (WebKit) marks a value read from WebKit's drawing of iOS controls (docs/platform-facts.md:23), not from UIKit.
 # A value with no comment has no primary source (M2c Step 2 found none: Apple publishes no UIKit
 # metric or state colour for it) and is kept as it was.
-# docs/inheritance-rules.toml:460-465 asks a preset to state the colours it would otherwise inherit
+# docs/inheritance-rules.toml:488-498 asks a preset to state the colours it would otherwise inherit
 # wrongly. No iOS source gives window.title_bar_background, list.header_background,
 # menu.background_color, menu.font.color, list.item_font.color, list.header_font.color or
 # scrollbar.thumb_color (the HIG's scroll indicator is "translucent", with no colour), so they

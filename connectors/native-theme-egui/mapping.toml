@@ -2350,6 +2350,11 @@ tested_by = "T18(a)"
 verdict   = "derived"
 tested_by = "T18(a)"
 
+["tab.active_outward_corner_radius"]
+verdict   = "derived"
+tested_by = "T18(a)"
+probe     = 4.0
+
 ["tab.min_height"]
 verdict = "scoped"
 sinks   = [{ path = "spacing.interact_size.y", scope = "tab" }]

@@ -757,6 +757,29 @@ and many have since drifted, as the archive's [README](README.md) warns.
       `[light.menu]`, `[dark.menu]`), and the M9-012 CHANGELOG line names no
       windows-11 example. The item closes.
 
+### Tab: an active-tab indicator
+
+- [x] [1.0] Research in `docs/platform-facts.md` **first**, cited to authoritative
+      sources, which platforms mark the active tab with an indicator line
+      (underline or similar) and at what thickness and colour, then add a `tab`
+      field for it. `TabTheme` (`native-theme/src/model/widgets/mod.rs:373-405`)
+      has no such field, so no connector paints an indicator until the model
+      states one — the egui connector marks the active tab only by the
+      `selection.*` colours of its `Tab` scope's `Normal` cell
+      (`tab.active_background`, `tab.active_text_color`; connector spec §6.2); no thickness is to be invented in the meantime.
+      Found 2026-09-28 for KDE: Breeze fills a 3px `QPalette::Highlight`
+      strip along the selected North tab's top edge (the bottom edge for
+      South tabs), with no pen, rounded `Frame_FrameRadius` = 5 on the
+      selected tab's corners — `TabBar_ActiveEffectSize` = 3
+      ([breezemetrics.h:137](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezemetrics.h#L137)),
+      painted after the tab's frame in `Helper::renderTabBarTab`
+      ([breezehelper.cpp:1471-1487](https://github.com/KDE/breeze/blob/f0b1d7534aa2356d7336241d0c7051522e8a6b68/kstyle/breezehelper.cpp#L1471-L1487));
+      recorded in `docs/platform-facts.md:1354` (§2.11). The other three
+      platforms are still to be researched before the field is added.
+      Closed 2026-10-22 (G3 T11): met by e610750b (2026-09-30), which added
+      the three `tab.active_indicator_*` fields, their §2.11 facts rows for
+      all five platforms and their receivers.
+
 ---
 
 ## Toolkit Connectors

@@ -283,7 +283,7 @@ pub fn window_title_bar_font(t: &ResolvedTheme, prefs: &AccessibilityPreferences
 }
 
 /// The title text colour for an active (`true`) or inactive window: `window.title_bar_font.color`
-/// or `window.inactive_title_bar_text_color` (`native-theme/src/model/widgets/mod.rs:25`).
+/// or `window.inactive_title_bar_text_color` (`native-theme/src/model/widgets/mod.rs:30`, `:27`).
 /// Feed to `RichText::color` (`egui/src/widget_text.rs:320`). egui does not tell the title
 /// which of the two a window is in (spec §5.2), so the application passes what it knows.
 #[must_use]
@@ -500,7 +500,7 @@ pub fn expander_icon(t: &ResolvedTheme) -> impl Fn(&mut egui::Ui, f32, &egui::Re
     }
 }
 
-/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:620`) as an `egui::FontId`:
+/// `list.header_font` (`native-theme/src/model/widgets/mod.rs:644`) as an `egui::FontId`:
 /// `FontFamily::Proportional` (the never-`Name` invariant, spec §4.9) at [`scaled_text_size`] of
 /// its size, or egui's own `TextStyle::Body` size where that is not a positive normal `f32`
 /// (spec §8.5). Feed to `RichText::font(..)`

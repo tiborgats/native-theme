@@ -305,7 +305,7 @@ impl ThemeAtlas {
     }
 
     /// The layout spacing the atlas was built with, as [`Builder::layout`] took it, or
-    /// `LayoutTheme::default()` (`native-theme/src/model/widgets/mod.rs:1028-1045`, all four
+    /// `LayoutTheme::default()` (`native-theme/src/model/widgets/mod.rs:1094-1111`, all four
     /// fields `None`). Read `container_margin` and `section_gap` here, the two per-call values
     /// no `Style` field carries (spec §5.1), so an atlas from [`from_system`](crate::from_system) needs no second
     /// detection of the OS.
@@ -680,7 +680,7 @@ impl<'a> Builder<'a> {
     /// (`native-theme/src/model/mod.rs:282`) and on `SystemTheme`
     /// (`native-theme/src/lib.rs:628`), and **not** on [`ResolvedTheme`]
     /// (`native-theme/src/model/resolved.rs:158-217`). All four fields are `Option<f32>`
-    /// (`native-theme/src/model/widgets/mod.rs:1028-1045`).
+    /// (`native-theme/src/model/widgets/mod.rs:1094-1111`).
     pub fn layout(mut self, layout: &'a LayoutTheme) -> Self {
         self.layout = Some(layout);
         self
