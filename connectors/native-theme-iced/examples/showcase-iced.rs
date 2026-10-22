@@ -434,7 +434,8 @@ fn hover_target(id: &str) -> bool {
 type PartRect<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Rectangle> + 'a>;
 
 /// `content`, one element of the list: while it is drawn its rectangle, and
-/// its parts', are recorded under their ids for the layout dump; while the
+/// its parts', are recorded under their ids for the layout dump, where the
+/// run records them ([`RECORDING`]); while the
 /// pointer is over it, it is the hover target Widget Info shows, unless a
 /// smaller one under the pointer is ([`hover_target`]).
 ///
@@ -462,30 +463,54 @@ type PartOrigin<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Rec
 /// own extent -- the list's "a label's is its text box" -- measured as iced
 /// shapes it: its widest line, by its lines on the theme's line box `line`
 /// (the font size times `defaults.line_height`).
+///
+/// The text is shaped once, the first time its extent is asked for, and the
+/// extent kept with it: the view that builds it is drawn and operated on
+/// until the next is built, and a recording run ([`RECORDING`]) asks for the
+/// extent at each draw and each operation.
 struct MeasuredText {
     content: String,
     size: f32,
     line: f32,
     font: iced::Font,
+    extent: std::cell::OnceCell<iced::Size>,
 }
 
 impl MeasuredText {
+    /// `content` in `font` at `size`, on lines `line` tall.
+    fn new(content: String, size: f32, line: f32, font: iced::Font) -> Self {
+        Self {
+            content,
+            size,
+            line,
+            font,
+            extent: std::cell::OnceCell::new(),
+        }
+    }
+
+    /// The text's extent as iced shapes it, shaped on the first call,
+    /// counted in [`TEXT_SHAPES`] under test.
     fn extent(&self) -> iced::Size {
-        use iced::advanced::text::Paragraph as _;
-        let paragraph = <iced::Renderer as iced::advanced::text::Renderer>::Paragraph::with_text(
-            iced::advanced::Text {
-                content: self.content.as_str(),
-                bounds: iced::Size::INFINITE,
-                size: iced::Pixels(self.size),
-                line_height: text::LineHeight::Absolute(iced::Pixels(self.line)),
-                font: self.font,
-                align_x: text::Alignment::Default,
-                align_y: iced::alignment::Vertical::Top,
-                shaping: text::Shaping::Advanced,
-                wrapping: text::Wrapping::None,
-            },
-        );
-        paragraph.min_bounds()
+        *self.extent.get_or_init(|| {
+            use iced::advanced::text::Paragraph as _;
+            #[cfg(test)]
+            TEXT_SHAPES.with(|shapes| shapes.set(shapes.get() + 1));
+            let paragraph =
+                <iced::Renderer as iced::advanced::text::Renderer>::Paragraph::with_text(
+                    iced::advanced::Text {
+                        content: self.content.as_str(),
+                        bounds: iced::Size::INFINITE,
+                        size: iced::Pixels(self.size),
+                        line_height: text::LineHeight::Absolute(iced::Pixels(self.line)),
+                        font: self.font,
+                        align_x: text::Alignment::Default,
+                        align_y: iced::alignment::Vertical::Top,
+                        shaping: text::Shaping::Advanced,
+                        wrapping: text::Wrapping::None,
+                    },
+                );
+            paragraph.min_bounds()
+        })
     }
 
     /// The text's rectangle in `room`: at its left edge, centred
@@ -574,15 +599,15 @@ impl<'a> Tagged<'a> {
             }),
             None => bounds,
         };
-        rects.insert(self.id, shown);
+        record_rect(rects, self.id, shown);
         for (id, rect) in &self.parts {
             if let Some(bounds) = rect(layout) {
-                rects.insert(id, bounds);
+                record_rect(rects, id, bounds);
             }
         }
         for (id, measured, origin) in &self.texts {
             if let Some(room) = origin(layout) {
-                rects.insert(id, measured.placed(room));
+                record_rect(rects, id, measured.placed(room));
             }
         }
     }
@@ -628,6 +653,52 @@ thread_local! {
     /// operation over the tree found them ([`Survey`]).
     static SURVEYED: std::cell::RefCell<ElementRects> =
         const { std::cell::RefCell::new(BTreeMap::new()) };
+    /// Whether the elements record their rectangles, into [`DRAWING`] as
+    /// they are drawn and into [`SURVEYED`] as they are operated on, and
+    /// shape their text parts to do so: set by `main` for `--dump-layout`
+    /// ([`records_layout`]), whose dump and settle read the two, and by the
+    /// tests that read them (`recording`). A plain run records nothing; the
+    /// hover target ([`UNDER_POINTER`]) needs no record.
+    static RECORDING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+#[cfg(test)]
+thread_local! {
+    /// The texts [`MeasuredText::extent`] has shaped on this thread.
+    static TEXT_SHAPES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// The rectangles [`record_rect`] has recorded on this thread, into the
+    /// frame being drawn or the survey.
+    static RECTS_RECORDED: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// Records into the frame being drawn ([`DRAWING`]) while [`RECORDING`] is
+/// set; does nothing otherwise.
+fn record_drawing(record: impl FnOnce(&mut ElementRects)) {
+    if RECORDING.get() {
+        DRAWING.with_borrow_mut(record);
+    }
+}
+
+/// Records into the survey ([`SURVEYED`]) while [`RECORDING`] is set; does
+/// nothing otherwise.
+fn record_survey(record: impl FnOnce(&mut ElementRects)) {
+    if RECORDING.get() {
+        SURVEYED.with_borrow_mut(record);
+    }
+}
+
+/// `rect` into `rects` under `id`, counted in [`RECTS_RECORDED`] under test.
+fn record_rect(rects: &mut ElementRects, id: &'static str, rect: iced::Rectangle) {
+    #[cfg(test)]
+    RECTS_RECORDED.with(|recorded| recorded.set(recorded.get() + 1));
+    rects.insert(id, rect);
+}
+
+/// Whether `main` sets [`RECORDING`] for the command line `cli`: exactly
+/// where it asks for a layout dump, the one reader of the records outside
+/// the tests.
+fn records_layout(cli: &CliArgs) -> bool {
+    cli.dump_layout.is_some()
 }
 
 /// The operation the layout dump runs over the whole tree: it does nothing
@@ -740,13 +811,13 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
         cursor: iced::mouse::Cursor,
         viewport: &iced::Rectangle,
     ) {
-        if self.root {
+        if self.root && RECORDING.get() {
             let frame = DRAWING.take();
             if !frame.is_empty() {
                 DRAWN.set(frame);
             }
         }
-        DRAWING.with_borrow_mut(|drawing| self.record(layout, drawing));
+        record_drawing(|drawing| self.record(layout, drawing));
         self.content
             .as_widget()
             .draw(tree, renderer, theme, style, layout, cursor, viewport);
@@ -754,8 +825,8 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
 
     /// Every operation goes through the whole tree, whether a widget is in
     /// view or not, so the element records itself for the layout dump here
-    /// too: the dump's [`Survey`] finds what a scrolled-off part of the page
-    /// lays out, which iced does not draw.
+    /// too, while [`RECORDING`] is set: the dump's [`Survey`] finds what a
+    /// scrolled-off part of the page lays out, which iced does not draw.
     fn operate(
         &mut self,
         tree: &mut iced::advanced::widget::Tree,
@@ -764,9 +835,9 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
         operation: &mut dyn iced::advanced::widget::Operation,
     ) {
         if self.root {
-            SURVEYED.with_borrow_mut(BTreeMap::clear);
+            record_survey(BTreeMap::clear);
         }
-        SURVEYED.with_borrow_mut(|surveyed| self.record(layout, surveyed));
+        record_survey(|surveyed| self.record(layout, surveyed));
         self.content
             .as_widget_mut()
             .operate(tree, layout, renderer, operation);
@@ -3378,7 +3449,7 @@ impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_>
         _cursor: iced::mouse::Cursor,
     ) {
         if let (Some(id), Some(panel)) = (self.popup, self.panel(layout)) {
-            DRAWING.with_borrow_mut(|drawing| drawing.insert(id, panel));
+            record_drawing(|drawing| record_rect(drawing, id, panel));
         }
         self.inner.as_overlay().draw(
             renderer,
@@ -3396,7 +3467,7 @@ impl iced::advanced::Overlay<Message, Theme, iced::Renderer> for HeldOverlay<'_>
         operation: &mut dyn iced::advanced::widget::Operation,
     ) {
         if let (Some(id), Some(panel)) = (self.popup, self.panel(layout)) {
-            SURVEYED.with_borrow_mut(|surveyed| surveyed.insert(id, panel));
+            record_survey(|surveyed| record_rect(surveyed, id, panel));
         }
         self.inner
             .as_overlay_mut()
@@ -8766,11 +8837,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     };
     // The text a field shows, `shown` (its value, or its placeholder while
     // empty), as the input's font sets it.
-    let input_text = |shown: &str| MeasuredText {
-        content: shown.to_string(),
-        size: input_size,
-        line: input_size * resolved.defaults.line_height,
-        font: theme_font(&resolved.input.font),
+    let input_text = |shown: &str| {
+        MeasuredText::new(
+            shown.to_string(),
+            input_size,
+            input_size * resolved.defaults.line_height,
+            theme_font(&resolved.input.font),
+        )
     };
     // A field and its text: the text sits in the field's first layout node,
     // the line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
@@ -8899,12 +8972,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // (iced_widget 0.14.2 `src/pick_list.rs:636-660`).
             .text_part(
                 "basic.drop_down.trigger.text",
-                MeasuredText {
-                    content: state.basic_fruit.to_string(),
-                    size: combo_size,
-                    line: combo_size * resolved.defaults.line_height,
-                    font: theme_font(&resolved.combo_box.font),
-                },
+                MeasuredText::new(
+                    state.basic_fruit.to_string(),
+                    combo_size,
+                    combo_size * resolved.defaults.line_height,
+                    theme_font(&resolved.combo_box.font),
+                ),
                 move |layout| Some(layout.bounds().shrink(combo_pad)),
             )
             .part("basic.drop_down.trigger.arrow", move |layout| {
@@ -9126,12 +9199,12 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // The text: the three lines inside the padding.
             .text_part(
                 "basic.text_area.field.text",
-                MeasuredText {
-                    content: state.basic_text_area.text(),
-                    size: input_size,
-                    line: area_line,
-                    font: theme_font(&resolved.input.font),
-                },
+                MeasuredText::new(
+                    state.basic_text_area.text(),
+                    input_size,
+                    area_line,
+                    theme_font(&resolved.input.font),
+                ),
                 move |l| Some(l.bounds().shrink(area_pad)),
             ),
         ),
@@ -12668,14 +12741,9 @@ fn menu_width<'a>(
     gap: f32,
 ) -> f32 {
     let width = |content: &str| {
-        MeasuredText {
-            content: content.to_owned(),
-            size,
-            line: size,
-            font,
-        }
-        .extent()
-        .width
+        MeasuredText::new(content.to_owned(), size, size, font)
+            .extent()
+            .width
     };
     let widest = rows
         .into_iter()
@@ -15061,6 +15129,10 @@ fn main() -> iced::Result {
         cli::refuse(&refused);
     }
     let capturing = cli.capturing();
+    // On this thread, the one iced runs the application's view, update and
+    // drawing on: the event loop runs here (iced_winit 0.14.0
+    // `src/lib.rs:451`) and polls the application in its handler (`:266-278`).
+    RECORDING.set(records_layout(&cli));
     let _ = CLI_ARGS.set(cli);
 
     // iced_aw draws its glyphs (the number input's step arrows) in a font of
@@ -15221,6 +15293,21 @@ mod tests {
     /// host.
     fn interface(state: &State) -> Simulator<'_, Message> {
         Simulator::with_size(Settings::default(), TALL_WINDOW, view(state))
+    }
+
+    /// `run`'s result, with the elements recording their rectangles while it
+    /// runs ([`RECORDING`]), as a `--dump-layout` run's do: what a test that
+    /// reads [`drawn_layout`] or [`surveyed_layout`] draws and operates on
+    /// goes through this.
+    fn recording<T>(run: impl FnOnce() -> T) -> T {
+        struct Restore(bool);
+        impl Drop for Restore {
+            fn drop(&mut self) {
+                RECORDING.set(self.0);
+            }
+        }
+        let _restore = Restore(RECORDING.replace(true));
+        run()
     }
 
     /// Builds the real interface, runs `interaction` on it, then feeds every
@@ -16698,54 +16785,56 @@ mod tests {
     /// none open. The bar draws its titles in [`MENU_TITLES`]' order.
     #[test]
     fn the_open_menu_flag_takes_a_menu_of_the_bar() {
-        for (index, title) in MENU_TITLES.iter().enumerate() {
-            let mut state = State::default();
-            apply_cli_args(&mut state, &command_line(&[("--open-menu", title)]));
-            assert_eq!(state.held_menu, Some(index), "--open-menu {title}");
-            assert_eq!(held_menu(&title.to_uppercase()), Ok(index));
-        }
-        assert_eq!(
-            held_menu("no-such-menu"),
-            Err(
-                "--open-menu no-such-menu: the menu bar has no such menu; the menus are: \
-                 file, view, theme, help"
-                    .to_string()
-            )
-        );
-        let mut state = State::default();
-        apply_cli_args(
-            &mut state,
-            &command_line(&[("--open-menu", "no-such-menu")]),
-        );
-        assert_eq!(state.held_menu, None, "an unknown menu is held open");
-
-        let theme = theme(&state);
-        let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-        for _ in 0..2 {
-            if let Err(error) = ui.snapshot(&theme) {
-                panic!("the interface did not draw: {error}");
+        recording(|| {
+            for (index, title) in MENU_TITLES.iter().enumerate() {
+                let mut state = State::default();
+                apply_cli_args(&mut state, &command_line(&[("--open-menu", title)]));
+                assert_eq!(state.held_menu, Some(index), "--open-menu {title}");
+                assert_eq!(held_menu(&title.to_uppercase()), Ok(index));
             }
-        }
-        let drawn = drawn_layout();
-        assert!(
-            !drawn.contains_key("chrome.menu.theme"),
-            "a menu is open with no --open-menu"
-        );
-        let titles: Vec<f32> = MENU_TITLES
-            .iter()
-            .map(|title| {
-                let id = format!("chrome.menu_bar.{}", title.to_lowercase());
-                match drawn.iter().find(|(drawn, _)| **drawn == id) {
-                    Some((_, rect)) => rect.x,
-                    None => panic!("{id} is not drawn"),
+            assert_eq!(
+                held_menu("no-such-menu"),
+                Err(
+                    "--open-menu no-such-menu: the menu bar has no such menu; the menus are: \
+                 file, view, theme, help"
+                        .to_string()
+                )
+            );
+            let mut state = State::default();
+            apply_cli_args(
+                &mut state,
+                &command_line(&[("--open-menu", "no-such-menu")]),
+            );
+            assert_eq!(state.held_menu, None, "an unknown menu is held open");
+
+            let theme = theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
                 }
-            })
-            .collect();
-        assert!(
-            titles.is_sorted(),
-            "the bar's titles are not in MENU_TITLES' order: {titles:?}"
-        );
+            }
+            let drawn = drawn_layout();
+            assert!(
+                !drawn.contains_key("chrome.menu.theme"),
+                "a menu is open with no --open-menu"
+            );
+            let titles: Vec<f32> = MENU_TITLES
+                .iter()
+                .map(|title| {
+                    let id = format!("chrome.menu_bar.{}", title.to_lowercase());
+                    match drawn.iter().find(|(drawn, _)| **drawn == id) {
+                        Some((_, rect)) => rect.x,
+                        None => panic!("{id} is not drawn"),
+                    }
+                })
+                .collect();
+            assert!(
+                titles.is_sorted(),
+                "the bar's titles are not in MENU_TITLES' order: {titles:?}"
+            );
+        })
     }
 
     /// `--open-menu <title>` holds that menu open from the first frame, each
@@ -18088,50 +18177,52 @@ mod tests {
     /// snapshot sends one, `RedrawRequested`.
     #[test]
     fn the_basic_tooltip_waits_the_themes_show_delay() {
-        for (delay, opens) in [(None, true), (Some(1_u16), true), (Some(60_000), false)] {
-            let (theme, mut resolved) =
-                match native_theme_iced::from_preset("catppuccin-mocha", false) {
-                    Ok(installed) => installed,
-                    Err(error) => panic!("catppuccin-mocha: {error}"),
+        recording(|| {
+            for (delay, opens) in [(None, true), (Some(1_u16), true), (Some(60_000), false)] {
+                let (theme, mut resolved) =
+                    match native_theme_iced::from_preset("catppuccin-mocha", false) {
+                        Ok(installed) => installed,
+                        Err(error) => panic!("catppuccin-mocha: {error}"),
+                    };
+                assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
+                resolved.tooltip.show_delay = delay;
+                let state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    active_tab: Tab::Basic,
+                    ..State::default()
                 };
-            assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
-            resolved.tooltip.show_delay = delay;
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                active_tab: Tab::Basic,
-                ..State::default()
-            };
-            let theme = super::theme(&state);
-            let mut ui: Simulator<'_, Message> =
-                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-            for _ in 0..2 {
-                if let Err(error) = ui.snapshot(&theme) {
-                    panic!("the interface did not draw: {error}");
+                let theme = super::theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
                 }
-            }
-            let at = match drawn_layout().get("basic.buttons.tooltip") {
-                Some(rect) => rect.center(),
-                None => panic!("the tooltip's button is not drawn"),
-            };
-            assert!(
-                !drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
-                "{delay:?}: the bubble is drawn before the pointer is on the button"
-            );
-            ui.point_at(at);
-            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
-            std::thread::sleep(Duration::from_millis(2));
-            for _ in 0..3 {
-                if let Err(error) = ui.snapshot(&theme) {
-                    panic!("the interface did not draw: {error}");
+                let at = match drawn_layout().get("basic.buttons.tooltip") {
+                    Some(rect) => rect.center(),
+                    None => panic!("the tooltip's button is not drawn"),
+                };
+                assert!(
+                    !drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                    "{delay:?}: the bubble is drawn before the pointer is on the button"
+                );
+                ui.point_at(at);
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                std::thread::sleep(Duration::from_millis(2));
+                for _ in 0..3 {
+                    if let Err(error) = ui.snapshot(&theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
                 }
+                assert_eq!(
+                    drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
+                    opens,
+                    "{delay:?}: whether the bubble is drawn with the pointer on the button"
+                );
             }
-            assert_eq!(
-                drawn_layout().contains_key("basic.buttons.tooltip.bubble"),
-                opens,
-                "{delay:?}: whether the bubble is drawn with the pointer on the button"
-            );
-        }
+        })
     }
 
     /// Where the pointer rests in [`hovered_frame`]: nowhere a tooltip is,
@@ -18148,54 +18239,56 @@ mod tests {
     /// pointer resting at `rest` past three frames, as
     /// [`the_basic_tooltip_waits_the_themes_show_delay`] rests it.
     fn hovered_frame(delay: Option<u16>, rest: Rest) -> iced_test::simulator::Snapshot {
-        let (theme, mut resolved) = match native_theme_iced::from_preset("catppuccin-mocha", false)
-        {
-            Ok(installed) => installed,
-            Err(error) => panic!("catppuccin-mocha: {error}"),
-        };
-        assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
-        resolved.tooltip.show_delay = delay;
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            active_tab: Tab::Display,
-            side_panel_visible: false,
-            ..State::default()
-        };
-        let theme = super::theme(&state);
-        let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-        let mut frame = || match ui.snapshot(&theme) {
-            Ok(frame) => frame,
-            Err(error) => panic!("the interface did not draw: {error}"),
-        };
-        let _ = frame();
-        drop(frame);
-        let at = match rest {
-            Rest::Away => Point::new(1.0, WINDOW_SIZE.1 / 2.0),
-            Rest::OnText(label) => match ui.find(label).map(|t| t.visible_bounds()) {
-                Ok(Some(bounds)) => bounds.center(),
-                Ok(None) => panic!("{label} is not in view"),
-                Err(error) => panic!("{label}: {error}"),
-            },
-            Rest::OnElement(id) => match drawn_layout().get(id) {
-                Some(rect) => rect.center(),
-                None => panic!("{id} is not drawn"),
-            },
-        };
-        ui.point_at(at);
-        let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
-        let mut last = None;
-        for _ in 0..3 {
-            last = Some(match ui.snapshot(&theme) {
+        recording(|| {
+            let (theme, mut resolved) =
+                match native_theme_iced::from_preset("catppuccin-mocha", false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("catppuccin-mocha: {error}"),
+                };
+            assert_eq!(resolved.tooltip.show_delay, None, "catppuccin-mocha");
+            resolved.tooltip.show_delay = delay;
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                active_tab: Tab::Display,
+                side_panel_visible: false,
+                ..State::default()
+            };
+            let theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            let mut frame = || match ui.snapshot(&theme) {
                 Ok(frame) => frame,
                 Err(error) => panic!("the interface did not draw: {error}"),
-            });
-        }
-        match last {
-            Some(frame) => frame,
-            None => unreachable!("three frames were drawn"),
-        }
+            };
+            let _ = frame();
+            drop(frame);
+            let at = match rest {
+                Rest::Away => Point::new(1.0, WINDOW_SIZE.1 / 2.0),
+                Rest::OnText(label) => match ui.find(label).map(|t| t.visible_bounds()) {
+                    Ok(Some(bounds)) => bounds.center(),
+                    Ok(None) => panic!("{label} is not in view"),
+                    Err(error) => panic!("{label}: {error}"),
+                },
+                Rest::OnElement(id) => match drawn_layout().get(id) {
+                    Some(rect) => rect.center(),
+                    None => panic!("{id} is not drawn"),
+                },
+            };
+            ui.point_at(at);
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+            let mut last = None;
+            for _ in 0..3 {
+                last = Some(match ui.snapshot(&theme) {
+                    Ok(frame) => frame,
+                    Err(error) => panic!("the interface did not draw: {error}"),
+                });
+            }
+            match last {
+                Some(frame) => frame,
+                None => unreachable!("three frames were drawn"),
+            }
+        })
     }
 
     /// Whether frames `a` and `b` hold the same pixels. iced_test compares a
@@ -18403,44 +18496,48 @@ mod tests {
         preset: &str,
         splice: impl Fn(&mut ResolvedTheme),
     ) -> Vec<(Rectangle, Rectangle)> {
-        let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("{preset}: {error}"),
-        };
-        resolved.tooltip.show_delay = None;
-        splice(&mut resolved);
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            active_tab: Tab::Display,
-            side_panel_visible: false,
-            ..State::default()
-        };
-        let theme = super::theme(&state);
-        probes::DISPLAY_TOOLTIPS
-            .into_iter()
-            .zip(probes::DISPLAY_TIPS)
-            .map(|(control, tip)| {
-                let mut ui: Simulator<'_, Message> =
-                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-                if let Err(error) = ui.snapshot(&theme) {
-                    panic!("the interface did not draw: {error}");
-                }
-                let button = probe_bounds(&mut ui, control);
-                let at = button.center();
-                ui.point_at(at);
-                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
-                for _ in 0..3 {
+        recording(|| {
+            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            resolved.tooltip.show_delay = None;
+            splice(&mut resolved);
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                active_tab: Tab::Display,
+                side_panel_visible: false,
+                ..State::default()
+            };
+            let theme = super::theme(&state);
+            probes::DISPLAY_TOOLTIPS
+                .into_iter()
+                .zip(probes::DISPLAY_TIPS)
+                .map(|(control, tip)| {
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
                     if let Err(error) = ui.snapshot(&theme) {
                         panic!("the interface did not draw: {error}");
                     }
-                }
-                match drawn_layout().get(tip) {
-                    Some(rect) => (button, *rect),
-                    None => panic!("{preset}: {tip} is not drawn with the pointer on {control}"),
-                }
-            })
-            .collect()
+                    let button = probe_bounds(&mut ui, control);
+                    let at = button.center();
+                    ui.point_at(at);
+                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                    for _ in 0..3 {
+                        if let Err(error) = ui.snapshot(&theme) {
+                            panic!("the interface did not draw: {error}");
+                        }
+                    }
+                    match drawn_layout().get(tip) {
+                        Some(rect) => (button, *rect),
+                        None => {
+                            panic!("{preset}: {tip} is not drawn with the pointer on {control}")
+                        }
+                    }
+                })
+                .collect()
+        })
     }
 
     /// The Display page's four tooltips take the tooltip's theme, as the
@@ -18535,76 +18632,78 @@ mod tests {
     /// iced can carry ([`ICED_TOOLTIP_PADDING`] then).
     #[test]
     fn every_tooltip_stands_the_gap_from_its_control() {
-        let mut failures = Vec::new();
-        for preset in ["kde-breeze", "adwaita"] {
-            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            resolved.tooltip.show_delay = None;
-            let gap = tooltip_gap(&resolved, &AccessibilityPreferences::default());
-            let padding = bubble_padding(&resolved);
+        recording(|| {
+            let mut failures = Vec::new();
+            for preset in ["kde-breeze", "adwaita"] {
+                let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("{preset}: {error}"),
+                };
+                resolved.tooltip.show_delay = None;
+                let gap = tooltip_gap(&resolved, &AccessibilityPreferences::default());
+                let padding = bubble_padding(&resolved);
 
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                active_tab: Tab::Basic,
-                ..State::default()
-            };
-            let iced_theme = super::theme(&state);
-            let mut ui: Simulator<'_, Message> =
-                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-            for _ in 0..2 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
-                }
-            }
-            let button = match drawn_layout().get("basic.buttons.tooltip") {
-                Some(rect) => *rect,
-                None => panic!("{preset}: the tooltip's button is not drawn"),
-            };
-            ui.point_at(button.center());
-            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
-                position: button.center(),
-            })]);
-            for _ in 0..3 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
-                }
-            }
-            match drawn_layout().get("basic.buttons.tooltip.bubble") {
-                Some(bubble) => {
-                    let stands = bubble.y - (button.y + button.height);
-                    if (stands - gap).abs() > 0.01 {
-                        failures.push(format!(
-                            "{preset}: the Basic bubble stands {stands} below its button, want {gap}"
-                        ));
+                let state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    active_tab: Tab::Basic,
+                    ..State::default()
+                };
+                let iced_theme = super::theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
                     }
                 }
-                None => panic!("{preset}: the Basic bubble is not drawn"),
-            }
-            drop(ui);
-
-            let want = gap + padding;
-            for (side, (button, tip)) in ["top", "bottom", "left", "right"]
-                .into_iter()
-                .zip(display_tips(preset, |_| {}))
-            {
-                let stands = match side {
-                    "top" => button.y - (tip.y + tip.height),
-                    "bottom" => tip.y - (button.y + button.height),
-                    "left" => button.x - (tip.x + tip.width),
-                    _ => tip.x - (button.x + button.width),
+                let button = match drawn_layout().get("basic.buttons.tooltip") {
+                    Some(rect) => *rect,
+                    None => panic!("{preset}: the tooltip's button is not drawn"),
                 };
-                if (stands - want).abs() > 0.01 {
-                    failures.push(format!(
+                ui.point_at(button.center());
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                    position: button.center(),
+                })]);
+                for _ in 0..3 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
+                }
+                match drawn_layout().get("basic.buttons.tooltip.bubble") {
+                    Some(bubble) => {
+                        let stands = bubble.y - (button.y + button.height);
+                        if (stands - gap).abs() > 0.01 {
+                            failures.push(format!(
+                            "{preset}: the Basic bubble stands {stands} below its button, want {gap}"
+                        ));
+                        }
+                    }
+                    None => panic!("{preset}: the Basic bubble is not drawn"),
+                }
+                drop(ui);
+
+                let want = gap + padding;
+                for (side, (button, tip)) in ["top", "bottom", "left", "right"]
+                    .into_iter()
+                    .zip(display_tips(preset, |_| {}))
+                {
+                    let stands = match side {
+                        "top" => button.y - (tip.y + tip.height),
+                        "bottom" => tip.y - (button.y + button.height),
+                        "left" => button.x - (tip.x + tip.width),
+                        _ => tip.x - (button.x + button.width),
+                    };
+                    if (stands - want).abs() > 0.01 {
+                        failures.push(format!(
                         "{preset}: the Display {side} tip stands {stands} from its button, want \
                          {want} (the gap {gap} and the padding {padding})"
                     ));
+                    }
                 }
             }
-        }
-        assert!(failures.is_empty(), "{failures:#?}");
+            assert!(failures.is_empty(), "{failures:#?}");
+        })
     }
 
     /// The chrome's tooltips stand [`tooltip_gap`] and the bubble's padding
@@ -18616,61 +18715,63 @@ mod tests {
     /// (gpui-pre 0.3.9 `src/window.rs:3835-3844`). Under kde-breeze light.
     #[test]
     fn the_chrome_tooltips_stand_the_gap_from_their_control() {
-        let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
-            Ok(installed) => installed,
-            Err(error) => panic!("kde-breeze: {error}"),
-        };
-        resolved.tooltip.show_delay = None;
-        let want = tooltip_gap(&resolved, &AccessibilityPreferences::default())
-            + bubble_padding(&resolved);
-        let state = State {
-            current_theme: theme,
-            current_resolved: resolved,
-            ..State::default()
-        };
-        let iced_theme = super::theme(&state);
-        let mut failures = Vec::new();
-        for (control, above) in [
-            ("chrome.toolbar.command_palette", false),
-            ("chrome.status_bar.toggle", true),
-        ] {
-            let mut ui: Simulator<'_, Message> =
-                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-            for _ in 0..2 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
+        recording(|| {
+            let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("kde-breeze: {error}"),
+            };
+            resolved.tooltip.show_delay = None;
+            let want = tooltip_gap(&resolved, &AccessibilityPreferences::default())
+                + bubble_padding(&resolved);
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                ..State::default()
+            };
+            let iced_theme = super::theme(&state);
+            let mut failures = Vec::new();
+            for (control, above) in [
+                ("chrome.toolbar.command_palette", false),
+                ("chrome.status_bar.toggle", true),
+            ] {
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
                 }
-            }
-            let button = match drawn_layout().get(control) {
-                Some(rect) => *rect,
-                None => panic!("{control} is not drawn"),
-            };
-            ui.point_at(button.center());
-            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
-                position: button.center(),
-            })]);
-            for _ in 0..3 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
+                let button = match drawn_layout().get(control) {
+                    Some(rect) => *rect,
+                    None => panic!("{control} is not drawn"),
+                };
+                ui.point_at(button.center());
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                    position: button.center(),
+                })]);
+                for _ in 0..3 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
                 }
-            }
-            let Some(tip) = drawn_layout().get(probes::CHROME_TIP).copied() else {
-                panic!("{control}: no tip drawn with the pointer on it");
-            };
-            let stands = if above {
-                button.y - (tip.y + tip.height)
-            } else {
-                tip.y - (button.y + button.height)
-            };
-            if (stands - want).abs() > 0.01 {
-                failures.push(format!(
+                let Some(tip) = drawn_layout().get(probes::CHROME_TIP).copied() else {
+                    panic!("{control}: no tip drawn with the pointer on it");
+                };
+                let stands = if above {
+                    button.y - (tip.y + tip.height)
+                } else {
+                    tip.y - (button.y + button.height)
+                };
+                if (stands - want).abs() > 0.01 {
+                    failures.push(format!(
                     "{control}: the tip at {tip:?} stands {stands} {} the button at {button:?}, \
                      want {want}",
                     if above { "above" } else { "below" }
                 ));
+                }
             }
-        }
-        assert!(failures.is_empty(), "{failures:#?}");
+            assert!(failures.is_empty(), "{failures:#?}");
+        })
     }
 
     /// The tables' stated heights hold their text at every text scale, as
@@ -18693,89 +18794,91 @@ mod tests {
     /// 1 and 1.5.
     #[test]
     fn the_tables_headers_take_the_themes_header_height() {
-        for (preset, factor) in ["adwaita", "material-3", "macos-tahoe", "catppuccin-mocha"]
-            .into_iter()
-            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
-        {
-            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
-            accessibility.text_scaling_factor = factor;
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let r = resolved.clone();
-            let stated = native_theme_iced::list_header_height(&r);
-            assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
-            let l = &r.list;
-            let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
-            let line_box =
-                |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
-            // A stated height, grown above a factor of 1 to hold a line of
-            // `size` inside `pad_y` and `rule`.
-            let grown = |height: f32, size: f32, pad_y: f32, rule: f32| {
-                if factor > 1.0 {
-                    height.max(line_box(size).ceil() + pad_y + rule)
-                } else {
-                    height
-                }
-            };
-            let rule = r.separator.line_width;
-            let want_header = match stated.or(l.row_height) {
-                Some(h) => grown(h, l.header_font.size, pad.y(), rule),
-                None => line_box(l.header_font.size) + pad.y(),
-            };
-            let want_row = match l.row_height {
-                Some(h) => grown(h, l.item_font.size, pad.y(), 0.0),
-                None => line_box(l.item_font.size) + pad.y(),
-            };
+        recording(|| {
+            for (preset, factor) in ["adwaita", "material-3", "macos-tahoe", "catppuccin-mocha"]
+                .into_iter()
+                .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+            {
+                let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+                accessibility.text_scaling_factor = factor;
+                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("{preset}: {error}"),
+                };
+                let r = resolved.clone();
+                let stated = native_theme_iced::list_header_height(&r);
+                assert_eq!(stated.is_some(), preset != "catppuccin-mocha", "{preset}");
+                let l = &r.list;
+                let pad = native_theme_iced::padding_or(&l.border.padding, Padding::ZERO);
+                let line_box =
+                    |size: f32| scaled_text_size(size, &accessibility) * r.defaults.line_height;
+                // A stated height, grown above a factor of 1 to hold a line of
+                // `size` inside `pad_y` and `rule`.
+                let grown = |height: f32, size: f32, pad_y: f32, rule: f32| {
+                    if factor > 1.0 {
+                        height.max(line_box(size).ceil() + pad_y + rule)
+                    } else {
+                        height
+                    }
+                };
+                let rule = r.separator.line_width;
+                let want_header = match stated.or(l.row_height) {
+                    Some(h) => grown(h, l.header_font.size, pad.y(), rule),
+                    None => line_box(l.header_font.size) + pad.y(),
+                };
+                let want_row = match l.row_height {
+                    Some(h) => grown(h, l.item_font.size, pad.y(), 0.0),
+                    None => line_box(l.item_font.size) + pad.y(),
+                };
 
-            let mut state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility: accessibility.clone(),
-                active_tab: Tab::Basic,
-                ..State::default()
-            };
-            let mut ui = interface(&state);
-            // A selector goes through the whole tree, as the dump's `Survey` does.
-            let _ = texts(&mut ui);
-            let surveyed = surveyed_layout();
-            for (id, want) in [
-                ("basic.table.header", want_header),
-                ("basic.table.row_1", want_row),
-            ] {
-                let height = match surveyed.get(id) {
-                    Some(rect) => rect.height,
-                    None => panic!("{preset} at {factor}: {id} is not laid out"),
+                let mut state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    accessibility: accessibility.clone(),
+                    active_tab: Tab::Basic,
+                    ..State::default()
+                };
+                let mut ui = interface(&state);
+                // A selector goes through the whole tree, as the dump's `Survey` does.
+                let _ = texts(&mut ui);
+                let surveyed = surveyed_layout();
+                for (id, want) in [
+                    ("basic.table.header", want_header),
+                    ("basic.table.row_1", want_row),
+                ] {
+                    let height = match surveyed.get(id) {
+                        Some(rect) => rect.height,
+                        None => panic!("{preset} at {factor}: {id} is not laid out"),
+                    };
+                    assert!(
+                        (height - want).abs() < 0.01,
+                        "{preset} at {factor}: {id} is {height} tall, want {want}"
+                    );
+                }
+                drop(ui);
+
+                state.active_tab = Tab::Layout;
+                let mut ui = interface(&state);
+                let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
+                let want = match stated {
+                    Some(h) => grown(h, l.header_font.size, 2.0 * SP.xs, 0.0),
+                    None => line_box(l.header_font.size) + 2.0 * SP.xs,
                 };
                 assert!(
-                    (height - want).abs() < 0.01,
-                    "{preset} at {factor}: {id} is {height} tall, want {want}"
+                    (cell.height - want).abs() < 0.01,
+                    "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
+                    cell.height
                 );
+                if stated.is_some() {
+                    let info = table_info(&state);
+                    let row = format!("header height: {want:.0}px");
+                    assert!(
+                        info.lines().any(|line| line.trim().starts_with(&row)),
+                        "{preset} at {factor}: the Table info gives no \"{row}\":\n{info}"
+                    );
+                }
             }
-            drop(ui);
-
-            state.active_tab = Tab::Layout;
-            let mut ui = interface(&state);
-            let cell = probe_bounds(&mut ui, probes::LAYOUT_TABLE_HEADER);
-            let want = match stated {
-                Some(h) => grown(h, l.header_font.size, 2.0 * SP.xs, 0.0),
-                None => line_box(l.header_font.size) + 2.0 * SP.xs,
-            };
-            assert!(
-                (cell.height - want).abs() < 0.01,
-                "{preset} at {factor}: the Layout table's header cell is {} tall, want {want}",
-                cell.height
-            );
-            if stated.is_some() {
-                let info = table_info(&state);
-                let row = format!("header height: {want:.0}px");
-                assert!(
-                    info.lines().any(|line| line.trim().starts_with(&row)),
-                    "{preset} at {factor}: the Table info gives no \"{row}\":\n{info}"
-                );
-            }
-        }
+        })
     }
 
     /// M9-150 (theme-data): a stated row height holds its text at every
@@ -18790,86 +18893,89 @@ mod tests {
     /// theme at test time.
     #[test]
     fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
-        let theme_menu = MENU_TITLES.iter().position(|title| *title == "Theme");
-        let mut faults = Vec::new();
-        for (preset, factor) in ["macos-tahoe", "adwaita", "macos-monterey", "material-3"]
-            .into_iter()
-            .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
-        {
-            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
-            accessibility.text_scaling_factor = factor;
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
-                Ok(installed) => installed,
-                Err(error) => panic!("{preset}: {error}"),
-            };
-            let r = resolved.clone();
-            let grown = |height: f32, size: f32, pad_y: f32| {
-                if factor > 1.0 {
-                    let line = scaled_text_size(size, &accessibility) * r.defaults.line_height;
-                    height.max(line.ceil() + pad_y)
-                } else {
-                    height
+        recording(|| {
+            let theme_menu = MENU_TITLES.iter().position(|title| *title == "Theme");
+            let mut faults = Vec::new();
+            for (preset, factor) in ["macos-tahoe", "adwaita", "macos-monterey", "material-3"]
+                .into_iter()
+                .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+            {
+                let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+                accessibility.text_scaling_factor = factor;
+                let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                    Ok(installed) => installed,
+                    Err(error) => panic!("{preset}: {error}"),
+                };
+                let r = resolved.clone();
+                let grown = |height: f32, size: f32, pad_y: f32| {
+                    if factor > 1.0 {
+                        let line = scaled_text_size(size, &accessibility) * r.defaults.line_height;
+                        height.max(line.ceil() + pad_y)
+                    } else {
+                        height
+                    }
+                };
+                let state = State {
+                    current_theme: theme,
+                    current_resolved: resolved,
+                    accessibility: accessibility.clone(),
+                    active_tab: Tab::Basic,
+                    held_menu: theme_menu,
+                    ..State::default()
+                };
+                let iced_theme = super::theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("{preset} at {factor}: the interface did not draw: {error}");
+                    }
                 }
-            };
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                accessibility: accessibility.clone(),
-                active_tab: Tab::Basic,
-                held_menu: theme_menu,
-                ..State::default()
-            };
-            let iced_theme = super::theme(&state);
-            let mut ui: Simulator<'_, Message> =
-                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-            for _ in 0..2 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("{preset} at {factor}: the interface did not draw: {error}");
+                let drawn = drawn_layout();
+                let _ = texts(&mut ui);
+                let surveyed = surveyed_layout();
+                let height_of = |id: &str| {
+                    drawn
+                        .get(id)
+                        .or_else(|| surveyed.get(id))
+                        .map(|rect| rect.height)
+                };
+                let l = &r.list;
+                if let Some(h) = l.row_height {
+                    let pad = native_theme_iced::padding_or(
+                        &l.border.padding,
+                        Padding::from(AW_LIST_PADDING),
+                    );
+                    let want = grown(h, l.item_font.size, pad.y());
+                    match height_of("basic.list.row_1") {
+                        Some(height) if (height - want).abs() < 0.01 => {}
+                        Some(height) => faults.push(format!(
+                            "{preset} at {factor}: basic.list.row_1 is {height} tall, want {want}"
+                        )),
+                        None => faults.push(format!(
+                            "{preset} at {factor}: basic.list.row_1 is not laid out"
+                        )),
+                    }
                 }
-            }
-            let drawn = drawn_layout();
-            let _ = texts(&mut ui);
-            let surveyed = surveyed_layout();
-            let height_of = |id: &str| {
-                drawn
-                    .get(id)
-                    .or_else(|| surveyed.get(id))
-                    .map(|rect| rect.height)
-            };
-            let l = &r.list;
-            if let Some(h) = l.row_height {
-                let pad = native_theme_iced::padding_or(
-                    &l.border.padding,
-                    Padding::from(AW_LIST_PADDING),
-                );
-                let want = grown(h, l.item_font.size, pad.y());
-                match height_of("basic.list.row_1") {
-                    Some(height) if (height - want).abs() < 0.01 => {}
-                    Some(height) => faults.push(format!(
-                        "{preset} at {factor}: basic.list.row_1 is {height} tall, want {want}"
-                    )),
-                    None => faults.push(format!(
-                        "{preset} at {factor}: basic.list.row_1 is not laid out"
-                    )),
-                }
-            }
-            let m = &r.menu;
-            if let Some(h) = m.row_height {
-                let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-                let want = grown(h, m.font.size, pad.y());
-                match height_of("chrome.menu.theme.light") {
-                    Some(height) if (height - want).abs() < 0.01 => {}
-                    Some(height) => faults.push(format!(
-                        "{preset} at {factor}: the Theme menu's Light row is {height} tall, \
+                let m = &r.menu;
+                if let Some(h) = m.row_height {
+                    let pad =
+                        native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+                    let want = grown(h, m.font.size, pad.y());
+                    match height_of("chrome.menu.theme.light") {
+                        Some(height) if (height - want).abs() < 0.01 => {}
+                        Some(height) => faults.push(format!(
+                            "{preset} at {factor}: the Theme menu's Light row is {height} tall, \
                          want {want}"
-                    )),
-                    None => faults.push(format!(
-                        "{preset} at {factor}: the Theme menu's Light row is not drawn"
-                    )),
+                        )),
+                        None => faults.push(format!(
+                            "{preset} at {factor}: the Theme menu's Light row is not drawn"
+                        )),
+                    }
                 }
             }
-        }
-        assert!(faults.is_empty(), "{faults:#?}");
+            assert!(faults.is_empty(), "{faults:#?}");
+        })
     }
 
     /// A state showing `tab` under `preset` light, the side panel hidden, at
@@ -20167,148 +20273,151 @@ mod tests {
     /// per tab state: the side panel hidden opens the tabs it opens shown.
     #[test]
     fn a_route_names_a_widget_only_where_the_state_draws_it() {
-        let mut state = State {
-            accessibility: native_theme_iced::AccessibilityPreferences::default(),
-            ..State::default()
-        };
-        let mut failures = Vec::new();
-        let mut seen = BTreeSet::new();
-        for preset in native_theme::theme::Theme::list_presets() {
-            for mode in [AppColorMode::Light, AppColorMode::Dark] {
-                let choice = ThemeChoice::Preset(preset.key.to_owned());
-                assert!(
-                    state.install_in_mode(choice, mode),
-                    "{} ({mode:?}): {:?}",
-                    preset.key,
-                    state.error_message
-                );
-                let r = &state.current_resolved;
-                seen.insert(("stroke", r.checkbox.check_mark_stroke_width.is_some()));
-                seen.insert(("pressed fill", r.button.active_background.is_some()));
-                seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
-                seen.insert(("indicator", state.basic_spinner.is_indicator()));
-                // The side panel shown and hidden, and each tab of the
-                // three rows open: the Basic page's, the page tabs' and the
-                // inspector's.
-                let states = [
-                    (true, 0, Tab::Basic, InspectorTab::Widget),
-                    (false, 0, Tab::Basic, InspectorTab::Widget),
-                    (true, 1, Tab::Buttons, InspectorTab::Theme),
-                ];
-                // Which tabs each state draws open, read once per tab state,
-                // with the set's icons: neither the icons nor the side
-                // panel's visibility opens a tab ([`drawn_open`] draws the
-                // rows on their own), so the panel hidden reads the same as
-                // the panel shown.
-                let mut opens = Vec::new();
-                // The set's icons, the same icons as an OS icon theme's,
-                // which keep their own colours, and none: a set without
-                // them, whose flat buttons show their labels.
-                for icons in ["set", "os", "none"] {
-                    match icons {
-                        "os" => state.chrome_icons.system = true,
-                        "none" => {
-                            state.chrome_icons = ChromeIcons::default();
-                            state.loaded_icons.clear();
+        recording(|| {
+            let mut state = State {
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                ..State::default()
+            };
+            let mut failures = Vec::new();
+            let mut seen = BTreeSet::new();
+            for preset in native_theme::theme::Theme::list_presets() {
+                for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                    let choice = ThemeChoice::Preset(preset.key.to_owned());
+                    assert!(
+                        state.install_in_mode(choice, mode),
+                        "{} ({mode:?}): {:?}",
+                        preset.key,
+                        state.error_message
+                    );
+                    let r = &state.current_resolved;
+                    seen.insert(("stroke", r.checkbox.check_mark_stroke_width.is_some()));
+                    seen.insert(("pressed fill", r.button.active_background.is_some()));
+                    seen.insert(("tab hover fill", r.tab.hover_background.is_some()));
+                    seen.insert(("indicator", state.basic_spinner.is_indicator()));
+                    // The side panel shown and hidden, and each tab of the
+                    // three rows open: the Basic page's, the page tabs' and the
+                    // inspector's.
+                    let states = [
+                        (true, 0, Tab::Basic, InspectorTab::Widget),
+                        (false, 0, Tab::Basic, InspectorTab::Widget),
+                        (true, 1, Tab::Buttons, InspectorTab::Theme),
+                    ];
+                    // Which tabs each state draws open, read once per tab state,
+                    // with the set's icons: neither the icons nor the side
+                    // panel's visibility opens a tab ([`drawn_open`] draws the
+                    // rows on their own), so the panel hidden reads the same as
+                    // the panel shown.
+                    let mut opens = Vec::new();
+                    // The set's icons, the same icons as an OS icon theme's,
+                    // which keep their own colours, and none: a set without
+                    // them, whose flat buttons show their labels.
+                    for icons in ["set", "os", "none"] {
+                        match icons {
+                            "os" => state.chrome_icons.system = true,
+                            "none" => {
+                                state.chrome_icons = ChromeIcons::default();
+                                state.loaded_icons.clear();
+                            }
+                            _ => {}
                         }
-                        _ => {}
+                        state.side_panel_visible = true;
+                        state.basic_tab = 0;
+                        state.active_tab = Tab::Basic;
+                        let laid = {
+                            let mut ui = interface(&state);
+                            let _ = texts(&mut ui);
+                            surveyed_layout()
+                        };
+                        let iconed = laid.contains_key("basic.icons.copy.icon");
+                        seen.insert(("icon", iconed));
+                        seen.insert(("os icon", iconed && state.chrome_icons.system));
+                        for (visible, basic_tab, page, inspector) in states {
+                            state.side_panel_visible = visible;
+                            state.basic_tab = basic_tab;
+                            state.active_tab = page;
+                            state.inspector_tab = inspector;
+                            let tabs = (basic_tab, page, inspector);
+                            if !opens.iter().any(|(read, _)| *read == tabs) {
+                                let open = drawn_open(&mut state);
+                                for (&id, &drawn_open) in &open {
+                                    seen.insert((id, drawn_open));
+                                    if tab_open(&state, id) != Some(drawn_open) {
+                                        failures.push(format!(
+                                            "{} ({mode:?}, tab {basic_tab}, {page:?}, \
+                                         {inspector:?}): {id} drawn {}",
+                                            preset.key,
+                                            if drawn_open { "open" } else { "closed" }
+                                        ));
+                                    }
+                                }
+                                opens.push((tabs, open));
+                            }
+                            let Some((_, open)) = opens.iter().find(|(read, _)| *read == tabs)
+                            else {
+                                panic!("{tabs:?}: the tabs were not read");
+                            };
+                            for element in elements::elements() {
+                                if element.name == "Spinner" {
+                                    let arc = iced_not_themeable(&state, element)
+                                        .iter()
+                                        .any(|line| line.contains("arc"));
+                                    if arc == state.basic_spinner.is_indicator() {
+                                        failures.push(format!(
+                                            "{} ({mode:?}): {}: an arc line {} the set's indicator",
+                                            preset.key,
+                                            element.id,
+                                            if arc { "beside" } else { "missing without" }
+                                        ));
+                                    }
+                                }
+                                for leaf in &element.leaves {
+                                    let route = iced_route(&state, element, leaf);
+                                    failures.extend(
+                                        route_faults(&state, &laid, open, element, leaf, &route)
+                                            .into_iter()
+                                            .map(|f| {
+                                                format!(
+                                                    "{} ({mode:?}, {icons} icons, panel {visible}, \
+                                                 tab {basic_tab}, {page:?}, {inspector:?}): {f}",
+                                                    preset.key
+                                                )
+                                            }),
+                                    );
+                                }
+                            }
+                        }
                     }
-                    state.side_panel_visible = true;
                     state.basic_tab = 0;
                     state.active_tab = Tab::Basic;
-                    let laid = {
-                        let mut ui = interface(&state);
-                        let _ = texts(&mut ui);
-                        surveyed_layout()
-                    };
-                    let iconed = laid.contains_key("basic.icons.copy.icon");
-                    seen.insert(("icon", iconed));
-                    seen.insert(("os icon", iconed && state.chrome_icons.system));
-                    for (visible, basic_tab, page, inspector) in states {
-                        state.side_panel_visible = visible;
-                        state.basic_tab = basic_tab;
-                        state.active_tab = page;
-                        state.inspector_tab = inspector;
-                        let tabs = (basic_tab, page, inspector);
-                        if !opens.iter().any(|(read, _)| *read == tabs) {
-                            let open = drawn_open(&mut state);
-                            for (&id, &drawn_open) in &open {
-                                seen.insert((id, drawn_open));
-                                if tab_open(&state, id) != Some(drawn_open) {
-                                    failures.push(format!(
-                                        "{} ({mode:?}, tab {basic_tab}, {page:?}, \
-                                         {inspector:?}): {id} drawn {}",
-                                        preset.key,
-                                        if drawn_open { "open" } else { "closed" }
-                                    ));
-                                }
-                            }
-                            opens.push((tabs, open));
-                        }
-                        let Some((_, open)) = opens.iter().find(|(read, _)| *read == tabs) else {
-                            panic!("{tabs:?}: the tabs were not read");
-                        };
-                        for element in elements::elements() {
-                            if element.name == "Spinner" {
-                                let arc = iced_not_themeable(&state, element)
-                                    .iter()
-                                    .any(|line| line.contains("arc"));
-                                if arc == state.basic_spinner.is_indicator() {
-                                    failures.push(format!(
-                                        "{} ({mode:?}): {}: an arc line {} the set's indicator",
-                                        preset.key,
-                                        element.id,
-                                        if arc { "beside" } else { "missing without" }
-                                    ));
-                                }
-                            }
-                            for leaf in &element.leaves {
-                                let route = iced_route(&state, element, leaf);
-                                failures.extend(
-                                    route_faults(&state, &laid, open, element, leaf, &route)
-                                        .into_iter()
-                                        .map(|f| {
-                                            format!(
-                                                "{} ({mode:?}, {icons} icons, panel {visible}, \
-                                                 tab {basic_tab}, {page:?}, {inspector:?}): {f}",
-                                                preset.key
-                                            )
-                                        }),
-                                );
-                            }
-                        }
+                    state.inspector_tab = InspectorTab::Widget;
+                }
+            }
+            let tabs = TAB_ROWS.into_iter().flatten();
+            for case in [
+                "stroke",
+                "pressed fill",
+                "tab hover fill",
+                "indicator",
+                "icon",
+                "os icon",
+            ]
+            .into_iter()
+            .chain(tabs)
+            {
+                for holds in [false, true] {
+                    if !seen.contains(&(case, holds)) {
+                        failures.push(format!("no case has {case} {holds}: one side is unchecked"));
                     }
                 }
-                state.basic_tab = 0;
-                state.active_tab = Tab::Basic;
-                state.inspector_tab = InspectorTab::Widget;
             }
-        }
-        let tabs = TAB_ROWS.into_iter().flatten();
-        for case in [
-            "stroke",
-            "pressed fill",
-            "tab hover fill",
-            "indicator",
-            "icon",
-            "os icon",
-        ]
-        .into_iter()
-        .chain(tabs)
-        {
-            for holds in [false, true] {
-                if !seen.contains(&(case, holds)) {
-                    failures.push(format!("no case has {case} {holds}: one side is unchecked"));
-                }
-            }
-        }
-        failures.sort();
-        failures.dedup();
-        assert!(
-            failures.is_empty(),
-            "{} faults: {failures:#?}",
-            failures.len()
-        );
+            failures.sort();
+            failures.dedup();
+            assert!(
+                failures.is_empty(),
+                "{} faults: {failures:#?}",
+                failures.len()
+            );
+        })
     }
 
     /// M9-069, M9-144 (M9b T5 fix round 1): the open menu's
@@ -20431,54 +20540,59 @@ mod tests {
     /// inside the box.
     #[test]
     fn the_check_mark_is_laid_out_where_it_is_drawn() {
-        for (preset, stated) in [("nord", false), ("kde-breeze", true)] {
-            let mut state = State {
-                accessibility: native_theme_iced::AccessibilityPreferences::default(),
-                ..State::default()
-            };
-            assert!(
-                state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
-            );
-            assert_eq!(
-                state
-                    .current_resolved
-                    .checkbox
-                    .check_mark_stroke_width
-                    .is_some(),
-                stated,
-                "{preset} states a check-mark line"
-            );
-            let laid = {
-                let mut ui = interface(&state);
-                let _ = texts(&mut ui);
-                surveyed_layout()
-            };
-            for check in ["checked", "disabled"] {
-                let rect = |part: &str| {
-                    let id = format!("basic.checkboxes.{check}.{part}");
-                    match laid.get(id.as_str()) {
-                        Some(rect) => *rect,
-                        None => panic!("{preset}: {id} is not laid out"),
-                    }
+        recording(|| {
+            for (preset, stated) in [("nord", false), ("kde-breeze", true)] {
+                let mut state = State {
+                    accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                    ..State::default()
                 };
-                let (mark, indicator) = (rect("mark"), rect("indicator"));
-                if stated {
-                    assert!(
-                        mark != indicator
-                            && mark.x >= indicator.x
-                            && mark.y >= indicator.y
-                            && mark.x + mark.width <= indicator.x + indicator.width
-                            && mark.y + mark.height <= indicator.y + indicator.height,
-                        "{preset} {check}: the mark {mark:?} is not inside the box {indicator:?}"
-                    );
-                } else {
-                    assert_eq!(
-                        mark, indicator,
-                        "{preset} {check}: iced's glyph fills the box"
-                    );
+                assert!(
+                    state.install_in_mode(
+                        ThemeChoice::Preset(preset.to_owned()),
+                        AppColorMode::Light
+                    )
+                );
+                assert_eq!(
+                    state
+                        .current_resolved
+                        .checkbox
+                        .check_mark_stroke_width
+                        .is_some(),
+                    stated,
+                    "{preset} states a check-mark line"
+                );
+                let laid = {
+                    let mut ui = interface(&state);
+                    let _ = texts(&mut ui);
+                    surveyed_layout()
+                };
+                for check in ["checked", "disabled"] {
+                    let rect = |part: &str| {
+                        let id = format!("basic.checkboxes.{check}.{part}");
+                        match laid.get(id.as_str()) {
+                            Some(rect) => *rect,
+                            None => panic!("{preset}: {id} is not laid out"),
+                        }
+                    };
+                    let (mark, indicator) = (rect("mark"), rect("indicator"));
+                    if stated {
+                        assert!(
+                            mark != indicator
+                                && mark.x >= indicator.x
+                                && mark.y >= indicator.y
+                                && mark.x + mark.width <= indicator.x + indicator.width
+                                && mark.y + mark.height <= indicator.y + indicator.height,
+                            "{preset} {check}: the mark {mark:?} is not inside the box {indicator:?}"
+                        );
+                    } else {
+                        assert_eq!(
+                            mark, indicator,
+                            "{preset} {check}: iced's glyph fills the box"
+                        );
+                    }
                 }
             }
-        }
+        })
     }
 
     /// The Basic page under `state`, drawn at the window's width and tall
@@ -20529,50 +20643,52 @@ mod tests {
         size: Size,
         interaction: impl FnOnce(&mut Simulator<'a, Message>),
     ) -> (image::RgbaImage, ElementRects, f32) {
-        static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let theme = theme(state);
-        let mut ui: Simulator<'a, Message> =
-            Simulator::with_size(Settings::default(), size, content);
-        interaction(&mut ui);
-        // The first frame records the elements, the second hands them over.
-        let mut snapshot = None;
-        for _ in 0..2 {
-            snapshot = Some(match ui.snapshot(&theme) {
-                Ok(snapshot) => snapshot,
-                Err(error) => panic!("the Basic page did not draw: {error}"),
-            });
-        }
-        let Some(snapshot) = snapshot else {
-            unreachable!("two frames were drawn")
-        };
-        let dir =
-            std::env::temp_dir().join(format!("showcase-iced-basic-{}-{call}", std::process::id()));
-        let image = snapshot
-            .matches_image(dir.join("basic.png"))
-            .map_err(|error| error.to_string())
-            .and_then(|_| {
-                std::fs::read_dir(&dir)
-                    .and_then(|mut entries| {
-                        entries
-                            .next()
-                            .unwrap_or_else(|| Err(std::io::Error::other("no snapshot written")))
-                    })
-                    .map_err(|error| error.to_string())
-            })
-            .and_then(|entry| {
-                image::open(entry.path())
-                    .map(|image| image.to_rgba8())
-                    .map_err(|error| error.to_string())
-            });
-        let _ = std::fs::remove_dir_all(&dir);
-        match image {
-            Ok(image) => {
-                let scale = image.width() as f32 / size.width;
-                (image, drawn_layout(), scale)
+        recording(|| {
+            static CALLS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+            let call = CALLS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let theme = theme(state);
+            let mut ui: Simulator<'a, Message> =
+                Simulator::with_size(Settings::default(), size, content);
+            interaction(&mut ui);
+            // The first frame records the elements, the second hands them over.
+            let mut snapshot = None;
+            for _ in 0..2 {
+                snapshot = Some(match ui.snapshot(&theme) {
+                    Ok(snapshot) => snapshot,
+                    Err(error) => panic!("the Basic page did not draw: {error}"),
+                });
             }
-            Err(error) => panic!("{}: {error}", dir.display()),
-        }
+            let Some(snapshot) = snapshot else {
+                unreachable!("two frames were drawn")
+            };
+            let dir = std::env::temp_dir()
+                .join(format!("showcase-iced-basic-{}-{call}", std::process::id()));
+            let image = snapshot
+                .matches_image(dir.join("basic.png"))
+                .map_err(|error| error.to_string())
+                .and_then(|_| {
+                    std::fs::read_dir(&dir)
+                        .and_then(|mut entries| {
+                            entries.next().unwrap_or_else(|| {
+                                Err(std::io::Error::other("no snapshot written"))
+                            })
+                        })
+                        .map_err(|error| error.to_string())
+                })
+                .and_then(|entry| {
+                    image::open(entry.path())
+                        .map(|image| image.to_rgba8())
+                        .map_err(|error| error.to_string())
+                });
+            let _ = std::fs::remove_dir_all(&dir);
+            match image {
+                Ok(image) => {
+                    let scale = image.width() as f32 / size.width;
+                    (image, drawn_layout(), scale)
+                }
+                Err(error) => panic!("{}: {error}", dir.display()),
+            }
+        })
     }
 
     /// The pixels of `image` inside `rect`, a rectangle in logical pixels.
@@ -22677,76 +22793,73 @@ mod tests {
     /// sits flush right in its row, inside the padding.
     #[test]
     fn a_menu_is_as_wide_as_its_widest_row() {
-        let state = State::default();
-        let theme = theme(&state);
-        let resolved = &state.current_resolved;
-        let m = &resolved.menu;
-        let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
-        let font = theme_font(&m.font);
-        let size = scaled_text_size(m.font.size, &state.accessibility);
-        let measured = |content: &str| {
-            MeasuredText {
-                content: content.to_owned(),
-                size,
-                line: size,
-                font,
+        recording(|| {
+            let state = State::default();
+            let theme = theme(&state);
+            let resolved = &state.current_resolved;
+            let m = &resolved.menu;
+            let pad = native_theme_iced::padding_or(&m.border.padding, button::DEFAULT_PADDING);
+            let font = theme_font(&m.font);
+            let size = scaled_text_size(m.font.size, &state.accessibility);
+            let measured = |content: &str| {
+                MeasuredText::new(content.to_owned(), size, size, font)
+                    .extent()
+                    .width
+            };
+            let widest = ["Reload System Theme", "System", "Light", "Dark"]
+                .into_iter()
+                .map(measured)
+                .chain([measured("Preferences…")
+                    + Gaps::from_layout(&state.layout).widget
+                    + measured(&binding(","))])
+                .fold(0.0, f32::max);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                let drew = ui.snapshot(&theme);
+                assert!(drew.is_ok(), "the interface did not draw: {drew:?}");
             }
-            .extent()
-            .width
-        };
-        let widest = ["Reload System Theme", "System", "Light", "Dark"]
-            .into_iter()
-            .map(measured)
-            .chain([measured("Preferences…")
-                + Gaps::from_layout(&state.layout).widget
-                + measured(&binding(","))])
-            .fold(0.0, f32::max);
-        let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-        for _ in 0..2 {
-            let drew = ui.snapshot(&theme);
-            assert!(drew.is_ok(), "the interface did not draw: {drew:?}");
-        }
-        let title = match drawn_layout().get("chrome.menu_bar.theme") {
-            Some(rect) => rect.center(),
-            None => panic!("the Theme menu's title is not drawn"),
-        };
-        ui.point_at(title);
-        let _ = ui.simulate([
-            Event::Mouse(mouse::Event::CursorMoved { position: title }),
-            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)),
-            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)),
-        ]);
-        for _ in 0..2 {
-            if let Err(error) = ui.snapshot(&theme) {
-                panic!("the interface did not draw: {error}");
+            let title = match drawn_layout().get("chrome.menu_bar.theme") {
+                Some(rect) => rect.center(),
+                None => panic!("the Theme menu's title is not drawn"),
+            };
+            ui.point_at(title);
+            let _ = ui.simulate([
+                Event::Mouse(mouse::Event::CursorMoved { position: title }),
+                Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)),
+                Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left)),
+            ]);
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
             }
-        }
-        let drawn = drawn_layout();
-        let rect = |id: &str| match drawn.get(id) {
-            Some(rect) => *rect,
-            None => panic!("{id} is not drawn with the Theme menu open"),
-        };
-        let expected = pad.left + widest + pad.right;
-        for id in [
-            "chrome.menu.theme.reload",
-            "chrome.menu.theme.system",
-            "chrome.menu.theme.light",
-            "chrome.menu.theme.dark",
-            "chrome.menu.theme.preferences",
-        ] {
-            let width = rect(id).width;
+            let drawn = drawn_layout();
+            let rect = |id: &str| match drawn.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{id} is not drawn with the Theme menu open"),
+            };
+            let expected = pad.left + widest + pad.right;
+            for id in [
+                "chrome.menu.theme.reload",
+                "chrome.menu.theme.system",
+                "chrome.menu.theme.light",
+                "chrome.menu.theme.dark",
+                "chrome.menu.theme.preferences",
+            ] {
+                let width = rect(id).width;
+                assert!(
+                    (width - expected).abs() < 0.01,
+                    "{id}: {width} wide, the widest row is {expected}"
+                );
+            }
+            let row = rect("chrome.menu.theme.preferences");
+            let shortcut = rect("chrome.menu.theme.preferences.shortcut");
             assert!(
-                (width - expected).abs() < 0.01,
-                "{id}: {width} wide, the widest row is {expected}"
+                (shortcut.x + shortcut.width - (row.x + row.width - pad.right)).abs() < 0.01,
+                "the shortcut {shortcut:?} is not flush right in {row:?} inside {pad:?}"
             );
-        }
-        let row = rect("chrome.menu.theme.preferences");
-        let shortcut = rect("chrome.menu.theme.preferences.shortcut");
-        assert!(
-            (shortcut.x + shortcut.width - (row.x + row.width - pad.right)).abs() < 0.01,
-            "the shortcut {shortcut:?} is not flush right in {row:?} inside {pad:?}"
-        );
+        })
     }
 
     /// The layout dump holds what the Basic page and the chrome draw: every
@@ -22756,63 +22869,136 @@ mod tests {
     /// theme on the test machine may not have.
     #[test]
     fn the_layout_dump_records_the_listed_elements() {
+        recording(|| {
+            let state = State::default();
+            let theme = theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let on_screen = drawn_layout();
+            let unknown: Vec<_> = on_screen
+                .keys()
+                .filter(|id| elements::element(id).is_none())
+                .collect();
+            assert!(
+                unknown.is_empty(),
+                "drawn ids the list has not: {unknown:?}"
+            );
+            // A selector goes through the whole tree, as the dump's `Survey` does.
+            let _ = texts(&mut ui);
+            let drawn = surveyed_layout();
+            let unknown: Vec<_> = drawn
+                .keys()
+                .filter(|id| elements::element(id).is_none())
+                .collect();
+            assert!(
+                unknown.is_empty(),
+                "recorded ids the list has not: {unknown:?}"
+            );
+            let missing: Vec<_> = elements::elements()
+                .iter()
+                .filter(|e| e.when.is_none())
+                .filter(|e| {
+                    !e.id.ends_with(".icon")
+                        && ![
+                            "basic.icons.small",
+                            "basic.icons.toolbar",
+                            "basic.icons.large",
+                        ]
+                        .contains(&e.id.as_str())
+                })
+                .filter(|e| !drawn.contains_key(e.id.as_str()))
+                .map(|e| e.id.as_str())
+                .collect();
+            assert!(
+                missing.is_empty(),
+                "listed elements not recorded: {missing:?}"
+            );
+            for (id, rect) in &drawn {
+                let parent = elements::element(id).map(|e| e.parent.as_str());
+                assert!(
+                    parent == Some("window")
+                        || parent.is_some_and(|p| elements::element(p).is_some()),
+                    "{id}: its parent is not in the list"
+                );
+                assert!(
+                    rect.width >= 0.0 && rect.height >= 0.0,
+                    "{id}: a negative size {rect:?}"
+                );
+            }
+        })
+    }
+
+    /// M9-076: a plain run records no layout. Drawing the Basic page and the
+    /// chrome three times and running an operation over them after each draw
+    /// shapes no text and records no rectangle while [`RECORDING`] is off;
+    /// while it is on (`recording`), the frame and the survey are recorded,
+    /// and each measured text part is shaped once however often the page is
+    /// drawn and operated on, as often as for one draw and one operation.
+    #[test]
+    fn only_a_recording_run_records_the_layout() {
         let state = State::default();
         let theme = theme(&state);
-        let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-        for _ in 0..2 {
-            if let Err(error) = ui.snapshot(&theme) {
-                panic!("the interface did not draw: {error}");
+        // The texts shaped and the rectangles recorded in `rounds` draws,
+        // each followed by an operation over the whole tree.
+        let count = |rounds: usize| -> (usize, usize) {
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            TEXT_SHAPES.set(0);
+            RECTS_RECORDED.set(0);
+            for _ in 0..rounds {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+                let _ = texts(&mut ui);
             }
-        }
-        let on_screen = drawn_layout();
-        let unknown: Vec<_> = on_screen
-            .keys()
-            .filter(|id| elements::element(id).is_none())
-            .collect();
-        assert!(
-            unknown.is_empty(),
-            "drawn ids the list has not: {unknown:?}"
+            (TEXT_SHAPES.get(), RECTS_RECORDED.get())
+        };
+        assert_eq!(
+            count(3),
+            (0, 0),
+            "a run that records nothing shaped texts or recorded rectangles \
+             (shapes, rectangles)"
         );
-        // A selector goes through the whole tree, as the dump's `Survey` does.
-        let _ = texts(&mut ui);
-        let drawn = surveyed_layout();
-        let unknown: Vec<_> = drawn
-            .keys()
-            .filter(|id| elements::element(id).is_none())
-            .collect();
+        let (once, recorded) = recording(|| count(1));
         assert!(
-            unknown.is_empty(),
-            "recorded ids the list has not: {unknown:?}"
+            once > 0 && recorded > 0,
+            "a recording run shaped {once} texts and recorded {recorded} rectangles"
         );
-        let missing: Vec<_> = elements::elements()
-            .iter()
-            .filter(|e| e.when.is_none())
-            .filter(|e| {
-                !e.id.ends_with(".icon")
-                    && ![
-                        "basic.icons.small",
-                        "basic.icons.toolbar",
-                        "basic.icons.large",
-                    ]
-                    .contains(&e.id.as_str())
-            })
-            .filter(|e| !drawn.contains_key(e.id.as_str()))
-            .map(|e| e.id.as_str())
-            .collect();
-        assert!(
-            missing.is_empty(),
-            "listed elements not recorded: {missing:?}"
+        let (thrice, _) = recording(|| count(3));
+        assert_eq!(
+            thrice, once,
+            "three draws and operations shaped the text parts {thrice} times, \
+             one draw and operation {once}"
         );
-        for (id, rect) in &drawn {
-            let parent = elements::element(id).map(|e| e.parent.as_str());
-            assert!(
-                parent == Some("window") || parent.is_some_and(|p| elements::element(p).is_some()),
-                "{id}: its parent is not in the list"
-            );
-            assert!(
-                rect.width >= 0.0 && rect.height >= 0.0,
-                "{id}: a negative size {rect:?}"
+    }
+
+    /// `main` sets [`RECORDING`] exactly where the command line asks for a
+    /// layout dump ([`records_layout`]), with a capture or a pointer beside
+    /// it or not, and for no other flag.
+    #[test]
+    fn only_a_layout_dump_records_the_layout() {
+        for (argv, records) in [
+            (&[][..], false),
+            (&["--dump-layout", "f"][..], true),
+            (&["--dump-layout", "f", "--screenshot", "p"][..], true),
+            (&["--dump-layout", "f", "--capture"][..], true),
+            (&["--dump-layout", "f", "--pointer", "10,10"][..], true),
+            (&["--capture"][..], false),
+            (&["--screenshot", "p"][..], false),
+            (&["--pointer", "10,10"][..], false),
+            (&["--tab", "buttons"][..], false),
+        ] {
+            let cli = CliArgs::parse(argv.iter().map(|arg| (*arg).to_string()));
+            assert_eq!(
+                records_layout(&cli),
+                records,
+                "{argv:?}: the layout recorded {}",
+                !records
             );
         }
     }
@@ -22825,57 +23011,59 @@ mod tests {
     /// [`INFO_SETTLE`].
     #[test]
     fn widget_info_names_the_hovered_element() {
-        for (id, title) in [
-            ("basic.buttons.default", "Button · Normal"),
-            ("basic.buttons.primary", "Button · Primary"),
-            ("basic.checkboxes.checked", "Checkbox · Checked"),
-        ] {
-            let mut state = State::default();
-            let at = {
-                let theme = theme(&state);
-                let mut ui: Simulator<'_, Message> =
-                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-                if let Err(error) = ui.snapshot(&theme) {
-                    panic!("the interface did not draw: {error}");
+        recording(|| {
+            for (id, title) in [
+                ("basic.buttons.default", "Button · Normal"),
+                ("basic.buttons.primary", "Button · Primary"),
+                ("basic.checkboxes.checked", "Checkbox · Checked"),
+            ] {
+                let mut state = State::default();
+                let at = {
+                    let theme = theme(&state);
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                    if let Err(error) = ui.snapshot(&theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
+                    let _ = ui.snapshot(&theme);
+                    match drawn_layout().get(id) {
+                        Some(rect) => rect.center(),
+                        None => panic!("{id} is not drawn"),
+                    }
+                };
+                let messages = {
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                    ui.point_at(at);
+                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                    ui.into_messages().collect::<Vec<_>>()
+                };
+                let start = Instant::now();
+                for message in messages {
+                    let _ = update_at(&mut state, message, start);
                 }
-                let _ = ui.snapshot(&theme);
-                match drawn_layout().get(id) {
-                    Some(rect) => rect.center(),
-                    None => panic!("{id} is not drawn"),
-                }
-            };
-            let messages = {
-                let mut ui: Simulator<'_, Message> =
-                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-                ui.point_at(at);
-                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
-                ui.into_messages().collect::<Vec<_>>()
-            };
-            let start = Instant::now();
-            for message in messages {
-                let _ = update_at(&mut state, message, start);
+                let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
+                assert_eq!(
+                    state.hovered,
+                    Some(Hovered::Listed(id)),
+                    "the pointer at {at:?}"
+                );
+                let element = match elements::element(id) {
+                    Some(element) => element,
+                    None => panic!("{id} is not in the list"),
+                };
+                let info = element_info(&state, element);
+                assert_eq!(info.title, title);
+                assert_eq!(shown_title(&state).as_deref(), Some(title));
+                let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
+                let listed_leaves: Vec<&str> = element.leaves.iter().map(String::as_str).collect();
+                assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
+                assert!(
+                    info.rows.iter().all(|row| !row.value.is_empty()),
+                    "{id}: a row with no value"
+                );
             }
-            let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
-            assert_eq!(
-                state.hovered,
-                Some(Hovered::Listed(id)),
-                "the pointer at {at:?}"
-            );
-            let element = match elements::element(id) {
-                Some(element) => element,
-                None => panic!("{id} is not in the list"),
-            };
-            let info = element_info(&state, element);
-            assert_eq!(info.title, title);
-            assert_eq!(shown_title(&state).as_deref(), Some(title));
-            let leaves: Vec<&str> = info.rows.iter().map(|row| row.leaf.as_str()).collect();
-            let listed_leaves: Vec<&str> = element.leaves.iter().map(String::as_str).collect();
-            assert_eq!(leaves, listed_leaves, "{id}: rows out of the list's order");
-            assert!(
-                info.rows.iter().all(|row| !row.value.is_empty()),
-                "{id}: a row with no value"
-            );
-        }
+        })
     }
 
     /// Moves the pointer onto the text reading `label` in the real
@@ -23305,143 +23493,145 @@ mod tests {
     /// the test reports by how much.
     #[test]
     fn the_basic_page_fits_the_window_across() {
-        for preset in native_theme::theme::Theme::list_presets()
-            .iter()
-            .map(|info| info.key)
-        {
-            for dark in [false, true] {
-                let mut state = State {
-                    accessibility: native_theme_iced::AccessibilityPreferences::default(),
-                    active_tab: Tab::Basic,
-                    ..State::default()
-                };
-                let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
-                assert!(loaded.is_ok(), "{preset}: {loaded:?}");
-                let mut ui: Simulator<'_, Message> =
-                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-                // The page's scrollable is the rightmost one as tall as half
-                // the window: the side panel's are left of it, the list's and
-                // the tab strip's are short.
-                let mut scrollables: Vec<(Rectangle, Rectangle)> = Vec::new();
-                {
-                    let sink = &mut scrollables;
-                    let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
-                        if let Candidate::Scrollable {
-                            bounds,
-                            content_bounds,
-                            ..
-                        } = candidate
-                        {
-                            sink.push((bounds, content_bounds));
-                        }
-                        None
-                    });
-                }
-                let page = scrollables
-                    .into_iter()
-                    .filter(|(bounds, _)| bounds.height > WINDOW_SIZE.1 / 2.0)
-                    .max_by(|a, b| a.0.x.total_cmp(&b.0.x));
-                assert!(
-                    page.is_some(),
-                    "{preset} (dark: {dark}): no page scrollable found"
-                );
-                if let Some((bounds, content)) = page {
-                    assert!(
-                        content.width <= bounds.width + 0.01,
-                        "{preset} (dark: {dark}): the Basic page is {}px wide, its area {}px",
-                        content.width,
-                        bounds.width
-                    );
-                    println!(
-                        "{preset} (dark: {dark}): page {}x{} in an area {}x{}{}",
-                        content.width,
-                        content.height,
-                        bounds.width,
-                        bounds.height,
-                        if content.height > bounds.height + 0.01 {
-                            ": it scrolls"
-                        } else {
-                            ""
-                        }
-                    );
-                    let _ = texts(&mut ui);
-                    let laid = surveyed_layout();
-                    let columns = laid
-                        .keys()
-                        .filter(|id| id.starts_with("basic.column_"))
-                        .count();
-                    let count = basic_column_count(
-                        &state.current_resolved,
-                        &state.layout,
-                        content_width(&state),
-                    );
-                    assert_eq!(
-                        columns, count,
-                        "{preset} (dark: {dark}): the columns laid out"
-                    );
-                    if let Some(panel) = laid.get("chrome.content") {
-                        assert!(
-                            (panel.width - content_width(&state)).abs() < 0.01,
-                            "{preset} (dark: {dark}): the content panel is {}px, the page counts from {}px",
-                            panel.width,
-                            content_width(&state)
-                        );
-                    }
-                    for (id, r) in laid.iter().filter(|(id, _)| id.starts_with("basic.")) {
-                        assert!(
-                            r.x + r.width <= bounds.x + bounds.width + 0.01,
-                            "{preset} (dark: {dark}): {id} ends at {}, past the page area's {}",
-                            r.x + r.width,
-                            bounds.x + bounds.width
-                        );
-                    }
-                    // Each control of a stated width is drawn at it: iced
-                    // clamps a fixed width to its column, so a column too
-                    // narrow for the count's assumption squeezes it. This
-                    // reads the widths the page states, not the count's.
-                    let r = &state.current_resolved;
-                    for (id, width) in [
-                        ("basic.text_area.field", BASIC_WIDE),
-                        ("basic.list.frame", BASIC_WIDE),
-                        ("basic.expander.details", BASIC_WIDE),
-                        ("basic.card.frame", BASIC_WIDE),
-                        ("basic.separator.line", BASIC_WIDE),
-                        ("basic.table.frame", BASIC_WIDE),
-                        ("basic.number_input.field", BASIC_WIDTH),
-                        ("basic.slider.control", BASIC_WIDTH),
-                        ("basic.progress_bar.bar", BASIC_WIDTH),
-                        (
-                            "basic.drop_down.trigger",
-                            BASIC_WIDTH.max(r.combo_box.min_width),
-                        ),
-                    ] {
-                        match laid.get(id) {
-                            Some(rect) => assert!(
-                                near(rect.width, width),
-                                "{preset} (dark: {dark}): {id} is drawn {}px wide, its stated \
-                                 width {width}px",
-                                rect.width
-                            ),
-                            None => panic!("{preset} (dark: {dark}): {id} is not laid out"),
-                        }
-                    }
-                    // The columns the count chose hold the widest control it
-                    // counted with: a column narrower squeezes that control.
-                    let widest = basic_widest(&state.current_resolved);
-                    for (id, r) in laid
-                        .iter()
-                        .filter(|(id, _)| id.starts_with("basic.column_"))
+        recording(|| {
+            for preset in native_theme::theme::Theme::list_presets()
+                .iter()
+                .map(|info| info.key)
+            {
+                for dark in [false, true] {
+                    let mut state = State {
+                        accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                        active_tab: Tab::Basic,
+                        ..State::default()
+                    };
+                    let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
+                    assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                    // The page's scrollable is the rightmost one as tall as half
+                    // the window: the side panel's are left of it, the list's and
+                    // the tab strip's are short.
+                    let mut scrollables: Vec<(Rectangle, Rectangle)> = Vec::new();
                     {
+                        let sink = &mut scrollables;
+                        let _ = ui.find(move |candidate: Candidate<'_>| -> Option<()> {
+                            if let Candidate::Scrollable {
+                                bounds,
+                                content_bounds,
+                                ..
+                            } = candidate
+                            {
+                                sink.push((bounds, content_bounds));
+                            }
+                            None
+                        });
+                    }
+                    let page = scrollables
+                        .into_iter()
+                        .filter(|(bounds, _)| bounds.height > WINDOW_SIZE.1 / 2.0)
+                        .max_by(|a, b| a.0.x.total_cmp(&b.0.x));
+                    assert!(
+                        page.is_some(),
+                        "{preset} (dark: {dark}): no page scrollable found"
+                    );
+                    if let Some((bounds, content)) = page {
                         assert!(
-                            r.width + 0.01 >= widest,
-                            "{preset} (dark: {dark}): {id} is {}px wide, narrower than the \
-                             {widest}px control the column count counted with",
-                            r.width
+                            content.width <= bounds.width + 0.01,
+                            "{preset} (dark: {dark}): the Basic page is {}px wide, its area {}px",
+                            content.width,
+                            bounds.width
                         );
+                        println!(
+                            "{preset} (dark: {dark}): page {}x{} in an area {}x{}{}",
+                            content.width,
+                            content.height,
+                            bounds.width,
+                            bounds.height,
+                            if content.height > bounds.height + 0.01 {
+                                ": it scrolls"
+                            } else {
+                                ""
+                            }
+                        );
+                        let _ = texts(&mut ui);
+                        let laid = surveyed_layout();
+                        let columns = laid
+                            .keys()
+                            .filter(|id| id.starts_with("basic.column_"))
+                            .count();
+                        let count = basic_column_count(
+                            &state.current_resolved,
+                            &state.layout,
+                            content_width(&state),
+                        );
+                        assert_eq!(
+                            columns, count,
+                            "{preset} (dark: {dark}): the columns laid out"
+                        );
+                        if let Some(panel) = laid.get("chrome.content") {
+                            assert!(
+                                (panel.width - content_width(&state)).abs() < 0.01,
+                                "{preset} (dark: {dark}): the content panel is {}px, the page counts from {}px",
+                                panel.width,
+                                content_width(&state)
+                            );
+                        }
+                        for (id, r) in laid.iter().filter(|(id, _)| id.starts_with("basic.")) {
+                            assert!(
+                                r.x + r.width <= bounds.x + bounds.width + 0.01,
+                                "{preset} (dark: {dark}): {id} ends at {}, past the page area's {}",
+                                r.x + r.width,
+                                bounds.x + bounds.width
+                            );
+                        }
+                        // Each control of a stated width is drawn at it: iced
+                        // clamps a fixed width to its column, so a column too
+                        // narrow for the count's assumption squeezes it. This
+                        // reads the widths the page states, not the count's.
+                        let r = &state.current_resolved;
+                        for (id, width) in [
+                            ("basic.text_area.field", BASIC_WIDE),
+                            ("basic.list.frame", BASIC_WIDE),
+                            ("basic.expander.details", BASIC_WIDE),
+                            ("basic.card.frame", BASIC_WIDE),
+                            ("basic.separator.line", BASIC_WIDE),
+                            ("basic.table.frame", BASIC_WIDE),
+                            ("basic.number_input.field", BASIC_WIDTH),
+                            ("basic.slider.control", BASIC_WIDTH),
+                            ("basic.progress_bar.bar", BASIC_WIDTH),
+                            (
+                                "basic.drop_down.trigger",
+                                BASIC_WIDTH.max(r.combo_box.min_width),
+                            ),
+                        ] {
+                            match laid.get(id) {
+                                Some(rect) => assert!(
+                                    near(rect.width, width),
+                                    "{preset} (dark: {dark}): {id} is drawn {}px wide, its stated \
+                                 width {width}px",
+                                    rect.width
+                                ),
+                                None => panic!("{preset} (dark: {dark}): {id} is not laid out"),
+                            }
+                        }
+                        // The columns the count chose hold the widest control it
+                        // counted with: a column narrower squeezes that control.
+                        let widest = basic_widest(&state.current_resolved);
+                        for (id, r) in laid
+                            .iter()
+                            .filter(|(id, _)| id.starts_with("basic.column_"))
+                        {
+                            assert!(
+                                r.width + 0.01 >= widest,
+                                "{preset} (dark: {dark}): {id} is {}px wide, narrower than the \
+                             {widest}px control the column count counted with",
+                                r.width
+                            );
+                        }
                     }
                 }
             }
-        }
+        })
     }
 
     /// `preset` installed through `load_theme` in the mode `dark` names,
@@ -23467,16 +23657,18 @@ mod tests {
     /// The rectangles and the texts of the frame `state`'s window draws at
     /// [`WINDOW_SIZE`].
     fn drawn_frame(state: &State) -> (ElementRects, Vec<(String, Rectangle)>) {
-        let theme = theme(state);
-        let mut ui: Simulator<'_, Message> =
-            Simulator::with_size(Settings::default(), WINDOW_SIZE, view(state));
-        for _ in 0..2 {
-            if let Err(error) = ui.snapshot(&theme) {
-                panic!("the interface did not draw: {error}");
+        recording(|| {
+            let theme = theme(state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&theme) {
+                    panic!("the interface did not draw: {error}");
+                }
             }
-        }
-        let found = texts(&mut ui);
-        (drawn_layout(), found)
+            let found = texts(&mut ui);
+            (drawn_layout(), found)
+        })
     }
 
     /// Whether two lengths are one, to a hundredth of a pixel.
@@ -23996,64 +24188,67 @@ mod tests {
     /// first half mean something.
     #[test]
     fn a_layout_dump_is_the_same_under_the_pointer() {
-        let dumping = CliArgs {
-            dump_layout: Some("dump.json".into()),
-            ..CliArgs::default()
-        };
-        let at = {
-            let state = State::default();
-            let mut ui = interface(&state);
-            probe_bounds(&mut ui, probes::BASIC_BUTTON).center()
-        };
-        // The dump, as `dump::write_layout` writes it (`{:#}` is
-        // `serde_json::to_string_pretty`), of the page `held_page` wraps as
-        // `shielded` asks, once the pointer's messages went through `update`.
-        let dump = |shielded: bool, pointer: bool| -> String {
-            let mut state = State::default();
-            if pointer {
-                let messages: Vec<Message> = {
-                    let page = held_page(view(&state), None, false, shielded);
-                    let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
-                    ui.point_at(at);
-                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
-                    ui.into_messages().collect()
-                };
-                // The pointer stands there for INFO_SETTLE.
-                let start = Instant::now();
-                for message in messages {
-                    let _ = update_at(&mut state, message, start);
+        recording(|| {
+            let dumping = CliArgs {
+                dump_layout: Some("dump.json".into()),
+                ..CliArgs::default()
+            };
+            let at = {
+                let state = State::default();
+                let mut ui = interface(&state);
+                probe_bounds(&mut ui, probes::BASIC_BUTTON).center()
+            };
+            // The dump, as `dump::write_layout` writes it (`{:#}` is
+            // `serde_json::to_string_pretty`), of the page `held_page` wraps as
+            // `shielded` asks, once the pointer's messages went through `update`.
+            let dump = |shielded: bool, pointer: bool| -> String {
+                let mut state = State::default();
+                if pointer {
+                    let messages: Vec<Message> = {
+                        let page = held_page(view(&state), None, false, shielded);
+                        let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+                        ui.point_at(at);
+                        let _ =
+                            ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                        ui.into_messages().collect()
+                    };
+                    // The pointer stands there for INFO_SETTLE.
+                    let start = Instant::now();
+                    for message in messages {
+                        let _ = update_at(&mut state, message, start);
+                    }
+                    let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
                 }
-                let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
-            }
-            let page = held_page(view(&state), None, false, shielded);
-            let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
-            // A selector goes through the whole tree, as the dump's `Survey` does.
-            let _ = texts(&mut ui);
-            format!("{:#}", layout_dump(&state, 1.0))
-        };
-        let shielded = dumping.shields_pointer();
-        let rest = dump(shielded, false);
-        let pointed = dump(shielded, true);
-        assert!(
-            rest == pointed,
-            "the pointer changed the layout dump:\n{rest}\n---\n{pointed}"
-        );
-        for (id, present) in [
-            ("chrome.info.hint", true),
-            ("chrome.info.title", false),
-            ("chrome.status_bar.shown", false),
-        ] {
-            assert_eq!(
-                rest.contains(&format!("\"{id}\"")),
-                present,
-                "the dump at rest holds {id}: {present} expected"
+                let page = held_page(view(&state), None, false, shielded);
+                let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+                // A selector goes through the whole tree, as the dump's `Survey` does.
+                let _ = texts(&mut ui);
+                format!("{:#}", layout_dump(&state, 1.0))
+            };
+            let shielded = dumping.shields_pointer();
+            let rest = dump(shielded, false);
+            let pointed = dump(shielded, true);
+            assert!(
+                rest == pointed,
+                "the pointer changed the layout dump:\n{rest}\n---\n{pointed}"
             );
-        }
-        assert!(
-            dump(false, true) != dump(false, false),
-            "without the shield the pointer does not change the dump either, so \
+            for (id, present) in [
+                ("chrome.info.hint", true),
+                ("chrome.info.title", false),
+                ("chrome.status_bar.shown", false),
+            ] {
+                assert_eq!(
+                    rest.contains(&format!("\"{id}\"")),
+                    present,
+                    "the dump at rest holds {id}: {present} expected"
+                );
+            }
+            assert!(
+                dump(false, true) != dump(false, false),
+                "without the shield the pointer does not change the dump either, so \
              the dump half of this test proves nothing"
-        );
+            );
+        })
     }
 
     /// `--dump-layout` writes the layout dump through `dump::write_layout`:
@@ -24062,31 +24257,34 @@ mod tests {
     /// `scripts/check_showcase_parity.py` reads.
     #[test]
     fn the_layout_dump_is_written_as_the_comparator_reads_it() {
-        let state = State::default();
-        let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, view(&state));
-        // A selector goes through the whole tree, as the dump's `Survey` does.
-        let _ = texts(&mut ui);
-        let json = layout_dump(&state, 1.0);
-        assert!(
-            json.get("elements")
-                .and_then(serde_json::Value::as_object)
-                .is_some_and(|elements| !elements.is_empty()),
-            "the dump records no element"
-        );
-        let dir = std::env::temp_dir().join(format!("showcase-iced-dump-{}", std::process::id()));
-        let written = std::fs::create_dir_all(&dir)
-            .map_err(|e| e.to_string())
-            .and_then(|()| {
-                let path = dir.join("dump.json");
-                let path = path.to_string_lossy();
-                dump::write_layout(&path, &json)?;
-                std::fs::read_to_string(&*path).map_err(|e| e.to_string())
-            });
-        let _ = std::fs::remove_dir_all(&dir);
-        match written {
-            Ok(text) => assert_eq!(text, format!("{json:#}")),
-            Err(error) => panic!("{}: {error}", dir.display()),
-        }
+        recording(|| {
+            let state = State::default();
+            let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, view(&state));
+            // A selector goes through the whole tree, as the dump's `Survey` does.
+            let _ = texts(&mut ui);
+            let json = layout_dump(&state, 1.0);
+            assert!(
+                json.get("elements")
+                    .and_then(serde_json::Value::as_object)
+                    .is_some_and(|elements| !elements.is_empty()),
+                "the dump records no element"
+            );
+            let dir =
+                std::env::temp_dir().join(format!("showcase-iced-dump-{}", std::process::id()));
+            let written = std::fs::create_dir_all(&dir)
+                .map_err(|e| e.to_string())
+                .and_then(|()| {
+                    let path = dir.join("dump.json");
+                    let path = path.to_string_lossy();
+                    dump::write_layout(&path, &json)?;
+                    std::fs::read_to_string(&*path).map_err(|e| e.to_string())
+                });
+            let _ = std::fs::remove_dir_all(&dir);
+            match written {
+                Ok(text) => assert_eq!(text, format!("{json:#}")),
+                Err(error) => panic!("{}: {error}", dir.display()),
+            }
+        })
     }
 
     /// A `--dump-layout` run whose dump is not written after
