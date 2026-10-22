@@ -11808,6 +11808,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#0.
+**Status (M9b close, 2026-10-23):** fixed — fb0d3ef5 (M9b T6): `State` keeps the OS theme read, and a colour-mode switch under `default` installs the mode's own read.
 
 #### M9-066 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2091
 **Claim:** A Preferences change (Text scale, Reduce motion, High contrast, Reduce transparency) is lost on the next mode change or Reload System Theme under the `default` theme, and on any switch to `default`: the dialog's switches jump back to the OS values.
@@ -11817,6 +11818,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#1.
+**Status (M9b close, 2026-10-23):** fixed — fb0d3ef5 (M9b T6): the kept read carries the Preferences, so a mode change, Reload System Theme or a switch to `default` keeps them.
 
 #### M9-067 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2183
 **Claim:** When the OS asks for reduced motion, turning Preferences > Reduce motion off leaves the Basic spinner and the Icons page's animations stopped while the switch shows off.
@@ -11826,6 +11828,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#2.
+**Status (M9b close, 2026-10-23):** fixed — fb0d3ef5 (M9b T6): the motion setting follows the switch, not the OS read.
 
 #### M9-068 · M9b · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2770
 **Claim:** On the Icons page the Material and Lucide indicators play at one frame per 50 ms tick, 1.2 s per turn instead of the 24 x 42 ms = 1.008 s the indicator states, so they turn about 19% slower than the Basic page's Spinner of the same set; `animated_frame_elapsed` grows by 8 ms every tick without bound.
@@ -11835,6 +11838,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#3.
+**Status (M9b close, 2026-10-23):** fixed — c98cdd40 (M9b T14): the Icons page's indicator shows the frame its clock gives, as the connector's Spinner plays (test ef5f4719).
 
 #### M9-069 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5805
 **Claim:** Hovering the open Theme menu (`chrome.menu.theme`, `--open-menu theme`), Widget Info says its four `popover.border.padding_*_px` rows are 'not reachable: iced_aw's Menu has no padding around its rows' and that `popover.border.shadow_enabled` is 'not reachable', while the showcase pads the panel with exactly that padding and switches the shadow on that flag.
@@ -11844,6 +11848,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#4.
+**Status (M9b close, 2026-10-23):** fixed — f74b86cc (M9b T5), with 89dd2ea4 (T5 fix round 1): the Menu's padding and shadow routes name `menu_popup_padding`/`menu_bar_style`.
 
 #### M9-070 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5691
 **Claim:** On the 14 presets that state no `checkbox.check_mark_stroke_width` (all but adwaita, kde-breeze and material-3), hovering the checked or disabled checkbox says its mark is 'the check mark's stroke colour (CheckMark canvas)', its stroke 'CheckMark: the mark's stroke width, over iced's glyph made transparent' and each padding side 'CheckMark: the mark's box', while iced's own glyph is drawn and no CheckMark exists.
@@ -11853,6 +11858,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#5.
+**Status (M9b close, 2026-10-23):** fixed — f74b86cc (M9b T5): no check-mark route where the theme states no `check_mark_stroke_width`; 89dd2ea4 and 6a02c688 (T5 fix round 1) hold it over every preset.
 
 #### M9-071 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:6120
 **Claim:** Hovering the Basic page's Spinner under a set with an indicator (Material, Lucide, a freedesktop theme with `process-working`: every Linux and community preset), Widget Info's Not themeable section says 'sweep and speed of the arc: egui's Spinner's', describing an arc that is not drawn.
@@ -11862,6 +11868,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#6.
+**Status (M9b close, 2026-10-23):** fixed — f74b86cc (M9b T5): the Spinner's Not themeable line follows `Spinner::is_indicator()`.
 
 #### M9-072 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:5583
 **Claim:** For the flat icon buttons (the toolbar's three, the Basic page's Copy/Paste/Delete, the page-tabs menu, the status-bar side-panel toggle) Widget Info says `button.hover_text_color` is 'ghost_button: the Hovered text_color' and `button.active_text_color` 'the Pressed text_color', but a bundled set's icon is baked in one colour and never changes under the pointer; the side-panel toggle, shown Selected by default, also claims `button.font.color` as its icon colour and a Hovered fill it never shows.
@@ -11871,6 +11878,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#7.
+**Status (M9b close, 2026-10-23):** fixed — f74b86cc (M9b T5): the ghost icon buttons' routes name only the colours the state draws.
 
 #### M9-073 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:7808
 **Claim:** In the build the module docs' Running command produces (`cargo run -p native-theme-iced --example showcase-iced`, no `iced_aw` feature, which is not default), the Basic page's Tabs are drawn as a primary button and a plain button, in none of the theme's `tab.*` colours, sizes or line width, they never switch when clicked, and Widget Info still describes them as `styles::aw::tab_bar` and `TabBar::tab_width`.
@@ -11880,6 +11888,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#8.
+**Status (M9b close, 2026-10-23):** fixed — cffb6355 (M9b T5): without `iced_aw` the Basic tabs are drawn as the page tab strip's, from `tab.*`; 89dd2ea4 holds their routes.
 
 #### M9-074 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:222
 **Claim:** On macos-tahoe (no `layout.section_gap`, no `layout.container_margin`) the iced Basic page puts 24 px (the showcase's SP.xl) between its columns and groups where the gpui showcase puts none, and its own column count assumes no gap: five 170 px columns are chosen for a 931 px page that then has 167 px columns, so BASIC_WIDE controls run 3 px past their column.
@@ -11889,6 +11898,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#9.
+**Status (M9b close, 2026-10-23):** fixed — 127d2ed5 (M9b T8): an unstated layout distance draws none, so the five 170 px columns hold under macos-tahoe.
 
 #### M9-075 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:5215
 **Claim:** While the pointer has left a listed element shown on the Widget tab, every view serialises the whole ResolvedTheme to a toml::Value and rebuilds every row's route and the Copy text; on the Basic page, the default tab, view runs 20 times a second from the animation tick, so this runs 20 times a second with nothing changing.
@@ -11898,6 +11908,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open
 *Source:* B1#10.
+**Status (M9b close, 2026-10-23):** fixed — bd474004 (M9b T15): `State.theme_json` is built once per install and the shown `ElementInfo` once per (hover, install); 2447fc4f states it in the CHANGELOG.
 
 #### M9-076 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:651
 **Claim:** Every frame, outside `--dump-layout` and the self-tests, every tagged element (76 `tagged(` call sites) inserts its rectangles into a thread-local BTreeMap and each measured text part (the Basic page's four fields, number input, drop-down and text area) is shaped again by cosmic-text, in draw and again in every widget operation; nothing reads the result in a normal run.
@@ -11907,6 +11918,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open
 *Source:* B1#11.
+**Status (M9b close, 2026-10-23):** fixed — 3411e9ed (M9b T16), b444429c: a run records the layout only while `RECORDING` is set.
 
 #### M9-077 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1303
 **Claim:** The Icons page's 'fallback' count is always 0 and every system-set reload loads all 42 Material icons for nothing: no loader substitutes Material for a missing system icon, so `IconSource::Fallback` ("System lookup failed; fell back to bundled Material SVGs") can never be the truth.
@@ -11916,6 +11928,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#12.
+**Status (M9b close, 2026-10-23):** fixed — 05e626b5 (M9b T13): `IconSource::Fallback`, the Material preload and the fallback count are gone.
 
 #### M9-078 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1449
 **Claim:** build_animation_caches returns a seven-field tuple of Vecs that never hold more than one entry, the indicator is loaded twice on every reload (once here, once inside Spinner::new), and the Icons page re-implements the frame playback and tinting the connector's Spinner already does.
@@ -11925,6 +11938,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#13.
+**Status (M9b close, 2026-10-23):** fixed — c98cdd40 (M9b T14), 5bfba259: the Icons page's indicator is the connector's Spinner, built once per reload; the two loads per reload that remain are the accepted ones (amendment of 2026-10-17).
 
 #### M9-079 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1747
 **Claim:** Of the four places the showcase builds an iced Theme, only the adwaita fallback passes the mode it resolved (M8 T4's `to_theme_in`); the startup OS read and both load_theme arms still call `to_theme`, so `Extended::is_dark` (the window title bar's flag) is iced's lightness guess where the mode is known, and the startup OS arm re-implements `SystemThemeExt::to_iced_theme` field by field.
@@ -11934,6 +11948,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#14.
+**Status (M9b close, 2026-10-23):** fixed — fb0d3ef5 (M9b T6): every Theme the showcase builds passes the mode it resolved.
 
 #### M9-080 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8484
 **Claim:** `over` re-implements `native_theme_iced::styles::composite_over` (public and core-backed since M8 T3), which gives the same colour over an opaque base; and the doc comment above it is the CheckMark's, so `over` documents a check mark and `CheckMark` has no doc.
@@ -11943,6 +11958,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#15.
+**Status (M9b close, 2026-10-23):** fixed — 438841a7 (M9b T4): `over` is `styles::composite_over`; the mark paragraph stays on `struct CheckMark`.
 
 #### M9-081 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5167
 **Claim:** hex_color hand-parses `#rrggbb[aa]` where core's `Rgba: FromStr` already parses it.
@@ -11952,6 +11968,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#16.
+**Status (M9b close, 2026-10-23):** fixed — 1d57e42d (M9b T1): `hex_color` parses through `Rgba`, keeping the `#` requirement; a line ending in a bare hex-like word gets no swatch.
 
 #### M9-082 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:6279
 **Claim:** On macOS and Windows the inspector's Theme tab says the window frame is 'whatever the window manager draws (KWin: Breeze's title bar, controls, corners and shadow)'.
@@ -11970,6 +11987,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B1#18.
+**Status (M9b close, 2026-10-23):** fixed — f876c1a7 (M9b T9): every tooltip is built by one `showcase_tooltip`, the Basic page's at gpui-component's tooltip margin; 97ab2de9 states it in the CHANGELOG.
 
 #### M9-084 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:5536
 **Claim:** M1-T7-07: iced's per-widget Widget Info is hand-written, not generated from the leaf-derived contract table; nothing ties `iced_route`'s ~570 lines of strings to what the styles draw, which is how the Menu, CheckMark, Spinner, icon-button and tab disagreements above went unnoticed.
@@ -11979,6 +11997,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** known — the cited entry carries it; its text is extended where the finding adds a site.
 **Status:** open
 *Source:* B1#19.
+**Status (M9b close, 2026-10-23):** fixed — 9f8f89e2, b3d5a8ca (M9b T3): the colour-leaf walk is exported as `contract-leaves.toml`, held current by a test, and Widget Info's colour routes for a listed element the connector draws are read from it; a86332bd and 65806c48 harden its tests. The Menu, CheckMark, Spinner, icon-button and tab routes are held by M9-144..M9-148's tests.
 
 #### M9-085 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8686
 **Claim:** On windows-11 (light and dark), the Buttons page's primary-row Widget Info gives 'hover bg: iced's primary.strong' as the theme palette's primary.strong, which iced derives from defaults.accent_color (#0078d4), while the hovered Primary button is drawn in Primary::generate(button.primary_background) (#0067c0 light, #4cc2ff dark).strong, so the hex shown is not the one on screen.
@@ -11988,6 +12007,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#0.
+**Status (M9b close, 2026-10-23):** fixed — ee330d53 (M9b T4): a page widget's colours are what the connector's style function paints, through a per-Style extractor set.
 
 #### M9-086 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8759
 **Claim:** On adwaita and macos-tahoe (no button.disabled_background), the Buttons page's 'Disabled Buttons' info says every class is 'button.disabled_background' (showing button.background_color) with 'button.disabled_text_color', 'one disabled pair for every button class', while Disabled Primary and Disabled Danger are drawn in their own idle pairs; on every preset the hexes are unfaded although each colour is drawn faded by button.disabled_opacity.
@@ -11997,6 +12017,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#1.
+**Status (M9b close, 2026-10-23):** fixed — ee330d53 (M9b T4): the disabled-button info follows the style function.
 
 #### M9-087 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:8604
 **Claim:** With the Selection page's switch off, on material-3 (both modes), windows-11 (both modes) and adwaita dark, the switch's Widget Info (and iced's Toggler's below it) names the thumb 'switch.thumb_background' and its size 'switch.thumb_diameter', while the off thumb is drawn in switch.unchecked_thumb_background and, on material-3, switch.unchecked_thumb_diameter (16 against 24).
@@ -12006,6 +12027,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#2.
+**Status (M9b close, 2026-10-23):** fixed — ee330d53 (M9b T4): the switch's thumb and size follow the state drawn; a172d3dd the Toggler's thumb that does not fit.
 
 #### M9-088 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:9632
 **Claim:** On adwaita, material-3 and windows-11 the Range page's progress-bar info claims 'border: progress_bar.border.color', and on material-3 the Display page's Tooltip info claims 'border: tooltip.border.color', though those borders are 0 px wide and draw nothing.
@@ -12015,6 +12037,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#3.
+**Status (M9b close, 2026-10-23):** fixed — ee330d53 (M9b T4): a zero-width border is not claimed.
 
 #### M9-089 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:9935
 **Claim:** The Display page's four tooltips ignore tooltip.border.padding (kde-breeze 3, macos-monterey 4), tooltip.max_width, layout.widget_gap and defaults.line_height, all of which the chrome and Basic tooltips take, and their info lists 'max width' as not themeable.
@@ -12024,6 +12047,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#4.
+**Status (M9b close, 2026-10-23):** fixed — f876c1a7 (M9b T9): the Display page's four tooltips take `tooltip.border.padding`, `tooltip.max_width` and `defaults.line_height` through `showcase_tooltip`; the info gives `tooltip.max_width` under Theme config.
 
 #### M9-090 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:11051
 **Claim:** On the Extra page (iced_aw feature), every MenuBar title, menu row and ContextMenu entry is styled as a button, so each paints button.background_color with the button's border and radius over the menu panel and takes button.font.color / hover_background / hover_text_color, never menu.font.color, menu.hover_background or menu.hover_text_color; the context popup is a card padded sp.xs and the drop-downs keep iced_aw's 5 px instead of popover.border.padding.
@@ -12033,6 +12057,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#5.
+**Status (M9b close, 2026-10-23):** fixed — 0b9bb16b (M9b T10), with 326c9d1a, 77484992 and 3b100ffb: the Extra page's menus are drawn as the theme's menus, as the window's are.
 
 #### M9-091 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:10341
 **Claim:** On material-3 (header #49454f), macOS presets (header #000000d8 light) and any theme whose list fonts' colours differ from defaults.text_color, the Layout page's table draws its header and cells in the inherited text colour and no list.header_background, while the Basic table draws both colours and the header fill.
@@ -12042,6 +12067,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#6.
+**Status (M9b close, 2026-10-23):** fixed — c2a33775 (M9b T11): the Layout table draws in `list.header_font.color` on `list.header_background` and its cells in `list.item_font.color`.
 
 #### M9-092 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:12599
 **Claim:** With the OS theme on GNOME or KDE set to an italic or oblique UI font, every text the showcase draws is upright: theme_font and font_from_database never carry ResolvedFontSpec.style, and font_row says 'family, size and weight' without naming the dropped style.
@@ -12051,6 +12077,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#7.
+**Status (M9b close, 2026-10-23):** fixed — d91ff927 (M9b T12): a theme font's style is drawn where the font database holds the face; 2fae98b0, be1731e5 and 49bb4ffc keep the font labels true.
 
 #### M9-093 · M9b · info-truth · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:6675
 **Claim:** Under an OS text-scaling factor other than 1, the 'Theme fonts' lines that widget_tooltip_themed adds to the Button, TextInput and TextEditor infos give defaults.font.size and defaults.mono_font.size unscaled, while all text is drawn at scaled_text_size; the Display page's font line shows the scaled size and notes the theme's.
@@ -12060,6 +12087,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#8.
+**Status (M9b close, 2026-10-23):** fixed — ee330d53 (M9b T4): the Theme fonts lines give the scaled sizes.
 
 #### M9-094 · M9b · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:11772
 **Claim:** On the Icons tab, every view rebuilds all 42 role icons' handles, re-colourising and copying each bundled SVG (and cloning each RGBA buffer) into a new handle, and the tab views 20 times a second while its animated icons tick.
@@ -12069,6 +12097,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open
 *Source:* B2#9.
+**Status (M9b close, 2026-10-23):** fixed — b31c0aa7 (M9b T13): each icon is drawn from the handle `load_all_icons` builds with it; 8fc848a6 states it in the CHANGELOG.
 
 #### M9-095 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8644
 **Claim:** button_info, text_input_info and pick_list_info take a `sized` flag that every caller passes as false, so their 'minimum size'/'height'/'padding' branches are dead, and the docs of these and of checkbox_info, radio_info, slider_info and progress_bar_info say the Basic page uses them, which it has not since it took its info from the element list.
@@ -12078,6 +12107,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#10.
+**Status (M9b close, 2026-10-23):** fixed — 8c625891 (M9b T4): the dead `sized` flag and its branches are gone.
 
 #### M9-096 · M9b · theme-data · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:10043
 **Claim:** On every preset whose card.border.padding is not 12 px, the Display page's 'Spacing & Layout' boxes, drawn as cards (styles::container_card), are padded by the showcase's sp.m instead of the card padding the same page computes for its card containers.
@@ -12087,6 +12117,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#11.
+**Status (M9b close, 2026-10-23):** fixed — 58b63a56 (M9b T11), then 1429b18b (batch fix): every card surface is padded by one rule, `card_padding`.
 
 #### M9-097 · M9b · theme-data · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:11220
 **Claim:** Where a theme states tab.item_gap, the Extra page's TabBar spaces its tabs by the showcase's sp.xxs instead, while the Basic tabs and the chrome tab strip take tab.item_gap.
@@ -12097,6 +12128,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* B2#12.
 **Status (M9b batch fix, 2026-10-22):** the rule in the code: the Extra page's stand-alone TabBar and its Tabs space their tabs `tab.item_gap` apart where stated, iced_aw's own none otherwise, as this entry asked; the TabBar's tabs are no longer `tab.min_width` wide but one width, `aw_tab_width`, `tab.min_width` or the widest label inside iced_aw's paddings where that is wider (55f52f22), and the Basic page's iced_aw TabBar takes the same width (b977a635), so no label wraps; `the_extra_tab_bars_take_the_tab_gap` measures the gap against that width.
+**Status (M9b close, 2026-10-23):** fixed — 0b9bb16b (M9b T10), then 55f52f22 and b977a635 (batch fix): the Extra and Basic iced_aw TabBars space their tabs `tab.item_gap` apart where stated, one `aw_tab_width` wide.
 
 #### M9-098 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10158
 **Claim:** The Layout page's Grid info says its spacing is 'the showcase's own scale' though it is layout.widget_gap wherever the platform states one, shows 'cell fill: each cell's own color' with the accent's hex, and its caption calls the eight swatches 'the eight colors ResolvedDefaults names' though ResolvedDefaults names more (the Theme Map lists 22 of its colours).
@@ -12107,6 +12139,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* B2#13.
 **Status (M9b final fix, residuals, 2026-10-22):** the Grid's spacing is no longer `layout.widget_gap`: the controller ruled that the Grid and the Theme Map lay out their colour swatches by one rule, gpui's swatch table, so the Grid's one spacing (iced's `grid` takes one, `grid.rs:63`) is `SWATCH_GAP_Y` between two rows, its columns splitting its width evenly, and its Widget Info says so; `the_grid_says_what_it_draws` holds the line.
+**Status (M9b close, 2026-10-23):** fixed — 3d5659c7 (M9b T11), then the final fix: the Grid names its spacing and fill as drawn; see the line above.
 
 #### M9-099 · M9b · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:10029
 **Claim:** The Display page's 'Available presets' count is every platform's preset list, while the theme picker and --theme offer only this platform's (on Linux it says 17 where fewer are selectable).
@@ -12117,6 +12150,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* B2#14.
 **Status (M9b batch fix, 2026-10-22):** the card padding that M9b T11 filed under this entry (`card_pad`, `padding_inside_border(&card.border, Padding::ZERO)`, cited by M9-154 and the showcase's tests) is replaced by one rule for every surface a page draws as a card, `card_padding`: a side `card.border.padding` states, inside `card.border.line_width`, and `layout.container_margin` on a side it leaves unstated, none where that is unstated too, as gpui's `demo::card` and `group_box` fall back (1429b18b, the controller's ruling I1); the presets line this entry names still counts `list_presets_for_platform()`.
+**Status (M9b close, 2026-10-23):** fixed — ee8f0f73 (M9b T11): the presets line counts `Theme::list_presets_for_platform()` (13 on Linux).
 
 #### M9-100 · M9b · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8919
 **Claim:** The Text Inputs page builds both single-line inputs with `let mut input` and a bare block `{ input = input.padding(inp_pad); }`, a leftover of a removed condition.
@@ -12126,6 +12160,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#15.
+**Status (M9b close, 2026-10-23):** fixed — 3af034d8 (M9b T11): the Inputs page chains each input's padding into its builder.
 
 #### M9-101 · M9b · bug · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:11691
 **Claim:** view_animated_icons indexes `state.animated_frame_indices[i]` and `anim_handles.handles[frame_idx]`; the vectors are kept in step today, but the view would panic if a change ever set them apart.
@@ -12135,6 +12170,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* B2#16.
+**Status (M9b close, 2026-10-23):** fixed — c98cdd40 (M9b T14): the Icons page's frame index is computed from the clock with checked arithmetic, indexing nothing that can fall out of step.
 
 #### M9-102 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:1606
 **Claim:** With any accessibility text scale other than 1 (the Preferences text-scale override, or a system large-text setting on the from_system path), the Basic page's table header stays at the unscaled list.header_font.size while its rows scale. Its header row height is computed from the unscaled size too.
@@ -12342,6 +12378,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T4 8ea82d65..0d0add6e); iced half M9b T1, egui half M9c T1 (I2: fixed when the last half lands)
 *Source:* X#1.
+**Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's element reader, leaf walk, value text and panel model); the egui half stays M9c T1 (I2).
 
 #### M9-125 · M9x · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/main.rs:213
 **Claim:** The command line and the capture checks are written three times, almost line for line: the CliArgs struct and its parser, the `--variant`/`--theme` validation with the same error texts, `parse_point`, the capture app id and `check_frame_capture`.
@@ -12351,6 +12388,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#2.
+**Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d, a15af491 and 7cc0c29d (M9b T1, T2: the crate's `CliArgs`, `Outputs`, `capture::app_id`, the bounded dump); the egui half stays M9c T1 (I2).
 
 #### M9-126 · M9x · simplify · S4 · native-theme/src/icons.rs:1436
 **Claim:** The three side panels' pickers are built three times over core's IconSetChoice: the icon-theme rows, the `--icon-set` name parser, the preset rows and the mode enum. The copies have drifted: egui accepts `--icon-set default` and gpui and iced reject it, though all three pickers show a default row.
@@ -12360,6 +12398,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** partly fixed (the shared crate's rows and parser and the gpui half: M9a T2 88e2296e..e04bd98c, T4 63570ccb; in the crate, not core, by the Step 6 ruling); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#3.
+**Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's picker rows and `--icon-set` parser, `default` accepted); the egui half stays M9c T1 (I2).
 
 #### M9-127 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1050
 **Claim:** On macOS and Windows, the gpui and iced showcases capture their own window through raw unsafe FFI. They carry two copies of the same code: objc2 msg_send for mainWindow/keyWindow/windowNumber, then screencapture -l; Win32 FindWindowW, DwmGetWindowAttribute, BitBlt and GetDIBits. The egui showcase does the same capture through xcap's safe API, with the same frame check.
@@ -12369,6 +12408,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open — gpui half fixed: M9a T3 (83b9c27c, safe capture through the crate); iced half M9b T2, egui half M9c T1
 *Source:* X#4.
+**Status (M9b close, 2026-10-23):** open — iced half fixed: cfa9534c, 843620f3 and 18a8c85e (M9b T2: `capture::FrameCapture` on macOS and Windows, the frame checked at each poll); the egui half stays M9c T1. The macOS and Windows legs are unrun here: they await the maintainer's dispatch of `screenshots.yml`.
 
 #### M9-128 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:422
 **Claim:** Colours are printed as hex by three local formatters next to core's Rgba Display, and the formatters disagree on alpha. The gpui showcase's hsla_to_hex prints `#rrggbbff` for an alpha below 1.0 that rounds to 255. The gpui connector's own copy and core print `#rrggbb` for the same colour.
@@ -12378,6 +12418,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** partly fixed (the gpui half: M9a T4 672b6e05 and 0d0add6e); iced half M9b T1; the plan's table lists no egui half (I2)
 *Source:* X#5.
+**Status (M9b close, 2026-10-23):** fixed — 1d57e42d (M9b T1: iced's hex formatter is `Rgba`'s `Display`); with M9a's gpui half the entry is whole (the plan lists no egui half).
 
 #### M9-129 · M9x · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:8484
 **Claim:** The iced showcase composites the checkbox mark's colour with a local `over`. The connector exports the same blend as `native_theme_iced::styles::composite_over`, now over core's `color::composite_over` (M8 T3). The gpui showcase uses its connector's `layer_over` (demo.rs:3983), and egui composites nowhere locally.
@@ -12387,6 +12428,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#6.
+**Status (M9b close, 2026-10-23):** fixed — 438841a7 (M9b T4): the local `over` is deleted for `styles::composite_over`.
 
 #### M9-130 · M9x · simplify · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:4990
 **Claim:** Each showcase has its own copy of the status bar's environment text, the `desktop()` pair and the defined-size formatter, and egui has two more inline. The font-family label behind docs/todo.md:3499 is copied per showcase too. The status bar, which names the stated family in all three, is a site that entry does not list.
@@ -12396,6 +12438,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#7.
+**Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: `status::environment`, `WINDOW_SIZE_PX`), with 2fae98b0, be1731e5 and 49bb4ffc for the font-family label; the egui half stays M9c T1.
 
 #### M9-131 · M9x · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2652
 **Claim:** In the iced showcase, hover a widget on any page but Basic (one that is not in the element list), then switch theme or mode without moving the pointer: from the command palette (Ctrl+K), or by an OS change under --features watch. Widget Info and its Copy button keep showing the previous theme's values. gpui and egui rebuild the shown info on the next frame.
@@ -12405,6 +12448,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#8.
+**Status (M9b close, 2026-10-23):** fixed — 916522f9 (M9b T7): a page widget's hover carries its identity, so an install reaches the shown info and its Copy text.
 
 #### M9-132 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:2652
 **Claim:** Moving the pointer across widgets switches the iced Widget Info at once, on each mouse_area enter. The gpui and egui panels wait INFO_SETTLE (250 ms) before a new choice replaces what is shown, so a pass over the page does not flicker through every widget.
@@ -12414,6 +12458,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#9.
+**Status (M9b close, 2026-10-23):** fixed — 916522f9 (M9b T7): a new hover waits `INFO_SETTLE` as `pending` before it replaces the shown info.
 
 #### M9-133 · M9x · ux · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2825
 **Claim:** On macOS, the iced showcase draws its File/View/Theme/Help menu row inside the window, while the gpui and egui showcases put the same menus in the system menu bar and draw no row. The macOS CI captures of macos-monterey and macos-tahoe therefore differ in their chrome, and no doc records why iced differs.
@@ -12423,6 +12468,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#10.
+**Status (M9b close, 2026-10-23):** fixed — 8a512b89, c6e1b90d (M9b T17): on macOS the menus are in the system menu bar and the window draws no row; 2eefe975 records what holds. Runtime evidence waits for the macOS leg of `screenshots.yml` (no menu row in the captures, the five titles read back, the install before the capture).
 
 #### M9-134 · M9x · ux · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:223
 **Claim:** Under macos-tahoe, which states no layout.container_margin and no toolbar padding, the iced chrome is padded 16 px on every surface: menu-bar sides, toolbar, side-panel settings, inspector body, tab bars and status bar. The gpui chrome pads none of those, and its toolbar 8 px. egui pads 0, and its toolbar keeps egui's panel margin of 8/2. These are three different looks for the shared chrome, none of them forced by the toolkit.
@@ -12432,6 +12478,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#11.
+**Status (M9b close, 2026-10-23):** fixed — 127d2ed5 (M9b T8): the chrome is spaced as gpui's, each unstated distance drawing none.
 
 #### M9-135 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:4572
 **Claim:** In gpui, typing into the side panel's Theme picker filters the presets by name or key. In iced the Theme picker is a plain pick_list, though iced_widget's searchable combo_box is available and the showcase already demonstrates it. egui's ComboBox has no search, which is forced by the toolkit. The difference is not recorded.
@@ -12441,6 +12488,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#12.
+**Status (M9b close, 2026-10-23):** fixed — dd79fdf9 (M9b T18): the side panel's Theme row is iced's `combo_box` over `theme_choices`, searchable as gpui's.
 
 #### M9-136 · M9x · ux · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1583
 **Claim:** The three showcases do not accept the same flags, and they exit differently. `--screenshot` on Linux keeps gpui running (exit 0 when closed, no file), makes iced write a frame-less content capture, and makes egui exit 1. `--icon-theme` exists only in gpui. `--icon-set default` works only in egui. `--tab text-inputs` works in gpui and iced but not egui, and `--tab inputs` in gpui and egui but not iced. An unknown `--open-menu` exits 1 in iced but is reported and ignored in gpui and egui. The window size (1280x720), a bad `--pointer` (exit 1) and the report-and-ignore handling of bad `--theme`/`--variant`/`--tab`/`--icon-set` values agree.
@@ -12450,6 +12498,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** partly fixed (the shared crate's one flag set and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#13.
+**Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's flag set, `--tab inputs`); the egui half stays M9c T1 (I2).
 
 #### M9-137 · M9x · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1501
 **Claim:** On macOS or Windows, `--dump-layout F --screenshot P` without `--capture` makes gpui and iced write F and exit 0 before the screenshot is taken, so P is silently missing. egui keeps running until both are written.
@@ -12459,6 +12508,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open — gpui half fixed: M9a T3 (83b9c27c, b66091f7 cli::Outputs, 275814b0 the bounded dump); iced half M9b T2; egui keeps running until both are written
 *Source:* X#14.
+**Status (M9b close, 2026-10-23):** fixed — 843620f3 (M9b T2): `--dump-layout F --screenshot P` without `--capture` writes both before it exits; with M9a's gpui half the entry is whole (egui already waited for both).
 
 #### M9-138 · M9x · perf · S3 · connectors/native-theme-gpui/examples/showcase-gpui/app.rs:1859
 **Claim:** A colour-mode switch under the `default` theme (the Mode picker, Theme > Light/Dark, the palette) re-reads the whole OS theme in gpui and iced, and reloads every icon from its source. egui does nothing but egui's own set_theme. The rebuild cost on a mode switch is uneven, and egui is the cheap one.
@@ -12468,6 +12518,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open — gpui half fixed: M9a T10 (00ca6bfb..210c7269); iced half M9b T6 (the OS read) and T13 (the icon reload)
 *Source:* X#15.
+**Status (M9b close, 2026-10-23):** fixed — fb0d3ef5 (M9b T6: the OS read kept, not re-read on a mode switch) and f374fbd7 (M9b T13: the comment states why every install reloads the icons, a colour-mode switch needing the mode's own); with M9a's gpui half the entry is whole.
 
 #### M9-139 · M9x · perf · S3 · connectors/native-theme-iced/examples/showcase-iced.rs:5211
 **Claim:** While Widget Info shows a listed element, iced converts the whole ResolvedTheme to a toml::Value on every view call. gpui converts it to a serde_json::Value on every Widget-tab render, even when nothing listed is shown. egui serialises once per install and caches it. Unmeasured, but traced on a per-frame path.
@@ -12477,6 +12528,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open
 *Source:* X#16.
+**Status (M9b close, 2026-10-23):** fixed — bd474004 (M9b T15): the serialised theme is built once per install.
 
 #### M9-140 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:1040
 **Claim:** Only the ends of the three page lists correspond: Basic and Buttons first, Icons and Theme Map last. In between, pages with the same content have different names and a different order, and nothing records how the pages correspond. The `--tab` keys differ with them.
@@ -12486,6 +12538,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#17.
+**Status (M9b close, 2026-10-23):** fixed — 91423451 (M9b T19) and 1d57e42d (the key): the three showcases list their pages in gpui's order, recorded in `docs/showcase-elements.toml`'s header; iced's "Text Inputs" is "Inputs".
 
 #### M9-141 · M9x · ux · S4 · .github/workflows/screenshots.yml:55
 **Claim:** The release captures build the three showcases with three feature rules: gpui with its defaults, iced with defaults plus iced_aw, egui with --all-features. egui's release screenshots therefore come from a build that differs from the one its README tells users to run. It adds svg-rasterize, which egui does not enable by default, and the connector's watch feature, which starts the OS watcher during Linux `--capture` runs; gpui and iced run no watcher there.
@@ -12864,6 +12917,14 @@ Set from the plan's task table, the progress ledger's "complete" lines and the t
 - M9-124, M9-125, M9-126, M9-136: iced half M9b T1, egui half M9c T1. M9-128: iced half M9b T1. M9-127: iced M9b T2, egui M9c T1. M9-137: iced M9b T2. M9-138: iced M9b T6 and T13.
 - M9-130 and M9-139 (M9b's entries): their gpui halves are in M9a T4 (f3e058ee) and T16 (d320c727); the entries stay M9b's.
 - **M9a closed (2026-10-21).** CI run 39656159244 on `b73dd1c6`, the push after G3 Task 3, is green in all 39 jobs (the `pull_request` run on the pushed commit), *Test gpui connector* with its GPUI Fast step and *Security audit* among them. The GPUI Fast step that failed in run 39490500851 on gpui-fast 0.1.7's stale child-list crash passes on the 0.1.10 floor G3 Task 1 set (`c8d89e75`), so M9a's Step 8 closes on that run (D11; the G3 plan's *Interleaving with M9b*). The controller's M9a gpui-fast fix brief (`m9a-gpuifast-fix-brief.md`, in the review's SDD directory) is superseded (G3 rationale K4): its regression test is adopted (G3 Task 1, spec Appendix A); its workaround, `[upstream]` entry and CHANGELOG line are not. The SDD progress file records that.
+
+### M9b Step 8 — statuses (2026-10-23)
+
+Set from the commits `c0d6d530..ecfefd27` (each entry's line names its commits), the task reports and the final-fix and batch-fix reports.
+
+- **M9b's 37 entries (M9-065–M9-101):** 37 fixed; M9-082's iced half 9a0c356b and its gpui half c41ec977, 5e825d6a (G3 T6). M9-142–M9-148 and M9-150–M9-154, filed during the phase, are fixed.
+- **M9x entries M9b owns:** M9-128, M9-129, M9-131–M9-135, M9-137–M9-140 fixed; M9-124, M9-125, M9-126, M9-130, M9-136 partly fixed (the iced half done, the egui half M9c T1); M9-127 open (iced half done, egui half M9c T1). M9-141 is M9c's (T17).
+- **What remains open, and who owns it.** (1) The macOS and Windows legs of M9-127, M9-133 and the T17 menu evidence (no menu row in the captures, the five titles read back, the install landing before the capture) are unrun: ci.yml tests `native-theme` only on those systems, and `screenshots.yml` is `workflow_dispatch`, so they are the maintainer's dispatch after the push. (2) The desktop-session iced re-capture (Step 8 notes, rounds 1-4) and the parity run on its dumps, with the re-read of the exceptions the notes list: the maintainer, on a free desktop. (3) The egui halves above: M9c.
 
 ### Status
 
