@@ -99,8 +99,8 @@ use std::rc::Rc;
 
 use gpui::{
     A11ySubtreeBuilder, App, Bounds, Element, ElementId, FontWeight, GlobalElementId, Hsla,
-    InspectorElementId, IntoElement, LayoutId, Pixels, Styled as _, Window, accesskit, canvas, div,
-    px, relative,
+    InspectorElementId, InteractiveElement, Interactivity, IntoElement, LayoutId, Pixels,
+    Styled as _, Window, accesskit, canvas, div, px, relative,
 };
 use native_theme::color::Rgba;
 use native_theme::theme::ResolvedFontSpec;
@@ -177,6 +177,12 @@ struct A11yDisabled<E> {
 impl<E> A11yDisabled<E> {
     fn new(inner: E, disabled: bool) -> Self {
         Self { inner, disabled }
+    }
+}
+
+impl<E: InteractiveElement> InteractiveElement for A11yDisabled<E> {
+    fn interactivity(&mut self) -> &mut Interactivity {
+        self.inner.interactivity()
     }
 }
 

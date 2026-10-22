@@ -1677,18 +1677,6 @@ fn announced(
     cx: &mut TestAppContext,
     probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
 ) -> Vec<Option<String>> {
-    a11y_nodes(cx, probe)
-        .iter()
-        .map(|node| node.label().map(str::to_owned))
-        .collect()
-}
-
-/// The accessibility nodes `probe` builds while a frame is laid out under
-/// kde-breeze.
-fn a11y_nodes(
-    cx: &mut TestAppContext,
-    probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
-) -> Vec<accesskit::Node> {
     let captured = Rc::new(RefCell::new(Vec::new()));
     let c = captured.clone();
     window_with(
@@ -1704,7 +1692,11 @@ fn a11y_nodes(
             .into_any_element()
         }),
     );
-    captured.take()
+    captured
+        .take()
+        .iter()
+        .map(|node| node.label().map(str::to_owned))
+        .collect()
 }
 
 /// The node `base`, a control's headless primitive, writes; an empty one
@@ -1720,16 +1712,6 @@ fn a11y_node(
         base.render(window, cx)
             .into_element()
             .write_a11y_info(&mut node);
-    }
-    node
-}
-
-/// The node `element`, a control's theme-drawn root, writes; an empty one
-/// where the control is not theme-drawn (`None`).
-fn a11y_node_of(role: accesskit::Role, element: Option<impl gpui::Element>) -> accesskit::Node {
-    let mut node = accesskit::Node::new(role);
-    if let Some(element) = element {
-        element.write_a11y_info(&mut node);
     }
     node
 }
@@ -1804,24 +1786,95 @@ fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
     assert_eq!(announced, three_names());
 }
 
+/// What gpui-kit's test API finds of sliders drawn one under another, each
+/// over a state of its own and built by its `build`, under `theme` (with no
+/// native theme where `None`): each looked up by gpui-base's slider id,
+/// `("slider", entity_id)` (gpui-base slider.rs:509-511).
+fn slider_snapshots(
+    cx: &mut TestAppContext,
+    theme: Option<(&str, ColorMode)>,
+    builds: &[fn(Slider) -> Slider],
+) -> Vec<Option<gpui_kit::test::ElementSnapshot>> {
+    let builds = builds.to_vec();
+    let states: Vec<Entity<SliderState>> = builds
+        .iter()
+        .map(|_| cx.new(|_| SliderState::new()))
+        .collect();
+    let drawn = states.clone();
+    let cx = window_with(
+        cx,
+        theme,
+        Box::new(move |_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .children(
+                    drawn
+                        .iter()
+                        .zip(&builds)
+                        .map(|(state, build)| build(Slider::new(state).w(px(100.)))),
+                )
+                .into_any_element()
+        }),
+    );
+    // A query by id alone would find gpui-component's slider just as well.
+    assert_eq!(
+        cx.debug_bounds("native-slider").is_some(),
+        theme.is_some(),
+        "the connector draws its slider exactly under a native theme"
+    );
+    cx.update(|window, _| {
+        states
+            .iter()
+            .map(|state| {
+                gpui_kit::test::TestWindowExt::try_find(window, ("slider", state.entity_id()))
+            })
+            .collect()
+    })
+}
+
+/// G3 T7 fix round 1: a themed slider registers for gpui-kit's test API
+/// under gpui-base's slider id, as gpui-component's slider does, so a test
+/// finds it by id, role and label under a native theme too; an enabled one's
+/// focus binding is observed (`focused()` does not panic).
+#[gpui::test]
+fn a_themed_slider_registers_for_gpui_kits_test_api(cx: &mut TestAppContext) {
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[|slider| slider.accessibility_label("Volume")],
+    );
+    let slider = found
+        .into_iter()
+        .next()
+        .flatten()
+        .expect("the themed slider is registered");
+    assert_eq!(slider.role(), Some(accesskit::Role::Slider));
+    assert_eq!(slider.label(), Some("Volume"));
+    assert_eq!(slider.focused(), Some(false));
+}
+
 /// G3 T7: a themed slider announces its `accessibility_label`, as
 /// gpui-component's does (slider.rs:126-130, :269-273), and no name without
 /// one.
 #[gpui::test]
 fn a_slider_announces_its_accessibility_label(cx: &mut TestAppContext) {
-    let announced = announced(cx, |window, cx| {
-        let state = cx.new(|_| SliderState::new());
-        [
-            Slider::new(&state).accessibility_label("Announced"),
-            Slider::new(&state),
-        ]
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[
+            |slider| slider.accessibility_label("Announced"),
+            |slider| slider,
+        ],
+    );
+    let labels: Vec<Option<String>> = found
+        .iter()
         .map(|slider| {
-            let root = slider.themed_root(window, cx).ok();
-            a11y_node_of(accesskit::Role::Slider, root)
+            let slider = slider.as_ref().expect("the themed slider is registered");
+            slider.label().map(str::to_owned)
         })
-        .to_vec()
-    });
-    assert_eq!(announced, vec![Some("Announced".to_owned()), None]);
+        .collect();
+    assert_eq!(labels, vec![Some("Announced".to_owned()), None]);
 }
 
 /// G3 T7: a disabled themed slider's node is disabled, as gpui-base marks
@@ -1829,25 +1882,21 @@ fn a_slider_announces_its_accessibility_label(cx: &mut TestAppContext) {
 /// one's is not.
 #[gpui::test]
 fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
-    let nodes = a11y_nodes(cx, |window, cx| {
-        let state = cx.new(|_| SliderState::new());
-        [true, false]
-            .map(|disabled| {
-                let root = Slider::new(&state)
-                    .disabled(disabled)
-                    .themed_root(window, cx)
-                    .ok();
-                a11y_node_of(accesskit::Role::Slider, root)
-            })
-            .to_vec()
-    });
-    // The themed root wrote both nodes: each has the slider's range.
-    assert!(
-        nodes.iter().all(|node| node.max_numeric_value().is_some()),
-        "a slider was not theme-drawn"
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[|slider| slider.disabled(true), |slider| slider],
     );
-    let disabled: Vec<bool> = nodes.iter().map(accesskit::Node::is_disabled).collect();
-    assert_eq!(disabled, [true, false]);
+    let disabled: Vec<Option<bool>> = found
+        .iter()
+        .map(|slider| {
+            slider
+                .as_ref()
+                .expect("the themed slider is registered")
+                .disabled()
+        })
+        .collect();
+    assert_eq!(disabled, [Some(true), None]);
 }
 
 /// G3 T7: without a native theme the slider passes its label and its
@@ -1856,37 +1905,28 @@ fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
 /// test_support.rs:330-340).
 #[gpui::test]
 fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &mut TestAppContext) {
-    let enabled = cx.new(|_| SliderState::new());
-    let disabled = cx.new(|_| SliderState::new());
-    let (e, d) = (enabled.clone(), disabled.clone());
-    let cx = window_with(
+    let found = slider_snapshots(
         cx,
         None,
-        Box::new(move |_, _| {
-            div()
-                .flex()
-                .flex_col()
-                .child(Slider::new(&e).accessibility_label("Enabled").w(px(100.)))
-                .child(
-                    Slider::new(&d)
-                        .disabled(true)
-                        .accessibility_label("Disabled")
-                        .w(px(100.)),
-                )
-                .into_any_element()
-        }),
+        &[
+            |slider| slider.accessibility_label("Enabled"),
+            |slider| slider.disabled(true).accessibility_label("Disabled"),
+        ],
     );
-    cx.update(|window, _| {
-        let find = |state: &Entity<SliderState>| {
-            gpui_kit::test::TestWindowExt::try_find(window, ("slider", state.entity_id()))
-                .expect("gpui-base's slider is registered")
-        };
-        let (enabled, disabled) = (find(&enabled), find(&disabled));
-        assert_eq!(enabled.label(), Some("Enabled"));
-        assert_eq!(enabled.disabled(), None);
-        assert_eq!(disabled.label(), Some("Disabled"));
-        assert_eq!(disabled.disabled(), Some(true));
-    });
+    let found: Vec<(Option<String>, Option<bool>)> = found
+        .iter()
+        .map(|slider| {
+            let slider = slider.as_ref().expect("gpui-base's slider is registered");
+            (slider.label().map(str::to_owned), slider.disabled())
+        })
+        .collect();
+    assert_eq!(
+        found,
+        [
+            (Some("Enabled".to_owned()), None),
+            (Some("Disabled".to_owned()), Some(true)),
+        ]
+    );
 }
 
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the

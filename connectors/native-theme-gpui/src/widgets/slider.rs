@@ -2,13 +2,13 @@
 //! thumb, painted from `SliderTheme`, and made focusable with keyboard steps.
 
 use gpui::{
-    AccessibleAction, AnyElement, App, Axis, Div, ElementId, Entity, Hsla, InteractiveElement,
+    AccessibleAction, AnyElement, App, Axis, ElementId, Entity, Hsla, InteractiveElement,
     IntoElement, KeyDownEvent, Length, MouseButton, Orientation, ParentElement, Pixels, RenderOnce,
-    Role, SharedString, Stateful, StatefulInteractiveElement as _, StyleRefinement, Styled, Window,
-    div, prelude::FluentBuilder as _, px, relative,
+    Role, SharedString, StatefulInteractiveElement as _, StyleRefinement, Styled, Window, div,
+    prelude::FluentBuilder as _, px, relative,
 };
 use gpui_base::slider::{SliderEvent, SliderState, SliderValue};
-use gpui_base::{SliderIndicator, SliderThumb, SliderTrack};
+use gpui_base::{SliderIndicator, SliderThumb, SliderTrack, TestSupportExt as _};
 use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
 use native_theme::theme::ResolvedTheme;
 
@@ -138,11 +138,13 @@ impl SliderLook {
 /// a slider with its value, range and step, its
 /// [`accessibility_label`](Slider::accessibility_label) and, while disabled,
 /// its disabled state, as gpui-component's does, and answers AccessKit's
-/// Increment and Decrement while enabled. Unlike gpui-component's, it takes
-/// keyboard focus: Left and Down step it down, Right and Up up, Home and End
-/// to the ends, each emitting `SliderEvent::Change`. The thumb's centre
-/// travels the widget's length less one thumb radius at each end, so the
-/// thumb stays inside the widget.
+/// Increment and Decrement while enabled. With gpui-base's `test-support`,
+/// gpui-kit's test API finds it as it finds gpui-component's, by the id
+/// `("slider", state.entity_id())`, its label or its role. Unlike
+/// gpui-component's, it takes keyboard focus: Left and Down step it down,
+/// Right and Up up, Home and End to the ends, each emitting
+/// `SliderEvent::Change`. The thumb's centre travels the widget's length
+/// less one thumb radius at each end, so the thumb stays inside the widget.
 ///
 /// A range state (`SliderState::default_value(20.0..80.0)`) draws a thumb at
 /// each end and the fill between them, as gpui-component's slider does
@@ -319,23 +321,13 @@ fn thumb(
         )
 }
 
-/// The theme-drawn slider's root, its node marked disabled while the slider
-/// is.
-pub(super) type SliderRoot = A11yDisabled<Stateful<Div>>;
-
-impl Slider {
-    /// The theme-drawn root, or the slider back where gpui-component's
-    /// slider is drawn instead.
-    pub(super) fn themed_root(
-        mut self,
-        window: &mut Window,
-        cx: &mut App,
-    ) -> Result<SliderRoot, Box<Self>> {
+impl RenderOnce for Slider {
+    fn render(mut self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let Some(n) = cx.native() else {
-            return Err(Box::new(self));
+            return self.fallback();
         };
         let Some(look) = SliderLook::of(n.resolved, self.disabled) else {
-            return Err(Box::new(self));
+            return self.fallback();
         };
         let look = look.faded_over(
             self.backdrop
@@ -361,7 +353,9 @@ impl Slider {
                 percentage.end.clamp(0., 1.),
             )
         };
-        let id = ElementId::from(("native-theme-slider", entity_id));
+        // gpui-base's slider's id (slider.rs:510), under which gpui-kit's
+        // test API finds gpui-component's slider, so one query finds either.
+        let id = ElementId::from(("slider", entity_id));
         let focus_handle = window
             .use_keyed_state(id.clone(), cx, |_, cx| cx.focus_handle())
             .read(cx)
@@ -477,38 +471,37 @@ impl Slider {
                 let keys = state.clone();
                 let increment = state.clone();
                 let decrement = state.clone();
-                root.track_focus(&focus_handle.clone().tab_stop(true))
-                    .on_key_down(move |event: &KeyDownEvent, window, cx| {
-                        let key = event.keystroke.key.clone();
-                        if step_by(&keys, |s| stepped(s, &key), window, cx) {
-                            cx.stop_propagation();
-                        }
-                    })
-                    .on_a11y_action(AccessibleAction::Increment, move |_, window, cx| {
-                        step_by(&increment, |s| stepped(s, "right"), window, cx);
-                    })
-                    .on_a11y_action(AccessibleAction::Decrement, move |_, window, cx| {
-                        step_by(&decrement, |s| stepped(s, "left"), window, cx);
-                    })
-                    .on_mouse_up(
-                        MouseButton::Left,
-                        window.listener_for(&state, |state, _, _, cx| state.handle_release(cx)),
-                    )
-                    .on_mouse_up_out(
-                        MouseButton::Left,
-                        window.listener_for(&state, |state, _, _, cx| state.handle_release(cx)),
-                    )
+                root.on_key_down(move |event: &KeyDownEvent, window, cx| {
+                    let key = event.keystroke.key.clone();
+                    if step_by(&keys, |s| stepped(s, &key), window, cx) {
+                        cx.stop_propagation();
+                    }
+                })
+                .on_a11y_action(AccessibleAction::Increment, move |_, window, cx| {
+                    step_by(&increment, |s| stepped(s, "right"), window, cx);
+                })
+                .on_a11y_action(AccessibleAction::Decrement, move |_, window, cx| {
+                    step_by(&decrement, |s| stepped(s, "left"), window, cx);
+                })
+                .on_mouse_up(
+                    MouseButton::Left,
+                    window.listener_for(&state, |state, _, _, cx| state.handle_release(cx)),
+                )
+                .on_mouse_up_out(
+                    MouseButton::Left,
+                    window.listener_for(&state, |state, _, _, cx| state.handle_release(cx)),
+                )
             })
             .child(track);
-        Ok(A11yDisabled::new(root, disabled))
-    }
-}
-
-impl RenderOnce for Slider {
-    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
-        match self.themed_root(window, cx) {
-            Ok(root) => root.into_any_element(),
-            Err(slider) => slider.fallback(),
-        }
+        // Registered for gpui-kit's test API outside the disabled mark, so its
+        // snapshot sees the flag, and the focus bound after the registration,
+        // so the snapshot sees the binding (gpui-base a11y_disabled.rs:52-61,
+        // observe.rs:25).
+        A11yDisabled::new(root, disabled)
+            .test_support()
+            .when(!disabled, |root| {
+                root.track_focus(&focus_handle.tab_stop(true))
+            })
+            .into_any_element()
     }
 }

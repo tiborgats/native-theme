@@ -680,6 +680,16 @@ shortens the time M9b is held and M9a's CI stays red.
 - `docs/todo.md`, *native-theme-gpui connector*: an `[upstream]` entry: a public way to mark
   an element's accessibility node disabled (gpui-base's `A11yDisabledExt` public, or a GPUI
   `aria_disabled`), so the connector's copy can go.
+- *Added 2026-10-22 (G3 T7 fix round 1), the controller's ruling on the review's I1:* the
+  themed root registers for gpui-kit's test API under gpui-base's slider id, `("slider",
+  entity_id)` (`GB8/slider.rs:509-511`): `A11yDisabled::new(root, disabled).test_support()`,
+  the observation outside the wrapper so its snapshot sees the flag
+  (`GB8/a11y_disabled.rs:52-61`), `track_focus` after it so the snapshot sees the focus
+  binding (`GB8/observe.rs:25`), and an `InteractiveElement` forward on the wrapper. The
+  registration made the typed seam unneeded: `themed_root` and `a11y_node_of` are gone, and
+  the themed tests read the drawn frame through `TestWindowExt::try_find`, as the
+  fallback's does, each first checking that the connector drew its own slider
+  (`native-slider`) exactly under a native theme.
 
 ## 7 -- The side panel on a window resize (K10)
 
