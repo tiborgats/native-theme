@@ -3528,12 +3528,18 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `a_nested_scroller_keeps_the_wheel_to_itself` on both cores. The
       Settings frame is GPUI's own `overflow_y_scroll` div, but the Settings
       fills it, so the frame never scrolls; what does is the Settings' page
-      list, wrapped at `setting/page.rs:233`. Still open: scroll chaining (at its
-      end the inner area stretches instead of handing over, upstream's test
-      `the_innermost_area_takes_the_whole_gesture`, gpui-base
-      `src/scroll_bounce.rs:970`), and GPUI's own `overflow_*_scroll` divs,
-      whose listener still moves every scroller under the pointer, so a
-      nested one still needs `.occlude()` (the test fails, on both cores,
+      list, wrapped at `setting/page.rs:233`. The occlusions covered whole demo
+      boxes, so the page now also scrolls over a box's parts that do not
+      scroll (its padding and border, the Settings' heading, sidebar search
+      field and resize handle) and over an inner area whose content fits, as
+      native toolkits do. Still open: scroll chaining (at its end the inner
+      area keeps the wheel, and stretches where bounce is on, on macOS, iOS
+      and Android, gpui-base `src/scroll_bounce.rs:170-178`, instead of
+      handing over, upstream's test
+      `the_innermost_area_takes_the_whole_gesture`, `src/scroll_bounce.rs:970`),
+      and GPUI's own `overflow_*_scroll` divs, whose listener still moves
+      every scroller under the pointer, so a nested one still needs
+      `.occlude()` (the test failed, on both cores, when tried on 2026-10-22
       with the Scrollable Area's viewport made such a div and not occluded).
 - [ ] [upstream] Additional PRs as gaps are discovered during connector implementation
 - [ ] [upstream] Report: a single-select `Combobox` misses a change after a search.

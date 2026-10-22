@@ -216,8 +216,8 @@ connectors and showcases (§12).
 - *Added 2026-10-22 (G3 T5), on the line above:* "gpui-pre's suites pass unchanged" means
   that no gpui-pre test failed without `refresh()`; the three tests changed for GPUI Fast run
   on gpui-pre too, and pass there as changed. The fix the bullet "All pass" cites is gpui-fast
-  0.1.9's, by its release notes: "remove debug bounds for elements no longer drawn" (PRs #74
-  and #75).
+  0.1.9's, by its release notes: "remove debug bounds for elements no longer drawn" (PR #74;
+  the notes list it with #75, which aligns composited scroll content's bounds).
 
 ### 2.4 Widget Info under GPUI Fast's partial frames (K4, K5, K6, K19)
 
@@ -564,6 +564,16 @@ shortens the time M9b is held and M9a's CI stays red.
   still open: scroll chaining (at its end the inner area stretches instead of handing over,
   upstream's test `the_innermost_area_takes_the_whole_gesture`) and GPUI's own
   `overflow_*_scroll` divs; and which showcase occlusions remain.
+- *Added 2026-10-22 (G3 T6), the controller's ruling at Task 5:* the Settings frame never
+  scrolls. The `Settings` it holds is an `h_resizable` (`GC8/setting/settings.rs:416-432`)
+  that fills it (318 px of the 320 px frame), so the frame's `overflow_y_scroll` had nothing
+  to move and its first child never moves. The scroll owner under the frame is the Settings'
+  page list, a `ScrollBounce` over its `list_state` (`GC8/setting/page.rs:228-257`, wrapped
+  at `:233`), and the test measures that owner, by the row probe in its first group. The
+  frame's `.occlude()` went in Task 5 (`342232d6`), and Task 6 replaced its dead
+  `.overflow_y_scroll()` with `.overflow_hidden()`, the clip it gave. Over a box's parts
+  that do not scroll (its padding and border, the Settings' heading, sidebar search field
+  and resize handle) the page now scrolls too, where the occlusion swallowed the wheel.
 
 ## 5 -- `TabVariant::Folder` in the showcase (K8)
 

@@ -429,6 +429,16 @@ under the occlusion (upstream has no chaining); and over an inner area whose con
 the page now scrolls, since `ScrollBounce` lets the wheel go when it cannot move
 (`GB8/scroll_bounce.rs:570`), where the occlusion swallowed it.
 
+*Added 2026-10-22 (G3 T6):* the test decided the Settings frame too, and its occlusion
+went (Task 5, `342232d6`): the `Settings` fills the frame, so the frame's own
+`overflow_y_scroll` never scrolls, and the scroll owner under it is the Settings' page list,
+which `ScrollBounce` wraps (`GC8/setting/page.rs:233`); Task 6 made the frame
+`overflow_hidden`, the clip its dead `overflow_y_scroll` gave (spec §4). The trade-off is
+also wider than an inner area whose content fits: the occlusions covered whole demo boxes,
+so the page now scrolls over their parts that do not scroll as well (the frames' padding
+and borders, the Settings' heading, sidebar search field and resize handle), as native
+toolkits do.
+
 ### K8 — `TabVariant::Folder`: shown in the showcase as upstream's variant
 
 Shown, by the rule G1 set (every new element a gpui-kit release brings is shown): a Folder

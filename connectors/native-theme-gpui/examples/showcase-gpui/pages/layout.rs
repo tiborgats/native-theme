@@ -480,7 +480,7 @@ impl Showcase {
                     .h(px(320.0))
                     .w_full()
                     .demo_frame(cx)
-                    .overflow_y_scroll()
+                    .overflow_hidden()
                     .child(demo::settings(ui, cx, "layout-settings")),
             )
     }

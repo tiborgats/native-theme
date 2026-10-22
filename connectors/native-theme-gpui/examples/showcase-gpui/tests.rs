@@ -456,10 +456,14 @@ type ScrolledTo = fn(&mut VisualTestContext, &Entity<Showcase>) -> String;
 /// and three quarters of the way down the Diff, which a click there selects
 /// (gpui-component `diff/mod.rs:1318-1327`, `begin_line_selection`):
 /// `DiffState` has no public scroll offset, so the lines under fixed points
-/// stand for it. A point over a row with no line number (a file header, a
-/// hunk separator) selects none, so at least one of the three has to. The
-/// selection is cleared before each click, as a click on the selected line
-/// clears it instead.
+/// stand for it. A point over a hunk separator selects none, as the row has
+/// nothing there to click (`render_hunk_separator`, `diff/mod.rs:935-940`),
+/// so at least one of the three has to select a line. A file header and a
+/// fold row hold a button there instead, which a click presses: the
+/// header's collapse button (`:1196-1214`) or the fold's expand buttons
+/// (`:989-1010`), which would change what the Diff shows. Today's sample is
+/// one file, whose header lies above the quarter point. Each click starts
+/// from no selection: it is cleared before each one.
 fn diff_lines_down_the_middle(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> String {
     let diff = bounds_of(cx, "typography-diff");
     let lines: Vec<_> = [0.25, 0.5, 0.75]
@@ -546,8 +550,8 @@ fn a_nested_scroller_keeps_the_wheel_to_itself(cx: &mut TestAppContext) {
         (Page::Layout, "layout-scroll-area", |cx, _| {
             format!("{:?}", bounds_of(cx, "layout-scroll-area-item-1").top())
         }),
-        // The frame's own `overflow_y_scroll` never moves: the Settings
-        // fills it. What scrolls is the Settings' page list
+        // The frame itself does not scroll: the Settings fills it. What
+        // scrolls is the Settings' page list
         // (gpui-component `setting/page.rs:229-257`), whose first group
         // holds the row probe.
         (Page::Layout, "settings-frame", |cx, _| {

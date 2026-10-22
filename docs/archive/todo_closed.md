@@ -959,8 +959,9 @@ and many have since drifted, as the archive's [README](README.md) warns.
       >   x: 0px, y: 0px }, size: Size { 1280px × 26px } })`, right `None`
 
       *Closed by G3 T4 (2026-10-22, c3c1cef9), not filed:* gpui-fast 0.1.9 fixed it
-      (its release notes: "remove debug bounds for elements no longer drawn", PRs #74
-      and #75); 0.1.10's `finish_retained_frame` (`src/fast/retained.rs:1372-1385`) copies
+      (its release notes: "remove debug bounds for elements no longer drawn", PR #74;
+      the notes list it with #75, which aligns composited scroll content's bounds);
+      0.1.10's `finish_retained_frame` (`src/fast/retained.rs:1372-1385`) copies
       no debug bounds forward, and `reuse_paint` copies the reused range's only
       (`src/window.rs:4134-4143`). Both draw helpers call `window.draw(cx)` alone; the five
       tests above pass on GPUI Fast without the `refresh()`. Three other tests had leaned on
