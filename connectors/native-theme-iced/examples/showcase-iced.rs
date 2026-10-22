@@ -159,6 +159,30 @@ fn drawn_probe<'a>(
     content.into()
 }
 
+/// A [`drawn_probe`] of the Extra page's stand-alone `TabBar`, recording its
+/// three tabs and their labels' text boxes too: the nodes of the one `Row`
+/// iced_aw lays the bar out as, a `Row` per tab whose first child is the
+/// label's `Column` round its `Text` (iced_aw 0.14.1
+/// `src/widget/tab_bar.rs:406-512`).
+#[cfg(all(test, feature = "iced_aw"))]
+fn aw_tab_bar_probe<'a>(bar: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
+    let [one, two, three] = probes::AW_TAB_BAR_TABS;
+    let [first, second, third] = probes::AW_TAB_BAR_LABELS;
+    tagged(probes::AW_TAB_BAR, bar)
+        .node(one, &[0])
+        .node(two, &[1])
+        .node(three, &[2])
+        .node(first, &[0, 0, 0])
+        .node(second, &[1, 0, 0])
+        .node(third, &[2, 0, 0])
+        .into()
+}
+
+#[cfg(all(not(test), feature = "iced_aw"))]
+fn aw_tab_bar_probe<'a>(bar: impl Into<Element<'a, Message>>) -> Element<'a, Message> {
+    bar.into()
+}
+
 /// A [`drawn_probe`] of the Extra page's menu item labelled `label`, under
 /// its [`probes::aw_menu_item`] id where the tests measure it.
 #[cfg(all(test, feature = "iced_aw"))]
@@ -272,6 +296,22 @@ mod probes {
     /// The Extra page's `iced_aw` `Tabs` ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_TABS: &str = "probe-aw-tabs";
+    /// The Extra page's stand-alone `TabBar`, its three tabs and their
+    /// labels' text boxes ([`super::aw_tab_bar_probe`]).
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_TAB_BAR: &str = "probe-aw-tab-bar";
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_TAB_BAR_TABS: [&str; 3] = [
+        "probe-aw-tab-bar-tab-1",
+        "probe-aw-tab-bar-tab-2",
+        "probe-aw-tab-bar-tab-3",
+    ];
+    #[cfg(all(test, feature = "iced_aw"))]
+    pub const AW_TAB_BAR_LABELS: [&str; 3] = [
+        "probe-aw-tab-bar-label-1",
+        "probe-aw-tab-bar-label-2",
+        "probe-aw-tab-bar-label-3",
+    ];
     /// The Extra page's context menu's popup ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_CONTEXT_MENU: &str = "probe-aw-context-menu";
@@ -13535,6 +13575,47 @@ fn menu_width<'a>(
 /// `src/widget/menu/menu_tree.rs:161`), which it keeps in no constant.
 const AW_MENU_PADDING: f32 = 5.0;
 
+/// The labels of the Extra page's stand-alone `TabBar`'s three tabs.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_BAR_LABELS: [&str; 3] = ["Overview", "Details", "About"];
+
+/// The padding `iced_aw` gives a `TabBar`'s tab round its label where the
+/// application sets none: `DEFAULT_PADDING`, `Padding::new(5.0)` (iced_aw
+/// 0.14.1 `src/widget/tab_bar.rs:41`), which it keeps private.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_PADDING: f32 = 5.0;
+
+/// The padding `iced_aw` lays a text label of a `TabBar` out in, inside the
+/// tab's padding: a `Column` padded 5 (iced_aw 0.14.1
+/// `src/widget/tab_bar.rs:414-417`), which it keeps in no constant.
+#[cfg(feature = "iced_aw")]
+const AW_TAB_LABEL_PADDING: f32 = 5.0;
+
+/// The one width an `iced_aw` `TabBar` lays each of its tabs out at
+/// (`tab_width`, iced_aw 0.14.1 `src/widget/tab_bar.rs:307-312`, applied to
+/// the tab and its label at `:490-495`): `tab.min_width`, or where the
+/// widest of `labels` is wider, that label as iced_aw shapes it, at its
+/// text size plus one (`:398-404`), inside [`AW_TAB_LABEL_PADDING`] and the
+/// tab's `padding`, to the next whole pixel. iced_aw takes no minimum and a
+/// fixed width narrower than a label wraps it onto a second line its tab
+/// clips; `Length::Shrink`, the other sizing it offers, would drop the
+/// theme's minimum (material-3's 90, windows-11's 100).
+#[cfg(feature = "iced_aw")]
+fn aw_tab_width(state: &State, labels: &[&str], padding: Padding) -> f32 {
+    let t = &state.current_resolved.tab;
+    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+    let widest = labels
+        .iter()
+        .map(|label| {
+            MeasuredText::new((*label).to_owned(), size, size, theme_font(&t.font))
+                .extent()
+                .width
+        })
+        .fold(0.0, f32::max);
+    t.min_width
+        .max((widest + 2.0 * AW_TAB_LABEL_PADDING + padding.x()).ceil())
+}
+
 /// How far the Extra page's menu panels lie from the item that opens them,
 /// and their rows and the context menu's entries from one another (spec
 /// §3.1): the showcase's own, 2 px, as the model states no menu offset and
@@ -13886,7 +13967,13 @@ fn aw_tab_bar_info(state: &State) -> String {
         ),
         &[
             ("label", font_row("tab.font", &resolved.tab.font).as_str()),
-            ("tab width", "tab.min_width"),
+            (
+                "tab width",
+                "the TabBar's: tab.min_width, or the widest label inside iced_aw's \
+                 paddings where that is wider (aw_tab_width), as iced_aw takes one \
+                 width for every tab; the Tabs' share their bar, iced_aw's own \
+                 (tab_width Fill, widget/tab_bar.rs:173)",
+            ),
             ("bar height", "tab.min_height"),
             (
                 "tab spacing",
@@ -13904,8 +13991,9 @@ fn aw_tab_bar_info(state: &State) -> String {
         ],
         &[(
             "min_width / min_height",
-            "the platform states minima and iced_aw takes fixed lengths, so a \
-             tab here is exactly its minimum",
+            "the platform states minima and iced_aw takes fixed lengths, so the \
+             bar is exactly tab.min_height tall and every tab exactly one width, \
+             the minimum unless a label needs more",
         )],
     )
 }
@@ -14294,14 +14382,21 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- TabBar and Tabs ----
 
+    // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
+    // takes a padding whole, so only a theme that states every side replaces it.
+    let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
     let tab_bar = TabBar::new(Message::AwTabBarSelected)
-        .push(0usize, TabLabel::Text("Overview".to_string()))
-        .push(1usize, TabLabel::Text("Details".to_string()))
-        .push(2usize, TabLabel::Text("About".to_string()))
+        .push(0usize, TabLabel::Text(AW_TAB_BAR_LABELS[0].to_string()))
+        .push(1usize, TabLabel::Text(AW_TAB_BAR_LABELS[1].to_string()))
+        .push(2usize, TabLabel::Text(AW_TAB_BAR_LABELS[2].to_string()))
         .set_active_tab(&state.aw_tab_bar_active)
         .text_size(scaled_text_size(tab_t.font.size, a11y))
         .text_font(theme_font(&tab_t.font))
-        .tab_width(Length::Fixed(tab_t.min_width))
+        .tab_width(Length::Fixed(aw_tab_width(
+            state,
+            &AW_TAB_BAR_LABELS,
+            tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING)),
+        )))
         .height(Length::Fixed(tab_t.min_height));
     // tab.item_gap between the tabs, where stated; iced_aw's own none
     // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`), as the Basic
@@ -14310,9 +14405,6 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         Some(gap) => tab_bar.spacing(gap),
         None => tab_bar,
     };
-    // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
-    // takes a padding whole, so only a theme that states every side replaces it.
-    let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
     let tab_bar = match tab_padding {
         Some(padding) => tab_bar.padding(padding),
         None => tab_bar,
@@ -14380,7 +14472,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             ),
             flared(native_theme_iced::tab_flares(
                 resolved,
-                tab_bar.style(styles::aw::tab_bar(resolved)),
+                aw_tab_bar_probe(tab_bar.style(styles::aw::tab_bar(resolved))),
                 &[state.aw_tab_bar_active],
             ))
             .style(surface(resolved, Surface::TabStrip)),
@@ -23827,13 +23919,69 @@ mod tests {
         }
     }
 
+    /// M9b Step 8 I3 (ux): the Extra page's stand-alone `TabBar` neither
+    /// wraps nor clips a label: iced_aw lays each label out at its
+    /// `text_size` plus one on iced's default line, 1.3 of that (iced_aw
+    /// 0.14.1 `src/widget/tab_bar.rs:390-404`, `layout_text`), and draws it
+    /// clipped to that box (`:900-917`), so under kde-breeze and
+    /// catppuccin-mocha, in both modes, each label's box is one such line
+    /// tall and at least as wide as the label shaped on one line, inside its
+    /// tab, and each tab is at least `tab.min_width` wide.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_extra_tab_bar_labels_are_one_whole_line() {
+        let mut faults = Vec::new();
+        for preset in ["kde-breeze", "catppuccin-mocha"] {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                let state = extra_state(preset, mode);
+                let t = &state.current_resolved.tab;
+                let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+                let line = line_of(size);
+                let (_, rects, _) = extra_frame(&state, |_| {});
+                for ((label, label_id), tab_id) in AW_TAB_BAR_LABELS
+                    .into_iter()
+                    .zip(probes::AW_TAB_BAR_LABELS)
+                    .zip(probes::AW_TAB_BAR_TABS)
+                {
+                    let (Some(at), Some(tab)) = (rects.get(label_id), rects.get(tab_id)) else {
+                        faults.push(format!("{preset} {mode:?}: the {label} tab is not drawn"));
+                        continue;
+                    };
+                    let one_line =
+                        MeasuredText::new(label.to_owned(), size, line, theme_font(&t.font))
+                            .extent();
+                    if at.height > line + 0.01 || at.width + 0.01 < one_line.width {
+                        faults.push(format!(
+                            "{preset} {mode:?}: {label} is laid out {}x{}, one line of it is \
+                             {}x{line}",
+                            at.width, at.height, one_line.width
+                        ));
+                    }
+                    if at.x < tab.x || at.x + at.width > tab.x + tab.width + 0.01 {
+                        faults.push(format!(
+                            "{preset} {mode:?}: {label}'s box {at:?} runs out of its tab {tab:?}"
+                        ));
+                    }
+                    if tab.width + 0.01 < t.min_width {
+                        faults.push(format!(
+                            "{preset} {mode:?}: the {label} tab is {}px wide, tab.min_width {}",
+                            tab.width, t.min_width
+                        ));
+                    }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// M9-097 (theme-data): the Extra page's `TabBar` spaces its tabs
     /// `tab.item_gap` apart where the theme states it, and by iced_aw's own
     /// spacing, none, where it does not (`DEFAULT_SPACING`, iced_aw 0.14.1
     /// `src/widget/tab_bar.rs:43`), over every bundled preset in both modes
-    /// (adwaita and kde-breeze state 0): its tabs are `tab.min_width` wide,
-    /// and each label is centred in its tab, so two neighbours' labels are
-    /// that width and the gap apart. The `Tabs` beside it take the same gap:
+    /// (adwaita and kde-breeze state 0): its tabs are all one width,
+    /// [`aw_tab_width`] (`tab.min_width`, or the widest label's where that is
+    /// wider), and each label is centred in its tab, so two neighbours'
+    /// labels are that width and the gap apart. The `Tabs` beside it take the same gap:
     /// under kde-breeze, with the gap spliced 10 px wider, the bar's two tabs
     /// are 10 px further apart, and so are the `Tabs`' two, whose labels no
     /// selector reaches (`Tabs::operate` visits the open tab's content
@@ -23863,15 +24011,17 @@ mod tests {
             for mode in [AppColorMode::Light, AppColorMode::Dark] {
                 let state = extra_state(info.key, mode);
                 let t = &state.current_resolved.tab;
-                let want = t.min_width + t.item_gap.unwrap_or(0.0);
+                let padding = native_theme_iced::stated_padding(&t.border.padding)
+                    .unwrap_or(Padding::new(AW_TAB_PADDING));
+                let width = aw_tab_width(&state, &AW_TAB_BAR_LABELS, padding);
+                let want = width + t.item_gap.unwrap_or(0.0);
                 let [overview, details] = centres(&state);
                 if (details - overview - want).abs() > 0.5 {
                     faults.push(format!(
-                        "{} {mode:?}: the TabBar's tabs are {} apart, tab.min_width {} and \
-                         tab.item_gap {:?}",
+                        "{} {mode:?}: the TabBar's tabs are {} apart, the tab width {width} \
+                         and tab.item_gap {:?}",
                         info.key,
                         details - overview,
-                        t.min_width,
                         t.item_gap
                     ));
                 }
