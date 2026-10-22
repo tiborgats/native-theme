@@ -214,6 +214,37 @@ fn the_showcase_opens_on_the_basic_page() {
     assert_eq!(harness.state().settings.page, Page::Basic);
 }
 
+/// The pages are in the order of the counterpart table in `docs/showcase-elements.toml`'s
+/// header, under the labels its egui column gives them, and so are the View menu's page items;
+/// each page's `--tab` key is its label as the header says: lower case, each space a `-`.
+#[test]
+fn the_pages_follow_the_counterpart_table() {
+    let table = crate::elements::page_order().expect("the counterpart table reads");
+    let labels: Vec<&str> = Page::ALL.iter().map(|page| page.label()).collect();
+    assert_eq!(labels, table, "the page tabs against the counterpart table");
+    for page in Page::ALL {
+        assert_eq!(
+            page.key(),
+            page.label().to_lowercase().replace(' ', "-"),
+            "{page:?}'s --tab key"
+        );
+    }
+    let view: Vec<Page> = Action::MENUS
+        .iter()
+        .filter(|(menu, _)| *menu == "View")
+        .flat_map(|(_, items)| items.iter().flatten())
+        .filter_map(|action| match action {
+            Action::ShowPage(page) => Some(*page),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        view,
+        Page::ALL,
+        "the View menu's pages against the page tabs"
+    );
+}
+
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
 /// user picks one, and again after a pick of `default` (the iced showcase's
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,

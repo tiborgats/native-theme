@@ -121,6 +121,36 @@
 # Shared elements only: a page tab, a menu or a menu row the three do not all have is not here.
 # The chrome's page tabs share Basic and Buttons (first and second in all three); the Theme menu
 # is the one menu whose rows the three share.
+#
+# The pages' counterparts. The three showcases list their pages in one order, gpui's, with a
+# page gpui has no counterpart for after its nearest counterpart and a toolkit's own pages
+# before Icons. A row is one counterpart: the tab label each showcase gives it, `-` where it has
+# none. A row's pages are the ones whose content is nearest; each page's content follows its
+# toolkit's widget catalogue, so they differ (iced's Display holds tooltips, cards and the
+# spacing demo besides its text, which is why it keeps its name). A page's `--tab` key is its
+# label in lower case with each space a `-`, but iced's Extra widgets page's, `extra`. Each
+# showcase's own test reads this table against its page list, through `elements::page_order`
+# (the egui showcase through its copy, until M9c T1).
+#
+#   | Counterpart | gpui       | iced                    | egui       |
+#   |-------------|------------|-------------------------|------------|
+#   | Basic       | Basic      | Basic                   | Basic      |
+#   | Buttons     | Buttons    | Buttons                 | Buttons    |
+#   | Inputs      | Inputs     | Inputs                  | Inputs     |
+#   | Selection   | -          | Selection               | Selection  |
+#   | Range       | -          | Range                   | Range      |
+#   | Data        | Data       | -                       | Data       |
+#   | Feedback    | Feedback   | -                       | -          |
+#   | Typography  | Typography | Display                 | Text       |
+#   | Layout      | Layout     | Layout                  | Containers |
+#   | Overlays    | Overlays   | -                       | Overlays   |
+#   | Charts      | Charts     | Graphics                | -          |
+#   | egui's own  | -          | -                       | Colour     |
+#   | iced's own  | -          | Extra widgets (iced_aw) | -          |
+#   | Icons       | Icons      | Icons                   | Icons      |
+#   | Theme Map   | Theme Map  | Theme Map               | Theme Map  |
+#
+# iced's Extra widgets page is in a build with the iced connector's `iced_aw` feature only.
 
 # =============================================================================================
 # Chrome

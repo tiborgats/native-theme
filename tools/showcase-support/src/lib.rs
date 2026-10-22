@@ -13,7 +13,8 @@
 //! - [`capture`]: the capture's app id, the frame check, `--screenshot`'s
 //!   capture on macOS and Windows and the Retina nudge;
 //! - [`dump`]: the layout dump `--dump-layout` writes;
-//! - [`elements`]: the element list, parsed once;
+//! - [`elements`]: the element list, parsed once, and the order the
+//!   showcases list their pages in;
 //! - [`values`]: a leaf's value in the text the three showcases agreed;
 //! - [`info`]: a listed element's Widget Info rows and Copy text;
 //! - [`menu`]: the menus' titles in the macOS system menu bar, and the

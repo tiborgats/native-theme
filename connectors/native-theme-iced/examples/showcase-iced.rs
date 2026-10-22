@@ -1032,7 +1032,7 @@ enum Tab {
     /// the showcase opens on.
     Basic,
     Buttons,
-    TextInputs,
+    Inputs,
     Selection,
     Range,
     Display,
@@ -1058,7 +1058,7 @@ impl Tab {
     const ALL: &[Tab] = &[
         Tab::Basic,
         Tab::Buttons,
-        Tab::TextInputs,
+        Tab::Inputs,
         Tab::Selection,
         Tab::Range,
         Tab::Display,
@@ -1076,7 +1076,7 @@ impl Tab {
         match self {
             Tab::Basic => "basic",
             Tab::Buttons => "buttons",
-            Tab::TextInputs => "inputs",
+            Tab::Inputs => "inputs",
             Tab::Selection => "selection",
             Tab::Range => "range",
             Tab::Display => "display",
@@ -1093,7 +1093,7 @@ impl Tab {
         match self {
             Tab::Basic => "Basic",
             Tab::Buttons => "Buttons",
-            Tab::TextInputs => "Text Inputs",
+            Tab::Inputs => "Inputs",
             Tab::Selection => "Selection",
             Tab::Range => "Range",
             Tab::Display => "Display",
@@ -2964,7 +2964,7 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
     let tab_content: Element<'_, Message> = match state.active_tab {
         Tab::Basic => view_basic(state, btn_pad, inp_pad),
         Tab::Buttons => view_buttons(state, btn_pad),
-        Tab::TextInputs => view_text_inputs(state, inp_pad),
+        Tab::Inputs => view_inputs(state, inp_pad),
         Tab::Selection => view_selection(state),
         Tab::Range => view_range(state),
         Tab::Display => view_display(state),
@@ -10967,10 +10967,10 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 }
 
 // ---------------------------------------------------------------------------
-// Tab: Text Inputs
+// Tab: Inputs
 // ---------------------------------------------------------------------------
 
-/// The Widget Info of the Text Inputs page's single-line text field: at
+/// The Widget Info of the Inputs page's single-line text field: at
 /// rest, under the pointer and focused.
 fn text_input_info(state: &State) -> String {
     use text_input::Status;
@@ -11035,7 +11035,7 @@ fn text_input_info(state: &State) -> String {
     )
 }
 
-/// The Widget Info of the Text Inputs page's password field.
+/// The Widget Info of the Inputs page's password field.
 fn secure_text_input_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let radius_s = format!("{:.0}px", resolved.input.border.corner_radius);
@@ -11061,7 +11061,7 @@ fn secure_text_input_info(state: &State) -> String {
     )
 }
 
-/// The Widget Info of the Text Inputs page's multi-line editor.
+/// The Widget Info of the Inputs page's multi-line editor.
 fn text_editor_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let area_radius_s = format!("{:.0}px", resolved.text_area.border.corner_radius);
@@ -11096,7 +11096,7 @@ fn text_editor_info(state: &State) -> String {
     )
 }
 
-fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
+fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let sp = &SP;
     let gap = Gaps::from_layout(&state.layout);
@@ -11106,7 +11106,7 @@ fn view_text_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Messa
     let radius = i.border.corner_radius;
 
     let header = section_header(
-        "Text Inputs",
+        "Inputs",
         "Single-line TextInput and multi-line TextEditor",
         resolved,
         ts,
@@ -16116,14 +16116,14 @@ mod tests {
         }
 
         // ---- the tab strip carries the view to the next tab ----
-        let messages = drive(&mut state, |ui| click_text(ui, "Text Inputs"));
+        let messages = drive(&mut state, |ui| click_text(ui, "Inputs"));
         assert!(
-            matches!(messages.as_slice(), [Message::TabSelected(Tab::TextInputs)]),
+            matches!(messages.as_slice(), [Message::TabSelected(Tab::Inputs)]),
             "tab strip: {messages:?}"
         );
         assert_eq!(
             state.active_tab,
-            Tab::TextInputs,
+            Tab::Inputs,
             "the tab strip did not switch tabs"
         );
 
@@ -16562,9 +16562,7 @@ mod tests {
             &state.accessibility,
         );
         let pad = combo_box_padding(&state.current_resolved);
-        let messages = drive(state, |ui| {
-            pick_option(ui, probes::THEME, nth, size, pad)
-        });
+        let messages = drive(state, |ui| pick_option(ui, probes::THEME, nth, size, pad));
         assert!(
             matches!(messages.as_slice(), [Message::ThemeSelected(ThemeChoice::Preset(name))] if *name == preset),
             "theme preset: {messages:?}"
@@ -16659,7 +16657,10 @@ mod tests {
             .map(|info| info.key)
             .find(|key| *key != state.default_preset)
         else {
-            panic!("this platform offers no preset but {}", state.default_preset);
+            panic!(
+                "this platform offers no preset but {}",
+                state.default_preset
+            );
         };
         let read = match os_read_with(|system| system.preset = other.to_owned()) {
             Ok(read) => read,
@@ -17392,7 +17393,7 @@ mod tests {
         for &tab in Tab::ALL {
             assert_eq!(Tab::named(tab.flag()), Ok(tab));
         }
-        assert_eq!(Tab::named("inputs"), Ok(Tab::TextInputs));
+        assert_eq!(Tab::named("inputs"), Ok(Tab::Inputs));
         assert_eq!(Tab::named("basic"), Ok(Tab::Basic));
         assert_eq!(
             Tab::ALL.first(),
@@ -17414,7 +17415,37 @@ mod tests {
         }
         let mut state = State::default();
         apply_cli_args(&mut state, &command_line(&[("--tab", "inputs")]));
-        assert_eq!(state.active_tab, Tab::TextInputs, "--tab inputs");
+        assert_eq!(state.active_tab, Tab::Inputs, "--tab inputs");
+    }
+
+    /// The tabs are in the order of the counterpart table in
+    /// `docs/showcase-elements.toml`'s header, under the labels its iced
+    /// column gives them (the Extra widgets page only in an `iced_aw`
+    /// build), and each tab's `--tab` key is its label as the header says:
+    /// lower case, each space a `-`, but the Extra widgets page's `extra`.
+    #[test]
+    fn the_tabs_follow_the_counterpart_table() {
+        const EXTRA: &str = "Extra widgets (iced_aw)";
+        let table = match elements::page_order(Kind::Iced) {
+            Ok(table) => table,
+            Err(error) => panic!("{error}"),
+        };
+        let wanted: Vec<&str> = table
+            .into_iter()
+            .filter(|label| cfg!(feature = "iced_aw") || *label != EXTRA)
+            .collect();
+        let labels: Vec<&str> = Tab::ALL.iter().map(|tab| tab.label()).collect();
+        assert_eq!(
+            labels, wanted,
+            "the tab strip against the counterpart table"
+        );
+        for tab in Tab::ALL {
+            let key = match tab.label() {
+                EXTRA => "extra".to_string(),
+                label => label.to_lowercase().replace(' ', "-"),
+            };
+            assert_eq!(tab.flag(), key, "{tab:?}'s --tab key");
+        }
     }
 
     /// `--open-menu` takes a title of the menu bar, in any case, and holds
@@ -18969,7 +19000,7 @@ mod tests {
             );
             drop(ui);
 
-            state.active_tab = Tab::TextInputs;
+            state.active_tab = Tab::Inputs;
             let mut ui = interface(&state);
             let input = match ui.find(selector::id(TEXT_INPUT_ID)) {
                 Ok(target) => target.bounds().height,
@@ -20082,7 +20113,7 @@ mod tests {
         );
     }
 
-    /// M9-100 (simplify): the Text Inputs page chains each single-line
+    /// M9-100 (simplify): the Inputs page chains each single-line
     /// input's padding into its builder; no bare block reassigns it.
     #[test]
     fn the_text_inputs_chain_their_padding() {

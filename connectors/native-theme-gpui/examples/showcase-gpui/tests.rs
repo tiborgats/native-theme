@@ -11365,6 +11365,29 @@ fn the_tab_flag_names_every_page() {
     }
 }
 
+/// The pages are in the order of the counterpart table in
+/// `docs/showcase-elements.toml`'s header, under the labels its gpui column
+/// gives them, and each page's `--tab` key is its label as the header says:
+/// lower case, each space a `-`.
+#[test]
+fn the_pages_follow_the_counterpart_table() {
+    let table = match native_theme_showcase_support::elements::page_order(
+        native_theme_showcase_support::Kind::Gpui,
+    ) {
+        Ok(table) => table,
+        Err(error) => panic!("{error}"),
+    };
+    let labels: Vec<&str> = Page::ALL.iter().map(|page| page.label()).collect();
+    assert_eq!(labels, table, "the TabBar against the counterpart table");
+    for page in Page::ALL {
+        assert_eq!(
+            page.flag(),
+            page.label().to_lowercase().replace(' ', "-"),
+            "{page:?}'s --tab key"
+        );
+    }
+}
+
 /// The parts of two `drawn_state`s that differ, as `name: before -> after`,
 /// the colours and tokens field by field.
 fn changed_fields(

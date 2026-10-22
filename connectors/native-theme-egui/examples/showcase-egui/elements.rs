@@ -61,3 +61,49 @@ pub fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
         })
         .collect()
 }
+
+/// The tab labels the egui showcase gives its pages, in the order the three showcases list them:
+/// the egui column of the counterpart table in the list's header (*The pages' counterparts*),
+/// less the rows it has no page for, or why the table does not read. A copy of the reader of
+/// `native-theme-showcase-support`'s `elements::page_order`, as this file is of its list reader
+/// (until M9c T1); its test holds `Page::ALL` to it.
+#[cfg(test)]
+pub fn page_order() -> Result<Vec<&'static str>, String> {
+    const HEAD: [&str; 4] = ["Counterpart", "gpui", "iced", "egui"];
+    const COLUMN: usize = 3;
+    let cells = |line: &'static str| -> Option<Vec<&'static str>> {
+        let row = line.strip_prefix('#')?.trim();
+        let inner = row.strip_prefix('|')?.strip_suffix('|')?;
+        Some(inner.split('|').map(str::trim).collect())
+    };
+    let mut lines = SHOWCASE_ELEMENTS.lines();
+    lines
+        .by_ref()
+        .find(|line| cells(line).is_some_and(|row| row == HEAD))
+        .ok_or("docs/showcase-elements.toml: no counterpart table in the header")?;
+    let rule = lines.next().and_then(cells).is_some_and(|row| {
+        row.iter()
+            .all(|cell| !cell.is_empty() && cell.trim_matches('-').is_empty())
+    });
+    if !rule {
+        return Err("the counterpart table's head is not followed by its rule".to_string());
+    }
+    let mut pages = Vec::new();
+    for row in lines.map_while(cells) {
+        if row.len() != HEAD.len() {
+            return Err(format!(
+                "a counterpart row has {} cells, not {}",
+                row.len(),
+                HEAD.len()
+            ));
+        }
+        match row.get(COLUMN) {
+            Some(&"-") | None => {}
+            Some(page) => pages.push(*page),
+        }
+    }
+    if pages.is_empty() {
+        return Err("the counterpart table lists no egui page".to_string());
+    }
+    Ok(pages)
+}

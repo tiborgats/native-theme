@@ -3249,6 +3249,16 @@ the gap — closing it is a change, and each wants its own decision.
       to show it. Found in the final review of the v0.5.9 showcase-app work
       (2026-09-23).
       Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
+      M9b T19 (2026-10-22): the showcase half is not open, and "the iced
+      showcase draws no toolbar" no longer holds: the iced showcase has drawn
+      a toolbar row since the v0.5.9 chrome (`toolbar` in
+      `connectors/native-theme-iced/examples/showcase-iced.rs`), which reads
+      `resolved.toolbar` itself: `icon_size`, `background_color`, the
+      `toolbar.border` padding, line width and colour, `item_gap` and
+      `bar_height`. The connector half stays open: nothing under
+      `connectors/native-theme-iced/src/` reads `resolved.toolbar` yet, and a
+      reader is a connector API, which M9b leaves to this entry (M9b's fix
+      plan, the ruling on what leaves M9b, item 5).
 
 - [ ] [1.0] **Follow-up plan: the other sizing fields a platform leaves
       unstated.** The v0.5.9 unstated-sizes plan

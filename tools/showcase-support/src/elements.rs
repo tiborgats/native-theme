@@ -3,9 +3,13 @@
 //! The gpui and iced showcases read the list through it; until egui moves
 //! onto it (M9c T1), it reads the list with a copy of its own. Widget
 //! Info shows an element's name, state and leaves from it, and each
-//! showcase's layout dump records where it drew each of them.
+//! showcase's layout dump records where it drew each of them. The list's
+//! header also records the order the three list their pages in
+//! ([`page_order`]).
 
 use std::sync::OnceLock;
+
+use crate::Kind;
 
 /// One element of `docs/showcase-elements.toml`: every field of the schema
 /// but `clip` and the sample points, the comparator's, which a showcase
@@ -116,6 +120,67 @@ pub fn element(id: &str) -> Option<&'static ShowcaseElement> {
     elements().iter().find(|e| e.id == id)
 }
 
+/// The tab labels `kind`'s showcase gives its pages, in the order the
+/// three list them: its column of the counterpart table in the list's
+/// header (*The pages' counterparts*), less the rows it has no page for, or
+/// why the table does not read. Each showcase's test holds its page list to
+/// it.
+pub fn page_order(kind: Kind) -> Result<Vec<&'static str>, String> {
+    pages_of(SHOWCASE_ELEMENTS, kind)
+}
+
+/// The cells of `line`, a row of a table in a comment (`#   | a | b |`), or
+/// `None` where it is no such row.
+fn table_cells(line: &str) -> Option<Vec<&str>> {
+    let row = line.strip_prefix('#')?.trim();
+    let inner = row.strip_prefix('|')?.strip_suffix('|')?;
+    Some(inner.split('|').map(str::trim).collect())
+}
+
+/// `kind`'s column of the counterpart table in `text`, a list in
+/// `docs/showcase-elements.toml`'s schema.
+fn pages_of(text: &str, kind: Kind) -> Result<Vec<&str>, String> {
+    const HEAD: [&str; 4] = ["Counterpart", "gpui", "iced", "egui"];
+    let mut lines = text.lines();
+    lines
+        .by_ref()
+        .find(|line| table_cells(line).is_some_and(|cells| cells == HEAD))
+        .ok_or("docs/showcase-elements.toml: no counterpart table in the header")?;
+    let column = HEAD
+        .iter()
+        .position(|name| *name == kind.name())
+        .ok_or_else(|| format!("the counterpart table has no {} column", kind.name()))?;
+    let rule = lines.next().and_then(table_cells).is_some_and(|cells| {
+        cells
+            .iter()
+            .all(|cell| !cell.is_empty() && cell.trim_matches('-').is_empty())
+    });
+    if !rule {
+        return Err("the counterpart table's head is not followed by its rule".to_string());
+    }
+    let mut pages = Vec::new();
+    for cells in lines.map_while(table_cells) {
+        if cells.len() != HEAD.len() {
+            return Err(format!(
+                "a counterpart row has {} cells, not {}",
+                cells.len(),
+                HEAD.len()
+            ));
+        }
+        match cells.get(column) {
+            Some(&"-") | None => {}
+            Some(page) => pages.push(*page),
+        }
+    }
+    if pages.is_empty() {
+        return Err(format!(
+            "the counterpart table lists no {} page",
+            kind.name()
+        ));
+    }
+    Ok(pages)
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
@@ -204,5 +269,77 @@ mod tests {
             bad,
             Err("`leaves` holds a value that is not a string".to_string())
         );
+    }
+
+    /// A showcase's column of the counterpart table, less the rows it has
+    /// no page for, in the table's order; the table's end is the first line
+    /// that is no row.
+    #[test]
+    fn a_counterpart_table_reads_each_column() {
+        let text = "\
+# Before it.
+#
+#   | Counterpart | gpui    | iced      | egui    |
+#   |-------------|---------|-----------|---------|
+#   | Basic       | Basic   | Basic     | Basic   |
+#   | Typography  | Typo    | Display   | -       |
+#   | Theme Map   | -       | Theme Map | Map     |
+#
+#   | Basic       | Later   | Later     | Later   |
+";
+        assert_eq!(pages_of(text, Kind::Gpui), Ok(vec!["Basic", "Typo"]));
+        assert_eq!(
+            pages_of(text, Kind::Iced),
+            Ok(vec!["Basic", "Display", "Theme Map"])
+        );
+        assert_eq!(pages_of(text, Kind::Egui), Ok(vec!["Basic", "Map"]));
+    }
+
+    /// A header without the table, a head without its rule, a row of
+    /// another width and a column with no page do not read.
+    #[test]
+    fn a_broken_counterpart_table_does_not_read() {
+        assert!(pages_of("# no table\n", Kind::Gpui).is_err());
+        let head = "#   | Counterpart | gpui | iced | egui |\n";
+        assert!(
+            pages_of(
+                &format!("{head}#   | Basic | Basic | Basic | Basic |\n"),
+                Kind::Gpui
+            )
+            .is_err()
+        );
+        let rule = "#   |---|---|---|---|\n";
+        assert_eq!(
+            pages_of(
+                &format!("{head}{rule}#   | Basic | Basic | Basic |\n"),
+                Kind::Gpui
+            ),
+            Err("a counterpart row has 3 cells, not 4".to_string())
+        );
+        assert!(
+            pages_of(
+                &format!("{head}{rule}#   | Basic | - | Basic | Basic |\n"),
+                Kind::Gpui
+            )
+            .is_err()
+        );
+    }
+
+    /// The committed table reads for each showcase, and puts the pages the
+    /// comparator matches by position where it looks for them: Basic and
+    /// Buttons first and second (`chrome.page_tabs.basic`, `.buttons`).
+    #[test]
+    fn the_committed_counterpart_table_reads() {
+        for kind in [Kind::Gpui, Kind::Iced, Kind::Egui] {
+            let pages = page_order(kind).unwrap();
+            assert_eq!(pages.get(..2), Some(&["Basic", "Buttons"][..]), "{kind:?}");
+            assert_eq!(
+                pages.get(pages.len() - 2..),
+                Some(&["Icons", "Theme Map"][..]),
+                "{kind:?}"
+            );
+        }
+        assert!(element("chrome.page_tabs.basic").is_some());
+        assert!(element("chrome.page_tabs.buttons").is_some());
     }
 }
