@@ -224,6 +224,24 @@ mod probes {
     pub const ICON_GRID_ROW_SECOND: &str = "probe-icon-grid-row-second";
     /// The Display page's Right-aligned Spacing & Layout box.
     pub const DISPLAY_SPACING_BOX: &str = "probe-display-spacing-box";
+    /// The Display page's two Styled Containers and its Theme Information
+    /// box, each drawn as a card.
+    pub const DISPLAY_CARDS: [&str; 3] = [
+        "probe-display-card",
+        "probe-display-card-second",
+        "probe-display-info",
+    ];
+    /// The Layout page's PaneGrid, whole.
+    pub const LAYOUT_PANES: &str = "probe-layout-panes";
+    /// The bodies of the Layout page's first two panes, each as wide as its
+    /// pane and as tall as it under its title bar, and their title bars'
+    /// controls.
+    pub const LAYOUT_PANE_BODIES: [&str; 2] =
+        ["probe-layout-pane-body-1", "probe-layout-pane-body-2"];
+    pub const LAYOUT_PANE_CONTROLS: [&str; 2] = [
+        "probe-layout-pane-controls-1",
+        "probe-layout-pane-controls-2",
+    ];
     /// The Layout page's Grid.
     pub const LAYOUT_GRID: &str = "probe-layout-grid";
     /// The Graphics page's canvas, QR code and Markdown view.
@@ -257,6 +275,10 @@ mod probes {
     /// The Extra page's context menu's popup ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_CONTEXT_MENU: &str = "probe-aw-context-menu";
+    /// The Extra page's panel under the context menu and the panel beside
+    /// its Sidebar, each drawn as a card.
+    #[cfg(feature = "iced_aw")]
+    pub const AW_PANELS: [&str; 2] = ["probe-aw-context-panel", "probe-aw-sidebar-panel"];
     /// The Extra page's File title, the File menu's first row, its Recent
     /// row, the Recent submenu's first row and the context menu's first
     /// entry ([`super::aw_menu_probe`]).
@@ -347,6 +369,22 @@ fn layout_value(stated: Option<f32>) -> String {
         Some(v) => format!("{v:.0}px"),
         None => values::NOT_STATED.to_string(),
     }
+}
+
+/// The padding of every surface a page draws as a card
+/// (`styles::container_card`), by one rule: a side `card.border.padding`
+/// states lies inside the card's border, which iced paints over the padded
+/// box, so it reaches iced plus the line width (`padding_inside_border`); a
+/// side it leaves unstated -- every side on the twelve presets that state no
+/// card padding, material-3 and the catppuccins among them -- is
+/// `layout.container_margin`, the theme's padding inside a container, as
+/// the gpui showcase's card and GroupBox fall back on it (`demo::card`,
+/// `demo::group_box`), and none where that is unstated too.
+fn card_padding(resolved: &ResolvedTheme, layout: &LayoutTheme) -> Padding {
+    native_theme_iced::padding_inside_border(
+        &resolved.card.border,
+        Padding::from(Gaps::from_layout(layout).container),
+    )
 }
 
 /// The menu-bar row's side padding where the theme states no
@@ -10130,12 +10168,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let card_group = group(
         "basic.card.heading",
         "Card",
-        // A side `card.border.padding` states lies inside the card's border,
-        // which iced paints over the padded box, so it reaches iced plus the
-        // line width (`padding_inside_border`). A side it leaves unstated --
-        // every side on adwaita and material-3, whose cards leave the padding
-        // to their content (platform-facts §2.26) -- is
-        // `layout.container_margin`, the theme's padding inside a container.
+        // Padded as every card is ([`card_padding`]).
         probe(
             probes::BASIC_CARD,
             Length::Shrink,
@@ -10145,10 +10178,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                     "basic.card.text",
                     text("Card content").body(resolved, a11y),
                 ))
-                .padding(native_theme_iced::padding_inside_border(
-                    &resolved.card.border,
-                    Padding::from(gap.container),
-                ))
+                .padding(card_padding(resolved, &state.layout))
                 .width(Length::Fixed(BASIC_WIDE))
                 .style(styles::container_card(resolved)),
             ),
@@ -12140,8 +12170,9 @@ fn card_info(state: &State) -> String {
             ("border-radius", &card_radius_s),
             (
                 "padding",
-                "card.border.padding's stated sides inside its line_width, a \
-                 container's own Padding::ZERO for the others",
+                "card.border.padding's stated sides inside its line_width, \
+                 layout.container_margin on a side it leaves unstated, none where \
+                 that is unstated too: one rule for every card (card_padding)",
             ),
         ],
         &[(
@@ -12221,10 +12252,9 @@ fn view_display(state: &State) -> Element<'_, Message> {
     let card = &resolved.card;
     let sep = &resolved.separator;
     let card_radius = card.border.corner_radius;
-    // A container is unpadded unless given a padding (container.rs:95), so a
-    // side the card's theme leaves unstated stays at zero; a stated side lies
-    // inside the border iced paints over the padded box.
-    let card_pad = native_theme_iced::padding_inside_border(&card.border, Padding::ZERO);
+    // The cards, the Spacing & Layout boxes among them, are padded as every
+    // card is ([`card_padding`]).
+    let card_pad = card_padding(resolved, &state.layout);
     let line_width_s = format!("{:.0}px", sep.line_width);
 
     let header = section_header(
@@ -12240,30 +12270,38 @@ fn view_display(state: &State) -> Element<'_, Message> {
         UnlistedKey::Card,
         column![
             text("Styled Containers").role(section_title(ts), resolved, a11y),
-            container(
-                column![
-                    text("Container (card fill)").body(resolved, a11y),
-                    text(format!(
-                        "This container uses styles::container_card. \
-                         card.border.corner_radius: {card_radius:.0}px."
-                    ))
-                    .role(&ts.caption, resolved, a11y),
-                ]
-                .spacing(gap.widget),
-            )
-            .padding(card_pad)
-            .style(styles::container_card(resolved))
-            .width(Fill),
-            container(
-                text(
-                    "A second container dressed as a card. Containers take their \
-                      background, border and padding from the resolved card theme."
+            probe(
+                probes::DISPLAY_CARDS[0],
+                Fill,
+                container(
+                    column![
+                        text("Container (card fill)").body(resolved, a11y),
+                        text(format!(
+                            "This container uses styles::container_card. \
+                             card.border.corner_radius: {card_radius:.0}px."
+                        ))
+                        .role(&ts.caption, resolved, a11y),
+                    ]
+                    .spacing(gap.widget),
                 )
-                .role(&ts.caption, resolved, a11y),
-            )
-            .padding(card_pad)
-            .style(styles::container_card(resolved))
-            .width(Fill),
+                .padding(card_pad)
+                .style(styles::container_card(resolved))
+                .width(Fill),
+            ),
+            probe(
+                probes::DISPLAY_CARDS[1],
+                Fill,
+                container(
+                    text(
+                        "A second container dressed as a card. Containers take their \
+                          background, border and padding from the resolved card theme."
+                    )
+                    .role(&ts.caption, resolved, a11y),
+                )
+                .padding(card_pad)
+                .style(styles::container_card(resolved))
+                .width(Fill),
+            ),
         ]
         .spacing(gap.widget)
         .into(),
@@ -12398,7 +12436,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         ]
         .spacing(gap.widget),
     )
-    .padding(Padding::from(gap.container))
+    .padding(card_pad)
     .style(styles::container_card(resolved))
     .width(Fill);
 
@@ -12444,7 +12482,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
         spacing_demo,
         rule::horizontal(sep.line_width).style(styles::rule(resolved)),
-        info_box,
+        probe(probes::DISPLAY_CARDS[2], Fill, info_box),
     ]
     .spacing(gap.section)
     .width(Fill)
@@ -12526,8 +12564,8 @@ fn pane_grid_info(state: &State) -> String {
             (
                 "padding",
                 "the pane's and its title bar's: card.border.padding inside \
-                 card.border.line_width, as the page's cards, none on a side it leaves \
-                 unstated",
+                 card.border.line_width, layout.container_margin on a side it leaves \
+                 unstated, as every card (card_padding)",
             ),
             ("controls gap", "layout.widget_gap, none where unstated"),
             (
@@ -12687,9 +12725,9 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let ts = &resolved.text_scale;
     let sep = &resolved.separator;
     let sp_th = &resolved.splitter;
-    // The panes and their title bars are drawn as cards, and padded as the
-    // page's cards are (M9-099): inside the border, none on a side unstated.
-    let card_pad = native_theme_iced::padding_inside_border(&resolved.card.border, Padding::ZERO);
+    // The panes and their title bars are drawn as cards, and padded as every
+    // card is ([`card_padding`]).
+    let card_pad = card_padding(resolved, &state.layout);
 
     let header = section_header(
         "Layout Widgets",
@@ -12760,6 +12798,12 @@ fn view_layout(state: &State) -> Element<'_, Message> {
     let panes = pane_grid(&state.panes, |pane, label, _is_maximized| {
         let focused = state.focused_pane == Some(pane);
         let title = format!("Pane {label}");
+        // The first two panes' parts, where the tests measure them.
+        let probed = |ids: [&'static str; 2]| match label {
+            1 => Some(ids[0]),
+            2 => Some(ids[1]),
+            _ => None,
+        };
         let controls = row![
             button(text("split |").typeset(&resolved.button.font, a11y))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
@@ -12775,9 +12819,13 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                 .padding(native_theme_iced::button_padding(resolved)),
         ]
         .spacing(gap.widget);
+        let controls = match probed(probes::LAYOUT_PANE_CONTROLS) {
+            Some(id) => probe(id, Length::Shrink, controls),
+            None => controls.into(),
+        };
 
         let title_bar = pane_grid::TitleBar::new(text(title).body(resolved, a11y))
-            .controls(Element::from(controls))
+            .controls(controls)
             .always_show_controls()
             .padding(card_pad)
             .style(styles::container_card(resolved));
@@ -12791,7 +12839,13 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             .role(&ts.caption, resolved, a11y),
         ]
         .spacing(gap.widget)
-        .padding(card_pad);
+        .padding(card_pad)
+        .width(Fill)
+        .height(Fill);
+        let body = match probed(probes::LAYOUT_PANE_BODIES) {
+            Some(id) => probe(id, Fill, body),
+            None => body.into(),
+        };
 
         pane_grid::Content::new(body)
             .title_bar(title_bar)
@@ -12814,7 +12868,7 @@ fn view_layout(state: &State) -> Element<'_, Message> {
                  divider between two panes."
             )
             .body(resolved, a11y),
-            panes,
+            probe(probes::LAYOUT_PANES, Fill, panes),
         ]
         .spacing(gap.widget)
         .into(),
@@ -13340,7 +13394,7 @@ fn view_graphics(state: &State) -> Element<'_, Message> {
                         h2: role_font(section_title(ts), resolved),
                     },
                 ))
-                .padding(Padding::from(gap.container))
+                .padding(card_padding(resolved, &state.layout))
                 .style(styles::container_card(resolved))
                 .width(Fill),
             ),
@@ -14167,10 +14221,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         ]
         .spacing(gap.widget),
     )
-    .padding(Padding::from(gap.container))
+    .padding(card_padding(resolved, &state.layout))
     .style(styles::container_card(resolved))
     .width(Fill);
-
+    let context_underlay = probe(probes::AW_PANELS[0], Fill, context_underlay);
     let context_demo = ContextMenu::new(context_underlay, move || {
         let entry = |label: &'static str| menu_item(label, format!("Context menu: {label}"));
         drawn_probe(
@@ -14323,19 +14377,23 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             text("Sidebar").role(section_title(ts), resolved, a11y),
             row![
                 side_bar,
-                container(
-                    text(match state.aw_sidebar_active {
-                        0 =>
-                            "General: an unselected item shows the panel itself — the \
-                              platform states no fill of its own for one.",
-                        1 => "Appearance: the selected item is sidebar.selection_background.",
-                        _ => "Icons: hovering an item paints sidebar.hover_background.",
-                    })
-                    .role(&ts.caption, resolved, a11y),
-                )
-                .padding(Padding::from(gap.container))
-                .style(styles::container_card(resolved))
-                .width(Fill),
+                probe(
+                    probes::AW_PANELS[1],
+                    Fill,
+                    container(
+                        text(match state.aw_sidebar_active {
+                            0 =>
+                                "General: an unselected item shows the panel itself — the \
+                                  platform states no fill of its own for one.",
+                            1 => "Appearance: the selected item is sidebar.selection_background.",
+                            _ => "Icons: hovering an item paints sidebar.hover_background.",
+                        })
+                        .role(&ts.caption, resolved, a11y),
+                    )
+                    .padding(card_padding(resolved, &state.layout))
+                    .style(styles::container_card(resolved))
+                    .width(Fill),
+                ),
             ]
             .spacing(gap.widget),
         ]
@@ -14595,10 +14653,18 @@ const ICON_GRID_GAP_REMS: f32 = 0.5;
 /// name, as the theme states no icon grid. The cell's Widget Info names it.
 const ICON_CELL_GAP_REMS: f32 = 0.25;
 
+/// The padding round an Icons page cell's icon, role and source, in gpui
+/// rems (spec §3.1): the gpui showcase's `ICON_CELL_PADDING`, `rems(0.5)`
+/// (`showcase-gpui/demo.rs`), which pads its gallery cells, as the theme
+/// states no icon grid and a cell is a gallery's, not a card's: the cell
+/// takes gpui's padding, not [`card_padding`], though it is drawn on a
+/// card's fill. The cell's Widget Info names it.
+const ICON_CELL_PADDING_REMS: f32 = 0.5;
+
 /// An Icons page cell: the icon loaded for its role, its role and its
-/// source, [`ICON_CELL_GAP_REMS`] apart, on a card (`styles::container_card`)
-/// padded as the page's cards are, by `card.border.padding` inside
-/// `card.border.line_width`, none on a side it leaves unstated.
+/// source, [`ICON_CELL_GAP_REMS`] apart and centred in the cell, on a card's
+/// fill (`styles::container_card`), padded [`ICON_CELL_PADDING_REMS`] round
+/// them, as the gpui showcase's gallery cell.
 fn build_icon_cell<'a>(
     loaded: &LoadedIcon,
     probe_id: &'static str,
@@ -14639,22 +14705,19 @@ fn build_icon_cell<'a>(
                 .spacing(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y))
                 .align_x(iced::Center),
             )
-            .padding(native_theme_iced::padding_inside_border(
-                &resolved.card.border,
-                Padding::ZERO,
-            ))
+            .padding(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y))
             .style(styles::container_card(resolved))
-            .width(Length::Fixed(100.0)),
+            .center_x(Length::Fixed(100.0)),
         ),
     )
 }
 
 /// The Widget Info of the Icons page's cell for `role`: the icon loaded for
-/// it now, where it came from, and the padding the cell, drawn as a card,
-/// takes; empty where none is loaded for the role.
+/// it now, where it came from, and the padding the cell takes; empty where
+/// none is loaded for the role.
 fn icon_info(state: &State, role: IconRole) -> String {
     let (resolved, a11y) = (&state.current_resolved, &state.accessibility);
-    let pad = native_theme_iced::padding_inside_border(&resolved.card.border, Padding::ZERO);
+    let pad = px_text(gpui_rems(ICON_CELL_PADDING_REMS, resolved, a11y));
     let cell_gap = px_text(gpui_rems(ICON_CELL_GAP_REMS, resolved, a11y));
     let grid_gap = px_text(gpui_rems(ICON_GRID_GAP_REMS, resolved, a11y));
     state
@@ -14663,19 +14726,16 @@ fn icon_info(state: &State, role: IconRole) -> String {
         .find(|loaded| loaded.role == role)
         .map(|loaded| {
             format!(
-                "{role:?}\nicon: {}\nsource: {}\npadding: top {}px, right {}px, bottom {}px, \
-                 left {}px: card.border.padding inside card.border.line_width, as the page's \
-                 cards, none on a side it leaves unstated\ngap: {cell_gap} between the icon, \
+                "{role:?}\nicon: {}\nsource: {}\npadding: {pad} round the icon, the role and \
+                 the source, ICON_CELL_PADDING_REMS (gpui's ICON_CELL_PADDING, a half of the \
+                 scaled defaults.font.size), as the gpui showcase's gallery cell: the theme \
+                 states no icon grid\ngap: {cell_gap} between the icon, \
                  the role and the source, ICON_CELL_GAP_REMS (gpui's ICON_CELL_GAP, a quarter \
                  of the scaled defaults.font.size)\ngrid gap: {grid_gap} between two cells and \
                  two rows, ICON_GRID_GAP_REMS (gpui's ICON_GRID_GAP, a half of the scaled \
                  defaults.font.size): the showcase's own, as the theme states no icon grid",
                 loaded.name.unwrap_or("(unmapped)"),
                 loaded.source.label(),
-                pad.top,
-                pad.right,
-                pad.bottom,
-                pad.left
             )
         })
         .unwrap_or_default()
@@ -19188,7 +19248,9 @@ mod tests {
     /// The card surfaces and the `iced_aw` tabs take the padding the theme
     /// states for them, not a spacing of the showcase's own: the `Card` and
     /// the `TabBar`/`Tabs` where every side is stated (`iced_aw` keeps their
-    /// defaults private), the containers dressed as a card side by side.
+    /// defaults private), and every container dressed as a card through
+    /// [`card_padding`], the one rule, which reads `card.border` and falls
+    /// back on `layout.container_margin`.
     #[test]
     fn card_and_tab_padding_come_from_the_theme() {
         let source = strip_comments_and_strings(SHOWCASE);
@@ -19218,7 +19280,8 @@ mod tests {
         for call in [
             "aw_card_padding(&card_t.border)",
             "stated_padding(&tab_t.border.padding)",
-            "padding_inside_border(&card.border, Padding::ZERO)",
+            "Padding::from(Gaps::from_layout(layout).container)",
+            "card_padding(resolved, &state.layout)",
         ] {
             assert!(
                 source.contains(call),
@@ -19592,7 +19655,7 @@ mod tests {
                 Some((number.parse().ok()?, rems))
             })
         };
-        let pairs: [(&str, f32, bool); 9] = [
+        let pairs: [(&str, f32, bool); 10] = [
             ("MENU_BAR_PADDING", MENU_BAR_PADDING, false),
             ("TOOLBAR_PADDING", TOOLBAR_PADDING, false),
             ("TOOLBAR_GAP", TOOLBAR_GAP, false),
@@ -19602,6 +19665,7 @@ mod tests {
             ("SWATCH_LABEL_GAP", SWATCH_LABEL_GAP_REMS, true),
             ("ICON_GRID_GAP", ICON_GRID_GAP_REMS, true),
             ("ICON_CELL_GAP", ICON_CELL_GAP_REMS, true),
+            ("ICON_CELL_PADDING", ICON_CELL_PADDING_REMS, true),
         ];
         for (name, ours, rems) in pairs {
             assert_eq!(
@@ -20779,21 +20843,131 @@ mod tests {
         }
     }
 
-    /// M9-154 (theme-data): the Icons page's cells, drawn as cards
-    /// (`styles::container_card`), are padded as the page's cards are, by
-    /// `card.border.padding` inside `card.border.line_width`, none on a side
-    /// it leaves unstated (`padding_inside_border`, M9-099): under every
-    /// bundled preset in both modes, the first cell's role name lies the
-    /// padding's top, the icon's box and the cell's gap below the cell's top,
-    /// and its source the padding's bottom above the cell's bottom.
+    /// M9b Step 8 I1 (theme-data): every surface the pages draw as a card
+    /// (`styles::container_card`) is padded by one rule, the Basic card's,
+    /// so nothing inside a filled card touches its edge: under material-3
+    /// and catppuccin-mocha, whose cards state no padding, in both modes,
+    /// every text and the pane controls inside the Basic card, the Display
+    /// page's Styled Containers, Theme Information and Spacing & Layout box,
+    /// the Graphics page's Markdown view, the Layout page's first two panes
+    /// (their title bars and bodies), an Icons cell and, with `iced_aw`, the
+    /// Extra page's two panels lie at least a pixel in from each of its edges.
     #[test]
-    fn the_icon_cells_are_padded_as_cards() {
+    fn nothing_inside_a_card_touches_its_edge() {
+        #[cfg(feature = "iced_aw")]
+        let extra = Some((Tab::Extra, probes::AW_PANELS.to_vec()));
+        #[cfg(not(feature = "iced_aw"))]
+        let extra = None;
+        let pages: Vec<(Tab, Vec<&str>)> = [
+            (Tab::Basic, vec![probes::BASIC_CARD]),
+            (
+                Tab::Display,
+                [
+                    probes::DISPLAY_CARDS.as_slice(),
+                    &[probes::DISPLAY_SPACING_BOX],
+                ]
+                .concat(),
+            ),
+            (Tab::Graphics, vec![probes::GRAPHICS_MARKDOWN]),
+            (Tab::Icons, vec![probes::ICON_CELL]),
+            (Tab::Layout, Vec::new()),
+        ]
+        .into_iter()
+        .chain(extra)
+        .collect();
+        let mut faults = Vec::new();
+        for (preset, dark) in [
+            ("material-3", false),
+            ("material-3", true),
+            ("catppuccin-mocha", false),
+            ("catppuccin-mocha", true),
+        ] {
+            for (tab, cards) in &pages {
+                let mut state = loaded(preset, dark);
+                state.side_panel_visible = false;
+                state.reload_icons();
+                state.active_tab = *tab;
+                let mut ui = interface(&state);
+                let found = texts(&mut ui);
+                // Each card, and the rectangles inside it: its texts, and a
+                // pane's controls.
+                let mut boxes: Vec<(String, Rectangle, Vec<Rectangle>)> = cards
+                    .iter()
+                    .map(|&id| (id.to_string(), probe_bounds(&mut ui, id), Vec::new()))
+                    .collect();
+                if *tab == Tab::Layout {
+                    let grid = probe_bounds(&mut ui, probes::LAYOUT_PANES);
+                    for n in 0..2 {
+                        let (Some(&body_id), Some(&controls_id)) = (
+                            probes::LAYOUT_PANE_BODIES.get(n),
+                            probes::LAYOUT_PANE_CONTROLS.get(n),
+                        ) else {
+                            continue;
+                        };
+                        let body = probe_bounds(&mut ui, body_id);
+                        // A pane of the first row: from the grid's top to
+                        // its body's foot, as wide as its body.
+                        let pane = Rectangle {
+                            x: body.x,
+                            y: grid.y,
+                            width: body.width,
+                            height: body.y + body.height - grid.y,
+                        };
+                        let controls = probe_bounds(&mut ui, controls_id);
+                        boxes.push((format!("pane {}", n + 1), pane, vec![controls]));
+                    }
+                }
+                for (card, bounds, inside) in &mut boxes {
+                    inside.extend(
+                        found
+                            .iter()
+                            .map(|(_, at)| *at)
+                            .filter(|at| bounds.contains(at.center())),
+                    );
+                    if inside.is_empty() {
+                        faults.push(format!(
+                            "{preset} (dark: {dark}) {tab:?}: {card} holds nothing"
+                        ));
+                    }
+                    for at in inside.iter() {
+                        let insets = [
+                            ("left", at.x - bounds.x),
+                            ("top", at.y - bounds.y),
+                            ("right", bounds.x + bounds.width - (at.x + at.width)),
+                            ("bottom", bounds.y + bounds.height - (at.y + at.height)),
+                        ];
+                        for (side, inset) in insets {
+                            if inset < 1.0 {
+                                faults.push(format!(
+                                    "{preset} (dark: {dark}) {tab:?}: {card}: a part at {at:?} \
+                                     is {inset}px from its {side} edge"
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9-154, as M9b Step 8 I1 rules it (theme-data): the Icons page's
+    /// cells are padded as the gpui showcase's gallery cells are, by
+    /// [`ICON_CELL_PADDING_REMS`] of the gpui rem (gpui's
+    /// `ICON_CELL_PADDING`, `rems(0.5)`), a half of the scaled
+    /// `defaults.font.size`, and their content is centred in them: under
+    /// every bundled preset in both modes, the first cell's role name lies
+    /// the padding, the icon's box and the cell's gap below the cell's top,
+    /// its source the padding above the cell's bottom, and the role name and
+    /// the source are centred across the cell.
+    #[test]
+    fn the_icon_cells_are_padded_as_gpuis_gallery_cells() {
         for (preset, dark) in every_preset_in_both_modes() {
             let mut state = loaded(preset, dark);
             state.reload_icons();
             state.active_tab = Tab::Icons;
             let r = &state.current_resolved;
-            let pad = native_theme_iced::padding_inside_border(&r.card.border, Padding::ZERO);
+            let pad = gpui_rems(ICON_CELL_PADDING_REMS, r, &state.accessibility);
             let Some(first) = state.loaded_icons.first() else {
                 panic!("{preset} (dark: {dark}): no icon role is listed");
             };
@@ -20815,17 +20989,23 @@ mod tests {
                 - box_px
                 - gpui_rems(ICON_CELL_GAP_REMS, r, &state.accessibility);
             assert!(
-                near(top, pad.top),
-                "{preset} (dark: {dark}): the cell's content starts {top}px down, want {}px",
-                pad.top
+                near(top, pad),
+                "{preset} (dark: {dark}): the cell's content starts {top}px down, want {pad}px"
             );
             let bottom = cell.y + cell.height - (source_at.y + source_at.height);
             assert!(
-                near(bottom, pad.bottom),
+                near(bottom, pad),
                 "{preset} (dark: {dark}): the cell's content ends {bottom}px above its foot, \
-                 want {}px",
-                pad.bottom
+                 want {pad}px"
             );
+            for (what, at) in [("role", role_at), ("source", source_at)] {
+                assert!(
+                    (at.center_x() - cell.center_x()).abs() < 0.5,
+                    "{preset} (dark: {dark}): the cell's {what} is centred at {}, the cell at {}",
+                    at.center_x(),
+                    cell.center_x()
+                );
+            }
         }
     }
 
