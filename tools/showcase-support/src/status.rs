@@ -80,6 +80,21 @@ pub enum DrawnFamily<'a> {
         /// match at all).
         held_weights: Option<&'a [u16]>,
     },
+    /// `family`, the first family of the text library's common fallback
+    /// list the font database holds, drawn because the toolkit draws no face
+    /// of the family it asked for and the database holds no family its
+    /// generic family names (cosmic-text 0.15 `font/fallback/mod.rs`,
+    /// `common_fallback`).
+    Fallback {
+        /// The toolkit, as the label names it (`iced`).
+        toolkit: &'a str,
+        /// The text library, as the label names it (`cosmic-text`).
+        library: &'a str,
+        /// The family drawn.
+        family: &'a str,
+        /// As [`DrawnFamily::Generic`]'s.
+        held_weights: Option<&'a [u16]>,
+    },
 }
 
 impl<'a> From<Option<&'a str>> for DrawnFamily<'a> {
@@ -93,10 +108,11 @@ impl<'a> From<Option<&'a str>> for DrawnFamily<'a> {
 impl DrawnFamily<'_> {
     /// `stated` as a label that says what is drawn: the stated name alone
     /// where it is drawn; the system UI font's note for `.SystemUIFont`; the
-    /// platform's substitute named otherwise; and, for a generic family,
-    /// whether the system has the stated family, at which weights where its
-    /// faces lie only at weights the toolkit cannot ask for, and the generic
-    /// family drawn with what it resolves to.
+    /// platform's substitute named otherwise; and, for a generic family or
+    /// the text library's fallback, whether the system has the stated
+    /// family, at which weights where its faces lie only at weights the
+    /// toolkit cannot ask for, and the generic family drawn with what it
+    /// resolves to, or the fallback family drawn.
     #[must_use]
     pub fn label(&self, stated: &str) -> String {
         match *self {
@@ -114,17 +130,7 @@ impl DrawnFamily<'_> {
                 family,
                 held_weights,
             } => {
-                let held = match held_weights {
-                    None => "not on this system".to_string(),
-                    Some([]) => format!("on this system, in no face {toolkit} can draw"),
-                    Some(weights) => {
-                        let weights: Vec<String> = weights.iter().map(u16::to_string).collect();
-                        format!(
-                            "on this system only at weights {toolkit} cannot ask for ({})",
-                            weights.join(", ")
-                        )
-                    }
-                };
+                let held = held(toolkit, held_weights);
                 match family {
                     Some(family) => {
                         format!("{stated} ({held}; drawn in {toolkit}'s generic {kind}, {family})")
@@ -132,6 +138,31 @@ impl DrawnFamily<'_> {
                     None => format!("{stated} ({held}; drawn in {toolkit}'s generic {kind})"),
                 }
             }
+            Self::Fallback {
+                toolkit,
+                library,
+                family,
+                held_weights,
+            } => {
+                let held = held(toolkit, held_weights);
+                format!("{stated} ({held}; drawn in {library}'s common fallback, {family})")
+            }
+        }
+    }
+}
+
+/// Whether the system has the stated family, as a label says it
+/// (`held_weights` as [`DrawnFamily::Generic`]'s).
+fn held(toolkit: &str, held_weights: Option<&[u16]>) -> String {
+    match held_weights {
+        None => "not on this system".to_string(),
+        Some([]) => format!("on this system, in no face {toolkit} can draw"),
+        Some(weights) => {
+            let weights: Vec<String> = weights.iter().map(u16::to_string).collect();
+            format!(
+                "on this system only at weights {toolkit} cannot ask for ({})",
+                weights.join(", ")
+            )
         }
     }
 }
@@ -228,7 +259,7 @@ mod tests {
     /// A generic family says whether the system has the stated one: not at
     /// all, only at weights the toolkit cannot ask for (listed), or in no
     /// face it can match; and what the generic family resolves to, where
-    /// the font database names it.
+    /// the font database names it, or the text library's fallback drawn.
     #[test]
     fn a_generic_family_says_why_it_is_drawn() {
         let generic = |family, held_weights| DrawnFamily::Generic {
@@ -254,6 +285,21 @@ mod tests {
             generic(Some("Open Sans"), Some(&[])).label("Theme Sans"),
             "Theme Sans (on this system, in no face iced can draw; drawn in iced's generic \
              sans-serif, Open Sans)"
+        );
+        let fallback = |held_weights| DrawnFamily::Fallback {
+            toolkit: "iced",
+            library: "cosmic-text",
+            family: "Noto Sans",
+            held_weights,
+        };
+        assert_eq!(
+            fallback(None).label("Segoe UI"),
+            "Segoe UI (not on this system; drawn in cosmic-text's common fallback, Noto Sans)"
+        );
+        assert_eq!(
+            fallback(Some(&[350])).label("Theme Sans"),
+            "Theme Sans (on this system only at weights iced cannot ask for (350); drawn in \
+             cosmic-text's common fallback, Noto Sans)"
         );
         assert_eq!(DrawnFamily::Stated.label("Noto Sans"), "Noto Sans");
         assert_eq!(

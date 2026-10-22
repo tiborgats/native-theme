@@ -14466,18 +14466,30 @@ fn family_label(stated: &str, drawn: &Drawn) -> String {
 /// macOS); the platform's substitute the connector asks for where the
 /// system lacks the stated family and iced draws the substitute; and
 /// otherwise iced's generic family, with the family it resolves to where
-/// the database names one and, where the system has the stated family, the
-/// weights of its faces, none of which iced can ask for.
+/// the database names one, or cosmic-text's common fallback family where
+/// that draws, and, where the system has the stated family, the weights of
+/// its faces, none of which iced can ask for.
 fn drawn_family(drawn: &Drawn) -> FontDrawing<'_> {
     match &drawn.generic {
         None if drawn.own => FontDrawing::Stated,
         None => FontDrawing::from(drawn.family.as_deref()),
-        Some((kind, weights)) => FontDrawing::Generic {
-            toolkit: "iced",
-            kind,
-            family: drawn.family.as_deref(),
-            held_weights: drawn.own.then_some(&**weights),
-        },
+        Some((kind, weights)) => {
+            let held_weights = drawn.own.then_some(&**weights);
+            match drawn.family.as_deref() {
+                Some(family) if drawn.fallback => FontDrawing::Fallback {
+                    toolkit: "iced",
+                    library: "cosmic-text",
+                    family,
+                    held_weights,
+                },
+                family => FontDrawing::Generic {
+                    toolkit: "iced",
+                    kind,
+                    family,
+                    held_weights,
+                },
+            }
+        }
     }
 }
 
@@ -14499,7 +14511,8 @@ fn weight_list(weights: &[u16]) -> String {
 
 /// A theme weight as the showcase shows it: the number alone where iced
 /// draws it, and otherwise what is drawn instead and why: the drawing
-/// family has no face at the weight iced asks for in the style drawn, and,
+/// family has no normal-width face (the faces cosmic-text matches,
+/// `attrs.rs:323-327`) at the weight iced asks for in the style drawn, and,
 /// where it has one at the stated weight, iced cannot ask for that weight.
 fn weight_label(stated: u16, drawn: &Drawn) -> String {
     let asked = css_weight(native_theme_iced::to_iced_weight(stated));
@@ -14517,14 +14530,15 @@ fn weight_label(stated: u16, drawn: &Drawn) -> String {
         } else {
             String::new()
         };
-        format!("{stated} (drawn at {at}: {family} has no {word} {asked} face{held})")
+        format!("{stated} (drawn at {at}: {family} has no normal-width {word} {asked} face{held})")
     }
 }
 
 /// A theme style as the showcase shows it: its name alone where iced draws
 /// it, and otherwise the style drawn instead and why: the drawing family has
-/// no face of the stated style, or has faces of it only at weights iced
-/// cannot ask for.
+/// no normal-width face of the stated style (the faces cosmic-text matches,
+/// `attrs.rs:323-327`), or has such faces of it only at weights iced cannot
+/// ask for.
 fn style_label(stated: FontStyle, drawn: &Drawn) -> String {
     let at = font_style(face_style(drawn.font.style));
     let name = style_name(stated);
@@ -14534,10 +14548,10 @@ fn style_label(stated: FontStyle, drawn: &Drawn) -> String {
     let family = drawn.family.as_deref().unwrap_or("the generic family");
     let weights = weights_in(drawn, stated_face_style(stated));
     let why = if weights.is_empty() {
-        format!("{family} has no {name} face")
+        format!("{family} has no normal-width {name} face")
     } else {
         format!(
-            "{family} has {name} faces only at weights iced cannot ask for ({})",
+            "{family} has normal-width {name} faces only at weights iced cannot ask for ({})",
             weight_list(&weights)
         )
     };
@@ -14631,6 +14645,11 @@ struct Drawn {
     /// weights of `asked`'s faces at the normal width, none of which iced
     /// can ask for. `None` where iced draws `asked`.
     generic: Option<(&'static str, Arc<[u16]>)>,
+    /// Whether `family` is the first family of cosmic-text's common
+    /// fallback list the database holds, drawn because it holds no family of
+    /// the name the generic sans-serif family is given (cosmic-text's
+    /// "Open Sans", `font/system.rs:158-160`), rather than that family.
+    fallback: bool,
 }
 
 /// The theme fonts worked out so far ([`FontKey`]).
@@ -14757,15 +14776,28 @@ fn drawable_font(
         iced::font::Family::Name(name) => Some(name),
         _ => None,
     };
-    let (drawn, deciding, generic) = match named.filter(|name| holds(db, name)) {
-        Some(name) => (iced::font::Family::Name(name), Some(name), None),
-        None if mono => (iced::font::Family::Monospace, None, Some("monospace")),
+    let (drawn, deciding, generic, fallback) = match named.filter(|name| holds(db, name)) {
+        Some(name) => (iced::font::Family::Name(name), Some(name), None, false),
+        None if mono => (
+            iced::font::Family::Monospace,
+            None,
+            Some("monospace"),
+            false,
+        ),
         None => {
             let generic = db.family_name(&fontdb::Family::SansSerif);
-            let resolved = std::iter::once(generic)
-                .chain(fallbacks.iter().copied())
-                .find(|name| holds(db, name));
-            (iced::font::Family::SansSerif, resolved, Some("sans-serif"))
+            let (resolved, fallback) = if holds(db, generic) {
+                (Some(generic), false)
+            } else {
+                let first = fallbacks.iter().copied().find(|name| holds(db, name));
+                (first, first.is_some())
+            };
+            (
+                iced::font::Family::SansSerif,
+                resolved,
+                Some("sans-serif"),
+                fallback,
+            )
         }
     };
     let generic = generic.map(|kind| {
@@ -14808,6 +14840,7 @@ fn drawable_font(
                 .unwrap_or_default(),
         ),
         generic,
+        fallback,
     }
 }
 
@@ -24031,8 +24064,9 @@ mod tests {
 
     /// No label claims what does not hold (M9b T12 fix round 1): a family
     /// the system has only at weights iced cannot ask for is not "not on
-    /// this system", and the generic family drawn in its place is iced's,
-    /// not the platform's substitute; a style or weight the family has only
+    /// this system", and the family drawn in its place is named as iced's
+    /// generic family's or, as here, cosmic-text's fallback, not as the
+    /// platform's substitute; a style or weight the family has only
     /// at weights iced cannot ask for says so, where the label said the
     /// family has no such face.
     #[test]
@@ -24047,7 +24081,67 @@ mod tests {
         assert_eq!(
             family_label("Theme Sans", &drawn),
             "Theme Sans (on this system only at weights iced cannot ask for (350, 650); \
-             drawn in iced's generic sans-serif, System Sans)"
+             drawn in cosmic-text's common fallback, System Sans)"
+        );
+    }
+
+    /// iced's generic sans-serif is named with the family it resolves to
+    /// where the database holds the family it names
+    /// (`db.family_name(&Family::SansSerif)`, cosmic-text's "Open Sans",
+    /// `font/system.rs:158-160`); where it does not, cosmic-text draws the
+    /// first family of its common fallback list the database holds
+    /// (`font/fallback/mod.rs`, `common_fallback`), and the label names that
+    /// as cosmic-text's, not as what the generic family resolves to.
+    #[test]
+    fn a_fallback_family_is_named_as_cosmic_texts() {
+        let fallbacks = ["System Sans"];
+        let mut db = database(&[("Generic Sans", 400, false), ("System Sans", 400, false)]);
+        db.set_sans_serif_family("Generic Sans");
+        let generic = drawable_font(&db, &fallbacks, asked("Theme Sans", 400), false, false);
+        assert_eq!(
+            family_label("Theme Sans", &generic),
+            "Theme Sans (not on this system; drawn in iced's generic sans-serif, Generic Sans)"
+        );
+        db.set_sans_serif_family("No Such Sans");
+        let fallback = drawable_font(&db, &fallbacks, asked("Theme Sans", 400), false, false);
+        assert_eq!(
+            family_label("Theme Sans", &fallback),
+            "Theme Sans (not on this system; drawn in cosmic-text's common fallback, System Sans)"
+        );
+    }
+
+    /// A face is said to be missing at the normal width, the only one
+    /// cosmic-text draws text that asks for no stretch in
+    /// (`attrs.rs:323-327`): a family whose only bold faces and only italic
+    /// face are condensed has no normal-width bold or italic face, not none.
+    #[test]
+    fn a_missing_face_is_missing_at_the_normal_width() {
+        let mut db = database(&[("Theme Sans", 400, false)]);
+        for style in [fontdb::Style::Normal, fontdb::Style::Italic] {
+            db.push_face_info(fontdb::FaceInfo {
+                id: fontdb::ID::dummy(),
+                source: fontdb::Source::Binary(std::sync::Arc::new(Vec::<u8>::new())),
+                index: 0,
+                families: vec![("Theme Sans".into(), fontdb::Language::English_UnitedStates)],
+                post_script_name: format!("Theme Sans Condensed Bold {style:?}"),
+                style,
+                weight: fontdb::Weight(700),
+                stretch: fontdb::Stretch::Condensed,
+                monospaced: false,
+            });
+        }
+        let bold_italic = iced::Font {
+            style: iced::font::Style::Italic,
+            ..asked("Theme Sans", 700)
+        };
+        let drawn = drawable_font(&db, &[], bold_italic, true, false);
+        assert_eq!(
+            weight_label(700, &drawn),
+            "700 (drawn at 400: Theme Sans has no normal-width upright 700 face)"
+        );
+        assert_eq!(
+            style_label(FontStyle::Italic, &drawn),
+            "italic (drawn upright: Theme Sans has no normal-width italic face)"
         );
     }
 
@@ -24064,8 +24158,8 @@ mod tests {
         let drawn = drawable_font(&db, &[], italic, true, false);
         assert_eq!(
             style_label(FontStyle::Italic, &drawn),
-            "italic (drawn upright: Theme Sans has italic faces only at weights iced cannot \
-             ask for (350))"
+            "italic (drawn upright: Theme Sans has normal-width italic faces only at weights \
+             iced cannot ask for (350))"
         );
     }
 
@@ -24077,8 +24171,8 @@ mod tests {
         let drawn = drawable_font(&db, &[], asked("Theme Sans", 650), true, false);
         assert_eq!(
             weight_label(650, &drawn),
-            "650 (drawn at 400: Theme Sans has no upright 700 face; its 650 face is at a \
-             weight iced cannot ask for)"
+            "650 (drawn at 400: Theme Sans has no normal-width upright 700 face; its 650 face \
+             is at a weight iced cannot ask for)"
         );
     }
 
@@ -24112,9 +24206,9 @@ mod tests {
         );
         assert_eq!(
             font_row_drawn("button.font", &font, &generic),
-            "button.font, size; family Theme Sans (not on this system; drawn in iced's generic \
-             sans-serif, System Sans); weight 700 (drawn at 400: System Sans has no upright \
-             700 face)"
+            "button.font, size; family Theme Sans (not on this system; drawn in cosmic-text's \
+             common fallback, System Sans); weight 700 (drawn at 400: System Sans has no \
+             normal-width upright 700 face)"
         );
         let mut segoe = font.clone();
         segoe.family = "Segoe UI".into();
@@ -24142,7 +24236,7 @@ mod tests {
         assert_eq!(
             font_row_drawn("button.font", &font, &upright),
             "button.font, family, size and weight; style italic (drawn upright: Theme Sans \
-             has no italic face)"
+             has no normal-width italic face)"
         );
     }
 
@@ -24150,7 +24244,8 @@ mod tests {
     /// it, under whatever name the database files it, and otherwise, through
     /// the shared crate's `status::DrawnFamily`, with what is drawn in its
     /// place: the platform's substitute, or iced's generic family and what
-    /// that resolves to, where the database names it.
+    /// that resolves to, where the database names it, or cosmic-text's
+    /// fallback.
     #[test]
     fn a_substituted_family_says_so() {
         let db = database(&[("Theme Sans", 400, false)]);
@@ -24166,7 +24261,7 @@ mod tests {
         );
         assert_eq!(
             family_label("Theme Sans", &generic),
-            "Theme Sans (not on this system; drawn in iced's generic sans-serif, System Sans)"
+            "Theme Sans (not on this system; drawn in cosmic-text's common fallback, System Sans)"
         );
         let mono = drawable_font(&db, &[], asked("Theme Mono", 400), false, true);
         assert_eq!(
@@ -24193,16 +24288,22 @@ mod tests {
     /// (windows-11's "Segoe UI" on a Linux system without it). A preset
     /// whose family iced draws in its generic family here is skipped and
     /// said so on stderr, with the count of the presets checked: the
-    /// generic forms are the fixture tests'.
+    /// generic forms are the fixture tests'. None checked fails where this
+    /// system has any of the three families, and passes, said so, only
+    /// where it has none.
     #[test]
     fn the_status_bar_names_the_drawn_family() {
         let presets = ["windows-11", "kde-breeze", "adwaita"];
         let mut checked = 0;
+        let mut installed = Vec::new();
         for preset in presets {
             let state = page_state(preset, Tab::Basic);
             let font = &state.current_resolved.defaults.font;
             let own =
                 native_theme::fonts::system_face(&font.family, font.weight, font.style).is_some();
+            if own {
+                installed.push(font.family.to_string());
+            }
             let asked = native_theme_iced::system_font_family(font);
             let held = {
                 let mut system = iced::advanced::graphics::text::font_system()
@@ -24234,6 +24335,10 @@ mod tests {
             "the_status_bar_names_the_drawn_family: {checked} of {} presets checked",
             presets.len()
         );
+        assert!(
+            checked > 0 || installed.is_empty(),
+            "no preset checked, though this system has {installed:?}"
+        );
     }
 
     /// A weight is shown as the number alone where it is drawn, and with
@@ -24247,7 +24352,7 @@ mod tests {
         let regular = drawable_font(&db, &[], asked("Theme Sans", 700), true, false);
         assert_eq!(
             weight_label(700, &regular),
-            "700 (drawn at 400: Theme Sans has no upright 700 face)"
+            "700 (drawn at 400: Theme Sans has no normal-width upright 700 face)"
         );
         let between = drawable_font(&db, &[], asked("Theme Sans", 350), true, false);
         assert_eq!(
