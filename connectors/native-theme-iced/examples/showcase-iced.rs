@@ -435,9 +435,9 @@ type PartRect<'a> = Box<dyn Fn(iced::advanced::Layout<'_>) -> Option<iced::Recta
 
 /// `content`, one element of the list: while it is drawn its rectangle, and
 /// its parts', are recorded under their ids for the layout dump, where the
-/// run records them ([`RECORDING`]); while the
-/// pointer is over it, it is the hover target Widget Info shows, unless a
-/// smaller one under the pointer is ([`hover_target`]).
+/// run records them ([`RECORDING`]); while the pointer is over it, it is the
+/// hover target Widget Info shows, unless a smaller one under the pointer is
+/// ([`hover_target`]).
 ///
 /// The wrapper is invisible to the widget tree: it hands its content the
 /// tree, the layout and every event as they are, so wrapping a widget keeps
@@ -656,9 +656,10 @@ thread_local! {
     /// Whether the elements record their rectangles, into [`DRAWING`] as
     /// they are drawn and into [`SURVEYED`] as they are operated on, and
     /// shape their text parts to do so: set by `main` for `--dump-layout`
-    /// ([`records_layout`]), whose dump and settle read the two, and by the
-    /// tests that read them (`recording`). A plain run records nothing; the
-    /// hover target ([`UNDER_POINTER`]) needs no record.
+    /// ([`records_layout`]), whose settle and write run where it is set and
+    /// read the two, and by the tests that read them (`recording`). A plain
+    /// run records nothing; the hover target ([`UNDER_POINTER`]) needs no
+    /// record.
     static RECORDING: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
 
@@ -888,7 +889,7 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Tagged<'_> {
             }
         }
         if let iced::Event::Window(iced::window::Event::RedrawRequested(now)) = event
-            && CLI_ARGS.get().is_some_and(|cli| cli.dump_layout.is_some())
+            && RECORDING.get()
         {
             let first = *FIRST_FRAME.get().get_or_insert(*now);
             FIRST_FRAME.set(Some(first));
@@ -1507,7 +1508,7 @@ struct State {
     /// `current_resolved` as a listed element's Widget Info reads its values
     /// ([`theme_json`]), serialised once per install. Written only with
     /// `current_resolved`, in `load_theme`: a test that sets
-    /// `current_resolved` sets this too.
+    /// `current_resolved` and reads a listed element's info sets this too.
     theme_json: serde_json::Value,
     /// The current theme's layout spacing. Not part of `ResolvedTheme`: it is
     /// shared between the light and the dark variant, so it sits on the
@@ -2652,7 +2653,9 @@ fn update_at(state: &mut State, message: Message, now: Instant) -> iced::Task<Me
                 .map(Message::LayoutScaled);
         }
         Message::LayoutScaled(scale) => {
-            if let Some(path) = CLI_ARGS.get().and_then(|cli| cli.dump_layout.as_deref()) {
+            if RECORDING.get()
+                && let Some(path) = CLI_ARGS.get().and_then(|cli| cli.dump_layout.as_deref())
+            {
                 if let Err(error) = dump::write_layout(path, &layout_dump(state, scale)) {
                     cli::refuse(&error);
                 }
