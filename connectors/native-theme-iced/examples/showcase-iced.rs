@@ -1433,6 +1433,9 @@ struct State {
     color_mode: AppColorMode,
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
+    /// `current_resolved` as a listed element's Widget Info reads its values
+    /// ([`theme_json`]), serialised once per install.
+    theme_json: serde_json::Value,
     /// The current theme's layout spacing. Not part of `ResolvedTheme`: it is
     /// shared between the light and the dark variant, so it sits on the
     /// native `Theme` and on `SystemTheme` instead.
@@ -1470,13 +1473,19 @@ struct State {
     // Widget Info (hover-driven)
     /// What Widget Info shows: the element or page widget the pointer was
     /// last over for [`INFO_SETTLE`], kept when the pointer leaves it;
-    /// `None` before any. Its text is built from the state in `view`.
+    /// `None` before any. Set through [`State::show`], which builds its
+    /// info, `shown_info`.
     hovered: Option<Hovered>,
     /// The pointer's newest target and when it was entered, waiting out
     /// [`INFO_SETTLE`] before it replaces `hovered` (gpui's
     /// `InfoRegistry::pending`); `None` once it is shown, or the pointer has
     /// left it.
     pending: Option<(Hovered, Instant)>,
+    /// The Widget Info of `hovered`, built when it is shown and again from
+    /// the state after each change of it ([`State::rebuild_info`]), so
+    /// `view` only lays it out; `None` with `hovered`, and for an id the
+    /// list does not hold.
+    shown_info: Option<ShownInfo>,
 
     // Chrome
     /// The inspector's open tab.
@@ -1785,6 +1794,7 @@ impl State {
             current_theme: theme,
             color_mode,
             is_dark,
+            theme_json: theme_json(&resolved),
             current_resolved: resolved,
             layout,
             accessibility: os_accessibility.clone(),
@@ -1797,6 +1807,7 @@ impl State {
             active_tab: Tab::Basic,
             hovered: None,
             pending: None,
+            shown_info: None,
             inspector_tab: InspectorTab::Widget,
             side_panel_visible: true,
             side_panel_width: LEFT_PANEL_WIDTH,
@@ -2146,6 +2157,7 @@ impl State {
                 self.current_icon_set = icon_set;
                 self.layout = layout;
                 self.current_icon_theme = icon_theme;
+                self.theme_json = theme_json(&resolved);
                 self.current_resolved = resolved;
                 self.current_theme = theme;
                 self.error_message = None;
@@ -2164,6 +2176,7 @@ impl State {
                     .clone()
                     .filter(|_| icon_theme_explicit);
                 self.current_icon_set = r.icon_set;
+                self.theme_json = theme_json(&r.variant);
                 self.current_resolved = r.variant;
                 self.layout = nt.layout.clone();
                 self.current_theme =
@@ -2280,9 +2293,25 @@ impl State {
         if let Some((choice, since)) = self.pending
             && now.saturating_duration_since(since) >= INFO_SETTLE
         {
-            self.hovered = Some(choice);
             self.pending = None;
+            self.show(Some(choice));
         }
+    }
+
+    /// Show `hovered` in Widget Info, its info built from the state now.
+    fn show(&mut self, hovered: Option<Hovered>) {
+        self.hovered = hovered;
+        self.rebuild_info();
+    }
+
+    /// Build the Widget Info of what is shown from the state now. The info
+    /// reads the installed theme, the preferences, the icons, the tabs open
+    /// and the side panel's visibility ([`iced_route`], [`unlisted_info`]),
+    /// so [`update_inner`] calls this after each message it handles: every
+    /// message but the hover, tick, capture, layout-dump and Copy messages,
+    /// which change none of them. A view only lays it out.
+    fn rebuild_info(&mut self) {
+        self.shown_info = self.hovered.and_then(|hovered| shown_info(self, hovered));
     }
 }
 
@@ -2714,6 +2743,7 @@ fn update_inner(state: &mut State, message: Message) {
         Message::IconSetSelected(choice) => state.choose_icon_set(choice),
         _ => {} // Screenshot messages handled by update()
     }
+    state.rebuild_info();
 }
 
 // ---------------------------------------------------------------------------
@@ -5204,9 +5234,9 @@ fn status_bar_padding(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences)
 /// element's (`name · state`), or the first line of another page's widget
 /// info; `None` before any hover.
 fn shown_title(state: &State) -> Option<String> {
-    match state.hovered? {
-        Hovered::Listed(id) => elements::element(id).map(ShowcaseElement::title),
-        Hovered::Unlisted(key) => info_title(&unlisted_info(state, key)).map(str::to_string),
+    match state.shown_info.as_ref()? {
+        ShownInfo::Listed { info, .. } => Some(info.title.clone()),
+        ShownInfo::Unlisted(info) => info_title(info).map(str::to_string),
     }
 }
 
@@ -5303,6 +5333,49 @@ fn hex_color(line: &str) -> Option<Color> {
 // Widget Info of a listed element (docs/showcase-elements.toml, section B)
 // ---------------------------------------------------------------------------
 
+#[cfg(test)]
+thread_local! {
+    /// The resolved themes [`theme_json`] has serialised on this thread.
+    static THEME_JSON_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// The listed elements' Widget Info [`element_info`] has built on this
+    /// thread.
+    static LISTED_INFO_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// The page widgets' Widget Info [`unlisted_info`] has built on this
+    /// thread.
+    static UNLISTED_INFO_BUILDS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// `resolved` as Widget Info reads a listed element's values from it
+/// (`values::theme_json`), counted in [`THEME_JSON_BUILDS`] under test;
+/// `Null`, every value then not stated, where it does not serialise.
+fn theme_json(resolved: &ResolvedTheme) -> serde_json::Value {
+    #[cfg(test)]
+    THEME_JSON_BUILDS.with(|builds| builds.set(builds.get() + 1));
+    values::theme_json(resolved).unwrap_or_default()
+}
+
+/// What Widget Info shows, as [`State::rebuild_info`] built it: a listed
+/// element's info with the text Copy copies, or a page widget's text, which
+/// Copy copies as it is.
+#[derive(Clone, Debug)]
+enum ShownInfo {
+    Listed { info: ListedInfo, copied: String },
+    Unlisted(String),
+}
+
+/// The Widget Info of `hovered` under `state`; `None` for an id the list
+/// does not hold.
+fn shown_info(state: &State, hovered: Hovered) -> Option<ShownInfo> {
+    Some(match hovered {
+        Hovered::Listed(id) => {
+            let info = element_info(state, elements::element(id)?);
+            let copied = info.copy_text();
+            ShownInfo::Listed { info, copied }
+        }
+        Hovered::Unlisted(key) => ShownInfo::Unlisted(unlisted_info(state, key)),
+    })
+}
+
 /// Widget Info of one element of the list, in the three showcases' form
 /// (`info::ListedInfo`): its title, a row per leaf in the list's order with
 /// its value -- the layout distances, the icon set and the icon theme read
@@ -5310,10 +5383,11 @@ fn hex_color(line: &str) -> Option<Color> {
 /// then what iced draws for it that the theme states nothing for
 /// ([`iced_not_themeable`]).
 fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
-    let json = values::theme_json(&state.current_resolved).unwrap_or_default();
+    #[cfg(test)]
+    LISTED_INFO_BUILDS.with(|builds| builds.set(builds.get() + 1));
     ListedInfo::new(
         element,
-        &json,
+        &state.theme_json,
         &state.layout,
         Some(state.current_icon_set),
         state.current_icon_theme.as_deref(),
@@ -5351,9 +5425,10 @@ fn info_gap(stated: Option<f32>) -> f32 {
     stated.unwrap_or_default()
 }
 
-/// Widget Info of the element `element`: the title (`name · state`) flush
-/// left and Copy flush right; `layout.section_gap` below them the "Theme"
-/// section, a row per leaf `layout.widget_gap` apart -- a swatch of a colour
+/// Widget Info of a listed element, `info`, which Copy copies as `copied`:
+/// the title (`name · state`) flush left and Copy flush right;
+/// `layout.section_gap` below them the "Theme" section, a row per leaf
+/// `layout.widget_gap` apart -- a swatch of a colour
 /// one line tall, then `<leaf> <value>` over the muted line that says how
 /// iced applies it -- and, where iced draws something the theme states
 /// nothing for, the "Not themeable" section. Every line in `sidebar.font`, the
@@ -5361,7 +5436,8 @@ fn info_gap(stated: Option<f32>) -> f32 {
 /// gaps). The layout the gpui and egui showcases' Widget Info has.
 fn element_info_view<'a>(
     state: &'a State,
-    element: &'static ShowcaseElement,
+    info: &'a ListedInfo,
+    copied: &str,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let widget_gap = info_gap(state.layout.widget_gap);
@@ -5370,7 +5446,6 @@ fn element_info_view<'a>(
     let regular = resolved.sidebar.font.weight;
     let line = scaled_text_size(resolved.sidebar.font.size, &state.accessibility)
         * resolved.defaults.line_height;
-    let info = element_info(state, element);
     let b = &resolved.button;
     let copy = button(text("Copy").themed(&resolved.sidebar.font, resolved, &state.accessibility))
         .padding(native_theme_iced::padding_or(
@@ -5378,12 +5453,12 @@ fn element_info_view<'a>(
             Padding::ZERO,
         ))
         .style(copy_button(ghost_button(resolved, false), resolved))
-        .on_press(Message::Copy(info.copy_text()));
+        .on_press(Message::Copy(copied.to_owned()));
     let mut body = column![
         row![
             tagged(
                 "chrome.info.title",
-                info_text(state, info.title.clone(), HEADING_WEIGHT, ink)
+                info_text(state, info.title.as_str(), HEADING_WEIGHT, ink)
             ),
             space().width(Fill),
             tagged("chrome.info.copy", copy),
@@ -5396,10 +5471,10 @@ fn element_info_view<'a>(
         ),
     ];
     let frame = swatch_frame(resolved);
-    for (index, row) in info.rows.into_iter().enumerate() {
+    for (index, row) in info.rows.iter().enumerate() {
         let first = index == 0;
         let leaf = info_text(state, format!("{} {}", row.leaf, row.value), regular, ink);
-        let how = info_text(state, row.how, regular, muted);
+        let how = info_text(state, row.how.as_str(), regular, muted);
         let (leaf, how): (Element<'a, Message>, Element<'a, Message>) = if first {
             (
                 // At the lines' own width, past the panel's edge, which
@@ -5451,10 +5526,13 @@ fn element_info_view<'a>(
             HEADING_WEIGHT,
             ink,
         ));
-        for line in info.not_themeable {
-            body = body
-                .push(space().height(widget_gap))
-                .push(info_text(state, line, regular, muted));
+        for line in &info.not_themeable {
+            body = body.push(space().height(widget_gap)).push(info_text(
+                state,
+                line.as_str(),
+                regular,
+                muted,
+            ));
         }
     }
     body.into()
@@ -6821,18 +6899,15 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
 /// text's sections as `widget_tooltip` writes them -- a heading per section,
 /// a swatch line per colour, a name over its value per other line.
 fn inspector_widget(state: &State) -> Element<'_, Message> {
-    let info = match state.hovered {
-        Some(Hovered::Listed(id)) => match elements::element(id) {
-            Some(element) => return element_info_view(state, element),
-            None => String::new(),
-        },
-        Some(Hovered::Unlisted(key)) => unlisted_info(state, key),
-        None => String::new(),
+    let info = match &state.shown_info {
+        Some(ShownInfo::Listed { info, copied }) => return element_info_view(state, info, copied),
+        Some(ShownInfo::Unlisted(info)) => info.as_str(),
+        None => "",
     };
     let resolved = &state.current_resolved;
     let gap = Gaps::from_layout(&state.layout);
     let (text_color, muted) = info_inks(resolved);
-    let Some(title) = info_title(&info) else {
+    let Some(title) = info_title(info) else {
         return tagged(
             "chrome.info.hint",
             info_text(
@@ -6849,7 +6924,7 @@ fn inspector_widget(state: &State) -> Element<'_, Message> {
         button(text("Copy").role(&resolved.text_scale.caption, resolved, &state.accessibility))
             .padding(Padding::ZERO.left(pad.left).right(pad.right))
             .style(ghost_button(resolved, false))
-            .on_press(Message::Copy(info.clone()));
+            .on_press(Message::Copy(info.to_owned()));
     let mut body = column![
         row![
             inspector_heading(state, title.to_string()),
@@ -7385,6 +7460,8 @@ enum Hovered {
 /// The Widget Info of the page widget `key` names, built from `state`: the
 /// theme installed now, the icons loaded now.
 fn unlisted_info(state: &State, key: UnlistedKey) -> String {
+    #[cfg(test)]
+    UNLISTED_INFO_BUILDS.with(|builds| builds.set(builds.get() + 1));
     match key {
         UnlistedKey::Button => button_info(state),
         UnlistedKey::DisabledButtons => disabled_buttons_info(state),
@@ -22973,6 +23050,112 @@ mod tests {
         }
     }
 
+    /// M9-075, M9-139: Widget Info is built when what it shows changes, not
+    /// at each view. Once the pointer has stood on the Basic page's plain
+    /// button, twenty animation ticks, the second the page animates in, each
+    /// with a view, serialise the theme no more and build its info and Copy
+    /// text no more, where each view serialised the whole theme and built
+    /// them again; an install serialises the theme once and builds the info
+    /// once, and a preference change builds the info again from the
+    /// serialised theme. A page widget's info is built once per hover and
+    /// install too, where each view built it twice, for the status bar and
+    /// the inspector (M9b T7 review Minor 2). Copy then copies what the
+    /// state builds.
+    #[test]
+    fn widget_info_is_built_once_per_hover_and_install() {
+        type Builds = std::thread::LocalKey<std::cell::Cell<usize>>;
+        let count = |builds: &'static Builds| builds.with(std::cell::Cell::get);
+        let animate = |state: &mut State, from: Instant| {
+            for tick in 1..=20 {
+                let _ = update_at(state, Message::AnimationTick, from + TICK * tick);
+                let _ = view(state);
+            }
+        };
+        let cases: [(Hovered, &'static Builds); 2] = [
+            (
+                Hovered::Listed("basic.buttons.default"),
+                &LISTED_INFO_BUILDS,
+            ),
+            (
+                Hovered::Unlisted(UnlistedKey::Button),
+                &UNLISTED_INFO_BUILDS,
+            ),
+        ];
+        for (hovered, builds) in cases {
+            let mut state = installed("kde-breeze");
+            let (json, built) = (count(&THEME_JSON_BUILDS), count(builds));
+            let since = || (count(&THEME_JSON_BUILDS) - json, count(builds) - built);
+            let start = Instant::now();
+            let entered = match hovered {
+                Hovered::Listed(id) => Message::ElementHovered(id),
+                Hovered::Unlisted(key) => Message::WidgetHovered(key),
+            };
+            let _ = update_at(&mut state, entered, start);
+            let shown = start + INFO_SETTLE;
+            let _ = update_at(&mut state, Message::InfoSettleTick, shown);
+            assert_eq!(state.hovered, Some(hovered), "{hovered:?} is not shown");
+            animate(&mut state, shown);
+            assert_eq!(
+                since(),
+                (0, 1),
+                "{hovered:?}: (themes serialised, infos built) by a hover and twenty views"
+            );
+            let _ = update(
+                &mut state,
+                Message::ThemeSelected(ThemeChoice::Preset("material-3".to_owned())),
+            );
+            animate(&mut state, shown + TICK * 20);
+            assert_eq!(
+                since(),
+                (1, 2),
+                "{hovered:?}: (themes serialised, infos built) by an install and twenty views more"
+            );
+            let _ = update(&mut state, Message::TextScaleSelected(TextScale(1.5)));
+            animate(&mut state, shown + TICK * 40);
+            assert_eq!(
+                since(),
+                (1, 3),
+                "{hovered:?}: (themes serialised, infos built) by a preference change and \
+                 twenty views more"
+            );
+            let _ = update(&mut state, Message::TabSelected(Tab::Buttons));
+            let built_now = match hovered {
+                Hovered::Listed(id) => match elements::element(id) {
+                    Some(element) => element_info(&state, element).copy_text(),
+                    None => panic!("{id} is not in the list"),
+                },
+                Hovered::Unlisted(key) => unlisted_info(&state, key),
+            };
+            assert_eq!(
+                copied(&state),
+                Some(built_now),
+                "{hovered:?}: the info shown"
+            );
+        }
+        // What the info reads besides the theme and the preferences moves it
+        // too: a page tab's route says whether the tab is open.
+        let tab = "chrome.page_tabs.buttons";
+        let mut state = installed("kde-breeze");
+        let start = Instant::now();
+        let _ = update_at(&mut state, Message::ElementHovered(tab), start);
+        let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
+        let shown = |state: &State| match &state.shown_info {
+            Some(ShownInfo::Listed { copied, .. }) => copied.clone(),
+            other => panic!("{tab}: {other:?} shown"),
+        };
+        let closed = shown(&state);
+        let _ = update(&mut state, Message::TabSelected(Tab::Buttons));
+        let Some(element) = elements::element(tab) else {
+            panic!("{tab} is not in the list");
+        };
+        assert_eq!(shown(&state), element_info(&state, element).copy_text());
+        assert_ne!(
+            shown(&state),
+            closed,
+            "{tab}: open and closed show one info"
+        );
+    }
+
     /// A leaf's value reads as the resolved theme holds it, in the
     /// registry's spelling: a padding side in px, a font as its family, the
     /// size its source stated and its weight, a colour as its hex, a layout
@@ -24797,7 +24980,7 @@ mod tests {
             .max_by_key(|key| unlisted_info(&state, *key).lines().count());
         let mut drawn = Vec::new();
         for hovered in [None, tallest.map(Hovered::Unlisted)] {
-            state.hovered = hovered;
+            state.show(hovered);
             let mut ui: Simulator<'_, Message> =
                 Simulator::with_size(Settings::default(), Size::from(WINDOW_SIZE), view(&state));
             drawn.push((
