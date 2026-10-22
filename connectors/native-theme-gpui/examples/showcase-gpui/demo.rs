@@ -4074,8 +4074,8 @@ pub(crate) fn switch(
         .debug_selector(move || id.into())
 }
 
-/// A `Slider` over `state` along `axis`, `length` long: its width, or a
-/// vertical one's height, which a screen reader names `label`: it draws no
+/// A `Slider` over `state` along `axis`, `length` long (its width, or a
+/// vertical one's height), which a screen reader names `label`: it draws no
 /// text of its own to be named by. A range state draws a thumb at each end.
 pub(crate) fn slider(
     ui: &Entity<InfoRegistry>,

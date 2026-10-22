@@ -235,7 +235,7 @@ impl Showcase {
                     ui,
                     cx,
                     "inputs-slider",
-                    "Value in the heading",
+                    "Sample value",
                     &self.slider_state,
                     Axis::Horizontal,
                     px(360.0),

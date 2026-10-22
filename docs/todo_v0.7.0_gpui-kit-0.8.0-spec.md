@@ -769,6 +769,9 @@ shortens the time M9b is held and M9a's CI stays red.
   the themed slider's disabled state for assistive technology; the Layout page's Folder tab
   bar.
   *Added 2026-10-21 (K19):* *Breaking Changes*, the `widgets::PartBounds` line (§2.4).
+  *Added 2026-10-22 (G3 T7 fix round 1):* the themed slider's disabled state is under
+  *Fixed*, not *Added*: the widget existed and told assistive technology a disabled slider
+  takes input; its test-API registration is in the same *Fixed* line. Task 10 keeps it there.
 - `ROADMAP.md`: the v0.7.0 paragraph (`:72-74`) names GPUI Kit 0.8.0; in *v0.7.2 — Upstream
   receivers*, the bullet "a gpui-fast marker constant" goes (gpui-kit 0.8.0's
   `GPUI_FAST`), and every bullet that cites a line "at gpui-component 0.7.x" / "gpui-base
