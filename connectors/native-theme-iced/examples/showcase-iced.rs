@@ -4806,8 +4806,12 @@ fn rounded_at(radius: f32, [nw, ne, sw, se]: [bool; 4]) -> iced::border::Radius 
 /// An edge meets the frame's within half a pixel: the scrollable rounds its
 /// translation to whole pixels (iced_widget 0.14.2
 /// `src/scrollable.rs:1876-1903`), so a row scrolled flush with the frame
-/// can lie that far off it. A row is far taller, and a solid bar's groove
-/// far wider, than that.
+/// can lie that far off it, and exactly that far where the scroll's offset
+/// ends in .5. A thousandth of a pixel more holds that case against f32's
+/// rounding: each side is a sum of a few window coordinates, under 4096 px,
+/// whose f32 steps are 2.5e-4 px at most, so a few of them stay under it.
+/// A row (18 px or more) is far taller, and a solid bar's groove (6 px or
+/// more) far wider, than either.
 fn shown_fill(
     row: iced::Rectangle,
     view: iced::Rectangle,
@@ -4815,7 +4819,7 @@ fn shown_fill(
     radius: f32,
 ) -> Option<(iced::Rectangle, iced::border::Radius)> {
     let shown = row.intersection(&view)?;
-    let meets = |a: f32, b: f32| (a - b).abs() <= 0.5;
+    let meets = |a: f32, b: f32| (a - b).abs() <= 0.5 + 1e-3;
     let top = meets(shown.y, edges.y);
     let bottom = meets(shown.y + shown.height, edges.y + edges.height);
     let left = meets(shown.x, edges.x);
@@ -4827,6 +4831,79 @@ fn shown_fill(
             [top && left, top && right, bottom && left, bottom && right],
         ),
     ))
+}
+
+/// The margin the Basic list's scrollbar keeps from the frame's inside, on
+/// its left and right, where iced puts a scrollbar's margin (iced_widget
+/// 0.14.2 `src/scrollable.rs:1957-1990`). iced lays the bar the list's full
+/// height, so its right-hand corners lie in the corners of the frame's
+/// inside, rounded by [`inner_radius`], and a part `w` wide fits a corner
+/// only `w / 2` round. A floating bar (`scrollbar.overlay_mode`) is held the
+/// inner radius off the right edge, clear of the corners the rows it floats
+/// over round into ([`shown_fill`]). A bar beside the rows is held as far as
+/// the inner radius is more than half its wider part
+/// (`scrollbar.groove_width` or `.thumb_width`), none where it is not, and
+/// rounds its parts into the arcs ([`list_bar_style`]).
+fn list_bar_margin(resolved: &ResolvedTheme) -> f32 {
+    let inner = inner_radius(&resolved.list);
+    let s = &resolved.scrollbar;
+    if s.overlay_mode {
+        inner
+    } else {
+        (inner - s.groove_width.max(s.thumb_width) / 2.0).max(0.0)
+    }
+}
+
+/// The Basic list's scrollbar: `styles::scrollbar`'s, at its stated widths,
+/// held [`list_bar_margin`] off the frame's right-hand edge.
+fn list_bar(resolved: &ResolvedTheme) -> scrollable::Scrollbar {
+    styles::scrollbar(resolved).margin(list_bar_margin(resolved))
+}
+
+/// The radius a part of the Basic list's scrollbar, `width` wide, its right
+/// edge `inset` in from the frame's inside, takes on its right-hand corners:
+/// `inner - inset`, at which the part's corner arc touches the inside's from
+/// within, or `own`, iced's, where that is rounder, which keeps inside too;
+/// at most half the part's width, which [`list_bar_margin`] leaves
+/// `inner - inset` within.
+fn list_bar_corner(inner: f32, inset: f32, width: f32, own: f32) -> f32 {
+    own.max(inner - inset).min(width / 2.0).max(0.0)
+}
+
+/// The Basic list's scrollbar's style: `styles::scrollable`'s, its vertical
+/// rail's and scroller's right-hand corners rounded by
+/// [`list_bar_corner`], so that both keep inside the frame's rounded inside;
+/// the scroller lies centred in the bar, as iced lays it out
+/// (`src/scrollable.rs:1993-2010`).
+fn list_bar_style(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme, scrollable::Status) -> scrollable::Style + use<> {
+    let style = styles::scrollable(resolved);
+    let inner = inner_radius(&resolved.list);
+    let margin = list_bar_margin(resolved);
+    let (groove, thumb) = (
+        resolved.scrollbar.groove_width,
+        resolved.scrollbar.thumb_width,
+    );
+    let bar = groove.max(thumb);
+    let rounded = move |border: iced::Border, width: f32| {
+        let inset = margin + (bar - width) / 2.0;
+        iced::Border {
+            radius: iced::border::Radius {
+                top_right: list_bar_corner(inner, inset, width, border.radius.top_right),
+                bottom_right: list_bar_corner(inner, inset, width, border.radius.bottom_right),
+                ..border.radius
+            },
+            ..border
+        }
+    };
+    move |theme, status| {
+        let mut style = style(theme, status);
+        let rail = &mut style.vertical_rail;
+        rail.border = rounded(rail.border, groove);
+        rail.scroller.border = rounded(rail.scroller.border, thumb);
+        style
+    }
 }
 
 /// Where the Basic list's scrollable draws, which its rows' fills read
@@ -4846,7 +4923,9 @@ type UnderPaint<'a> = Box<
 /// none ([`Underlay`]): [`list_row`]'s background for the row in the state
 /// the button takes from the cursor (Hovered and Pressed both need the
 /// cursor over the row, iced_widget 0.14.2 `src/button.rs:342-354`, and
-/// [`list_row`] fills them alike), over the part of the row the list shows,
+/// [`list_row`] fills them alike; the rows always take `on_press`, so the
+/// button is never `Disabled`, the one state the cursor does not decide and
+/// [`list_row`] fills none in), over the part of the row the list shows,
 /// rounded by the frame's inner radius where it meets the frame's inside
 /// ([`shown_fill`]), as egui's list rows are. The rows draw in the
 /// scrollable's shown part moved by its scroll (iced_widget 0.14.2
@@ -8084,10 +8163,26 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "a row's padding; iced_aw's list's 5 px where unstated".into()
         }
         // ---- scrollbar ----
+        ("scrollbar", "groove_width_px") if under("basic.list.") => {
+            "styles::scrollbar: Scrollbar::width; list_bar_margin, list_bar_style: the bar's \
+             margin and its right-hand corners, inside the frame's"
+                .into()
+        }
+        ("scrollbar", "thumb_width_px") if under("basic.list.") => {
+            "styles::scrollbar: Scrollbar::scroller_width; list_bar_margin, list_bar_style: \
+             the bar's margin and its right-hand corners, inside the frame's"
+                .into()
+        }
         ("scrollbar", "groove_width_px") => "styles::scrollbar: Scrollbar::width".into(),
         ("scrollbar", "thumb_width_px") => "styles::scrollbar: Scrollbar::scroller_width".into(),
         ("scrollbar", "min_thumb_length_px") => {
             "not reachable: iced's scroller has no minimum length setter".into()
+        }
+        ("scrollbar", "overlay_mode") if under("basic.list.") => {
+            "styles::scrollbar: no spacing beside the content; list_bar_margin: a floating \
+             bar held the frame's inner radius off its right edge, one beside the rows as \
+             far as its corners need"
+                .into()
         }
         ("scrollbar", "overlay_mode") => "styles::scrollbar: no spacing beside the content".into(),
         // ---- expander ----
@@ -10801,15 +10896,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     });
     // The scrollbar and its thumb as iced lays them out (iced_widget 0.14.2
     // `src/scrollable.rs:1957-2015`): the groove `scrollbar.groove_width`
-    // wide at the right edge, the thumb `scrollbar.thumb_width` wide centred
-    // in it, as tall as the part of the rows shown, at the top.
+    // wide, `list_bar_margin` in from the right edge, the thumb
+    // `scrollbar.thumb_width` wide centred in it, as tall as the part of the
+    // rows shown, at the top.
     let (groove, scroller) = (
         resolved.scrollbar.groove_width,
         resolved.scrollbar.thumb_width,
     );
+    let bar_margin = list_bar_margin(resolved);
     let shown = BASIC_LIST_VISIBLE / BASIC_LIST_ITEMS as f32;
     let groove_rect = move |b: iced::Rectangle| {
-        let total = groove.max(scroller);
+        let total = groove.max(scroller) + 2.0 * bar_margin;
         iced::Rectangle {
             x: b.x + b.width - total / 2.0 - groove / 2.0,
             width: groove,
@@ -10825,8 +10922,8 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             "basic.list.frame",
             container(Underlay::new(
                 scrollable(column(rows))
-                    .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
-                    .style(styles::scrollable(resolved))
+                    .direction(scrollable::Direction::Vertical(list_bar(resolved)))
+                    .style(list_bar_style(resolved))
                     .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
                 Box::new(
                     move |_: &mut iced::Renderer,
@@ -20060,9 +20157,14 @@ mod tests {
             ctor: "combo_box",
             styles: &[&["styles::text_input"], &["styles::menu"]],
         },
+        // The Basic list's bar is the connector's, held off the frame's
+        // rounded corners (`list_bar`, `list_bar_style`).
         Dressed {
             ctor: "scrollable",
-            styles: &[&["styles::scrollable"], &["styles::scrollbar"]],
+            styles: &[
+                &["styles::scrollable", "list_bar_style"],
+                &["styles::scrollbar", "list_bar"],
+            ],
         },
         Dressed {
             ctor: "slider",
@@ -21710,6 +21812,288 @@ mod tests {
         );
         assert!(half_line, "a list line off the whole-pixel grid");
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// The Basic list's scrollbar keeps inside the frame's rounded inside, at
+    /// its stated widths: iced lays the rail the list's full height, so its
+    /// right-hand corners, and the scroller's at the top at rest and at the
+    /// bottom at the end, lie in the inside's corners, rounded by the inner
+    /// radius (`list.border.corner_radius` less `list.border.line_width`).
+    /// Under adwaita and ios-13 light, whose bars float over the rows, the
+    /// bar is held the inner radius off the frame's right-hand edge, clear of
+    /// the corners the rows round into; under material-3 and kde-breeze light,
+    /// whose bars lie beside the rows, as far as half the bar's width leaves
+    /// to the inner radius (material-3 5, kde-breeze 0), its parts' right-hand
+    /// corners rounded to touch the inside's arcs from within. The rail and
+    /// the thumb are the layout dump's parts (`basic.list.scrollbar` and
+    /// `.thumb`), the radii `list_bar_style`'s, and every point of each
+    /// part's rounded outline lies inside the inside's rounded rectangle.
+    /// iced's own margin is held by where the bar takes the pointer: half a
+    /// pixel inside its whole width (the bar, its margin on both sides) a row
+    /// under the pointer takes no hover fill, half a pixel outside it does
+    /// ([`LIST_FILLS`]).
+    #[test]
+    fn the_basic_list_scrollbar_keeps_inside_the_frames_corners() {
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut faults = Vec::new();
+        let mut bars = Vec::new();
+        for preset in ["adwaita", "ios-13", "material-3", "kde-breeze"] {
+            let mut state = State {
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                side_panel_visible: false,
+                ..State::default()
+            };
+            assert!(
+                state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
+            );
+            let r = state.current_resolved.clone();
+            let l = &r.list;
+            let s = &r.scrollbar;
+            let inner = l.border.corner_radius - l.border.line_width;
+            assert!(
+                inner > 0.0,
+                "{preset}: the list's frame is rounded inside its line"
+            );
+            let (groove, thumb) = (s.groove_width, s.thumb_width);
+            let bar = groove.max(thumb);
+            bars.push(s.overlay_mode);
+            let margin = if s.overlay_mode {
+                inner
+            } else {
+                (inner - bar / 2.0).max(0.0)
+            };
+
+            let (_, rects, _) = frame_of(&state, view(&state), size);
+            let rect_of = |id: &str| match rects.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{preset}: {id} is not drawn"),
+            };
+            let frame = rect_of("basic.list.frame");
+            let w = l.border.line_width;
+            let inside = Rectangle {
+                x: frame.x + w,
+                y: frame.y + w,
+                width: frame.width - 2.0 * w,
+                height: frame.height - 2.0 * w,
+            };
+            let right = inside.x + inside.width;
+            let rail = rect_of("basic.list.scrollbar");
+            let rest = rect_of("basic.list.scrollbar.thumb");
+            // iced lays the bar `bar + 2 margin` wide at the right edge, each
+            // part centred in it (`src/scrollable.rs:1966-1990`, `:2000-2010`).
+            let centre = right - margin - bar / 2.0;
+            for (part, rect, width) in [("rail", rail, groove), ("thumb", rest, thumb)] {
+                if (rect.width - width).abs() > 0.01 || (rect.center_x() - centre).abs() > 0.01 {
+                    faults.push(format!(
+                        "{preset}: the {part} is {rect:?}, want {width} wide centred at {centre}"
+                    ));
+                }
+            }
+            if s.overlay_mode && rail.x + rail.width.max(rest.width) > right - inner + 0.01 {
+                faults.push(format!(
+                    "{preset}: the floating bar reaches into the corners the rows round into"
+                ));
+            }
+
+            let theme = theme(&state);
+            let style = list_bar_style(&r)(
+                &theme,
+                scrollable::Status::Active {
+                    is_horizontal_scrollbar_disabled: false,
+                    is_vertical_scrollbar_disabled: false,
+                },
+            );
+            let rail_radius = style.vertical_rail.border.radius;
+            let thumb_radius = style.vertical_rail.scroller.border.radius;
+            let at_end = Rectangle {
+                y: rail.y + rail.height - rest.height,
+                ..rest
+            };
+            // Whether `p` lies inside the inside's rounded rectangle.
+            let within = |p: iced::Point| {
+                let eps = 1e-3;
+                let (left, top) = (inside.x, inside.y);
+                let bottom = inside.y + inside.height;
+                if p.x < left - eps || p.x > right + eps || p.y < top - eps || p.y > bottom + eps {
+                    return false;
+                }
+                let cx = p.x.clamp(left + inner, right - inner);
+                let cy = p.y.clamp(top + inner, bottom - inner);
+                ((p.x - cx).powi(2) + (p.y - cy).powi(2)).sqrt() <= inner + eps
+            };
+            for (part, rect, radius) in [
+                ("rail", rail, rail_radius),
+                ("thumb at rest", rest, thumb_radius),
+                ("thumb at the end", at_end, thumb_radius),
+            ] {
+                let half = rect.width.min(rect.height) / 2.0;
+                let corners = [
+                    (radius.top_left.min(half), rect.x, rect.y, -1.0, -1.0),
+                    (
+                        radius.top_right.min(half),
+                        rect.x + rect.width,
+                        rect.y,
+                        1.0,
+                        -1.0,
+                    ),
+                    (
+                        radius.bottom_right.min(half),
+                        rect.x + rect.width,
+                        rect.y + rect.height,
+                        1.0,
+                        1.0,
+                    ),
+                    (
+                        radius.bottom_left.min(half),
+                        rect.x,
+                        rect.y + rect.height,
+                        -1.0,
+                        1.0,
+                    ),
+                ];
+                let outside: Vec<iced::Point> = corners
+                    .iter()
+                    .flat_map(|&(rho, x, y, sx, sy)| {
+                        let centre = iced::Point::new(x - sx * rho, y - sy * rho);
+                        (0..=32).map(move |k| {
+                            let angle = std::f32::consts::FRAC_PI_2 * k as f32 / 32.0;
+                            iced::Point::new(
+                                centre.x + sx * rho * angle.cos(),
+                                centre.y + sy * rho * angle.sin(),
+                            )
+                        })
+                    })
+                    .filter(|p| !within(*p))
+                    .collect();
+                if let Some(first) = outside.first() {
+                    faults.push(format!(
+                        "{preset}: the {part} {rect:?} rounded {radius:?} leaves the inside \
+                         {inside:?} (inner radius {inner}) at {first:?}"
+                    ));
+                }
+            }
+
+            // Where the bar takes the pointer: a row under it there is not
+            // hovered (the scrollable hands the rows no cursor over its bar,
+            // `src/scrollable.rs:1160-1173`).
+            let row_1 = rect_of("basic.list.row_1");
+            let row_3 = Rectangle {
+                y: row_1.y + 2.0 * row_1.height,
+                ..row_1
+            };
+            let hover = iced::Background::Color(to_color(l.hover_background));
+            let edge = right - (bar + 2.0 * margin);
+            for (x, hovered) in [(edge + 0.5, false), (edge - 0.5, true)] {
+                let at = iced::Point::new(x, row_3.center_y());
+                LIST_FILLS.with_borrow_mut(Vec::clear);
+                let _ = frame_after(&state, view(&state), size, |ui| {
+                    ui.point_at(at);
+                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved { position: at })]);
+                });
+                let filled = LIST_FILLS.take().iter().any(|(bounds, _, _, colour)| {
+                    *colour == hover && (bounds.y - row_3.y).abs() < 0.01
+                });
+                if filled != hovered {
+                    faults.push(format!(
+                        "{preset}: the pointer at x {x} (the bar's whole width from {edge}) \
+                         hovers row 3: {filled}, want {hovered}"
+                    ));
+                }
+            }
+        }
+        assert!(
+            bars.contains(&true) && bars.contains(&false),
+            "a floating bar and one beside the rows: {bars:?}"
+        );
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// The Basic list's fills read the frame's inside from the scrollable's
+    /// bounds (`ListView`), not from the part of the list the page shows:
+    /// under adwaita light, in a window short enough that the page's view
+    /// ends across the selected second row, the list scrolled half a row
+    /// down, that row's fill is the part the page shows, square at the page's
+    /// edge, where the frame is not, and at its top, which is not at the
+    /// frame's either. A fill that took the shown part for the frame's
+    /// inside would round it at the page's edge.
+    #[test]
+    fn a_basic_list_fill_is_square_where_the_page_cuts_the_list() {
+        let mut state = State {
+            accessibility: native_theme_iced::AccessibilityPreferences::default(),
+            side_panel_visible: false,
+            ..State::default()
+        };
+        assert!(state.install_in_mode(
+            ThemeChoice::Preset("adwaita".to_owned()),
+            AppColorMode::Light
+        ));
+        state.basic_list_selected = Some(1);
+        let r = state.current_resolved.clone();
+        let l = &r.list;
+        assert!(
+            l.border.corner_radius > l.border.line_width,
+            "the list's frame is rounded inside its line"
+        );
+        let selection = iced::Background::Color(to_color(l.selection_background));
+        let tall = Size::new(WINDOW_SIZE.0, 2000.0);
+        let (_, rects, _) = frame_of(&state, view(&state), tall);
+        let rect_of = |rects: &ElementRects, id: &str| match rects.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let frame = rect_of(&rects, "basic.list.frame");
+        let row_1 = rect_of(&rects, "basic.list.row_1");
+        let content = rect_of(&rects, "chrome.content");
+        let w = l.border.line_width;
+        let top = frame.y + w;
+        let rh = row_1.height;
+        let by = (rh / 2.0).round();
+        // The second row on screen, scrolled `by`; the page's view ends
+        // half way down it.
+        let cut = top + rh - by + rh / 2.0;
+        let short = Size::new(tall.width, tall.height - (content.y + content.height - cut));
+        let at = iced::Point::new(frame.center_x(), top + rh / 4.0);
+        LIST_FILLS.with_borrow_mut(Vec::clear);
+        let (_, rects, _) = frame_after(&state, view(&state), short, |ui| {
+            ui.point_at(at);
+            let _ = ui.simulate([
+                Event::Mouse(mouse::Event::CursorMoved { position: at }),
+                Event::Mouse(mouse::Event::WheelScrolled {
+                    delta: mouse::ScrollDelta::Pixels { x: 0.0, y: -by },
+                }),
+            ]);
+        });
+        let content = rect_of(&rects, "chrome.content");
+        assert!(
+            (content.y + content.height - cut).abs() < 0.01,
+            "the page's view ends at {}, want {cut}",
+            content.y + content.height
+        );
+        let second = Rectangle {
+            y: row_1.y + rh,
+            ..row_1
+        };
+        // The second row's part the page shows, in the rows' coordinates.
+        let want = Rectangle {
+            height: cut - (top + rh - by),
+            ..second
+        };
+        let square = iced::border::Radius::new(0.0);
+        let found: Vec<_> = LIST_FILLS
+            .take()
+            .into_iter()
+            .filter(|(bounds, _, _, colour)| {
+                *colour == selection && (bounds.y - second.y).abs() < 0.01
+            })
+            .collect();
+        assert!(!found.is_empty(), "the second row's fill is not drawn");
+        for (_, rect, radius, _) in &found {
+            assert!(
+                (rect.y - want.y).abs() < 0.01 && (rect.height - want.height).abs() < 0.01,
+                "the second row's fill is {rect:?}, want {want:?}"
+            );
+            assert_eq!(*radius, square, "the second row's fill, cut by the page");
+        }
     }
 
     /// The tables' stated heights hold their text at every text scale, as
