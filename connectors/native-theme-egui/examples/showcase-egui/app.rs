@@ -517,7 +517,8 @@ impl App {
     /// (`native-theme/src/lib.rs:500`) the [`effective_preferences`] of the OS's reading it
     /// holds and Preferences' overrides; a preset is `from_preset` with the effective
     /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
-    /// watcher and `ReloadTheme` clear before they rebuild) and the overrides, whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
+    /// watcher and `ReloadTheme` clear before they rebuild) and the overrides. `from_preset`'s
+    /// `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
     /// for `default`, the platform preset it builds on (`SystemTheme::preset`). It reads
     /// `theme` and `prefs` alone, not `mode`, which the watcher's selection relies on: a mode
