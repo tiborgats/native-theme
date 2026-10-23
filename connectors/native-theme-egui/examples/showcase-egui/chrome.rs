@@ -1246,10 +1246,17 @@ pub(crate) fn central_panel(
                 bottom: 0,
                 ..page_margin
             };
-            if app.theme_error.is_some() {
+            let errors = app.theme_errors();
+            let note = app.watcher_note();
+            if !errors.is_empty() || note.is_some() {
                 egui::Frame::NONE.inner_margin(banner).show(ui, |ui| {
                     ui.spacing_mut().item_spacing = spacing;
-                    theme_error_banner(app, ui);
+                    if !errors.is_empty() {
+                        theme_error_banner(app, ui, errors.join("\n"));
+                    }
+                    if let Some(note) = note {
+                        watcher_note_banner(app, ui, note);
+                    }
                 });
             }
             ui.spacing_mut().item_spacing = spacing;
@@ -1260,47 +1267,56 @@ pub(crate) fn central_panel(
     app.registry.untarget(&out.response);
 }
 
-/// The theme error, in a card across the content.
-fn theme_error_banner(app: &mut App, ui: &mut egui::Ui) {
-    if let Some(error) = app.theme_error.clone() {
-        // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2860-2884`):
-        // across the content, the chosen icon theme's error icon first, where it
-        // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
-        // (`showcase-gpui/support.rs:512-523`, `role_for_gpui_icon`) — at
-        // `defaults.icon_sizes.small`.
-        let (set, icon_theme) = app.chosen_icons();
-        let size = app
-            .atlas
-            .resolved_for(ui.ctx().theme())
-            .defaults
-            .icon_sizes
-            .small;
-        demo::framed(
-            &mut app.registry,
-            ui,
-            Surface::Card,
-            None,
-            "theme error",
-            |ui, reg| {
-                ui.set_min_width(ui.available_width());
-                ui.horizontal(|ui| {
-                    let icon = demo::role_image(
-                        ui,
-                        IconRole::DialogError,
-                        set,
-                        icon_theme.as_deref(),
-                        size,
-                    );
-                    if let Some(icon) = icon {
-                        demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
-                    }
-                    demo::base(reg, ui, "theme error text", |ui| {
-                        ui.colored_label(ui.visuals().error_fg_color, error)
-                    });
+/// The theme errors, one per line, in a card across the content.
+fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
+    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2860-2884`):
+    // across the content, the chosen icon theme's error icon first, where it
+    // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
+    // (`showcase-gpui/support.rs:512-523`, `role_for_gpui_icon`) — at
+    // `defaults.icon_sizes.small`.
+    let (set, icon_theme) = app.chosen_icons();
+    let size = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .defaults
+        .icon_sizes
+        .small;
+    demo::framed(
+        &mut app.registry,
+        ui,
+        Surface::Card,
+        None,
+        "theme error",
+        |ui, reg| {
+            ui.set_min_width(ui.available_width());
+            ui.horizontal(|ui| {
+                let icon =
+                    demo::role_image(ui, IconRole::DialogError, set, icon_theme.as_deref(), size);
+                if let Some(icon) = icon {
+                    demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
+                }
+                demo::base(reg, ui, "theme error text", |ui| {
+                    ui.colored_label(ui.visuals().error_fg_color, error)
                 });
-            },
-        );
-    }
+            });
+        },
+    );
+}
+
+/// The watcher's note, in a card across the content under the errors: in the body text's
+/// colour, since it reports no failed theme, only that the OS's changes are not followed.
+fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
+    demo::framed(
+        &mut app.registry,
+        ui,
+        Surface::Card,
+        None,
+        "watcher note",
+        |ui, reg| {
+            ui.set_min_width(ui.available_width());
+            demo::base(reg, ui, "watcher note text", |ui| ui.label(note));
+        },
+    );
 }
 
 /// A dialog extent the theme states, less the frame's own margins and stroke,

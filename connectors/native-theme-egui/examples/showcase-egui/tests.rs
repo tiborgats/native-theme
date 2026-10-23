@@ -1289,6 +1289,158 @@ fn a_failed_rebuild_keeps_the_installed_fonts() {
     assert_eq!(faces(&harness), before);
 }
 
+/// A preset every platform offers other than [`TEST_PRESET`], and its atlas: the watcher's
+/// rebuilt atlas in the hand-off tests, told from the installed one by its name.
+#[cfg(feature = "watch")]
+const OTHER_PRESET: &str = "nord";
+
+#[cfg(feature = "watch")]
+fn preset_atlas(name: &str) -> native_theme_egui::ThemeAtlas {
+    from_preset(name, false, &AccessibilityPreferences::default())
+        .expect("a bundled preset builds")
+        .0
+}
+
+#[cfg(feature = "watch")]
+fn preset_name(name: &str) -> String {
+    Theme::preset(name)
+        .expect("a bundled preset")
+        .name
+        .to_string()
+}
+
+#[cfg(feature = "watch")]
+fn watch_failure() -> native_theme::error::Error {
+    native_theme::error::Error::WatchUnavailable {
+        reason: "the showcase's test",
+    }
+}
+
+/// M9-115: a rebuild the watcher started before the user picked a theme, and that returned after
+/// the pick's install, was built for the selection before it. Its hand-off installs the current
+/// selection rebuilt, by `install`'s own result, and not the stale atlas over the pick.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    app.settings.theme = ThemeChoice::Preset(OTHER_PRESET.to_string());
+    app.install(&ctx);
+    assert_ne!(
+        app.generation(),
+        read,
+        "the install published a new selection"
+    );
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(
+        app.theme_error, None,
+        "the current selection's install succeeded"
+    );
+}
+
+/// M9-115: a rebuild that returned before the user's install read the record is covered by that
+/// install: its hand-off installs nothing.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_an_install_has_covered_installs_nothing() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.settings.theme = ThemeChoice::Preset(OTHER_PRESET.to_string());
+    app.install(&ctx);
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.theme_error.as_deref(), Some("an earlier failure"));
+}
+
+/// M9-114, M9-115: the watcher's `rebuild` records the generation of the selection it read; a
+/// hand-off built for the current selection is installed and clears an earlier theme error.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_error() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    App::rebuild_selected(&app.selection, &app.rebuilt).unwrap();
+    let recorded = app
+        .rebuilt
+        .lock()
+        .unwrap()
+        .built
+        .as_ref()
+        .map(|(number, generation, _)| (*number, *generation));
+    assert_eq!(recorded, Some((1, app.generation())));
+    let current = app.generation();
+    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.theme_error, None);
+}
+
+/// M9-114: a failed watcher rebuild is shown in the banner as `theme watcher: …` until a later
+/// rebuild is installed, or an install covers it, though the error's text stays the same.
+#[cfg(feature = "watch")]
+#[test]
+fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let line = format!("theme watcher: {}", watch_failure());
+    let shown = |h: &Harness<'_, App>| h.query_by_label(&line).is_some();
+    let fail = |h: &mut Harness<'_, App>| {
+        let app = h.state_mut();
+        let current = app.generation();
+        App::record_rebuild(&app.rebuilt, current, Err(watch_failure())).unwrap_err();
+        app.watcher_last_error = Some(watch_failure().to_string());
+        h.run_steps(SETTLE);
+    };
+    assert!(!shown(&harness));
+    fail(&mut harness);
+    assert!(shown(&harness), "a failed rebuild is shown");
+    let app = harness.state_mut();
+    let current = app.generation();
+    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(!shown(&harness), "the next rebuild was installed");
+    fail(&mut harness);
+    assert!(
+        shown(&harness),
+        "a repeat of the same failure is shown again"
+    );
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(!shown(&harness), "an install covers the failed rebuild");
+}
+
+/// M9-114: the watcher's start error is a note, not a theme error, and stays after an install,
+/// since the OS's changes are still not followed.
+#[cfg(feature = "watch")]
+#[test]
+fn the_watchers_start_error_is_a_note_an_install_keeps() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().watcher_started(Err(watch_failure()));
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(harness.state().theme_errors().is_empty());
+    let note = format!("OS theme changes are not followed: {}", watch_failure());
+    assert!(harness.query_by_label(&note).is_some(), "the note is shown");
+}
+
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
 /// installs once, when it ends, not on every pass it moves the value.
 #[test]

@@ -1,7 +1,7 @@
 //! The application: its settings, its atlas, and the `eframe::App` impl (spec §10.4).
 
 #[cfg(feature = "watch")]
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
@@ -159,6 +159,27 @@ impl Settings {
     }
 }
 
+/// What the watcher's `rebuild` reads: the settings the UI thread last installed or switched
+/// the mode to, and their generation, which each publish bumps.
+#[cfg(feature = "watch")]
+#[derive(Debug)]
+pub(crate) struct Selection {
+    pub(crate) generation: u64,
+    pub(crate) settings: Settings,
+}
+
+/// The watcher's rebuilds, as its `rebuild` records them under one lock, before the connector's
+/// hand-off stores the atlas it returns (`Handoff::on_change`, `src/watch.rs`), so the atlas
+/// `ThemeWatcher::take` signals is recorded by then: how many have returned, `Ok` or `Err`, and
+/// the last that returned an atlas, as its number, the generation of the selection it was built
+/// for, and the atlas.
+#[cfg(feature = "watch")]
+#[derive(Debug, Default)]
+pub(crate) struct Rebuilt {
+    pub(crate) rebuilds: u64,
+    pub(crate) built: Option<(u64, u64, ThemeAtlas)>,
+}
+
 /// `--screenshot`: where the capture goes, when the first pass ran, the capture while under
 /// way (the shared crate's `FrameCapture`), whether it was written.
 struct Screenshot {
@@ -311,11 +332,27 @@ pub(crate) struct App {
     /// system menu bar's, which the flag does not reach.
     #[cfg_attr(all(target_os = "macos", not(test)), allow(dead_code))]
     pub(crate) open_menu: Option<String>,
-    /// What the watcher's `rebuild` reads: the UI thread writes it on each install.
+    /// What the watcher's `rebuild` reads: the UI thread publishes it on each install and mode
+    /// switch.
     #[cfg(feature = "watch")]
-    selection: Arc<std::sync::RwLock<Settings>>,
+    pub(crate) selection: Arc<RwLock<Selection>>,
+    /// What the watcher's `rebuild` has returned.
+    #[cfg(feature = "watch")]
+    pub(crate) rebuilt: Arc<Mutex<Rebuilt>>,
+    /// The watcher's rebuilds an install has covered: the record's `rebuilds` when an `install`
+    /// read it, or the number of the rebuilt atlas the hand-off installed.
+    #[cfg(feature = "watch")]
+    installed_rebuild: u64,
     #[cfg(feature = "watch")]
     watcher: Option<native_theme_egui::ThemeWatcher>,
+    /// Why the watcher did not start: shown as a note, which no install clears, since the OS's
+    /// changes stay unfollowed whatever is installed.
+    #[cfg(feature = "watch")]
+    pub(crate) watcher_error: Option<String>,
+    /// The tests' stand-in for the running watcher's `ThemeWatcher::last_error`: the tests start
+    /// no watcher.
+    #[cfg(all(test, feature = "watch"))]
+    pub(crate) watcher_last_error: Option<String>,
     /// The macOS system menu bar, owned here: a muda `Menu` holds `Rc`s and is not `Send`.
     #[cfg(all(target_os = "macos", not(test)))]
     system_menu: Option<crate::chrome::system_menu::SystemMenu>,
@@ -361,13 +398,16 @@ impl App {
             written: false,
         });
         #[cfg(feature = "watch")]
-        let selection = Arc::new(std::sync::RwLock::new(settings.clone()));
+        let selection = Arc::new(RwLock::new(Selection {
+            generation: 0,
+            settings: settings.clone(),
+        }));
         let mut app = Self {
             atlas: atlas.clone(),
             settings,
             default_preset,
             semibold: demo::Semibold::default(),
-            theme_error,
+            theme_error: None,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
             side_panel_visible: true,
@@ -412,13 +452,23 @@ impl App {
             #[cfg(feature = "watch")]
             selection,
             #[cfg(feature = "watch")]
+            rebuilt: Arc::default(),
+            #[cfg(feature = "watch")]
+            installed_rebuild: 0,
+            #[cfg(feature = "watch")]
             watcher: None,
+            #[cfg(feature = "watch")]
+            watcher_error: None,
+            #[cfg(all(test, feature = "watch"))]
+            watcher_last_error: None,
             #[cfg(all(target_os = "macos", not(test)))]
             system_menu: None,
             #[cfg(all(target_os = "macos", not(test)))]
             menu_rx: None,
         };
         app.apply(&cc.egui_ctx, atlas);
+        // After the install, which clears it: the platform's preset stands in for the selection.
+        app.theme_error = theme_error;
         #[cfg(all(target_os = "macos", not(test)))]
         {
             let (tx, rx) = std::sync::mpsc::channel();
@@ -468,15 +518,22 @@ impl App {
     }
 
     /// Rebuild what `settings` select and install it; a failure keeps the installed atlas and
-    /// is shown on the page (§10.4, the theme error in the content).
+    /// is shown on the page (§10.4, the theme error in the content). A success covers the
+    /// watcher's rebuilds returned before it read the record: a rebuild still running counts as
+    /// newer, since it may carry an OS change this rebuild did not read.
     pub(crate) fn install(&mut self, ctx: &egui::Context) {
+        #[cfg(feature = "watch")]
+        let rebuilds = self.rebuilds();
         match Self::rebuild_atlas(&self.settings) {
             Ok((atlas, preset)) => {
                 if let Some(preset) = preset {
                     self.default_preset = preset;
                 }
-                self.theme_error = None;
                 self.apply(ctx, atlas);
+                #[cfg(feature = "watch")]
+                {
+                    self.installed_rebuild = rebuilds;
+                }
             }
             Err(error) => {
                 // The installed atlas, its fonts and the semibold faces stay as they are.
@@ -495,10 +552,10 @@ impl App {
 
     /// The steps every install of an atlas takes, and nothing else: `atlas` installed into
     /// `ctx` and held, the OS's semibold faces of its family registered, the JSON cache and the
-    /// scheme the icon choice was derived for forgotten, and the shown Widget Info released.
-    /// `apply` runs it, so does the watcher's hand-off, which leaves the mode as it is, and so
-    /// do the tests that install an atlas of their own; it sets no theme preference, so a test
-    /// that holds a scheme keeps it.
+    /// scheme the icon choice was derived for forgotten, the shown Widget Info released, and the
+    /// theme error cleared, since a theme now loaded. `apply` runs it, so does the watcher's
+    /// hand-off, which leaves the mode as it is, and so do the tests that install an atlas of
+    /// their own; it sets no theme preference, so a test that holds a scheme keeps it.
     pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
         atlas.install(ctx);
         self.semibold.register(ctx, &atlas);
@@ -506,6 +563,7 @@ impl App {
         self.json = info::JsonCache::default();
         self.last_scheme = None;
         self.registry.screen_changed();
+        self.theme_error = None;
     }
 
     /// Switch the mode: egui's own theme call and nothing else (§10.4's side-panel row). The
@@ -577,28 +635,144 @@ impl App {
         let mut guard = self
             .selection
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        *guard = self.settings.clone();
+            .unwrap_or_else(PoisonError::into_inner);
+        guard.generation = guard.generation.wrapping_add(1);
+        guard.settings = self.settings.clone();
     }
 
-    /// One watcher for every selection, never dropped and restarted (§10.2, §10.4). Each
-    /// event clears the detection caches first, as `ThemeWatcher::system_rebuild` does, so a
-    /// preset's rebuild reads the OS accessibility preferences again.
+    /// The generation of the selection last published.
+    #[cfg(feature = "watch")]
+    pub(crate) fn generation(&self) -> u64 {
+        self.selection
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .generation
+    }
+
+    /// How many of the watcher's rebuilds have returned.
+    #[cfg(feature = "watch")]
+    fn rebuilds(&self) -> u64 {
+        self.rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .rebuilds
+    }
+
+    /// One watcher for every selection, never dropped and restarted (§10.2, §10.4).
     #[cfg(feature = "watch")]
     fn start_watcher(&mut self, ctx: &egui::Context) {
-        let selection = Arc::clone(&self.selection);
+        let (selection, rebuilt) = (Arc::clone(&self.selection), Arc::clone(&self.rebuilt));
         let started = native_theme_egui::ThemeWatcher::start(ctx, move || {
-            let settings = selection
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
-            native_theme::detect::invalidate_caches();
-            App::rebuild_atlas(&settings).map(|(atlas, _)| atlas)
+            App::rebuild_selected(&selection, &rebuilt)
         });
+        self.watcher_started(started);
+    }
+
+    /// The watcher held, or why it did not start kept for the note.
+    #[cfg(feature = "watch")]
+    pub(crate) fn watcher_started(
+        &mut self,
+        started: native_theme::Result<native_theme_egui::ThemeWatcher>,
+    ) {
         match started {
             Ok(watcher) => self.watcher = Some(watcher),
-            Err(error) => self.theme_error = Some(format!("theme watcher: {error}")),
+            Err(error) => self.watcher_error = Some(error.to_string()),
         }
+    }
+
+    /// The watcher's `rebuild`, on the watcher thread: the selection read with its generation,
+    /// the detection caches cleared, as `ThemeWatcher::system_rebuild` does, so a preset's
+    /// rebuild reads the OS accessibility preferences again, then the atlas it selects built and
+    /// recorded.
+    #[cfg(feature = "watch")]
+    pub(crate) fn rebuild_selected(
+        selection: &RwLock<Selection>,
+        rebuilt: &Mutex<Rebuilt>,
+    ) -> native_theme::Result<ThemeAtlas> {
+        let (generation, settings) = {
+            let guard = selection.read().unwrap_or_else(PoisonError::into_inner);
+            (guard.generation, guard.settings.clone())
+        };
+        native_theme::detect::invalidate_caches();
+        let result = App::rebuild_atlas(&settings).map(|(atlas, _)| atlas);
+        App::record_rebuild(rebuilt, generation, result)
+    }
+
+    /// A rebuild for the selection of `generation` returned `result`: counted, and an atlas
+    /// recorded as the last built, before the connector's hand-off holds it.
+    #[cfg(feature = "watch")]
+    pub(crate) fn record_rebuild(
+        rebuilt: &Mutex<Rebuilt>,
+        generation: u64,
+        result: native_theme::Result<ThemeAtlas>,
+    ) -> native_theme::Result<ThemeAtlas> {
+        let mut record = rebuilt.lock().unwrap_or_else(PoisonError::into_inner);
+        record.rebuilds = record.rebuilds.saturating_add(1);
+        if let Ok(atlas) = &result {
+            record.built = Some((record.rebuilds, generation, atlas.clone()));
+        }
+        result
+    }
+
+    /// The watcher's hand-off, which `ThemeWatcher::take` signals; the atlas is read from the
+    /// record, with the generation it was built for. A rebuild no install has covered is
+    /// installed where it was built for the current selection; built for an earlier one, it is
+    /// dropped and the current selection rebuilt, which also reads the OS change it announced
+    /// (M9-115). A rebuild an install has covered installs nothing.
+    #[cfg(feature = "watch")]
+    pub(crate) fn take_rebuilt(&mut self, ctx: &egui::Context) {
+        let built = self
+            .rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .built
+            .clone();
+        let Some((number, generation, atlas)) =
+            built.filter(|(number, ..)| *number > self.installed_rebuild)
+        else {
+            return;
+        };
+        if generation == self.generation() {
+            self.adopt(ctx, atlas);
+            self.installed_rebuild = number;
+        } else {
+            self.install(ctx);
+        }
+    }
+
+    /// The watcher's last rebuild error, `None` again once a later rebuild succeeds.
+    #[cfg(feature = "watch")]
+    fn watcher_last_error(&self) -> Option<String> {
+        #[cfg(test)]
+        if let Some(error) = &self.watcher_last_error {
+            return Some(error.clone());
+        }
+        self.watcher
+            .as_ref()
+            .and_then(native_theme_egui::ThemeWatcher::last_error)
+    }
+
+    /// The theme errors the banner shows: the last install's, then the watcher's last failed
+    /// rebuild as `theme watcher: …` while no install has covered it. The record's count decides,
+    /// not the error's text, which a repeat failure keeps.
+    pub(crate) fn theme_errors(&self) -> Vec<String> {
+        let errors = self.theme_error.iter().cloned();
+        #[cfg(feature = "watch")]
+        let errors = errors.chain(
+            self.watcher_last_error()
+                .filter(|_| self.rebuilds() > self.installed_rebuild)
+                .map(|error| format!("theme watcher: {error}")),
+        );
+        errors.collect()
+    }
+
+    /// The note the banner shows under the errors: why the watcher did not start.
+    pub(crate) fn watcher_note(&self) -> Option<String> {
+        #[cfg(feature = "watch")]
+        if let Some(error) = &self.watcher_error {
+            return Some(format!("OS theme changes are not followed: {error}"));
+        }
+        None
     }
 }
 
@@ -790,8 +964,13 @@ impl eframe::App for App {
             self.run_action(action, ctx);
         }
         #[cfg(feature = "watch")]
-        if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
-            self.adopt(ctx, atlas);
+        if self
+            .watcher
+            .as_ref()
+            .and_then(native_theme_egui::ThemeWatcher::take)
+            .is_some()
+        {
+            self.take_rebuilt(ctx);
         }
         // A new theme or a scheme switch re-derives a following icon choice (§10.4:
         // `breeze` to `breeze-dark` on `kde-breeze`); a pass on the same scheme does nothing.
