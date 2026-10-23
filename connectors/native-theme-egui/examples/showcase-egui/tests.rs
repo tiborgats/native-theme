@@ -1821,7 +1821,7 @@ enum GhostAt {
     Label(&'static str),
 }
 
-/// A Ghost button's global rect, and its record's notes where it is recorded.
+/// A Ghost button's global rect, and its record's `not_themeable` lines where it is recorded.
 fn ghost_at(
     harness: &Harness<'_, App>,
     at: GhostAt,
@@ -1846,11 +1846,11 @@ fn ghost_at(
                 .next()
                 .unwrap_or_else(|| panic!("no {label} button"));
             let id = node.accesskit_node().locate().0;
-            let notes = records
+            let not_themeable = records
                 .iter()
                 .find(|r| r.id.accesskit_id() == id)
                 .map(|r| r.info.not_themeable.clone());
-            (node.rect(), notes)
+            (node.rect(), not_themeable)
         }
     }
 }
@@ -1906,7 +1906,7 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
             harness.run_steps(4);
             harness.remove_cursor();
             harness.run_steps(2);
-            let (rest, notes) = ghost_at(&harness, at);
+            let (rest, not_themeable) = ghost_at(&harness, at);
             harness.hover_at(rest.center());
             harness.run_steps(2);
             let (hovered, _) = ghost_at(&harness, at);
@@ -1918,10 +1918,12 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
                 (rest, rest),
                 "{what} under {theme:?}: hovered and pressed, not its resting rect"
             );
-            if let Some(notes) = notes {
+            if let Some(not_themeable) = not_themeable {
                 assert!(
-                    notes.iter().any(|(k, _)| *k == crate::demo::GHOST_NOTE.0),
-                    "{what} under {theme:?}: its record does not note it Ghost: {notes:?}"
+                    not_themeable
+                        .iter()
+                        .any(|(k, _)| *k == crate::demo::GHOST_NOTE.0),
+                    "{what} under {theme:?}: its record does not note it Ghost: {not_themeable:?}"
                 );
             }
         }
