@@ -275,6 +275,12 @@ mod probes {
         "probe-layout-pane-controls-1",
         "probe-layout-pane-controls-2",
     ];
+    /// The first pane's three controls, each with its label.
+    pub const LAYOUT_PANE_BUTTONS: [(&str, &str); 3] = [
+        ("probe-layout-pane-split-vertical", "split |"),
+        ("probe-layout-pane-split-horizontal", "split —"),
+        ("probe-layout-pane-close", "close"),
+    ];
     /// The Layout page's Grid.
     pub const LAYOUT_GRID: &str = "probe-layout-grid";
     /// The Graphics page's canvas, QR code and Markdown view.
@@ -302,6 +308,11 @@ mod probes {
     /// The Extra page's `iced_aw` `Card`.
     #[cfg(feature = "iced_aw")]
     pub const AW_CARD: &str = "probe-aw-card";
+    /// The card's Dismiss button, and the button that brings the card back.
+    #[cfg(feature = "iced_aw")]
+    pub const AW_CARD_DISMISS: &str = "probe-aw-card-dismiss";
+    #[cfg(feature = "iced_aw")]
+    pub const AW_CARD_SHOW: &str = "probe-aw-card-show";
     /// The Extra page's `iced_aw` `Tabs` ([`super::drawn_probe`]).
     #[cfg(feature = "iced_aw")]
     pub const AW_TABS: &str = "probe-aw-tabs";
@@ -12763,8 +12774,10 @@ fn tooltip_info(state: &State) -> String {
         .map(|delay| format!("{}ms, tooltip.show_delay", delay.as_millis()));
     let gap_s = tooltip_gap_text(state);
     let label_s = font_row("tooltip.font", &resolved.tooltip.font);
+    let buttons_min = button_min_size_row(resolved);
     let mut config = vec![
         ("positions", "Top / Bottom / Left / Right"),
+        ("buttons' min size", buttons_min.as_str()),
         ("border-radius", tip_radius_s.as_str()),
         ("label", label_s.as_str()),
         ("max width", max_width_s.as_str()),
@@ -12880,41 +12893,56 @@ fn view_display(state: &State) -> Element<'_, Message> {
     .spacing(gap.widget);
 
     // The four, one per side: the button, its side, the tip, and their probes.
+    // Each button at least `button.min_width` by `button.min_height`, as the
+    // Buttons page's are.
+    let btn_min = native_theme_iced::button_content_min_size(resolved);
     let [top, bottom, left, right] = probes::DISPLAY_TOOLTIPS;
     let [top_tip, bottom_tip, left_tip, right_tip] = probes::DISPLAY_TIPS;
     let sides = [
         (
-            button(text("Hover: Top").typeset(&resolved.button.font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_primary(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+            button(at_least(
+                text("Hover: Top").typeset(&resolved.button.font, a11y),
+                btn_min,
+            ))
+            .on_press(Message::ButtonPressed)
+            .style(styles::button_primary(resolved))
+            .padding(native_theme_iced::button_padding(resolved)),
             tooltip::Position::Top,
             "Tooltip on top!",
             (top, top_tip),
         ),
         (
-            button(text("Hover: Bottom").typeset(&resolved.button.font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+            button(at_least(
+                text("Hover: Bottom").typeset(&resolved.button.font, a11y),
+                btn_min,
+            ))
+            .on_press(Message::ButtonPressed)
+            .style(styles::button(resolved))
+            .padding(native_theme_iced::button_padding(resolved)),
             tooltip::Position::Bottom,
             "Tooltip on bottom!",
             (bottom, bottom_tip),
         ),
         (
-            button(text("Hover: Left").typeset(&resolved.button.font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_success(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+            button(at_least(
+                text("Hover: Left").typeset(&resolved.button.font, a11y),
+                btn_min,
+            ))
+            .on_press(Message::ButtonPressed)
+            .style(styles::button_success(resolved))
+            .padding(native_theme_iced::button_padding(resolved)),
             tooltip::Position::Left,
             "Tooltip on left!",
             (left, left_tip),
         ),
         (
-            button(text("Hover: Right").typeset(&resolved.button.font, a11y))
-                .on_press(Message::ButtonPressed)
-                .style(styles::button_danger(resolved))
-                .padding(native_theme_iced::button_padding(resolved)),
+            button(at_least(
+                text("Hover: Right").typeset(&resolved.button.font, a11y),
+                btn_min,
+            ))
+            .on_press(Message::ButtonPressed)
+            .style(styles::button_danger(resolved))
+            .padding(native_theme_iced::button_padding(resolved)),
             tooltip::Position::Right,
             "Tooltip on right!",
             (right, right_tip),
@@ -13130,6 +13158,7 @@ fn pane_grid_info(state: &State) -> String {
                 "controls",
                 font_row("button.font", &resolved.button.font).as_str(),
             ),
+            ("controls' min size", button_min_size_row(resolved).as_str()),
         ],
         &[
             (
@@ -13272,7 +13301,7 @@ fn table_info(state: &State) -> String {
 
 /// Grid, PaneGrid and Table: the three `iced_widget` modules that arrange
 /// other widgets rather than paint a control.
-fn view_layout(state: &State) -> Element<'_, Message> {
+fn view_layout<'a>(state: &'a State) -> Element<'a, Message> {
     let a11y = &state.accessibility;
     let gap = Gaps::from_layout(&state.layout);
     let resolved = &state.current_resolved;
@@ -13358,33 +13387,66 @@ fn view_layout(state: &State) -> Element<'_, Message> {
             2 => Some(ids[1]),
             _ => None,
         };
+        // Each control at least `button.min_width` by `button.min_height`, as
+        // the Buttons page's buttons are.
+        let btn_min = native_theme_iced::button_content_min_size(resolved);
+        // The first pane's controls, where the tests measure them.
+        let [split_vertical, split_horizontal, close] =
+            probes::LAYOUT_PANE_BUTTONS.map(|(id, _)| id);
+        let probed_control =
+            |id: &'static str, control: button::Button<'a, Message>| -> Element<'a, Message> {
+                match label {
+                    1 => probe(id, Length::Shrink, control),
+                    _ => control.into(),
+                }
+            };
         let controls = row![
-            button(text("split |").typeset(&resolved.button.font, a11y))
+            probed_control(
+                split_vertical,
+                button(at_least(
+                    text("split |").typeset(&resolved.button.font, a11y),
+                    btn_min
+                ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Vertical, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("split —").typeset(&resolved.button.font, a11y))
+            ),
+            probed_control(
+                split_horizontal,
+                button(at_least(
+                    text("split —").typeset(&resolved.button.font, a11y),
+                    btn_min
+                ))
                 .on_press(Message::PaneSplit(pane_grid::Axis::Horizontal, pane))
                 .style(styles::button(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
-            button(text("close").typeset(&resolved.button.font, a11y))
+            ),
+            probed_control(
+                close,
+                button(at_least(
+                    text("close").typeset(&resolved.button.font, a11y),
+                    btn_min
+                ))
                 .on_press(Message::PaneClosed(pane))
                 .style(styles::button_danger(resolved))
                 .padding(native_theme_iced::button_padding(resolved)),
+            ),
         ]
         .spacing(gap.widget);
         // The title on its controls' labels' centre line, as iced lays both
         // out at the bar's top (pane_grid/title_bar.rs:275-345): each in a
         // box as tall as the taller of a control, a button's padding round
         // one line of its label at iced's own line height
-        // (`LineHeight::default`, the labels set none), and the title's own
+        // (`LineHeight::default`, the labels set none), or
+        // `button.min_height` where that is taller, and the title's own
         // line; the title inside the button's padding above and below, so a
         // padding the theme states unequal (macos-monterey's 1 and 3) moves
-        // it as it moves the labels.
+        // it as it moves the labels, which `at_least` centres between them.
         let button_pad = native_theme_iced::button_padding(resolved);
         let label_size = scaled_text_size(resolved.button.font.size, a11y);
-        let control_height =
-            button_pad.y() + f32::from(text::LineHeight::default().to_absolute(label_size.into()));
+        let control_height = (button_pad.y()
+            + f32::from(text::LineHeight::default().to_absolute(label_size.into())))
+        .max(resolved.button.min_height);
         let title_height = scaled_text_size(resolved.defaults.font.size, a11y)
             * native_theme_iced::line_height(resolved);
         let bar_line = control_height.max(title_height);
@@ -14290,6 +14352,7 @@ fn aw_card_info(state: &State) -> String {
                 "Dismiss label",
                 font_row("button.font", &resolved.button.font).as_str(),
             ),
+            ("Dismiss min size", button_min_size_row(resolved).as_str()),
         ],
         &[(
             "close icon",
@@ -14646,6 +14709,9 @@ fn view_extra(state: &State) -> Element<'_, Message> {
 
     // ---- Card ----
 
+    // The card's buttons at least `button.min_width` by `button.min_height`,
+    // as the Buttons page's are.
+    let btn_min = native_theme_iced::button_content_min_size(resolved);
     let card_section: Element<'_, Message> = if state.aw_card_open {
         let card = Card::new(
             text("Card").role(section_title(ts), resolved, a11y),
@@ -14660,12 +14726,17 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             .spacing(gap.widget),
         )
         .foot(Element::from(
-            row![
-                button(text("Dismiss").typeset(&resolved.button.font, a11y))
-                    .on_press(Message::AwCardToggled)
-                    .style(styles::button(resolved))
-                    .padding(native_theme_iced::button_padding(resolved)),
-            ]
+            row![probe(
+                probes::AW_CARD_DISMISS,
+                Length::Shrink,
+                button(at_least(
+                    text("Dismiss").typeset(&resolved.button.font, a11y),
+                    btn_min
+                ))
+                .on_press(Message::AwCardToggled)
+                .style(styles::button(resolved))
+                .padding(native_theme_iced::button_padding(resolved)),
+            )]
             .spacing(gap.widget),
         ))
         .width(Length::Fixed(420.0))
@@ -14677,11 +14748,17 @@ fn view_extra(state: &State) -> Element<'_, Message> {
             .padding_foot(foot);
         probe(probes::AW_CARD, Length::Shrink, card)
     } else {
-        button(text("Show the card again").typeset(&resolved.button.font, a11y))
+        probe(
+            probes::AW_CARD_SHOW,
+            Length::Shrink,
+            button(at_least(
+                text("Show the card again").typeset(&resolved.button.font, a11y),
+                btn_min,
+            ))
             .on_press(Message::AwCardToggled)
             .style(styles::button_primary(resolved))
-            .padding(native_theme_iced::button_padding(resolved))
-            .into()
+            .padding(native_theme_iced::button_padding(resolved)),
+        )
     };
 
     let card_demo = hoverable(
@@ -22109,14 +22186,27 @@ mod tests {
     /// its own size where its label, padded, is larger, as the Basic page's
     /// push buttons are and every Buttons-page button of the gpui showcase
     /// is through `geometry::button`. kde-breeze states 80 by 32, which a
-    /// short label such as "Primary" falls short of.
+    /// short label such as "Primary" falls short of; material-3 with its
+    /// minimum raised to 120 by 48 holds both floors beyond kde-breeze.
     #[test]
     fn the_buttons_page_takes_the_stated_minimum_size() {
-        for preset in ["kde-breeze", "adwaita", "material-3"] {
-            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+        let cases = [
+            ("kde-breeze", None),
+            ("adwaita", None),
+            ("material-3", None),
+            // A raised minimum, wider and taller than every label here, so
+            // both floors hold under a second font and padding.
+            ("material-3", Some((120.0, 48.0))),
+        ];
+        for (preset, raised) in cases {
+            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("{preset}: {error}"),
             };
+            if let Some((width, height)) = raised {
+                resolved.button.min_width = width;
+                resolved.button.min_height = height;
+            }
             let r = resolved.clone();
             let pad = native_theme_iced::button_padding(&r);
             let state = State {
@@ -22154,6 +22244,97 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// M9-155, round 2: the push buttons of the Display, Layout and Extra
+    /// pages are laid out at the minimum size the theme states
+    /// (`button.min_width` and `.min_height`), as the Buttons page's are: the
+    /// four tooltip buttons, the first pane's three controls and, in the
+    /// `iced_aw` build, the card's Dismiss and the button that brings the
+    /// card back; and each page's Widget Info names the minimum. kde-breeze
+    /// states 80 by 32, which "close" and "Dismiss" fall short of; windows-11
+    /// 64 by 32.
+    #[test]
+    fn the_other_pages_push_buttons_take_the_stated_minimum_size() {
+        let mut faults = Vec::new();
+        for preset in ["kde-breeze", "windows-11"] {
+            let mut state = loaded(preset, false);
+            state.side_panel_visible = false;
+            let r = state.current_resolved.clone();
+            let under = |what: &str, button: Rectangle| {
+                (button.width < r.button.min_width - 0.01
+                    || button.height < r.button.min_height - 0.01)
+                    .then(|| {
+                        format!(
+                            "{preset}: {what} is {} x {}px, under button.min_width x \
+                             button.min_height {} x {}",
+                            button.width, button.height, r.button.min_width, r.button.min_height
+                        )
+                    })
+            };
+
+            state.active_tab = Tab::Display;
+            let mut ui = interface(&state);
+            for id in probes::DISPLAY_TOOLTIPS {
+                faults.extend(under(id, probe_bounds(&mut ui, id)));
+            }
+            drop(ui);
+
+            state.active_tab = Tab::Layout;
+            let mut ui = interface(&state);
+            // The title bar's line, which the controls are centred in, holds
+            // them where `button.min_height` makes them taller than their
+            // label and padding.
+            let bar = probe_bounds(&mut ui, probes::LAYOUT_PANE_CONTROLS[0]);
+            for (id, label) in probes::LAYOUT_PANE_BUTTONS {
+                let control = probe_bounds(&mut ui, id);
+                if control.height > bar.height + 0.01 {
+                    faults.push(format!(
+                        "{preset}: {label} is {}px tall, in a title bar line {}px tall",
+                        control.height, bar.height
+                    ));
+                }
+                faults.extend(under(label, control));
+            }
+            drop(ui);
+
+            #[cfg(feature = "iced_aw")]
+            {
+                state.active_tab = Tab::Extra;
+                state.aw_card_open = true;
+                let mut ui = interface(&state);
+                faults.extend(under(
+                    "Dismiss",
+                    probe_bounds(&mut ui, probes::AW_CARD_DISMISS),
+                ));
+                drop(ui);
+                state.aw_card_open = false;
+                let mut ui = interface(&state);
+                faults.extend(under(
+                    "Show the card again",
+                    probe_bounds(&mut ui, probes::AW_CARD_SHOW),
+                ));
+                drop(ui);
+                state.aw_card_open = true;
+            }
+
+            let want = format!(
+                "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
+                r.button.min_width, r.button.min_height
+            );
+            let mut infos = vec![
+                ("Tooltip", tooltip_info(&state)),
+                ("PaneGrid", pane_grid_info(&state)),
+            ];
+            #[cfg(feature = "iced_aw")]
+            infos.push(("Card", aw_card_info(&state)));
+            for (name, info) in infos {
+                if !info.lines().any(|line| line.contains(&want)) {
+                    faults.push(format!("{preset}: the {name} info does not say {want:?}"));
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// M9-100 (simplify): the Inputs page chains each single-line
