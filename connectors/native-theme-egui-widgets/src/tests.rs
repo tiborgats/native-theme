@@ -732,51 +732,154 @@ fn the_expander_is_laid_out_as_stated() {
     );
 }
 
-/// The painted header wraps a title too long for its column inside itself, clear of a
-/// trailing arrow, and is at least as wide as a title that cannot wrap narrower, as egui's
-/// own header is at least its text (`egui/src/containers/collapsing_header.rs:516-532`).
+/// `scale` as the OS's text-scaling factor.
+fn scaled_by(scale: f32) -> AccessibilityPreferences {
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = scale;
+    prefs
+}
+
+/// The header's height by the rule every stated row height takes (M9-150), as the showcases'
+/// `rows::scaled_height` computes it: at a text scale of 1 or less `stated`; above 1 at least
+/// the line box of the title's font at its scaled size and `defaults.line_height`, rounded up,
+/// plus `padding`, the header's own above and below.
+fn header_rule(t: &ResolvedTheme, prefs: &AccessibilityPreferences, padding: f32) -> f32 {
+    let stated = t.expander.header_height;
+    if prefs.text_scale_factor() <= 1.0 {
+        return stated;
+    }
+    let line = (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil();
+    stated.max(line + padding)
+}
+
+/// The padding above and below the title: on the painted path each stated side of
+/// `expander.border.padding`, the scope's `button_padding.y` where unstated; on egui's own, the
+/// scope's `button_padding.y` twice (`egui/src/containers/collapsing_header.rs:531`).
+fn header_padding(t: &ResolvedTheme, ctx: &egui::Context, painted: bool) -> f32 {
+    use native_theme_egui::NativeThemeUiExt as _;
+    let mut own = 0.0;
+    let _ = pass(ctx, at(0.0), |ui| {
+        own = ui
+            .native_scope(
+                native_theme_egui::Role::Expander,
+                native_theme_egui::RoleVariant::Normal,
+                |ui| ui.spacing().button_padding.y,
+            )
+            .inner;
+    });
+    let pad = &t.expander.border.padding;
+    if painted {
+        pad.top.unwrap_or(own) + pad.bottom.unwrap_or(own)
+    } else {
+        2.0 * own
+    }
+}
+
+/// The header is `expander.header_height` tall at a text scale of 1 or less, and above 1 the
+/// rule's height, the stated height grown to hold its scaled line box and padding: on the
+/// painted path (kde-breeze, adwaita) and on egui's own `CollapsingHeader` (material-3), as
+/// the gpui showcase's header is the stated height at 1 (`geometry::accordion_title`). At 1.5
+/// kde-breeze's 13.33 px title's line box is 27.2 at its 1.36 line height, 28 rounded up, so the
+/// header is 28 and its 7 + 7, past the stated 40, where it was its title's 27 and its padding.
 #[test]
-fn a_long_title_wraps_inside_the_header() {
-    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
-        .unwrap()
-        .1;
-    assert_eq!(
-        t.expander.arrow_side,
-        Some(native_theme_egui::native_theme::theme::ArrowSide::Trailing)
-    );
-    let ctx = installed(&t, &AccessibilityPreferences::default());
-    let title = "A title far longer than the narrow column it is shown in";
-    // 120 points wraps the words; 1 point leaves no width for the title at all.
-    for width in [120.0, 1.0] {
-        let show = |ui: &mut egui::Ui| {
-            ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
-                Expander::new(title)
+fn the_header_is_its_stated_height_by_the_row_rule() {
+    let mut faults = Vec::new();
+    for (preset, painted) in [
+        ("kde-breeze", true),
+        ("adwaita", true),
+        ("material-3", false),
+    ] {
+        for scale in [1.0, 1.5] {
+            let prefs = scaled_by(scale);
+            let t = from_preset(preset, false, &prefs).unwrap().1;
+            let ctx = installed(&t, &prefs);
+            let show = |ui: &mut egui::Ui| {
+                Expander::new("Details")
                     .show(ui, |ui| ui.label("Body"))
                     .header_response
-            })
-            .inner
-        };
-        let _ = response(&ctx, at(0.0), show);
-        let (out, header) = response(&ctx, at(0.0), show);
-        let text = flat(&out.shapes)
-            .into_iter()
-            .find_map(|s| match s {
-                egui::Shape::Text(text) if text.galley.text() == title => Some(text),
-                _ => None,
-            })
-            .unwrap();
-        assert!(text.galley.rows.len() > 1, "{width}: the title wraps");
-        let painted = egui::Rect::from_min_size(text.pos, text.galley.size());
-        assert!(
-            header.rect.contains_rect(painted),
-            "{width}: {painted:?} inside {:?}",
-            header.rect
+            };
+            let _ = response(&ctx, at(0.0), show);
+            let (_, header) = response(&ctx, at(0.0), show);
+            let want = header_rule(&t, &prefs, header_padding(&t, &ctx, painted));
+            if (header.rect.height() - want).abs() > 0.01 {
+                faults.push(format!(
+                    "{preset} at {scale}: the header is {}, want {want}",
+                    header.rect.height()
+                ));
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// At a text scale of 1 or less the painted header is its stated height and its title one
+/// line, cut short with egui's ellipsis where it is too long for its column
+/// (`TextWrapMode::Truncate`, `epaint/src/text/text_layout_types.rs:707-714`; the `…`,
+/// `text_layout.rs:146-149`), inside the header and clear of a trailing arrow, as egui's own single-line labels truncate; at least as
+/// wide as what is left of it where no width is left for the title at all. Above 1 the title
+/// wraps inside the header, which grows to hold it.
+#[test]
+fn a_long_title_is_one_line_inside_the_stated_header() {
+    let title = "A title far longer than the narrow column it is shown in";
+    for scale in [1.0, 1.5] {
+        let prefs = scaled_by(scale);
+        let t = from_preset("adwaita", false, &prefs).unwrap().1;
+        assert_eq!(
+            t.expander.arrow_side,
+            Some(native_theme_egui::native_theme::theme::ArrowSide::Trailing)
         );
-        let arrow = Parts::of(&header).unwrap().get("arrow").unwrap();
-        assert!(
-            painted.right() <= arrow.left(),
-            "{width}: {painted:?} clear of the arrow {arrow:?}"
-        );
+        let ctx = installed(&t, &prefs);
+        // 120 points is narrower than the title; 1 point leaves no width for it at all.
+        for width in [120.0, 1.0] {
+            let show = |ui: &mut egui::Ui| {
+                ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
+                    Expander::new(title)
+                        .show(ui, |ui| ui.label("Body"))
+                        .header_response
+                })
+                .inner
+            };
+            let _ = response(&ctx, at(0.0), show);
+            let (out, header) = response(&ctx, at(0.0), show);
+            let text = flat(&out.shapes)
+                .into_iter()
+                .find_map(|s| match s {
+                    egui::Shape::Text(text) if text.galley.text() == title => Some(text),
+                    _ => None,
+                })
+                .unwrap();
+            let painted = egui::Rect::from_min_size(text.pos, text.galley.size());
+            if scale <= 1.0 {
+                assert_eq!(text.galley.rows.len(), 1, "{width}: one line at 1");
+                assert!(text.galley.elided, "{width}: cut short at 1");
+                assert_eq!(
+                    header.rect.height(),
+                    t.expander.header_height,
+                    "{width}: the stated height at 1"
+                );
+                assert!(
+                    header.rect.x_range().contains(painted.left())
+                        && header.rect.x_range().contains(painted.right()),
+                    "{width}: {painted:?} across inside {:?}",
+                    header.rect
+                );
+            } else {
+                assert!(
+                    text.galley.rows.len() > 1,
+                    "{width}: the title wraps above 1"
+                );
+                assert!(
+                    header.rect.contains_rect(painted),
+                    "{width}: {painted:?} inside {:?}",
+                    header.rect
+                );
+            }
+            let arrow = Parts::of(&header).unwrap().get("arrow").unwrap();
+            assert!(
+                painted.right() <= arrow.left(),
+                "{scale}, {width}: {painted:?} clear of the arrow {arrow:?}"
+            );
+        }
     }
 }
 

@@ -6,7 +6,7 @@ use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::{
     ArrowSide, ResolvedExpanderTheme, ResolvedPadding, ResolvedTheme,
 };
-use native_theme_egui::{Role, ThemeAtlas, expander_icon};
+use native_theme_egui::{AccessibilityPreferences, Role, ThemeAtlas, expander_icon};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -24,12 +24,17 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// `expander.arrow_side`, `arrow_gap`, `content_indent` or `frame_enabled`
 /// (`docs/platform-facts.md` §2.27), this crate lays the expander out itself:
 ///
-/// * the header is as wide as the `Ui`, at least the scope's `interact_size.y` tall
-///   (`expander.header_height`), padded by the stated `expander.border.padding` sides (the
-///   scope's `button_padding` on a side left unstated), its fill the scope's state fill
-///   (`expander.hover_background` under the pointer); the title wraps at the width the
-///   padding and the arrow leave it, and where it cannot wrap that narrow the header is as
-///   wide as it needs, as egui's own header is at least its text;
+/// * the header is as wide as the `Ui`, padded by the stated `expander.border.padding` sides
+///   (the scope's `button_padding` on a side left unstated), its fill the scope's state fill
+///   (`expander.hover_background` under the pointer). Its height is the rule every stated row
+///   height takes: at a text scale of 1 or less the scope's `interact_size.y`
+///   (`expander.header_height`) exactly, its title one line, cut short with egui's ellipsis at
+///   the width the padding and the arrow leave it, as egui's single-line labels are
+///   (`TextWrapMode::Truncate`); above 1 the title wraps at that width, and the header is the
+///   tallest of the stated height, the title's line box at its scaled size and
+///   `defaults.line_height`, rounded up, with the padding above and below it, and the wrapped
+///   title with that padding. Where the title cannot be that narrow the header is as wide as it
+///   needs, as egui's own header is at least its text;
 /// * the arrow, `expander.arrow_icon_size` across in `expander.arrow_color` (the state's
 ///   text colour where unstated), is egui's triangle: before the title it turns from the
 ///   title to down as the body opens, egui's own turn; after it (`arrow_side` trailing) from
@@ -43,8 +48,11 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 ///
 /// Where the theme states none of the four, or with no atlas installed, it is egui's own
 /// `CollapsingHeader` (in the expander's scope, with the connector's `expander_icon`, where an
-/// atlas is installed). The open state lives in egui's `CollapsingState` under the header's
-/// id, so it animates and persists as egui's does.
+/// atlas is installed): one line of title, never wrapped (`egui/src/containers/
+/// collapsing_header.rs:518-523`), the stated height at a text scale of 1 or less, where the
+/// connector fits the scope's vertical padding to it, and above 1 grown by the same rule. The
+/// open state lives in egui's `CollapsingState` under the header's id, so it animates and
+/// persists as egui's does.
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -131,10 +139,12 @@ impl Expander {
         add_body: impl FnOnce(&mut egui::Ui) -> R,
     ) -> ExpanderResponse<R> {
         let atlas = ThemeAtlas::from_ctx(ui.ctx());
-        let Some(t) = atlas.as_ref().map(|a| a.resolved_for(ui.ctx().theme())) else {
-            return own(ui, self, None, add_body);
+        let Some(atlas) = atlas else {
+            return own(ui, self, None, None, add_body);
         };
+        let t = atlas.resolved_for(ui.ctx().theme());
         let e = &t.expander;
+        let line = scaled_line(t, atlas.accessibility());
         let enabled = self.enabled;
         if e.arrow_side.is_none()
             && e.arrow_gap.is_none()
@@ -142,21 +152,34 @@ impl Expander {
             && e.frame_enabled.is_none()
         {
             return scope::open(ui, Role::Expander, enabled, |ui| {
-                own(ui, self, Some(t), add_body)
+                own(ui, self, Some(t), line, add_body)
             });
         }
         let look = Look::of(t);
         scope::open(ui, Role::Expander, enabled, |ui| {
-            painted(ui, self, e, look, add_body)
+            painted(ui, self, e, look, line, add_body)
         })
     }
 }
 
-/// egui's own `CollapsingHeader`, with the connector's arrow where a theme is given.
+/// The header's line box above a text scale of 1, by the rule every stated row height takes
+/// (ledger M9-150; the showcases' `rows::scaled_height`, the gpui connector's
+/// `geometry::with_height_rule`): the title's font at its scaled size (`expander.font.size`)
+/// times `defaults.line_height`, rounded up. `None` at a factor of 1 or less, where the stated
+/// height is the header's.
+fn scaled_line(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Option<f32> {
+    (prefs.text_scale_factor() > 1.0)
+        .then(|| (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil())
+}
+
+/// egui's own `CollapsingHeader`, with the connector's arrow where a theme is given; above a
+/// text scale of 1 at least `line`, the scaled line box, and its padding above and below it
+/// tall.
 fn own<R>(
     ui: &mut egui::Ui,
     expander: Expander,
     t: Option<&ResolvedTheme>,
+    line: Option<f32>,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
     let Expander {
@@ -181,6 +204,14 @@ fn own<R>(
             egui::TextStyle::Button,
         )
         .size();
+    // egui pads the title by `button_padding.y` above and below
+    // (`egui/src/containers/collapsing_header.rs:531-532`)
+    if let Some(line) = line {
+        let side = ui.spacing().button_padding.y;
+        let least = line + side + side;
+        let height = &mut ui.spacing_mut().interact_size.y;
+        *height = height.max(least);
+    }
     let header = egui::CollapsingHeader::new(title)
         .id_salt(id_salt)
         .default_open(default_open)
@@ -224,12 +255,13 @@ fn stated_or(v: Option<f32>, own: f32) -> f32 {
     v.and_then(scope::length).unwrap_or(own)
 }
 
-/// The expander laid out as `e` states it.
+/// The expander laid out as `e` states it, its header's height by `line` ([`scaled_line`]).
 fn painted<R>(
     ui: &mut egui::Ui,
     expander: Expander,
     e: &ResolvedExpanderTheme,
     look: Look,
+    line: Option<f32>,
     add_body: impl FnOnce(&mut egui::Ui) -> R,
 ) -> ExpanderResponse<R> {
     let Expander {
@@ -254,7 +286,7 @@ fn painted<R>(
         egui::Frame::NONE
     };
     let out = frame.show(ui, |ui| {
-        let (header, mut parts) = header(ui, &mut state, id, open, title, e, look);
+        let (header, mut parts) = header(ui, &mut state, id, open, title, (e, look, line));
         let own_indent = ui.spacing().indent;
         let indent = stated_or(e.content_indent, own_indent);
         let body = state.show_body_unindented(ui, |ui| {
@@ -287,15 +319,16 @@ fn painted<R>(
 }
 
 /// The header row: allocated, sensed and painted, toggling `state` on a click, or to `open`
-/// where that is given; with the `header`, `arrow` and `title` [`Parts`] it painted.
+/// where that is given; with the `header`, `arrow` and `title` [`Parts`] it painted. Its height
+/// is the scope's `interact_size.y`, the stated one, where `line` is `None`, a text scale of 1
+/// or less; else at least `line` and the padding ([`scaled_line`]).
 fn header(
     ui: &mut egui::Ui,
     state: &mut egui::collapsing_header::CollapsingState,
     id: egui::Id,
     open: Option<bool>,
     title: egui::WidgetText,
-    e: &ResolvedExpanderTheme,
-    look: Look,
+    (e, look, line): (&ResolvedExpanderTheme, Look, Option<f32>),
 ) -> (egui::Response, Parts) {
     let own_pad = ui.spacing().button_padding;
     let pad = &e.border.padding;
@@ -313,17 +346,25 @@ fn header(
 
     let available = ui.available_width();
     let wrap = (available - left - right - arrow - gap).max(0.0);
-    let galley = title.into_galley(
-        ui,
-        Some(egui::TextWrapMode::Wrap),
-        wrap,
-        egui::TextStyle::Button,
-    );
+    // One line cut short at the stated height, as egui's single-line labels are
+    // (`epaint/src/text/text_layout_types.rs:707-714`); wrapped where the header grows.
+    let mode = match line {
+        None => egui::TextWrapMode::Truncate,
+        Some(_) => egui::TextWrapMode::Wrap,
+    };
+    let galley = title.into_galley(ui, Some(mode), wrap, egui::TextStyle::Button);
     // At least the title's width, as egui's own header is at least its text
-    // (`egui/src/containers/collapsing_header.rs:516-532`): a title that cannot wrap to the
-    // width left (a glyph wider than it) still lies inside the header, clear of the arrow.
+    // (`egui/src/containers/collapsing_header.rs:516-532`): a title that cannot be cut or
+    // wrapped to the width left (a glyph wider than it) still lies across the header, clear of
+    // the arrow.
     let width = available.max(galley.size().x + left + right + arrow + gap);
-    let height = (galley.size().y + top + bottom).max(ui.spacing().interact_size.y);
+    let stated = ui.spacing().interact_size.y;
+    let height = match line {
+        None => stated,
+        Some(line) => stated
+            .max(line + top + bottom)
+            .max(galley.size().y + top + bottom),
+    };
     let (_, rect) = ui.allocate_space(egui::vec2(width, height));
     let mut response = ui.interact(rect, id, egui::Sense::click());
     // egui's own rule (`egui/src/containers/collapsing_header.rs:542-550`): a given `open`
