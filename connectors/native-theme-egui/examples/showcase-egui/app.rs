@@ -108,7 +108,8 @@ pub(crate) struct Settings {
     /// Whether `icon` is re-derived from each theme installed: until the user picks an icon
     /// theme, and again after a pick of the `default` row (§10.4).
     pub icon_follows_theme: bool,
-    /// Preferences' overrides; `None` is the OS's own.
+    /// Preferences' overrides, the user's requests; `None` is the OS's own. An install builds
+    /// with their [`effective_preferences`] over the OS's.
     pub prefs: Option<AccessibilityPreferences>,
     pub page: Page,
     pub screenshot: Option<String>,
@@ -270,6 +271,27 @@ fn pointer_event(event: &egui::Event) -> bool {
             | egui::Event::PointerGone
             | egui::Event::Touch { .. }
     )
+}
+
+/// The preferences an install builds with, from the OS's reading `os` and Preferences'
+/// `overrides` (`None` until the user changes one): every preference the override's where one
+/// is set, except Reduce motion, whose switch off is no request, so an OS request still stops
+/// the animations (the Step 4 ruling: the gpui showcase's switch through native-theme-gpui's
+/// `forward_reduce_motion`, spec v0.5.9 §5, and the iced showcase's `motion_reduced`). High
+/// contrast and Reduce transparency keep the override's value, since the atlas builds no
+/// differently for them.
+pub(crate) fn effective_preferences(
+    os: &AccessibilityPreferences,
+    overrides: Option<&AccessibilityPreferences>,
+) -> AccessibilityPreferences {
+    match overrides {
+        Some(overrides) => {
+            let mut prefs = overrides.clone();
+            prefs.reduce_motion |= os.reduce_motion;
+            prefs
+        }
+        None => os.clone(),
+    }
 }
 
 pub(crate) struct App {
@@ -488,10 +510,11 @@ impl App {
     }
 
     /// The atlas `settings` select (§10.4): `default` is `SystemTheme::from_system` through
-    /// `to_egui_atlas`, with Preferences' overrides on its public `accessibility`
-    /// (`native-theme/src/lib.rs:500`) after `invalidate_caches()`; a preset is `from_preset`
-    /// with the cached OS preferences (`detect::accessibility_preferences`, which the watcher
-    /// and `ReloadTheme` clear before they rebuild), whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
+    /// `to_egui_atlas` after `invalidate_caches()`, its public `accessibility`
+    /// (`native-theme/src/lib.rs:500`) the [`effective_preferences`] of the OS's reading it
+    /// holds and Preferences' overrides; a preset is `from_preset` with the effective
+    /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
+    /// watcher and `ReloadTheme` clear before they rebuild) and the overrides, whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
     /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
     pub(crate) fn rebuild_atlas(
@@ -501,17 +524,16 @@ impl App {
             ThemeChoice::Default => {
                 native_theme::detect::invalidate_caches();
                 let mut sys = SystemTheme::from_system()?;
-                if let Some(overrides) = &settings.prefs {
-                    sys.accessibility = overrides.clone();
-                }
+                sys.accessibility =
+                    effective_preferences(&sys.accessibility, settings.prefs.as_ref());
                 let preset = sys.preset.clone();
                 Ok((sys.to_egui_atlas(), Some(preset)))
             }
             ThemeChoice::Preset(name) => {
-                let prefs = settings
-                    .prefs
-                    .clone()
-                    .unwrap_or_else(native_theme::detect::accessibility_preferences);
+                let prefs = effective_preferences(
+                    &native_theme::detect::accessibility_preferences(),
+                    settings.prefs.as_ref(),
+                );
                 from_preset(name, false, &prefs).map(|(atlas, _)| (atlas, None))
             }
         }

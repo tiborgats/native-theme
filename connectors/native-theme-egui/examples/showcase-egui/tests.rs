@@ -15,7 +15,7 @@ use native_theme_showcase_support::{Kind, capture};
 
 use crate::{
     CliArgs,
-    app::{App, ModeChoice, Page, Settings, ThemeChoice},
+    app::{App, ModeChoice, Page, Settings, ThemeChoice, effective_preferences},
     apply_cli_args,
 };
 
@@ -295,6 +295,44 @@ fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
     );
     settings.theme_installed(&breeze, egui::Theme::Light);
     assert_eq!(settings.icon, follows(egui::Theme::Light));
+}
+
+/// The Step 4 ruling on Reduce motion: Preferences' switch off is no request, so an OS request
+/// still stops the animations, as the gpui showcase's switch (native-theme-gpui
+/// `forward_reduce_motion`) and the iced showcase's `motion_reduced` read it; the scale and the
+/// two other flags are the user's where the user set them, and the OS's where not.
+#[test]
+fn reduce_motion_off_is_no_request() {
+    let prefs = |scale, reduce_motion, high_contrast, reduce_transparency| {
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = scale;
+        prefs.reduce_motion = reduce_motion;
+        prefs.high_contrast = high_contrast;
+        prefs.reduce_transparency = reduce_transparency;
+        prefs
+    };
+    let os_on = prefs(1.25, true, true, true);
+    let os_off = prefs(1.0, false, false, false);
+    let user_off = prefs(1.5, false, false, false);
+    let user_on = prefs(2.0, true, true, true);
+
+    assert_eq!(
+        effective_preferences(&os_on, Some(&user_off)),
+        prefs(1.5, true, false, false),
+        "the switch off keeps the OS's request; the rest is the user's"
+    );
+    assert_eq!(
+        effective_preferences(&os_off, Some(&user_on)),
+        prefs(2.0, true, true, true),
+        "the switch on is a request; the rest is the user's"
+    );
+    assert_eq!(
+        effective_preferences(&os_off, Some(&user_off)),
+        prefs(1.5, false, false, false),
+        "neither asks"
+    );
+    assert_eq!(effective_preferences(&os_on, None), os_on, "no override");
+    assert_eq!(effective_preferences(&os_off, None), os_off, "no override");
 }
 
 use egui::accesskit::Role;
@@ -3641,6 +3679,47 @@ fn a_set_preference_is_a_selected_switch() {
             .as_ref()
             .is_some_and(|p| p.high_contrast),
         "the switch did not set the flag"
+    );
+
+    // The OS's request, as the installed atlas's effective preferences carry it, with none of
+    // the user's: the switch shows the user's request, so it is off, and a change of another
+    // switch stores no request for Reduce motion.
+    let mut os = AccessibilityPreferences::default();
+    os.reduce_motion = true;
+    let (atlas, _) = from_preset(TEST_PRESET, false, &os).expect("a bundled preset");
+    harness.state_mut().settings.prefs = None;
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness
+            .get_by_role_and_label(Role::Switch, "Reduce motion")
+            .accesskit_node()
+            .toggled(),
+        Some(egui::accesskit::Toggled::False),
+        "an OS request shows as the user's"
+    );
+    assert!(
+        harness
+            .query_by_label(
+                "reduce_motion: every style's animation time is zero and its scroll animation \
+                 is off; off is no request: an OS request still stops the animations"
+            )
+            .is_some(),
+        "the Reduce motion row does not say that off is no request"
+    );
+    harness
+        .get_by_role_and_label(Role::Switch, "High contrast")
+        .click();
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness
+            .state()
+            .settings
+            .prefs
+            .as_ref()
+            .map(|p| (p.reduce_motion, p.high_contrast)),
+        Some((false, true)),
+        "the OS's request was stored as the user's"
     );
 }
 

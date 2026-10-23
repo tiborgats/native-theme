@@ -1661,11 +1661,13 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .color(window_title_bar_text_color(t, true));
     // `dialog.max_width`, a required size (`f32` on the resolved theme).
     let dialog_width = t.dialog.max_width;
-    let mut prefs = app
-        .settings
-        .prefs
-        .clone()
-        .unwrap_or_else(|| app.atlas.accessibility().clone());
+    // The user's request: the atlas's preferences are the effective ones, which carry the OS's
+    // Reduce motion request, so with no request of the user's the switch starts off.
+    let mut prefs = app.settings.prefs.clone().unwrap_or_else(|| {
+        let mut prefs = app.atlas.accessibility().clone();
+        prefs.reduce_motion = false;
+        prefs
+    });
     let before = prefs.clone();
     // Whether the text-scaling field is still being dragged, or was just let go of.
     let mut scale_dragged = false;
@@ -1755,7 +1757,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                                 (
                                     "switch · reduce motion",
                                     "Reduce motion",
-                                    "reduce_motion: every style's animation time is zero and its scroll animation is off",
+                                    "reduce_motion: every style's animation time is zero and its scroll animation is off; off is no request: an OS request still stops the animations",
                                     &mut prefs.reduce_motion,
                                 ),
                                 (
