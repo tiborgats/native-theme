@@ -751,7 +751,7 @@ impl<'a> Builder<'a> {
     /// [`ThemeAtlas::builder`] has none unless given one here. The OS's current mode is
     /// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`
     /// (`native-theme/src/detect.rs:211`), which reads `Light` wherever detection fails
-    /// (`detect_is_dark_inner`, `:811` on Linux). Without this call a builder atlas leaves the
+    /// (`detect_is_dark_inner`, `:812` on Linux). Without this call a builder atlas leaves the
     /// choice to egui's `Options::fallback_theme` on Linux.
     pub fn os_mode(mut self, mode: ColorMode) -> Self {
         self.os_mode = Some(mode);

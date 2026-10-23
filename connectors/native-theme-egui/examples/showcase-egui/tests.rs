@@ -1575,7 +1575,7 @@ fn a_preset_under_the_system_mode_follows_the_os() {
     };
     let mut harness = open(
         egui::Theme::Light,
-        cli(&[("--theme", TEST_PRESET), ("--variant", "system")]),
+        cli(&[("--theme", "catppuccin-mocha"), ("--variant", "system")]),
     );
     harness.run_steps(SETTLE);
     assert_eq!(harness.state().settings.mode, ModeChoice::System);
