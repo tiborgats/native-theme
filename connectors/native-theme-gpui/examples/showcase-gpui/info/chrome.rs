@@ -1681,7 +1681,7 @@ pub fn preference_switch(
     .instance(
         "preference",
         match field {
-            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped, and apply_accessibility forwards it to gpui's reduced motion",
+            "reduce_motion" => "reduce_motion: a click installs the preferences with it flipped, and apply_accessibility forwards it to gpui's reduced motion; off is no request: it undoes only the connector's own switch (native-theme-gpui lib.rs, forward_reduce_motion), so an OS request keeps motion reduced whatever the switch shows",
             "high_contrast" => "high_contrast: a click installs the preferences with it flipped",
             _ => "reduce_transparency: a click installs the preferences with it flipped",
         },

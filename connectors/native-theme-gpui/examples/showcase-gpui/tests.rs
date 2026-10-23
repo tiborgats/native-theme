@@ -12095,6 +12095,37 @@ fn a_preference_reaches_apply_accessibility(cx: &mut TestAppContext) {
     );
 }
 
+/// The Reduce motion switch off is no request (spec v0.5.9 §5, the Step 4
+/// ruling the three showcases share): `forward_reduce_motion(false)` undoes
+/// only the connector's own switch and re-reads the system, so an OS request
+/// keeps motion reduced whatever the switch shows. The row and the switch's
+/// info say so, as the iced and egui showcases' rows do.
+#[test]
+fn the_reduce_motion_texts_say_that_off_is_no_request() {
+    let says = |text: &str| {
+        text.contains("off is no request")
+            && text.contains("an OS request keeps motion reduced whatever the switch shows")
+    };
+    assert!(
+        says(crate::demo::REDUCE_MOTION_DESCRIPTION),
+        "the row: {}",
+        crate::demo::REDUCE_MOTION_DESCRIPTION
+    );
+    let t = Theme::from(&gpui_component::theme::ThemeColor::default());
+    for checked in [false, true] {
+        let info = crate::info::chrome::preference_switch(&t, "reduce_motion", checked, false);
+        let line = info
+            .instance
+            .iter()
+            .find(|note| note.what == "preference")
+            .map(|note| note.text.clone());
+        assert!(
+            line.as_deref().is_some_and(says),
+            "the switch's info, checked {checked}: {line:?}"
+        );
+    }
+}
+
 /// A theme that fails to load is reported by an Alert across the content
 /// (spec §2.5), which reports itself: under the page TabBar, which does not
 /// move, and above the page.

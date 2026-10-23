@@ -2722,6 +2722,9 @@ const TEXT_SCALE_STEP: f64 = 0.25;
 /// A row whose field is one of the showcase's own Switches, built as
 /// upstream's switch field builds one (setting/fields/bool.rs, `BoolField`)
 /// but wrapped in its info, which upstream's field has no room for.
+/// The Reduce motion row's description in the Preferences sheet.
+pub(crate) const REDUCE_MOTION_DESCRIPTION: &str = "reduce_motion: forwarded to gpui's own reduce-motion flag; off is no request, so an OS request keeps motion reduced whatever the switch shows";
+
 fn preference_item(
     ui: &Entity<InfoRegistry>,
     title: &'static str,
@@ -2817,7 +2820,7 @@ pub(crate) fn preferences(
     .item(preference_item(
         ui,
         "Reduce motion",
-        "reduce_motion: forwarded to gpui's own reduce-motion flag",
+        REDUCE_MOTION_DESCRIPTION,
         Preference::ReduceMotion,
         disabled,
     ))
