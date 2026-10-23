@@ -93,10 +93,6 @@
 # 1.1.5 is already there as a dependency of native-theme (native-theme/Cargo.toml,
 # `toml.workspace = true`), which re-exports none of it.
 #
-# A showcase not yet on the crate reads the list with a copy of that reader and an
-# `include_str!` of its own, the path relative to the file that holds it:
-#   egui: examples/showcase-egui/elements.rs -> "../../../../docs/showcase-elements.toml" (until M9c T1)
-#
 # The sample points are the comparator's alone; a showcase ignores them. A showcase's own test
 # checks that every id it records is in this list and that it records every element it draws.
 #
@@ -132,8 +128,7 @@
 # toolkit's widget catalogue, so they differ (iced's Display holds tooltips, cards and the
 # spacing demo besides its text, which is why it keeps its name). A page's `--tab` key is its
 # label in lower case with each space a `-`, but iced's Extra widgets page's, `extra`. Each
-# showcase's own test reads this table against its page list, through `elements::page_order`
-# (the egui showcase through its copy, until M9c T1).
+# showcase's own test reads this table against its page list, through `elements::page_order`.
 #
 #   | Counterpart | gpui       | iced                    | egui       |
 #   |-------------|------------|-------------------------|------------|

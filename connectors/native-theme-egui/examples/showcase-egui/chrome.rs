@@ -1,6 +1,6 @@
 //! The chrome: menu bar, toolbar, status bar, side panel, page tabs, overlays (spec §10.4).
 
-use native_theme::icons::{IconRole, IconSetChoice, default_icon_choice};
+use native_theme::icons::{IconRole, IconSetChoice};
 use native_theme::theme::IconSet;
 use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
@@ -8,6 +8,7 @@ use native_theme_egui::{
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::switch::Switch;
+use native_theme_showcase_support::{rows, status};
 
 use crate::{
     LEFT_PANEL_WIDTH,
@@ -73,9 +74,7 @@ impl Action {
             Action::ToggleSidePanel => "Toggle Side Panel",
             Action::OpenCommandPalette => "Command Palette",
             Action::ReloadTheme => "Reload System Theme",
-            Action::SetMode(ModeChoice::System) => "System",
-            Action::SetMode(ModeChoice::Light) => "Light",
-            Action::SetMode(ModeChoice::Dark) => "Dark",
+            Action::SetMode(mode) => mode.short_label(),
             Action::OpenPreferences => "Preferences…",
             Action::OpenAbout => "About",
             Action::Quit => "Quit",
@@ -692,62 +691,28 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     app.registry.tag("chrome.status_bar", &out.response);
 }
 
-/// Desktop, preset and mode, the font in its defined unit (§8.7), the
-/// text-scaling factor, the flags that are set (the gpui status bar,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:282-305`).
+/// The status bar's environment items (`status::environment`, the three showcases' text):
+/// the desktop, the preset by its key (`default` by the preset it builds on) and the mode, the
+/// font in its defined unit (§8.7), the text-scaling factor and the flags that are set.
 fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
     let t = app.atlas.resolved_for(theme);
-    let prefs = app.atlas.accessibility();
     let mode = if theme == egui::Theme::Dark {
         "dark"
     } else {
         "light"
     };
-    let font = &t.defaults.font;
-    let size = match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        // Validation records a missing size rather than inventing one (§8.7).
-        None => "(size not stated)".to_string(),
-    };
-    // The preset by its key, `default` by the preset it builds on, as the gpui showcase's
-    // (`showcase-gpui/chrome.rs:90-97`).
     let preset = match &app.settings.theme {
-        ThemeChoice::Default => format!("default ({})", app.default_preset),
+        ThemeChoice::Default => rows::default_label(&app.default_preset),
         ThemeChoice::Preset(key) => key.clone(),
     };
-    let mut items = vec![
-        desktop(),
-        format!("{preset} {mode}"),
-        format!("{} {size}", font.family),
-        format!("text ×{}", prefs.text_scaling_factor),
-    ];
-    let flags = [
-        ("reduce_motion", prefs.reduce_motion),
-        ("high_contrast", prefs.high_contrast),
-        ("reduce_transparency", prefs.reduce_transparency),
-    ];
-    items.extend(
-        flags
-            .into_iter()
-            .filter(|(_, set)| *set)
-            .map(|(name, _)| name.to_string()),
-    );
-    items
-}
-
-/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, as the gpui
-/// showcase names it (`connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:307-321`).
-#[cfg(target_os = "linux")]
-fn desktop() -> String {
-    format!("{:?}", native_theme::detect::detect_linux_desktop())
-}
-
-/// The operating system: `native_theme::detect` names a desktop on Linux only.
-#[cfg(not(target_os = "linux"))]
-fn desktop() -> String {
-    std::env::consts::OS.to_string()
+    status::environment(
+        &preset,
+        mode,
+        &t.defaults.font,
+        None,
+        Some(app.atlas.accessibility()),
+    )
 }
 
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
@@ -932,35 +897,24 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         .map(|(_, label)| label.clone())
         .unwrap_or_default();
     let current_mode = app.settings.mode;
-    // The gpui showcase's icon-theme list (`showcase-gpui/app.rs:517-541`), less its
-    // gpui-component row: `default`, `system`, the installed themes, Lucide, Material.
-    let mut icon_rows = Vec::new();
-    if let choice @ IconSetChoice::Default(_) =
-        default_icon_choice(app.atlas.icon_set(), app.atlas.icon_theme(theme))
-    {
-        icon_rows.push(choice);
-    }
-    icon_rows.push(IconSetChoice::System);
-    icon_rows.extend(
-        app.settings
-            .installed_themes
-            .iter()
-            .map(|name| IconSetChoice::Freedesktop(name.clone())),
-    );
-    icon_rows.push(IconSetChoice::Lucide);
-    icon_rows.push(IconSetChoice::Material);
-    let icon_rows: Vec<(IconSetChoice, String)> = icon_rows
+    // The shared crate's icon-theme rows (`rows::icon_rows`): `default` where the theme names an
+    // available icon theme, `system`, the installed themes, Lucide, Material; the gpui
+    // showcase adds its gpui-component row to them.
+    let icon_rows: Vec<(IconSetChoice, String)> = rows::icon_rows(
+        app.atlas.icon_set(),
+        app.atlas.icon_theme(theme),
+        &app.settings.installed_themes,
+    )
+    .into_iter()
+    .map(|choice| {
+        let text = choice.to_string();
+        (choice, text)
+    })
+    .collect();
+    let mode_rows: Vec<(ModeChoice, String)> = ModeChoice::ALL
         .into_iter()
-        .map(|choice| {
-            let text = choice.to_string();
-            (choice, text)
-        })
+        .map(|mode| (mode, Action::SetMode(mode).label().to_string()))
         .collect();
-    let mode_rows: Vec<(ModeChoice, String)> =
-        [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
-            .into_iter()
-            .map(|mode| (mode, Action::SetMode(mode).label().to_string()))
-            .collect();
     let current_icon = app.settings.icon.clone();
 
     let registry = &mut app.registry;
@@ -1140,6 +1094,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                         elements,
                         manifest,
                         (json, app.preset_key()),
+                        (&app.atlas, theme),
                     )),
                     (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
                         Err(error.clone())
@@ -1459,7 +1414,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
         .system_theme()
         .map(|theme| theme == egui::Theme::Dark)
         .or_else(|| app.atlas.os_mode().map(|mode| mode.is_dark()));
-    let modes = [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
+    let modes = ModeChoice::ALL
         .into_iter()
         .map(|mode| {
             let label = match (mode, system) {

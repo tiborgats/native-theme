@@ -11,6 +11,7 @@ use egui_kittest::Harness;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, theme::Theme};
 use native_theme_egui::from_preset;
+use native_theme_showcase_support::{Kind, capture};
 
 use crate::{
     CliArgs,
@@ -226,7 +227,7 @@ fn the_showcase_opens_on_the_basic_page() {
 /// each page's `--tab` key is its label as the header says: lower case, each space a `-`.
 #[test]
 fn the_pages_follow_the_counterpart_table() {
-    let table = crate::elements::page_order().expect("the counterpart table reads");
+    let table = crate::elements::page_order(Kind::Egui).expect("the counterpart table reads");
     let labels: Vec<&str> = Page::ALL.iter().map(|page| page.label()).collect();
     assert_eq!(labels, table, "the page tabs against the counterpart table");
     for page in Page::ALL {
@@ -406,7 +407,7 @@ fn a_capture_opens_at_the_default_size() {
         assert_eq!(options.persist_window, !capturing, "capturing: {capturing}");
         assert_eq!(
             options.viewport.app_id,
-            capturing.then(crate::capture_app_id),
+            capturing.then(|| capture::app_id(Kind::Egui)),
             "capturing: {capturing}"
         );
     }
@@ -435,63 +436,6 @@ fn only_an_interactive_run_follows_the_os() {
         &["--dump-layout", "f"],
     ] {
         assert!(!args(argv).follows_os(), "{argv:?} follows the OS");
-    }
-}
-
-/// An OS capture of the window passes only when it is the window with its frame and title bar
-/// around a content of `WINDOW_SIZE` times the display's scale factor, as the gpui showcase's
-/// `a_frame_capture_of_another_size_fails` checks its own.
-#[test]
-fn a_frame_capture_of_another_size_fails() {
-    use crate::check_frame_capture;
-    // A frame 2px wider and 32px taller than the content, as the Windows runner's gpui
-    // captures measured (`showcase-gpui/tests.rs:2062-2064`), and a 28px title bar alone.
-    assert_eq!(
-        check_frame_capture((1282, 752), (1280, 720), Some(1.0)),
-        Ok(())
-    );
-    assert_eq!(
-        check_frame_capture((1600, 928), (1600, 900), Some(1.25)),
-        Ok(())
-    );
-    assert_eq!(
-        check_frame_capture((2560, 1496), (2560, 1440), Some(2.0)),
-        Ok(())
-    );
-    // A 1024px-wide display clamped the window.
-    let clamped = check_frame_capture((1024, 674), (1024, 642), Some(1.0));
-    assert!(
-        clamped
-            .as_ref()
-            .is_err_and(|e| e.contains("1024x674") && e.contains("1280x752")),
-        "{clamped:?}"
-    );
-    assert!(check_frame_capture((1282, 752), (1280, 720), Some(2.0)).is_err());
-    assert!(check_frame_capture((1282, 752), (1280, 720), None).is_err());
-    // egui's own frame capture, the content alone: never passed as the window.
-    let frameless = check_frame_capture((1280, 720), (1280, 720), Some(1.0));
-    assert!(
-        frameless.as_ref().is_err_and(|e| e.contains("title bar")),
-        "{frameless:?}"
-    );
-    assert!(check_frame_capture((1278, 752), (1280, 720), Some(1.0)).is_err());
-}
-
-/// The Windows window finder's line, `x y width height`, and nothing else.
-#[test]
-fn the_window_finders_line_is_four_numbers() {
-    use crate::capture::{Frame, parse_frame};
-    assert_eq!(
-        parse_frame("-8 0 1282 752\n"),
-        Ok(Frame {
-            x: -8,
-            y: 0,
-            width: 1282,
-            height: 752
-        })
-    );
-    for bad in ["", "1 2 3", "1 2 3 4 5", "1 2 -3 4", "a 2 3 4"] {
-        assert!(parse_frame(bad).is_err(), "{bad:?} parsed");
     }
 }
 
@@ -1232,8 +1176,10 @@ fn instances_are_distinct() {
     let (manifest, json) = manifest_and_json(&harness);
     let elements = crate::elements::showcase_elements().unwrap_or_default();
     assert!(!elements.is_empty(), "the element list parses");
-    let text =
-        |shown| crate::info::InfoView::of(shown, &elements, &manifest, (&json, TEST_PRESET)).text();
+    let scheme = (&harness.state().atlas, harness.ctx.theme());
+    let text = |shown| {
+        crate::info::InfoView::of(shown, &elements, &manifest, (&json, TEST_PRESET), scheme).text()
+    };
     let (a, b) = (text(&unchecked), text(&checked));
     assert_ne!(
         a, b,
@@ -3886,7 +3832,9 @@ fn the_info_is_the_manifest() {
         .clone()
         .unwrap_or_default();
     let elements = crate::elements::showcase_elements().unwrap_or_default();
-    let text = crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other)).text();
+    let scheme = (&app.atlas, harness.ctx.theme());
+    let text =
+        crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other), scheme).text();
     let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
     let line = leaf_value(&expected, "button.background_color")
         .map(|value| value_line("button.background_color", &value));
@@ -4576,9 +4524,14 @@ fn a_ms_leaf_reads_its_value() {
     let delay = atlas.resolved_for(egui::Theme::Light).tooltip.show_delay;
     assert!(delay.is_some(), "kde-breeze states a tooltip delay");
     let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
-    let shown = crate::info::listed_value(&json, "tooltip.show_delay_ms")
-        .map(|v| crate::info::leaf_text("tooltip.show_delay_ms", &v));
-    assert_eq!(shown, delay.map(|ms| format!("{ms} ms")));
+    let shown = native_theme_showcase_support::values::leaf_value(
+        "tooltip.show_delay_ms",
+        &json,
+        atlas.layout(),
+        Some(atlas.icon_set()),
+        atlas.icon_theme(egui::Theme::Light),
+    );
+    assert_eq!(Some(shown.text), delay.map(|ms| format!("{ms} ms")));
     assert_eq!(
         crate::info::mapping_key("tooltip.show_delay_ms"),
         "tooltip.show_delay"
@@ -4712,7 +4665,9 @@ fn widget_info_shows_the_listed_elements_rows() {
     let listed = elements.iter().find(|e| e.id == "basic.buttons.default");
     let (manifest, json) = manifest_and_json(&harness);
     if let (Some(shown), Some(listed)) = (shown, listed) {
-        let view = crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET));
+        let scheme = (&harness.state().atlas, harness.ctx.theme());
+        let view =
+            crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET), scheme);
         assert_eq!(view.title, "Button · Normal");
         let leaves: Vec<&str> = view.rows.iter().map(|r| r.leaf.as_str()).collect();
         let want: Vec<&str> = listed.leaves.iter().map(String::as_str).collect();

@@ -6,9 +6,19 @@ use std::sync::Arc;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
+use native_theme_showcase_support::capture::{Content, FrameCapture};
+use native_theme_showcase_support::cli::{self, Output, Outputs};
+use native_theme_showcase_support::{Kind, dump, rows};
 
 use crate::chrome::{self, Action, InspectorTab, PaletteState};
-use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, info, pages};
+use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, elements, info, pages};
+
+/// The colour mode the Mode row, the Theme menu and `--variant` choose (`cli::color_mode`), and
+/// the theme the Theme row and `--theme` choose (`cli::theme_key`): the shared crate's, which
+/// the gpui and iced showcases choose from too.
+pub(crate) use native_theme_showcase_support::cli::{
+    ColorModeChoice as ModeChoice, ThemeKey as ThemeChoice,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Page {
@@ -41,7 +51,9 @@ impl Page {
         Page::Icons,
         Page::ThemeMap,
     ];
-    /// The `--tab` name (§10.4's palette table).
+    /// The `--tab` name (§10.4's palette table): the page's label in lower case with each space
+    /// a `-`, the key the three showcases give the pages that correspond (the counterpart table
+    /// in `docs/showcase-elements.toml`'s header).
     pub(crate) fn key(self) -> &'static str {
         match self {
             Page::Basic => "basic",
@@ -74,31 +86,15 @@ impl Page {
             Page::ThemeMap => "Theme Map",
         }
     }
+    /// The page `--tab` names (`cli::page_key`, whose error lists every page's key).
     pub(crate) fn from_key(key: &str) -> Result<Page, String> {
+        let keys = Page::ALL.map(Page::key);
+        let key = cli::page_key(key, &keys)?;
         Page::ALL
             .into_iter()
-            .find(|p| p.key() == key)
-            .ok_or_else(|| {
-                let keys: Vec<&str> = Page::ALL.iter().map(|p| p.key()).collect();
-                format!(
-                    "--tab {key}: no such page; the pages are: {}",
-                    keys.join(", ")
-                )
-            })
+            .find(|page| page.key() == key)
+            .ok_or_else(|| format!("--tab {key}: no such page"))
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ModeChoice {
-    System,
-    Light,
-    Dark,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum ThemeChoice {
-    Default,
-    Preset(String),
 }
 
 /// What the pickers, the command line and Preferences select. Pure: T11 (c)
@@ -141,61 +137,6 @@ impl Settings {
             ..Self::initial()
         }
     }
-    pub(crate) fn mode_choice(variant: &str) -> Result<ModeChoice, String> {
-        match variant {
-            "light" => Ok(ModeChoice::Light),
-            "dark" => Ok(ModeChoice::Dark),
-            "system" => Ok(ModeChoice::System),
-            other => Err(format!("--variant {other}: not light, dark or system")),
-        }
-    }
-    /// `default`, or a preset the Theme row offers on this platform.
-    pub(crate) fn theme_choice(name: &str) -> Result<ThemeChoice, String> {
-        if name == "default" {
-            return Ok(ThemeChoice::Default);
-        }
-        let offered = native_theme::theme::Theme::list_presets_for_platform();
-        if offered.iter().any(|info| info.key == name) {
-            return Ok(ThemeChoice::Preset(name.to_string()));
-        }
-        let names: Vec<&str> = std::iter::once("default")
-            .chain(offered.iter().map(|info| info.key))
-            .collect();
-        let names = names.join(", ");
-        if native_theme::theme::Theme::list_presets()
-            .iter()
-            .any(|info| info.key == name)
-        {
-            Err(format!(
-                "--theme {name}: a preset of another platform; only this platform's presets run here: {names}"
-            ))
-        } else {
-            Err(format!(
-                "--theme {name}: no such preset; the presets are: {names}"
-            ))
-        }
-    }
-    /// What the icon-theme picker offers: `default` (`None`: follow the theme), a bundled set,
-    /// `system` or `freedesktop` (the OS's icon theme), or an installed freedesktop theme.
-    pub(crate) fn icon_choice(&self, name: &str) -> Result<Option<IconSetChoice>, String> {
-        match name {
-            "default" => Ok(None),
-            "material" => Ok(Some(IconSetChoice::Material)),
-            "lucide" => Ok(Some(IconSetChoice::Lucide)),
-            "system" | "freedesktop" => Ok(Some(IconSetChoice::System)),
-            theme if self.installed_themes.iter().any(|t| t == theme) => {
-                Ok(Some(IconSetChoice::Freedesktop(theme.to_string())))
-            }
-            other => Err(format!(
-                "--icon-set {other}: not default, material, lucide, system, freedesktop or an installed icon theme; installed: {}",
-                if self.installed_themes.is_empty() {
-                    "none".to_string()
-                } else {
-                    self.installed_themes.join(", ")
-                }
-            )),
-        }
-    }
     /// A pick: `None` is the `default` row, which follows the theme again (re-derived at the
     /// next `theme_installed`); a `Default(_)` row picked from the list follows too
     /// (`IconSetChoice::follows_preset`); anything else stays chosen.
@@ -219,50 +160,45 @@ impl Settings {
 }
 
 /// `--screenshot`: where the capture goes, when the first pass ran, the capture while under
-/// way, whether it was written.
+/// way (the shared crate's `FrameCapture`), whether it was written.
 struct Screenshot {
     path: String,
     started: Option<f64>,
-    capture: Option<crate::capture::FrameCapture>,
+    capture: Option<FrameCapture>,
     written: bool,
 }
 
-/// `--dump-layout`: where the dump goes, whether the showcase keeps running after it, the layout
-/// of the last pass and the input time it was first seen at, and whether it was written.
+/// `--dump-layout`: where the dump goes, the layout of the last pass and the input time it was
+/// first seen at, and whether it was written.
 struct LayoutDump {
     path: String,
-    keep_running: bool,
     last: Option<(std::collections::BTreeMap<String, egui::Rect>, f64)>,
     written: bool,
 }
 
-/// The layout dump's JSON (`docs/showcase-elements.toml`, "The layout dump"): each placed
-/// element's rectangle in logical pixels, window-content coordinates.
+/// The layout dump's JSON (`dump::layout_json`, the object `docs/showcase-elements.toml`'s
+/// "The layout dump" describes): each placed element's rectangle in logical pixels,
+/// window-content coordinates.
 pub(crate) fn layout_json(
     places: &std::collections::BTreeMap<String, egui::Rect>,
     preset: &str,
     theme: egui::Theme,
     scale: f32,
 ) -> serde_json::Value {
-    let elements: serde_json::Map<String, serde_json::Value> = places
-        .iter()
-        .map(|(id, r)| {
-            (
-                id.clone(),
-                serde_json::json!({"x": r.min.x, "y": r.min.y, "w": r.width(), "h": r.height()}),
-            )
-        })
-        .collect();
-    serde_json::json!({
-        "kind": "egui",
-        "preset": preset,
-        "variant": match theme {
-            egui::Theme::Light => "light",
-            egui::Theme::Dark => "dark",
-        },
-        "scale": scale,
-        "elements": elements,
-    })
+    let variant = match theme {
+        egui::Theme::Light => "light",
+        egui::Theme::Dark => "dark",
+    };
+    let rects = places.iter().map(|(id, r)| {
+        let rect = dump::Rect {
+            x: r.min.x,
+            y: r.min.y,
+            w: r.width(),
+            h: r.height(),
+        };
+        (id.clone(), rect)
+    });
+    dump::layout_json(Kind::Egui, preset, variant, scale, rects)
 }
 
 /// The pointer `--pointer` holds at a point of the window, and whether `--press` holds the
@@ -327,7 +263,7 @@ pub(crate) struct App {
     /// The embedded `mapping.toml`, parsed once; an error is shown in the inspector (§10.4).
     pub(crate) manifest: Result<info::Manifest, String>,
     /// `docs/showcase-elements.toml`, parsed once; an error is shown in the inspector.
-    pub(crate) elements: Result<Vec<crate::elements::ShowcaseElement>, String>,
+    pub(crate) elements: Result<Vec<elements::ShowcaseElement>, String>,
     /// The installed atlas's JSON per scheme, emptied on each install.
     pub(crate) json: info::JsonCache,
     /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
@@ -343,6 +279,9 @@ pub(crate) struct App {
     screenshot: Option<Screenshot>,
     /// `--dump-layout`, until the dump is written.
     dump: Option<LayoutDump>,
+    /// The files the run writes, and whether it quits once they are written (`cli::Outputs`, the
+    /// three showcases' exit rule).
+    outputs: Outputs,
     /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
     held_pointer: Option<HeldPointer>,
     /// `--capture`, `--screenshot` or `--dump-layout`: the window is captured or its layout
@@ -420,7 +359,7 @@ impl App {
             quit_requested: false,
             pending: Vec::new(),
             manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
-            elements: crate::elements::showcase_elements(),
+            elements: elements::showcase_elements(),
             json: info::JsonCache::default(),
             hold_zone: None,
             #[cfg(test)]
@@ -431,10 +370,10 @@ impl App {
             screenshot,
             dump: cli.dump_layout.clone().map(|path| LayoutDump {
                 path,
-                keep_running: cli.capturing(),
                 last: None,
                 written: false,
             }),
+            outputs: Outputs::new(cli),
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
                 at: egui::pos2(f32::from(x), f32::from(y)),
                 press: cli.press,
@@ -442,14 +381,12 @@ impl App {
                 pressed: false,
             }),
             shields_pointer: cli.shields_pointer(),
-            open_menu: cli.open_menu.clone().filter(|menu| {
-                let known = crate::chrome::Action::MENUS
+            open_menu: cli.open_menu.as_deref().and_then(|menu| {
+                let titles: Vec<&str> = crate::chrome::Action::MENUS
                     .iter()
-                    .any(|(title, _)| title.to_lowercase() == *menu);
-                if !known {
-                    eprintln!("--open-menu {menu:?}: the menu bar has no such menu; ignored");
-                }
-                known
+                    .map(|(title, _)| *title)
+                    .collect();
+                cli::reported(cli::open_menu(menu, &titles))
             }),
             #[cfg(feature = "watch")]
             selection,
@@ -559,25 +496,15 @@ impl App {
         }
     }
 
-    /// What the Theme row and the command palette offer, as `(choice, display name)`: `default`
-    /// named by the preset it builds on, then this platform's presets by their display names,
-    /// as the gpui showcase's `preset_items` (`showcase-gpui/support.rs:1119-1140`).
+    /// What the Theme row and the command palette offer, as `(choice, display name)`: the
+    /// shared crate's preset rows (`rows::preset_rows`), `default` named by the preset it builds
+    /// on, then this platform's presets by their display names, as the gpui and iced showcases
+    /// offer them.
     pub(crate) fn theme_rows(&self) -> Vec<(ThemeChoice, String)> {
-        std::iter::once((
-            ThemeChoice::Default,
-            format!("default ({})", self.default_preset),
-        ))
-        .chain(
-            native_theme::theme::Theme::list_presets_for_platform()
-                .into_iter()
-                .map(|info| {
-                    (
-                        ThemeChoice::Preset(info.key.to_string()),
-                        info.display_name.to_string(),
-                    )
-                }),
-        )
-        .collect()
+        rows::preset_rows(&self.default_preset)
+            .into_iter()
+            .filter_map(|row| Some((cli::theme_key(&row.key).ok()?, row.display_name)))
+            .collect()
     }
 
     /// The key of the preset the atlas is built from — `default_preset` for `default` — the key
@@ -601,10 +528,7 @@ impl App {
                 .and_then(|all| all.iter().find(|e| e.id == id))
         });
         match element {
-            Some(element) => match element.states.first() {
-                Some(state) => format!("{} · {state}", element.name),
-                None => element.name.clone(),
-            },
+            Some(element) => element.title(),
             None => shown.info.kind.to_string(),
         }
     }
@@ -663,9 +587,10 @@ impl App {
         None
     }
 
-    /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it,
-    /// then close the window unless it is being captured. A failed write is reported and ends
-    /// the run with 1, as a failed `--screenshot` does.
+    /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it
+    /// (`dump::write_layout`), then close the window once every file the run asked for is
+    /// written, unless it is being captured (`cli::Outputs`). A failed write is reported and
+    /// ends the run with 1, as a failed `--screenshot` does (`cli::refuse`).
     fn dump_layout(&mut self, ctx: &egui::Context) {
         let preset = self.preset_key().to_string();
         let Some(dump) = self.dump.as_mut().filter(|d| !d.written) else {
@@ -685,16 +610,12 @@ impl App {
             return;
         }
         let json = layout_json(places, &preset, ctx.theme(), ctx.pixels_per_point());
-        let written = serde_json::to_string_pretty(&json)
-            .map_err(|e| e.to_string())
-            .and_then(|text| std::fs::write(&dump.path, text).map_err(|e| e.to_string()));
-        if let Err(error) = written {
-            eprintln!("ERROR: --dump-layout {}: {error}", dump.path);
-            std::process::exit(1);
+        if let Err(error) = dump::write_layout(&dump.path, &json) {
+            cli::refuse(&error);
         }
         eprintln!("Layout dumped to {}", dump.path);
         dump.written = true;
-        if !dump.keep_running {
+        if self.outputs.written(Output::Dump) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
@@ -721,6 +642,22 @@ impl App {
         }
         ctx.request_repaint();
     }
+}
+
+/// The window's content in physical pixels and the display's scale factor, as egui has them
+/// when the capture asks (`FrameCapture::poll`); a scale egui does not know is refused here, so
+/// the frame check (`capture::check_frame_capture`) always has one to measure against.
+fn content_px(ctx: &egui::Context) -> Result<Content, String> {
+    let (inner, scale) = ctx.input(|i| {
+        (
+            i.viewport().inner_rect,
+            i.viewport().native_pixels_per_point,
+        )
+    });
+    let inner = inner.ok_or("the window's content rect is unknown")?;
+    let scale = scale.ok_or("the display's scale factor is unknown")?;
+    let px = |points: f32| (points * scale).round() as i64;
+    Ok(((px(inner.width()), px(inner.height())), f64::from(scale)))
 }
 
 impl eframe::App for App {
@@ -821,31 +758,27 @@ impl eframe::App for App {
                     );
                     std::process::exit(1);
                 }
-                match crate::capture::FrameCapture::start(&shot.path) {
+                match FrameCapture::start(crate::WINDOW_TITLE, &shot.path) {
                     Ok(capture) => shot.capture = Some(capture),
-                    Err(error) => {
-                        eprintln!(
-                            "ERROR: screenshot capture failed for {}: {error}",
-                            shot.path
-                        );
-                        std::process::exit(1);
-                    }
+                    Err(error) => cli::refuse(&Output::Screenshot.failure(&shot.path, &error)),
                 }
             }
-            match shot.capture.as_mut().and_then(|c| c.poll(ctx)) {
+            match shot
+                .capture
+                .as_mut()
+                .and_then(|c| c.poll(|| content_px(ctx)))
+            {
                 None => {}
                 Some(Ok(())) => {
                     eprintln!("Screenshot saved to {}", shot.path);
                     shot.capture = None;
                     shot.written = true;
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    if self.outputs.written(Output::Screenshot) {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
                 }
                 Some(Err(error)) => {
-                    eprintln!(
-                        "ERROR: screenshot capture failed for {}: {error}",
-                        shot.path
-                    );
-                    std::process::exit(1);
+                    cli::refuse(&Output::Screenshot.failure(&shot.path, &error));
                 }
             }
             // egui repaints only on demand (`egui/src/memory/mod.rs:341`): keep the passes

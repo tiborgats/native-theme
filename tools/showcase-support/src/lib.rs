@@ -83,7 +83,7 @@ pub const WINDOW_SIZE_PX: (u32, u32) = (1280, 720);
 /// shown. The model states no such value: its `tooltip.show_delay_ms` is how
 /// long a tooltip waits, and Widget Info is not a tooltip. The gpui
 /// showcase's (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs`,
-/// `INFO_SETTLE`), which the egui showcase copied.
+/// `INFO_SETTLE`), which the iced and egui showcases take from here.
 pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 
 /// How long a showcase's window and its layout dump are waited for before

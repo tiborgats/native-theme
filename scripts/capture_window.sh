@@ -27,9 +27,7 @@
 
 # The showcases' default window size in logical pixels:
 # `native_theme_showcase_support::WINDOW_SIZE_PX` (tools/showcase-support),
-# which the gpui and iced showcases open at; the egui showcase keeps its own
-# copy, `WINDOW_SIZE` in connectors/native-theme-egui/examples/showcase-egui/main.rs,
-# until M9c T1.
+# which the three showcases open at.
 SHOWCASE_WINDOW_WIDTH=1280
 SHOWCASE_WINDOW_HEIGHT=720
 

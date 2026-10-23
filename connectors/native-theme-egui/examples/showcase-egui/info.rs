@@ -3,8 +3,14 @@
 use std::str::FromStr;
 
 use native_theme_egui::ThemeAtlas;
+use native_theme_showcase_support::info::ListedInfo;
+use native_theme_showcase_support::{status, values};
 
 use crate::demo::{Seam, Shown};
+
+/// One row of Widget Info's "Theme" section, the shared crate's: the leaf, its value, a colour
+/// value's colour, and how egui applies it.
+pub(crate) use native_theme_showcase_support::info::InfoRow;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Verdict {
@@ -206,7 +212,7 @@ pub(crate) fn theme_json(
     atlas: &ThemeAtlas,
     theme: egui::Theme,
 ) -> Result<serde_json::Value, String> {
-    let mut json = serde_json::to_value(atlas.resolved_for(theme)).map_err(|e| e.to_string())?;
+    let mut json = values::theme_json(atlas.resolved_for(theme))?;
     let layout = atlas.layout();
     if let Some(object) = json.as_object_mut() {
         object.insert(
@@ -297,29 +303,6 @@ fn sink_text(sink: &Sink) -> String {
     }
 }
 
-/// The value at a leaf as `docs/showcase-elements.toml` spells it, in `theme_json`'s tree: a
-/// `*_px` or `*_ms` segment is the serialised name without the suffix, and `padding_<side>_px`
-/// the side of the border's `padding`.
-pub(crate) fn listed_value(json: &serde_json::Value, leaf: &str) -> Option<serde_json::Value> {
-    let mut current = json;
-    for part in leaf.split('.') {
-        current = listed_step(current, part)?;
-    }
-    Some(current.clone())
-}
-
-fn listed_step<'a>(value: &'a serde_json::Value, part: &str) -> Option<&'a serde_json::Value> {
-    if let Some(next) = value.get(part) {
-        return Some(next);
-    }
-    let bare = unit_less(part)?;
-    if let Some(next) = value.get(bare) {
-        return Some(next);
-    }
-    let side = bare.strip_prefix("padding_")?;
-    value.get("padding")?.get(side)
-}
-
 /// A leaf's segment without its `_px` or `_ms` unit, if it has one.
 fn unit_less(part: &str) -> Option<&str> {
     part.strip_suffix("_px")
@@ -339,69 +322,6 @@ pub(crate) fn mapping_key(leaf: &str) -> String {
         })
         .collect::<Vec<_>>()
         .join(".")
-}
-
-/// A number as Rust prints the `f32` the resolved theme holds.
-fn number_text(number: &serde_json::Number) -> String {
-    number
-        .as_f64()
-        .map_or_else(|| number.to_string(), |n| format!("{}", n as f32))
-}
-
-/// A whole font: `<family> <defined size> <pt|px> <weight>`, the size as its source stated it
-/// (`size` in px where it stated none), the style after the weight when it is not normal.
-fn font_text(font: &serde_json::Map<String, serde_json::Value>) -> String {
-    let family = font
-        .get("family")
-        .and_then(serde_json::Value::as_str)
-        .unwrap_or_default();
-    let number = |value: Option<&serde_json::Value>| match value {
-        Some(serde_json::Value::Number(n)) => number_text(n),
-        _ => "?".to_string(),
-    };
-    let size = match font.get("defined_size") {
-        Some(serde_json::Value::Object(defined)) => match (defined.get("Pt"), defined.get("Px")) {
-            (Some(pt), _) => format!("{} pt", number(Some(pt))),
-            (None, Some(px)) => format!("{} px", number(Some(px))),
-            (None, None) => format!("{} px", number(font.get("size"))),
-        },
-        _ => format!("{} px", number(font.get("size"))),
-    };
-    let weight = number(font.get("weight"));
-    let mut text = format!("{family} {size} {weight}");
-    if let Some(style) = font
-        .get("style")
-        .and_then(serde_json::Value::as_str)
-        .filter(|s| *s != "normal")
-    {
-        text.push(' ');
-        text.push_str(style);
-    }
-    text
-}
-
-/// How a listed leaf's value prints (the three showcases print it alike): a colour as its
-/// `#rrggbb[aa]`, a `*_px` number with " px", a `*_ms` one with " ms", another number as
-/// itself, a whole font as [`font_text`], a text-scale entry as `<size> px <weight>`, a flag as
-/// `true` or `false`, a name as itself, and a value the theme leaves unstated as "not stated".
-pub(crate) fn leaf_text(leaf: &str, value: &serde_json::Value) -> String {
-    match value {
-        serde_json::Value::Null => "not stated".to_string(),
-        serde_json::Value::Bool(b) => b.to_string(),
-        serde_json::Value::Number(n) if leaf.ends_with("_px") => format!("{} px", number_text(n)),
-        serde_json::Value::Number(n) if leaf.ends_with("_ms") => format!("{} ms", number_text(n)),
-        serde_json::Value::Number(n) => number_text(n),
-        serde_json::Value::String(s) => s.clone(),
-        serde_json::Value::Object(font) if font.contains_key("family") => font_text(font),
-        serde_json::Value::Object(entry) if entry.contains_key("line_height") => {
-            let number = |key: &str| match entry.get(key) {
-                Some(serde_json::Value::Number(n)) => number_text(n),
-                _ => "?".to_string(),
-            };
-            format!("{} px {}", number("size"), number("weight"))
-        }
-        other => other.to_string(),
-    }
 }
 
 /// Whether `sink` writes into the cell or frame `seam` is.
@@ -564,45 +484,48 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
 }
 
 /// The row of a `mapping.toml` row for an instance drawn with `seams`: the leaf as the manifest
-/// names it, its value in `json`, and its route.
+/// names it, its value in `json` in the listed rows' text (`values::value_of`), and its route.
 pub(crate) fn manifest_row(row: &Row, json: &serde_json::Value, seams: &[Seam]) -> InfoRow {
-    let value = value_at(json, &row.leaf);
+    let value = value_at(json, &row.leaf).map_or_else(
+        || values::LeafValue {
+            text: values::NOT_STATED.to_string(),
+            colour: None,
+        },
+        |v| values::value_of(&row.leaf, &v),
+    );
     InfoRow {
         leaf: row.leaf.clone(),
-        colour: value.as_ref().and_then(swatch_colour),
-        value: value.map_or_else(|| "not stated".to_string(), |v| leaf_text(&row.leaf, &v)),
+        value: value.text,
+        colour: value.colour,
         how: Route::of(row, seams).line(),
     }
 }
 
-/// One row of Widget Info's "Theme" section: the leaf, its value, a colour value's colour, and
-/// how egui applies it.
+/// What Widget Info shows for the hovered instance (R11 §B), in the shared crate's form
+/// (`info::ListedInfo`): its title, a "Theme" row per leaf, and what egui draws there that the
+/// theme states nothing for.
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct InfoRow {
-    pub leaf: String,
-    pub value: String,
-    pub colour: Option<egui::Color32>,
-    pub how: String,
-}
+pub(crate) struct InfoView(ListedInfo);
 
-/// What Widget Info shows for the hovered instance (R11 §B): its title, a "Theme" row per leaf,
-/// and what egui draws there that the theme states nothing for.
-#[derive(Clone, Debug, PartialEq)]
-pub(crate) struct InfoView {
-    pub title: String,
-    pub rows: Vec<InfoRow>,
-    pub not_themeable: Vec<String>,
+impl std::ops::Deref for InfoView {
+    type Target = ListedInfo;
+
+    fn deref(&self) -> &ListedInfo {
+        &self.0
+    }
 }
 
 impl InfoView {
     /// The view of `shown`: for an element of `docs/showcase-elements.toml`, its name and state
-    /// and a row per leaf of the list, in its order; for any other instance, its kind and a row
-    /// per `mapping.toml` row of its seams.
+    /// and a row per leaf of the list, in its order, each value read as the three showcases
+    /// read it (`info::ListedInfo::new`) under the layout, icon set and icon theme of `atlas` in
+    /// `scheme`; for any other instance, its kind and a row per `mapping.toml` row of its seams.
     pub(crate) fn of(
         shown: &Shown,
         elements: &[crate::elements::ShowcaseElement],
         manifest: &Manifest,
         (json, preset): (&serde_json::Value, &str),
+        (atlas, scheme): (&ThemeAtlas, egui::Theme),
     ) -> Self {
         let seams = &shown.info.seams;
         // A row's route, with each exception `mapping.toml` records for the preset shown.
@@ -621,46 +544,6 @@ impl InfoView {
             .element
             .as_deref()
             .and_then(|id| elements.iter().find(|e| e.id == id));
-        let (title, rows) = match listed {
-            Some(element) => {
-                let title = match element.states.first() {
-                    Some(state) => format!("{} · {state}", element.name),
-                    None => element.name.clone(),
-                };
-                let rows = element
-                    .leaves
-                    .iter()
-                    .map(|leaf| {
-                        let value = listed_value(json, leaf);
-                        InfoRow {
-                            leaf: leaf.clone(),
-                            colour: value.as_ref().and_then(swatch_colour),
-                            value: value
-                                .map_or_else(|| "not stated".to_string(), |v| leaf_text(leaf, &v)),
-                            how: with_exceptions(
-                                how_line(manifest, leaf, seams),
-                                &mapping_key(leaf),
-                            ),
-                        }
-                    })
-                    .collect();
-                (title, rows)
-            }
-            None => {
-                let mut rows: Vec<&Row> = seams.iter().flat_map(|s| manifest.rows_for(s)).collect();
-                rows.sort_by(|a, b| a.leaf.cmp(&b.leaf));
-                rows.dedup_by(|a, b| a.leaf == b.leaf);
-                let rows = rows
-                    .into_iter()
-                    .map(|row| {
-                        let mut info = manifest_row(row, json, seams);
-                        info.how = with_exceptions(info.how, &row.leaf);
-                        info
-                    })
-                    .collect();
-                (shown.info.kind.to_string(), rows)
-            }
-        };
         let not_themeable = shown
             .info
             .notes
@@ -670,11 +553,33 @@ impl InfoView {
             })
             .map(|(what, note)| format!("{what}: {note}"))
             .collect();
-        InfoView {
-            title,
+        if let Some(element) = listed {
+            return InfoView(ListedInfo::new(
+                element,
+                json,
+                atlas.layout(),
+                Some(atlas.icon_set()),
+                atlas.icon_theme(scheme),
+                |leaf| with_exceptions(how_line(manifest, leaf, seams), &mapping_key(leaf)),
+                not_themeable,
+            ));
+        }
+        let mut rows: Vec<&Row> = seams.iter().flat_map(|s| manifest.rows_for(s)).collect();
+        rows.sort_by(|a, b| a.leaf.cmp(&b.leaf));
+        rows.dedup_by(|a, b| a.leaf == b.leaf);
+        let rows = rows
+            .into_iter()
+            .map(|row| {
+                let mut info = manifest_row(row, json, seams);
+                info.how = with_exceptions(info.how, &row.leaf);
+                info
+            })
+            .collect();
+        InfoView(ListedInfo {
+            title: shown.info.kind.to_string(),
             rows,
             not_themeable,
-        }
+        })
     }
 
     /// The lines one row prints in Copy's text: `<leaf> <value>`, then its route, indented.
@@ -685,17 +590,10 @@ impl InfoView {
         ]
     }
 
-    /// What Copy puts on the clipboard: the text the panel shows, line by line.
+    /// What Copy puts on the clipboard: the text the panel shows, in the three showcases'
+    /// form (`ListedInfo::copy_text`).
     pub(crate) fn text(&self) -> String {
-        let mut out = vec![self.title.clone(), "Theme".to_string()];
-        for row in &self.rows {
-            out.extend(Self::row_lines(row));
-        }
-        if !self.not_themeable.is_empty() {
-            out.push("Not themeable".to_string());
-            out.extend(self.not_themeable.iter().cloned());
-        }
-        out.join("\n")
+        self.0.copy_text()
     }
 }
 
@@ -1024,7 +922,12 @@ pub(crate) fn widget_tab(
         let mut x = rect.left();
         let swatch = row.colour.map(|colour| {
             let square = egui::Rect::from_min_size(rect.min, egui::Vec2::splat(text.line));
-            paint_swatch(ui, t, square, colour);
+            paint_swatch(
+                ui,
+                t,
+                square,
+                native_theme_egui::convert::to_color32(colour),
+            );
             x += text.line + widget_gap;
             square
         });
@@ -1121,19 +1024,18 @@ pub(crate) fn theme_tab(
         row(ui, &kind, text);
     }
     section(ui, "Fonts");
-    let size = |font: &native_theme::theme::ResolvedFontSpec| match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        None => "(size not stated)".to_string(),
-    };
     row(ui, "font_family", t.defaults.font.family.to_string());
-    row(ui, "font_size", size(&t.defaults.font));
+    row(ui, "font_size", status::defined_size(&t.defaults.font));
     row(
         ui,
         "mono_font_family",
         t.defaults.mono_font.family.to_string(),
     );
-    row(ui, "mono_font_size", size(&t.defaults.mono_font));
+    row(
+        ui,
+        "mono_font_size",
+        status::defined_size(&t.defaults.mono_font),
+    );
     section(ui, "Window");
     row(
         ui,

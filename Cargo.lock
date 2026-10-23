@@ -5856,11 +5856,11 @@ dependencies = [
  "egui",
  "egui_extras",
  "egui_kittest",
- "image",
  "jiff",
  "muda",
  "native-theme",
  "native-theme-egui-widgets",
+ "native-theme-showcase-support",
  "native-theme-test-fixtures",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
@@ -5868,7 +5868,6 @@ dependencies = [
  "skrifa 0.44.0",
  "toml 1.1.5+spec-1.1.0",
  "winit",
- "xcap",
 ]
 
 [[package]]

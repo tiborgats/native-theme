@@ -70,7 +70,7 @@ pub fn leaf_value(
         .split('.')
         .try_fold(resolved, |at, segment| step(at, segment));
     match value {
-        Some(value) => shown(leaf, value),
+        Some(value) => value_of(leaf, value),
         None => LeafValue::text(NOT_STATED.to_string()),
     }
 }
@@ -92,8 +92,13 @@ fn step<'a>(at: &'a serde_json::Value, segment: &str) -> Option<&'a serde_json::
     at.get(bare)
 }
 
-/// `value`, the value of `leaf`, as Widget Info shows it.
-fn shown(leaf: &str, value: &serde_json::Value) -> LeafValue {
+/// `value`, the value of `leaf` in the resolved theme's JSON, as Widget Info
+/// shows it: the text [`leaf_value`] gives a leaf it found. For a showcase
+/// that walks a JSON tree of its own to a leaf (the egui showcase's
+/// `mapping.toml` rows, whose keys carry no unit), so its rows read as the
+/// listed ones do.
+#[must_use]
+pub fn value_of(leaf: &str, value: &serde_json::Value) -> LeafValue {
     match value {
         serde_json::Value::Null => LeafValue::text(NOT_STATED.to_string()),
         serde_json::Value::Bool(b) => LeafValue::text(b.to_string()),
@@ -290,6 +295,28 @@ mod tests {
         assert_eq!(
             leaf_value("tooltip.show_delay_ms", &json, &theme.layout, None, None).text,
             format!("{delay} ms")
+        );
+    }
+
+    /// A value another walk reached reads as `leaf_value`'s own: a colour as
+    /// `Rgba` prints it, with its swatch; a number under a key with no unit
+    /// as itself, under a `_px` one with ` px`.
+    #[test]
+    fn a_value_reached_elsewhere_reads_as_a_leafs() {
+        let colour = value_of("button.background_color", &serde_json::json!("#336699"));
+        assert_eq!(colour.text, "#336699");
+        assert_eq!(colour.colour, Rgba::from_str("#336699").ok());
+        assert_eq!(
+            value_of("button.border.corner_radius", &serde_json::json!(4.0)).text,
+            "4"
+        );
+        assert_eq!(
+            value_of("button.border.corner_radius_px", &serde_json::json!(4.0)).text,
+            "4 px"
+        );
+        assert_eq!(
+            value_of("button.border.padding.top", &serde_json::Value::Null).text,
+            NOT_STATED
         );
     }
 

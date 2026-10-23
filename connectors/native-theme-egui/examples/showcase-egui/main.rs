@@ -10,16 +10,24 @@
 #![deny(clippy::unimplemented)]
 
 mod app;
-mod capture;
 mod chrome;
 mod demo;
-mod elements;
 mod info;
 mod pages;
 #[cfg(test)]
 mod tests;
 
+use native_theme_showcase_support::cli;
+use native_theme_showcase_support::{Kind, WINDOW_SIZE_PX, capture};
+
 use app::{App, Page, Settings};
+
+/// What the three showcases share (`native-theme-showcase-support`): its command line, the
+/// element list's reader and the Widget Info settle time, under the names the showcase's
+/// modules use.
+pub(crate) use native_theme_showcase_support::INFO_SETTLE;
+pub(crate) use native_theme_showcase_support::cli::CliArgs;
+pub(crate) use native_theme_showcase_support::elements;
 
 /// The window's title: the crate's name and version, as the gpui showcase's
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:277-282`).
@@ -35,17 +43,12 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
 /// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:340`).
 pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 
-/// The initial window size, 1280 × 720 logical pixels: the maintainer's default for every
-/// showcase, the gpui showcase's `WINDOW_SIZE` and the iced showcase's `WINDOW_SIZE`. The model
-/// states no such value (spec §10.4). The side panel opens `LEFT_PANEL_WIDTH` wide and the page
-/// takes the rest.
-pub(crate) const WINDOW_SIZE: egui::Vec2 = egui::Vec2::new(1280.0, 720.0);
-
-/// How long a new Widget Info choice must stay the choice before it is shown. The model
-/// states no such value (spec §10.4): its `tooltip.show_delay_ms` is how long a tooltip waits,
-/// and Widget Info is not a tooltip. This is the gpui showcase's
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/info/registry.rs:16`).
-pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_millis(250);
+/// The initial window size: the shared crate's `WINDOW_SIZE_PX`, 1280 × 720 logical pixels,
+/// the maintainer's default for every showcase, which the gpui and iced showcases open at too.
+/// The model states no such value (spec §10.4). The side panel opens `LEFT_PANEL_WIDTH` wide and
+/// the page takes the rest.
+pub(crate) const WINDOW_SIZE: egui::Vec2 =
+    egui::Vec2::new(WINDOW_SIZE_PX.0 as f32, WINDOW_SIZE_PX.1 as f32);
 
 /// The weight the showcase draws its inspector's headings in (a page's section headings take
 /// `text_scale.section_heading.weight`). The model states no inspector heading weight; this is
@@ -76,7 +79,8 @@ pub(crate) const SCREENSHOT_DELAY_S: f64 = 3.0;
 /// (`eframe/src/epi.rs:378-379`), which the showcase does not enable, and `persist_window` is
 /// off for a capture so that enabling it would not change what a capture shows. A desktop can
 /// store a size of its own, by the window's app id (a KWin script that remembers window
-/// geometry, say), so a capture's window takes `capture_app_id`, which nothing stored.
+/// geometry, say), so a capture's window takes the three showcases' capture app id
+/// (`capture::app_id`), which nothing stored and `scripts/capture_window.sh` finds it by.
 pub(crate) fn native_options(capturing: bool) -> eframe::NativeOptions {
     let viewport = egui::ViewportBuilder::default()
         .with_title(WINDOW_TITLE)
@@ -84,7 +88,7 @@ pub(crate) fn native_options(capturing: bool) -> eframe::NativeOptions {
         .with_inner_size(WINDOW_SIZE);
     eframe::NativeOptions {
         viewport: if capturing {
-            viewport.with_app_id(capture_app_id())
+            viewport.with_app_id(capture::app_id(Kind::Egui))
         } else {
             viewport
         },
@@ -103,225 +107,67 @@ pub(crate) fn native_options(capturing: bool) -> eframe::NativeOptions {
     }
 }
 
-/// The app id of a capture's window: this process's own, so no geometry a desktop stored
-/// for an earlier window applies to it.
-pub(crate) fn capture_app_id() -> String {
-    format!("showcase-egui-capture-{}", std::process::id())
-}
-
-/// Whether an OS capture of the window with its frame, `captured` pixels, is the frame of a
-/// window whose content is `WINDOW_SIZE` at the display's scale factor `scale`, rounded as
-/// winit rounds a logical size to a physical one: the capture less the content the window has
-/// now, `content` pixels, is the frame, and around a `WINDOW_SIZE` content it makes the size
-/// the capture must be, as the gpui showcase's `check_frame_capture` checks
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:629-663`). Any other size is a
-/// window that did not open at its default size (a display too small for it, or a size restored
-/// from elsewhere); a capture no taller than the content has no title bar, and fails too.
-#[cfg_attr(
-    not(any(target_os = "macos", target_os = "windows", test)),
-    allow(dead_code)
-)]
-pub(crate) fn check_frame_capture(
-    captured: (i64, i64),
-    content: (i64, i64),
-    scale: Option<f32>,
-) -> Result<(), String> {
-    let scale = scale.ok_or("the display's scale factor is unknown")?;
-    if captured.1 <= content.1 || captured.0 < content.0 {
-        return Err(format!(
-            "the capture is {}x{} px around a {}x{} px content: it is not the window with its \
-             frame and title bar",
-            captured.0, captured.1, content.0, content.1
-        ));
-    }
-    let default = (
-        (WINDOW_SIZE.x * scale).round() as i64,
-        (WINDOW_SIZE.y * scale).round() as i64,
-    );
-    let expected = (
-        default.0 + captured.0 - content.0,
-        default.1 + captured.1 - content.1,
-    );
-    if captured == expected {
-        Ok(())
-    } else {
-        Err(format!(
-            "the capture is {}x{} px, expected {}x{}: a {}x{} content area ({}x{} at scale \
-             {scale}) in the frame's {}x{} px, but the content is {}x{} px, so the window did \
-             not open at its default size",
-            captured.0,
-            captured.1,
-            expected.0,
-            expected.1,
-            default.0,
-            default.1,
-            WINDOW_SIZE.x,
-            WINDOW_SIZE.y,
-            captured.0 - content.0,
-            captured.1 - content.1,
-            content.0,
-            content.1,
-        ))
-    }
-}
-
 /// How long, in seconds of `InputState::time`, the layout must stay the same from pass to pass
 /// before `--dump-layout` writes it: the first settled frame, after the fonts, the icons and a
 /// held pointer's Widget Info (`INFO_SETTLE`) have landed. Not a style value.
 pub(crate) const DUMP_SETTLE_S: f64 = 1.0;
 
-/// The flags the capture pipeline passes (`.github/workflows/screenshots.yml`,
-/// `scripts/generate_screenshots_egui.sh`).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct CliArgs {
-    pub theme: Option<String>,
-    pub variant: Option<String>,
-    pub tab: Option<String>,
-    pub icon_set: Option<String>,
-    pub screenshot: Option<String>,
-    /// `--capture`: a tool outside the showcase captures its window, which opens as a
-    /// `--screenshot` run's does (`native_options`).
-    pub capture: bool,
-    /// `--pointer X,Y`: the pointer is held at that point of the window's content, in logical
-    /// pixels, so a capture shows the control under it hovered (`App::raw_input_hook`). For
-    /// captures where no pointer can be driven, as in a nested compositor.
-    pub pointer: Option<(u16, u16)>,
-    /// A `--pointer` value that is not `X,Y`, or its missing value: `main` reports it and exits
-    /// with 1, as a failed `--screenshot` does, rather than capture the window at rest.
-    pub bad_pointer: Option<String>,
-    /// `--press`: with `--pointer`, the primary button is held down there, so a capture shows
-    /// the control pressed.
-    pub press: bool,
-    /// `--dump-layout <file.json>`: after the first settled frame the rectangle of every element
-    /// of `docs/showcase-elements.toml` the showcase draws is written there, at rest wherever the
-    /// window's own pointer is (`shields_pointer`); the showcase then closes, or with `--capture`
-    /// keeps running for the capture.
-    pub dump_layout: Option<String>,
-    /// `--open-menu <title>`: the menu bar's menu of that title (`theme`) is opened before the
-    /// first settled frame, so a capture and a layout dump show it open with its rows.
-    pub open_menu: Option<String>,
-}
-
-impl CliArgs {
-    /// Whether the window is captured: by the showcase itself (`--screenshot`) or by a tool
-    /// outside it (`--capture`).
-    pub(crate) fn capturing(&self) -> bool {
-        self.capture || self.screenshot.is_some()
-    }
-
-    /// Whether the window's own pointer is kept off every widget (`App::raw_input_hook`): in a
-    /// capture, and in a layout dump (`--dump-layout`), which records the chrome at rest
-    /// wherever the desktop's pointer is, so two dumps of one theme are the same. A held pointer
-    /// (`--pointer`) takes the window's place.
-    pub(crate) fn shields_pointer(&self) -> bool {
-        self.capturing() || self.dump_layout.is_some()
-    }
-
-    /// Whether the showcase follows the OS theme as it changes: not in a capture or a layout
-    /// dump, which show the theme the run started with.
-    #[cfg_attr(not(feature = "watch"), allow(dead_code))]
-    pub(crate) fn follows_os(&self) -> bool {
-        !self.capturing() && self.dump_layout.is_none()
-    }
-
-    /// `--flag value` pairs, `--capture`, `--press` and `--pointer X,Y`; an unknown flag is
-    /// ignored, and `--variant`, `--tab` and `--open-menu` are lower-cased, as the iced
-    /// showcase does
-    /// (`connectors/native-theme-iced/examples/showcase-iced.rs:841-903`); a
-    /// theme or icon-theme name keeps its case, since a freedesktop theme's is
-    /// a directory name.
-    pub(crate) fn parse(argv: impl IntoIterator<Item = String>) -> Self {
-        let mut cli = Self::default();
-        let mut argv = argv.into_iter();
-        while let Some(flag) = argv.next() {
-            let lower = matches!(flag.as_str(), "--variant" | "--tab" | "--open-menu");
-            let slot = match flag.as_str() {
-                "--capture" => {
-                    cli.capture = true;
-                    continue;
-                }
-                "--press" => {
-                    cli.press = true;
-                    continue;
-                }
-                "--pointer" => {
-                    let value = argv.next().unwrap_or_default();
-                    let point = value
-                        .split_once(',')
-                        .and_then(|(x, y)| Some((x.trim().parse().ok()?, y.trim().parse().ok()?)));
-                    match point {
-                        Some(point) => cli.pointer = Some(point),
-                        None => cli.bad_pointer = Some(value),
-                    }
-                    continue;
-                }
-                "--theme" => &mut cli.theme,
-                "--variant" => &mut cli.variant,
-                "--tab" => &mut cli.tab,
-                "--icon-set" => &mut cli.icon_set,
-                "--screenshot" => &mut cli.screenshot,
-                "--dump-layout" => &mut cli.dump_layout,
-                "--open-menu" => &mut cli.open_menu,
-                _ => continue,
-            };
-            *slot = argv
-                .next()
-                .map(|v| if lower { v.to_lowercase() } else { v });
-        }
-        cli
-    }
-}
-
-/// Each flag takes exactly what its picker offers; a value the showcase cannot
-/// honour is reported on stderr and ignored (§10.4).
+/// Each flag takes exactly what its picker offers; a value the showcase cannot honour is
+/// reported on stderr and ignored (§10.4), by the shared crate's validators (`cli`), whose error
+/// texts the three showcases share.
 pub(crate) fn apply_cli_args(settings: &mut Settings, cli: &CliArgs) {
     if let Some(mode) = cli
         .variant
         .as_deref()
-        .and_then(|v| reported(Settings::mode_choice(v)))
+        .and_then(|v| cli::reported(cli::color_mode(v)))
     {
         settings.mode = mode;
     }
     if let Some(theme) = cli
         .theme
         .as_deref()
-        .and_then(|v| reported(Settings::theme_choice(v)))
+        .and_then(|v| cli::reported(cli::theme_key(v)))
     {
         settings.theme = theme;
     }
-    if let Some(pick) = cli
+    let installed = &settings.installed_themes;
+    match cli
         .icon_set
         .as_deref()
-        .and_then(|v| reported(settings.icon_choice(v)))
+        .and_then(|v| cli::reported(cli::icon_set_choice(v, installed, &[])))
     {
-        settings.pick_icon(pick);
+        Some(cli::IconPick::FollowTheme) => settings.pick_icon(None),
+        Some(cli::IconPick::Choice(choice)) => settings.pick_icon(Some(choice)),
+        // The egui picker has no row of its own, and none is passed.
+        Some(cli::IconPick::Toolkit(_)) | None => {}
     }
-    if let Some(page) = cli.tab.as_deref().and_then(|v| reported(Page::from_key(v))) {
+    if let Some(page) = cli
+        .tab
+        .as_deref()
+        .and_then(|v| cli::reported(Page::from_key(v)))
+    {
         settings.page = page;
     }
     settings.screenshot.clone_from(&cli.screenshot);
 }
 
-/// The value of `result`; its error reported on stderr, and `None`.
-fn reported<T>(result: Result<T, String>) -> Option<T> {
-    result.map_err(|error| eprintln!("{error}; ignored")).ok()
-}
-
 fn main() -> eframe::Result {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    #[cfg(target_os = "windows")]
-    if let Some(code) = capture::run_finder(&args) {
+    // The second run `--screenshot` starts on Windows to find the window (`capture::run_finder`),
+    // before any window opens.
+    if let Some(code) = capture::run_finder(&args, WINDOW_TITLE) {
         std::process::exit(code);
     }
     let cli = CliArgs::parse(args);
     if let Some(value) = &cli.bad_pointer {
-        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
-        std::process::exit(1);
+        cli::refuse(&format!(
+            "--pointer {value:?}: not X,Y in whole logical pixels"
+        ));
     }
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    if cli.screenshot.is_some() {
-        eprintln!("ERROR: {}", capture::UNSUPPORTED);
-        std::process::exit(1);
+    if cli.screenshot.is_some()
+        && let Err(error) = cli::screenshot_support(Kind::Egui)
+    {
+        cli::refuse(&error);
     }
     eframe::run_native(
         WINDOW_TITLE,
