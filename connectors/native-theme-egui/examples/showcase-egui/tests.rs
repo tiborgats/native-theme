@@ -6391,13 +6391,57 @@ fn the_drawn_family_is_the_notes_substitute() {
     assert_eq!(drawn_family(&[], "Segoe UI"), None);
 }
 
+/// A family the font plan loads is drawn as its notes say (`demo::planned_drawing`, over
+/// literal notes): as stated with none; in the substitute a `FontFamilyUnavailable` note names;
+/// in egui's own face where that note names none, where the substitute's face failed epaint's
+/// parse (a `FontDataInvalid` note under the theme's family, which the substitute's face is
+/// registered under), and, as "in no face egui can draw", where the family's own face did.
+#[test]
+fn a_planned_family_is_drawn_as_its_notes_say() {
+    use crate::demo::planned_drawing;
+    use native_theme_showcase_support::status::DrawnFamily;
+    let own = ("proportional", Some("Ubuntu-Light"));
+    let generic = |held_weights| DrawnFamily::Generic {
+        toolkit: "egui",
+        kind: "proportional",
+        family: Some("Ubuntu-Light"),
+        held_weights,
+    };
+    let substituted = [("Segoe UI", Some("Adwaita Sans"))];
+    let unsubstituted = [("Segoe UI", None)];
+    assert_eq!(
+        planned_drawing(&[], &[], "Noto Sans", own),
+        DrawnFamily::Stated
+    );
+    assert_eq!(
+        planned_drawing(&substituted, &[], "Segoe UI", own),
+        DrawnFamily::Named("Adwaita Sans")
+    );
+    assert_eq!(
+        planned_drawing(&unsubstituted, &[], "Segoe UI", own),
+        generic(None)
+    );
+    assert_eq!(
+        planned_drawing(&substituted, &["Segoe UI"], "Segoe UI", own),
+        generic(None)
+    );
+    assert_eq!(
+        planned_drawing(&[], &["Noto Sans"], "Noto Sans", own),
+        generic(Some(&[]))
+    );
+    assert_eq!(
+        planned_drawing(&[], &["Hack"], "Noto Sans", own),
+        DrawnFamily::Stated
+    );
+}
+
 /// The label of the theme's `stated` family the showcase must show, read from what the
 /// harness has installed: the stated name alone where the atlas holds no
-/// `Note::FontFamilyUnavailable` for it; the platform's substitute where its note names one
-/// (`status::family_label`); egui's generic family in egui's own first face of it, as the
-/// fonts the pass draws with hold it, where its note names none, or wherever the build loads no
-/// system font (feature `system-fonts` off), `monospace` for the monospace font, else
-/// `proportional`.
+/// `Note::FontFamilyUnavailable` or `Note::FontDataInvalid` for it; the platform's substitute
+/// where its note names one (`status::family_label`); egui's generic family in egui's own first
+/// face of it, as the fonts the pass draws with hold it, where its note names none, where a
+/// face registered under it failed epaint's parse, or wherever the build loads no system font
+/// (feature `system-fonts` off), `monospace` for the monospace font, else `proportional`.
 fn drawn_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
     use native_theme_showcase_support::status::{DrawnFamily, family_label};
     let (kind, chain) = if mono {
@@ -6419,27 +6463,31 @@ fn drawn_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
         }
         .label(stated);
     }
-    let noted = harness
-        .state()
-        .atlas
-        .notes()
-        .iter()
-        .find_map(|note| match note {
-            native_theme_egui::Note::FontFamilyUnavailable {
-                family, substitute, ..
-            } if &**family == stated => Some(substitute.clone()),
-            _ => None,
-        });
-    match noted {
-        None => stated.to_string(),
-        Some(Some(substitute)) => family_label(stated, Some(&substitute)),
-        Some(None) => DrawnFamily::Generic {
+    let notes = harness.state().atlas.notes();
+    let noted = notes.iter().find_map(|note| match note {
+        native_theme_egui::Note::FontFamilyUnavailable {
+            family, substitute, ..
+        } if &**family == stated => Some(substitute.clone()),
+        _ => None,
+    });
+    let dropped = notes.iter().any(|note| {
+        matches!(note, native_theme_egui::Note::FontDataInvalid { family, .. }
+            if &**family == stated)
+    });
+    let generic = |held_weights| {
+        DrawnFamily::Generic {
             toolkit: "egui",
             kind,
             family: own.as_deref(),
-            held_weights: None,
+            held_weights,
         }
-        .label(stated),
+        .label(stated)
+    };
+    match noted {
+        Some(Some(substitute)) if !dropped => family_label(stated, Some(&substitute)),
+        Some(_) => generic(None),
+        None if dropped => generic(Some(&[])),
+        None => stated.to_string(),
     }
 }
 

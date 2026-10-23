@@ -1036,10 +1036,56 @@ pub(crate) fn drawn_family<'a>(
         .and_then(|(_, substitute)| *substitute)
 }
 
+/// The families the atlas's `Note::FontDataInvalid` notes name: each the name a face of the font
+/// plan was registered under, which failed epaint's parse and was dropped, so egui's own face
+/// stays in its place (the note's doc, `connectors/native-theme-egui/src/atlas.rs`). A face of
+/// the platform's substitute is registered under the theme's family (connector `fonts.rs`,
+/// `FontPlan::from_system`), so the note names the theme's family for it too.
+pub(crate) fn invalid_families(notes: &[Note]) -> Vec<&str> {
+    notes
+        .iter()
+        .filter_map(|note| match note {
+            Note::FontDataInvalid { family, .. } => Some(&**family),
+            _ => None,
+        })
+        .collect()
+}
+
+/// How egui draws text of `planned`, a family the font plan loads, by the atlas's notes on it
+/// (`unavailable`, [`unavailable_families`]; `invalid`, [`invalid_families`]) and `generic`,
+/// egui's generic family it is drawn in (`proportional`, `monospace`) with egui's own first face
+/// of it: as stated where no note names it; in the platform's substitute its
+/// `FontFamilyUnavailable` note names; and in egui's own face where that note names none (the
+/// OS has no face of it, `native_theme::fonts::system_face`'s `None`), where the substitute's
+/// face failed epaint's parse, or, as "in no face egui can draw", where the family's own face
+/// did.
+pub(crate) fn planned_drawing<'a>(
+    unavailable: &[(&str, Option<&'a str>)],
+    invalid: &[&str],
+    planned: &str,
+    (kind, own): (&'a str, Option<&'a str>),
+) -> DrawnFamily<'a> {
+    let generic = |held_weights| DrawnFamily::Generic {
+        toolkit: "egui",
+        kind,
+        family: own,
+        held_weights,
+    };
+    let noted = unavailable.iter().any(|(family, _)| *family == planned);
+    let dropped = invalid.contains(&planned);
+    match drawn_family(unavailable, planned) {
+        Some(substitute) if !dropped => DrawnFamily::Named(substitute),
+        _ if noted => generic(None),
+        _ if dropped => generic(Some(&[])),
+        _ => DrawnFamily::Stated,
+    }
+}
+
 /// What egui draws the theme's families in, as the status bar, the Theme tab and Widget Info
 /// name them (the shared crate's `status::DrawnFamily`): the two families the connector's font
 /// plan loads, the light variant's `defaults.font.family` and `defaults.mono_font.family`
-/// (`FontPlan::from_system(&light)`), the atlas's notes on them ([`unavailable_families`]), and
+/// (`FontPlan::from_system(&light)`), the atlas's notes on them ([`unavailable_families`],
+/// [`invalid_families`]), and
 /// egui's own first face of its proportional and monospace families in the fonts the pass draws
 /// with, which stays where the plan registers no face. egui draws every font in one of those
 /// two faces: the monospace font in the monospace one, every other font in the proportional one
@@ -1047,6 +1093,7 @@ pub(crate) fn drawn_family<'a>(
 /// §8.1, §5.8 item 7), whatever family the font states.
 pub(crate) struct DrawnFamilies<'a> {
     unavailable: Vec<(&'a str, Option<&'a str>)>,
+    invalid: Vec<&'a str>,
     proportional: Option<String>,
     monospace: Option<String>,
     /// The light variant's `defaults.font.family` and its label ([`Self::drawn`]).
@@ -1070,6 +1117,7 @@ impl<'a> DrawnFamilies<'a> {
         let light = &atlas.resolved_for(egui::Theme::Light).defaults;
         let mut families = Self {
             unavailable: unavailable_families(atlas.notes()),
+            invalid: invalid_families(atlas.notes()),
             proportional: first(egui::FontFamily::Proportional),
             monospace: first(egui::FontFamily::Monospace),
             body: (light.font.family.to_string(), String::new()),
@@ -1085,11 +1133,9 @@ impl<'a> DrawnFamilies<'a> {
     }
 
     /// How egui draws text of `planned`, a family the font plan loads, in its `Monospace` family
-    /// where `mono`, else its `Proportional` one: as stated where the atlas notes no lack of it;
-    /// in the platform's substitute its note names; in egui's own face where the note names
-    /// none (the OS has no face of it, `native_theme::fonts::system_face`'s `None`); and in
-    /// egui's own face wherever the build loads no system font (feature `system-fonts` off, so
-    /// the atlas has no font plan and leaves egui's faces in place, `Builder::fonts`).
+    /// where `mono`, else its `Proportional` one: by the atlas's notes ([`planned_drawing`]);
+    /// and in egui's own face wherever the build loads no system font (feature `system-fonts`
+    /// off, so the atlas has no font plan and leaves egui's faces in place, `Builder::fonts`).
     fn drawn(&self, planned: &str, mono: bool) -> DrawnFamily<'_> {
         let (kind, own) = if mono {
             ("monospace", self.monospace.as_deref())
@@ -1103,22 +1149,7 @@ impl<'a> DrawnFamilies<'a> {
                 family: own,
             };
         }
-        match drawn_family(&self.unavailable, planned) {
-            Some(substitute) => DrawnFamily::Named(substitute),
-            None if self
-                .unavailable
-                .iter()
-                .any(|(family, _)| *family == planned) =>
-            {
-                DrawnFamily::Generic {
-                    toolkit: "egui",
-                    kind,
-                    family: own,
-                    held_weights: None,
-                }
-            }
-            None => DrawnFamily::Stated,
-        }
+        planned_drawing(&self.unavailable, &self.invalid, planned, (kind, own))
     }
 
     /// How egui draws text of a theme font whose family is `stated`, the monospace font where
