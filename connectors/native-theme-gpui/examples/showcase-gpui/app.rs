@@ -321,6 +321,17 @@ pub(crate) struct Showcase {
     /// (`--dump-layout`) that hold no pointer of their own (`--pointer`).
     pub(crate) pointer_shield: bool,
 
+    /// While held, every keystroke is stopped before gpui dispatches it, so
+    /// a key the desktop hands the window types into no field and runs no
+    /// binding: held for a capture (`--capture`, `--screenshot`) and a layout
+    /// dump (`--dump-layout`), which record the run as it started
+    /// (`CliArgs::shields_keyboard`). An interceptor runs before the keymap,
+    /// the key listeners and the input handler, and a stopped keystroke
+    /// reaches none of them (gpui-pre 0.3.9 `src/app.rs`,
+    /// `App::intercept_keystrokes`; `src/window.rs`, `dispatch_key_event` and
+    /// `dispatch_keystroke`).
+    pub(crate) keyboard_shield: Option<Subscription>,
+
     // Basic page
     /// The Basic page's three text fields: empty with a placeholder, filled,
     /// and disabled.
@@ -1503,6 +1514,7 @@ impl Showcase {
             // `None` and the layout accessors report it as such.
             layout: native_theme::theme::LayoutTheme::default(),
             pointer_shield: false,
+            keyboard_shield: None,
             basic_hint_state,
             basic_text_state,
             basic_disabled_state,

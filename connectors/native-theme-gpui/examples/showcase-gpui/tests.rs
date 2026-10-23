@@ -5953,6 +5953,72 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
     }
 }
 
+/// Keys typed while a capture runs reach the window the desktop gives the
+/// focus, and changed what a capture recorded (the Basic page's focused field
+/// read "Focusedones?" in the iced showcase): under `--capture`,
+/// `--screenshot` and `--dump-layout` the window takes no keyboard input
+/// (`Showcase::keyboard_shield`). Text typed into the Basic page's filled
+/// field and the side-panel toggle's binding change nothing; the same keys
+/// in a run that neither captures nor dumps type into the field and hide the
+/// panel, which is what makes the first half mean something.
+#[gpui::test]
+fn a_captured_or_dumped_window_takes_no_keyboard_input(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    show(&mut cx, &showcase, Page::Basic);
+    let runs = [
+        (
+            "--capture",
+            crate::CliArgs {
+                capture: true,
+                ..Default::default()
+            },
+        ),
+        (
+            "--screenshot",
+            crate::CliArgs {
+                screenshot: Some("out.png".into()),
+                ..Default::default()
+            },
+        ),
+        (
+            "--dump-layout",
+            crate::CliArgs {
+                dump_layout: Some("dump.json".into()),
+                ..Default::default()
+            },
+        ),
+        ("no flag", crate::CliArgs::default()),
+    ];
+    for (flag, args) in runs {
+        let shielded = args.shields_keyboard();
+        apply_cli(&mut cx, &showcase, &args);
+        let before = cx.update(|window, cx| {
+            let field = showcase.read(cx).basic_text_state.clone();
+            field.read(cx).focus_handle(cx).focus(window, cx);
+            field.read(cx).value()
+        });
+        let panel = read(&mut cx, &showcase, |this, _| this.side_panel_visible);
+        cx.simulate_input("ones?");
+        cx.simulate_keystrokes("secondary-b");
+        cx.run_until_parked();
+        draw(&mut cx);
+        let after = cx.update(|_window, cx| {
+            let field = showcase.read(cx).basic_text_state.clone();
+            field.read(cx).value()
+        });
+        assert_eq!(
+            after != before,
+            !shielded,
+            "{flag}: the filled field holds {after:?}, from {before:?}"
+        );
+        assert_eq!(
+            read(&mut cx, &showcase, |this, _| this.side_panel_visible) == panel,
+            shielded,
+            "{flag}: the side-panel toggle's binding"
+        );
+    }
+}
+
 /// A capture that holds no pointer of its own keeps the pointer off every
 /// widget: wherever the desktop's pointer is, no widget is hovered, so the
 /// inspector and the status bar show nothing hovered.

@@ -224,6 +224,20 @@ impl HeldPointer {
     const PRESS_AFTER: f64 = 3.0;
 }
 
+/// Whether `event` is the keyboard's: a key, typed or composed text, or the clipboard keys'
+/// cut, copy and paste.
+fn keyboard_event(event: &egui::Event) -> bool {
+    matches!(
+        event,
+        egui::Event::Key { .. }
+            | egui::Event::Text(_)
+            | egui::Event::Ime(_)
+            | egui::Event::Paste(_)
+            | egui::Event::Copy
+            | egui::Event::Cut
+    )
+}
+
 /// Whether `event` moves, presses, touches or leaves with the window's own pointer.
 fn pointer_event(event: &egui::Event) -> bool {
     matches!(
@@ -287,6 +301,10 @@ pub(crate) struct App {
     /// `--capture`, `--screenshot` or `--dump-layout`: the window is captured or its layout
     /// dumped, so the real pointer draws nothing (`raw_input_hook`, `CliArgs::shields_pointer`).
     shields_pointer: bool,
+    /// `--capture`, `--screenshot` or `--dump-layout`: the window takes no keyboard input, so a
+    /// key typed while it is captured or dumped changes nothing it shows (`raw_input_hook`,
+    /// `CliArgs::shields_keyboard`).
+    shields_keyboard: bool,
     /// `--open-menu <title>`: the menu bar's menu of that title (lower case) still to be opened;
     /// the menu bar opens it at its first pass and clears this. On macOS the menus are the
     /// system menu bar's, which the flag does not reach.
@@ -381,6 +399,7 @@ impl App {
                 pressed: false,
             }),
             shields_pointer: cli.shields_pointer(),
+            shields_keyboard: cli.shields_keyboard(),
             open_menu: cli.open_menu.as_deref().and_then(|menu| {
                 let titles: Vec<&str> = crate::chrome::Action::MENUS
                     .iter()
@@ -671,6 +690,11 @@ fn content_px(ctx: &egui::Context) -> Result<Content, String> {
 
 impl eframe::App for App {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        // A captured or dumped window shows the run as it started whatever is typed while it
+        // runs: a key the desktop hands it types into no field and runs no shortcut.
+        if self.shields_keyboard {
+            raw_input.events.retain(|e| !keyboard_event(e));
+        }
         let Some(held) = &mut self.held_pointer else {
             // A captured or dumped window shows the page at rest wherever the real pointer is:
             // no control hovered or pressed under it, no Widget Info chosen by it, nothing

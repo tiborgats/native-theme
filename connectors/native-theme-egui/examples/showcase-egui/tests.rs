@@ -4825,6 +4825,67 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
     );
 }
 
+/// Keys typed while a capture runs reach the window the desktop gives the focus, and changed
+/// what a capture recorded (the Basic page's focused field read "Focusedones?"): under
+/// `--capture`, `--screenshot` and `--dump-layout` the window takes no keyboard input
+/// (`App::raw_input_hook`, `CliArgs::shields_keyboard`). Text typed into the focused field and
+/// the side-panel toggle's shortcut, handed to the hook as eframe hands them, change nothing;
+/// the same keys in a run that neither captures nor dumps type into the field and hide the
+/// panel, which is what makes the first half mean something. A `--screenshot` run shields the
+/// keyboard as a `--capture` one does; it is not opened here, since off macOS and Windows it
+/// ends the run when it captures.
+#[test]
+fn a_captured_or_dumped_window_takes_no_keyboard_input() {
+    let dump = std::env::temp_dir().join(format!(
+        "showcase-egui-keyboard-{}.json",
+        std::process::id()
+    ));
+    let shot = CliArgs::parse(["--screenshot".to_string(), "p.png".to_string()]);
+    assert!(shot.shields_keyboard(), "--screenshot takes keyboard input");
+    let runs = [
+        ("--capture", true),
+        ("--dump-layout", true),
+        ("no flag", false),
+    ];
+    for (flag, shielded) in runs {
+        let mut args = cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
+        match flag {
+            "--capture" => args.capture = true,
+            "--dump-layout" => args.dump_layout = Some(dump.display().to_string()),
+            _ => {}
+        }
+        assert_eq!(args.shields_keyboard(), shielded, "{flag}");
+        let mut harness = open(egui::Theme::Light, args);
+        harness.run_steps(SETTLE);
+        let before = harness.state().demo_state.basic_focused.clone();
+        let ctx = harness.ctx.clone();
+        let mut input = std::mem::take(harness.input_mut());
+        input.events.push(egui::Event::Text("ones?".to_string()));
+        input.events.push(egui::Event::Key {
+            key: egui::Key::B,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::COMMAND,
+        });
+        eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+        *harness.input_mut() = input;
+        harness.run_steps(SETTLE);
+        let app = harness.state();
+        let typed = app.demo_state.basic_focused != before;
+        assert_eq!(
+            typed, !shielded,
+            "{flag}: the focused field holds {:?}, from {before:?}",
+            app.demo_state.basic_focused
+        );
+        assert_eq!(
+            app.side_panel_visible, shielded,
+            "{flag}: the side-panel toggle's shortcut"
+        );
+    }
+    let _ = std::fs::remove_file(&dump);
+}
+
 // --- The chrome's icons from a fixture icon theme --------------------------------------------
 
 /// M7-15: the side-panel toggle's freedesktop icon loads from the icon theme the chrome chose

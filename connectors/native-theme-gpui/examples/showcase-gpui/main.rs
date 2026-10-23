@@ -983,6 +983,9 @@ fn apply_cli_args(
     cx: &mut gpui::Context<Showcase>,
 ) {
     s.pointer_shield = cli_args.shields_pointer();
+    s.keyboard_shield = cli_args
+        .shields_keyboard()
+        .then(|| cx.intercept_keystrokes(|_event, _window, cx| cx.stop_propagation()));
     let mode = cli_args
         .variant
         .as_deref()

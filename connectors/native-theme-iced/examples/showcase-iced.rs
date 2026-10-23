@@ -3106,7 +3106,13 @@ fn view(state: &State) -> Element<'_, Message> {
         None => window.into(),
     };
     match CLI_ARGS.get() {
-        Some(cli) => held_page(page, cli.pointer, cli.press, cli.shields_pointer()),
+        Some(cli) => held_page(
+            page,
+            cli.pointer,
+            cli.press,
+            cli.shields_pointer(),
+            cli.shields_keyboard(),
+        ),
         None => page,
     }
 }
@@ -3174,23 +3180,29 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
 /// `--screenshot`, `--dump-layout`: [`CliArgs::shields_pointer`]), no pointer
 /// at all: the real one, wherever the desktop left it, hovers nothing, opens
 /// no tooltip and fills no Widget Info, so a capture shows every control at
-/// rest and a layout dump records it so. Neither: the page as it is.
+/// rest and a layout dump records it so. Neither: the page as it is. With
+/// `keyboard` (a capture or a layout dump, [`CliArgs::shields_keyboard`],
+/// which holds only where one of the two others does) no key reaches the
+/// page either.
 fn held_page<'a>(
     page: Element<'a, Message>,
     pointer: Option<(u16, u16)>,
     press: bool,
     capturing: bool,
+    keyboard: bool,
 ) -> Element<'a, Message> {
     match (pointer, capturing) {
         (Some((x, y)), _) => Element::new(HeldPointer {
             content: page,
             at: Some(iced::Point::new(f32::from(x), f32::from(y))),
             press,
+            keyboard,
         }),
         (None, true) => Element::new(HeldPointer {
             content: page,
             at: None,
             press: false,
+            keyboard,
         }),
         (None, false) => page,
     }
@@ -3223,10 +3235,17 @@ const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 /// (iced_widget 0.14.2 `src/button.rs`, `Button::update`). With `at` `None`
 /// the cursor is `Cursor::Unavailable` and nothing is delivered: the content
 /// sees no pointer at all.
+///
+/// With `keyboard`, the window's keyboard events are captured here and
+/// handed to no widget, so a key the desktop hands the window while it is
+/// captured or dumped types into no field, and, captured, reaches no
+/// `keyboard::listen` either, so it runs no shortcut ([`shortcut`]; iced_futures
+/// 0.14.0 `src/keyboard.rs`, `listen`, takes only events no widget captured).
 struct HeldPointer<'a> {
     content: Element<'a, Message>,
     at: Option<iced::Point>,
     press: bool,
+    keyboard: bool,
 }
 
 impl HeldPointer<'_> {
@@ -3332,6 +3351,10 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
     ) {
+        if self.keyboard && matches!(event, iced::Event::Keyboard(_)) {
+            shell.capture_event();
+            return;
+        }
         let cursor = self.cursor();
         // `State::downcast_mut` panics on a state of another type; this cannot.
         let iced::advanced::widget::tree::State::Some(any) = &mut tree.state else {
@@ -3408,7 +3431,9 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
     /// The content's overlays, unwrapped: iced hands an overlay its events
     /// and draws it with the window's own cursor, not the held one, so a
     /// held pointer hovers and presses nothing inside an open menu or a
-    /// tooltip bubble.
+    /// tooltip bubble. Its keyboard events reach it too; the one overlay a
+    /// capture holds open, `--open-menu`'s menu (iced_aw 0.14.1
+    /// `src/widget/menu`), reads no key.
     fn overlay<'b>(
         &'b mut self,
         tree: &'b mut iced::advanced::widget::Tree,
@@ -27762,10 +27787,80 @@ mod tests {
             "the page as it is reports no hover over the Basic button, so the \
              capture half of this test proves nothing: {live:?}"
         );
-        let captured = hover(held_page(view(&state), None, false, true));
+        let captured = hover(held_page(view(&state), None, false, true, true));
         assert!(
             captured.is_empty(),
             "a capture reacted to the pointer: {captured:?}"
+        );
+    }
+
+    /// Keys typed while a capture runs reach the window the desktop gives
+    /// the focus, and changed what a capture recorded (the Basic page's
+    /// focused field read "Focusedones?"): under `--capture`, `--screenshot`
+    /// and `--dump-layout` the window takes no keyboard input
+    /// ([`CliArgs::shields_keyboard`], [`HeldPointer`]'s `keyboard`). The
+    /// focused field takes the focus from a press held on it, as `--pointer
+    /// X,Y --press` holds one in a capture, and is typed into: with the
+    /// keyboard shielded no message is sent, and a key no widget takes is
+    /// captured, so `keyboard::listen` and its shortcuts never see it; with it
+    /// not, the text reaches the field, which is what makes the first half
+    /// mean something.
+    #[test]
+    fn a_captured_or_dumped_window_takes_no_keyboard_input() {
+        for (args, flag) in [
+            (&["--capture"][..], "--capture"),
+            (&["--screenshot", "p.png"], "--screenshot"),
+            (&["--dump-layout", "f.json"], "--dump-layout"),
+        ] {
+            let cli = CliArgs::parse(args.iter().map(|a| (*a).to_string()));
+            assert!(cli.shields_keyboard(), "{flag} takes keyboard input");
+        }
+        assert!(!CliArgs::default().shields_keyboard());
+        let state = State::default();
+        let at = {
+            let mut ui = interface(&state);
+            probe_bounds(&mut ui, FOCUSED_INPUT_ID).center()
+        };
+        let typed = |keyboard: bool| -> (Vec<Message>, Vec<iced::event::Status>) {
+            let page = Element::new(HeldPointer {
+                content: view(&state),
+                at: Some(at),
+                press: true,
+                keyboard,
+            });
+            let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
+            let start = Instant::now();
+            let redraw = |at: Instant| Event::Window(iced::window::Event::RedrawRequested(at));
+            let _ = ui.simulate([redraw(start), redraw(start + HELD_PRESS_AFTER)]);
+            let _ = ui.typewrite("ones?");
+            let unbound = ui.simulate([Event::Keyboard(key_press(Some("j")))]);
+            (ui.into_messages().collect(), unbound)
+        };
+        let (shielded, unbound) = typed(true);
+        assert!(
+            !shielded
+                .iter()
+                .any(|m| matches!(m, Message::BasicFocusedChanged(_))),
+            "a shielded capture took typed text: {shielded:?}"
+        );
+        assert_eq!(
+            unbound,
+            [iced::event::Status::Captured],
+            "a shielded key reaches keyboard::listen"
+        );
+        let (live, unbound) = typed(false);
+        assert!(
+            live.iter().any(
+                |m| matches!(m, Message::BasicFocusedChanged(value) if value.contains("ones?"))
+            ),
+            "the field held pressed takes no typed text either, so the shielded \
+             half of this test proves nothing: {live:?}"
+        );
+        assert_eq!(
+            unbound,
+            [iced::event::Status::Ignored],
+            "an unshielded key no widget takes is captured, so the shielded half's \
+             status proves nothing"
         );
     }
 
@@ -27832,7 +27927,7 @@ mod tests {
                 let mut state = State::default();
                 if pointer {
                     let messages: Vec<Message> = {
-                        let page = held_page(view(&state), None, false, shielded);
+                        let page = held_page(view(&state), None, false, shielded, shielded);
                         let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
                         ui.point_at(at);
                         let _ =
@@ -27846,7 +27941,7 @@ mod tests {
                     }
                     let _ = update_at(&mut state, Message::InfoSettleTick, start + INFO_SETTLE);
                 }
-                let page = held_page(view(&state), None, false, shielded);
+                let page = held_page(view(&state), None, false, shielded, shielded);
                 let mut ui = Simulator::with_size(Settings::default(), TALL_WINDOW, page);
                 // A selector goes through the whole tree, as the dump's `Survey` does.
                 let _ = texts(&mut ui);

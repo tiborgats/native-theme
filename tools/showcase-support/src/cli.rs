@@ -133,6 +133,16 @@ impl CliArgs {
         (self.capturing() || self.dump_layout.is_some()) && self.pointer.is_none()
     }
 
+    /// Whether the window takes no keyboard input: in a capture and a layout
+    /// dump, which record the run as it started, so a key the desktop hands
+    /// the window while it is captured or dumped types into no field and runs
+    /// no shortcut. A capture tool's focus check catches a window that loses
+    /// the focus, not a key typed into the one that has it.
+    #[must_use]
+    pub fn shields_keyboard(&self) -> bool {
+        self.capturing() || self.dump_layout.is_some()
+    }
+
     /// Whether the showcase follows the OS theme as it changes: not in a
     /// capture or a layout dump, which show the theme the run started with.
     #[must_use]
@@ -541,8 +551,9 @@ mod tests {
     }
 
     /// The pointer is shielded in a capture and a layout dump without a held
-    /// pointer; the OS is followed only by a run that neither captures nor
-    /// dumps; a dump quits only when nothing captures.
+    /// pointer, the keyboard in every capture and layout dump; the OS is
+    /// followed only by a run that neither captures nor dumps; a dump quits
+    /// only when nothing captures.
     #[test]
     fn the_run_predicates_follow_the_flags() {
         // The flags, whether they capture, whether they dump.
@@ -564,6 +575,11 @@ mod tests {
                     cli.shields_pointer(),
                     (capturing || dumping) && !pointer,
                     "{argv:?}: shields_pointer"
+                );
+                assert_eq!(
+                    cli.shields_keyboard(),
+                    capturing || dumping,
+                    "{argv:?}: shields_keyboard"
                 );
                 assert_eq!(
                     cli.follows_os(),
