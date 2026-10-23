@@ -2866,9 +2866,9 @@ mod t13_accessibility {
     /// T13 (b): `style_diff` between the two atlases reports the text sizes, `animation_time`,
     /// `scroll_animation` and — where their values move — the two values that follow the Body row
     /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
-    /// (§6.6), and the `Role::Menu` and `Role::List` cells' vertical `button_padding`, which a
-    /// stated row height narrows at a text scale of 1 or less and leaves the theme's above it
-    /// (`style::roles::fit_row_padding`), and nothing else — in the base styles, the 75 cells
+    /// (§6.6), and the `Role::Menu`, `Role::List` and `Role::Expander` cells' vertical
+    /// `button_padding`, which a stated row or header height narrows at a text scale of 1 or
+    /// less and leaves the theme's above it (`style::roles::fit_row_padding`), and nothing else — in the base styles, the 75 cells
     /// and the 11 surface frames
     /// (`atlas_diff`), none of whose fields may move: scaling never turns into a zoom of every
     /// length.
@@ -2882,7 +2882,10 @@ mod t13_accessibility {
                 .build();
             for Change { location, path } in atlas_diff(&plain, &scaled) {
                 let is_slider = matches!(location, Location::Cell(_, Role::Slider, _));
-                let is_row = matches!(location, Location::Cell(_, Role::Menu | Role::List, _));
+                let is_row = matches!(
+                    location,
+                    Location::Cell(_, Role::Menu | Role::List | Role::Expander, _)
+                );
                 let is_frame = matches!(location, Location::Frame(..));
                 let allowed = !is_frame
                     && ((path.starts_with("text_styles[") && path.ends_with(".size"))
@@ -3692,4 +3695,78 @@ fn above_a_text_scale_of_one_the_row_padding_is_the_themes() {
         .scheme(egui::Theme::Light)
         .cell(Role::Menu, RoleVariant::Normal);
     assert_eq!(cell.spacing.button_padding.y, want);
+}
+
+/// The height egui's own `CollapsingHeader` is drawn at in the `Role::Expander` scope
+/// (`native_scope`), under `atlas` installed on a fresh context in `scheme`, after the passes
+/// that load its fonts, and the height of its title as egui lays it out there, in the Button
+/// font (`egui/src/containers/collapsing_header.rs:518-523`, `egui/src/widget_text.rs:775-776`).
+fn drawn_header_height(atlas: &ThemeAtlas, scheme: egui::Theme) -> (f32, f32) {
+    use crate::NativeThemeUiExt as _;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(scheme);
+    let (mut height, mut title) = (0.0, 0.0);
+    for _ in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Expander, RoleVariant::Normal, |ui| {
+                height = egui::CollapsingHeader::new("Header")
+                    .show(ui, |_| ())
+                    .header_response
+                    .rect
+                    .height();
+                let font = egui::TextStyle::Button.resolve(ui.style());
+                title =
+                    ui.fonts_mut(|f| f.row_height(&font)) + ui.spacing().extra_text_line_spacing;
+            });
+        });
+    }
+    (height, title)
+}
+
+/// A stated `expander.header_height` is the drawn height of egui's own `CollapsingHeader` in
+/// the expander's scope at a text scale of 1 or less, by the rule every stated row height
+/// takes (M9-150), as gpui draws its accordion header (`geometry::accordion_title`'s fixed
+/// `h`): egui takes `interact_size.y` as the header's least height and grows it to its title
+/// and vertical padding (`egui/src/containers/collapsing_header.rs:531-532`), so the cell's
+/// vertical padding is narrowed to fit (`style::roles::fit_row_padding`). Every bundled preset
+/// in both modes, and material-3 with its 48 px header lowered to 24, under its 10 px padding
+/// above and below its title. Where the title alone is taller than the stated height the
+/// padding has nothing left to give, and the header is the title's height.
+#[test]
+fn a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one() {
+    let prefs = AccessibilityPreferences::default();
+    let mut atlases = Vec::new();
+    for name in Theme::list_presets() {
+        for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
+            let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
+            atlases.push((name.key.to_string(), scheme, atlas));
+        }
+    }
+    let mut low = resolved("material-3", ColorMode::Light);
+    assert_eq!(
+        low.expander.header_height, 48.0,
+        "material-3's stated header"
+    );
+    low.expander.header_height = 24.0;
+    let atlas = ThemeAtlas::builder("low", &low, &low)
+        .accessibility(&prefs)
+        .build();
+    atlases.push(("material-3 at 24".to_string(), egui::Theme::Light, atlas));
+    let mut faults = Vec::new();
+    for (name, scheme, atlas) in &atlases {
+        let stated = atlas.resolved_for(*scheme).expander.header_height;
+        let (drawn, title) = drawn_header_height(atlas, *scheme);
+        let want = if title > stated {
+            title.round()
+        } else {
+            stated
+        };
+        if (drawn - want).abs() > 0.01 {
+            faults.push(format!(
+                "{name} {scheme:?}: drawn {drawn}, stated {stated}, its title {title}"
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
 }

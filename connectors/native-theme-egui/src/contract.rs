@@ -909,28 +909,28 @@ fn expected(
             Val::F32(convert::clamp_length(w - cell.spacing.icon_width))
         }
         // ---- a stated row height drawn as the row's height at a text scale of 1 or less: the
-        // menu's pair-rule padding, or the list's inherited one, narrowed until a one-line
-        // Body label and its padding fit the row, floored, never widened
-        // (`style::roles::fit_row_padding`) ----
-        (Some(w @ ("menu" | "list")), "normal", None, "spacing.button_padding.y") => {
-            let unfitted = if w == "menu" {
+        // menu's or the expander's pair-rule padding, or the list's inherited one, narrowed
+        // until a one-line label (Body; the expander's title, Button) and its padding fit the
+        // row, floored, never widened (`style::roles::fit_row_padding`) ----
+        (Some(w @ ("menu" | "list" | "expander")), "normal", None, "spacing.button_padding.y") => {
+            let unfitted = if w == "list" {
+                inherited_style().spacing.button_padding.y
+            } else {
                 convert::to_button_padding(
                     inherited_style().spacing.button_padding,
-                    &border_of(c, "menu"),
+                    &border_of(c, w),
                 )
                 .y
-            } else {
-                inherited_style().spacing.button_padding.y
             };
-            let stated = if w == "menu" {
-                t.menu.row_height
-            } else {
-                t.list.row_height
+            let (stated, slot) = match w {
+                "menu" => (t.menu.row_height, egui::TextStyle::Body),
+                "list" => (t.list.row_height, egui::TextStyle::Body),
+                _ => (Some(t.expander.header_height), egui::TextStyle::Button),
             };
             let cell = cell().ok_or("a scoped sink")?;
             let label = cell
                 .text_styles
-                .get(&egui::TextStyle::Body)
+                .get(&slot)
                 .and_then(|font| c.row_height_at(font.size))
                 .map(|row| row + cell.spacing.extra_text_line_spacing);
             Val::F32(match (stated.filter(|h| h.is_finite()), label) {

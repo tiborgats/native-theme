@@ -62,6 +62,7 @@ sinks   = [
   { path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" },
   { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
   { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)" },
+  { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
 ]
 
 ["defaults.mono_font.family"]
@@ -2762,7 +2763,10 @@ sinks   = [{ path = "inner_margin.left", surface = "panel_bottom" }]
 
 ["expander.header_height"]
 verdict = "scoped"
-sinks   = [{ path = "spacing.interact_size.y", scope = "expander" }]
+sinks   = [
+  { path = "spacing.interact_size.y", scope = "expander" },
+  { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
+]
 
 ["expander.arrow_icon_size"]
 verdict = "derived"
@@ -2810,7 +2814,10 @@ upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["expander.font.size"]
 verdict = "scoped"
-sinks   = [{ path = "text_styles[Button].size", scope = "expander" }]
+sinks   = [
+  { path = "text_styles[Button].size", scope = "expander" },
+  { path = "spacing.button_padding.y", scope = "expander", when = "a one-line title and the padding overrun the stated expander.header_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a title alone taller than the stated height is drawn whole, its padding 0 and the header its height, since egui takes the stated height as the header's least (egui/src/containers/collapsing_header.rs:531-532)" },
+]
 
 ["expander.font.defined_size"]
 verdict  = "unmappable"
@@ -2877,7 +2884,7 @@ upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§
 
 ["expander.border.padding.top"]
 verdict = "derived"
-sinks   = [{ path = "spacing.button_padding.y", scope = "expander" }]
+sinks   = [{ path = "spacing.button_padding.y", scope = "expander", when = "no stated expander.header_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["expander.border.padding.right"]
 verdict = "derived"
@@ -2885,7 +2892,7 @@ sinks   = [{ path = "spacing.button_padding.x", scope = "expander" }]
 
 ["expander.border.padding.bottom"]
 verdict = "derived"
-sinks   = [{ path = "spacing.button_padding.y", scope = "expander" }]
+sinks   = [{ path = "spacing.button_padding.y", scope = "expander", when = "no stated expander.header_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["expander.border.padding.left"]
 verdict = "derived"
