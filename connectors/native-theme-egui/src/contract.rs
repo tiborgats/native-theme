@@ -1131,7 +1131,10 @@ fn t10_every_sink_holds_the_leafs_value() {
 fn t10_the_expander_arm_holds_a_fitted_header() {
     let manifest = Manifest::load();
     let mut low = resolved("material-3", ColorMode::Light);
-    assert_eq!(low.expander.header_height, 48.0, "material-3's stated header");
+    assert_eq!(
+        low.expander.header_height, 48.0,
+        "material-3's stated header"
+    );
     low.expander.header_height = 24.0;
     let atlas = ThemeAtlas::builder("material-3", &low, &low).build();
     let json = serde_json::to_value(&low).expect("ResolvedTheme serialises");
@@ -1157,7 +1160,10 @@ fn t10_the_expander_arm_holds_a_fitted_header() {
             let want = expected(&c, &manifest.rows, sink, inherited)
                 .unwrap_or_else(|why| panic!("`{leaf}`: {why}"))
                 .unwrap_or(inherited);
-            assert_eq!(got, want, "`{leaf}` → the expander cell's spacing.button_padding.y");
+            assert_eq!(
+                got, want,
+                "`{leaf}` → the expander cell's spacing.button_padding.y"
+            );
             let unfitted = convert::to_button_padding(
                 inherited_style(&c, sink).spacing.button_padding,
                 &border_of(&c, "expander"),
