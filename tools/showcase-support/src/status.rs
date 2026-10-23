@@ -121,6 +121,19 @@ pub enum DrawnFamily<'a> {
         /// The toolkit's first face of the generic family, where its font list names one.
         family: Option<&'a str>,
     },
+    /// `family`, the first family of the toolkit's own fallback stack its text system finds,
+    /// drawn because the text system finds no face of the family it was asked for: the stated
+    /// one where `asked` is `None`, else `asked`, the platform's substitute for it or gpui's
+    /// `.SystemUIFont` alias for the system UI font (gpui-pre 0.3.9 `src/text_system.rs`:
+    /// `TextSystem::resolve_font`, lines 370-388, over the stack of lines 255-266).
+    FallbackStack {
+        /// The toolkit, as the label names it (`gpui`).
+        toolkit: &'a str,
+        /// The family the toolkit was asked for in the stated one's place, where it was.
+        asked: Option<&'a str>,
+        /// The family drawn.
+        family: &'a str,
+    },
 }
 
 impl<'a> From<Option<&'a str>> for DrawnFamily<'a> {
@@ -141,7 +154,8 @@ impl DrawnFamily<'_> {
     /// resolves to, or the fallback family drawn; for a build that loads no
     /// system font, that it does and the generic family drawn in the
     /// toolkit's own face; for a font the toolkit draws in another font's
-    /// face, that font and its family's label.
+    /// face, that font and its family's label; for the toolkit's fallback
+    /// stack, which family it found no face of and the stack's family drawn.
     #[must_use]
     pub fn label(&self, stated: &str) -> String {
         match *self {
@@ -195,6 +209,26 @@ impl DrawnFamily<'_> {
                      {kind})"
                 ),
             },
+            Self::FallbackStack {
+                toolkit,
+                asked,
+                family,
+            } => {
+                let missing = match asked {
+                    None => format!("{toolkit} finds no face of it"),
+                    Some(".SystemUIFont") => {
+                        format!("{toolkit} finds no face of the system UI font, .SystemUIFont")
+                    }
+                    Some(asked) => format!(
+                        "not on this system; {toolkit} finds no face of the platform's \
+                         substitute, {asked}"
+                    ),
+                };
+                format!(
+                    "{stated} ({missing}; drawn in the first family of {toolkit}'s fallback \
+                     stack it finds, {family})"
+                )
+            }
         }
     }
 }
@@ -381,6 +415,34 @@ mod tests {
         assert_eq!(
             DrawnFamily::from(Some("Adwaita Sans")).label("Segoe UI"),
             family_label("Segoe UI", Some("Adwaita Sans"))
+        );
+    }
+
+    /// The toolkit's fallback stack says which family the toolkit found no face of: the stated
+    /// one, the platform's substitute for it, or the system UI font's alias; and names the
+    /// family drawn.
+    #[test]
+    fn a_fallback_stack_says_what_was_not_found() {
+        let stack = |asked| DrawnFamily::FallbackStack {
+            toolkit: "gpui",
+            asked,
+            family: "DejaVu Sans",
+        };
+        assert_eq!(
+            stack(None).label("Segoe UI"),
+            "Segoe UI (gpui finds no face of it; drawn in the first family of gpui's fallback \
+             stack it finds, DejaVu Sans)"
+        );
+        assert_eq!(
+            stack(Some("Noto Sans")).label("NoSuchFamily-T10b"),
+            "NoSuchFamily-T10b (not on this system; gpui finds no face of the platform's \
+             substitute, Noto Sans; drawn in the first family of gpui's fallback stack it finds, \
+             DejaVu Sans)"
+        );
+        assert_eq!(
+            stack(Some(".SystemUIFont")).label("SF Pro"),
+            "SF Pro (gpui finds no face of the system UI font, .SystemUIFont; drawn in the first \
+             family of gpui's fallback stack it finds, DejaVu Sans)"
         );
     }
 
