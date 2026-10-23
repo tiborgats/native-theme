@@ -845,7 +845,7 @@ pub(crate) fn separator_line(separator: &egui::Response, width: f32) -> egui::Re
 }
 
 /// A key binding as the menus and tooltips print it: the modifiers' names and the key's
-/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:4395-4403`,
+/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:4427-4435`,
 /// `showcase-gpui/chrome.rs:165`). `Context::format_shortcut` spells a key by its name outside
 /// macOS (`Ctrl+Comma`: `ModifierNames::NAMES` is not short,
 /// `egui/src/data/input/keyboard_shortcut.rs:30-34`); on macOS it is kept, its symbols short.
@@ -1117,9 +1117,10 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
 /// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
 /// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
 /// row's right end a Ghost menu button listing every page, the current one selected, as
-/// gpui-component's tab-bar menu does (`GC/tab/tab_bar.rs:554-584`). Its caret is the chosen
-/// icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the button
-/// reads "Pages" (§10.4's icon rule).
+/// gpui-component's tab-bar menu does (gpui-component 0.8.0 `src/tab/tab_bar.rs:699-732`,
+/// `TabBar::render`'s Ghost `menu` button, the selected tab's item `checked`). Its caret is the
+/// chosen icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the
+/// button reads "Pages" (§10.4's icon rule).
 pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
     let (set, icon_theme) = app.chosen_icons();
@@ -1329,7 +1330,8 @@ pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -
     }
 }
 
-/// A dialog's title row, as gpui-component's `Dialog` draws one (`GC/dialog/dialog.rs:696-701`) and
+/// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.0
+/// `src/dialog/dialog.rs:749-756`, the `DialogTitle`, and `:789-804`, the Ghost close button) and
 /// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2508`, `:2550`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's

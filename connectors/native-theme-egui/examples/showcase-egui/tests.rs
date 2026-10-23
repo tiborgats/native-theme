@@ -148,7 +148,7 @@ fn every_page_renders() {
 
 /// T11 (c), first rule of §10.4: a flag value the pickers do not offer is
 /// reported and ignored (the iced showcase's `the_command_line_rejects_what_it_cannot_honour`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:19284`).
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:19316`).
 #[test]
 fn the_command_line_rejects_what_it_cannot_honour() {
     let mut settings = Settings::for_tests();
@@ -256,7 +256,7 @@ fn the_pages_follow_the_counterpart_table() {
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
 /// user picks one, and again after a pick of `default` (the iced showcase's
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:19227`). Following is
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:19259`). Following is
 /// `default_icon_choice` of what the atlas reports per scheme — `breeze`, then
 /// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:1436-1455`),
 /// which then keeps following.

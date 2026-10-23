@@ -169,10 +169,9 @@ jobs:
       # and exits non-zero, with the measured and the expected size, unless
       # the capture is of that window: each showcase's OS capture is the
       # window with its frame and title bar, the content 1280 x 720 times the
-      # display's scale factor (gpui's and iced's through the shared crate's
-      # capture, egui's through the copy the crate took it from, all xcap:
-      # `screencapture -l` of the window it lists on macOS, a BitBlt of its
-      # frame on Windows).
+      # display's scale factor (the three showcases' through the shared
+      # crate's capture, xcap: `screencapture -l` of the window it lists on
+      # macOS, a BitBlt of its frame on Windows).
       - name: Capture screenshots (macOS)
         if: runner.os == 'macOS'
         run: |

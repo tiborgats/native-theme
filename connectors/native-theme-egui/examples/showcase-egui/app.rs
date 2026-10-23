@@ -258,7 +258,7 @@ pub(crate) struct App {
     /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
     /// the OS: the name the Theme row, the command palette and the status bar give `default`,
     /// "default (kde-breeze)", as the gpui showcase's `default_label`
-    /// (`showcase-gpui/app.rs:1787-1791`).
+    /// (`showcase-gpui/app.rs:1808-1812`).
     pub(crate) default_preset: String,
     /// The OS's semibold face of the theme's family, registered after each install.
     pub(crate) semibold: demo::Semibold,

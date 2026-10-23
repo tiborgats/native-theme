@@ -189,7 +189,7 @@ fn cell(
     });
 }
 
-/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:788-802`): a
+/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:808-822`): a
 /// freedesktop set with the theme its icons load from — where that is the system's and it
 /// cannot be detected, why — else the set's name.
 fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
