@@ -789,12 +789,13 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component `src/status_bar.rs`,
-/// `StatusBar`'s `render`): `rems(0.25)` above and below and `rems(0.5)` at the sides, at the
-/// rem gpui-component sets to the theme's font size, which the gpui connector fills with the
-/// scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding the gpui
-/// showcase's status bar keeps where the theme states none, as `(vertical, horizontal)` in
-/// logical pixels. egui's frame margin is whole points, so each side is rounded as
+/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component 0.8.0
+/// `src/status_bar.rs:89-90`, `StatusBar`'s `render`): `rems(0.25)` above and below and
+/// `rems(0.5)` at the sides, at the rem gpui-component sets to the theme's font size
+/// (`src/root.rs:538`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
+/// fills with the scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding
+/// the gpui showcase's status bar keeps where the theme states none, as `(vertical, horizontal)`
+/// in logical pixels. egui's frame margin is whole points, so each side is rounded as
 /// `convert::to_margin` rounds it.
 fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
     let rem = atlas
