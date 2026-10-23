@@ -29,11 +29,11 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 ///   (`expander.hover_background` under the pointer). Its height is the rule every stated row
 ///   height takes: at a text scale of 1 or less the scope's `interact_size.y`
 ///   (`expander.header_height`) exactly, its title one line, cut short with egui's ellipsis at
-///   the width the padding and the arrow leave it, as egui's single-line labels are
-///   (`TextWrapMode::Truncate`); above 1 the title wraps at that width, and the header is the
-///   tallest of the stated height, the title's line box at its scaled size and
-///   `defaults.line_height`, rounded up, with the padding above and below it, and the wrapped
-///   title with that padding. Where the title cannot be that narrow the header is as wide as it
+///   the width the padding and the arrow leave it, its whole text shown on hover, as egui's
+///   single-line labels are (`TextWrapMode::Truncate`); above 1 the title wraps at that width,
+///   and the header is the tallest of the stated height, the title's line box at its scaled
+///   size and `defaults.line_height`, rounded up, with the padding above and below it, and the
+///   wrapped title with that padding. Where the title cannot be that narrow the header is as wide as it
 ///   needs, as egui's own header is at least its text;
 /// * the arrow, `expander.arrow_icon_size` across in `expander.arrow_color` (the state's
 ///   text colour where unstated), is egui's triangle: before the title it turns from the
@@ -166,7 +166,10 @@ impl Expander {
 /// (ledger M9-150; the showcases' `rows::scaled_height`, the gpui connector's
 /// `geometry::with_height_rule`): the title's font at its scaled size (`expander.font.size`)
 /// times `defaults.line_height`, rounded up. `None` at a factor of 1 or less, where the stated
-/// height is the header's.
+/// height is the header's. The egui showcase's
+/// `the_expander_header_is_its_stated_height_by_the_row_rule` is its drift gate against
+/// `rows::scaled_height`: it holds the header this draws and the ones the showcase grows by that
+/// function to one expected height.
 fn scaled_line(t: &ResolvedTheme, prefs: &AccessibilityPreferences) -> Option<f32> {
     (prefs.text_scale_factor() > 1.0)
         .then(|| (prefs.scaled(t.expander.font.size) * t.defaults.line_height).ceil())
@@ -382,6 +385,16 @@ fn header(
     response.widget_info(|| {
         egui::WidgetInfo::labeled(egui::WidgetType::CollapsingHeader, enabled, &text)
     });
+    // A title cut short shows its whole text under the pointer, as egui's truncated `Label`
+    // does (`egui/src/widgets/label.rs:285-294`): its sections and text, the wrapping reset.
+    if galley.elided {
+        let job = egui::text::LayoutJob {
+            sections: galley.job.sections.clone(),
+            text: galley.job.text.clone(),
+            ..egui::text::LayoutJob::default()
+        };
+        response = response.on_hover_text(job);
+    }
     let (arrow_x, text_x) = if trailing {
         (rect.right() - right - arrow, rect.left() + left)
     } else {

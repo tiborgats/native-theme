@@ -780,7 +780,7 @@ fn header_padding(t: &ResolvedTheme, ctx: &egui::Context, painted: bool) -> f32 
 /// painted path (kde-breeze, adwaita) and on egui's own `CollapsingHeader` (material-3), as
 /// the gpui showcase's header is the stated height at 1 (`geometry::accordion_title`). At 1.5
 /// kde-breeze's 13.33 px title's line box is 27.2 at its 1.36 line height, 28 rounded up, so the
-/// header is 28 and its 7 + 7, past the stated 40, where it was its title's 27 and its padding.
+/// header is 28 + 7 + 7 = 42, past the stated 40, where it was its title's 27 and its padding.
 #[test]
 fn the_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -815,8 +815,9 @@ fn the_header_is_its_stated_height_by_the_row_rule() {
 /// At a text scale of 1 or less the painted header is its stated height and its title one
 /// line, cut short with egui's ellipsis where it is too long for its column
 /// (`TextWrapMode::Truncate`, `epaint/src/text/text_layout_types.rs:707-714`; the `…`,
-/// `text_layout.rs:146-149`), inside the header and clear of a trailing arrow, as egui's own single-line labels truncate; at least as
-/// wide as what is left of it where no width is left for the title at all. Above 1 the title
+/// `text_layout.rs:146-149`), inside the header and clear of a trailing arrow, as egui's own
+/// single-line labels truncate; at least as wide as what is left of it where no width is left
+/// for the title at all. Above 1 the title
 /// wraps inside the header, which grows to hold it.
 #[test]
 fn a_long_title_is_one_line_inside_the_stated_header() {
@@ -880,6 +881,50 @@ fn a_long_title_is_one_line_inside_the_stated_header() {
                 "{scale}, {width}: {painted:?} clear of the arrow {arrow:?}"
             );
         }
+    }
+}
+
+/// A title the stated header cuts short shows its whole text under the pointer, as egui's own
+/// truncated `Label` does (`egui/src/widgets/label.rs:285-294`, `show_tooltip_when_elided`,
+/// true by default): adwaita in a 120-point column, the pointer resting on the header past the
+/// tooltip delay, paints the full title once, unelided. A title that fits shows none.
+#[test]
+fn a_cut_title_shows_its_whole_text_on_hover() {
+    let long = "A title far longer than the narrow column it is shown in";
+    let prefs = AccessibilityPreferences::default();
+    let t = from_preset("adwaita", false, &prefs).unwrap().1;
+    for (title, tip) in [(long, true), ("Details", false)] {
+        let ctx = installed(&t, &prefs);
+        let show = |ui: &mut egui::Ui| {
+            ui.allocate_ui(egui::vec2(120.0, f32::INFINITY), |ui| {
+                Expander::new(title)
+                    .show(ui, |ui| ui.label("Body"))
+                    .header_response
+            })
+            .inner
+        };
+        let (_, header) = response(&ctx, at(0.0), show);
+        let centre = header.rect.center();
+        let mut last = None;
+        // the pointer moves onto the header, then rests there past egui's tooltip delay
+        for (i, time) in [0.1, 0.2, 5.0, 10.0].into_iter().enumerate() {
+            let mut input = at(time);
+            if i == 0 {
+                input.events = vec![egui::Event::PointerMoved(centre)];
+            }
+            last = Some(response(&ctx, input, show).0);
+        }
+        let out = last.unwrap();
+        let painted: Vec<bool> = flat(&out.shapes)
+            .into_iter()
+            .filter_map(|s| match s {
+                egui::Shape::Text(text) if text.galley.text() == title => Some(text.galley.elided),
+                _ => None,
+            })
+            .collect();
+        // the header's own title, elided where it is cut, and the tooltip's, never elided
+        let want = if tip { vec![true, false] } else { vec![false] };
+        assert_eq!(painted, want, "{title}: the title's shapes, elided or not");
     }
 }
 
