@@ -1022,15 +1022,18 @@ impl eframe::App for App {
             self.settings.theme_installed(&self.atlas, scheme);
             self.last_scheme = Some(scheme);
         }
-        // Read before the screenshot's `&mut` borrow of `self` (§10.4's fourth rule).
-        let menu_installed = self.menu_installed();
-        if let Some(shot) = &mut self.screenshot {
-            let now = ctx.input(|i| i.time);
+        let now = ctx.input(|i| i.time);
+        let due = self.screenshot.as_mut().is_some_and(|shot| {
             let started = *shot.started.get_or_insert(now);
-            if !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S {
-                // The macOS runner's check (§13): a capture step fails where the menu bar AppKit
-                // holds is not the showcase's.
-                if let Err(error) = &menu_installed {
+            !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S
+        });
+        // The macOS runner's check (§13), read on the pass the capture is due alone, and before
+        // the screenshot's `&mut` borrow of `self` (§10.4's fourth rule): a capture step fails
+        // where the menu bar AppKit holds is not the showcase's.
+        let menu_installed = due.then(|| self.menu_installed());
+        if let Some(shot) = &mut self.screenshot {
+            if due {
+                if let Some(Err(error)) = &menu_installed {
                     cli::refuse(&Output::Screenshot.failure(&shot.path, error));
                 }
                 match FrameCapture::start(crate::WINDOW_TITLE, &shot.path) {

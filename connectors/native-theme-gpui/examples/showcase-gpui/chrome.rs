@@ -70,20 +70,22 @@ pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
 ///
 /// - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the
 ///   Preferences sheet, the in-window Theme menu's Preferences…), the OS's
-///   Services menu (gpui-pre `MenuItem::os_submenu`, which the macOS
-///   platform makes AppKit's `servicesMenu`), Hide ⌘H, Hide Others ⌥⌘H,
-///   Show All, and Quit ⌘Q, with the HIG's separators;
+///   Services menu (gpui-pre 0.3.9 `MenuItem::os_submenu`,
+///   `src/platform/app_menu.rs:118`, which the macOS platform makes AppKit's
+///   `servicesMenu`, gpui-pre-macos 0.3.9 `src/platform.rs:491-493`),
+///   Hide ⌘H, Hide Others ⌥⌘H, Show All, and Quit ⌘Q, with the HIG's
+///   separators;
 /// - File: Close ⌘W;
 /// - View: the in-window View menu's rows;
 /// - Theme: the in-window Theme menu's rows, less Preferences…;
 /// - Window: Minimize ⌘M and Zoom. gpui's macOS platform makes the menu
 ///   titled `Window` AppKit's windows menu (gpui-pre-macos 0.3.9
-///   `src/platform.rs`, `create_menu_bar`), to which AppKit adds its
-///   window-switching items. Bring All to Front, which the HIG and the
+///   `src/platform.rs:313-316`, in `create_menu_bar`), to which AppKit adds
+///   its window-switching items. Bring All to Front, which the HIG and the
 ///   iced and egui showcases' Window menus hold, is left out: gpui offers
 ///   neither a call for it nor an `OsAction` (gpui-pre 0.3.9
-///   `src/platform/app_menu.rs`, `OsAction`: cut, copy, paste, select all,
-///   undo and redo only).
+///   `src/platform/app_menu.rs:311-329`, `OsAction`: cut, copy, paste, select
+///   all, undo and redo only).
 ///
 /// The keys beside the rows are the bindings of their actions
 /// (`app::init`, `app::macos_bindings`). The rows the in-window menus also
