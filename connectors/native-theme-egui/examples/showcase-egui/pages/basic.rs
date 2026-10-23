@@ -56,7 +56,7 @@ const SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
 
 /// The list's rows, and how many of them it shows: data of the page.
 const LIST_ROWS: usize = 8;
-const LIST_VISIBLE: usize = 3;
+pub(crate) const LIST_VISIBLE: usize = 3;
 
 /// The text area's text, three lines.
 pub(crate) const AREA_TEXT: &str = "Line one\nLine two\nLine three";
@@ -68,8 +68,8 @@ const NUMBER_STEP: f64 = 1.0;
 
 /// The table's header and rows, and the row shown selected (the second): data of the page.
 const TABLE_HEADER: [&str; 2] = ["Name", "Size"];
-const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
-const TABLE_SELECTED: usize = 1;
+pub(crate) const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
+pub(crate) const TABLE_SELECTED: usize = 1;
 
 /// The page's groups in reading order (Basic page v6): the five columns' groups, left to right,
 /// each column top to bottom, which the tests check the page against.
@@ -1382,6 +1382,27 @@ fn list_frame(l: &native_theme::theme::ResolvedListTheme) -> egui::Frame {
         ))
 }
 
+/// The radius of `list_frame`'s inside, `list.border.corner_radius` less `list.border.line_width`
+/// (egui lays a frame's content inside its stroke, and the frame has no margin), on the corners
+/// `[nw, ne, sw, se]` marks, square on the others: a fill where a row meets the frame keeps
+/// inside the frame's arcs.
+fn inner_corners(
+    l: &native_theme::theme::ResolvedListTheme,
+    [nw, ne, sw, se]: [bool; 4],
+) -> egui::CornerRadius {
+    let radius = to_corner_radius(
+        egui::CornerRadius::ZERO,
+        (l.border.corner_radius - l.border.line_width).max(0.0),
+    );
+    let at = |rounded: bool, r: u8| if rounded { r } else { 0 };
+    egui::CornerRadius {
+        nw: at(nw, radius.nw),
+        ne: at(ne, radius.ne),
+        sw: at(sw, radius.sw),
+        se: at(se, radius.se),
+    }
+}
+
 /// A list or table row's height and its text's inset: `stated` where the theme states the
 /// row's height (`list.row_height`, `list.header_height`), grown above a text scale of 1 to
 /// hold the row's line, its padding and `rule`, the width of a line drawn inside it, as gpui's
@@ -1422,7 +1443,8 @@ fn row_metrics(
 /// list widget, and the leaves egui never reads from the style are per call (connector spec
 /// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
 /// `list.selection_background` in `list.selection_text_color` while selected and with
-/// `list.hover_background` in `list.hover_text_color` while hovered.
+/// `list.hover_background` in `list.hover_text_color` while hovered, the fill rounded where it
+/// meets the frame (`inner_corners`).
 fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
@@ -1457,6 +1479,8 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
                     // `list.item_font.color`; the theme states no such effect.
                     ui.spacing_mut().scroll.fade.strength = 0.0;
                     let room = ui.max_rect();
+                    // The frame's inside: the scroll area fills it, `visible` tall.
+                    let edges = egui::Rect::from_min_size(room.min, egui::vec2(inner, visible));
                     let area = egui::ScrollArea::vertical()
                         .id_salt("basic/list")
                         .auto_shrink([false, false])
@@ -1471,6 +1495,7 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
                                     list_row(
                                         ui,
                                         l,
+                                        edges,
                                         &text,
                                         selected,
                                         (row_height, inset, line),
@@ -1540,10 +1565,12 @@ fn scroll_bar(
 }
 
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
-/// centred vertically.
+/// centred vertically. Its fill covers what the list's view shows of it, rounded at a corner
+/// where that meets a corner of `edges`, the frame's inside.
 fn list_row(
     ui: &mut egui::Ui,
     l: &native_theme::theme::ResolvedListTheme,
+    edges: egui::Rect,
     text: &str,
     selected: bool,
     (height, inset, line): (f32, f32, f32),
@@ -1562,8 +1589,26 @@ fn list_row(
         (None, l.item_font.color)
     };
     if let Some(fill) = fill {
-        ui.painter()
-            .rect_filled(rect, egui::CornerRadius::ZERO, to_color32(fill));
+        let view = ui.clip_rect();
+        let shown = egui::Rect::from_x_y_ranges(
+            rect.x_range(),
+            rect.top().max(view.top())..=rect.bottom().min(view.bottom()),
+        );
+        if shown.is_positive() {
+            let meets = |a: f32, b: f32| (a - b).abs() < 0.5;
+            let top = meets(shown.top(), edges.top());
+            let bottom = meets(shown.bottom(), edges.bottom());
+            let left = meets(shown.left(), edges.left());
+            let right = meets(shown.right(), edges.right());
+            ui.painter().rect_filled(
+                shown,
+                inner_corners(
+                    l,
+                    [top && left, top && right, bottom && left, bottom && right],
+                ),
+                to_color32(fill),
+            );
+        }
     }
     paint_cell_text(ui, text, font, to_color32(colour), (rect, inset, line));
     response
@@ -1597,7 +1642,8 @@ fn paint_cell_text(
 /// (`list_header_font`), `list_header_height` tall where the theme states it, else a row
 /// (`row_metrics`, of the header font), the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
-/// `list.selection_text_color`; a vertical
+/// `list.selection_text_color`, the header's fill rounded at the top and the last row's at the
+/// bottom, where they meet the frame (`inner_corners`); a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
 fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
@@ -1652,7 +1698,7 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                         egui::Rect::from_min_size(rect.min, egui::vec2(inner, header_height));
                     painter.rect_filled(
                         header,
-                        egui::CornerRadius::ZERO,
+                        inner_corners(l, [true, true, false, false]),
                         to_color32(l.header_background),
                     );
                     places.push(("basic.table.header".to_string(), header));
@@ -1687,7 +1733,12 @@ fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                             (None, l.item_font.color)
                         };
                         if let Some(fill) = fill {
-                            painter.rect_filled(row, egui::CornerRadius::ZERO, to_color32(fill));
+                            let last = i.saturating_add(1) == TABLE_ROWS.len();
+                            painter.rect_filled(
+                                row,
+                                inner_corners(l, [false, false, last, last]),
+                                to_color32(fill),
+                            );
                         }
                         for (j, text) in cells.iter().enumerate() {
                             let cell = if j == 0 {
