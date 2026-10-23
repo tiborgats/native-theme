@@ -4,10 +4,11 @@ use std::borrow::Cow;
 
 use native_theme::Rgba;
 use native_theme::icons::{FreedesktopLoader, IconProvider, IconRole};
-use native_theme::theme::IconSet;
+use native_theme::theme::{IconSet, ResolvedFontSpec};
 use native_theme_egui::{
-    NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
+    NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
 };
+use native_theme_showcase_support::status::DrawnFamily;
 use native_theme_showcase_support::{DIALOG_PADDING_PX, rows};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1004,6 +1005,110 @@ pub(crate) const SEMIBOLD_FAMILY: &str = "showcase-semibold";
 /// `text_scale.section_heading.weight`. Application code only, as `SEMIBOLD_FAMILY`.
 pub(crate) fn weight_family(weight: u16) -> egui::FontFamily {
     egui::FontFamily::Name(format!("showcase-weight-{weight}").into())
+}
+
+/// The atlas's `Note::FontFamilyUnavailable` notes as `(family, substitute)` pairs: each family
+/// the theme asked for that the connector's font plan found no face of
+/// (`fonts::FontPlan::from_system`), and the family drawn in its place, `None` where egui's
+/// own face stays (the note's doc, `connectors/native-theme-egui/src/atlas.rs`).
+pub(crate) fn unavailable_families(notes: &[Note]) -> Vec<(&str, Option<&str>)> {
+    notes
+        .iter()
+        .filter_map(|note| match note {
+            Note::FontFamilyUnavailable {
+                family, substitute, ..
+            } => Some((&**family, substitute.as_deref())),
+            _ => None,
+        })
+        .collect()
+}
+
+/// The family drawn in place of the theme's `stated` family: the substitute the pair of
+/// `unavailable` ([`unavailable_families`]) for `stated` names; `None` where no pair names
+/// `stated`, so its own face is drawn, or where its pair names no substitute.
+pub(crate) fn drawn_family<'a>(
+    unavailable: &[(&str, Option<&'a str>)],
+    stated: &str,
+) -> Option<&'a str> {
+    unavailable
+        .iter()
+        .find(|(family, _)| *family == stated)
+        .and_then(|(_, substitute)| *substitute)
+}
+
+/// What egui draws the theme's families in, as the status bar, the Theme tab and Widget Info
+/// name them (the shared crate's `status::DrawnFamily`): the atlas's notes
+/// ([`unavailable_families`]) and egui's own first face of its proportional and monospace
+/// families in the fonts the pass draws with, which stays where the plan registers no face.
+pub(crate) struct DrawnFamilies<'a> {
+    unavailable: Vec<(&'a str, Option<&'a str>)>,
+    proportional: Option<String>,
+    monospace: Option<String>,
+}
+
+impl<'a> DrawnFamilies<'a> {
+    /// The families `atlas` draws in, the fonts read from `ctx`, which has run a pass
+    /// (`Context::fonts` panics before the first, `egui/src/context.rs:1097-1106`).
+    pub(crate) fn of(ctx: &egui::Context, atlas: &'a ThemeAtlas) -> Self {
+        let first = |family: egui::FontFamily| {
+            ctx.fonts(|f| {
+                f.definitions()
+                    .families
+                    .get(&family)
+                    .and_then(|faces| faces.first().cloned())
+            })
+        };
+        Self {
+            unavailable: unavailable_families(atlas.notes()),
+            proportional: first(egui::FontFamily::Proportional),
+            monospace: first(egui::FontFamily::Monospace),
+        }
+    }
+
+    /// How egui draws text of the theme's `stated` family, in its `Monospace` family where
+    /// `mono`, else its `Proportional` one: as stated where the atlas notes no lack of it; in
+    /// the platform's substitute its note names; in egui's own face where the note names none
+    /// (the OS has no face of it, `native_theme::fonts::system_face`'s `None`); and in egui's
+    /// own face wherever the build loads no system font (feature `system-fonts` off, so the
+    /// atlas has no font plan and leaves egui's faces in place, `Builder::fonts`).
+    pub(crate) fn drawn(&self, stated: &str, mono: bool) -> DrawnFamily<'_> {
+        let (kind, own) = if mono {
+            ("monospace", self.monospace.as_deref())
+        } else {
+            ("proportional", self.proportional.as_deref())
+        };
+        if !cfg!(feature = "system-fonts") {
+            return DrawnFamily::Unloaded {
+                toolkit: "egui",
+                kind,
+                family: own,
+            };
+        }
+        match drawn_family(&self.unavailable, stated) {
+            Some(substitute) => DrawnFamily::Named(substitute),
+            None if self.unavailable.iter().any(|(family, _)| *family == stated) => {
+                DrawnFamily::Generic {
+                    toolkit: "egui",
+                    kind,
+                    family: own,
+                    held_weights: None,
+                }
+            }
+            None => DrawnFamily::Stated,
+        }
+    }
+
+    /// The theme's `stated` family as a label that says what egui draws ([`Self::drawn`]).
+    pub(crate) fn label(&self, stated: &str, mono: bool) -> String {
+        self.drawn(stated, mono).label(stated)
+    }
+
+    /// The family of `font`, the theme font at the registry path `path`, as Widget Info's rows
+    /// show it (`values::leaf_value`'s lookup): [`Self::label`], in egui's monospace family for
+    /// `defaults.mono_font`, the one font the connector draws there (`fonts.rs`'s module doc).
+    pub(crate) fn font_label(&self, path: &str, font: &ResolvedFontSpec) -> String {
+        self.label(&font.family, path == "defaults.mono_font")
+    }
 }
 
 /// The OS's faces of the theme's family at the weights the showcase draws besides the body's:

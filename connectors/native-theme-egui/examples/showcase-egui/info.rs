@@ -2,6 +2,7 @@
 
 use std::str::FromStr;
 
+use native_theme::theme::ResolvedFontSpec;
 use native_theme_egui::ThemeAtlas;
 use native_theme_showcase_support::info::ListedInfo;
 use native_theme_showcase_support::{status, values};
@@ -485,15 +486,15 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
 }
 
 /// The row of a `mapping.toml` row for an instance drawn with `seams`: the leaf as the manifest
-/// names it, its value in `json` in the listed rows' text (`values::value_of`), and its route.
-pub(crate) fn manifest_row(row: &Row, json: &serde_json::Value, seams: &[Seam]) -> InfoRow {
-    let value = value_at(json, &row.leaf).map_or_else(
-        || values::LeafValue {
-            text: values::NOT_STATED.to_string(),
-            colour: None,
-        },
-        |v| values::value_of(&row.leaf, &v),
-    );
+/// names it, its value in `json` in the listed rows' text, a font's family as `family` labels
+/// it (`values::value_at`), and its route.
+pub(crate) fn manifest_row(
+    row: &Row,
+    json: &serde_json::Value,
+    family: &dyn Fn(&str, &ResolvedFontSpec) -> String,
+    seams: &[Seam],
+) -> InfoRow {
+    let value = values::value_at(&row.leaf, json, family);
     InfoRow {
         leaf: row.leaf.clone(),
         value: value.text,
@@ -520,14 +521,19 @@ impl InfoView {
     /// The view of `shown`: for an element of `docs/showcase-elements.toml`, its name and state
     /// and a row per leaf of the list, in its order, each value read as the three showcases
     /// read it (`info::ListedInfo::new`) under the layout, icon set and icon theme of `atlas` in
-    /// `scheme`; for any other instance, its kind and a row per `mapping.toml` row of its seams.
+    /// `ctx`'s scheme; for any other instance, its kind and a row per `mapping.toml` row of its
+    /// seams. Each font's family is named by the family egui draws
+    /// (`demo::DrawnFamilies::font_label`, the fonts read from `ctx`).
     pub(crate) fn of(
         shown: &Shown,
         elements: &[crate::elements::ShowcaseElement],
         manifest: &Manifest,
         (json, preset): (&serde_json::Value, &str),
-        (atlas, scheme): (&ThemeAtlas, egui::Theme),
+        (atlas, ctx): (&ThemeAtlas, &egui::Context),
     ) -> Self {
+        let scheme = ctx.theme();
+        let families = crate::demo::DrawnFamilies::of(ctx, atlas);
+        let family = |path: &str, font: &ResolvedFontSpec| families.font_label(path, font);
         let seams = &shown.info.seams;
         // A row's route, with each exception `mapping.toml` records for the preset shown.
         let with_exceptions = |line: String, key: &str| {
@@ -558,6 +564,7 @@ impl InfoView {
                 atlas.layout(),
                 Some(atlas.icon_set()),
                 atlas.icon_theme(scheme),
+                family,
                 |leaf| with_exceptions(how_line(manifest, leaf, seams), &mapping_key(leaf)),
                 not_themeable,
             ));
@@ -568,7 +575,7 @@ impl InfoView {
         let rows = rows
             .into_iter()
             .map(|row| {
-                let mut info = manifest_row(row, json, seams);
+                let mut info = manifest_row(row, json, &family, seams);
                 info.how = with_exceptions(info.how, &row.leaf);
                 info
             })

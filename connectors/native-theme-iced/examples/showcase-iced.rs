@@ -6414,8 +6414,9 @@ fn shown_info(state: &State, hovered: Hovered) -> Option<ShownInfo> {
 /// Widget Info of one element of the list, in the three showcases' form
 /// (`info::ListedInfo`): its title, a row per leaf in the list's order with
 /// its value -- the layout distances, the icon set and the icon theme read
-/// where the showcase keeps them -- and how iced applies it ([`iced_route`]),
-/// then what iced draws for it that the theme states nothing for
+/// where the showcase keeps them, each font's family by what iced draws
+/// ([`listed_family`]) -- and how iced applies it ([`iced_route`]), then
+/// what iced draws for it that the theme states nothing for
 /// ([`iced_not_themeable`]).
 fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
     #[cfg(test)]
@@ -6426,6 +6427,7 @@ fn element_info(state: &State, element: &ShowcaseElement) -> ListedInfo {
         &state.layout,
         Some(state.current_icon_set),
         state.current_icon_theme.as_deref(),
+        listed_family,
         |leaf| iced_route(state, element, leaf),
         iced_not_themeable(state, element)
             .into_iter()
@@ -16076,6 +16078,17 @@ fn font_row_drawn(field: &str, font: &ResolvedFontSpec, drawn: &Drawn) -> String
 /// ([`FontDrawing::label`]) of what iced draws ([`drawn_family`]).
 fn family_label(stated: &str, drawn: &Drawn) -> String {
     drawn_family(drawn).label(stated)
+}
+
+/// The family of `font`, the theme font at the registry path `path`, as
+/// Widget Info's listed rows show it (`values::leaf_value`'s lookup): the
+/// [`family_label`] of how iced draws it, in its monospace family for
+/// `defaults.mono_font` ([`mono_drawn`]), as text otherwise ([`font_drawn`]).
+fn listed_family(path: &str, font: &ResolvedFontSpec) -> String {
+    family_label(
+        &font.family,
+        &font_from_database(font, path == "defaults.mono_font"),
+    )
 }
 
 /// What a theme font's family is drawn in, as the shared crate's label
@@ -27376,8 +27389,8 @@ mod tests {
     }
 
     /// A leaf's value reads as the resolved theme holds it, in the
-    /// registry's spelling: a padding side in px, a font as its family, the
-    /// size its source stated and its weight, a colour as its hex, a layout
+    /// registry's spelling: a padding side in px, a font as the family iced
+    /// draws, the size its source stated and its weight, a colour as its hex, a layout
     /// gap from the theme's layout, and what the theme leaves unset as not
     /// stated.
     #[test]
@@ -27414,7 +27427,11 @@ mod tests {
         };
         assert_eq!(
             value("button.font").0,
-            format!("{} {size} {}", font.family, font.weight)
+            format!(
+                "{} {size} {}",
+                family_label(&font.family, &font_drawn(font)),
+                font.weight
+            )
         );
         assert_eq!(
             value("layout.widget_gap_px").0,
@@ -27435,7 +27452,8 @@ mod tests {
 
     /// The value Widget Info shows for `leaf` (`values::leaf_value`), read as
     /// [`element_info`] reads it: from the resolved theme's JSON, and the
-    /// layout, icon set and icon theme `state` keeps.
+    /// layout, icon set and icon theme `state` keeps, a font's family as
+    /// [`listed_family`] names it.
     fn listed_value(state: &State, leaf: &str) -> values::LeafValue {
         let json = match values::theme_json(&state.current_resolved) {
             Ok(json) => json,
@@ -27447,6 +27465,7 @@ mod tests {
             &state.layout,
             Some(state.current_icon_set),
             state.current_icon_theme.as_deref(),
+            &listed_family,
         )
     }
 
@@ -27469,6 +27488,61 @@ mod tests {
             Some(listed_value(&state, "tooltip.show_delay_ms").text),
             delay.map(|ms| format!("{ms} ms"))
         );
+    }
+
+    /// Widget Info's listed font rows name the family iced draws, as its own
+    /// font rows do: `defaults.font.family` and the family part of
+    /// `defaults.font` are [`family_label`] of what iced draws the stated
+    /// family in ([`font_drawn`]), and `defaults.mono_font`'s of what it
+    /// draws the monospace font in ([`mono_drawn`]), under windows-11 set
+    /// directly. Conditioned on the host: where the system lacks "Segoe UI"
+    /// or "Cascadia Mono", the rows name what is drawn instead; where it has
+    /// them, the stated names alone.
+    #[test]
+    fn a_listed_font_row_names_the_family_iced_draws() {
+        let (theme, resolved) = match native_theme_iced::from_preset("windows-11", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("windows-11: {error}"),
+        };
+        let layout = match native_theme::theme::Theme::preset("windows-11") {
+            Ok(preset) => preset.layout,
+            Err(error) => panic!("windows-11: {error}"),
+        };
+        let state = State {
+            current_theme: theme,
+            theme_json: theme_json(&resolved),
+            current_resolved: resolved.clone(),
+            layout,
+            ..State::default()
+        };
+        let d = &resolved.defaults;
+        let label = family_label(&d.font.family, &font_drawn(&d.font));
+        let mono = family_label(&d.mono_font.family, &mono_drawn(&resolved));
+        println!("windows-11's fonts are named {label:?} and {mono:?}");
+        let value = |id: &str, leaf: &str| {
+            let Some(element) = elements::element(id) else {
+                panic!("{id} is not in the list");
+            };
+            let info = element_info(&state, element);
+            match info.rows.into_iter().find(|row| row.leaf == leaf) {
+                Some(row) => row.value,
+                None => panic!("{id} lists no {leaf}"),
+            }
+        };
+        assert_eq!(
+            value("basic.buttons.heading", "defaults.font.family"),
+            label
+        );
+        for (id, leaf, label) in [
+            ("basic.switches.off", "defaults.font", &label),
+            ("basic.typography.monospace", "defaults.mono_font", &mono),
+        ] {
+            let font = value(id, leaf);
+            assert!(
+                font.starts_with(&format!("{label} ")),
+                "the {leaf} row does not name the drawn family {label:?}: {font}"
+            );
+        }
     }
 
     /// The Basic page never needs sideways scrolling under any bundled preset

@@ -1258,7 +1258,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                         elements,
                         manifest,
                         (json, app.preset_key()),
-                        (&app.atlas, theme),
+                        (&app.atlas, ui.ctx()),
                     )),
                     (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
                         Err(error.clone())

@@ -9817,6 +9817,55 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
     );
 }
 
+/// Widget Info's listed font rows name the family gpui draws, as the
+/// inspector's Theme tab does: `defaults.font.family` and the family part
+/// of `defaults.font` and of `defaults.mono_font` are `status::family_label`
+/// of the stated family and `font_family`'s, under windows-11 set directly.
+/// Conditioned on the host: where the system lacks "Segoe UI" or "Cascadia
+/// Mono" and the platform names a substitute (fontconfig, feature
+/// `system-fonts`), the rows name it; elsewhere the label is the stated name
+/// alone, which the rows then show.
+#[gpui::test]
+fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
+    use crate::inspector::PanelLook;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_light_preset(&mut cx, &showcase, "windows-11");
+    let r = resolved_theme(&mut cx, &showcase);
+    let label = |family: &std::sync::Arc<str>| {
+        let drawn = native_theme_gpui::font_family(family);
+        let label = native_theme_showcase_support::status::family_label(family, Some(&drawn));
+        println!("windows-11's {family:?} is drawn in {drawn:?}: its rows read {label:?}");
+        label
+    };
+    let (body, mono) = (
+        label(&r.defaults.font.family),
+        label(&r.defaults.mono_font.family),
+    );
+    let mut value = |id: &str, leaf: &str| {
+        let row = read(&mut cx, &showcase, |this, cx| {
+            let look = PanelLook::of(this, cx)?;
+            let element = crate::elements::element(id)?;
+            let info = crate::inspector::listed(&look, element, &WidgetInfo::default());
+            info.rows
+                .into_iter()
+                .find(|row| row.leaf == leaf)
+                .map(|row| row.value)
+        });
+        row.unwrap_or_else(|| panic!("no Widget Info row {leaf} for {id}"))
+    };
+    assert_eq!(value("basic.buttons.heading", "defaults.font.family"), body);
+    for (id, leaf, label) in [
+        ("basic.switches.off", "defaults.font", &body),
+        ("basic.typography.monospace", "defaults.mono_font", &mono),
+    ] {
+        let font = value(id, leaf);
+        assert!(
+            font.starts_with(&format!("{label} ")),
+            "the {leaf} row does not name the drawn family {label:?}: {font}"
+        );
+    }
+}
+
 /// A chrome popup row is padded on each side the theme states by
 /// `menu.border.padding` (`geometry::menu_item`), on an unstated left or
 /// right by `MENU_ROW_PADDING_X`, upstream's row padding, and on an

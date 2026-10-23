@@ -6,7 +6,7 @@
 //! its own toolkit, in the panel's typography.
 
 use native_theme::color::Rgba;
-use native_theme::theme::{IconSet, LayoutTheme};
+use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec};
 
 use crate::elements::ShowcaseElement;
 use crate::values::leaf_value;
@@ -50,15 +50,18 @@ pub struct ListedInfo {
 impl ListedInfo {
     /// The Widget Info of `element` under the resolved theme's JSON
     /// `resolved` (`values::theme_json`), with the `layout`, the icon set and
-    /// the icon theme the leaves the resolved theme does not hold read from
+    /// the icon theme the leaves the resolved theme does not hold read from,
+    /// and every font's family as `family` labels what the toolkit draws
     /// ([`crate::values::leaf_value`]); `route` is the toolkit's "how" line
     /// for a leaf, and `not_themeable` the widget's own lines.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         element: &ShowcaseElement,
         resolved: &serde_json::Value,
         layout: &LayoutTheme,
         icon_set: Option<IconSet>,
         icon_theme: Option<&str>,
+        family: impl Fn(&str, &ResolvedFontSpec) -> String,
         route: impl Fn(&str) -> String,
         not_themeable: Vec<String>,
     ) -> Self {
@@ -66,7 +69,7 @@ impl ListedInfo {
             .leaves
             .iter()
             .map(|leaf| {
-                let value = leaf_value(leaf, resolved, layout, icon_set, icon_theme);
+                let value = leaf_value(leaf, resolved, layout, icon_set, icon_theme, &family);
                 InfoRow {
                     leaf: leaf.clone(),
                     value: value.text,
@@ -111,6 +114,11 @@ impl ListedInfo {
 mod tests {
     use super::*;
 
+    /// A lookup that names every family as stated.
+    fn as_stated(_: &str, font: &ResolvedFontSpec) -> String {
+        font.family.to_string()
+    }
+
     fn element(leaves: &[&str], states: &[&str]) -> ShowcaseElement {
         ShowcaseElement {
             id: "basic.buttons.default".into(),
@@ -147,6 +155,7 @@ mod tests {
             &layout,
             None,
             None,
+            as_stated,
             |leaf| format!("route of {leaf}"),
             Vec::new(),
         );
@@ -196,6 +205,7 @@ mod tests {
             &layout,
             None,
             None,
+            as_stated,
             route,
             notes,
         );
@@ -219,6 +229,7 @@ mod tests {
             &layout,
             None,
             None,
+            as_stated,
             route,
             Vec::new(),
         );

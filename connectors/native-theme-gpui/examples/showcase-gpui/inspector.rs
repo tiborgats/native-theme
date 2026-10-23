@@ -546,8 +546,10 @@ thread_local! {
 
 /// The panel's text for `element` of docs/showcase-elements.toml, whose
 /// widget reported `info`, under `look`: a row per leaf the list names, with
-/// its value and how gpui applies it (`info::leaves`), and the widget's "Not
-/// themeable" notes.
+/// its value and how gpui applies it (`info::leaves`), each font's family by
+/// the family gpui draws (`status::family_label` of the stated family and
+/// the connector's `font_family` of it, as the Theme tab's [`font_rows`]),
+/// and the widget's "Not themeable" notes.
 pub(crate) fn listed(
     look: &PanelLook,
     element: &elements::ShowcaseElement,
@@ -559,6 +561,12 @@ pub(crate) fn listed(
         &look.layout,
         Some(look.icon_set),
         look.icon_theme.as_deref(),
+        |_, font| {
+            family_label(
+                &font.family,
+                Some(&native_theme_gpui::font_family(&font.family)),
+            )
+        },
         |leaf| {
             leaves::how(&element.id, leaf)
                 .unwrap_or(NO_ROUTE)

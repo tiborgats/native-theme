@@ -1314,7 +1314,7 @@ fn instances_are_distinct() {
     let (manifest, json) = manifest_and_json(&harness);
     let elements = crate::elements::showcase_elements().unwrap_or_default();
     assert!(!elements.is_empty(), "the element list parses");
-    let scheme = (&harness.state().atlas, harness.ctx.theme());
+    let scheme = (&harness.state().atlas, &harness.ctx);
     let text = |shown| {
         crate::info::InfoView::of(shown, &elements, &manifest, (&json, TEST_PRESET), scheme).text()
     };
@@ -5403,8 +5403,12 @@ fn the_info_is_the_manifest() {
                 egui::Theme::Light
             };
             let json = crate::info::theme_json(&atlas, theme).expect("serialises");
-            // The values the info must print, read here and not through the info module.
+            // The values the info must print, read here and not through the info module; a
+            // family as the theme states it (`every_font_label_names_the_drawn_family` reads
+            // the drawn one).
             let expected = resolved_json(&atlas, theme);
+            let stated =
+                |_: &str, font: &native_theme::theme::ResolvedFontSpec| font.family.to_string();
             for seam in &seams {
                 let rows = manifest.rows_for(seam);
                 let listed: BTreeSet<String> = rows.iter().map(|r| r.leaf.clone()).collect();
@@ -5417,7 +5421,8 @@ fn the_info_is_the_manifest() {
                 assert!(!rows.is_empty(), "{seam:?} lists no row");
                 for row in rows {
                     let printed =
-                        crate::info::manifest_row(row, &json, std::slice::from_ref(seam)).lines();
+                        crate::info::manifest_row(row, &json, &stated, std::slice::from_ref(seam))
+                            .lines();
                     let lines = printed.join("\n");
                     // The first line, whole: a substring would let `12` pass for `1`.
                     if let Some(value) = leaf_value(&expected, &row.leaf) {
@@ -5481,7 +5486,7 @@ fn the_info_is_the_manifest() {
         .clone()
         .unwrap_or_default();
     let elements = crate::elements::showcase_elements().unwrap_or_default();
-    let scheme = (&app.atlas, harness.ctx.theme());
+    let scheme = (&app.atlas, &harness.ctx);
     let text =
         crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other), scheme).text();
     let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
@@ -6188,6 +6193,7 @@ fn a_ms_leaf_reads_its_value() {
         atlas.layout(),
         Some(atlas.icon_set()),
         atlas.icon_theme(egui::Theme::Light),
+        &|_, font| font.family.to_string(),
     );
     assert_eq!(Some(shown.text), delay.map(|ms| format!("{ms} ms")));
     assert_eq!(
@@ -6323,7 +6329,7 @@ fn widget_info_shows_the_listed_elements_rows() {
     let listed = elements.iter().find(|e| e.id == "basic.buttons.default");
     let (manifest, json) = manifest_and_json(&harness);
     if let (Some(shown), Some(listed)) = (shown, listed) {
-        let scheme = (&harness.state().atlas, harness.ctx.theme());
+        let scheme = (&harness.state().atlas, &harness.ctx);
         let view =
             crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET), scheme);
         assert_eq!(view.title, "Button · Normal");
@@ -6363,6 +6369,134 @@ fn widget_info_shows_the_listed_elements_rows() {
         assert!(
             !LAYOUT_BOXES.contains(&id) || !record.target,
             "the layout box {id} is a Widget Info target"
+        );
+    }
+}
+
+/// The family drawn in a family's place is the substitute the atlas's note for that family
+/// names: none for a family with no note, or whose note names no substitute (`demo::drawn_family`
+/// over the `(family, substitute)` pairs `demo::unavailable_families` takes from the notes).
+#[test]
+fn the_drawn_family_is_the_notes_substitute() {
+    use crate::demo::drawn_family;
+    let unavailable = [("Segoe UI", Some("Adwaita Sans")), ("Cascadia Mono", None)];
+    assert_eq!(drawn_family(&unavailable, "Segoe UI"), Some("Adwaita Sans"));
+    assert_eq!(drawn_family(&unavailable, "Noto Sans"), None);
+    assert_eq!(drawn_family(&unavailable, "Cascadia Mono"), None);
+    assert_eq!(drawn_family(&[], "Segoe UI"), None);
+}
+
+/// The label of the theme's `stated` family the showcase must show, read from what the
+/// harness has installed: the stated name alone where the atlas holds no
+/// `Note::FontFamilyUnavailable` for it; the platform's substitute where its note names one
+/// (`status::family_label`); egui's generic family in egui's own first face of it, as the
+/// fonts the pass draws with hold it, where its note names none, or wherever the build loads no
+/// system font (feature `system-fonts` off), `monospace` for the monospace font, else
+/// `proportional`.
+fn drawn_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
+    use native_theme_showcase_support::status::{DrawnFamily, family_label};
+    let (kind, chain) = if mono {
+        ("monospace", egui::FontFamily::Monospace)
+    } else {
+        ("proportional", egui::FontFamily::Proportional)
+    };
+    let own = harness.ctx.fonts(|f| {
+        f.definitions()
+            .families
+            .get(&chain)
+            .and_then(|faces| faces.first().cloned())
+    });
+    if !cfg!(feature = "system-fonts") {
+        return DrawnFamily::Unloaded {
+            toolkit: "egui",
+            kind,
+            family: own.as_deref(),
+        }
+        .label(stated);
+    }
+    let noted = harness
+        .state()
+        .atlas
+        .notes()
+        .iter()
+        .find_map(|note| match note {
+            native_theme_egui::Note::FontFamilyUnavailable {
+                family, substitute, ..
+            } if &**family == stated => Some(substitute.clone()),
+            _ => None,
+        });
+    match noted {
+        None => stated.to_string(),
+        Some(Some(substitute)) => family_label(stated, Some(&substitute)),
+        Some(None) => DrawnFamily::Generic {
+            toolkit: "egui",
+            kind,
+            family: own.as_deref(),
+            held_weights: None,
+        }
+        .label(stated),
+    }
+}
+
+/// The value of Widget Info's row for `leaf`, the text after the leaf on its first line: a
+/// row is a `Label`, whose text is its AccessKit value (`egui/src/response.rs:962-964`).
+fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
+    let prefix = format!("{leaf} ");
+    harness
+        .query_all(By::new().predicate(|n| n.value().is_some_and(|v| v.starts_with(&prefix))))
+        .filter_map(|n| n.accesskit_node().value())
+        .find_map(|value| {
+            value
+                .lines()
+                .next()
+                .and_then(|line| line.strip_prefix(&prefix))
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| panic!("Widget Info shows no {leaf} row"))
+}
+
+/// Every font label names the family egui draws, as the atlas records it: Widget Info's
+/// `defaults.font.family` row (hover a Basic group heading), its `defaults.font` row (the
+/// Basic "Off" switch), its `defaults.mono_font` row (the Basic "Monospace" line) and its
+/// `button.font` row (the Basic "Button"), under windows-11, set directly as `--theme` does not
+/// take it here. Conditioned on the host: where the system lacks "Segoe UI", the
+/// atlas notes it and the labels name the substitute drawn in its place (fontconfig's match on
+/// Linux); where it has it, the stated name alone; and without feature `system-fonts`,
+/// egui's own face. The expected texts are read from the installed atlas ([`drawn_label`]).
+#[test]
+fn every_font_label_names_the_drawn_family() {
+    let mut harness = open_scaled("windows-11", "basic", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let body = drawn_label(&harness, &t.defaults.font.family, false);
+    println!(
+        "windows-11's {:?} is shown as {body:?}",
+        t.defaults.font.family
+    );
+    let mono = drawn_label(&harness, &t.defaults.mono_font.family, true);
+    println!(
+        "windows-11's {:?} is shown as {mono:?}",
+        t.defaults.mono_font.family
+    );
+    let button = drawn_label(&harness, &t.button.font.family, false);
+    let mut row = |kind: &str, leaf: &str| {
+        let pos = centre_of(&harness, kind);
+        hover_and_settle(&mut harness, pos);
+        info_row_value(&harness, leaf)
+    };
+    assert_eq!(row("heading", "defaults.font.family"), body);
+    for (kind, leaf, label) in [
+        ("switch (off)", "defaults.font", &body),
+        ("Label (monospace)", "defaults.mono_font", &mono),
+        ("button (enabled)", "button.font", &button),
+    ] {
+        let font = row(kind, leaf);
+        assert!(
+            font.starts_with(&format!("{label} ")),
+            "the {leaf} row does not name the drawn family {label:?}: {font}"
         );
     }
 }
