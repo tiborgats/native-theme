@@ -1166,8 +1166,7 @@ impl Semibold {
             let unavailable = unavailable_families(atlas.notes());
             let drawn = drawn_family(&unavailable, &body.family).unwrap_or(&body.family);
             for (weight, family) in families {
-                let Some(face) = native_theme::fonts::system_face(drawn, weight, body.style)
-                else {
+                let Some(face) = native_theme::fonts::system_face(drawn, weight, body.style) else {
                     continue;
                 };
                 let mut data = egui::FontData::from_owned(face.data.to_vec());
