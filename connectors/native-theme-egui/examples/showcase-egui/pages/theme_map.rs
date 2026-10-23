@@ -3,7 +3,7 @@
 //! manifest that maps egui's.
 
 use native_theme_egui::convert::to_color32;
-use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font, list_header_height};
+use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -54,11 +54,15 @@ pub(crate) fn show(
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
     let t = atlas.resolved_for(theme);
-    let row_height = t.list.row_height;
-    // The header as the Data page's table has it: `list_header_font` in `list.header_font.color`
-    // (§10.4's Data row), not `RichText::strong`, which is the scope's active-state text colour
-    // (`egui/src/style.rs:1147-1149`).
-    let header_font = list_header_font(t, atlas.accessibility());
+    let (row_height, header_height) = super::data::table_heights(atlas, t);
+    // The header as the Data page's table has it: `list.header_font` at its weight
+    // (`demo::weighted_family`) and scaled size (`list_header_font`), in
+    // `list.header_font.color` (§10.4's Data row), not `RichText::strong`, which is the scope's
+    // active-state text colour (`egui/src/style.rs:1147-1149`).
+    let header_font = egui::FontId::new(
+        list_header_font(t, atlas.accessibility()).size,
+        demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight),
+    );
     let header_color = to_color32(t.list.header_font.color);
     demo::scoped_container(
         reg,
@@ -68,7 +72,7 @@ pub(crate) fn show(
         "theme map",
         |ui, list, reg| {
             let height = row_height.unwrap_or(ui.spacing().interact_size.y);
-            let header = list_header_height(t).unwrap_or(height);
+            let header = header_height.unwrap_or(height);
             let out = ui.scope(|ui| {
                 egui_extras::TableBuilder::new(ui)
                     .striped(true)

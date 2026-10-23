@@ -4,6 +4,7 @@
 use egui_extras::{Column, Size, StripBuilder, TableBuilder};
 use native_theme_egui::convert::to_color32;
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas, list_header_font, list_header_height};
+use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -23,10 +24,14 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
-    let header_font = list_header_font(t, atlas.accessibility());
+    // `list.header_font` at its weight, as the Basic table's header is
+    // (`demo::weighted_family`), and at its scaled size (`list_header_font`)
+    let header_font = egui::FontId::new(
+        list_header_font(t, atlas.accessibility()).size,
+        demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight),
+    );
     let header_color = to_color32(t.list.header_font.color);
-    let row_height = t.list.row_height;
-    let header_height = list_header_height(t);
+    let (row_height, header_height) = table_heights(atlas, t);
     let normal = RoleVariant::Normal;
 
     caption(
@@ -132,6 +137,36 @@ pub(crate) fn show(
                     })
             })
     });
+}
+
+/// An egui_extras table's body row and header heights where the theme states them, the Data
+/// and Theme Map tables' alike: `list.row_height`, and `list.header_height` (else the row's,
+/// as a header the theme gives no height is a row); each grown above a text scale of 1 to hold
+/// its line, in `list.item_font` and `list.header_font` at `defaults.line_height`, as gpui's
+/// table rows grow and the Basic table's (`rows::scaled_height`). The cells draw no padding and
+/// no line inside the row. `None` where the theme states neither, and the table takes egui's
+/// own `interact_size.y`.
+pub(crate) fn table_heights(
+    atlas: &ThemeAtlas,
+    t: &native_theme_egui::ResolvedTheme,
+) -> (Option<f32>, Option<f32>) {
+    let l = &t.list;
+    let grown = |stated: Option<f32>, size: f32| {
+        stated.map(|h| {
+            rows::scaled_height(
+                h,
+                atlas.accessibility(),
+                size,
+                t.defaults.line_height,
+                0.0,
+                0.0,
+            )
+        })
+    };
+    (
+        grown(l.row_height, l.item_font.size),
+        grown(list_header_height(t).or(l.row_height), l.header_font.size),
+    )
 }
 
 /// The grids' cells, each recorded with the grid's seam.

@@ -8,6 +8,7 @@ use native_theme::theme::IconSet;
 use native_theme_egui::{
     NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
 };
+use native_theme_showcase_support::rows;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Seam {
@@ -339,7 +340,8 @@ fn menu_modifier(
 }
 
 /// A widget inside `ui.native_scope(role, variant, ..)`: the closure adds it and
-/// returns its `Response`, which is recorded with the role seam.
+/// returns its `Response`, which is recorded with the role seam; a menu row's least height
+/// grown above a text scale of 1 ([`grow_menu_rows`]).
 pub(crate) fn scoped(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -348,13 +350,46 @@ pub(crate) fn scoped(
     kind: &'static str,
     add: impl FnOnce(&mut egui::Ui) -> egui::Response,
 ) -> egui::Response {
-    let response = ui.native_scope(role, variant, add).inner;
+    let response = ui
+        .native_scope(role, variant, |ui| {
+            grow_menu_rows(ui, role);
+            add(ui)
+        })
+        .inner;
     reg.record(
         &response,
         info(kind, vec![Seam::Role(role, variant)]),
         false,
     );
     response
+}
+
+/// In `role`'s scope, where it is `Role::Menu`: a stated `menu.row_height`, which the connector
+/// writes into `interact_size.y`, the least height egui's `Button` gives a row
+/// (`egui/src/widgets/button.rs:306-309`), grown above a text scale of 1 to at least the row's
+/// line box at `defaults.line_height`, rounded up, and its padding (`button_padding` above and
+/// below), as gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and the iced
+/// showcase's (`rows::scaled_height`). At a factor of 1 or less the stated height stands.
+fn grow_menu_rows(ui: &mut egui::Ui, role: Role) {
+    if role != Role::Menu {
+        return;
+    }
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return;
+    };
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let Some(stated) = t.menu.row_height else {
+        return;
+    };
+    let padding = 2.0 * ui.spacing().button_padding.y;
+    ui.spacing_mut().interact_size.y = rows::scaled_height(
+        stated,
+        atlas.accessibility(),
+        t.menu.font.size,
+        t.defaults.line_height,
+        padding,
+        0.0,
+    );
 }
 
 /// A widget of the companion crate `native-theme-egui-widgets`, which opens `role`'s scope in
@@ -654,7 +689,8 @@ pub(crate) fn menu_button(
 /// `native_set_style` on a `Ui` the application did not create — a `Window`'s
 /// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response
 /// (`egui/src/ui.rs:944`); the seam is returned as `Applied` for the widgets egui or the caller
-/// adds to that body without a scope of their own.
+/// adds to that body without a scope of their own. An open menu's rows take their least height
+/// grown above a text scale of 1 ([`grow_menu_rows`]).
 pub(crate) fn styled(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -664,6 +700,7 @@ pub(crate) fn styled(
 ) -> Applied {
     let seam = Seam::Role(role, variant);
     ui.native_set_style(role, variant);
+    grow_menu_rows(ui, role);
     let response = ui.response();
     reg.record(&response, info(kind, vec![seam]), true);
     Applied(seam)

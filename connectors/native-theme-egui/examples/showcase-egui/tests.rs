@@ -2490,58 +2490,223 @@ fn the_basic_page_applies_the_per_call_leaves() {
     }
 }
 
+/// The showcase on `tab` with `preset`'s atlas installed in place of the one it opened with, as
+/// `from_preset` builds it under a text-scaling factor of `factor` and the app installs one, at
+/// rest: a preset of another platform, which `--theme` does not take here, at the scale an OS
+/// setting or the Preferences dialog's override installs.
+fn open_scaled(preset: &str, tab: &str, factor: f32) -> Harness<'static, App> {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", tab)]),
+    );
+    harness.run_steps(4);
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
+    let (atlas, _) =
+        from_preset(preset, false, &prefs).unwrap_or_else(|error| panic!("{preset}: {error}"));
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    harness
+}
+
+/// A stated row height under a text-scaling factor of `factor`, as the gpui connector's table,
+/// list and menu rows take one (`geometry::table_row_height`, `with_height_rule`): verbatim at a
+/// factor of 1 or less; above 1 at least the line box of `size` scaled, at `line_height`,
+/// rounded up, with `padding` (the row's top and bottom together) and `rule`.
+fn grown(stated: f32, factor: f32, size: f32, line_height: f32, padding: f32, rule: f32) -> f32 {
+    if factor <= 1.0 {
+        return stated;
+    }
+    stated.max((size * factor * line_height).ceil() + padding + rule)
+}
+
+/// The family text at `weight` is drawn in over a `body`-weight body: the proportional one at
+/// the body's weight, else the face the showcase registers at `weight` where the fonts hold it,
+/// and the proportional one where they do not (`demo::weighted_family`).
+fn weighted(harness: &Harness<'_, App>, weight: u16, body: u16) -> egui::FontFamily {
+    let named = crate::demo::weight_family(weight);
+    let held = harness
+        .ctx
+        .fonts(|f| f.definitions().families.contains_key(&named));
+    if weight != body && held {
+        named
+    } else {
+        egui::FontFamily::Proportional
+    }
+}
+
+/// The font of the painted galley of `text` whose top left lies in one of `within`.
+fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) -> egui::FontId {
+    let shapes = harness.output().shapes.clone();
+    let found = shapes.iter().find_map(|clipped| match &clipped.shape {
+        egui::Shape::Text(shape)
+            if shape.galley.job.text == text && within.iter().any(|r| r.contains(shape.pos)) =>
+        {
+            shape
+                .galley
+                .job
+                .sections
+                .first()
+                .map(|s| s.format.font_id.clone())
+        }
+        _ => None,
+    });
+    found.unwrap_or_else(|| panic!("no {text:?} galley was painted"))
+}
+
+/// M9-102, M9-103: a table's header is drawn in `list.header_font` at its weight and at the
+/// scaled size, on all three tables: under material-3 (`list.header_font.weight` 500 over a 400
+/// body) at a text-scaling factor of 1.5, the Basic table's "Name" is `list_header_font`'s size
+/// in the face registered at 500 (`demo::weighted_family`), and the Data and Theme Map tables'
+/// header labels are in that font.
+#[test]
+fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
+    let preset = "material-3";
+    let basic = open_scaled(preset, "basic", 1.5);
+    let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let prefs = basic.state().atlas.accessibility().clone();
+    assert_eq!(prefs.text_scaling_factor, 1.5, "the override is installed");
+    let want = egui::FontId::new(
+        native_theme_egui::list_header_font(&t, &prefs).size,
+        weighted(&basic, t.list.header_font.weight, t.defaults.font.weight),
+    );
+    assert_ne!(
+        t.list.header_font.weight, t.defaults.font.weight,
+        "{preset}: the header's weight is not the body's"
+    );
+    let cell = basic.state().registry.places()["basic.table.header.name"];
+    assert_eq!(
+        galley_font(&basic, "Name", &[cell]),
+        want,
+        "{preset}: the Basic table's header"
+    );
+    for (tab, kind, title) in [
+        ("data", "table header", "Theme"),
+        ("theme-map", "theme map header", "Leaf"),
+    ] {
+        let page = open_scaled(preset, tab, 1.5);
+        let cells: Vec<egui::Rect> = page
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .collect();
+        assert_eq!(
+            galley_font(&page, title, &cells),
+            want,
+            "{preset} {tab}: the header is not the Basic table's font"
+        );
+    }
+}
+
+/// M9-107: the Text page's text-role labels are drawn at the weight they name, as the Basic
+/// page's Typography lines are (`demo::role_text`): under windows-11 (`text_scale.display.weight`
+/// 600 over a 400 body) "Display, weight 600" is in the face registered at 600, and each role's
+/// label at its role's size and line height.
+#[test]
+fn the_text_role_labels_are_drawn_at_their_weight() {
+    use native_theme_egui::TextRole;
+    let harness = open_scaled("windows-11", "text", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let prefs = harness.state().atlas.accessibility().clone();
+    assert_ne!(
+        t.text_scale.display.weight, t.defaults.font.weight,
+        "windows-11's display weight is not the body's"
+    );
+    let labels: Vec<egui::Rect> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "text role label")
+        .map(|r| r.rect)
+        .collect();
+    for (role, name) in [
+        (TextRole::Caption, "Caption"),
+        (TextRole::SectionHeading, "Section heading"),
+        (TextRole::DialogTitle, "Dialog title"),
+        (TextRole::Display, "Display"),
+    ] {
+        let weight = native_theme_egui::text_role_weight(&t, role);
+        let text = format!("{name}, weight {weight}");
+        let want = egui::FontId::new(
+            native_theme_egui::text_role_font(&t, role, &prefs).size,
+            weighted(&harness, weight, t.defaults.font.weight),
+        );
+        assert_eq!(galley_font(&harness, &text, &labels), want, "{text}");
+    }
+}
+
 /// The tables' header rows are `list_header_height` tall where the theme states one
-/// (material-3), else as tall as before (catppuccin-mocha): on the Basic page's painted table
-/// (its `basic.table.header` place) a row of the header font, `list.border.padding` above and
-/// below its line (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages'
-/// `TableBuilder`s a body row, egui's own `interact_size.y` where the theme states no
-/// `list.row_height`. There the header pushes the first body row down by its height, or its
-/// tallest cell where that is taller (egui_extras `layout.rs:165`), and the spacing after a row
-/// (`:181`).
+/// (material-3, macos-monterey), else a row's height where the theme states one, else as tall
+/// as before (catppuccin-mocha): on the Basic page's painted table (its `basic.table.header`
+/// place) a row of the header font, `list.border.padding` above and below its line
+/// (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s a body
+/// row, egui's own `interact_size.y` where the theme states no `list.row_height`. There the
+/// header pushes the first body row down by its height, or its tallest cell where that is
+/// taller (egui_extras `layout.rs:165`), and the spacing after a row (`:181`). At a
+/// text-scaling factor of 1.5 a stated height grows to hold its label, as gpui's table rows
+/// grow ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
 /// A body row is no measure: it grows to a cell that wraps, as the Theme Map's leaf names do.
 #[test]
 fn the_tables_headers_take_the_themes_header_height() {
-    for preset in ["material-3", TEST_PRESET] {
-        let mut basic = open(
-            egui::Theme::Light,
-            cli(&[("--theme", preset), ("--tab", "basic")]),
-        );
-        basic.run_steps(4);
+    for (preset, factor) in [
+        ("material-3", 1.0),
+        (TEST_PRESET, 1.0),
+        ("material-3", 1.5),
+        (TEST_PRESET, 1.5),
+        ("macos-monterey", 1.5),
+    ] {
+        let basic = open_scaled(preset, "basic", factor);
         let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
         let stated = native_theme_egui::list_header_height(&t);
         assert_eq!(
             stated.is_some(),
-            preset == "material-3",
+            preset != TEST_PRESET,
             "{preset}: the preset's header height"
         );
         let l = &t.list;
-        let header_row = l.row_height.unwrap_or(
-            l.header_font.size * t.defaults.line_height
-                + l.border.padding.top.unwrap_or(0.0)
-                + l.border.padding.bottom.unwrap_or(0.0),
-        );
-        let want = stated.unwrap_or(header_row);
+        let line_height = t.defaults.line_height;
+        let padding = l.border.padding.top.unwrap_or(0.0) + l.border.padding.bottom.unwrap_or(0.0);
+        let size =
+            native_theme_egui::list_header_font(&t, basic.state().atlas.accessibility()).size;
+        let want = match stated.or(l.row_height) {
+            Some(h) => grown(
+                h,
+                factor,
+                l.header_font.size,
+                line_height,
+                padding,
+                t.separator.line_width,
+            ),
+            None => size * line_height + padding,
+        };
         let placed = basic.state().registry.places()["basic.table.header"];
         assert!(
             (placed.height() - want).abs() <= 0.5,
-            "{preset}: the Basic table's header is {} tall, want {want}",
+            "{preset} at {factor}: the Basic table's header is {} tall, want {want}",
             placed.height()
         );
 
         // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
         // scheme (src/style/roles.rs, `row_height`)
         let own = egui::Theme::Light.default_style().spacing.interact_size.y;
-        let row = l.row_height.unwrap_or(own);
-        let header = stated.unwrap_or(row);
+        let header = match stated.or(l.row_height) {
+            Some(h) => grown(h, factor, l.header_font.size, line_height, 0.0, 0.0),
+            None => own,
+        };
         for (tab, header_kind, cell_kind) in [
             ("data", "table header", "table cell"),
             ("theme-map", "theme map header", "theme map cell"),
         ] {
-            let mut page = open(
-                egui::Theme::Light,
-                cli(&[("--theme", preset), ("--tab", tab)]),
-            );
-            page.run_steps(4);
+            let page = open_scaled(preset, tab, factor);
             let records = page.state().registry.records();
             let of_kind = |kind: &'static str| records.iter().filter(move |r| r.info.kind == kind);
             let top = |kind| {
@@ -2560,11 +2725,95 @@ fn the_tables_headers_take_the_themes_header_height() {
             let pushed = top(cell_kind) - top(header_kind);
             assert!(
                 (pushed - (header + gap)).abs() <= 0.5,
-                "{preset} {tab}: the header pushes the first row {pushed}, want {header} and \
-                 the {gap} gap"
+                "{preset} at {factor} {tab}: the header pushes the first row {pushed}, want \
+                 {header} and the {gap} gap"
             );
         }
     }
+}
+
+/// M9-150's class in egui: a stated row height holds its text at every text scale, as gpui's
+/// list and menu rows do (`geometry::list_item`, `geometry::menu_item`: the stated height at a
+/// factor of 1 or less, a minimum around the drawn text and padding above it) and as the iced
+/// showcase's Basic list and window menu rows do. At 1 the Basic list's rows are
+/// `list.row_height` (macos-monterey, material-3) and the window's menu rows at least
+/// `menu.row_height` (adwaita, macos-monterey, material-3): egui's `Button` takes the stated
+/// height as its least (`interact_size.y`) and grows past it to hold its text and padding, as
+/// macos-monterey's 22 px row does at 1 for its 17.33 px menu font; at 1.5 and 1.75 each is the
+/// stated height or the line box of its font at its scaled size and `defaults.line_height`,
+/// rounded up, plus its padding (`list.border.padding`, the menu's button padding), whichever is
+/// more, computed from the theme at test time ([`grown`]): 1.75 puts macos-monterey's menu line
+/// box at 36.09, which egui's own growth would leave a pixel short of the rounded-up 37.
+#[test]
+fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
+    let mut faults = Vec::new();
+    let mut seen = (0, 0);
+    for (preset, factor) in ["adwaita", "macos-monterey", "material-3"]
+        .into_iter()
+        .flat_map(|preset| [(preset, 1.0), (preset, 1.5), (preset, 1.75)])
+    {
+        let mut harness = open_scaled(preset, "basic", factor);
+        harness.state_mut().open_menu = Some("theme".to_string());
+        harness.run_steps(4);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let line_height = t.defaults.line_height;
+        let places = harness.state().registry.places();
+        let mut check = |id: &str, want: f32, least: bool| match places.get(id) {
+            Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
+            Some(rect) if least && rect.height() > want => {}
+            Some(rect) => faults.push(format!(
+                "{preset} at {factor}: {id} is {} tall, want {want}",
+                rect.height()
+            )),
+            None => faults.push(format!("{preset} at {factor}: {id} is not placed")),
+        };
+        let l = &t.list;
+        if let Some(h) = l.row_height {
+            seen.0 += 1;
+            // the list's rows take the List scope's button padding on a side the theme leaves
+            // unstated (`pages/basic.rs`, `row_metrics`), which the List role leaves the base
+            // style's
+            let own = harness.ctx.global_style().spacing.button_padding.y;
+            let padding =
+                l.border.padding.top.unwrap_or(own) + l.border.padding.bottom.unwrap_or(own);
+            check(
+                "basic.list.row_1",
+                egui::emath::GuiRounding::round_ui(grown(
+                    h,
+                    factor,
+                    l.item_font.size,
+                    line_height,
+                    padding,
+                    0.0,
+                )),
+                false,
+            );
+        }
+        let m = &t.menu;
+        if let Some(h) = m.row_height {
+            seen.1 += 1;
+            // the menu scope's button padding above and below: a stated side and the border's
+            // width, egui's menu padding (0 vertically, `egui/src/containers/menu.rs:23`) on a
+            // side the theme leaves unstated (src/convert.rs, `to_button_padding`,
+            // `padding_with_border`)
+            let side = |stated: Option<f32>| stated.map_or(0.0, |v| v + m.border.line_width);
+            let padding = side(m.border.padding.top) + side(m.border.padding.bottom);
+            check(
+                "chrome.menu.theme.light",
+                grown(h, factor, m.font.size, line_height, padding, 0.0),
+                factor <= 1.0,
+            );
+        }
+    }
+    assert!(
+        seen.0 > 0 && seen.1 > 0,
+        "no preset states a row height: {seen:?}"
+    );
+    assert!(faults.is_empty(), "{faults:#?}");
 }
 
 /// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest

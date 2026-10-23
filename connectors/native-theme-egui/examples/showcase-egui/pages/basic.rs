@@ -7,12 +7,13 @@
 
 use egui::Button;
 use egui::widget_style::{Classes, WidgetState};
+use native_theme::AccessibilityPreferences;
 use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_height,
-    text_area_frame,
+    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_font,
+    list_header_height, text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
@@ -25,6 +26,7 @@ use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
+use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -1106,9 +1108,8 @@ fn separator(reg: &mut Registry, ui: &mut egui::Ui) {
 
 /// The List group.
 fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.list.heading", "List");
-    list(reg, state, t, ui);
+    list(reg, state, atlas, ui);
 }
 
 /// The Icons group's first row: three icon-only tool buttons, as the toolbar's
@@ -1297,9 +1298,8 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
 
 /// The Table group.
 fn table_group(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.table.heading", "Table");
-    table(reg, t, ui);
+    table(reg, atlas, ui);
 }
 
 /// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
@@ -1363,26 +1363,36 @@ fn list_frame(l: &native_theme::theme::ResolvedListTheme) -> egui::Frame {
         ))
 }
 
-/// A list row's height and its text's inset: `list.row_height` where the theme states it, else
-/// as tall as its content — one line of the item font, `defaults.line_height` of its size, and
-/// `list.border.padding` above and below it, the platform's "sizes to content"
-/// (docs/platform-facts.md §2.15) — its text `list.border.padding.left` in. A side the theme
-/// leaves unstated is `own`'s: for the list what egui gives a selectable row there, the scope's
-/// `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three
-/// showcases lay their tables out.
+/// A list or table row's height and its text's inset: `stated` where the theme states the
+/// row's height (`list.row_height`, `list.header_height`), grown above a text scale of 1 to
+/// hold the row's line, its padding and `rule`, the width of a line drawn inside it, as gpui's
+/// table and list rows grow and the iced showcase's (`rows::scaled_height`, over `size`, the
+/// font's stated size, and `prefs`); else as tall as its content — one line of `font`, the
+/// font as drawn, `defaults.line_height` of its size, and `list.border.padding` above and below
+/// it, the platform's "sizes to content" (docs/platform-facts.md §2.15) — its text
+/// `list.border.padding.left` in. A side the theme leaves unstated is `own`'s: for the list what
+/// egui gives a selectable row there, the scope's `button_padding`
+/// (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three showcases lay
+/// their tables out.
 fn row_metrics(
     t: &native_theme_egui::ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+    (stated, size): (Option<f32>, f32),
     font: &egui::FontId,
     own: egui::Vec2,
+    rule: f32,
 ) -> (f32, f32, f32) {
-    let l = &t.list;
-    let padding = &l.border.padding;
-    let line = font.size * t.defaults.line_height;
-    let content = line + padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
+    let padding = &t.list.border.padding;
+    let line_height = t.defaults.line_height;
+    let line = font.size * line_height;
+    let padding_y = padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
+    let height = stated.map_or(line + padding_y, |h| {
+        rows::scaled_height(h, prefs, size, line_height, padding_y, rule)
+    });
     // On egui's layout grid (`emath::GUI_ROUNDING`), as `allocate_exact_size` lays each row out,
     // so `n` rows are `n` row heights tall.
     (
-        egui::emath::GuiRounding::round_ui(l.row_height.unwrap_or(content)),
+        egui::emath::GuiRounding::round_ui(height),
         padding.left.unwrap_or(own.x),
         line,
     )
@@ -1394,12 +1404,8 @@ fn row_metrics(
 /// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
 /// `list.selection_background` in `list.selection_text_color` while selected and with
 /// `list.hover_background` in `list.hover_text_color` while hovered.
-fn list(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    t: &native_theme_egui::ResolvedTheme,
-    ui: &mut egui::Ui,
-) {
+fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
     let mut rows_drawn: Vec<egui::Response> = Vec::new();
     let mut bar = None;
@@ -1411,7 +1417,14 @@ fn list(
         "List",
         |ui, rows, reg| {
             let font = egui::TextStyle::Body.resolve(ui.style());
-            let (row_height, inset, line) = row_metrics(t, &font, ui.spacing().button_padding);
+            let (row_height, inset, line) = row_metrics(
+                t,
+                atlas.accessibility(),
+                (l.row_height, l.item_font.size),
+                &font,
+                ui.spacing().button_padding,
+                0.0,
+            );
             let frame = list_frame(l);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             let visible = row_height * LIST_VISIBLE as f32;
@@ -1561,13 +1574,16 @@ fn paint_cell_text(
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
 /// stripes), so it is painted here as the list's rows are: the header in
-/// `list.header_background` and `list.header_font`, `list_header_height` tall where the theme
-/// states it and `row_metrics` tall else, the rows `row_metrics` tall in
+/// `list.header_background` and `list.header_font` at its weight and scaled size
+/// (`list_header_font`), `list_header_height` tall where the theme states it, else a row
+/// (`row_metrics`, of the header font), the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
 /// `list.selection_text_color`; a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
-fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui::Ui) {
+fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let prefs = atlas.accessibility();
     let l = &t.list;
     let mut places: Vec<(String, egui::Rect)> = Vec::new();
     let frame_response = demo::scoped_container(
@@ -1579,17 +1595,29 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
         |ui, _rows, _reg| {
             let item_font = egui::TextStyle::Body.resolve(ui.style());
             let header_font = egui::FontId::new(
-                l.header_font.size,
+                list_header_font(t, prefs).size,
                 demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
             );
-            let (row_height, inset, line) = row_metrics(t, &item_font, egui::Vec2::ZERO);
-            let (header_row, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
-            // `list.header_height` where the theme states it, on the layout grid as the rows
-            // are; else the header is a row
-            let header_height =
-                list_header_height(t).map_or(header_row, egui::emath::GuiRounding::round_ui);
             let grid = to_color32(l.grid_color);
             let grid_width = t.separator.line_width;
+            let (row_height, inset, line) = row_metrics(
+                t,
+                prefs,
+                (l.row_height, l.item_font.size),
+                &item_font,
+                egui::Vec2::ZERO,
+                0.0,
+            );
+            // `list.header_height` where the theme states it, else the header is a row; the
+            // grid's line under it lies inside it
+            let (header_height, _, header_line) = row_metrics(
+                t,
+                prefs,
+                (list_header_height(t).or(l.row_height), l.header_font.size),
+                &header_font,
+                egui::Vec2::ZERO,
+                grid_width,
+            );
             let frame = list_frame(l);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             frame

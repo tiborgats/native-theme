@@ -3,10 +3,7 @@
 //! and egui_extras's code view in the base style.
 
 use egui_extras::syntax_highlighting::{CodeTheme, code_view_ui};
-use native_theme_egui::{
-    Role, RoleVariant, TextRole, ThemeAtlas, text_role_font, text_role_line_height,
-    text_role_weight,
-};
+use native_theme_egui::{Role, RoleVariant, TextRole, ThemeAtlas, text_role_weight};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -28,7 +25,6 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
-    let prefs = atlas.accessibility();
     let normal = RoleVariant::Normal;
 
     caption(reg, ui, "Label (the base style)");
@@ -60,13 +56,12 @@ pub(crate) fn show(
         ui,
         "Text roles (text_role_font, text_role_line_height, text_role_weight)",
     );
+    // Each label at the weight it names, as the Basic page's Typography lines are: its size and
+    // line height through `text_role_font` and `text_role_line_height`, its weight through the
+    // face the showcase registers at it (`demo::role_text`).
     for (role, name) in TEXT_ROLES {
-        let font = text_role_font(t, role, prefs);
-        let line_height = text_role_line_height(t, role, prefs);
         let weight = text_role_weight(t, role);
-        let text = egui::RichText::new(format!("{name}, weight {weight}"))
-            .font(font.clone())
-            .line_height(Some(line_height));
+        let text = demo::role_text(ui, role, format!("{name}, weight {weight}"));
         demo::base(reg, ui, "text role label", |ui| ui.label(text));
     }
 
