@@ -1477,6 +1477,74 @@ fn the_watchers_start_error_is_a_note_an_install_keeps() {
     assert!(harness.state().theme_errors().is_empty());
     let note = format!("OS theme changes are not followed: {}", watch_failure());
     assert!(harness.query_by_label(&note).is_some(), "the note is shown");
+    let visuals = harness.ctx.global_style().visuals.clone();
+    let colours: Vec<egui::Color32> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text) if text.galley.job.text == note => {
+                text.galley.job.sections.first().map(|s| {
+                    if s.format.color == egui::Color32::PLACEHOLDER {
+                        text.fallback_color
+                    } else {
+                        s.format.color
+                    }
+                })
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        colours,
+        vec![visuals.text_color()],
+        "the note is drawn in the body text's colour, not as an error ({:?})",
+        visuals.error_fg_color
+    );
+}
+
+/// M9-114, M9-115: a failed pick is published, so the selection the watcher rebuilds is the one
+/// the Theme row names. A rebuild of the theme still drawn is then stale: it reinstalls the pick,
+/// which fails again, and the pick's error stays. A rebuild of the pick fails too and installs
+/// nothing.
+#[cfg(feature = "watch")]
+#[test]
+fn a_failed_picks_error_stays_through_the_watchers_rebuilds() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let drawn = app.atlas.name().to_string();
+    let read = app.generation();
+    app.settings.theme = ThemeChoice::Preset("no-such-preset".to_string());
+    app.install(&ctx);
+    let error = app.theme_error.clone();
+    assert!(error.is_some(), "the pick must fail");
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), drawn);
+    assert_eq!(app.theme_error, error, "a rebuild of the theme drawn");
+    App::rebuild_selected(&app.selection, &app.rebuilt).unwrap_err();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), drawn);
+    assert_eq!(app.theme_error, error, "a rebuild of the failed pick");
+}
+
+/// The watcher's rebuild reads no mode (`App::rebuild_atlas`), so a mode switch publishes nothing:
+/// a rebuild in flight across it is current and is installed, not dropped for a rebuild of the
+/// same selection.
+#[cfg(feature = "watch")]
+#[test]
+fn a_mode_switch_leaves_a_rebuild_in_flight_current() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    app.set_mode(ModeChoice::Dark, &ctx);
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
 }
 
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag

@@ -160,8 +160,10 @@ impl Settings {
     }
 }
 
-/// What the watcher's `rebuild` reads: the settings the UI thread last installed or switched
-/// the mode to, and their generation, which each publish bumps.
+/// What the watcher's `rebuild` reads: the settings the UI thread last installed or tried to
+/// install, so a hand-off it builds is a rebuild of the choice the Theme row names, and their
+/// generation, which each publish bumps. A mode switch publishes nothing, since the rebuild
+/// reads only `theme` and `prefs` (`App::rebuild_atlas`), so `settings.mode` here can be stale.
 #[cfg(feature = "watch")]
 #[derive(Debug)]
 pub(crate) struct Selection {
@@ -354,8 +356,8 @@ pub(crate) struct App {
     /// system menu bar's, which the flag does not reach.
     #[cfg_attr(all(target_os = "macos", not(test)), allow(dead_code))]
     pub(crate) open_menu: Option<String>,
-    /// What the watcher's `rebuild` reads: the UI thread publishes it on each install and mode
-    /// switch.
+    /// What the watcher's `rebuild` reads: the UI thread publishes it on each install, failed
+    /// or not.
     #[cfg(feature = "watch")]
     pub(crate) selection: Arc<RwLock<Selection>>,
     /// What the watcher's `rebuild` has returned.
@@ -372,7 +374,8 @@ pub(crate) struct App {
     #[cfg(feature = "watch")]
     pub(crate) watcher_error: Option<String>,
     /// The tests' stand-in for the running watcher's `ThemeWatcher::last_error`: the tests start
-    /// no watcher.
+    /// no watcher. Unlike the watcher's, it is never reset by a later rebuild, so the tests prove
+    /// the record's count gates the banner's line.
     #[cfg(all(test, feature = "watch"))]
     pub(crate) watcher_last_error: Option<String>,
     /// The macOS system menu bar, owned here: a muda `Menu` holds `Rc`s and is not `Send`.
@@ -516,7 +519,9 @@ impl App {
     /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
     /// watcher and `ReloadTheme` clear before they rebuild) and the overrides, whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
-    /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
+    /// for `default`, the platform preset it builds on (`SystemTheme::preset`). It reads
+    /// `theme` and `prefs` alone, not `mode`, which the watcher's selection relies on: a mode
+    /// switch publishes nothing to it.
     pub(crate) fn rebuild_atlas(
         settings: &Settings,
     ) -> native_theme::Result<(ThemeAtlas, Option<String>)> {
@@ -558,8 +563,12 @@ impl App {
                 }
             }
             Err(error) => {
-                // The installed atlas, its fonts and the semibold faces stay as they are.
+                // The installed atlas, its fonts and the semibold faces stay as they are; the
+                // failed choice is published, so a rebuild of the theme still drawn is stale
+                // and keeps this error.
                 self.theme_error = Some(error.to_string());
+                #[cfg(feature = "watch")]
+                self.publish_selection();
             }
         }
     }
@@ -590,12 +599,11 @@ impl App {
 
     /// Switch the mode: egui's own theme call and nothing else (§10.4's side-panel row). The
     /// atlas carries both schemes and egui picks one (§4.6), so nothing is rebuilt, the OS is
-    /// not read again, and a mode switch cannot fail.
+    /// not read again, and a mode switch cannot fail. Nothing is published to the watcher, whose
+    /// rebuild reads no mode, so a rebuild under way stays current.
     pub(crate) fn set_mode(&mut self, mode: ModeChoice, ctx: &egui::Context) {
         self.settings.mode = mode;
         ctx.set_theme(self.theme_preference());
-        #[cfg(feature = "watch")]
-        self.publish_selection();
     }
 
     fn theme_preference(&self) -> egui::ThemePreference {
