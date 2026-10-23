@@ -70,8 +70,8 @@ use native_theme::icons::{
     list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{
-    ArrowSide, FontStyle, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedTheme,
+    ArrowSide, FontStyle, IconSet, LayoutTheme, ResolvedFontSpec, ResolvedListTheme,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
 };
 use native_theme_iced::icons::to_svg_handle;
 use native_theme_iced::palette::to_color;
@@ -4725,7 +4725,8 @@ fn tab_style(
 /// `list.selection_background` and `.selection_text_color` while selected;
 /// `list.hover_background` and `.hover_text_color` under the pointer;
 /// `list.disabled_text_color` disabled. Square: the model rounds the list's
-/// frame, not its rows.
+/// frame, not its rows; the Basic list paints this fill itself, rounded
+/// where it meets the frame ([`list_row_fill`]).
 fn list_row(
     resolved: &ResolvedTheme,
     selected: bool,
@@ -4767,6 +4768,265 @@ fn list_frame(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style +
         background: Some(iced::Background::Color(fill)),
         border,
         ..container::Style::default()
+    }
+}
+
+/// The radius of a list frame's inside, `list.border.corner_radius` less
+/// `list.border.line_width`, 0 where that is not a positive length: iced
+/// draws a border inside its quad, so the line's inner edge is rounded that
+/// much about the same centres (iced_wgpu 0.14.0
+/// `src/shader/quad/solid.wgsl:78-83`, iced_tiny_skia 0.14.1
+/// `src/engine.rs:204-234`), and the Basic list's and table's frames pad
+/// their content by the line's width (`view_basic`, [`basic_table`]).
+fn inner_radius(l: &ResolvedListTheme) -> f32 {
+    let radius = l.border.corner_radius - l.border.line_width;
+    if radius.is_finite() {
+        radius.max(0.0)
+    } else {
+        0.0
+    }
+}
+
+/// `radius` on the corners `[top_left, top_right, bottom_left,
+/// bottom_right]` marks, square on the others.
+fn rounded_at(radius: f32, [nw, ne, sw, se]: [bool; 4]) -> iced::border::Radius {
+    let at = |rounded: bool| if rounded { radius } else { 0.0 };
+    iced::border::Radius {
+        top_left: at(nw),
+        top_right: at(ne),
+        bottom_right: at(se),
+        bottom_left: at(sw),
+    }
+}
+
+/// The part of a Basic list row, `row`, that the list's view, `view`,
+/// shows, both in the coordinates the rows draw in, and its corners:
+/// rounded by `radius` where they meet a corner of `edges`, the frame's
+/// inside, square elsewhere; `None` where the view shows none of the row.
+/// An edge meets the frame's within half a pixel: the scrollable rounds its
+/// translation to whole pixels (iced_widget 0.14.2
+/// `src/scrollable.rs:1876-1903`), so a row scrolled flush with the frame
+/// can lie that far off it. A row is far taller, and a solid bar's groove
+/// far wider, than that.
+fn shown_fill(
+    row: iced::Rectangle,
+    view: iced::Rectangle,
+    edges: iced::Rectangle,
+    radius: f32,
+) -> Option<(iced::Rectangle, iced::border::Radius)> {
+    let shown = row.intersection(&view)?;
+    let meets = |a: f32, b: f32| (a - b).abs() <= 0.5;
+    let top = meets(shown.y, edges.y);
+    let bottom = meets(shown.y + shown.height, edges.y + edges.height);
+    let left = meets(shown.x, edges.x);
+    let right = meets(shown.x + shown.width, edges.x + edges.width);
+    Some((
+        shown,
+        rounded_at(
+            radius,
+            [top && left, top && right, bottom && left, bottom && right],
+        ),
+    ))
+}
+
+/// Where the Basic list's scrollable draws, which its rows' fills read
+/// ([`list_row_fill`]): its bounds, the frame's inside, and the part of
+/// them the page shows. Set as the scrollable draws, before its rows
+/// ([`Underlay`]).
+type ListView = std::rc::Rc<std::cell::Cell<Option<(iced::Rectangle, iced::Rectangle)>>>;
+
+/// What [`Underlay`] paints before its content: the renderer, the theme,
+/// the content's bounds, the cursor and the viewport the content draws in.
+type UnderPaint<'a> = Box<
+    dyn Fn(&mut iced::Renderer, &Theme, iced::Rectangle, iced::mouse::Cursor, &iced::Rectangle)
+        + 'a,
+>;
+
+/// A Basic list row's fill, painted under the row's button, which paints
+/// none ([`Underlay`]): [`list_row`]'s background for the row in the state
+/// the button takes from the cursor (Hovered and Pressed both need the
+/// cursor over the row, iced_widget 0.14.2 `src/button.rs:342-354`, and
+/// [`list_row`] fills them alike), over the part of the row the list shows,
+/// rounded by the frame's inner radius where it meets the frame's inside
+/// ([`shown_fill`]), as egui's list rows are. The rows draw in the
+/// scrollable's shown part moved by its scroll (iced_widget 0.14.2
+/// `src/scrollable.rs:1152`, `:1198-1202`), so the frame's inside, the
+/// scrollable's bounds ([`ListView`]), moves with it.
+fn list_row_fill(resolved: &ResolvedTheme, selected: bool, view: ListView) -> UnderPaint<'static> {
+    let style = list_row(resolved, selected);
+    let radius = inner_radius(&resolved.list);
+    Box::new(move |renderer, theme, bounds, cursor, viewport| {
+        use iced::advanced::Renderer as _;
+        let status = if cursor.is_over(bounds) {
+            button::Status::Hovered
+        } else {
+            button::Status::Active
+        };
+        let style = style(theme, status);
+        let Some(background) = style.background else {
+            return;
+        };
+        let Some((inside, shown)) = view.get() else {
+            return;
+        };
+        let edges = iced::Rectangle {
+            x: inside.x + (viewport.x - shown.x),
+            y: inside.y + (viewport.y - shown.y),
+            ..inside
+        };
+        let Some((rect, radius)) = shown_fill(bounds, *viewport, edges, radius) else {
+            return;
+        };
+        #[cfg(test)]
+        LIST_FILLS.with_borrow_mut(|fills| fills.push((bounds, rect, radius, background)));
+        renderer.fill_quad(
+            iced::advanced::renderer::Quad {
+                bounds: rect,
+                border: iced::Border {
+                    radius,
+                    ..style.border
+                },
+                shadow: style.shadow,
+                snap: style.snap,
+            },
+            background,
+        );
+    })
+}
+
+#[cfg(test)]
+thread_local! {
+    /// The fills [`list_row_fill`] has painted on this thread: each row's
+    /// bounds, the rectangle filled, its corners and its colour.
+    static LIST_FILLS: std::cell::RefCell<
+        Vec<(iced::Rectangle, iced::Rectangle, iced::border::Radius, iced::Background)>,
+    > = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// `content`, drawn over what `paint` paints first; in all else the
+/// content's own widget.
+struct Underlay<'a> {
+    content: Element<'a, Message>,
+    paint: UnderPaint<'a>,
+}
+
+impl<'a> Underlay<'a> {
+    fn new(content: impl Into<Element<'a, Message>>, paint: UnderPaint<'a>) -> Self {
+        Self {
+            content: content.into(),
+            paint,
+        }
+    }
+}
+
+impl iced::advanced::Widget<Message, Theme, iced::Renderer> for Underlay<'_> {
+    fn tag(&self) -> iced::advanced::widget::tree::Tag {
+        self.content.as_widget().tag()
+    }
+
+    fn state(&self) -> iced::advanced::widget::tree::State {
+        self.content.as_widget().state()
+    }
+
+    fn children(&self) -> Vec<iced::advanced::widget::Tree> {
+        self.content.as_widget().children()
+    }
+
+    fn diff(&self, tree: &mut iced::advanced::widget::Tree) {
+        self.content.as_widget().diff(tree);
+    }
+
+    fn size(&self) -> iced::Size<Length> {
+        self.content.as_widget().size()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        self.content.as_widget().size_hint()
+    }
+
+    fn layout(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        renderer: &iced::Renderer,
+        limits: &iced::advanced::layout::Limits,
+    ) -> iced::advanced::layout::Node {
+        self.content.as_widget_mut().layout(tree, renderer, limits)
+    }
+
+    fn draw(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        renderer: &mut iced::Renderer,
+        theme: &Theme,
+        style: &iced::advanced::renderer::Style,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+    ) {
+        (self.paint)(renderer, theme, layout.bounds(), cursor, viewport);
+        self.content
+            .as_widget()
+            .draw(tree, renderer, theme, style, layout, cursor, viewport);
+    }
+
+    fn operate(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        renderer: &iced::Renderer,
+        operation: &mut dyn iced::advanced::widget::Operation,
+    ) {
+        self.content
+            .as_widget_mut()
+            .operate(tree, layout, renderer, operation);
+    }
+
+    fn update(
+        &mut self,
+        tree: &mut iced::advanced::widget::Tree,
+        event: &iced::Event,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        renderer: &iced::Renderer,
+        clipboard: &mut dyn iced::advanced::Clipboard,
+        shell: &mut iced::advanced::Shell<'_, Message>,
+        viewport: &iced::Rectangle,
+    ) {
+        self.content.as_widget_mut().update(
+            tree, event, layout, cursor, renderer, clipboard, shell, viewport,
+        );
+    }
+
+    fn mouse_interaction(
+        &self,
+        tree: &iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'_>,
+        cursor: iced::mouse::Cursor,
+        viewport: &iced::Rectangle,
+        renderer: &iced::Renderer,
+    ) -> iced::mouse::Interaction {
+        self.content
+            .as_widget()
+            .mouse_interaction(tree, layout, cursor, viewport, renderer)
+    }
+
+    fn overlay<'b>(
+        &'b mut self,
+        tree: &'b mut iced::advanced::widget::Tree,
+        layout: iced::advanced::Layout<'b>,
+        renderer: &iced::Renderer,
+        viewport: &iced::Rectangle,
+        translation: iced::Vector,
+    ) -> Option<iced::advanced::overlay::Element<'b, Message, Theme, iced::Renderer>> {
+        self.content
+            .as_widget_mut()
+            .overlay(tree, layout, renderer, viewport, translation)
+    }
+}
+
+impl<'a> From<Underlay<'a>> for Element<'a, Message> {
+    fn from(underlay: Underlay<'a>) -> Self {
+        Element::new(underlay)
     }
 }
 
@@ -10510,17 +10770,30 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         None => label_line + row_pad.y(),
     };
     const LIST_ROW_IDS: [&str; 3] = ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"];
+    // Where the scrollable draws, for the rows' fills, which each row paints
+    // under its button, rounded where it meets the frame (`list_row_fill`).
+    let list_view = ListView::default();
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
-        let item = button(
-            text(format!("Item {}", i.saturating_add(1)))
-                .typeset(&list_t.item_font, a11y)
-                .line_height(iced::Pixels(label_line)),
-        )
-        .padding(row_pad)
-        .width(Fill)
-        .height(Length::Fixed(row_height))
-        .style(list_row(resolved, state.basic_list_selected == Some(i)))
-        .on_press(Message::BasicListSelected(i));
+        let selected = state.basic_list_selected == Some(i);
+        let item = Underlay::new(
+            button(
+                text(format!("Item {}", i.saturating_add(1)))
+                    .typeset(&list_t.item_font, a11y)
+                    .line_height(iced::Pixels(label_line)),
+            )
+            .padding(row_pad)
+            .width(Fill)
+            .height(Length::Fixed(row_height))
+            .style({
+                let row = list_row(resolved, selected);
+                move |theme, status| button::Style {
+                    background: None,
+                    ..row(theme, status)
+                }
+            })
+            .on_press(Message::BasicListSelected(i)),
+            list_row_fill(resolved, selected, list_view.clone()),
+        );
         match LIST_ROW_IDS.get(i) {
             Some(id) => tagged(id, item).into(),
             None => item.into(),
@@ -10550,12 +10823,21 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         // container's padding.
         tagged(
             "basic.list.frame",
-            container(
+            container(Underlay::new(
                 scrollable(column(rows))
                     .direction(scrollable::Direction::Vertical(styles::scrollbar(resolved)))
                     .style(styles::scrollable(resolved))
                     .height(Length::Fixed(BASIC_LIST_VISIBLE * row_height)),
-            )
+                Box::new(
+                    move |_: &mut iced::Renderer,
+                          _: &Theme,
+                          bounds: iced::Rectangle,
+                          _: iced::mouse::Cursor,
+                          viewport: &iced::Rectangle| {
+                        list_view.set(bounds.intersection(viewport).map(|shown| (bounds, shown)));
+                    },
+                ),
+            ))
             .padding(list_t.border.line_width)
             .width(Length::Fixed(BASIC_WIDE))
             .style(list_frame(resolved)),
@@ -10866,8 +11148,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 /// padded by `list.border.padding`, none on a side it leaves unstated; a
 /// `list.grid_color` line between the columns and under the header,
 /// `separator.line_width` thick (the theme states no grid width), inside the
-/// cell it closes; the frame `list.border` on `list.background_color`. The
-/// table the gpui and egui showcases build.
+/// cell it closes; the frame `list.border` on `list.background_color`, the
+/// header's fill rounded at the top and the last row's at the bottom where
+/// they meet it ([`table_row_style`]). The table the gpui and egui
+/// showcases build.
 fn basic_table(state: &State) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
@@ -10937,17 +11221,15 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         &l.header_font,
         line,
     );
-    let (head_ink, head_fill) = (colours.header_ink, colours.header_fill);
+    let head_ink = colours.header_ink;
+    let head_style = table_row_style(resolved, TableRow::Header);
     let header = tagged(
         "basic.table.header",
         container(row![
             cell("Name", &l.header_font, head_ink, true, true, head_h),
             cell("Size", &l.header_font, head_ink, false, true, head_h),
         ])
-        .style(move |_: &Theme| container::Style {
-            background: Some(iced::Background::Color(head_fill)),
-            ..container::Style::default()
-        }),
+        .style(move |_: &Theme| head_style),
     )
     .node("basic.table.header.name", &[0, 0])
     .node("basic.table.header.size", &[0, 1]);
@@ -10956,22 +11238,19 @@ fn basic_table(state: &State) -> Element<'_, Message> {
         .iter()
         .enumerate()
         .map(|(i, (id, name, size))| {
-            let selected = i == BASIC_TABLE_SELECTED;
-            let (fill, ink) = if selected {
-                (Some(colours.selected_fill), colours.selected_ink)
+            let ink = if i == BASIC_TABLE_SELECTED {
+                colours.selected_ink
             } else {
-                (None, colours.row_ink)
+                colours.row_ink
             };
+            let row_style = table_row_style(resolved, TableRow::Body(i));
             tagged(
                 id,
                 container(row![
                     cell(name, &l.item_font, ink, true, false, row_h),
                     cell(size, &l.item_font, ink, false, false, row_h),
                 ])
-                .style(move |_: &Theme| container::Style {
-                    background: fill.map(iced::Background::Color),
-                    ..container::Style::default()
-                }),
+                .style(move |_: &Theme| row_style),
             )
             .into()
         });
@@ -11056,6 +11335,41 @@ fn disabled_switch_label(resolved: &ResolvedTheme) -> Color {
     let mut c = to_color(resolved.defaults.disabled_text_color);
     c.a *= resolved.switch.disabled_opacity;
     c
+}
+
+/// A row of the Basic table: its header, or its body row of that index in
+/// [`BASIC_TABLE_ROWS`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum TableRow {
+    Header,
+    Body(usize),
+}
+
+/// The container style of the Basic table's `row`: the header on
+/// `list.header_background`, the selected row ([`BASIC_TABLE_SELECTED`]) on
+/// `list.selection_background`, the others unfilled; the header rounded at
+/// the top and the last row at the bottom by the frame's inner radius
+/// ([`inner_radius`]), where they meet the frame, square elsewhere.
+fn table_row_style(resolved: &ResolvedTheme, row: TableRow) -> container::Style {
+    let colours = TableColours::of(resolved);
+    let (fill, corners) = match row {
+        TableRow::Header => (Some(colours.header_fill), [true, true, false, false]),
+        TableRow::Body(i) => {
+            let last = i.saturating_add(1) == BASIC_TABLE_ROWS.len();
+            (
+                (i == BASIC_TABLE_SELECTED).then_some(colours.selected_fill),
+                [false, false, last, last],
+            )
+        }
+    };
+    container::Style {
+        background: fill.map(iced::Background::Color),
+        border: iced::Border {
+            radius: rounded_at(inner_radius(&resolved.list), corners),
+            ..iced::Border::default()
+        },
+        ..container::Style::default()
+    }
 }
 
 /// The colours [`basic_table`] draws in, each the list's.
@@ -21169,6 +21483,233 @@ mod tests {
             }
             assert!(failures.is_empty(), "{failures:#?}");
         })
+    }
+
+    /// M9-158: the Basic table's and list's fills keep inside their frames'
+    /// rounded corners, as egui's do (M9-110). Each frame is rounded by
+    /// `list.border.corner_radius` and pads its content by its
+    /// `list.border.line_width` line, so its inside is rounded by the radius
+    /// less the width. Under adwaita, kde-breeze and macos-tahoe light, whose
+    /// list frames are rounded inside their lines (macos-tahoe's line is
+    /// 0.5 px wide, so its inside lies off the whole-pixel grid; iced lays
+    /// the rows out from it unrounded):
+    /// - the table's header container is rounded by the inner radius at the
+    ///   top and square at the bottom, the selected last row's at the bottom
+    ///   and square at the top, the first row's square
+    ///   (`table_row_style`, which `basic_table` styles them with);
+    /// - the list's selected row, as the Basic page draws it
+    ///   ([`LIST_FILLS`]), fills the part of the row the list shows, rounded
+    ///   where that meets the frame's inside: at rest the first row at the
+    ///   top, the third, the last shown, at the bottom and the second
+    ///   nowhere; scrolled half a row down, the first row's lower part at the
+    ///   top and the fourth row's upper part at the bottom; scrolled to the
+    ///   end, the last row at the bottom, where the scrollable's whole-pixel
+    ///   translation leaves it within half a pixel of the frame. On the right
+    ///   only where the bar floats over the rows (adwaita, macos-tahoe):
+    ///   kde-breeze's bar takes its groove beside them.
+    #[test]
+    fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
+        let corners = |nw: f32, ne: f32, sw: f32, se: f32| iced::border::Radius {
+            top_left: nw,
+            top_right: ne,
+            bottom_right: se,
+            bottom_left: sw,
+        };
+        assert_eq!(
+            BASIC_TABLE_SELECTED + 1,
+            BASIC_TABLE_ROWS.len(),
+            "the table's last row is selected"
+        );
+        const {
+            assert!(
+                BASIC_TABLE_SELECTED > 0,
+                "the table has a row above its last"
+            );
+            assert!(
+                BASIC_LIST_VISIBLE == 3.0 && BASIC_LIST_ITEMS > 4,
+                "the list shows three rows of more than four"
+            );
+        }
+        let size = Size::new(WINDOW_SIZE.0, 2000.0);
+        let mut bars = Vec::new();
+        let (mut off_grid, mut half_line) = (false, false);
+        let mut faults = Vec::new();
+        for preset in ["adwaita", "kde-breeze", "macos-tahoe"] {
+            let mut state = State {
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                side_panel_visible: false,
+                ..State::default()
+            };
+            assert!(
+                state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), AppColorMode::Light)
+            );
+            let r = state.current_resolved.clone();
+            let l = &r.list;
+            let inner = l.border.corner_radius - l.border.line_width;
+            assert!(
+                inner > 0.0,
+                "{preset}: the list's frame is rounded inside its line"
+            );
+            let floats = r.scrollbar.overlay_mode;
+            bars.push(floats);
+            half_line |= l.border.line_width.fract() != 0.0;
+
+            for (row, want) in [
+                (TableRow::Header, corners(inner, inner, 0.0, 0.0)),
+                (TableRow::Body(0), corners(0.0, 0.0, 0.0, 0.0)),
+                (
+                    TableRow::Body(BASIC_TABLE_SELECTED),
+                    corners(0.0, 0.0, inner, inner),
+                ),
+            ] {
+                let style = table_row_style(&r, row);
+                if style.border.radius != want {
+                    faults.push(format!(
+                        "{preset}: the table's {row:?}: {:?}, want {want:?}",
+                        style.border.radius
+                    ));
+                }
+                if style.background.is_some() == (row == TableRow::Body(0)) {
+                    faults.push(format!(
+                        "{preset}: the table's {row:?} is filled: {:?}",
+                        style.background
+                    ));
+                }
+            }
+
+            let selection = iced::Background::Color(to_color(l.selection_background));
+            let rect_of = |rects: &ElementRects, id: &str| match rects.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{preset}: {id} is not drawn"),
+            };
+            // The selected row's fills on a frame of the Basic page, scrolled
+            // `by` down first, the pointer away from the selected row.
+            let fills = |state: &mut State, selected: usize, by: Option<(f32, iced::Point)>| {
+                LIST_FILLS.with_borrow_mut(Vec::clear);
+                state.basic_list_selected = Some(selected);
+                let state = &*state;
+                let _ = frame_after(state, view(state), size, |ui| {
+                    if let Some((by, at)) = by {
+                        ui.point_at(at);
+                        let _ = ui.simulate([
+                            Event::Mouse(mouse::Event::CursorMoved { position: at }),
+                            Event::Mouse(mouse::Event::WheelScrolled {
+                                delta: mouse::ScrollDelta::Pixels { x: 0.0, y: -by },
+                            }),
+                        ]);
+                    }
+                });
+                LIST_FILLS
+                    .take()
+                    .into_iter()
+                    .filter(|(_, _, _, colour)| *colour == selection)
+                    .collect::<Vec<_>>()
+            };
+            let (_, rects, _) = frame_of(&state, view(&state), size);
+            let frame = rect_of(&rects, "basic.list.frame");
+            let row_1 = rect_of(&rects, "basic.list.row_1");
+            let w = l.border.line_width;
+            let inside = iced::Rectangle {
+                x: frame.x + w,
+                y: frame.y + w,
+                width: frame.width - 2.0 * w,
+                height: frame.height - 2.0 * w,
+            };
+            let rh = row_1.height;
+            let row = |i: usize| iced::Rectangle {
+                y: row_1.y + i as f32 * rh,
+                ..row_1
+            };
+            let left = |at: bool| if at { inner } else { 0.0 };
+            let right = |at: bool| if at && floats { inner } else { 0.0 };
+            let near = |a: iced::Rectangle, b: iced::Rectangle| {
+                (a.x - b.x).abs() < 0.01
+                    && (a.y - b.y).abs() < 0.01
+                    && (a.width - b.width).abs() < 0.01
+                    && (a.height - b.height).abs() < 0.01
+            };
+            let mut check = |what: String,
+                             found: Vec<(
+                iced::Rectangle,
+                iced::Rectangle,
+                iced::border::Radius,
+                iced::Background,
+            )>,
+                             bounds: iced::Rectangle,
+                             want_rect: iced::Rectangle,
+                             want: iced::border::Radius| {
+                if found.is_empty()
+                    || found.iter().any(|(b, rect, radius, _)| {
+                        !near(*b, bounds) || !near(*rect, want_rect) || *radius != want
+                    })
+                {
+                    faults.push(format!(
+                        "{preset}: {what}: the fills drawn {found:?}, want {want_rect:?} \
+                         rounded {want:?}"
+                    ));
+                }
+            };
+
+            let last = BASIC_LIST_VISIBLE as usize - 1;
+            for i in 0..=last {
+                let (top, bottom) = (i == 0, i == last);
+                check(
+                    format!("at rest, basic.list.row_{} selected", i + 1),
+                    fills(&mut state, i, None),
+                    row(i),
+                    row(i),
+                    corners(left(top), right(top), left(bottom), right(bottom)),
+                );
+            }
+
+            // Half a row down, a whole pixel: the first row's lower part at
+            // the top, the fourth row's upper part at the bottom; the pointer
+            // in the view's middle, over neither.
+            let by = (rh / 2.0).round();
+            let at = iced::Point::new(inside.center_x(), inside.center_y());
+            let view_at = |t: f32| iced::Rectangle {
+                y: inside.y + t,
+                ..inside
+            };
+            let shown = |i: usize, t: f32| row(i).intersection(&view_at(t)).unwrap_or(row(i));
+            check(
+                "half a row down, row 1 selected".to_owned(),
+                fills(&mut state, 0, Some((by, at))),
+                row(0),
+                shown(0, by),
+                corners(left(true), right(true), 0.0, 0.0),
+            );
+            check(
+                "half a row down, row 4 selected".to_owned(),
+                fills(&mut state, 3, Some((by, at))),
+                row(3),
+                shown(3, by),
+                corners(0.0, 0.0, left(true), right(true)),
+            );
+
+            // To the end: the scrollable's translation is the end's offset,
+            // five rows, rounded to a whole pixel.
+            let end = BASIC_LIST_ITEMS - 1;
+            let t = ((BASIC_LIST_ITEMS as f32 - BASIC_LIST_VISIBLE) * rh).round();
+            off_grid |= (t - (BASIC_LIST_ITEMS as f32 - BASIC_LIST_VISIBLE) * rh).abs() > 0.01;
+            check(
+                format!("at the end, row {} selected", end + 1),
+                fills(&mut state, end, Some((BASIC_LIST_ITEMS as f32 * rh, at))),
+                row(end),
+                shown(end, t),
+                corners(0.0, 0.0, left(true), right(true)),
+            );
+        }
+        assert!(
+            bars.contains(&true) && bars.contains(&false),
+            "a floating bar and one beside the rows: {bars:?}"
+        );
+        assert!(
+            off_grid,
+            "a list whose end the scrollable reaches by a rounded translation"
+        );
+        assert!(half_line, "a list line off the whole-pixel grid");
+        assert!(faults.is_empty(), "{faults:#?}");
     }
 
     /// The tables' stated heights hold their text at every text scale, as
