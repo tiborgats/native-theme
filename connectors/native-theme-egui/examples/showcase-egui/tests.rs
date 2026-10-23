@@ -3691,6 +3691,37 @@ fn a_capture_is_drawn_at_rest_under_the_pointer() {
     }
 }
 
+/// Reduce motion switched off after the user switched it on is installed: the atlas's
+/// `reduce_motion` was the user's request, so it goes back to the OS's reading. Where the OS
+/// requests reduced motion itself, the atlas keeps it on and the test cannot tell the two apart.
+#[test]
+fn a_switch_off_of_the_users_reduce_motion_request_installs() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    harness.state_mut().settings.prefs = Some(prefs);
+    harness.state_mut().install(&ctx);
+    harness
+        .state_mut()
+        .run_action(Action::OpenPreferences, &ctx);
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().atlas.accessibility().reduce_motion,
+        "the user's request was not installed"
+    );
+    harness
+        .get_by_role_and_label(Role::Switch, "Reduce motion")
+        .click();
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness.state().atlas.accessibility().reduce_motion,
+        native_theme::detect::accessibility_preferences().reduce_motion,
+        "the switch off kept the user's earlier request in the atlas"
+    );
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// the companion crate's, in `Role::Switch`, so a set flag is a toggled switch named by its
 /// row's title, and a click flips it; each sits right of its title.

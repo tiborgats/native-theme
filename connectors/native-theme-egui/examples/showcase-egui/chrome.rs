@@ -1805,7 +1805,10 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         app.settings.prefs = Some(prefs);
     }
     // A rebuild per pass of a drag would re-read the OS for `default` and rebuild the font
-    // atlas on every frame: the drag installs once, when it ends.
+    // atlas on every frame: the drag installs once, when it ends. The request is compared
+    // with the atlas's effective preferences: where the two are equal, an install would build
+    // the same atlas. An OR of the atlas's `reduce_motion` into the request would hide the
+    // user's switch-off of their own request, whose atlas holds the user's `true`.
     let differs = app
         .settings
         .prefs
