@@ -6543,6 +6543,144 @@ fn every_font_label_names_the_drawn_family() {
     }
 }
 
+/// `preset`'s atlas, built as `from_preset` builds it, from its two resolved variants with
+/// `edit` applied to each (handed its scheme): the resolved themes' fields are public, so a
+/// test can give a font a family no bundled preset states.
+fn edited_atlas(
+    preset: &str,
+    edit: impl Fn(egui::Theme, &mut native_theme_egui::ResolvedTheme),
+) -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (built, _) = from_preset(preset, false, &prefs).expect("a bundled preset builds");
+    let [mut light, mut dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| built.resolved_for(theme).clone());
+    edit(egui::Theme::Light, &mut light);
+    edit(egui::Theme::Dark, &mut dark);
+    let mut builder = native_theme_egui::ThemeAtlas::builder(built.name(), &light, &dark)
+        .layout(built.layout())
+        .accessibility(built.accessibility())
+        .icon_set(built.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = built.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// What egui draws a font whose stated family is not the one the font plan loaded for its kind
+/// in, as the showcase must name it: the face of the light variant's `defaults.font` (or
+/// `defaults.mono_font` for the monospace font), that family labelled by [`drawn_label`]
+/// (connector `fonts.rs`: the plan registers the light variant's two default families, and
+/// every `FontId` the connector hands out names `Proportional` or `Monospace`).
+fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
+    let light = harness.state().atlas.resolved_for(egui::Theme::Light);
+    let (font, planned) = if mono {
+        (
+            "the light variant's defaults.mono_font",
+            &light.defaults.mono_font.family,
+        )
+    } else {
+        (
+            "the light variant's defaults.font",
+            &light.defaults.font.family,
+        )
+    };
+    let planned = planned.to_string();
+    let family = drawn_label(harness, &planned, mono);
+    native_theme_showcase_support::status::DrawnFamily::OtherFont {
+        toolkit: "egui",
+        font,
+        family: &family,
+    }
+    .label(stated)
+}
+
+/// A widget font whose stated family is not the body's is named by the face egui draws it in,
+/// the body's, which is where egui draws every font but the monospace one (the connector's
+/// never-`Name` invariant, spec §8.1, §5.8 item 7): `button.font.family` set to "Noto Serif"
+/// on kde-breeze, as a reader's own widget font would state it (KDE's `menuFont`, Windows'
+/// menu font), hover the Basic "Button".
+#[test]
+fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let atlas = edited_atlas("kde-breeze", |_, t| {
+        t.button.font.family = "Noto Serif".into();
+    });
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    let label = other_font_label(&harness, "Noto Serif", false);
+    let pos = centre_of(&harness, "button (enabled)");
+    hover_and_settle(&mut harness, pos);
+    let font = info_row_value(&harness, "button.font");
+    assert!(
+        font.starts_with(&format!("{label} ")),
+        "the button.font row does not name the face egui draws, {label:?}: {font}"
+    );
+}
+
+/// Under a dark variant whose `defaults.font.family` is not the light one's, the status bar and
+/// the Theme tab name the face egui draws, the light variant's: the connector's font plan
+/// reads the light variant alone (`FontPlan::from_system(&light)`). No bundled preset or OS
+/// reader gives the two variants other families; the test sets one.
+#[test]
+fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
+    let mut harness = open(
+        egui::Theme::Dark,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let atlas = edited_atlas("kde-breeze", |theme, t| {
+        if theme == egui::Theme::Dark {
+            t.defaults.font.family = "Noto Serif".into();
+        }
+    });
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
+    let label = other_font_label(&harness, "Noto Serif", false);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Dark)
+        .clone();
+    let values = |harness: &Harness<'_, App>| -> Vec<String> {
+        harness
+            .query_all(By::new().predicate(|n| n.value().is_some()))
+            .filter_map(|n| n.accesskit_node().value())
+            .collect()
+    };
+    let font_item = format!(
+        "{label} {}",
+        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+    );
+    let environment = values(&harness)
+        .into_iter()
+        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
+        .expect("one environment line");
+    assert!(
+        environment.split(" · ").any(|item| item == font_item),
+        "the status bar does not name the face egui draws as {font_item:?}: {environment}"
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let row = format!("font_family\n{label}");
+    assert!(
+        values(&harness).contains(&row),
+        "the Theme tab shows no {row:?}"
+    );
+}
+
 /// The dump is the object `docs/showcase-elements.toml` describes: the kind, the preset, the
 /// variant, the scale and a rectangle per placed element.
 #[test]

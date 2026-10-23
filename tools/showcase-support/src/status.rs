@@ -96,6 +96,19 @@ pub enum DrawnFamily<'a> {
         /// As [`DrawnFamily::Generic`]'s.
         held_weights: Option<&'a [u16]>,
     },
+    /// The face of another of the theme's fonts, `font`, whose family `family` labels: the
+    /// toolkit draws every font of a kind in one face (egui: every font but the monospace one
+    /// in `defaults.font`'s), so a font whose stated family is another is drawn in that face.
+    OtherFont {
+        /// The toolkit, as the label names it (`egui`).
+        toolkit: &'a str,
+        /// The font whose face is drawn, as the label names it (`the light variant's
+        /// defaults.font`).
+        font: &'a str,
+        /// That font's family, as its own label names what is drawn
+        /// ([`DrawnFamily::label`]).
+        family: &'a str,
+    },
     /// The toolkit's generic family `kind` in the toolkit's own faces, `family` the first
     /// where the toolkit's font list names one, drawn because the build loads no system font,
     /// so the system is not asked for the stated family (the egui showcase without feature
@@ -127,7 +140,8 @@ impl DrawnFamily<'_> {
     /// toolkit cannot ask for, and the generic family drawn with what it
     /// resolves to, or the fallback family drawn; for a build that loads no
     /// system font, that it does and the generic family drawn in the
-    /// toolkit's own face.
+    /// toolkit's own face; for a font the toolkit draws in another font's
+    /// face, that font and its family's label.
     #[must_use]
     pub fn label(&self, stated: &str) -> String {
         match *self {
@@ -162,6 +176,11 @@ impl DrawnFamily<'_> {
                 let held = held(toolkit, held_weights);
                 format!("{stated} ({held}; drawn in {library}'s common fallback, {family})")
             }
+            Self::OtherFont {
+                toolkit,
+                font,
+                family,
+            } => format!("{stated} ({toolkit} draws it in the face of {font}, {family})"),
             Self::Unloaded {
                 toolkit,
                 kind,
@@ -290,7 +309,8 @@ mod tests {
     /// all, only at weights the toolkit cannot ask for (listed), or in no
     /// face it can match; and what the generic family resolves to, where
     /// the font database names it, or the text library's fallback drawn; a
-    /// build that loads no system font says so.
+    /// build that loads no system font says so; a font drawn in another
+    /// font's face names that font and its family's label.
     #[test]
     fn a_generic_family_says_why_it_is_drawn() {
         let generic = |family, held_weights| DrawnFamily::Generic {
@@ -346,6 +366,17 @@ mod tests {
         assert_eq!(
             unloaded(None).label("Noto Sans"),
             "Noto Sans (this build loads no system font; drawn in egui's generic proportional)"
+        );
+        let body = family_label("Segoe UI", Some("Adwaita Sans"));
+        assert_eq!(
+            DrawnFamily::OtherFont {
+                toolkit: "egui",
+                font: "the light variant's defaults.font",
+                family: &body,
+            }
+            .label("Noto Serif"),
+            "Noto Serif (egui draws it in the face of the light variant's defaults.font, \
+             Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans))"
         );
         assert_eq!(
             DrawnFamily::from(Some("Adwaita Sans")).label("Segoe UI"),

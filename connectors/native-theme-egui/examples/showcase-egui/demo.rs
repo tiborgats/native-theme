@@ -1037,13 +1037,22 @@ pub(crate) fn drawn_family<'a>(
 }
 
 /// What egui draws the theme's families in, as the status bar, the Theme tab and Widget Info
-/// name them (the shared crate's `status::DrawnFamily`): the atlas's notes
-/// ([`unavailable_families`]) and egui's own first face of its proportional and monospace
-/// families in the fonts the pass draws with, which stays where the plan registers no face.
+/// name them (the shared crate's `status::DrawnFamily`): the two families the connector's font
+/// plan loads, the light variant's `defaults.font.family` and `defaults.mono_font.family`
+/// (`FontPlan::from_system(&light)`), the atlas's notes on them ([`unavailable_families`]), and
+/// egui's own first face of its proportional and monospace families in the fonts the pass draws
+/// with, which stays where the plan registers no face. egui draws every font in one of those
+/// two faces: the monospace font in the monospace one, every other font in the proportional one
+/// (the connector's never-`Name` invariant, `docs/archive/todo_v0.6.0_egui-connector-spec.md`
+/// §8.1, §5.8 item 7), whatever family the font states.
 pub(crate) struct DrawnFamilies<'a> {
     unavailable: Vec<(&'a str, Option<&'a str>)>,
     proportional: Option<String>,
     monospace: Option<String>,
+    /// The light variant's `defaults.font.family` and its label ([`Self::drawn`]).
+    body: (String, String),
+    /// The light variant's `defaults.mono_font.family` and its label.
+    mono: (String, String),
 }
 
 impl<'a> DrawnFamilies<'a> {
@@ -1058,20 +1067,30 @@ impl<'a> DrawnFamilies<'a> {
                     .and_then(|faces| faces.first().cloned())
             })
         };
-        Self {
+        let light = &atlas.resolved_for(egui::Theme::Light).defaults;
+        let mut families = Self {
             unavailable: unavailable_families(atlas.notes()),
             proportional: first(egui::FontFamily::Proportional),
             monospace: first(egui::FontFamily::Monospace),
-        }
+            body: (light.font.family.to_string(), String::new()),
+            mono: (light.mono_font.family.to_string(), String::new()),
+        };
+        families.body.1 = families
+            .drawn(&families.body.0, false)
+            .label(&families.body.0);
+        families.mono.1 = families
+            .drawn(&families.mono.0, true)
+            .label(&families.mono.0);
+        families
     }
 
-    /// How egui draws text of the theme's `stated` family, in its `Monospace` family where
-    /// `mono`, else its `Proportional` one: as stated where the atlas notes no lack of it; in
-    /// the platform's substitute its note names; in egui's own face where the note names none
-    /// (the OS has no face of it, `native_theme::fonts::system_face`'s `None`); and in egui's
-    /// own face wherever the build loads no system font (feature `system-fonts` off, so the
-    /// atlas has no font plan and leaves egui's faces in place, `Builder::fonts`).
-    pub(crate) fn drawn(&self, stated: &str, mono: bool) -> DrawnFamily<'_> {
+    /// How egui draws text of `planned`, a family the font plan loads, in its `Monospace` family
+    /// where `mono`, else its `Proportional` one: as stated where the atlas notes no lack of it;
+    /// in the platform's substitute its note names; in egui's own face where the note names
+    /// none (the OS has no face of it, `native_theme::fonts::system_face`'s `None`); and in
+    /// egui's own face wherever the build loads no system font (feature `system-fonts` off, so
+    /// the atlas has no font plan and leaves egui's faces in place, `Builder::fonts`).
+    fn drawn(&self, planned: &str, mono: bool) -> DrawnFamily<'_> {
         let (kind, own) = if mono {
             ("monospace", self.monospace.as_deref())
         } else {
@@ -1084,9 +1103,13 @@ impl<'a> DrawnFamilies<'a> {
                 family: own,
             };
         }
-        match drawn_family(&self.unavailable, stated) {
+        match drawn_family(&self.unavailable, planned) {
             Some(substitute) => DrawnFamily::Named(substitute),
-            None if self.unavailable.iter().any(|(family, _)| *family == stated) => {
+            None if self
+                .unavailable
+                .iter()
+                .any(|(family, _)| *family == planned) =>
+            {
                 DrawnFamily::Generic {
                     toolkit: "egui",
                     kind,
@@ -1098,14 +1121,37 @@ impl<'a> DrawnFamilies<'a> {
         }
     }
 
-    /// The theme's `stated` family as a label that says what egui draws ([`Self::drawn`]).
+    /// How egui draws text of a theme font whose family is `stated`, the monospace font where
+    /// `mono`: as [`Self::drawn`] of the family the plan loads for its kind where `stated` is
+    /// that family (compared caselessly, as the plan's lookup compares, connector `fonts.rs`);
+    /// in that family's face otherwise, which the label names with its own label.
+    pub(crate) fn drawn_at(&self, stated: &str, mono: bool) -> DrawnFamily<'_> {
+        let ((planned, label), font) = if mono {
+            (&self.mono, "the light variant's defaults.mono_font")
+        } else {
+            (&self.body, "the light variant's defaults.font")
+        };
+        if stated.eq_ignore_ascii_case(planned) {
+            self.drawn(planned, mono)
+        } else {
+            DrawnFamily::OtherFont {
+                toolkit: "egui",
+                font,
+                family: label,
+            }
+        }
+    }
+
+    /// A theme font's `stated` family as a label that says what egui draws
+    /// ([`Self::drawn_at`]), the monospace font where `mono`.
     pub(crate) fn label(&self, stated: &str, mono: bool) -> String {
-        self.drawn(stated, mono).label(stated)
+        self.drawn_at(stated, mono).label(stated)
     }
 
     /// The family of `font`, the theme font at the registry path `path`, as Widget Info's rows
-    /// show it (`values::leaf_value`'s lookup): [`Self::label`], in egui's monospace family for
-    /// `defaults.mono_font`, the one font the connector draws there (`fonts.rs`'s module doc).
+    /// show it (`values::leaf_value`'s lookup): [`Self::label`], the monospace font's for
+    /// `defaults.mono_font`, the one font the connector draws in egui's monospace family
+    /// (`fonts.rs`'s module doc).
     pub(crate) fn font_label(&self, path: &str, font: &ResolvedFontSpec) -> String {
         self.label(&font.family, path == "defaults.mono_font")
     }

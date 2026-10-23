@@ -826,7 +826,7 @@ fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         &preset,
         mode,
         &t.defaults.font,
-        families.drawn(&t.defaults.font.family, false),
+        families.drawn_at(&t.defaults.font.family, false),
         Some(app.atlas.accessibility()),
     )
 }
