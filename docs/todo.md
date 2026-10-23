@@ -1777,6 +1777,18 @@ model, the platform presets and the three connectors
       Ghost buttons in a style scope instead (`demo::ghost`: the full frame in
       every state, the resting fill and border colour transparent), and
       `a_ghost_button_keeps_its_size_when_hovered_and_pressed` checks it.
+- [ ] [upstream] **A widget font's own family is drawn in the body's face.** The egui
+      connector draws every theme font but `defaults.mono_font` in the light variant's
+      `defaults.font` face, so a widget font that states a family of its own is drawn in
+      the body's family. The KDE reader states `menu.font` and `toolbar.font` from
+      `menuFont` and `toolBarFont`, and the Windows reader `window.title_bar_font`,
+      `menu.font`, `tooltip.font` and `status_bar.font` from `NONCLIENTMETRICS`. The route
+      would be a `FontFamily::Name` per family, which the connector never emits: epaint
+      panics at a `Name` a style names before `set_fonts` binds it
+      (`docs/archive/todo_v0.6.0_egui-connector-spec.md` §8.1, and §14 item 8, which
+      records the limit). It waits for an epaint hook or a `FontId` that can name a family
+      with no registered key. Ledger M9-157 carries the evidence; the egui showcase names
+      the face drawn (`DrawnFamily::OtherFont`, M9c T10 fix round 1, 79769ea9).
 
 ### native-theme-gpui connector
 

@@ -12718,6 +12718,7 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 **Triage:** known — the archived spec's §14 item 8 carries it as an upstream limit. The egui showcase states the face drawn (M9c T10 fix round 1).
 **Status:** open (upstream).
 *Source:* m9c-T10-review.md, Important 1.
+**Correction (M9c T10 round 2, 2026-10-24):** the triage "known" names no docs/todo.md entry that carries the item, as the file's "known" entries do, and "open (upstream)" is no status form of the file. docs/todo.md now carries it: *native-theme-egui connector*, "A widget font's own family is drawn in the body's face", `[upstream]`. The triage reads "defer — docs/todo.md, that entry (the spec's §14 item 8 limit)", and the status reads "open".
 
 #### M9-158 · M9c · ux · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:10947
 **Claim:** On every preset whose list frame is rounded inside its line (adwaita, macos-tahoe, kde-breeze and windows-11 among them), the iced showcase's Basic table header fill and its selected last row, and the Basic list's selected or hovered rows where they meet the frame, are square rectangles drawn over the frame's corner arcs and past them. This is the iced counterpart of M9-110.
