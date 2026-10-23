@@ -906,6 +906,7 @@ fn compile_scheme(
             prefs,
             layout,
             row_height,
+            defs: Some(defs),
             patch,
         },
         notes,

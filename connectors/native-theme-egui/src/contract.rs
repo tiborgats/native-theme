@@ -77,7 +77,11 @@ impl Combination {
     /// definitions the atlas installs — the plan's (`ThemeAtlas::fonts`), else egui's default —
     /// at the Body size the atlas writes (`body_size`).
     fn row_height(&self) -> Option<f32> {
-        let size = self.body_size()?;
+        self.row_height_at(self.body_size()?)
+    }
+    /// epaint's Body row at `size` over the definitions the atlas installs, as
+    /// [`Self::row_height`] measures it at the Body size.
+    fn row_height_at(&self, size: f32) -> Option<f32> {
         match self.atlas.fonts() {
             Some(defs) => crate::fonts::body_row_height(defs, size),
             None => crate::fonts::body_row_height(&egui::FontDefinitions::default(), size),
@@ -903,6 +907,39 @@ fn expected(
             }
             let cell = cell().ok_or("a scoped sink")?;
             Val::F32(convert::clamp_length(w - cell.spacing.icon_width))
+        }
+        // ---- a stated row height drawn as the row's height at a text scale of 1 or less: the
+        // menu's pair-rule padding, or the list's inherited one, narrowed until a one-line
+        // Body label and its padding fit the row, floored, never widened
+        // (`style::roles::fit_row_padding`) ----
+        (Some(w @ ("menu" | "list")), "normal", None, "spacing.button_padding.y") => {
+            let unfitted = if w == "menu" {
+                convert::to_button_padding(
+                    inherited_style().spacing.button_padding,
+                    &border_of(c, "menu"),
+                )
+                .y
+            } else {
+                inherited_style().spacing.button_padding.y
+            };
+            let stated = if w == "menu" {
+                t.menu.row_height
+            } else {
+                t.list.row_height
+            };
+            let cell = cell().ok_or("a scoped sink")?;
+            let label = cell
+                .text_styles
+                .get(&egui::TextStyle::Body)
+                .and_then(|font| c.row_height_at(font.size))
+                .map(|row| row + cell.spacing.extra_text_line_spacing);
+            Val::F32(match (stated.filter(|h| h.is_finite()), label) {
+                (Some(h), Some(label)) if c.atlas.accessibility().text_scale_factor() <= 1.0 => {
+                    let fit = ((convert::clamp_length(h) - label) / 2.0).floor().max(0.0);
+                    fit.min(unfitted)
+                }
+                _ => unfitted,
+            })
         }
         // ---- §5's pair rule (§7.2 `to_button_padding`): four sides and the line width. The
         // expander reads `.x` on its trailing side only, so its `.x` is that side alone (§7.4). ----

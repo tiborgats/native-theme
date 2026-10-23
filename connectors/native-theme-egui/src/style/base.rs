@@ -450,6 +450,7 @@ mod tests {
             prefs: &prefs,
             layout,
             row_height,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();

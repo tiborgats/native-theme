@@ -53,7 +53,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `defaults.icon_sizes.toolbar` | DERIVED | → T18(e) |  |
 | `defaults.info_color` | DERIVED | → T18(a) |  |
 | `defaults.info_text_color` | DERIVED | → T18(a) |  |
-| `defaults.line_height` | DERIVED | `spacing.extra_text_line_spacing` (when: the theme's line box is taller than epaint's row, §6.15) |  |
+| `defaults.line_height` | DERIVED | `spacing.extra_text_line_spacing` (when: the theme's line box is taller than epaint's row, §6.15); «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)); «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
 | `defaults.link_color` | DIRECT | `visuals.hyperlink_color` |  |
 | `defaults.mono_font.color` | DERIVED | → T18(a) |  |
 | `defaults.mono_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -137,23 +137,23 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `menu.border.color` | SCOPED | «menu» `visuals.widgets.inactive.bg_stroke.color`; «menu» `visuals.widgets.hovered.bg_stroke.color`; «menu» `visuals.widgets.active.bg_stroke.color`; «menu» `visuals.widgets.open.bg_stroke.color` | probe `"#ff000080"` |
 | `menu.border.corner_radius` | SCOPED | «menu» `visuals.widgets.inactive.corner_radius`; «menu» `visuals.widgets.hovered.corner_radius`; «menu» `visuals.widgets.active.corner_radius`; «menu» `visuals.widgets.open.corner_radius` | probe `4.0` |
 | `menu.border.line_width` | SCOPED | «menu» `visuals.widgets.inactive.bg_stroke.width`; «menu» `visuals.widgets.hovered.bg_stroke.width`; «menu» `visuals.widgets.active.bg_stroke.width`; «menu» `visuals.widgets.open.bg_stroke.width`; «menu» `spacing.button_padding.x` (when: a side of the pair is stated, §5 intro); «menu» `spacing.button_padding.y` (when: a side of the pair is stated, §5 intro) | probe `2.0` |
-| `menu.border.padding.bottom` | DERIVED | «menu» `spacing.button_padding.y` |  |
+| `menu.border.padding.bottom` | DERIVED | «menu» `spacing.button_padding.y` (when: no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)) |  |
 | `menu.border.padding.left` | DERIVED | «menu» `spacing.button_padding.x` |  |
 | `menu.border.padding.right` | DERIVED | «menu» `spacing.button_padding.x` |  |
-| `menu.border.padding.top` | DERIVED | «menu» `spacing.button_padding.y` |  |
+| `menu.border.padding.top` | DERIVED | «menu» `spacing.button_padding.y` (when: no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)) |  |
 | `menu.border.shadow_enabled` | UNMAPPABLE |  | `source-side gap`: native-theme: shadow offset, blur and spread in WidgetBorderSpec (§14 item 10) |
 | `menu.disabled_text_color` | SCOPED | «menu:disabled» `visuals.widgets.noninteractive.fg_stroke.color`; «menu:disabled» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `menu.font.color` | SCOPED | «menu» `visuals.widgets.noninteractive.fg_stroke.color`; «menu» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `menu.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `menu.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
-| `menu.font.size` | SCOPED | «menu» `text_styles[Body].size` |  |
+| `menu.font.size` | SCOPED | «menu» `text_styles[Body].size`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
 | `menu.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `menu.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `menu.hover_background` | SCOPED | «menu» `visuals.widgets.hovered.weak_bg_fill`; «menu» `visuals.widgets.active.weak_bg_fill`; «menu» `visuals.widgets.open.weak_bg_fill` |  |
 | `menu.hover_text_color` | SCOPED | «menu» `visuals.widgets.hovered.fg_stroke.color`; «menu» `visuals.widgets.active.fg_stroke.color`; «menu» `visuals.widgets.open.fg_stroke.color` |  |
 | `menu.icon_size` | DERIVED | → T18(a) | probe `20.0` |
 | `menu.icon_text_gap` | SCOPED | «menu» `spacing.icon_spacing` |  |
-| `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y` |  |
+| `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
 | `menu.separator_color` | SCOPED | «menu» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `popover.background_color` | SCOPED | \[popover\] `fill` |  |
 | `popover.border.color` | SCOPED | \[popover\] `stroke.color` |  |
@@ -401,10 +401,10 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |
 | `list.item_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `list.item_font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
-| `list.item_font.size` | SCOPED | «list» `text_styles[Body].size` |  |
+| `list.item_font.size` | SCOPED | «list» `text_styles[Body].size`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
 | `list.item_font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `list.item_font.weight` | DERIVED | → T18(c) | probe `700` |
-| `list.row_height` | SCOPED | «list» `spacing.interact_size.y` |  |
+| `list.row_height` | SCOPED | «list» `spacing.interact_size.y`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
 | `list.selection_background` | SCOPED | «list» `visuals.selection.bg_fill` |  |
 | `list.selection_text_color` | SCOPED | «list» `visuals.selection.stroke.color` |  |
 | `text_area.border.color` | DERIVED | → T18(b) |  |
@@ -575,7 +575,7 @@ The leaf that wins an egui field globally; the leaves that only feed its formula
 | `interaction.tooltip_delay` | `tooltip.show_delay` |  |  |
 | `override_font_id.size` | — (egui's own value stands) |  | `button.font.size` «button», `checkbox.font.size` «checkbox», `link.font.size` «link», `segmented_control.font.size` «segmented_control» |
 | `spacing.button_padding.x` | `button.border.padding.left`, `button.border.padding.right` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.left` «button», `button.border.padding.right` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.left` «combo_box», `combo_box.border.padding.right` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.right` «expander», `menu.border.line_width` «menu», `menu.border.padding.left` «menu», `menu.border.padding.right` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.left` «segmented_control», `segmented_control.border.padding.right` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.left` «tab», `tab.border.padding.right` «tab» |
-| `spacing.button_padding.y` | `button.border.padding.bottom`, `button.border.padding.top` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.bottom` «button», `button.border.padding.top` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.bottom` «combo_box», `combo_box.border.padding.top` «combo_box», `expander.border.line_width` «expander», `expander.border.padding.bottom` «expander», `expander.border.padding.top` «expander», `menu.border.line_width` «menu», `menu.border.padding.bottom` «menu», `menu.border.padding.top` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.bottom` «segmented_control», `segmented_control.border.padding.top` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.bottom` «tab», `tab.border.padding.top` «tab» |
+| `spacing.button_padding.y` | `button.border.padding.bottom`, `button.border.padding.top` | `button.border.line_width` | `button.border.line_width` «button», `button.border.padding.bottom` «button», `button.border.padding.top` «button», `combo_box.border.line_width` «combo_box», `combo_box.border.padding.bottom` «combo_box», `combo_box.border.padding.top` «combo_box», `defaults.line_height` «menu», `defaults.line_height` «list», `expander.border.line_width` «expander», `expander.border.padding.bottom` «expander», `expander.border.padding.top` «expander», `list.item_font.size` «list», `list.row_height` «list», `menu.border.line_width` «menu», `menu.border.padding.bottom` «menu», `menu.border.padding.top` «menu», `menu.font.size` «menu», `menu.row_height` «menu», `segmented_control.border.line_width` «segmented_control», `segmented_control.border.padding.bottom` «segmented_control», `segmented_control.border.padding.top` «segmented_control», `tab.border.line_width` «tab», `tab.border.padding.bottom` «tab», `tab.border.padding.top` «tab» |
 | `spacing.combo_width` | `combo_box.min_width` |  |  |
 | `spacing.extra_text_line_spacing` | — (a formula's result) | `defaults.font.size`, `defaults.line_height` |  |
 | `spacing.icon_spacing` | `checkbox.label_gap` |  | `button.icon_text_gap` «button», `checkbox.label_gap` «checkbox», `combo_box.arrow_area_width` «combo_box», `combo_box.arrow_icon_size` «combo_box», `menu.icon_text_gap` «menu» |

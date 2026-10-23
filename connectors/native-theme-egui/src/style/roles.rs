@@ -92,7 +92,9 @@ fn slot_size(
 /// stands as §2 *Unstated sizes* promises. A cell is a copy of the base style, whose
 /// `interact_size.y` is `button.min_height` (§5.9), and leaving that there would make a row
 /// the platform sizes to its content (`docs/platform-facts.md` §2.6, §2.13, §2.15) at least a
-/// push button tall. The toolbar's stated height is §6.10's, written after this.
+/// push button tall. The toolbar's stated height is §6.10's, written after this. A stated menu
+/// or list row height is a row's least height to egui, so the cell's vertical padding is fitted
+/// to it once the cell's font is written ([`fit_row_padding`]).
 fn row_height(
     s: &mut egui::Style,
     path: &'static str,
@@ -102,6 +104,43 @@ fn row_height(
 ) {
     let own = input.scheme.default_style().spacing.interact_size.y;
     s.spacing.interact_size.y = optional_length(path, v, own, notes).unwrap_or(own);
+}
+
+/// A stated row height (`menu.row_height`, `list.row_height`) as the drawn height of a one-line
+/// row at a text scale of 1 or less, as gpui (`geometry::with_height_rule`'s fixed `h`) and
+/// iced (`Length::Fixed`) draw it. egui's `Button` takes `interact_size.y`, where [`row_height`]
+/// writes the stated height, as its least height and grows to its label and vertical padding
+/// (`egui/src/widgets/button.rs:306-309`, `src/atomics/atom_layout.rs:409`), so the cell's
+/// vertical `button_padding` is narrowed until a one-line label in the cell's Body font —
+/// epaint's row at the cell's Body size (`fonts::body_row_height`) and
+/// `extra_text_line_spacing` (`egui/src/widget_text.rs:775-776`) — fits the stated height with
+/// it: floored to whole points, as egui rounds the margin (`epaint/src/margin.rs:115-119`), and
+/// never widened. A row that already fits is unchanged: egui centres the label in the room the
+/// height leaves (`atom_layout.rs:599`, `:619`). Where the label alone is taller than the
+/// stated height the padding goes to 0 and the row is the label's height. Above a text scale of
+/// 1 the theme's padding stands: the row grows past the stated height to hold its scaled text,
+/// as gpui's does (`min_h`), and keeps its padding round it. The same fit as the widgets
+/// crate's segmented control (`native-theme-egui-widgets` `segmented_control.rs`,
+/// `fit_height`).
+fn fit_row_padding(s: &mut egui::Style, stated: Option<f32>, input: &BuildInput<'_>) {
+    let (Some(_), Some(defs)) = (stated, input.defs) else {
+        return;
+    };
+    if input.prefs.text_scale_factor() > 1.0 {
+        return;
+    }
+    let Some(size) = s.text_styles.get(&TextStyle::Body).map(|font| font.size) else {
+        return;
+    };
+    let Some(row) = crate::fonts::body_row_height(defs, size) else {
+        return;
+    };
+    // `interact_size.y` holds the stated height as `row_height` wrote it, sanitised
+    let label = row + s.spacing.extra_text_line_spacing;
+    let fit = ((s.spacing.interact_size.y - label) / 2.0).floor().max(0.0);
+    if fit.is_finite() && fit < s.spacing.button_padding.y {
+        s.spacing.button_padding.y = fit;
+    }
 }
 
 /// An `Option<f32>` size (rationale §3.23, S2): `None` writes nothing and egui's value stands.
@@ -271,6 +310,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         input,
         notes,
     ); // items read Body (B3)
+    fit_row_padding(s, m.row_height, input);
 }
 
 fn input_role(
@@ -766,6 +806,7 @@ fn list(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         input,
         notes,
     );
+    fit_row_padding(s, l.row_height, input);
 }
 
 fn separator(
@@ -1103,6 +1144,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();
@@ -1161,6 +1203,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();

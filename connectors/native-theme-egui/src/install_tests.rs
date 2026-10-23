@@ -2866,7 +2866,10 @@ mod t13_accessibility {
     /// T13 (b): `style_diff` between the two atlases reports the text sizes, `animation_time`,
     /// `scroll_animation` and — where their values move — the two values that follow the Body row
     /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
-    /// (§6.6), and nothing else — in the base styles, the 75 cells and the 11 surface frames
+    /// (§6.6), and the `Role::Menu` and `Role::List` cells' vertical `button_padding`, which a
+    /// stated row height narrows at a text scale of 1 or less and leaves the theme's above it
+    /// (`style::roles::fit_row_padding`), and nothing else — in the base styles, the 75 cells
+    /// and the 11 surface frames
     /// (`atlas_diff`), none of whose fields may move: scaling never turns into a zoom of every
     /// length.
     #[test]
@@ -2879,6 +2882,7 @@ mod t13_accessibility {
                 .build();
             for Change { location, path } in atlas_diff(&plain, &scaled) {
                 let is_slider = matches!(location, Location::Cell(_, Role::Slider, _));
+                let is_row = matches!(location, Location::Cell(_, Role::Menu | Role::List, _));
                 let is_frame = matches!(location, Location::Frame(..));
                 let allowed = !is_frame
                     && ((path.starts_with("text_styles[") && path.ends_with(".size"))
@@ -2888,7 +2892,8 @@ mod t13_accessibility {
                         || path == "spacing.extra_text_line_spacing"
                         || (is_slider
                             && path.starts_with("visuals.widgets.")
-                            && path.ends_with(".expansion")));
+                            && path.ends_with(".expansion"))
+                        || (is_row && path == "spacing.button_padding.y"));
                 assert!(allowed, "{key} {location:?}: scaling moved `{path}`");
             }
         }
@@ -3593,4 +3598,98 @@ fn a_pass_under_the_cap_writes_no_style() {
             "{theme:?}"
         );
     }
+}
+
+/// The height a one-line `Button` is drawn at in `role`'s scope (`native_scope`), under
+/// `atlas` installed on a fresh context in `scheme`, after the passes that load its fonts, and
+/// the height of its label as egui lays it out there (`egui/src/widget_text.rs:775-776`).
+fn drawn_row_height(atlas: &ThemeAtlas, role: Role, scheme: egui::Theme) -> (f32, f32) {
+    use crate::NativeThemeUiExt as _;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(scheme);
+    let (mut height, mut label) = (0.0, 0.0);
+    for _ in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(role, RoleVariant::Normal, |ui| {
+                height = ui.button("Row").rect.height();
+                let font = egui::TextStyle::Body.resolve(ui.style());
+                label =
+                    ui.fonts_mut(|f| f.row_height(&font)) + ui.spacing().extra_text_line_spacing;
+            });
+        });
+    }
+    (height, label)
+}
+
+/// A stated `menu.row_height` and `list.row_height` are the drawn height of a `Button` row in
+/// their scope at a text scale of 1 or less, as gpui (`geometry::with_height_rule`'s fixed
+/// `h`) and iced (`Length::Fixed`) draw them: egui takes `interact_size.y` as a row's least
+/// height and grows the row to its label and vertical padding, so the cell's vertical padding
+/// is narrowed to fit (`style::roles::fit_row_padding`). Under macos-monterey the 17.33 px
+/// menu font's line box is 20.63 of the 22 px row, which egui drew taller with the stated
+/// 3 + 3 padding. Every bundled preset in both modes that states either height is checked.
+/// Where egui's label alone is taller than the stated height (the system face's own row past
+/// the theme's line box, which the connector never shortens, §6.15) the padding has nothing
+/// left to give: the row is the label's height, and the case is printed, since it depends on
+/// the faces the host has. Above 1 the theme's padding stands, for the application's own
+/// growth of the row.
+#[test]
+fn a_stated_row_height_is_the_drawn_row_at_a_text_scale_of_one() {
+    let mut faults = Vec::new();
+    let mut checked = 0;
+    for name in Theme::list_presets() {
+        for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
+            let prefs = AccessibilityPreferences::default();
+            let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
+            let t = atlas.resolved_for(scheme).clone();
+            for (role, stated) in [
+                (Role::Menu, t.menu.row_height),
+                (Role::List, t.list.row_height),
+            ] {
+                let Some(stated) = stated else { continue };
+                checked += 1;
+                let (drawn, label) = drawn_row_height(&atlas, role, scheme);
+                if label > stated {
+                    eprintln!(
+                        "{} {scheme:?} {role:?}: the label alone is {label} of the stated \
+                         {stated}; drawn {drawn}",
+                        name.key
+                    );
+                    if (drawn - label.round()).abs() > 0.01 {
+                        faults.push(format!(
+                            "{} {scheme:?} {role:?}: drawn {drawn}, its label {label}",
+                            name.key
+                        ));
+                    }
+                } else if (drawn - stated).abs() > 0.01 {
+                    faults.push(format!(
+                        "{} {scheme:?} {role:?}: drawn {drawn}, stated {stated}",
+                        name.key
+                    ));
+                }
+            }
+        }
+    }
+    assert!(checked > 0, "no bundled preset states a row height");
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// Above a text scale of 1 the menu cell's vertical padding is the theme's, unfitted
+/// (`to_button_padding` over egui's `menu_style` padding), so a row grown to hold its scaled
+/// text keeps the stated padding round it: macos-monterey's 3.
+#[test]
+fn above_a_text_scale_of_one_the_row_padding_is_the_themes() {
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
+    let (atlas, _) = crate::from_preset("macos-monterey", false, &prefs).unwrap();
+    let t = atlas.resolved_for(egui::Theme::Light);
+    let mut own = egui::Style::default();
+    egui::containers::menu::menu_style(&mut own);
+    let want = crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y;
+    assert_eq!(want, 3.0, "macos-monterey's stated menu padding");
+    let cell = atlas
+        .scheme(egui::Theme::Light)
+        .cell(Role::Menu, RoleVariant::Normal);
+    assert_eq!(cell.spacing.button_padding.y, want);
 }

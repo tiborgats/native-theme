@@ -58,7 +58,11 @@ upstream = "egui: a text colour per role (§14 item 40)"
 
 ["defaults.line_height"]
 verdict = "derived"
-sinks   = [{ path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" }]
+sinks   = [
+  { path = "spacing.extra_text_line_spacing", when = "the theme's line box is taller than epaint's row, §6.15" },
+  { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+  { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+]
 
 ["defaults.mono_font.family"]
 verdict   = "derived"
@@ -766,7 +770,10 @@ sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "m
 
 ["menu.row_height"]
 verdict = "scoped"
-sinks   = [{ path = "spacing.interact_size.y", scope = "menu" }]
+sinks   = [
+  { path = "spacing.interact_size.y", scope = "menu" },
+  { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+]
 
 ["menu.icon_text_gap"]
 verdict = "scoped"
@@ -807,7 +814,10 @@ upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["menu.font.size"]
 verdict = "scoped"
-sinks   = [{ path = "text_styles[Body].size", scope = "menu" }]
+sinks   = [
+  { path = "text_styles[Body].size", scope = "menu" },
+  { path = "spacing.button_padding.y", scope = "menu", when = "a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+]
 
 ["menu.font.defined_size"]
 verdict  = "unmappable"
@@ -870,7 +880,7 @@ upstream = "native-theme: shadow offset, blur and spread in WidgetBorderSpec (§
 
 ["menu.border.padding.top"]
 verdict = "derived"
-sinks   = [{ path = "spacing.button_padding.y", scope = "menu" }]
+sinks   = [{ path = "spacing.button_padding.y", scope = "menu", when = "no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["menu.border.padding.right"]
 verdict = "derived"
@@ -878,7 +888,7 @@ sinks   = [{ path = "spacing.button_padding.x", scope = "menu" }]
 
 ["menu.border.padding.bottom"]
 verdict = "derived"
-sinks   = [{ path = "spacing.button_padding.y", scope = "menu" }]
+sinks   = [{ path = "spacing.button_padding.y", scope = "menu", when = "no stated menu.row_height narrows the padding at a text scale of 1 or less (roles::fit_row_padding)" }]
 
 ["menu.border.padding.left"]
 verdict = "derived"
@@ -1954,7 +1964,10 @@ sinks   = [{ path = "visuals.widgets.noninteractive.bg_stroke.color", scope = "l
 
 ["list.row_height"]
 verdict = "scoped"
-sinks   = [{ path = "spacing.interact_size.y", scope = "list" }]
+sinks   = [
+  { path = "spacing.interact_size.y", scope = "list" },
+  { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+]
 
 ["list.header_height"]
 verdict   = "derived"
@@ -1982,7 +1995,10 @@ upstream = "a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7)"
 
 ["list.item_font.size"]
 verdict = "scoped"
-sinks   = [{ path = "text_styles[Body].size", scope = "list" }]
+sinks   = [
+  { path = "text_styles[Body].size", scope = "list" },
+  { path = "spacing.button_padding.y", scope = "list", when = "a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)" },
+]
 
 ["list.item_font.defined_size"]
 verdict  = "unmappable"

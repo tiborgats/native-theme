@@ -22,6 +22,10 @@ pub(crate) struct BuildInput<'a> {
     /// epaint's row height for the Body face at the scaled Body size (§6.15), measured by
     /// `fonts::body_row_height`. `None` leaves egui's own `extra_text_line_spacing`.
     pub row_height: Option<f32>,
+    /// The font definitions the atlas installs, which a role cell measures its Body row on
+    /// (`fonts::body_row_height`) to fit a stated row height (`roles::fit_row_padding`); `None`
+    /// fits nothing.
+    pub defs: Option<&'a egui::FontDefinitions>,
     /// `Builder::style_patch`'s closure, applied last to every style (§4.3); `None` without one.
     pub patch: Option<&'a dyn Fn(&mut egui::Style)>,
 }
