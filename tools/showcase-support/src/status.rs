@@ -102,8 +102,8 @@ pub enum DrawnFamily<'a> {
     OtherFont {
         /// The toolkit, as the label names it (`egui`).
         toolkit: &'a str,
-        /// The font whose face is drawn, as the label names it (`the light variant's
-        /// defaults.font`).
+        /// The font whose face is drawn, as the label names it before "face" (`the light
+        /// variant's defaults.font`).
         font: &'a str,
         /// That font's family, as its own label names what is drawn
         /// ([`DrawnFamily::label`]).
@@ -180,7 +180,7 @@ impl DrawnFamily<'_> {
                 toolkit,
                 font,
                 family,
-            } => format!("{stated} ({toolkit} draws it in the face of {font}, {family})"),
+            } => format!("{stated} ({toolkit} draws it in {font} face: {family})"),
             Self::Unloaded {
                 toolkit,
                 kind,
@@ -375,8 +375,8 @@ mod tests {
                 family: &body,
             }
             .label("Noto Serif"),
-            "Noto Serif (egui draws it in the face of the light variant's defaults.font, \
-             Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans))"
+            "Noto Serif (egui draws it in the light variant's defaults.font face: Segoe UI (not \
+             on this system; drawn in the platform's substitute, Adwaita Sans))"
         );
         assert_eq!(
             DrawnFamily::from(Some("Adwaita Sans")).label("Segoe UI"),
