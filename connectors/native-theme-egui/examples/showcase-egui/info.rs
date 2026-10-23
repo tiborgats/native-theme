@@ -546,11 +546,8 @@ impl InfoView {
             .and_then(|id| elements.iter().find(|e| e.id == id));
         let not_themeable = shown
             .info
-            .notes
+            .not_themeable
             .iter()
-            .filter(|(what, note)| {
-                note.contains("not stated") || (*what, note.as_str()) == crate::demo::GHOST_NOTE
-            })
             .map(|(what, note)| format!("{what}: {note}"))
             .collect();
         if let Some(element) = listed {

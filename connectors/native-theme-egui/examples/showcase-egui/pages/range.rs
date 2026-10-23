@@ -24,7 +24,6 @@ pub(crate) fn show(
             demo::scoped(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
                 ui.add(egui::Slider::new(&mut state.slider, range.clone()).show_value(false))
             });
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             demo::scoped(
                 reg,
                 ui,
@@ -33,7 +32,6 @@ pub(crate) fn show(
                 "Slider (with its value)",
                 |ui| ui.add(egui::Slider::new(&mut state.slider, range.clone()).text("value")),
             );
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             demo::scoped(
                 reg,
                 ui,
@@ -63,7 +61,6 @@ pub(crate) fn show(
                 "Slider (native-theme-egui-widgets)",
                 |ui| ui.add(Slider::new(&mut state.slider, range.clone())),
             );
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             let mut disabled = state.slider;
             demo::widget(
                 reg,

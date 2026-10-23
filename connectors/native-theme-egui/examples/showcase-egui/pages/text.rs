@@ -68,12 +68,6 @@ pub(crate) fn show(
             .font(font.clone())
             .line_height(Some(line_height));
         demo::base(reg, ui, "text role label", |ui| ui.label(text));
-        reg.amend_last(|i| {
-            i.read.push(("text_role_font", format!("{font:?}")));
-            i.read
-                .push(("text_role_line_height", format!("{line_height}")));
-            i.read.push(("text_role_weight", format!("{weight}")));
-        });
     }
 
     caption(reg, ui, "Links (Role::Link)");

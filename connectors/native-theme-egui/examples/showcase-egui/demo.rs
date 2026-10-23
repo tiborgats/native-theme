@@ -22,11 +22,10 @@ pub(crate) struct InstanceInfo {
     /// The widget's kind, e.g. "Button", "TextEdit (password)".
     pub kind: &'static str,
     pub seams: Vec<Seam>,
-    /// The §4.7 accessors and `ResolvedTheme` leaves the helper read, with their values.
-    pub read: Vec<(&'static str, String)>,
-    /// *This instance* notes from the helper's own arguments, never a claim about the theme: what
-    /// each is about, and the note.
-    pub notes: Vec<(&'static str, String)>,
+    /// What egui draws here unthemed, where no leaf states it (an unstated leaf, a Ghost
+    /// button's resting fill): the lines Widget Info shows under *Not themeable* (R11), each
+    /// what it is about and what is drawn.
+    pub not_themeable: Vec<(&'static str, String)>,
     /// The element of `docs/showcase-elements.toml` the instance is, which Widget Info shows.
     pub element: Option<String>,
 }
@@ -222,7 +221,7 @@ impl Registry {
             }
         }
     }
-    /// Add the accessors or leaves a page read, or a *This instance* note, to the last record.
+    /// Add a *Not themeable* line to the last record.
     pub(crate) fn amend_last(&mut self, f: impl FnOnce(&mut InstanceInfo)) {
         if let Some(last) = self.records.last_mut() {
             f(&mut last.info);
@@ -231,12 +230,13 @@ impl Registry {
     /// Note on the last record that it is a button drawn in a `ghost` scope.
     pub(crate) fn ghost_last(&mut self) {
         self.amend_last(|i| {
-            i.notes.push((GHOST_NOTE.0, GHOST_NOTE.1.to_string()));
+            i.not_themeable
+                .push((GHOST_NOTE.0, GHOST_NOTE.1.to_string()));
         });
     }
 }
 
-/// What a button drawn in a `ghost` scope notes under *This instance*.
+/// What a button drawn in a `ghost` scope notes under *Not themeable*.
 pub(crate) const GHOST_NOTE: (&str, &str) = (
     "fill and border at rest",
     "transparent, the border's width kept: a Ghost button, as gpui-component's (gpui-component 0.8.0 src/button/button.rs:1008, :1098)",
@@ -302,8 +302,7 @@ pub(crate) fn info(kind: &'static str, seams: Vec<Seam>) -> InstanceInfo {
     InstanceInfo {
         kind,
         seams,
-        read: Vec::new(),
-        notes: Vec::new(),
+        not_themeable: Vec::new(),
         element: None,
     }
 }
@@ -358,15 +357,8 @@ pub(crate) fn scoped(
     response
 }
 
-/// What a widget of the companion crate notes under *This instance*.
-pub(crate) const WIDGETS_NOTE: (&str, &str) = (
-    "drawn by",
-    "native-theme-egui-widgets, in the role's scope, painted from the role's leaves themselves (docs/archive/todo_egui-widgets-spec.md §4)",
-);
-
 /// A widget of the companion crate `native-theme-egui-widgets`, which opens `role`'s scope in
-/// `variant` itself: the closure adds it, and its `Response` is recorded with that role seam
-/// and `WIDGETS_NOTE`.
+/// `variant` itself: the closure adds it, and its `Response` is recorded with that role seam.
 pub(crate) fn widget(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -376,10 +368,11 @@ pub(crate) fn widget(
     add: impl FnOnce(&mut egui::Ui) -> egui::Response,
 ) -> egui::Response {
     let response = add(ui);
-    let mut info = info(kind, vec![Seam::Role(role, variant)]);
-    info.notes
-        .push((WIDGETS_NOTE.0, WIDGETS_NOTE.1.to_string()));
-    reg.record(&response, info, false);
+    reg.record(
+        &response,
+        info(kind, vec![Seam::Role(role, variant)]),
+        false,
+    );
     response
 }
 
@@ -697,12 +690,6 @@ pub(crate) struct PanelSeams {
     surface: Surface,
     live: Option<(Role, RoleVariant)>,
     body: Option<(Role, RoleVariant)>,
-    /// Set by `PanelSeams::unpadded`: the panel's own inner margin is dropped and its content
-    /// pads itself by this `layout.container_margin`.
-    content_margin: Option<Option<f32>>,
-    /// Set by `PanelSeams::lift_margin`: the frame's inner margin, moved onto the content below
-    /// a row that sits flush at the panel's top.
-    lifted: Option<egui::Margin>,
     pub frame: egui::Frame,
 }
 
@@ -720,30 +707,24 @@ impl PanelSeams {
             surface,
             live,
             body,
-            content_margin: None,
-            lifted: None,
             frame: ui.native_frame(surface),
         }
     }
 
     /// The frame's inner margin, taken off the frame and handed to the caller, who pads the
     /// content below a row that sits flush at the panel's top with it: the page tabs, as the
-    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:2047`). Recorded
-    /// with the panel.
+    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:2047`).
     pub(crate) fn lift_margin(&mut self) -> egui::Margin {
-        let margin = std::mem::take(&mut self.frame.inner_margin);
-        self.lifted = Some(margin);
-        margin
+        std::mem::take(&mut self.frame.inner_margin)
     }
 
-    /// The panel with no inner margin of its own, its content padded by `container_margin`
-    /// (`layout.container_margin`) where the theme states one, as the gpui showcase pads its
+    /// The panel with no inner margin of its own, its content padded by the caller by
+    /// `layout.container_margin` where the theme states one, as the gpui showcase pads its
     /// side panel's settings and inspector
     /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1553-1564`), so a separator
-    /// and a tab bar's rule inside run from edge to edge. Recorded with the panel.
-    pub(crate) fn unpadded(mut self, container_margin: Option<f32>) -> Self {
+    /// and a tab bar's rule inside run from edge to edge.
+    pub(crate) fn unpadded(mut self) -> Self {
         self.frame.inner_margin = egui::Margin::ZERO;
-        self.content_margin = Some(container_margin);
         self
     }
 
@@ -763,26 +744,7 @@ impl PanelSeams {
                 seams.push(seam);
             }
         }
-        let mut info = info(kind, seams);
-        if let Some(margin) = self.content_margin {
-            info.notes.push((
-                "inner margin",
-                "none: the content pads itself by layout.container_margin, as the gpui showcase's side panel does".to_string(),
-            ));
-            info.read.push((
-                "layout.container_margin",
-                margin.map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
-            ));
-        }
-        if let Some(margin) = self.lifted {
-            info.notes.push((
-                "inner margin",
-                format!(
-                    "{margin:?}, the surface's, below the page tabs: the tabs sit flush at the top, as the gpui showcase's do"
-                ),
-            ));
-        }
-        reg.record(response, info, true);
+        reg.record(response, info(kind, seams), true);
     }
 }
 
@@ -1416,46 +1378,14 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
             out.response
         },
     );
-    reg.amend_last(|i| {
-        i.read.extend([
-            ("tab.min_width", min_width.to_string()),
-            (
-                "tab.active_indicator_color",
-                t.tab
-                    .active_indicator_color
-                    .map_or_else(|| "not stated: no line".to_string(), |c| c.to_string()),
-            ),
-            (
-                "tab.active_indicator_width",
-                t.tab
-                    .active_indicator_width
-                    .map_or_else(|| "not stated: no line".to_string(), |w| w.to_string()),
-            ),
-            (
-                "tab.active_indicator_side",
-                t.tab
-                    .active_indicator_side
-                    .map_or_else(|| "not stated: no line".to_string(), |s| format!("{s:?}")),
-            ),
-            (
-                "tab.active_outward_corner_radius",
-                t.tab
-                    .active_outward_corner_radius
-                    .map_or_else(|| "not stated: square feet".to_string(), |r| r.to_string()),
-            ),
-            (
-                "layout.container_margin",
-                bar.margin
-                    .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
-            ),
-        ]);
-        if t.tab.item_gap.is_none() {
-            i.notes.push((
+    if t.tab.item_gap.is_none() {
+        reg.amend_last(|i| {
+            i.not_themeable.push((
                 "the gap between tabs",
                 "not stated by the theme: none, the tabs side by side".to_string(),
             ));
-        }
-    });
+        });
+    }
     reg.tag(bar.element, &strip);
     picked
 }

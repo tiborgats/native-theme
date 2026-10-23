@@ -495,7 +495,6 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     })
                     .inner;
                 registry.ghost_last();
-                registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
                 registry.tag(id, &response);
                 if drawn {
                     place_icon(registry, ui, id, &response, icon_size);
@@ -646,15 +645,6 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     },
                 );
                 registry.ghost_last();
-                registry.amend_last(|i| {
-                    i.read
-                        .push(("defaults.icon_sizes.small", format!("{icon_size}")));
-                    i.notes.push((
-                        "fill while the panel shows",
-                        "the button role's pressed fill, visuals.widgets.active.weak_bg_fill"
-                            .to_string(),
-                    ));
-                });
                 registry.tag("chrome.status_bar.toggle", &toggle);
                 if drawn {
                     place_icon(registry, ui, "chrome.status_bar.toggle", &toggle, icon_size);
@@ -741,7 +731,7 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
         (seams, None)
     } else {
         let margin = app.atlas.layout().container_margin;
-        (seams.unpadded(margin), margin)
+        (seams.unpadded(), margin)
     };
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
@@ -1357,12 +1347,6 @@ fn dialog_title(
     ui.horizontal(|ui| {
         body.add(reg, ui, "Label · dialog title", |ui| {
             ui.label(egui::RichText::new(title).heading().color(colour))
-        });
-        reg.amend_last(|i| {
-            i.read.push((
-                "dialog.title_font.color",
-                t.dialog.title_font.color.to_string(),
-            ));
         });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             demo::ghost(ui);

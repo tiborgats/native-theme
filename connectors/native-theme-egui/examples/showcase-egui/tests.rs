@@ -1838,7 +1838,7 @@ fn ghost_at(
                 .ctx
                 .layer_transform_to_global(record.layer)
                 .map_or(record.rect, |t| t.mul_rect(record.rect));
-            (rect, Some(record.info.notes.clone()))
+            (rect, Some(record.info.not_themeable.clone()))
         }
         GhostAt::Label(label) => {
             let node = harness
@@ -1849,7 +1849,7 @@ fn ghost_at(
             let notes = records
                 .iter()
                 .find(|r| r.id.accesskit_id() == id)
-                .map(|r| r.info.notes.clone());
+                .map(|r| r.info.not_themeable.clone());
             (node.rect(), notes)
         }
     }
@@ -2802,8 +2802,7 @@ fn tessellated_extent(
 /// stroked as wide as the annulus, and tessellated it reaches from 3 to `4 * sqrt(2) + 1`. Under
 /// them, after every tab, the strip `tab.active_background` lays over the selected tab's bottom
 /// edge, `[x0 + 1, x1 - 1] x [y1 - 1, y1]`. The first tab starts 4 further in than with the radius
-/// unstated, and the Basic bar, as wide as its tabs, ends 4 after its last; the bar's info reads
-/// the radius.
+/// unstated, and the Basic bar, as wide as its tabs, ends 4 after its last.
 #[test]
 fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
     for theme in [egui::Theme::Light, egui::Theme::Dark] {
@@ -2929,26 +2928,6 @@ fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
             near(bar.max.x - two.max.x, 4.0),
             "{theme:?}: the Basic bar ends {} after its last tab",
             bar.max.x - two.max.x
-        );
-        let read = |h: &Harness<'_, App>| {
-            h.state()
-                .registry
-                .records()
-                .iter()
-                .find(|r| r.info.kind == "TabBar · Basic")
-                .and_then(|r| {
-                    r.info
-                        .read
-                        .iter()
-                        .find(|(leaf, _)| *leaf == "tab.active_outward_corner_radius")
-                        .map(|(_, value)| value.clone())
-                })
-        };
-        assert_eq!(read(&harness).as_deref(), Some("4"), "{theme:?}");
-        assert_eq!(
-            read(&square_feet).as_deref(),
-            Some("not stated: square feet"),
-            "{theme:?}"
         );
     }
 }

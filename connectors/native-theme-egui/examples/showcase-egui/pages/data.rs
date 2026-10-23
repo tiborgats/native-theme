@@ -79,15 +79,6 @@ pub(crate) fn show(
         })
         .response
     });
-    reg.amend_last(|i| {
-        i.read.push(("list.row_height", format!("{row_height:?}")));
-        i.read
-            .push(("list_header_height", format!("{header_height:?}")));
-        i.read
-            .push(("list_header_font", format!("{header_font:?}")));
-        i.read
-            .push(("list.header_font.color", format!("{header_color:?}")));
-    });
 
     caption(
         reg,

@@ -194,7 +194,7 @@ fn group(
         11 => card(reg, atlas, ui),
         12 => typography(reg, atlas, ui),
         13 => separator(reg, ui),
-        14 => progress_bar(reg, atlas, ui),
+        14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
         16 => icons_group(reg, atlas, ui, chosen),
         17 => tabs(reg, state, t, ui),
@@ -390,10 +390,6 @@ fn text_button(
         let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
         r
-    });
-    reg.amend_last(|i| {
-        i.read.push(("button.min_width", min.x.to_string()));
-        i.read.push(("button.min_height", min.y.to_string()));
     });
     reg.tag(id, &response);
     remember_width(ui, id, response.rect);
@@ -732,10 +728,6 @@ fn text_field(
         ));
         r
     });
-    reg.amend_last(|i| {
-        i.read
-            .push(("input.min_height", t.input.min_height.to_string()));
-    });
     reg.tag(id, &response);
     if let Some(text) = text {
         reg.place(ui, &format!("{id}.text"), text);
@@ -755,7 +747,6 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
         let hint = demo::lined(ui, "Placeholder", egui::TextStyle::Body);
         ui.add(field(&mut state.basic_hint, id, ui, t).hint_text(hint))
     });
-    reg.amend_last(|i| i.notes.push(("hint text", "\"Placeholder\"".to_string())));
     let kind = ("basic.text_inputs.filled", "TextEdit (single line)", normal);
     let shown = state.basic_text.clone();
     text_field(reg, ui, kind, t, &shown, |ui, id| {
@@ -821,7 +812,6 @@ fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         })
         .inner
     });
-    reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
     reg.tag("basic.slider.control", &slider);
     let names = [("track", "track"), ("fill", "fill"), ("thumb", "thumb")];
     place_parts(reg, ui, "basic.slider.control", &slider, &names);
@@ -830,26 +820,11 @@ fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
 /// The Progress bar group: the companion crate's progress bar
 /// (docs/archive/todo_egui-widgets-spec.md §4.9), egui's, rounded `progress_bar.border.corner_radius`
 /// and outlined as `progress_bar.border` states, which egui's `ProgressBar` does not draw.
-fn progress_bar(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.progress_bar.heading", "Progress bar");
     let bar = demo::scoped(reg, ui, Role::ProgressBar, normal, "ProgressBar", |ui| {
         ui.add(ProgressBar::new(PROGRESS).desired_width(BASIC_WIDTH))
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "progress_bar.border.corner_radius",
-            t.progress_bar.border.corner_radius.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.line_width",
-            t.progress_bar.border.line_width.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.color",
-            format!("{:?}", t.progress_bar.border.color),
-        ));
     });
     reg.tag("basic.progress_bar.bar", &bar);
     place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
@@ -936,7 +911,6 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
         text = Some(button_label(ui, &r, &shown));
         r
     });
-    reg.amend_last(|i| i.notes.push(("step", format!("{NUMBER_STEP}"))));
     reg.tag("basic.number_input.field", &number);
     if let Some(text) = text {
         reg.place(ui, "basic.number_input.field.text", text);
@@ -1065,14 +1039,6 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
         let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "link.underline_enabled",
-            t.link.underline_enabled.to_string(),
-        ));
-        i.read
-            .push(("link.font.color", format!("{:?}", t.link.font.color)));
     });
     reg.tag("basic.typography.link", &link);
     for (role, text, id) in [
@@ -1233,7 +1199,6 @@ fn icons(
                 };
                 wrap_before(ui, id);
                 let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
-                reg.amend_last(|i| i.read.push(("size", format!("{size}"))));
                 reg.tag(id, &icon);
                 remember_width(ui, id, icon.rect);
             }
@@ -1486,12 +1451,6 @@ fn list(
         reg.place(ui, "basic.list.scrollbar", groove);
         reg.place(ui, "basic.list.scrollbar.thumb", thumb);
     }
-    reg.amend_last(|i| {
-        i.read
-            .push(("list.row_height", format!("{:?}", l.row_height)));
-        i.read
-            .push(("list.border.padding", format!("{:?}", l.border.padding)));
-    });
     reg.tag("basic.list.frame", &frame_response);
     for (i, row) in rows_drawn.iter().take(LIST_VISIBLE).enumerate() {
         reg.place(ui, &format!("basic.list.row_{}", i + 1), row.rect);

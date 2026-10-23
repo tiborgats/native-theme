@@ -305,7 +305,6 @@ pub(crate) fn show(
                     }),
                 };
                 menu.record(reg, &r.response, "menu button (image and text)");
-                reg.amend_last(|i| i.read.push(("menu.icon_size", format!("{menu_icon_size}"))));
 
                 let image = demo::role_image(
                     ui,

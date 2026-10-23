@@ -114,12 +114,6 @@ pub(crate) fn show(
                             ui.painter().rect_filled(rect, radius, skeleton);
                             response
                         });
-                        reg.amend_last(|i| {
-                            i.read.push((
-                                "button.background_color",
-                                t.button.background_color.to_string(),
-                            ));
-                        });
                     }
                 }
                 demo::base(reg, ui, "Label · icon name", |ui| {
@@ -304,21 +298,5 @@ fn icons_indicator(
             });
         })
         .response
-    });
-    reg.amend_last(|i| {
-        i.read.extend([
-            ("defaults.border.color", t.defaults.border.color.to_string()),
-            (
-                "defaults.border.line_width",
-                t.defaults.border.line_width.to_string(),
-            ),
-            (
-                "layout.container_margin",
-                atlas
-                    .layout()
-                    .container_margin
-                    .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
-            ),
-        ]);
     });
 }

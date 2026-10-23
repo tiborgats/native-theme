@@ -166,40 +166,10 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui
             ui.add_space(space);
         }
     }
-    let response = demo::base(reg, ui, "heading", |ui| {
+    demo::base(reg, ui, "heading", |ui| {
         let heading = demo::heading_text(ui, text);
         ui.label(heading)
-    });
-    let role = atlas.map(|atlas| {
-        let t = atlas.resolved_for(ui.ctx().theme());
-        let prefs = atlas.accessibility();
-        let r = native_theme_egui::TextRole::SectionHeading;
-        let weight = native_theme_egui::text_role_weight(t, r);
-        (
-            native_theme_egui::text_role_font(t, r, prefs),
-            native_theme_egui::text_role_line_height(t, r, prefs),
-            weight,
-            demo::weighted_family(ui, weight, t.defaults.font.weight),
-        )
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "layout.section_gap",
-            section_gap.map_or_else(|| "not stated: no gap".to_string(), |g| g.to_string()),
-        ));
-        if let Some((font, line_height, weight, family)) = role {
-            i.read.push(("text_role_font", format!("{font:?}")));
-            i.read
-                .push(("text_role_line_height", format!("{line_height}")));
-            i.read.push(("text_role_weight", format!("{weight}")));
-            let drawn = match family {
-                egui::FontFamily::Proportional => "the body font's face",
-                _ => "the OS's face of the body family at that weight",
-            };
-            i.notes.push(("weight drawn in", drawn.to_string()));
-        }
-    });
-    response
+    })
 }
 
 /// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's
