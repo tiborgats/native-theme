@@ -1060,13 +1060,7 @@ const MENU_TITLES: [&str; 4] = ["File", "View", "Theme", "Help"];
 /// system menu bar's ([`menus_in_window`]) no menu can be held open, so
 /// every name is an error.
 fn held_menu(name: &str) -> Result<usize, String> {
-    if !menus_in_window() {
-        return Err(format!(
-            "--open-menu {}: the menus are the system menu bar's on macOS",
-            name.to_lowercase()
-        ));
-    }
-    let name = cli::open_menu(name, &MENU_TITLES)?;
+    let name = cli::open_menu(name, &MENU_TITLES, !menus_in_window())?;
     MENU_TITLES
         .iter()
         .position(|title| title.to_lowercase() == name)

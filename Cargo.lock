@@ -5862,8 +5862,6 @@ dependencies = [
  "native-theme-egui-widgets",
  "native-theme-showcase-support",
  "native-theme-test-fixtures",
- "objc2 0.6.4",
- "objc2-app-kit 0.3.2",
  "serde_json",
  "skrifa 0.44.0",
  "toml 1.1.5+spec-1.1.0",

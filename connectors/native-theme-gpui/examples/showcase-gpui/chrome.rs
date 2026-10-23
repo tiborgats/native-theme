@@ -10,8 +10,9 @@ use native_theme_showcase_support::status;
 
 use crate::Page;
 use crate::app::{
-    AppColorMode, OpenAbout, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode,
-    SetPreset, ShowPage, Showcase, ToggleSidePanel,
+    AppColorMode, CloseWindow, Hide, HideOthers, Minimize, OpenAbout, OpenCommandPalette,
+    OpenPreferences, Quit, ReloadTheme, SetColorMode, SetPreset, ShowAll, ShowPage, Showcase,
+    ToggleSidePanel, Zoom,
 };
 use crate::demo::{SeparatorKind, TabBarKind};
 use crate::support::preset_items;
@@ -55,6 +56,78 @@ pub(crate) fn menus() -> Vec<Menu> {
             ]),
         ),
         Menu::new("Help").items([MenuItem::action("About", OpenAbout)]),
+    ]
+}
+
+/// The application's name, as the macOS app menu takes it: its title, and
+/// the name its About, Hide and Quit rows give.
+pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
+
+/// The showcase's menus in the macOS system menu bar, as the iced and egui
+/// showcases put theirs there: Apple's HIG list (*The menu bar*), under the
+/// titles the shared crate gives the three showcases
+/// (`menu::macos_menu_titles`):
+///
+/// - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the
+///   Preferences sheet, the in-window Theme menu's Preferences…), the OS's
+///   Services menu (gpui-pre `MenuItem::os_submenu`, which the macOS
+///   platform makes AppKit's `servicesMenu`), Hide ⌘H, Hide Others ⌥⌘H,
+///   Show All, and Quit ⌘Q, with the HIG's separators;
+/// - File: Close ⌘W;
+/// - View: the in-window View menu's rows;
+/// - Theme: the in-window Theme menu's rows, less Preferences…;
+/// - Window: Minimize ⌘M and Zoom. gpui's macOS platform makes the menu
+///   titled `Window` AppKit's windows menu (gpui-pre-macos 0.3.9
+///   `src/platform.rs`, `create_menu_bar`), to which AppKit adds its
+///   window-switching items. Bring All to Front, which the HIG and the
+///   iced and egui showcases' Window menus hold, is left out: gpui offers
+///   neither a call for it nor an `OsAction` (gpui-pre 0.3.9
+///   `src/platform/app_menu.rs`, `OsAction`: cut, copy, paste, select all,
+///   undo and redo only).
+///
+/// The keys beside the rows are the bindings of their actions
+/// (`app::init`, `app::macos_bindings`). The rows the in-window menus also
+/// hold take the in-window rows' actions, so a list built from
+/// [`menus`] cannot drift from them.
+pub(crate) fn macos_menus() -> Vec<Menu> {
+    let [app, file, view, theme, window] =
+        native_theme_showcase_support::menu::macos_menu_titles(APP_NAME);
+    let in_window = |title: &str| -> Vec<MenuItem> {
+        menus()
+            .into_iter()
+            .filter(|menu| menu.name.as_ref() == title)
+            .flat_map(|menu| menu.items)
+            .collect()
+    };
+    let view_items = in_window(&view);
+    let mut theme_items = in_window(&theme);
+    theme_items.retain(|item| {
+        !matches!(item, MenuItem::Action { action, .. } if action.partial_eq(&OpenPreferences))
+    });
+    while matches!(theme_items.last(), Some(MenuItem::Separator)) {
+        theme_items.pop();
+    }
+    vec![
+        Menu::new(app).items([
+            MenuItem::action(format!("About {APP_NAME}"), OpenAbout),
+            MenuItem::separator(),
+            MenuItem::action("Settings…", OpenPreferences),
+            MenuItem::separator(),
+            MenuItem::os_submenu("Services", gpui::SystemMenuType::Services),
+            MenuItem::separator(),
+            MenuItem::action(format!("Hide {APP_NAME}"), Hide),
+            MenuItem::action("Hide Others", HideOthers),
+            MenuItem::action("Show All", ShowAll),
+            MenuItem::separator(),
+            MenuItem::action(format!("Quit {APP_NAME}"), Quit),
+        ]),
+        Menu::new(file).items([MenuItem::action("Close", CloseWindow)]),
+        Menu::new(view).items(view_items),
+        Menu::new(theme).items(theme_items),
+        Menu::new(window).items([
+            MenuItem::action("Minimize", Minimize),
+            MenuItem::action("Zoom", Zoom),
+        ]),
     ]
 }
 

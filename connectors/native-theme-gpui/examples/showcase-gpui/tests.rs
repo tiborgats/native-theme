@@ -2145,6 +2145,102 @@ fn a_menu_acts_after_the_focused_widget_left_the_page(cx: &mut TestAppContext) {
     );
 }
 
+/// Each item of `menu` as a line: an action's row by its name and its
+/// action's, a separator as `-`, an OS submenu by its name.
+fn menu_lines(menu: &gpui::Menu) -> Vec<String> {
+    menu.items
+        .iter()
+        .map(|item| match item {
+            gpui::MenuItem::Separator => "-".to_string(),
+            gpui::MenuItem::Submenu(menu) => format!("{} (submenu)", menu.name),
+            gpui::MenuItem::SystemMenu(menu) => format!("{} (the OS's)", menu.name),
+            gpui::MenuItem::Action { name, action, .. } => format!("{name}: {}", action.name()),
+        })
+        .collect()
+}
+
+/// M9-117: the macOS menu bar is Apple's HIG list (*The menu bar*), under
+/// the titles the shared crate gives the three showcases: the app menu,
+/// holding About, Settings…, the OS's Services, Hide, Hide Others, Show All
+/// and Quit, with the HIG's separators; File, holding Close; View, holding
+/// the in-window View menu's rows; Theme, holding the in-window Theme
+/// menu's rows less Preferences…, which is the app menu's Settings…;
+/// Window, holding Minimize and Zoom (gpui offers no Bring All to Front);
+/// and no Help menu. The list is built on every host; gpui hands it to the
+/// menu bar only on macOS.
+#[test]
+fn the_macos_menus_are_the_hig_list() {
+    use crate::chrome::{APP_NAME, macos_menus};
+    use native_theme_showcase_support::menu::macos_menu_titles;
+
+    let built = macos_menus();
+    let titles: Vec<String> = built.iter().map(|m| m.name.to_string()).collect();
+    assert_eq!(titles, macos_menu_titles(APP_NAME), "the menu bar's titles");
+    let in_window = |title: &str| -> Vec<String> {
+        menus()
+            .iter()
+            .filter(|m| m.name.as_ref() == title)
+            .flat_map(menu_lines)
+            .collect()
+    };
+    let lines: Vec<Vec<String>> = built.iter().map(menu_lines).collect();
+    assert_eq!(
+        lines[0],
+        [
+            format!("About {APP_NAME}: showcase::OpenAbout"),
+            "-".to_string(),
+            "Settings…: showcase::OpenPreferences".to_string(),
+            "-".to_string(),
+            "Services (the OS's)".to_string(),
+            "-".to_string(),
+            format!("Hide {APP_NAME}: showcase::Hide"),
+            "Hide Others: showcase::HideOthers".to_string(),
+            "Show All: showcase::ShowAll".to_string(),
+            "-".to_string(),
+            format!("Quit {APP_NAME}: showcase::Quit"),
+        ],
+        "the app menu"
+    );
+    assert_eq!(lines[1], ["Close: showcase::CloseWindow"], "File");
+    assert_eq!(lines[2], in_window("View"), "View");
+    let theme = in_window("Theme");
+    assert_eq!(
+        theme[theme.len().saturating_sub(2)..],
+        ["-", "Preferences…: showcase::OpenPreferences"],
+        "the in-window Theme menu no longer ends with Preferences…"
+    );
+    assert_eq!(lines[3], theme[..theme.len() - 2], "Theme");
+    assert_eq!(
+        lines[4],
+        ["Minimize: showcase::Minimize", "Zoom: showcase::Zoom"],
+        "Window"
+    );
+}
+
+/// The keys the macOS menus' rows show are the HIG's: ⌘H Hide, ⌥⌘H Hide
+/// Others, ⌘M Minimize and ⌘W Close, beside the bindings every platform
+/// takes (⌘Q Quit, ⌘, Settings…).
+#[test]
+fn the_macos_menus_keys_are_the_higs() {
+    use crate::app::{CloseWindow, Hide, HideOthers, Minimize};
+
+    let bindings = crate::app::macos_bindings();
+    let bound = |keys: &str, action: &dyn gpui::Action| {
+        let typed = [gpui::Keystroke::parse(keys).expect("a keystroke")];
+        bindings.iter().any(|binding| {
+            binding.match_keystrokes(&typed) == Some(false) && binding.action().partial_eq(action)
+        })
+    };
+    assert!(bound("cmd-h", &Hide), "⌘H does not hide");
+    assert!(
+        bound("alt-cmd-h", &HideOthers),
+        "⌥⌘H does not hide the others"
+    );
+    assert!(bound("cmd-m", &Minimize), "⌘M does not minimize");
+    assert!(bound("cmd-w", &CloseWindow), "⌘W does not close");
+    assert_eq!(bindings.len(), 4, "a binding the HIG list does not name");
+}
+
 /// The showcase's menus answer the keyboard as upstream's `AppMenuBar` and
 /// `PopupMenu` do (demo.rs, `MenuBar`): with a menu open, Left and Right
 /// move to the neighbouring menu, wrapping; Down and Up move between its
@@ -13899,7 +13995,7 @@ fn the_open_theme_menu_is_dumped_with_its_rows(cx: &mut TestAppContext) {
     use_preset(&mut cx, &showcase, "kde-breeze");
     let refused = cx.update(|window, cx| {
         let menus = showcase.read(cx).menus.clone();
-        menus.update(cx, |m, cx| m.open_named("nonesuch", window, cx))
+        menus.update(cx, |m, cx| m.open_named("nonesuch", false, window, cx))
     });
     assert!(
         refused.as_ref().is_err_and(|e| e.contains("theme")),
@@ -13907,7 +14003,7 @@ fn the_open_theme_menu_is_dumped_with_its_rows(cx: &mut TestAppContext) {
     );
     let opened = cx.update(|window, cx| {
         let menus = showcase.read(cx).menus.clone();
-        menus.update(cx, |m, cx| m.open_named("theme", window, cx))
+        menus.update(cx, |m, cx| m.open_named("theme", false, window, cx))
     });
     assert!(opened.is_ok(), "the Theme menu does not open: {opened:?}");
     cx.run_until_parked();

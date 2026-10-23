@@ -939,6 +939,16 @@ fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String, outputs: RunO
         }
         cx.background_executor().timer(SCREENSHOT_SETTLE).await;
         let failed = |error: &str| Output::Screenshot.failure(&path, error);
+        // The macOS runner's check: the menu bar AppKit holds is the
+        // showcase's (`chrome::macos_menus`), by its titles in order, or the
+        // capture fails. On the main thread, where this task runs.
+        #[cfg(target_os = "macos")]
+        if let Err(error) = native_theme_showcase_support::menu::check_main_menu(
+            crate::chrome::APP_NAME,
+            native_theme_showcase_support::menu::main_menu_titles(),
+        ) {
+            cli::refuse(&failed(&error));
+        }
         let mut capture = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
             Ok(capture) => capture,
             Err(error) => cli::refuse(&failed(&error)),
@@ -1036,10 +1046,12 @@ fn apply_cli_args(
         s.reload_icons(window, cx);
     }
 
+    // On macOS the menus are the system menu bar's, which the window does
+    // not draw (`chrome::window_top`, `demo::title_bar`).
     if let Some(name) = cli_args.open_menu.as_deref() {
-        let opened = s
-            .menus
-            .update(cx, |menus, cx| menus.open_named(name, window, cx));
+        let opened = s.menus.update(cx, |menus, cx| {
+            menus.open_named(name, cfg!(target_os = "macos"), window, cx)
+        });
         reported(opened);
     }
 }

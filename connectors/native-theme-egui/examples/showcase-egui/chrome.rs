@@ -1897,35 +1897,165 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-#[cfg(all(target_os = "macos", not(test)))]
+#[cfg(any(target_os = "macos", test))]
 pub(crate) mod system_menu {
-    //! The showcase's menus in the macOS system menu bar (spec §10.4).
+    //! The showcase's menus in the macOS system menu bar (spec §10.4), as the gpui and iced
+    //! showcases put theirs there: Apple's HIG list (*The menu bar*), under the titles the shared
+    //! crate gives the three showcases (`menu::macos_menu_titles`):
+    //!
+    //! - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the Preferences dialog, the
+    //!   in-window Theme menu's Preferences…), Services, Hide ⌘H, Hide Others ⌥⌘H, Show All, and
+    //!   Quit ⌘Q, with the HIG's separators;
+    //! - File: Close ⌘W;
+    //! - View: the in-window View menu's rows (`Action::MENUS`);
+    //! - Theme: the in-window Theme menu's rows, less Preferences…;
+    //! - Window: Minimize ⌘M, Zoom and Bring All to Front.
+    //!
+    //! About and Settings… are the showcase's own rows, which run the in-window rows' actions, so
+    //! About opens the showcase's one About dialog; the rest of the app, File and Window menus
+    //! are muda's predefined items, which AppKit runs itself, with the keys muda gives them
+    //! (muda 0.20.0 `src/items/predefined.rs:617-670`). There is no Help menu: the HIG
+    //! describes it as access to help documentation, which the showcase has none of.
+    //!
+    //! There is no Edit menu either: egui-winit 0.36.2 turns ⌘X, ⌘C and ⌘V into `Event::Cut`,
+    //! `Event::Copy` and `Event::Paste` itself (`src/lib.rs:1019-1035`, `is_cut_command`,
+    //! `is_copy_command` and `is_paste_command` at `:1418-1434`), so egui's text fields take the
+    //! editing keys without one.
+    //!
+    //! The list ([`menus`]) is built on every host, so the tests read it; the menu bar itself
+    //! ([`build`]) is built on macOS outside `cfg(test)`.
 
-    use muda::{
-        IsMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
-        accelerator::{Accelerator, Code, Modifiers},
-    };
-    use objc2::MainThreadMarker;
-    use objc2_app_kit::NSApplication;
+    use native_theme_showcase_support::menu::macos_menu_titles;
 
     use super::Action;
 
-    pub(crate) struct SystemMenu {
-        menu: Menu,
+    /// The application's name, as the app menu takes it: its title, and the name its About,
+    /// Hide and Quit rows give.
+    pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
+
+    /// A row of a system menu.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub(crate) enum Row {
+        /// One of the showcase's own: its label and the action it runs, with that action's
+        /// shortcut as its key.
+        Own {
+            label: String,
+            action: Action,
+        },
+        /// A muda predefined item, which AppKit runs.
+        System(SystemItem),
+        Separator,
     }
 
-    impl SystemMenu {
-        /// The number of top-level menus, which the readback compares with `mainMenu`'s count.
-        pub(crate) fn top_level(&self) -> usize {
-            self.menu.items().len()
+    /// The muda predefined items the menus hold.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(crate) enum SystemItem {
+        Services,
+        Hide,
+        HideOthers,
+        ShowAll,
+        Quit,
+        Close,
+        Minimize,
+        Zoom,
+        BringAllToFront,
+    }
+
+    impl SystemItem {
+        /// The text the item is given where muda's own is not the three showcases' wording: on
+        /// macOS muda 0.20.0 names Hide and Quit after the running application's
+        /// `localizedName` (`src/items/predefined.rs:464-481`,
+        /// `src/platform_impl/macos/util.rs:9-13`), which need not be [`APP_NAME`], and Close
+        /// "Close Window" (`predefined.rs:441`). `None` keeps muda's.
+        pub(crate) fn wording(self) -> Option<String> {
+            match self {
+                SystemItem::Hide => Some(format!("Hide {APP_NAME}")),
+                SystemItem::Quit => Some(format!("Quit {APP_NAME}")),
+                SystemItem::Close => Some("Close".to_string()),
+                SystemItem::Services
+                | SystemItem::HideOthers
+                | SystemItem::ShowAll
+                | SystemItem::Minimize
+                | SystemItem::Zoom
+                | SystemItem::BringAllToFront => None,
+            }
         }
+    }
+
+    /// The rows of the in-window menu titled `title` (`Action::MENUS`), each under its action's
+    /// label.
+    fn in_window(title: &str) -> Vec<Row> {
+        Action::MENUS
+            .iter()
+            .filter(|(menu, _)| *menu == title)
+            .flat_map(|(_, items)| items.iter())
+            .map(|item| match item {
+                Some(action) => Row::Own {
+                    label: action.label().to_string(),
+                    action: *action,
+                },
+                None => Row::Separator,
+            })
+            .collect()
+    }
+
+    /// The five menus, in the menu bar's order, each under its title.
+    pub(crate) fn menus() -> [(String, Vec<Row>); 5] {
+        let [app, file, view, theme, window] = macos_menu_titles(APP_NAME);
+        let own = |label: String, action| Row::Own { label, action };
+        let pages = in_window(&view);
+        let mut theme_rows = in_window(&theme);
+        theme_rows.retain(
+            |row| !matches!(row, Row::Own { action, .. } if *action == Action::OpenPreferences),
+        );
+        while theme_rows.last() == Some(&Row::Separator) {
+            theme_rows.pop();
+        }
+        [
+            (
+                app,
+                vec![
+                    own(format!("About {APP_NAME}"), Action::OpenAbout),
+                    Row::Separator,
+                    own("Settings…".to_string(), Action::OpenPreferences),
+                    Row::Separator,
+                    Row::System(SystemItem::Services),
+                    Row::Separator,
+                    Row::System(SystemItem::Hide),
+                    Row::System(SystemItem::HideOthers),
+                    Row::System(SystemItem::ShowAll),
+                    Row::Separator,
+                    Row::System(SystemItem::Quit),
+                ],
+            ),
+            (file, vec![Row::System(SystemItem::Close)]),
+            (view, pages),
+            (theme, theme_rows),
+            (
+                window,
+                vec![
+                    Row::System(SystemItem::Minimize),
+                    Row::System(SystemItem::Zoom),
+                    Row::Separator,
+                    Row::System(SystemItem::BringAllToFront),
+                ],
+            ),
+        ]
+    }
+
+    /// The installed menu bar: AppKit keeps it while the muda `Menu` lives.
+    #[cfg(not(test))]
+    pub(crate) struct SystemMenu {
+        _menu: muda::Menu,
     }
 
     /// `action`'s shortcut as muda's accelerator: egui's `Modifiers::COMMAND` is Cmd on macOS,
     /// muda's `Modifiers::META`; a key this match does not map gets no accelerator.
-    fn accelerator(action: Action) -> Option<Accelerator> {
+    #[cfg(not(test))]
+    fn accelerator(action: Action) -> Option<muda::accelerator::Accelerator> {
+        use muda::accelerator::{Accelerator, Code, Modifiers};
+
         let code = match action.shortcut()?.logical_key {
-            egui::Key::Q => Code::KeyQ,
             egui::Key::B => Code::KeyB,
             egui::Key::K => Code::KeyK,
             egui::Key::Comma => Code::Comma,
@@ -1934,37 +2064,59 @@ pub(crate) mod system_menu {
         Some(Accelerator::new(Modifiers::META, code))
     }
 
-    /// Build File, View, Theme and Help from `Action::MENUS`, install them as the
-    /// application's main menu, and route every click to `tx` with a repaint,
-    /// so `logic` runs the action on the next pass.
+    /// Build [`menus`] in muda, install them as the application's main menu, the last of them
+    /// as its Window menu, to which AppKit adds its window-switching items (muda 0.20.0
+    /// `src/items/submenu.rs:334-349`, set once the menu is installed), and route every click
+    /// on an own row to `tx` with a repaint, so `logic` runs the action on the next pass.
+    #[cfg(not(test))]
     pub(crate) fn build(
         ctx: &egui::Context,
         tx: std::sync::mpsc::Sender<Action>,
     ) -> muda::Result<SystemMenu> {
+        use muda::{IsMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu};
+
+        let predefined = |item: SystemItem| {
+            let text = item.wording();
+            let text = text.as_deref();
+            match item {
+                SystemItem::Services => PredefinedMenuItem::services(text),
+                SystemItem::Hide => PredefinedMenuItem::hide(text),
+                SystemItem::HideOthers => PredefinedMenuItem::hide_others(text),
+                SystemItem::ShowAll => PredefinedMenuItem::show_all(text),
+                SystemItem::Quit => PredefinedMenuItem::quit(text),
+                SystemItem::Close => PredefinedMenuItem::close_window(text),
+                SystemItem::Minimize => PredefinedMenuItem::minimize(text),
+                SystemItem::Zoom => PredefinedMenuItem::zoom(text),
+                SystemItem::BringAllToFront => PredefinedMenuItem::bring_all_to_front(text),
+            }
+        };
         let menu = Menu::new();
         let mut actions = Vec::new();
-        for (title, items) in Action::MENUS {
-            let mut owned: Vec<Box<dyn IsMenuItem>> = Vec::new();
-            for item in *items {
-                match item {
-                    None => owned.push(Box::new(PredefinedMenuItem::separator())),
-                    Some(action) => {
-                        let id = MenuId::new(actions.len().to_string());
-                        actions.push(*action);
-                        owned.push(Box::new(MenuItem::with_id(
-                            id,
-                            action.label(),
-                            true,
-                            accelerator(*action),
-                        )));
+        let mut window = None;
+        for (title, rows) in menus() {
+            let owned: Vec<Box<dyn IsMenuItem>> = rows
+                .into_iter()
+                .map(|row| -> Box<dyn IsMenuItem> {
+                    match row {
+                        Row::Own { label, action } => {
+                            let id = MenuId::new(actions.len().to_string());
+                            actions.push(action);
+                            Box::new(MenuItem::with_id(id, label, true, accelerator(action)))
+                        }
+                        Row::System(item) => Box::new(predefined(item)),
+                        Row::Separator => Box::new(PredefinedMenuItem::separator()),
                     }
-                }
-            }
+                })
+                .collect();
             let refs: Vec<&dyn IsMenuItem> = owned.iter().map(|b| b.as_ref()).collect();
-            let submenu = Submenu::with_items(*title, true, &refs)?;
+            let submenu = Submenu::with_items(title, true, &refs)?;
             menu.append(&submenu)?;
+            window = Some(submenu);
         }
         menu.init_for_nsapp();
+        if let Some(window) = window {
+            window.set_as_windows_menu_for_nsapp();
+        }
         let ctx = ctx.clone();
         MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
             if let Some(action) = event
@@ -1978,14 +2130,6 @@ pub(crate) mod system_menu {
                 ctx.request_repaint();
             }
         }));
-        Ok(SystemMenu { menu })
-    }
-
-    /// `NSApplication.mainMenu.numberOfItems`, on the main thread; `None` off it
-    /// or when no main menu is installed (§13's runner check).
-    pub(crate) fn main_menu_item_count() -> Option<isize> {
-        let mtm = MainThreadMarker::new()?;
-        let app = NSApplication::sharedApplication(mtm);
-        app.mainMenu().map(|menu| menu.numberOfItems())
+        Ok(SystemMenu { _menu: menu })
     }
 }

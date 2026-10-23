@@ -535,17 +535,21 @@ impl MenuBar {
     }
 
     /// Opens the menu titled `name`, compared without case (`--open-menu`);
-    /// an error naming the menus where none is titled so
+    /// an error naming the menus where none is titled so, and for every name
+    /// where `menus_are_the_systems`: the macOS system menu bar holds the
+    /// menus there, and the window draws none
     /// (`native_theme_showcase_support::cli::open_menu`).
     pub(crate) fn open_named(
         &mut self,
         name: &str,
+        menus_are_the_systems: bool,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Result<(), String> {
         let menus = app_menu_rows();
         let titles: Vec<&str> = menus.iter().map(|(title, _)| title.as_ref()).collect();
-        let name = native_theme_showcase_support::cli::open_menu(name, &titles)?;
+        let name =
+            native_theme_showcase_support::cli::open_menu(name, &titles, menus_are_the_systems)?;
         if let Some(ix) = titles.iter().position(|title| title.to_lowercase() == name) {
             self.open(ix, window, cx);
         }

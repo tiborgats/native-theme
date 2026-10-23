@@ -467,12 +467,18 @@ impl App {
             }),
             shields_pointer: cli.shields_pointer(),
             shields_keyboard: cli.shields_keyboard(),
+            // On macOS outside `cfg(test)` the menus are the system menu bar's, which no flag
+            // holds open, so every name is reported and none kept.
             open_menu: cli.open_menu.as_deref().and_then(|menu| {
                 let titles: Vec<&str> = crate::chrome::Action::MENUS
                     .iter()
                     .map(|(title, _)| *title)
                     .collect();
-                cli::reported(cli::open_menu(menu, &titles))
+                cli::reported(cli::open_menu(
+                    menu,
+                    &titles,
+                    cfg!(all(target_os = "macos", not(test))),
+                ))
             }),
             #[cfg(feature = "watch")]
             selection,
@@ -808,18 +814,24 @@ impl App {
 }
 
 impl App {
-    /// Whether the system menu bar holds exactly the menus the showcase built:
-    /// `Some(true)` or `Some(false)` on macOS outside `cfg(test)`.
+    /// Whether the system menu bar AppKit holds is the showcase's (`system_menu::menus`), on
+    /// macOS outside `cfg(test)`: the showcase's installed, and the five titles read back are
+    /// the ones the shared crate gives, in order (`menu::check_main_menu`). The error says
+    /// which does not hold.
     #[cfg(all(target_os = "macos", not(test)))]
-    pub(crate) fn menu_installed(&self) -> Option<bool> {
-        let built = self.system_menu.as_ref().map(|m| m.top_level())?;
-        let installed = crate::chrome::system_menu::main_menu_item_count()?;
-        Some(usize::try_from(installed).ok() == Some(built))
+    pub(crate) fn menu_installed(&self) -> Result<(), String> {
+        if self.system_menu.is_none() {
+            return Err("the showcase's macOS menu bar did not install".to_string());
+        }
+        native_theme_showcase_support::menu::check_main_menu(
+            crate::chrome::system_menu::APP_NAME,
+            native_theme_showcase_support::menu::main_menu_titles(),
+        )
     }
-    /// `None` wherever there is no system menu bar to read back.
+    /// `Ok` wherever there is no system menu bar to read back.
     #[cfg(not(all(target_os = "macos", not(test))))]
-    pub(crate) fn menu_installed(&self) -> Option<bool> {
-        None
+    pub(crate) fn menu_installed(&self) -> Result<(), String> {
+        Ok(())
     }
 
     /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it
@@ -1016,12 +1028,10 @@ impl eframe::App for App {
             let now = ctx.input(|i| i.time);
             let started = *shot.started.get_or_insert(now);
             if !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S {
-                // The macOS runner's check (§13): a capture step fails when the menu did not install.
-                if menu_installed == Some(false) {
-                    eprintln!(
-                        "ERROR: the macOS main menu holds a different number of menus than the showcase built"
-                    );
-                    std::process::exit(1);
+                // The macOS runner's check (§13): a capture step fails where the menu bar AppKit
+                // holds is not the showcase's.
+                if let Err(error) = &menu_installed {
+                    cli::refuse(&Output::Screenshot.failure(&shot.path, error));
                 }
                 match FrameCapture::start(crate::WINDOW_TITLE, &shot.path) {
                     Ok(capture) => shot.capture = Some(capture),

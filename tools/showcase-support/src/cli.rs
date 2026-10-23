@@ -424,9 +424,20 @@ pub fn page_key<'a>(name: &str, keys: &[&'a str]) -> Result<&'a str, String> {
 }
 
 /// The menu `--open-menu` names, lower-cased: one of the menu bar's
-/// `titles`, lower-cased.
-pub fn open_menu(name: &str, titles: &[&str]) -> Result<String, String> {
+/// `titles`, lower-cased. Where `menus_are_the_systems`, the menus are the
+/// macOS system menu bar's, which no flag holds open, so every name is an
+/// error.
+pub fn open_menu(
+    name: &str,
+    titles: &[&str],
+    menus_are_the_systems: bool,
+) -> Result<String, String> {
     let name = name.to_lowercase();
+    if menus_are_the_systems {
+        return Err(format!(
+            "--open-menu {name}: the menus are the system menu bar's on macOS"
+        ));
+    }
     let menus: Vec<String> = titles.iter().map(|title| title.to_lowercase()).collect();
     if menus.contains(&name) {
         Ok(name)
@@ -797,16 +808,34 @@ mod tests {
     #[test]
     fn the_open_menu_flag_names_a_menu() {
         let titles = ["File", "View", "Theme"];
-        assert_eq!(open_menu("theme", &titles), Ok("theme".to_string()));
-        assert_eq!(open_menu("THEME", &titles), Ok("theme".to_string()));
+        assert_eq!(open_menu("theme", &titles, false), Ok("theme".to_string()));
+        assert_eq!(open_menu("THEME", &titles, false), Ok("theme".to_string()));
         assert_eq!(
-            open_menu("help", &titles),
+            open_menu("help", &titles, false),
             Err(
                 "--open-menu help: the menu bar has no such menu; the menus are: file, view, \
                  theme"
                     .to_string()
             )
         );
+    }
+
+    /// Where the menus are the system menu bar's, `--open-menu` opens none:
+    /// every name is reported, one the window's bar has as well as one it
+    /// lacks.
+    #[test]
+    fn no_menu_opens_where_the_menus_are_the_system_menu_bars() {
+        let titles = ["File", "View", "Theme"];
+        for name in ["theme", "Theme", "help"] {
+            assert_eq!(
+                open_menu(name, &titles, true),
+                Err(format!(
+                    "--open-menu {}: the menus are the system menu bar's on macOS",
+                    name.to_lowercase()
+                )),
+                "{name}"
+            );
+        }
     }
 
     /// A reported error is gone, a value kept.

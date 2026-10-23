@@ -113,6 +113,33 @@ actions!(
     ]
 );
 
+// The rows the macOS menu bar's app, File and Window menus add
+// (`chrome::macos_menus`), each with the HIG's key (`macos_bindings`):
+// gpui offers them as calls, not as menu items of its own.
+
+actions!(
+    showcase,
+    [
+        /// Hide the application (`App::hide`): the app menu's Hide ⌘H.
+        Hide,
+        /// Hide the other applications (`App::hide_other_apps`): the app
+        /// menu's Hide Others ⌥⌘H.
+        HideOthers,
+        /// Show the other applications again (`App::unhide_other_apps`): the
+        /// app menu's Show All.
+        ShowAll,
+        /// Close the window: File's Close ⌘W. The showcase has one window,
+        /// so this quits, as the title bar's X does (`demo::title_bar`).
+        CloseWindow,
+        /// Minimize the active window (`Window::minimize_window`): the
+        /// Window menu's Minimize ⌘M.
+        Minimize,
+        /// Zoom the active window (`Window::zoom_window`): the Window
+        /// menu's Zoom.
+        Zoom
+    ]
+);
+
 /// Show the page at this position of [`Page::ALL`].
 ///
 /// `no_json`: gpui builds an action from JSON only for a keymap file, which
@@ -143,6 +170,9 @@ pub(crate) struct SetPreset(pub SharedString);
 /// has the focus; the actions that change the showcase are handled around
 /// the whole window, view and overlays, by `host::ShowcaseHost`, which this
 /// registers before any window opens.
+///
+/// On macOS it also binds and handles the rows the system menu bar's app,
+/// File and Window menus add (`chrome::macos_menus`, [`macos_bindings`]).
 pub(crate) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("secondary-q", Quit, None),
@@ -151,7 +181,38 @@ pub(crate) fn init(cx: &mut App) {
         KeyBinding::new("secondary-,", OpenPreferences, None),
     ]);
     cx.on_action(|_: &Quit, cx| quit(cx));
+    if cfg!(target_os = "macos") {
+        cx.bind_keys(macos_bindings());
+        cx.on_action(|_: &Hide, cx| cx.hide());
+        cx.on_action(|_: &HideOthers, cx| cx.hide_other_apps());
+        cx.on_action(|_: &ShowAll, cx| cx.unhide_other_apps());
+        cx.on_action(|_: &CloseWindow, cx| quit(cx));
+        cx.on_action(|_: &Minimize, cx| {
+            on_active_window(cx, |window| window.minimize_window());
+        });
+        cx.on_action(|_: &Zoom, cx| on_active_window(cx, |window| window.zoom_window()));
+    }
     crate::host::register(cx);
+}
+
+/// The keys of the macOS menu bar's own rows (Apple's HIG, *The menu bar*):
+/// ⌘H Hide, ⌥⌘H Hide Others, ⌘M Minimize and ⌘W Close, which the rows show
+/// beside their titles. Show All and Zoom have none.
+pub(crate) fn macos_bindings() -> [KeyBinding; 4] {
+    [
+        KeyBinding::new("cmd-h", Hide, None),
+        KeyBinding::new("alt-cmd-h", HideOthers, None),
+        KeyBinding::new("cmd-m", Minimize, None),
+        KeyBinding::new("cmd-w", CloseWindow, None),
+    ]
+}
+
+/// Run `act` on the active window, where there is one: the Window menu acts
+/// on the window in front.
+fn on_active_window(cx: &mut App, act: impl FnOnce(&mut Window)) {
+    if let Some(window) = cx.active_window() {
+        let _ = window.update(cx, |_, window, _| act(window));
+    }
 }
 
 /// Quit the showcase: take the focus off every field, let the windows paint
@@ -1435,9 +1496,14 @@ impl Showcase {
             cx.new(|cx| DiffState::new(DiffFile::parse(DIFF_SAMPLE).unwrap_or_default(), cx));
 
         // Set up application menus: `cx.set_menus` hands them to the
-        // platform's own menu bar; the showcase draws them itself where the
-        // platform has none (`demo::menu_bar`, `demo::title_bar`).
-        cx.set_menus(chrome::menus());
+        // platform's own menu bar, which on macOS takes Apple's list
+        // (`chrome::macos_menus`); the showcase draws its own menus itself
+        // where the platform has none (`demo::menu_bar`, `demo::title_bar`).
+        cx.set_menus(if cfg!(target_os = "macos") {
+            chrome::macos_menus()
+        } else {
+            chrome::menus()
+        });
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
         // The Basic page's focused field holds the keyboard focus at start,

@@ -843,6 +843,106 @@ fn the_menus_run_their_actions() {
     }
 }
 
+/// M9-117: the macOS menu bar is Apple's HIG list (*The menu bar*), under the titles the shared
+/// crate gives the three showcases: the app menu, holding the showcase's own About and
+/// Settings… and AppKit's Services, Hide, Hide Others, Show All and Quit, with the HIG's
+/// separators; File, holding Close; View, holding the in-window View menu's rows; Theme,
+/// holding the in-window Theme menu's rows less Preferences…, which is the app menu's
+/// Settings…; Window, holding Minimize, Zoom and Bring All to Front; and no Help menu. The
+/// list is built on every host; the menu bar itself only on macOS.
+#[test]
+fn the_macos_menus_are_the_hig_list() {
+    use crate::chrome::system_menu::{APP_NAME, Row, SystemItem, menus};
+    use native_theme_showcase_support::menu::macos_menu_titles;
+
+    let own = |label: &str, action| Row::Own {
+        label: label.to_string(),
+        action,
+    };
+    let in_window = |title: &str| -> Vec<Row> {
+        Action::MENUS
+            .iter()
+            .filter(|(menu, _)| *menu == title)
+            .flat_map(|(_, items)| items.iter())
+            .map(|item| match item {
+                Some(action) => own(action.label(), *action),
+                None => Row::Separator,
+            })
+            .collect()
+    };
+    let built = menus();
+    let titles: Vec<&str> = built.iter().map(|(title, _)| title.as_str()).collect();
+    assert_eq!(titles, macos_menu_titles(APP_NAME), "the menu bar's titles");
+    let rows = |at: usize| &built[at].1;
+    assert_eq!(
+        rows(0),
+        &[
+            own(&format!("About {APP_NAME}"), Action::OpenAbout),
+            Row::Separator,
+            own("Settings…", Action::OpenPreferences),
+            Row::Separator,
+            Row::System(SystemItem::Services),
+            Row::Separator,
+            Row::System(SystemItem::Hide),
+            Row::System(SystemItem::HideOthers),
+            Row::System(SystemItem::ShowAll),
+            Row::Separator,
+            Row::System(SystemItem::Quit),
+        ],
+        "the app menu"
+    );
+    assert_eq!(rows(1), &[Row::System(SystemItem::Close)], "File");
+    assert_eq!(rows(2), &in_window("View"), "View");
+    let theme = in_window("Theme");
+    assert_eq!(
+        theme[theme.len().saturating_sub(2)..],
+        [Row::Separator, own("Preferences…", Action::OpenPreferences)],
+        "the in-window Theme menu no longer ends with Preferences…"
+    );
+    assert_eq!(rows(3), &theme[..theme.len() - 2], "Theme");
+    assert_eq!(
+        rows(4),
+        &[
+            Row::System(SystemItem::Minimize),
+            Row::System(SystemItem::Zoom),
+            Row::Separator,
+            Row::System(SystemItem::BringAllToFront),
+        ],
+        "Window"
+    );
+    assert_eq!(
+        Action::OpenPreferences.shortcut(),
+        Some(egui::KeyboardShortcut::new(
+            egui::Modifiers::COMMAND,
+            egui::Key::Comma
+        )),
+        "Settings… is not ⌘,"
+    );
+}
+
+/// The muda predefined items take the three showcases' one wording where muda's own differs:
+/// muda names Hide and Quit after the running application's `localizedName` and Close
+/// "Close Window"; the rest keep muda's.
+#[test]
+fn the_macos_system_items_take_the_showcases_wording() {
+    use crate::chrome::system_menu::{APP_NAME, SystemItem};
+
+    let wording = |item: SystemItem| item.wording();
+    assert_eq!(wording(SystemItem::Hide), Some(format!("Hide {APP_NAME}")));
+    assert_eq!(wording(SystemItem::Quit), Some(format!("Quit {APP_NAME}")));
+    assert_eq!(wording(SystemItem::Close), Some("Close".to_string()));
+    for item in [
+        SystemItem::Services,
+        SystemItem::HideOthers,
+        SystemItem::ShowAll,
+        SystemItem::Minimize,
+        SystemItem::Zoom,
+        SystemItem::BringAllToFront,
+    ] {
+        assert_eq!(wording(item), None, "{item:?}");
+    }
+}
+
 /// §13.2: Ctrl+K opens the palette, typing filters, a row acts, Escape clears then closes.
 #[test]
 fn the_command_palette_runs_what_it_lists() {
