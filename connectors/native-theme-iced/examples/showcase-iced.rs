@@ -228,6 +228,20 @@ mod probes {
     pub const BASIC_SWITCH_ON: &str = "probe-basic-switch-on";
     pub const BASIC_SWITCH_DISABLED: &str = "probe-basic-switch-disabled";
     pub const BASIC_CARD: &str = "probe-basic-card";
+    /// The Buttons page's buttons, each with its label: the primary row's
+    /// six, the disabled row's three and the interactive demo's.
+    pub const BUTTONS: [(&str, &str); 10] = [
+        ("probe-buttons-primary", "Primary"),
+        ("probe-buttons-secondary", "Secondary"),
+        ("probe-buttons-success", "Success"),
+        ("probe-buttons-warning", "Warning"),
+        ("probe-buttons-danger", "Danger"),
+        ("probe-buttons-text-style", "Text Style"),
+        ("probe-buttons-disabled-primary", "Disabled Primary"),
+        ("probe-buttons-disabled-secondary", "Disabled Secondary"),
+        ("probe-buttons-disabled-danger", "Disabled Danger"),
+        ("probe-buttons-click-me", "Click me!"),
+    ];
     pub const TOGGLER: &str = "probe-toggler";
     pub const PICK_LIST: &str = "probe-pick-list";
     pub const COMBO_BOX: &str = "probe-combo-box";
@@ -11314,6 +11328,16 @@ fn line_zero(table: &str) -> String {
     format!("{table}.border.line_width 0")
 }
 
+/// The minimum size a Buttons-page button is laid out at, and the leaves
+/// and helpers it comes from.
+fn button_min_size_row(resolved: &native_theme::theme::ResolvedTheme) -> String {
+    format!(
+        "{:.0} x {:.0}px, button.min_width x button.min_height: \
+         at_least(label, button_content_min_size), the minimum less button_padding",
+        resolved.button.min_width, resolved.button.min_height
+    )
+}
+
 /// The Widget Info of the Buttons page's primary row: the primary button at
 /// rest and under the pointer.
 fn button_info(state: &State) -> String {
@@ -11321,8 +11345,10 @@ fn button_info(state: &State) -> String {
     let resolved = &state.current_resolved;
     let radius_s = format!("{:.0}px", resolved.button.border.corner_radius);
     let label = font_row("button.font", &resolved.button.font);
+    let min_size = button_min_size_row(resolved);
     let config = [
         ("border-radius", radius_s.as_str()),
+        ("min size", min_size.as_str()),
         (
             "padding",
             "button_padding — each side button.border.padding states, plus \
@@ -11356,13 +11382,7 @@ fn button_info(state: &State) -> String {
         &[("hover bg", "background"), ("hover text", "text_color")],
         "",
     ));
-    widget_tooltip_themed(
-        state,
-        "Button (Primary)",
-        &colours,
-        &config,
-        &[("min-height", "hardcoded by iced")],
-    )
+    widget_tooltip_themed(state, "Button (Primary)", &colours, &config, &[])
 }
 
 /// The Widget Info of the Buttons page's disabled row: each of its three
@@ -11413,10 +11433,14 @@ fn disabled_buttons_info(state: &State) -> String {
         },
         resolved.button.disabled_opacity
     );
+    let min_size = button_min_size_row(resolved);
     widget_tooltip(
         "Disabled Buttons",
         &colours,
-        &[("disabled pair", pair.as_str())],
+        &[
+            ("disabled pair", pair.as_str()),
+            ("min size", min_size.as_str()),
+        ],
         &[("cursor", "not interactive")],
     )
 }
@@ -11427,8 +11451,24 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let resolved = &state.current_resolved;
     let ts = &resolved.text_scale;
 
+    // `button.min_width` and `button.min_height`, as a floor under every
+    // label, as the Basic page's push buttons take them and every
+    // Buttons-page button of the gpui showcase does (`geometry::button`).
+    let btn_min = native_theme_iced::button_content_min_size(resolved);
     let apply_pad =
         |b: button::Button<'a, Message>| -> button::Button<'a, Message> { b.padding(btn_pad) };
+    let [
+        primary,
+        secondary,
+        success,
+        warning,
+        danger,
+        text_style,
+        disabled_primary,
+        disabled_secondary,
+        disabled_danger,
+        click_me,
+    ] = probes::BUTTONS.map(|(id, _)| id);
 
     let header = section_header(
         "Buttons",
@@ -11444,35 +11484,77 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
         column![
             text("Primary Actions").role(section_title(ts), resolved, a11y),
             row![
-                apply_pad(
-                    button(text("Primary").typeset(&resolved.button.font, a11y))
+                probe(
+                    primary,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Primary").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_primary(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Secondary").typeset(&resolved.button.font, a11y))
+                probe(
+                    secondary,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Secondary").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Success").typeset(&resolved.button.font, a11y))
+                probe(
+                    success,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Success").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_success(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Warning").typeset(&resolved.button.font, a11y))
+                probe(
+                    warning,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Warning").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_warning(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Danger").typeset(&resolved.button.font, a11y))
+                probe(
+                    danger,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Danger").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_danger(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Text Style").typeset(&resolved.button.font, a11y))
+                probe(
+                    text_style,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Text Style").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .on_press(Message::ButtonPressed)
                         .style(styles::button_link(resolved))
+                    ),
                 ),
             ]
             .spacing(gap.widget),
@@ -11487,17 +11569,38 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             text("Disabled State").role(section_title(ts), resolved, a11y),
             text("Buttons without on_press are rendered as disabled:").body(resolved, a11y),
             row![
-                apply_pad(
-                    button(text("Disabled Primary").typeset(&resolved.button.font, a11y))
+                probe(
+                    disabled_primary,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Disabled Primary").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .style(styles::button_primary(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Disabled Secondary").typeset(&resolved.button.font, a11y))
+                probe(
+                    disabled_secondary,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Disabled Secondary").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .style(styles::button(resolved))
+                    ),
                 ),
-                apply_pad(
-                    button(text("Disabled Danger").typeset(&resolved.button.font, a11y))
+                probe(
+                    disabled_danger,
+                    Length::Shrink,
+                    apply_pad(
+                        button(at_least(
+                            text("Disabled Danger").typeset(&resolved.button.font, a11y),
+                            btn_min
+                        ))
                         .style(styles::button_danger(resolved))
+                    ),
                 ),
             ]
             .spacing(gap.widget),
@@ -11511,10 +11614,17 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let interactive = column![
         text("Interactive Demo").role(section_title(ts), resolved, a11y),
         row![
-            apply_pad(
-                button(text("Click me!").typeset(&resolved.button.font, a11y))
+            probe(
+                click_me,
+                Length::Shrink,
+                apply_pad(
+                    button(at_least(
+                        text("Click me!").typeset(&resolved.button.font, a11y),
+                        btn_min
+                    ))
                     .on_press(Message::ButtonPressed)
                     .style(styles::button_primary(resolved))
+                ),
             ),
             text(counter_text).body(resolved, a11y),
         ]
@@ -21190,28 +21300,23 @@ mod tests {
     fn the_pages_rows_are_a_widget_gap_apart() {
         for (preset, dark) in every_preset_in_both_modes() {
             let mut state = loaded(preset, dark);
-            let r = &state.current_resolved;
             let gap = state.layout.widget_gap.unwrap_or_default();
-            let pad = native_theme_iced::button_padding(r);
             let mut gaps = Vec::new();
 
             state.active_tab = Tab::Buttons;
             let mut ui = interface(&state);
-            let found = texts(&mut ui);
-            let at = |label: &str| {
-                found
-                    .iter()
-                    .find(|(content, _)| content.starts_with(label))
-                    .map(|(_, bounds)| *bounds)
-            };
-            if let (Some(click), Some(counter)) =
-                (at("Click me!"), at("Button presses this session"))
-            {
-                let end = click.x + click.width + pad.right;
-                gaps.push(("Click me! and its counter", counter.x - end));
-            } else {
+            let [.., (click_me, _)] = probes::BUTTONS;
+            let click = probe_bounds(&mut ui, click_me);
+            let Some((_, counter)) = texts(&mut ui)
+                .into_iter()
+                .find(|(content, _)| content.starts_with("Button presses this session"))
+            else {
                 panic!("{preset} (dark: {dark}): the Buttons page's demo row is not drawn");
-            }
+            };
+            gaps.push((
+                "Click me! and its counter",
+                counter.x - (click.x + click.width),
+            ));
             drop(ui);
 
             state.active_tab = Tab::Range;
@@ -21975,6 +22080,58 @@ mod tests {
             1,
             "the Grid's info lists its columns more than once:\n{info}"
         );
+    }
+
+    /// M9-155: every button of the Buttons page is laid out at the minimum
+    /// size the theme states (`button.min_width` and `.min_height`), or at
+    /// its own size where its label, padded, is larger, as the Basic page's
+    /// push buttons are and every Buttons-page button of the gpui showcase
+    /// is through `geometry::button`. kde-breeze states 80 by 32, which a
+    /// short label such as "Primary" falls short of.
+    #[test]
+    fn the_buttons_page_takes_the_stated_minimum_size() {
+        for preset in ["kde-breeze", "adwaita", "material-3"] {
+            let (theme, resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            let r = resolved.clone();
+            let pad = native_theme_iced::button_padding(&r);
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility: native_theme_iced::AccessibilityPreferences::default(),
+                active_tab: Tab::Buttons,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+            for (id, label) in probes::BUTTONS {
+                let button = probe_bounds(&mut ui, id);
+                let text = height_of(&mut ui, label);
+                assert!(
+                    button.width >= r.button.min_width - 0.01,
+                    "{preset}: {label:?} is {}px wide, button.min_width is {}px",
+                    button.width,
+                    r.button.min_width
+                );
+                let expected = r.button.min_height.max(text + pad.y());
+                assert!(
+                    (button.height - expected).abs() < 0.01,
+                    "{preset}: {label:?} is {}px tall, expected {expected}px",
+                    button.height
+                );
+            }
+            let want = format!(
+                "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
+                r.button.min_width, r.button.min_height
+            );
+            for info in [button_info(&state), disabled_buttons_info(&state)] {
+                assert!(
+                    info.lines().any(|line| line.trim().starts_with(&want)),
+                    "{preset}: the info does not say {want:?}:\n{info}"
+                );
+            }
+        }
     }
 
     /// M9-100 (simplify): the Inputs page chains each single-line
