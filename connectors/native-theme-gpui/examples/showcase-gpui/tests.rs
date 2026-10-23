@@ -9866,6 +9866,308 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
     }
 }
 
+/// A platform text system that holds the families `.0` alone, each its own face, and lays text
+/// out as gpui's `NoopTextSystem`: a host that lacks a theme's family, for a test. The test
+/// platform's own, `NoopTextSystem`, resolves every family to one face and lists none
+/// (gpui-pre 0.3.9 `src/platform.rs:1547-1553`).
+struct HeldFamilies(Vec<String>);
+
+impl gpui::PlatformTextSystem for HeldFamilies {
+    fn add_fonts(&self, fonts: Vec<std::borrow::Cow<'static, [u8]>>) -> gpui::Result<()> {
+        gpui::NoopTextSystem.add_fonts(fonts)
+    }
+
+    fn all_font_names(&self) -> Vec<String> {
+        self.0.clone()
+    }
+
+    fn font_id(&self, descriptor: &gpui::Font) -> gpui::Result<gpui::FontId> {
+        self.0
+            .iter()
+            .position(|family| *family == descriptor.family.as_ref())
+            .map(gpui::FontId)
+            .ok_or_else(|| {
+                std::io::Error::other(format!("no face of {}", descriptor.family)).into()
+            })
+    }
+
+    fn font_metrics(&self, font_id: gpui::FontId) -> gpui::FontMetrics {
+        gpui::NoopTextSystem.font_metrics(font_id)
+    }
+
+    fn typographic_bounds(
+        &self,
+        font_id: gpui::FontId,
+        glyph_id: gpui::GlyphId,
+    ) -> gpui::Result<Bounds<f32>> {
+        gpui::NoopTextSystem.typographic_bounds(font_id, glyph_id)
+    }
+
+    fn advance(
+        &self,
+        font_id: gpui::FontId,
+        glyph_id: gpui::GlyphId,
+    ) -> gpui::Result<gpui::Size<f32>> {
+        gpui::NoopTextSystem.advance(font_id, glyph_id)
+    }
+
+    fn glyph_for_char(&self, font_id: gpui::FontId, ch: char) -> Option<gpui::GlyphId> {
+        gpui::NoopTextSystem.glyph_for_char(font_id, ch)
+    }
+
+    fn glyph_raster_bounds(
+        &self,
+        params: &gpui::RenderGlyphParams,
+    ) -> gpui::Result<Bounds<gpui::DevicePixels>> {
+        gpui::NoopTextSystem.glyph_raster_bounds(params)
+    }
+
+    fn rasterize_glyph(
+        &self,
+        params: &gpui::RenderGlyphParams,
+        raster_bounds: Bounds<gpui::DevicePixels>,
+    ) -> gpui::Result<(gpui::Size<gpui::DevicePixels>, Vec<u8>)> {
+        gpui::NoopTextSystem.rasterize_glyph(params, raster_bounds)
+    }
+
+    fn layout_line(
+        &self,
+        text: &str,
+        font_size: Pixels,
+        runs: &[gpui::FontRun],
+    ) -> gpui::LineLayout {
+        gpui::NoopTextSystem.layout_line(text, font_size, runs)
+    }
+
+    fn recommended_rendering_mode(
+        &self,
+        font_id: gpui::FontId,
+        font_size: Pixels,
+    ) -> gpui::TextRenderingMode {
+        gpui::NoopTextSystem.recommended_rendering_mode(font_id, font_size)
+    }
+}
+
+/// Run `test` as `#[gpui::test]` runs a test's body (gpui-pre-macros 0.3.9 `src/test.rs:159-196`),
+/// in an app whose platform text system holds the families `held` alone ([`HeldFamilies`]).
+fn with_held_families(
+    held: &[&str],
+    test: impl Fn(&mut TestAppContext) + std::panic::RefUnwindSafe,
+) {
+    let held: Vec<String> = held.iter().map(|family| family.to_string()).collect();
+    gpui::run_test(
+        1,
+        &[],
+        0,
+        &mut |dispatcher, _seed| {
+            let mut cx = TestAppContext::build_with_text_system(
+                dispatcher,
+                None,
+                std::sync::Arc::new(HeldFamilies(held.clone())),
+            );
+            test(&mut cx);
+            cx.run_until_parked();
+            cx.update(|cx| {
+                cx.background_executor().forbid_parking();
+                cx.quit();
+            });
+            cx.run_until_parked();
+        },
+        None,
+    );
+}
+
+/// The installed theme's font labels, as the three sites show them: the status bar's font item,
+/// the Theme tab's `font_family` and `mono_font_family` rows, and Widget Info's listed
+/// `defaults.font.family` row of the Basic page's heading button and the family part of its
+/// `defaults.mono_font` row of the monospace text, each with the frame drawn that keeps the
+/// install's look.
+fn font_labels(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> [(String, String); 5] {
+    use crate::inspector::PanelLook;
+    draw(cx);
+    read(cx, showcase, |this, cx| {
+        let status = crate::chrome::status_environment(this, cx);
+        let rows = crate::inspector::font_rows(this, cx);
+        let row = |what: &str| {
+            rows.iter()
+                .find(|(name, _)| *name == what)
+                .map(|(_, value)| value.clone())
+                .unwrap_or_default()
+        };
+        let size = native_theme_showcase_support::status::defined_size(&this.original_font);
+        let listed = |id: &str, leaf: &str| {
+            PanelLook::of(this, cx)
+                .and_then(|look| {
+                    let element = crate::elements::element(id)?;
+                    crate::inspector::listed(&look, element, &WidgetInfo::default())
+                        .rows
+                        .into_iter()
+                        .find(|row| row.leaf == leaf)
+                        .map(|row| row.value)
+                })
+                .unwrap_or_default()
+        };
+        // "<family> <size> <unit> <weight>": the monospace font's style is normal.
+        let mono = listed("basic.typography.monospace", "defaults.mono_font");
+        let mono_family = mono.rsplitn(4, ' ').nth(3).unwrap_or_default().to_string();
+        let (body, mono_stated) = (
+            this.original_font.family.to_string(),
+            this.original_mono_font.family.to_string(),
+        );
+        [
+            (
+                "the status bar's font item".to_string(),
+                status
+                    .get(2)
+                    .and_then(|item| item.strip_suffix(&format!(" {size}")))
+                    .unwrap_or_default()
+                    .to_string(),
+            ),
+            (
+                "the Theme tab's font_family row".to_string(),
+                row("font_family"),
+            ),
+            (
+                "the Theme tab's mono_font_family row".to_string(),
+                row("mono_font_family"),
+            ),
+            (
+                format!("Widget Info's defaults.font.family row ({body})"),
+                listed("basic.buttons.heading", "defaults.font.family"),
+            ),
+            (
+                format!("Widget Info's defaults.mono_font row ({mono_stated})"),
+                mono_family,
+            ),
+        ]
+    })
+}
+
+/// The family gpui is asked for in a theme's `stated` one (the connector's `font_family`).
+fn asked_family(stated: &str) -> String {
+    native_theme_gpui::font_family(&std::sync::Arc::from(stated)).to_string()
+}
+
+/// The stack families a [`HeldFamilies`] test holds the first of that is none of `asked`, so
+/// gpui draws text it finds no face for in that one.
+fn held_fallback(asked: &[String]) -> &'static str {
+    ["DejaVu Sans", "Cantarell", "Arial"]
+        .into_iter()
+        .find(|family| !asked.iter().any(|asked| asked == family))
+        .unwrap_or("Arial")
+}
+
+/// Where gpui's text system finds no face of a theme's family, the status bar, the Theme tab and
+/// Widget Info name the family gpui draws in its place, the first of gpui's fallback stack its
+/// text system holds, and the family it found no face of: under kde-breeze on a host whose text
+/// system holds neither "Noto Sans" nor "Hack" (the platform names no substitute where the
+/// system has them, as this host's fontconfig, feature `system-fonts`, or as macOS and Windows
+/// never do), and under a theme that states "NoSuchFamily-T10b", which no system has (on this
+/// host, the platform's substitute, which the text system does not hold either).
+#[test]
+fn a_family_gpui_finds_no_face_of_is_named_by_its_fallback() {
+    let light = |preset: &str| {
+        native_theme::theme::Theme::preset(preset)
+            .and_then(|t| t.resolve(native_theme::theme::ColorMode::Light))
+            .map(|r| r.variant.defaults)
+            .expect("the preset resolves")
+    };
+    let breeze = light("kde-breeze");
+    let (absent, absent_mono) = ("NoSuchFamily-T10b", "NoSuchFamily-T10b Mono");
+    let asked: Vec<String> = [
+        &*breeze.font.family,
+        &*breeze.mono_font.family,
+        absent,
+        absent_mono,
+    ]
+    .into_iter()
+    .map(asked_family)
+    .collect();
+    let held = held_fallback(&asked);
+    let expected = |stated: &str| {
+        let asked = asked_family(stated);
+        let missing = if asked == stated {
+            "gpui finds no face of it".to_string()
+        } else {
+            format!("not on this system; gpui finds no face of the platform's substitute, {asked}")
+        };
+        format!(
+            "{stated} ({missing}; drawn in the first family of gpui's fallback stack it finds, \
+             {held})"
+        )
+    };
+    with_held_families(&[held], |cx| {
+        let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+        use_light_preset(&mut cx, &showcase, "kde-breeze");
+        let check = |cx: &mut VisualTestContext, under: &str, body: &str, mono: &str| {
+            let labels = font_labels(cx, &showcase);
+            for (ix, (site, label)) in labels.iter().enumerate() {
+                let stated = if ix == 2 || ix == 4 { mono } else { body };
+                println!("{under}: {site}: {label}");
+                assert_eq!(label, &expected(stated), "{under}: {site}");
+            }
+        };
+        check(
+            &mut cx,
+            "kde-breeze",
+            &breeze.font.family,
+            &breeze.mono_font.family,
+        );
+        let Ok(system) = system_theme() else {
+            return;
+        };
+        let overlay = native_theme::theme::Theme::from_toml(&format!(
+            "[light.defaults.font]\nfamily = \"{absent}\"\n[light.defaults.mono_font]\nfamily = \
+             \"{absent_mono}\"\n[dark.defaults.font]\nfamily = \"{absent}\"\n\
+             [dark.defaults.mono_font]\nfamily = \"{absent_mono}\"\n"
+        ))
+        .and_then(|overlay| system.with_overlay(&overlay))
+        .expect("the overlay applies");
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| this.install_system(overlay, window, cx))
+        });
+        cx.run_until_parked();
+        check(&mut cx, absent, absent, absent_mono);
+    });
+}
+
+/// Where gpui's text system finds a theme's family, the three sites name it as
+/// `status::family_label` of the stated family and the one gpui is asked for: the stated name
+/// alone where the platform names no substitute, as on a host that has "Noto Sans" and "Hack".
+#[test]
+fn a_family_gpui_finds_is_named_as_stated() {
+    let breeze = native_theme::theme::Theme::preset("kde-breeze")
+        .and_then(|t| t.resolve(native_theme::theme::ColorMode::Light))
+        .map(|r| r.variant.defaults)
+        .expect("the preset resolves");
+    let (body, mono) = (
+        asked_family(&breeze.font.family),
+        asked_family(&breeze.mono_font.family),
+    );
+    let fallback = held_fallback(&[body.clone(), mono.clone()]);
+    let held = [body.as_str(), mono.as_str(), fallback];
+    with_held_families(&held, |cx| {
+        let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+        use_light_preset(&mut cx, &showcase, "kde-breeze");
+        for (ix, (site, label)) in font_labels(&mut cx, &showcase).iter().enumerate() {
+            let (stated, asked) = if ix == 2 || ix == 4 {
+                (&breeze.mono_font.family, &mono)
+            } else {
+                (&breeze.font.family, &body)
+            };
+            println!("kde-breeze: {site}: {label}");
+            assert_eq!(
+                label,
+                &native_theme_showcase_support::status::family_label(stated, Some(asked)),
+                "{site}"
+            );
+            if stated.as_ref() == asked.as_str() {
+                assert_eq!(label, stated.as_ref(), "{site}");
+            }
+        }
+    });
+}
+
 /// A chrome popup row is padded on each side the theme states by
 /// `menu.border.padding` (`geometry::menu_item`), on an unstated left or
 /// right by `MENU_ROW_PADDING_X`, upstream's row padding, and on an

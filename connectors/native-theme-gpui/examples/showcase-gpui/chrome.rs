@@ -365,23 +365,31 @@ pub(crate) fn status_bar(
 }
 
 /// The status bar's environment text (spec §2.7), the shared crate's items
-/// (`status::environment`): the desktop, the preset and colour mode, the
+/// (`status::environment_drawn`): the desktop, the preset and colour mode, the
 /// installed theme's `defaults.font` (`Showcase::original_font`, a
 /// placeholder where no theme could be read) by the family gpui draws and
 /// the size in the unit its source stated, and, once a native theme is
 /// installed, its text-scale factor and each of its accessibility
 /// preferences that is set, by its field name. The drawn family is
-/// `Theme::font_family`, the connector's `font_family` of the stated one,
-/// once a native theme is installed; before that no preferences are
-/// installed, and the placeholder is named alone.
+/// `inspector::DrawnFamilies::drawn` of the stated one and
+/// `Theme::font_family`, the connector's `font_family` of it, once a native
+/// theme is installed; before that no preferences are installed, and the
+/// placeholder is named alone.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
     let native = cx.native_theme();
-    status::environment(
+    let families = crate::inspector::DrawnFamilies::installed(app, cx);
+    let asked = &cx.theme().font_family;
+    let drawn = families
+        .as_deref()
+        .map_or(status::DrawnFamily::Stated, |families| {
+            families.drawn(&app.original_font.family, asked)
+        });
+    status::environment_drawn(
         &preset,
         mode,
         &app.original_font,
-        native.map(|_| cx.theme().font_family.as_ref()),
+        drawn,
         native.map(|nt| nt.accessibility()),
     )
 }

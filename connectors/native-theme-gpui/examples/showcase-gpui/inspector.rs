@@ -18,8 +18,10 @@ use gpui_component::{
 };
 use native_theme_gpui::{ActiveNativeTheme as _, geometry, variants};
 use native_theme_showcase_support::info::ListedInfo;
-use native_theme_showcase_support::status::{defined_size, family_label};
+use native_theme_showcase_support::status::{DrawnFamily, defined_size};
 use native_theme_showcase_support::values;
+use std::borrow::Cow;
+use std::sync::Arc;
 
 use crate::app::Showcase;
 use crate::demo::TabBarKind;
@@ -242,25 +244,147 @@ impl Inspector {
 
 /// The Theme tab's Fonts section: the installed theme's `defaults.font` and
 /// `defaults.mono_font` of `app`, each family by the family gpui draws
-/// (`status::family_label` of `Theme::font_family` and `mono_font_family`,
-/// the connector's `font_family` of the stated ones, once a native theme is
-/// installed; the placeholder alone before that), each size in the unit the
-/// platform stated, like the Widget Info: these rows report the theme's own
-/// definition, not the pixel value gpui lays out with.
+/// ([`DrawnFamilies::label`] of the stated family and `Theme::font_family`
+/// or `mono_font_family`, the connector's `font_family` of it, once a native
+/// theme is installed; the placeholder alone before that), each size in the
+/// unit the platform stated, like the Widget Info: these rows report the
+/// theme's own definition, not the pixel value gpui lays out with.
 pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, String)> {
     let (font, mono) = (&app.original_font, &app.original_mono_font);
     let theme = cx.theme();
-    let native = cx.native_theme().is_some();
-    let (drawn, drawn_mono) = (
-        native.then_some(theme.font_family.as_ref()),
-        native.then_some(theme.mono_font_family.as_ref()),
-    );
+    let families = DrawnFamilies::installed(app, cx);
+    let label = |stated: &str, asked: &SharedString| {
+        families
+            .as_deref()
+            .map_or_else(|| stated.to_string(), |f| f.label(stated, asked))
+    };
     vec![
-        ("font_family", family_label(&font.family, drawn)),
+        ("font_family", label(&font.family, &theme.font_family)),
         ("font_size", defined_size(font)),
-        ("mono_font_family", family_label(&mono.family, drawn_mono)),
+        (
+            "mono_font_family",
+            label(&mono.family, &theme.mono_font_family),
+        ),
         ("mono_font_size", defined_size(mono)),
     ]
+}
+
+/// What gpui draws each family it is asked for under the installed theme
+/// in, as the status bar, the Theme tab and Widget Info name it (the shared
+/// crate's `status::DrawnFamily`): the family gpui's text system resolves it
+/// to, which is the family itself where the text system finds a face of it
+/// and otherwise the first family of gpui's fallback stack it finds
+/// (`TextSystem::resolve_font`: gpui-pre 0.3.9 `src/text_system.rs:370-388`
+/// over the stack of `:255-266`; gpui-fast 0.1.10 `src/text_system.rs:372-374`,
+/// `src/fast/text.rs:990-1058`, over `:256-267`), read back from the face's
+/// id (`TextSystem::get_font_for_id`, gpui-pre `:354-362`, gpui-fast
+/// `:356-364`): each face gpui's platform text systems load gets an id of its
+/// own for each family it is asked for under (gpui-pre-wgpu 0.3.9 and
+/// gpui-fast-wgpu 0.1.10 `src/cosmic_text_system.rs:44-47`, `:400-443`;
+/// gpui-pre-apple `src/text_system.rs:382`, gpui-fast-apple `:385`;
+/// gpui-pre-windows and gpui-fast-windows `src/direct_write.rs:332`), so the
+/// id names that family.
+/// Built once an install, with the panel's look (`PanelLook::of`), as the
+/// text system is read through the app.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct DrawnFamilies(Vec<(SharedString, Option<SharedString>)>);
+
+impl DrawnFamilies {
+    /// The family the text system of `cx` resolves each of `asked` to, each
+    /// asked once. A text system that lists no font
+    /// (`TextSystem::all_font_names`, gpui-pre `:284-289`, gpui-fast
+    /// `:285-290`) is not asked, and the answer is `None`: the test
+    /// platform's `NoopTextSystem` lists none and resolves every family to
+    /// one face, whose id then names no family of its own (gpui-pre
+    /// `src/platform.rs:1547-1553`). `resolve_font` panics where its text
+    /// system finds no face of the family nor of any family of the stack, as
+    /// gpui's own layout of that family's text, which goes through it
+    /// (gpui-pre `src/text_system.rs:797`, `:911`), already does.
+    pub(crate) fn of(asked: impl IntoIterator<Item = SharedString>, cx: &gpui::App) -> Self {
+        let text_system = cx.text_system();
+        let listed = !text_system.all_font_names().is_empty();
+        let mut drawn: Vec<(SharedString, Option<SharedString>)> = Vec::new();
+        for family in asked {
+            if drawn.iter().any(|(known, _)| *known == family) {
+                continue;
+            }
+            let resolved = if listed {
+                let id = text_system.resolve_font(&gpui::font(family.clone()));
+                text_system.get_font_for_id(id).map(|font| font.family)
+            } else {
+                None
+            };
+            drawn.push((family, resolved));
+        }
+        Self(drawn)
+    }
+
+    /// The installed theme's: kept with the panel's look
+    /// (`Showcase::panel_look`), or, where the frame that keeps it has not
+    /// run since the install, built now for `Theme::font_family` and
+    /// `mono_font_family`; `None` where no native theme is installed.
+    pub(crate) fn installed<'a>(app: &'a Showcase, cx: &gpui::App) -> Option<Cow<'a, Self>> {
+        if let Some(look) = &app.panel_look {
+            return Some(Cow::Borrowed(&look.families));
+        }
+        cx.native_theme()?;
+        let theme = cx.theme();
+        Some(Cow::Owned(Self::of(
+            [theme.font_family.clone(), theme.mono_font_family.clone()],
+            cx,
+        )))
+    }
+
+    /// What gpui draws text of a theme font whose family is `stated` in,
+    /// gpui having been asked for `asked` (the connector's `font_family` of
+    /// it): where the text system resolves `asked` to another family, the
+    /// first family of gpui's fallback stack it finds, with `asked` named
+    /// where it is not `stated`; else `asked` itself
+    /// (`DrawnFamily::Named`, the stated name alone where `asked` is it), and
+    /// so where the text system was not asked or does not say.
+    pub(crate) fn drawn<'a>(&'a self, stated: &str, asked: &'a str) -> DrawnFamily<'a> {
+        let resolved = self
+            .0
+            .iter()
+            .find(|(known, _)| known.as_ref() == asked)
+            .and_then(|(_, resolved)| resolved.as_deref());
+        match resolved {
+            Some(family) if family != asked => DrawnFamily::FallbackStack {
+                toolkit: "gpui",
+                asked: (asked != stated).then_some(asked),
+                family,
+            },
+            _ => DrawnFamily::from(Some(asked)),
+        }
+    }
+
+    /// `stated` as a label that says what gpui draws ([`Self::drawn`]).
+    pub(crate) fn label(&self, stated: &str, asked: &str) -> String {
+        self.drawn(stated, asked).label(stated)
+    }
+}
+
+/// Every font family `value`, a resolved theme's JSON, states: the `family`
+/// string of each object it holds, each once.
+fn stated_families(value: &serde_json::Value, families: &mut Vec<String>) {
+    match value {
+        serde_json::Value::Object(map) => {
+            if let Some(family) = map.get("family").and_then(serde_json::Value::as_str)
+                && !families.iter().any(|known| known == family)
+            {
+                families.push(family.to_string());
+            }
+            for value in map.values() {
+                stated_families(value, families);
+            }
+        }
+        serde_json::Value::Array(values) => {
+            for value in values {
+                stated_families(value, families);
+            }
+        }
+        _ => {}
+    }
 }
 
 /// Who draws the frame of a window granted server-side decorations, on the
@@ -471,6 +595,9 @@ pub(crate) struct PanelLook {
     layout: native_theme::theme::LayoutTheme,
     icon_set: native_theme::theme::IconSet,
     icon_theme: Option<String>,
+    /// What gpui draws each family of `resolved` in, and `Theme::font_family`
+    /// and `mono_font_family`.
+    families: DrawnFamilies,
 }
 
 impl PanelLook {
@@ -485,6 +612,15 @@ impl PanelLook {
         let size = native_theme_gpui::scaled_text_size(r.sidebar.font.size, n.accessibility);
         let side = |v: Option<f32>| v.map_or(gpui::px(0.), gpui::px);
         let p = &r.button.border.padding;
+        let resolved = theme_json(r);
+        let mut named = Vec::new();
+        stated_families(&resolved, &mut named);
+        let theme = cx.theme();
+        let asked = named
+            .iter()
+            .map(|family| native_theme_gpui::font_family(&Arc::from(family.as_str())))
+            .chain([theme.font_family.clone(), theme.mono_font_family.clone()]);
+        let families = DrawnFamilies::of(asked, cx);
         Some(Self {
             family: native_theme_gpui::font_family(&r.sidebar.font.family),
             size: gpui::px(size),
@@ -509,10 +645,11 @@ impl PanelLook {
                 r.button.active_background.map(stated),
                 stated(r.button.active_text_color),
             ),
-            resolved: theme_json(r),
+            resolved,
             layout,
             icon_set: showcase.current_icon_set,
             icon_theme: showcase.current_icon_theme.clone(),
+            families,
         })
     }
 
@@ -547,7 +684,7 @@ thread_local! {
 /// The panel's text for `element` of docs/showcase-elements.toml, whose
 /// widget reported `info`, under `look`: a row per leaf the list names, with
 /// its value and how gpui applies it (`info::leaves`), each font's family by
-/// the family gpui draws (`status::family_label` of the stated family and
+/// the family gpui draws ([`DrawnFamilies::label`] of the stated family and
 /// the connector's `font_family` of it, as the Theme tab's [`font_rows`]),
 /// and the widget's "Not themeable" notes.
 pub(crate) fn listed(
@@ -562,10 +699,8 @@ pub(crate) fn listed(
         Some(look.icon_set),
         look.icon_theme.as_deref(),
         |_, font| {
-            family_label(
-                &font.family,
-                Some(&native_theme_gpui::font_family(&font.family)),
-            )
+            look.families
+                .label(&font.family, &native_theme_gpui::font_family(&font.family))
         },
         |leaf| {
             leaves::how(&element.id, leaf)
