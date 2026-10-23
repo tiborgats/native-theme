@@ -137,7 +137,10 @@ impl CliArgs {
     /// dump, which record the run as it started, so a key the desktop hands
     /// the window while it is captured or dumped types into no field and runs
     /// no shortcut. A capture tool's focus check catches a window that loses
-    /// the focus, not a key typed into the one that has it.
+    /// the focus, not a key typed into the one that has it. An input method's
+    /// commit is no key: the egui and iced showcases drop it too, and the gpui
+    /// showcase stops only a one-character one (its `keyboard_shield` says
+    /// why).
     #[must_use]
     pub fn shields_keyboard(&self) -> bool {
         self.capturing() || self.dump_layout.is_some()

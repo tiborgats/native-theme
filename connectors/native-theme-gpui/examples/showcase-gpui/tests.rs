@@ -5956,8 +5956,9 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
 /// Keys typed while a capture runs reach the window the desktop gives the
 /// focus, and changed what a capture recorded (the Basic page's focused field
 /// read "Focusedones?" in the iced showcase): under `--capture`,
-/// `--screenshot` and `--dump-layout` the window takes no keyboard input
-/// (`Showcase::keyboard_shield`). Text typed into the Basic page's filled
+/// `--screenshot` and `--dump-layout` the window takes no keystroke
+/// (`Showcase::keyboard_shield`, whose doc names the input-method commits it
+/// cannot stop). Text typed into the Basic page's filled
 /// field and the side-panel toggle's binding change nothing; the same keys
 /// in a run that neither captures nor dumps type into the field and hide the
 /// panel, which is what makes the first half mean something.

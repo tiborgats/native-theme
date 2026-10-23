@@ -3182,8 +3182,8 @@ fn content_panel(state: &State, btn_pad: Padding, inp_pad: Padding) -> Element<'
 /// no tooltip and fills no Widget Info, so a capture shows every control at
 /// rest and a layout dump records it so. Neither: the page as it is. With
 /// `keyboard` (a capture or a layout dump, [`CliArgs::shields_keyboard`],
-/// which holds only where one of the two others does) no key reaches the
-/// page either.
+/// which holds only where one of the two others does) no key and no input
+/// method's commit reaches the page either.
 fn held_page<'a>(
     page: Element<'a, Message>,
     pointer: Option<(u16, u16)>,
@@ -3236,9 +3236,11 @@ const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 /// the cursor is `Cursor::Unavailable` and nothing is delivered: the content
 /// sees no pointer at all.
 ///
-/// With `keyboard`, the window's keyboard events are captured here and
-/// handed to no widget, so a key the desktop hands the window while it is
-/// captured or dumped types into no field, and, captured, reaches no
+/// With `keyboard`, the window's keyboard and input-method events are
+/// captured here and handed to no widget, so a key or an input method's
+/// commit the desktop hands the window while it is captured or dumped types
+/// into no field (iced_widget 0.14.2 `src/text_input.rs` takes text from
+/// both), and, captured, a key reaches no
 /// `keyboard::listen` either, so it runs no shortcut ([`shortcut`]; iced_futures
 /// 0.14.0 `src/keyboard.rs`, `listen`, takes only events no widget captured).
 struct HeldPointer<'a> {
@@ -3351,7 +3353,12 @@ impl iced::advanced::Widget<Message, Theme, iced::Renderer> for HeldPointer<'_> 
         shell: &mut iced::advanced::Shell<'_, Message>,
         viewport: &iced::Rectangle,
     ) {
-        if self.keyboard && matches!(event, iced::Event::Keyboard(_)) {
+        if self.keyboard
+            && matches!(
+                event,
+                iced::Event::Keyboard(_) | iced::Event::InputMethod(_)
+            )
+        {
             shell.capture_event();
             return;
         }
@@ -27800,8 +27807,9 @@ mod tests {
     /// and `--dump-layout` the window takes no keyboard input
     /// ([`CliArgs::shields_keyboard`], [`HeldPointer`]'s `keyboard`). The
     /// focused field takes the focus from a press held on it, as `--pointer
-    /// X,Y --press` holds one in a capture, and is typed into: with the
-    /// keyboard shielded no message is sent, and a key no widget takes is
+    /// X,Y --press` holds one in a capture, and is typed into, by keys and by
+    /// an input method's commit: with the keyboard shielded no message is
+    /// sent, and a key no widget takes is
     /// captured, so `keyboard::listen` and its shortcuts never see it; with it
     /// not, the text reaches the field, which is what makes the first half
     /// mean something.
@@ -27833,6 +27841,8 @@ mod tests {
             let redraw = |at: Instant| Event::Window(iced::window::Event::RedrawRequested(at));
             let _ = ui.simulate([redraw(start), redraw(start + HELD_PRESS_AFTER)]);
             let _ = ui.typewrite("ones?");
+            let commit = iced::advanced::input_method::Event::Commit("相".to_string());
+            let _ = ui.simulate([Event::InputMethod(commit)]);
             let unbound = ui.simulate([Event::Keyboard(key_press(Some("j")))]);
             (ui.into_messages().collect(), unbound)
         };
@@ -27855,6 +27865,13 @@ mod tests {
             ),
             "the field held pressed takes no typed text either, so the shielded \
              half of this test proves nothing: {live:?}"
+        );
+        assert!(
+            live.iter().any(
+                |m| matches!(m, Message::BasicFocusedChanged(value) if value.ends_with("ones?相"))
+            ),
+            "the field held pressed takes no input method's commit either, so the \
+             shielded half of this test proves nothing for it: {live:?}"
         );
         assert_eq!(
             unbound,

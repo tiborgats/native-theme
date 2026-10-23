@@ -330,6 +330,15 @@ pub(crate) struct Showcase {
     /// reaches none of them (gpui-pre 0.3.9 `src/app.rs`,
     /// `App::intercept_keystrokes`; `src/window.rs`, `dispatch_key_event` and
     /// `dispatch_keystroke`).
+    ///
+    /// Its limit: an input method's commit of more than one character is no
+    /// keystroke. gpui hands it straight to the focused field's input handler
+    /// (gpui-pre-linux 0.3.9 `src/linux/wayland/client.rs:2298-2320`,
+    /// `CommitString`; `src/linux/wayland/window.rs:1469-1479`, `handle_ime`),
+    /// with no hook ahead of the handler, so where an input method runs, the
+    /// Basic page's focused field, which keeps the focus for its focus border,
+    /// still takes such a commit. A one-character commit comes as a keystroke
+    /// and is stopped.
     pub(crate) keyboard_shield: Option<Subscription>,
 
     // Basic page
