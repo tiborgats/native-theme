@@ -22335,12 +22335,12 @@ mod tests {
                 "min size: {:.0} x {:.0}px, button.min_width x button.min_height",
                 r.button.min_width, r.button.min_height
             );
-            let mut infos = vec![
+            let infos = [
                 ("Tooltip", tooltip_info(&state)),
                 ("PaneGrid", pane_grid_info(&state)),
+                #[cfg(feature = "iced_aw")]
+                ("Card", aw_card_info(&state)),
             ];
-            #[cfg(feature = "iced_aw")]
-            infos.push(("Card", aw_card_info(&state)));
             for (name, info) in infos {
                 if !info.lines().any(|line| line.contains(&want)) {
                     faults.push(format!("{preset}: the {name} info does not say {want:?}"));
