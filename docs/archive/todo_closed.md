@@ -1541,6 +1541,65 @@ and many have since drifted, as the archive's [README](README.md) warns.
       `src/dialog/dialog.rs:749-756` and `:789-804`; `GHOST_NOTE` and the `ghost` scope's
       doc `src/button/button.rs:1008` and `:1098`.
 
+### Showcases: the strict panic lints do not reach the showcase examples
+
+- [x] [v0.7.0] `scripts/check_release.sh` and `.github/workflows/ci.yml` run
+      `scripts/check_strict_panic.sh` on each connector with `--lib`
+      (check_release.sh, *strict-panic (native-theme-gpui, native, watch)*),
+      so the three showcase examples get clippy's default lints alone, where
+      the M9 constraints hold them to the strict ones. M9a's final fix
+      (2026-10-18) ran it over the gpui showcase:
+      `bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch`
+      finds 45: 42 `arithmetic_side_effects`, 2 `indexing_slicing` and 1
+      `integer_division`, in demo.rs (17), app.rs (6), info/layout.rs (5),
+      inspector.rs (4), main.rs (3), pages/data.rs and pages/layout.rs (2
+      each), and info/feedback.rs, pages/basic.rs, pages/feedback.rs,
+      pages/mod.rs, speech.rs and support.rs (1 each). Some of the arithmetic
+      is on gpui's `Pixels`, an `f32` whose operators do not panic, the rest
+      on integers and one `Duration` sum (main.rs, `held`). Fix them, then
+      add the example's line to check_release.sh's strict-panic section and
+      to ci.yml's strict-panic step, beside the connector's. M9b's iced
+      showcase (`--example showcase-iced`) and M9c's egui showcase
+      (`--example showcase-egui`) need the same run.
+      M9a T21 (2026-10-18): the gpui half is closed. `30c49fc1` fixes the
+      45 (integer arithmetic saturating or checked, the `Duration` sum
+      through `saturating_add`, the integer division through `div_euclid`,
+      the two indexings through `Value::get` and a slice pattern, `Pixels`
+      arithmetic in `f32` through `f32::from` and `px`, as the connector's
+      widgets spell it), and `259a8146` adds the example's line, with
+      `native,watch` and with `gpui-fast,native,watch`, to check_release.sh's
+      strict-panic section and ci.yml's two gpui strict-panic steps. The
+      iced and egui showcases' runs stay open, for M9b and M9c.
+      M9b T1 (2026-10-20): the iced half is closed. The run found 40 at
+      `c0d6d530` (21 `arithmetic_side_effects`, 17 `indexing_slicing`, 2
+      `exit`); `1d57e42d` moved the showcase onto the shared crate, which
+      took 19 of them with the code it replaced (the command-line parser,
+      the hex parser, the exits through `cli::refuse`), and `f6ed4f75` fixes
+      the other 21 (the `const` `Tab::ALL` check by slice pattern, counters
+      saturating, the animation frames through a zip, `.get()` and
+      `checked_rem`, the grids as slice chunks, the frame check's arithmetic
+      saturating). `1bacf203` adds the example's line,
+      with `iced_aw,watch,native`, to check_release.sh's strict-panic section
+      and ci.yml's iced leg, and splits each connector's step in ci.yml so
+      that the library and the showcase run as steps of their own. The egui
+      showcase's run stays open, for M9c.
+      M9c T1c (2026-10-23): the egui half is closed. The run found 13 at
+      `1bea8cf5` with `--all-features` and with the default features, all
+      `arithmetic_side_effects`: pages/basic.rs (7), demo.rs (3), chrome.rs
+      (2) and pages/icons.rs (1); 12 with `--no-default-features` (the
+      semibold registration compiles only with `system-fonts`), 12 for
+      x86_64-apple-darwin (the Theme menu's frame is not compiled there) and
+      13 for x86_64-pc-windows-msvc. `f183d015` fixes
+      them (the 1-based row numbers and the registration count saturating;
+      egui's `Rect`, `Margin` and `Vec2` operators spelled in `f32` as epaint
+      and emath compute them, so nothing drawn moves), and `3d471f65` adds
+      the example's lines, with `--all-features` and `--no-default-features`
+      and with `--all-features` for the two targets, to check_release.sh's
+      strict-panic section and ci.yml's egui leg, each a step of its own.
+  *Closed by M9c T1c (2026-10-23, f183d015, 3d471f65):* the three showcase examples hold
+      the strict panic lints, in check_release.sh's strict-panic section and ci.yml's
+      gpui, iced and egui legs.
+
 ## Post-1.0 / Deferred
 
 ### Change notification

@@ -3850,49 +3850,6 @@ name in [`archive/todo_closed.md`](archive/todo_closed.md).
       M9a as the showcases' milestone; M9's plan gives each showcase its
       own, M9a gpui, M9b iced and M9c egui.
 
-### Showcases: the strict panic lints do not reach the showcase examples
-
-- [ ] [v0.7.0] `scripts/check_release.sh` and `.github/workflows/ci.yml` run
-      `scripts/check_strict_panic.sh` on each connector with `--lib`
-      (check_release.sh, *strict-panic (native-theme-gpui, native, watch)*),
-      so the three showcase examples get clippy's default lints alone, where
-      the M9 constraints hold them to the strict ones. M9a's final fix
-      (2026-10-18) ran it over the gpui showcase:
-      `bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch`
-      finds 45: 42 `arithmetic_side_effects`, 2 `indexing_slicing` and 1
-      `integer_division`, in demo.rs (17), app.rs (6), info/layout.rs (5),
-      inspector.rs (4), main.rs (3), pages/data.rs and pages/layout.rs (2
-      each), and info/feedback.rs, pages/basic.rs, pages/feedback.rs,
-      pages/mod.rs, speech.rs and support.rs (1 each). Some of the arithmetic
-      is on gpui's `Pixels`, an `f32` whose operators do not panic, the rest
-      on integers and one `Duration` sum (main.rs, `held`). Fix them, then
-      add the example's line to check_release.sh's strict-panic section and
-      to ci.yml's strict-panic step, beside the connector's. M9b's iced
-      showcase (`--example showcase-iced`) and M9c's egui showcase
-      (`--example showcase-egui`) need the same run.
-      M9a T21 (2026-10-18): the gpui half is closed. `30c49fc1` fixes the
-      45 (integer arithmetic saturating or checked, the `Duration` sum
-      through `saturating_add`, the integer division through `div_euclid`,
-      the two indexings through `Value::get` and a slice pattern, `Pixels`
-      arithmetic in `f32` through `f32::from` and `px`, as the connector's
-      widgets spell it), and `259a8146` adds the example's line, with
-      `native,watch` and with `gpui-fast,native,watch`, to check_release.sh's
-      strict-panic section and ci.yml's two gpui strict-panic steps. The
-      iced and egui showcases' runs stay open, for M9b and M9c.
-      M9b T1 (2026-10-20): the iced half is closed. The run found 40 at
-      `c0d6d530` (21 `arithmetic_side_effects`, 17 `indexing_slicing`, 2
-      `exit`); `1d57e42d` moved the showcase onto the shared crate, which
-      took 19 of them with the code it replaced (the command-line parser,
-      the hex parser, the exits through `cli::refuse`), and `f6ed4f75` fixes
-      the other 21 (the `const` `Tab::ALL` check by slice pattern, counters
-      saturating, the animation frames through a zip, `.get()` and
-      `checked_rem`, the grids as slice chunks, the frame check's arithmetic
-      saturating). `1bacf203` adds the example's line,
-      with `iced_aw,watch,native`, to check_release.sh's strict-panic section
-      and ci.yml's iced leg, and splits each connector's step in ci.yml so
-      that the library and the showcase run as steps of their own. The egui
-      showcase's run stays open, for M9c.
-
 ### M7 close (2026-10-16), its `[v0.7.0]` entries
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
 - [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
