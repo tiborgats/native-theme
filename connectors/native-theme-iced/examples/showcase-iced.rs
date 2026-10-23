@@ -7820,7 +7820,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         // ---- expander ----
         ("expander", "font") => "the title's size and theme_font".into(),
         ("expander", "header_height_px") => {
-            "at_least(title row, ..): the height less the padding".into()
+            "the header button's height, grown above a text scale of 1 to hold its title's \
+             line and padding (rows::scaled_height)"
+                .into()
         }
         ("expander", "arrow_icon_size_px") => "the DisclosureArrow canvas's size".into(),
         ("expander", "arrow_side") => "the arrow before or after the title".into(),
@@ -9576,6 +9578,18 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
     tab_row
 }
 
+/// An expander header's padding: inside its own border where it draws one;
+/// where the theme states whether the expander is framed the header draws
+/// none (`styles::expander`) -- a framed one sits inside the item's frame,
+/// `styles::expander_frame`, `expander.border.line_width` in -- so the
+/// stated sides are its padding as they are.
+fn expander_header_padding(x: &native_theme::theme::ResolvedExpanderTheme) -> Padding {
+    match x.frame_enabled {
+        Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
+        None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
+    }
+}
+
 /// The controls the three showcases all draw, in the same order, with the
 /// same labels, values and states, packed onto one screen so the gpui, iced
 /// and egui captures compare control by control, in five equal columns
@@ -10477,16 +10491,18 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     let list_group = group("basic.list.heading", "List", list);
 
     let x = &resolved.expander;
-    // The header's padding: inside its own border where it draws one; where
-    // the theme states whether the expander is framed the header draws none
-    // (`styles::expander`) -- a framed one sits inside the item's frame,
-    // `styles::expander_frame`, `expander.border.line_width` in -- so the
-    // stated sides are its padding as they are.
-    let x_pad = match x.frame_enabled {
-        Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
-        None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
-    };
-    let x_min = iced::Size::new(0.0, (x.header_height - x_pad.y()).max(0.0));
+    let x_pad = expander_header_padding(x);
+    // The header is `expander.header_height` tall at a text scale of 1 or
+    // less, grown above it to hold its title's line and padding, as a list
+    // or menu row is (`rows::scaled_height`).
+    let x_height = rows::scaled_height(
+        x.header_height,
+        a11y,
+        x.font.size,
+        resolved.defaults.line_height,
+        x_pad.y(),
+        0.0,
+    );
     let arrow_color = native_theme_iced::expander_arrow_color(resolved);
     // expander.arrow_side, arrow_gap, content_indent and frame_enabled
     // (docs/platform-facts.md §2.27); where one is unstated the showcase's
@@ -10516,19 +10532,25 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 None => title.into(),
             }
         };
-        let head = button(at_least(
+        // The title one line, centred in the header, as a menu row's label.
+        let head = button(
             row![]
                 .push((!trailing).then(arrow))
-                .push(tag_title(text(title).themed(&x.font, resolved, a11y)))
+                .push(tag_title(
+                    text(title)
+                        .themed(&x.font, resolved, a11y)
+                        .wrapping(text::Wrapping::None),
+                ))
                 // A trailing arrow at the header's far end.
                 .push(trailing.then(|| space().width(Fill)))
                 .push(trailing.then(arrow))
                 .spacing(arrow_gap)
-                .align_y(iced::Center),
-            x_min,
-        ))
+                .align_y(iced::Center)
+                .height(Fill),
+        )
         .padding(x_pad)
         .width(Fill)
+        .height(Length::Fixed(x_height))
         .style(styles::expander(resolved))
         .on_press(toggle);
         match listed_part(id, "header") {
@@ -22381,11 +22403,84 @@ mod tests {
         }
     }
 
+    /// M9-156: a stated `expander.header_height` takes the one rule every
+    /// stated row height takes (M9-150, `rows::scaled_height`): at a text
+    /// scale of 1 the header is exactly the stated height, its title no
+    /// more than one line, even where the title and its padding are taller
+    /// (kde-breeze with its header lowered to 20 px); at 1.5 it is at least
+    /// the line box of `expander.font` at its scaled size and
+    /// `defaults.line_height`, rounded up, and its padding.
+    #[test]
+    fn the_expander_header_takes_the_row_rule() {
+        let mut faults = Vec::new();
+        let cases = [
+            "kde-breeze",
+            "material-3",
+            "adwaita",
+            "macos-tahoe",
+            "windows-11",
+        ]
+        .into_iter()
+        .flat_map(|preset| [(preset, 1.0, None), (preset, 1.5, None)])
+        .chain([
+            ("kde-breeze", 1.0, Some(20.0)),
+            ("kde-breeze", 1.5, Some(20.0)),
+        ]);
+        for (preset, factor, lowered) in cases {
+            let (theme, mut resolved) = match native_theme_iced::from_preset(preset, false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("{preset}: {error}"),
+            };
+            if let Some(height) = lowered {
+                resolved.expander.header_height = height;
+            }
+            let mut accessibility = native_theme_iced::AccessibilityPreferences::default();
+            accessibility.text_scaling_factor = factor;
+            let x = resolved.expander.clone();
+            let line_height = resolved.defaults.line_height;
+            let want = rows::scaled_height(
+                x.header_height,
+                &accessibility,
+                x.font.size,
+                line_height,
+                expander_header_padding(&x).y(),
+                0.0,
+            );
+            let title_line = scaled_text_size(x.font.size, &accessibility) * line_height;
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                accessibility,
+                active_tab: Tab::Basic,
+                ..State::default()
+            };
+            let mut ui = interface(&state);
+            let what = format!("{preset} at {factor} (header_height {})", x.header_height);
+            let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
+            if (header.height - want).abs() >= 0.01 {
+                faults.push(format!(
+                    "{what}: the header is {}px tall, want {want}px",
+                    header.height
+                ));
+            }
+            let title = height_of(&mut ui, "Details");
+            // One line at most: a header lower than its title and padding
+            // lays the title out in what is left.
+            if title > title_line + 0.01 {
+                faults.push(format!(
+                    "{what}: the title is {title}px tall, more than one line, {title_line}px"
+                ));
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// The Basic page's text area, segmented control, expander and list take
     /// the sizes the theme states: three of the theme's lines inside the
-    /// field's padding; `segmented_control.segment_height` and
-    /// `expander.header_height` as outer heights, where the label fits;
-    /// three rows of the list, each `list.row_height` or its content.
+    /// field's padding; `segmented_control.segment_height` as an outer
+    /// height, where the label fits; `expander.header_height` as one,
+    /// verbatim; three rows of the list, each `list.row_height` or its
+    /// content.
     #[test]
     fn basic_composites_take_the_stated_sizes() {
         for preset in ["kde-breeze", "material-3", "adwaita"] {
@@ -22431,13 +22526,10 @@ mod tests {
                 segmented.height
             );
 
-            let x = &r.expander;
+            // At a text scale of 1 the header is `expander.header_height`
+            // tall, verbatim ([`the_expander_header_takes_the_row_rule`]).
             let header = probe_bounds(&mut ui, probes::BASIC_EXPANDER);
-            let x_pad = native_theme_iced::padding_inside_border(
-                &x.border,
-                iced::widget::button::DEFAULT_PADDING,
-            );
-            let expected = x.header_height.max(line_of(x.font.size) + x_pad.y());
+            let expected = r.expander.header_height;
             assert!(
                 (header.height - expected).abs() < 0.01,
                 "{preset}: the expander header is {}px tall, expected {expected}px",
