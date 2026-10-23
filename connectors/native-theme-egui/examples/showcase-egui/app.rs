@@ -344,7 +344,7 @@ impl App {
         #[cfg(feature = "watch")]
         let selection = Arc::new(std::sync::RwLock::new(settings.clone()));
         let mut app = Self {
-            atlas,
+            atlas: atlas.clone(),
             settings,
             default_preset,
             semibold: demo::Semibold::default(),
@@ -397,7 +397,7 @@ impl App {
             #[cfg(all(target_os = "macos", not(test)))]
             menu_rx: None,
         };
-        app.apply(&cc.egui_ctx);
+        app.apply(&cc.egui_ctx, atlas);
         #[cfg(all(target_os = "macos", not(test)))]
         {
             let (tx, rx) = std::sync::mpsc::channel();
@@ -451,31 +451,40 @@ impl App {
     pub(crate) fn install(&mut self, ctx: &egui::Context) {
         match Self::rebuild_atlas(&self.settings) {
             Ok((atlas, preset)) => {
-                self.atlas = atlas;
                 if let Some(preset) = preset {
                     self.default_preset = preset;
                 }
                 self.theme_error = None;
+                self.apply(ctx, atlas);
             }
             Err(error) => {
                 // The installed atlas, its fonts and the semibold faces stay as they are.
                 self.theme_error = Some(error.to_string());
-                return;
             }
         }
-        self.apply(ctx);
     }
 
-    /// Install the held atlas and the mode's theme preference (egui's own call, §10.3).
-    fn apply(&mut self, ctx: &egui::Context) {
-        self.atlas.install(ctx);
-        self.semibold.register(ctx, &self.atlas);
+    /// Install `atlas` and the mode's theme preference (egui's own call, §10.3).
+    fn apply(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
+        self.adopt(ctx, atlas);
         ctx.set_theme(self.theme_preference());
+        #[cfg(feature = "watch")]
+        self.publish_selection();
+    }
+
+    /// The steps every install of an atlas takes, and nothing else: `atlas` installed into
+    /// `ctx` and held, the OS's semibold faces of its family registered, the JSON cache and the
+    /// scheme the icon choice was derived for forgotten, and the shown Widget Info released.
+    /// `apply` runs it, so does the watcher's hand-off, which leaves the mode as it is, and so
+    /// do the tests that install an atlas of their own; it sets no theme preference, so a test
+    /// that holds a scheme keeps it.
+    pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
+        atlas.install(ctx);
+        self.semibold.register(ctx, &atlas);
+        self.atlas = atlas;
         self.json = info::JsonCache::default();
         self.last_scheme = None;
         self.registry.screen_changed();
-        #[cfg(feature = "watch")]
-        self.publish_selection();
     }
 
     /// Switch the mode: egui's own theme call and nothing else (§10.4's side-panel row). The
@@ -731,12 +740,7 @@ impl eframe::App for App {
         }
         #[cfg(feature = "watch")]
         if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
-            atlas.install(ctx);
-            self.semibold.register(ctx, &atlas);
-            self.atlas = atlas;
-            self.json = info::JsonCache::default();
-            self.last_scheme = None;
-            self.registry.screen_changed();
+            self.adopt(ctx, atlas);
         }
         // A new theme or a scheme switch re-derives a following icon choice (§10.4:
         // `breeze` to `breeze-dark` on `kde-breeze`); a pass on the same scheme does nothing.

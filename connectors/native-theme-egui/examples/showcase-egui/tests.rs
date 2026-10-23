@@ -2708,11 +2708,7 @@ fn open_curving_out_at(
     harness.run_steps(4);
     let ctx = harness.ctx.clone();
     let app = harness.state_mut();
-    app.atlas = windows_11_atlas(radius, edit);
-    app.atlas.install(&ctx);
-    app.semibold.register(&ctx, &app.atlas);
-    app.json = crate::info::JsonCache::default();
-    app.registry.screen_changed();
+    app.adopt(&ctx, windows_11_atlas(radius, edit));
     harness.run_steps(4);
     harness.remove_cursor();
     harness.run_steps(2);
