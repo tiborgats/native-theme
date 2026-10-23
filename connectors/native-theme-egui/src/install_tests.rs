@@ -2868,10 +2868,9 @@ mod t13_accessibility {
     /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
     /// (§6.6), and the `Role::Menu`, `Role::List` and `Role::Expander` cells' vertical
     /// `button_padding`, which a stated row or header height narrows at a text scale of 1 or
-    /// less and leaves the theme's above it (`style::roles::fit_row_padding`), and nothing else — in the base styles, the 75 cells
-    /// and the 11 surface frames
-    /// (`atlas_diff`), none of whose fields may move: scaling never turns into a zoom of every
-    /// length.
+    /// less and leaves the theme's above it (`style::roles::fit_row_padding`), and nothing
+    /// else — in the base styles, the 75 cells and the 11 surface frames (`atlas_diff`), none of
+    /// whose fields may move: scaling never turns into a zoom of every length.
     #[test]
     fn t13b_scaling_moves_only_text_sizes_and_what_follows_them() {
         let prefs = scaled_prefs();

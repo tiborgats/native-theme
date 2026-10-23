@@ -1120,6 +1120,62 @@ fn t10_every_sink_holds_the_leafs_value() {
     );
 }
 
+/// T10's expander arm (`spacing.button_padding.y` in the expander cell, the fit of
+/// `style::roles::fit_row_padding`) on a case that needs the fit, which no bundled preset is:
+/// every one's header holds its title and padding, so the 34 combinations hold the arm only as
+/// the theme's padding. material-3 with its 48 px header lowered to 24, as
+/// `a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one` builds it: each sink the
+/// manifest declares there holds the arm's value, and that value is narrower than the pair-rule
+/// padding the theme states (10), so an arm that left the padding unfitted fails.
+#[test]
+fn t10_the_expander_arm_holds_a_fitted_header() {
+    let manifest = Manifest::load();
+    let mut low = resolved("material-3", ColorMode::Light);
+    assert_eq!(low.expander.header_height, 48.0, "material-3's stated header");
+    low.expander.header_height = 24.0;
+    let atlas = ThemeAtlas::builder("material-3", &low, &low).build();
+    let json = serde_json::to_value(&low).expect("ResolvedTheme serialises");
+    let c = Combination {
+        key: "material-3",
+        mode: ColorMode::Light,
+        scheme: Theme::Light,
+        json: with_layout(json, atlas.layout()),
+        atlas,
+        resolved: low,
+    };
+    let mut checked = Vec::new();
+    for (leaf, row) in &manifest.rows {
+        let sinks = row.sinks.iter().filter(|sink| {
+            sink.scope.as_deref() == Some("expander")
+                && sink.variant.as_deref().unwrap_or("normal") == "normal"
+                && sink.path == "spacing.button_padding.y"
+        });
+        for sink in sinks {
+            let (Some(got), Some(inherited)) = read_sink(&c, sink) else {
+                panic!("`{leaf}`: the reader lacks the expander cell's padding");
+            };
+            let want = expected(&c, &manifest.rows, sink, inherited)
+                .unwrap_or_else(|why| panic!("`{leaf}`: {why}"))
+                .unwrap_or(inherited);
+            assert_eq!(got, want, "`{leaf}` → the expander cell's spacing.button_padding.y");
+            let unfitted = convert::to_button_padding(
+                inherited_style(&c, sink).spacing.button_padding,
+                &border_of(&c, "expander"),
+            )
+            .y;
+            assert!(
+                matches!(want, Val::F32(fit) if fit < unfitted),
+                "`{leaf}`: {want:?} is not narrower than the theme's {unfitted}"
+            );
+            checked.push(leaf.as_str());
+        }
+    }
+    assert!(
+        checked.contains(&"expander.header_height"),
+        "the manifest declares the fit at expander.header_height: {checked:?}"
+    );
+}
+
 /// The §6.11 cases T10 names, on `adwaita`, the one bundled preset that states the checkbox
 /// padding (`native-theme/src/presets/adwaita.toml:162`, `:176-177`): 14 where egui draws 8;
 /// pairs set apart, the mean of both; every side above half the box, `clamp_length`'s floor.
