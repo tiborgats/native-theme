@@ -252,7 +252,7 @@ pub(crate) fn show(
         let content = child.min_rect();
         reg.place(
             ui,
-            &format!("basic.column_{}", column + 1),
+            &format!("basic.column_{}", column.saturating_add(1)),
             egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), content.height())),
         );
         used = used.union(content);
@@ -285,6 +285,15 @@ fn text_size(
         .size()
 }
 
+/// `rect` less `margin` on each side, spelled in `f32` as egui's `Rect - MarginF32` computes it
+/// (`epaint/src/margin_f32.rs:269-279`).
+fn inside(rect: egui::Rect, margin: egui::epaint::MarginF32) -> egui::Rect {
+    egui::Rect::from_min_max(
+        egui::pos2(rect.min.x + margin.left, rect.min.y + margin.top),
+        egui::pos2(rect.max.x - margin.right, rect.max.y - margin.bottom),
+    )
+}
+
 /// Where a text-only `Button` of `ui` laid its label out: the text in the button style's font,
 /// placed in the button less its frame's margin by the layout's alignment
 /// (`egui/src/widgets/button.rs:325-367`, `egui/src/widget_style.rs:146-171`,
@@ -302,7 +311,7 @@ fn button_label(
         text,
         egui::FontSelection::FontId(style.text_style.font_id),
     );
-    let inner = button.rect - style.frame.total_margin();
+    let inner = inside(button.rect, style.frame.total_margin());
     let layout = ui.layout();
     egui::Align2([layout.horizontal_align(), layout.vertical_align()])
         .align_size_within_rect(size, inner)
@@ -321,7 +330,7 @@ fn checkbox_parts(
     let style = ui
         .style()
         .checkbox_style(&Classes::default(), WidgetState::Inactive);
-    let inner = control.rect - style.frame.total_margin();
+    let inner = inside(control.rect, style.frame.total_margin());
     let atom = egui::Rect::from_x_y_ranges(
         inner.left()..=inner.left() + style.checkbox_size,
         inner.y_range(),
@@ -690,7 +699,7 @@ fn field_text(
     text: &str,
     centred: bool,
 ) -> egui::Rect {
-    let inner = field.rect - frame.total_margin();
+    let inner = inside(field.rect, frame.total_margin());
     let size = text_size(
         ui,
         demo::lined(ui, text, egui::TextStyle::Body),
@@ -1424,7 +1433,7 @@ fn list(
                         .show(ui, |ui| {
                             ui.spacing_mut().item_spacing.y = 0.0;
                             for i in 0..LIST_ROWS {
-                                let text = format!("Item {}", i + 1);
+                                let text = format!("Item {}", i.saturating_add(1));
                                 let selected = state.basic_list == i;
                                 let r = rows.add(reg, ui, "List row", |ui| {
                                     list_row(
@@ -1453,7 +1462,11 @@ fn list(
     }
     reg.tag("basic.list.frame", &frame_response);
     for (i, row) in rows_drawn.iter().take(LIST_VISIBLE).enumerate() {
-        reg.place(ui, &format!("basic.list.row_{}", i + 1), row.rect);
+        reg.place(
+            ui,
+            &format!("basic.list.row_{}", i.saturating_add(1)),
+            row.rect,
+        );
     }
 }
 
@@ -1643,7 +1656,7 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                                 (cell, inset, line),
                             );
                         }
-                        places.push((format!("basic.table.row_{}", i + 1), row));
+                        places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }
                     // The grid: under the header, and between the columns from top to bottom,
                     // each inside the cell it closes.

@@ -173,7 +173,8 @@ fn cell(
     let height = icon + ui.spacing().item_spacing.y + ui.text_style_height(&egui::TextStyle::Small);
     // The padding is part of the cell's own size, not a `Frame` around it: a frame places its
     // rect where the row's cursor is, past a wrapping row's end (`Frame::show`).
-    let size = egui::vec2(width, height) + egui::Vec2::splat(pad + pad);
+    let both = pad + pad;
+    let size = egui::vec2(width + both, height + both);
     // The whole cell is used, so the row advances past it whatever the cell holds.
     ui.allocate_ui_with_layout(size, layout, |ui| {
         ui.set_min_size(size);

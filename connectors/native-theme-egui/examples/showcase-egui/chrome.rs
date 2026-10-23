@@ -342,8 +342,18 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                             }
                         }
                         if key == "theme" {
-                            // The popup's frame around its rows: its margin and its stroke.
-                            let rect = (ui.min_rect() + margin).expand(stroke);
+                            // The popup's frame around its rows: its margin and its stroke,
+                            // spelled in `f32` as egui's `Rect + Margin` computes it
+                            // (`epaint/src/margin.rs:241-251`).
+                            let rows = ui.min_rect();
+                            let rect = egui::Rect::from_min_max(
+                                egui::pos2(rows.min.x - margin.leftf(), rows.min.y - margin.topf()),
+                                egui::pos2(
+                                    rows.max.x + margin.rightf(),
+                                    rows.max.y + margin.bottomf(),
+                                ),
+                            )
+                            .expand(stroke);
                             registry.place(ui, "chrome.menu.theme", rect);
                         }
                     });
@@ -505,7 +515,10 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                 }
             }
             // The bar spans the window, as a toolbar does: the rest of the row is its own surface.
-            ui.allocate_space(egui::Vec2::X * ui.available_width());
+            ui.allocate_space(egui::Vec2 {
+                x: ui.available_width(),
+                ..egui::Vec2::ZERO
+            });
         })
         .response
     };

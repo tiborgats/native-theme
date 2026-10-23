@@ -910,7 +910,7 @@ impl Semibold {
         {
             let light = atlas.resolved_for(egui::Theme::Light);
             let body = &light.defaults.font;
-            self.registrations += 1;
+            self.registrations = self.registrations.saturating_add(1);
             let mut families = vec![(
                 crate::SEMIBOLD_WEIGHT,
                 egui::FontFamily::Name(SEMIBOLD_FAMILY.into()),
@@ -1268,7 +1268,10 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
         RoleVariant::Normal,
         bar.kind,
         |ui, tab, reg| {
-            let padding = egui::Vec2::X * bar.margin.unwrap_or_default();
+            let padding = egui::Vec2 {
+                x: bar.margin.unwrap_or_default(),
+                ..egui::Vec2::ZERO
+            };
             // The strip in `tab.bar_background`, the tab scope's `panel_fill`.
             let strip = egui::Frame::NONE
                 .fill(ui.visuals().panel_fill)
@@ -1308,7 +1311,10 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                         let mut button =
                             egui::Button::new(lined(ui, *label, egui::TextStyle::Button))
                                 .selected(selected)
-                                .min_size(egui::Vec2::X * min_width)
+                                .min_size(egui::Vec2 {
+                                    x: min_width,
+                                    ..egui::Vec2::ZERO
+                                })
                                 .corner_radius(top);
                         if !selected {
                             button = button.stroke(no_pen);
