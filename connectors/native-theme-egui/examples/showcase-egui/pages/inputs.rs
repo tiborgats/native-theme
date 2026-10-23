@@ -100,7 +100,7 @@ pub(crate) fn show(
     );
     // egui's own kinds, at egui's own size: `Ui::text_edit_singleline`, `text_edit_multiline` and
     // `code_editor` take no `min_size` (egui 0.36.2 src/ui.rs:1802-1807, :1812-1817, :1824-1826;
-    // a multiline `TextEdit` four rows tall, src/widgets/text_edit/builder.rs:140).
+    // a multiline `TextEdit` at least four rows tall, src/widgets/text_edit/builder.rs:140, :521).
     demo::scoped(
         reg,
         ui,
@@ -123,14 +123,14 @@ pub(crate) fn show(
     );
     reg.note_last(
         "ui.text_edit_multiline",
-        "egui's own height, four rows and its margin; input.min_height is not applied",
+        "egui's own height, at least four rows and its margin; input.min_height is not applied",
     );
     demo::scoped(reg, ui, Role::Input, normal, "ui.code_editor", |ui| {
         ui.code_editor(&mut state.code)
     });
     reg.note_last(
         "ui.code_editor",
-        "egui's own height, four rows and its margin; input.min_height is not applied",
+        "egui's own height, at least four rows and its margin; input.min_height is not applied",
     );
 
     caption(reg, ui, "DragValue (Role::Input)");

@@ -2901,9 +2901,11 @@ fn the_basic_page_applies_the_per_call_leaves() {
 /// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
 /// page's modal is at least `dialog.min_width` × `dialog.min_height` and at most the max
 /// extents; every `Role::Button` kind of the Buttons and Overlays pages built with
-/// `Button::new` is at least `button.min_width` wide, and every `TextEdit (…)` of the Inputs
-/// page at least `input.min_height` tall, there and under material-3, whose fields are taller
-/// than egui's. egui's own kinds keep egui's sizes, each saying so under *Not themeable*.
+/// `Button::new` is at least `button.min_width` wide, there and under kde-breeze, whose minimum
+/// is wider than egui's buttons; and every `TextEdit (…)` of the Inputs page at least
+/// `input.min_height` tall, there and under adwaita and material-3, whose fields are taller than
+/// egui's. egui's own kinds and its small button keep egui's sizes, as the gpui showcase's small
+/// button keeps gpui-component's, each saying so under *Not themeable*.
 #[test]
 fn the_palette_pages_apply_the_per_call_leaves() {
     fn rects(harness: &Harness<'_, App>, kind: &str) -> Vec<egui::Rect> {
@@ -2952,24 +2954,32 @@ fn the_palette_pages_apply_the_per_call_leaves() {
         }
     };
 
-    let harness = open_scaled("windows-11", "buttons", 1.0);
-    wide_enough(
-        &harness,
-        &[
-            "button (enabled)",
-            "button (icon and text)",
+    // windows-11's buttons are as wide as its 64 px already; kde-breeze's 80 px is wider.
+    for preset in ["windows-11", "kde-breeze"] {
+        let harness = open_scaled(preset, "buttons", 1.0);
+        wide_enough(
+            &harness,
+            &[
+                "button (enabled)",
+                "button (icon and text)",
+                "button (frameless)",
+                "button (shortcut text)",
+                "button (suggested action)",
+                "button (disabled)",
+            ],
+        );
+        for kind in [
+            "ui.button",
+            "ui.small_button",
+            "ui.toggle_value",
             "button (small)",
-            "button (frameless)",
-            "button (shortcut text)",
-            "button (suggested action)",
-            "button (disabled)",
-        ],
-    );
-    for kind in ["ui.button", "ui.small_button", "ui.toggle_value"] {
-        assert_noted(&harness, kind, "button.min_width");
+        ] {
+            assert_noted(&harness, kind, "button.min_width");
+        }
+        for kind in ["ui.small_button", "button (small)"] {
+            assert_noted(&harness, kind, "button.min_height");
+        }
     }
-    assert_noted(&harness, "ui.small_button", "button.min_height");
-    assert_noted(&harness, "button (small)", "button.min_height");
 
     let mut harness = open_scaled("windows-11", "overlays", 1.0);
     let t = harness
@@ -3011,9 +3021,9 @@ fn the_palette_pages_apply_the_per_call_leaves() {
     harness.run_steps(SETTLE);
     wide_enough(&harness, &["popup item"]);
 
-    // windows-11's fields are as tall as egui's one row and margin already; material-3's are
-    // taller than that.
-    for preset in ["windows-11", "material-3"] {
+    // windows-11's fields are as tall as egui's one row and margin already; adwaita's, which
+    // states no vertical padding, and material-3's, the tallest stated, are taller than that.
+    for preset in ["windows-11", "adwaita", "material-3"] {
         let harness = open_scaled(preset, "inputs", 1.0);
         let min_height = harness
             .state()
