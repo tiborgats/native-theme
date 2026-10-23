@@ -6435,6 +6435,52 @@ fn a_planned_family_is_drawn_as_its_notes_say() {
     );
 }
 
+/// A face the showcase adds at another weight than the body's that fails epaint's parse is
+/// skipped and noted, where epaint panicked at the next pass loading it ("Error parsing ...
+/// TTF/OTF font file", `epaint/src/text/fonts.rs:990`, in release too): 64 zero bytes added
+/// at weight 650 leave the pass running, that weight's family unbound, so text at it is
+/// drawn in the body's face (`demo::weighted_family`), and the Theme tab's Notes list it.
+#[cfg(feature = "system-fonts")]
+#[test]
+fn a_weight_face_epaint_cannot_parse_is_skipped_and_noted() {
+    let mut harness = open_page(Page::Basic, egui::Theme::Light);
+    let ctx = harness.ctx.clone();
+    let family = crate::demo::weight_family(650);
+    harness.state_mut().semibold.add_face(
+        &ctx,
+        ("Broken Sans", 650),
+        family.clone(),
+        vec![0; 64],
+        0,
+    );
+    let ran = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| harness.run_steps(2)));
+    assert!(
+        ran.is_ok(),
+        "the pass after adding an unparsable face panicked"
+    );
+    assert!(
+        !ctx.fonts(|f| f.definitions().families.contains_key(&family)),
+        "the unparsable face's family is bound"
+    );
+    assert_eq!(
+        harness.state().semibold.invalid(),
+        [("Broken Sans".to_string(), 650)]
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let noted = harness
+        .query_all(By::new().predicate(|n| {
+            n.value().is_some_and(|v| {
+                v.starts_with("FontDataInvalid\n") && v.contains("Broken Sans") && v.contains("650")
+            })
+        }))
+        .count();
+    assert_eq!(
+        noted, 1,
+        "the Theme tab's Notes do not list the skipped face"
+    );
+}
+
 /// The label of the theme's `stated` family the showcase must show, read from what the
 /// harness has installed: the stated name alone where the atlas holds no
 /// `Note::FontFamilyUnavailable` or `Note::FontDataInvalid` for it; the platform's substitute

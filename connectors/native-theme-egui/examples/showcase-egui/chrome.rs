@@ -1275,7 +1275,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                 &mut app.registry,
             );
         }
-        InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.manifest),
+        InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.semibold, &app.manifest),
     }
 }
 

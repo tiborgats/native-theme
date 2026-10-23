@@ -1201,14 +1201,18 @@ impl<'a> DrawnFamilies<'a> {
 #[derive(Default)]
 pub(crate) struct Semibold {
     registrations: u64,
+    /// The faces of the last registration that failed epaint's parse and were not added: the
+    /// family and the weight asked for ([`Semibold::add_face`]).
+    invalid: Vec<(String, u16)>,
 }
 
 impl Semibold {
     /// After `atlas.install(ctx)`: the faces of the family the connector's font plan registers
     /// for the theme's light variant (§4.6) — the family it names, or the platform's substitute
     /// where the OS lacks it, as the atlas's notes record ([`drawn_family`]) — where the OS has
-    /// them; none otherwise, and the text keeps the regular face. One
-    /// `native_theme::fonts::system_face` per weight registered.
+    /// them, each where epaint can load it ([`Semibold::add_face`]); none otherwise, and the
+    /// text keeps the regular face. One `native_theme::fonts::system_face` per weight
+    /// registered.
     pub(crate) fn register(&mut self, ctx: &egui::Context, atlas: &ThemeAtlas) {
         #[cfg(feature = "system-fonts")]
         {
@@ -1242,27 +1246,76 @@ impl Semibold {
             // the OS lacks the theme's family, else the theme's own.
             let unavailable = unavailable_families(atlas.notes());
             let drawn = drawn_family(&unavailable, &body.family).unwrap_or(&body.family);
+            self.invalid.clear();
             for (weight, family) in families {
                 let Some(face) = native_theme::fonts::system_face(drawn, weight, body.style) else {
                     continue;
                 };
-                let mut data = egui::FontData::from_owned(face.data.to_vec());
-                data.index = face.index;
-                // A face with a `wght` axis is set to the weight; a static face ignores it (§8.3).
-                data.tweak.coords = native_theme_egui::fonts::weight_coords(weight);
-                ctx.add_font(egui::epaint::text::FontInsert::new(
-                    &format!("{family:?}-{}", self.registrations),
-                    data,
-                    vec![egui::epaint::text::InsertFontFamily {
-                        family,
-                        priority: egui::epaint::text::FontPriority::Highest,
-                    }],
-                ));
+                self.add_face(ctx, (drawn, weight), family, face.data.to_vec(), face.index);
             }
         }
         #[cfg(not(feature = "system-fonts"))]
         let _ = (ctx, atlas, &mut self.registrations);
     }
+
+    /// Add `bytes`, the face at `index` of a font file of `drawn.0` at the weight `drawn.1`,
+    /// under `family`, at the head of its chain, where epaint can load it ([`epaint_loads`]);
+    /// otherwise add nothing and record it in [`Semibold::invalid`], as the connector drops a
+    /// face of its plan that fails the same check and notes it (`Note::FontDataInvalid`), so
+    /// `family` stays unbound and text at that weight is drawn in the body's face
+    /// ([`weighted_family`], [`semibold_font`]).
+    #[cfg(feature = "system-fonts")]
+    pub(crate) fn add_face(
+        &mut self,
+        ctx: &egui::Context,
+        (drawn, weight): (&str, u16),
+        family: egui::FontFamily,
+        bytes: Vec<u8>,
+        index: u32,
+    ) {
+        if !epaint_loads(&bytes, index) {
+            self.invalid.push((drawn.to_string(), weight));
+            return;
+        }
+        let mut data = egui::FontData::from_owned(bytes);
+        data.index = index;
+        // A face with a `wght` axis is set to the weight; a static face ignores it (§8.3).
+        data.tweak.coords = native_theme_egui::fonts::weight_coords(weight);
+        ctx.add_font(egui::epaint::text::FontInsert::new(
+            &format!("{family:?}-{}", self.registrations),
+            data,
+            vec![egui::epaint::text::InsertFontFamily {
+                family,
+                priority: egui::epaint::text::FontPriority::Highest,
+            }],
+        ));
+    }
+
+    /// The faces of the last registration that failed epaint's parse and were not added, each
+    /// the family and the weight asked for.
+    pub(crate) fn invalid(&self) -> &[(String, u16)] {
+        &self.invalid
+    }
+}
+
+/// Whether epaint can load the face at `index` of `bytes`: the parse epaint's `FontFace::new`
+/// makes, `skrifa::FontRef::from_index` (`epaint/src/text/font.rs:386-388`), whose failure
+/// epaint turns into a panic at the next pass, in release builds too
+/// (`epaint/src/text/fonts.rs:990`), and a non-zero `unitsPerEm`, which epaint divides by
+/// (`epaint/src/text/font.rs:215-218`). The connector makes the same check before it hands
+/// epaint a face of its font plan (`connectors/native-theme-egui/src/fonts.rs`, `parses`), and
+/// exports none.
+#[cfg(feature = "system-fonts")]
+fn epaint_loads(bytes: &[u8], index: u32) -> bool {
+    use skrifa::MetadataProvider as _;
+    skrifa::FontRef::from_index(bytes, index).is_ok_and(|font| {
+        font.metrics(
+            skrifa::instance::Size::unscaled(),
+            skrifa::instance::LocationRef::default(),
+        )
+        .units_per_em
+            != 0
+    })
 }
 
 /// `size` in the semibold family where the fonts this pass draws with hold it, else in the

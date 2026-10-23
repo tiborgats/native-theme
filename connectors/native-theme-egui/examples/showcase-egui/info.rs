@@ -970,12 +970,14 @@ pub(crate) fn widget_tab(
     }
 }
 
-/// The Theme tab: `name()`, `os_mode()`, `accessibility()`, every `Note`, the
+/// The Theme tab: `name()`, `os_mode()`, `accessibility()`, every `Note` and each face the
+/// showcase did not add at another weight (`demo::Semibold::invalid`), the
 /// fonts by the families egui draws (`demo::DrawnFamilies`) in their defined units (§8.7), the
 /// window-frame facts of §10.4, and the manifest's `[unwritten]` table.
 pub(crate) fn theme_tab(
     ui: &mut egui::Ui,
     atlas: &ThemeAtlas,
+    semibold: &crate::demo::Semibold,
     manifest: &Result<Manifest, String>,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
@@ -1004,13 +1006,24 @@ pub(crate) fn theme_tab(
         prefs.reduce_transparency.to_string(),
     );
     section(ui, "Notes");
-    if atlas.notes().is_empty() {
+    if atlas.notes().is_empty() && semibold.invalid().is_empty() {
         note(ui, "none", true);
     }
     for note in atlas.notes() {
         let text = format!("{note:?}");
         let kind: String = text.chars().take_while(|c| c.is_alphanumeric()).collect();
         row(ui, &kind, text);
+    }
+    // The showcase's own faces at other weights that epaint cannot load (`Semibold::add_face`).
+    for (family, weight) in semibold.invalid() {
+        row(
+            ui,
+            "FontDataInvalid",
+            format!(
+                "the showcase's face of {family:?} at weight {weight} failed epaint's parse and \
+                 is not added; text at weight {weight} is drawn in the body's face"
+            ),
+        );
     }
     section(ui, "Fonts");
     let families = crate::demo::DrawnFamilies::of(ui.ctx(), atlas);
