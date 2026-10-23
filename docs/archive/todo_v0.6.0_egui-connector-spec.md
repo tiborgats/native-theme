@@ -8221,3 +8221,12 @@ section now says so:
   lines (`InstanceInfo::not_themeable`); the leaves-read list
   (`InstanceInfo::read`) and the notes the panel did not show are deleted with
   their writers.
+- **§4.2, §4.3, §4.6, §10.3** (M9c T2; M9-113, amendment I3): `from_preset`
+  gives the atlas the OS colour mode, `native_theme::detect::system_is_dark()`'s
+  cached reading, so under `ThemePreference::System` a preset follows the
+  desktop on Linux as `from_system`'s atlas does, where egui drew its
+  `Options::fallback_theme`. "A preset-built atlas has no OS mode and fills
+  nothing" (§10.3), and the docs of `from_preset`, `ThemeAtlas::os_mode` and
+  `Builder::os_mode` that say so (§4.6, §4.2, §4.3), are true only of an atlas
+  built through `ThemeAtlas::builder` without `Builder::os_mode` and of
+  `to_theme`'s, and the docs say that now.

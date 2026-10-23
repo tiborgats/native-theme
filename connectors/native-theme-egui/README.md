@@ -32,10 +32,10 @@ egui's own types, and hands them to egui through egui's own seams:
 The install also registers a plugin that paints the platform's focus ring
 around the widget with keyboard focus and, where the platform integration
 reports no colour scheme (Linux), tells egui the OS one when the atlas carries
-it (`from_system`, `to_egui_atlas`, `Builder::os_mode`). The values no `Style` field carries — the
-info and warning colours, the text-scale roles, a `TextEdit`'s margin and
-frame, the dialog button order, icon sizes — are free functions of the crate
-root and of `icons`.
+it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). The
+values no `Style` field carries — the info and warning colours, the text-scale
+roles, a `TextEdit`'s margin and frame, the dialog button order, icon sizes —
+are free functions of the crate root and of `icons`.
 
 ## How it fits
 
@@ -165,8 +165,9 @@ fn main() -> eframe::Result {
 
 Or a bundled preset, with both its variants in one atlas. `is_dark` picks the
 `ResolvedTheme` returned beside the atlas; egui's own `set_theme` picks the
-scheme on screen. A preset pins the scheme: set the one `is_dark` named.
-`from_system` instead follows the OS, with `ThemePreference::System`:
+scheme on screen. This recipe pins the scheme `is_dark` named. The atlas also
+carries the OS colour mode, so with `ThemePreference::System` the preset
+follows the OS instead, as `from_system`'s atlas does:
 
 ```rust,no_run
 use native_theme_egui::egui::{self, ThemePreference};

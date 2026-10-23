@@ -1068,8 +1068,8 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
 }
 
 /// M7-02: once an atlas with an OS mode has told the title bar its scheme, an atlas with none
-/// (a preset) or `ThemeAtlas::clear` hands the window back to egui's own `SystemDefault`, once,
-/// so the title bar follows the scheme egui draws in.
+/// (a builder atlas without `Builder::os_mode`) or `ThemeAtlas::clear` hands the window back to
+/// egui's own `SystemDefault`, once, so the title bar follows the scheme egui draws in.
 #[test]
 fn an_atlas_without_an_os_mode_restores_egui_s_window_theme() {
     use egui::{SystemTheme, Theme};
@@ -2323,10 +2323,16 @@ mod t18_constructors {
 
     /// T18 (a), `from_preset` clause: its `name()` is the preset's
     /// `Theme::name` (`native-theme/src/model/mod.rs:267`), and the atlas carries both variants, each
-    /// variant's icon theme, and the requested variant as the returned `ResolvedTheme`.
+    /// variant's icon theme, the requested variant as the returned `ResolvedTheme`, and the OS's
+    /// colour mode as `native_theme::detect::system_is_dark()` reads it (M9-113).
     #[test]
     fn t18_a_from_preset_carries_the_presets_name_and_both_variants() {
         let prefs = AccessibilityPreferences::default();
+        let os_mode = if native_theme::detect::system_is_dark() {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        };
         for preset in Theme::list_presets() {
             let spec = Theme::preset(preset.key).unwrap();
             let light = spec.resolve(ColorMode::Light).unwrap();
@@ -2369,7 +2375,7 @@ mod t18_constructors {
                     preset.key
                 );
                 assert_eq!(atlas.icon_set(), light.icon_set, "{}", preset.key);
-                assert_eq!(atlas.os_mode(), None, "{}", preset.key);
+                assert_eq!(atlas.os_mode(), Some(os_mode), "{}", preset.key);
                 assert_eq!(atlas.accessibility(), &prefs, "{}", preset.key);
                 assert_eq!(atlas.layout(), &spec.layout, "{}", preset.key);
             }

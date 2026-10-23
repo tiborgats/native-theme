@@ -202,9 +202,29 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> ThemeAtlas {
 /// the light scheme and `ColorMode::Dark`'s for the dark one: [`ThemeAtlas::icon_set`](crate::ThemeAtlas::icon_set),
 /// [`ThemeAtlas::icon_theme`](crate::ThemeAtlas::icon_theme).
 ///
-/// The atlas carries no OS colour mode ([`ThemeAtlas::os_mode`](crate::ThemeAtlas::os_mode) is `None`), so on Linux,
-/// where the integration reports none either, egui falls back to `Options::fallback_theme`.
-/// To follow the OS there, build through [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) with [`Builder::os_mode`](crate::Builder::os_mode).
+/// The atlas carries the OS colour mode ([`ThemeAtlas::os_mode`](crate::ThemeAtlas::os_mode)),
+/// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`:
+/// the cached reading, which `native_theme::detect::invalidate_caches()` clears, and `Light`
+/// wherever detection fails. The install plugin feeds it to egui only where the integration
+/// reports no scheme (Linux, under winit 0.30.13), so under egui's `ThemePreference::System`
+/// a preset follows the desktop there, as [`from_system`]'s atlas does, rather than egui's
+/// `Options::fallback_theme`. An application that wants one scheme sets egui's preference
+/// (`ctx.set_theme(..)`); one that wants no OS mode in the atlas builds through
+/// [`ThemeAtlas::builder`](crate::ThemeAtlas::builder) without [`Builder::os_mode`](crate::Builder::os_mode).
+///
+/// ```rust
+/// use native_theme_egui::{AccessibilityPreferences, ColorMode, from_preset};
+///
+/// let (atlas, _resolved) =
+///     from_preset("catppuccin-mocha", false, &AccessibilityPreferences::default())?;
+/// let os = if native_theme_egui::native_theme::detect::system_is_dark() {
+///     ColorMode::Dark
+/// } else {
+///     ColorMode::Light
+/// };
+/// assert_eq!(atlas.os_mode(), Some(os));
+/// # Ok::<(), native_theme_egui::Error>(())
+/// ```
 ///
 /// `is_dark` selects the returned [`ResolvedTheme`]; it does not pin egui's colour scheme —
 /// that is egui's `ctx.set_theme(..)` ([`ThemeAtlas::install`](crate::ThemeAtlas::install)). It is explicit and never
@@ -237,7 +257,12 @@ pub fn from_preset(
         .layout(&spec.layout)
         .accessibility(prefs)
         // a theme-level value both `Resolved`s share (`native-theme/src/model/mod.rs:529`)
-        .icon_set(light.icon_set);
+        .icon_set(light.icon_set)
+        .os_mode(if native_theme::detect::system_is_dark() {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        });
     if let Some(icon_theme) = light.icon_theme.as_deref() {
         builder = builder.icon_theme(egui::Theme::Light, icon_theme);
     }

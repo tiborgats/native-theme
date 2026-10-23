@@ -1410,6 +1410,36 @@ fn a_mode_switch_installs_nothing() {
     );
 }
 
+/// M9-113: under a preset with Mode = System the atlas carries the OS's colour mode
+/// (`native_theme::detect::system_is_dark()`), so where the integration reports no scheme
+/// (Linux; the harness reports none either) egui draws the desktop's, not its
+/// `Options::fallback_theme`, once an install hands the choice back to `ThemePreference::System`.
+#[test]
+fn a_preset_under_the_system_mode_follows_the_os() {
+    let (os_mode, drawn) = if native_theme::detect::system_is_dark() {
+        (native_theme::theme::ColorMode::Dark, egui::Theme::Dark)
+    } else {
+        (native_theme::theme::ColorMode::Light, egui::Theme::Light)
+    };
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--variant", "system")]),
+    );
+    harness.run_steps(SETTLE);
+    assert_eq!(harness.state().settings.mode, ModeChoice::System);
+    assert_eq!(harness.state().atlas.os_mode(), Some(os_mode));
+
+    let ctx = harness.ctx.clone();
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert_eq!(harness.state().atlas.os_mode(), Some(os_mode));
+    assert_eq!(
+        harness.ctx.theme(),
+        drawn,
+        "Mode = System drew another scheme than the OS's"
+    );
+}
+
 /// §10.4's Text row: the code view's colours are egui_extras's own for the scheme shown, and
 /// its font is the base style's `Monospace` slot, after a mode switch or an install as before.
 #[test]

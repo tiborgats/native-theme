@@ -489,8 +489,9 @@ impl egui::plugin::Plugin for NativeThemePlugin {
     /// viewport — a rebuilt atlas after the desktop switched — the command is appended, because
     /// egui sends again only when the *preference* changes (spec §10.3).
     ///
-    /// The inverse, under the same two conditions, once the atlas has no OS mode (a preset, or
-    /// after [`ThemeAtlas::clear`]): a viewport this hook last told an explicit scheme gets
+    /// The inverse, under the same two conditions, once the atlas has no OS mode (a builder
+    /// atlas without [`Builder::os_mode`](crate::Builder::os_mode), [`to_theme`](crate::to_theme)'s,
+    /// or after [`ThemeAtlas::clear`]): a viewport this hook last told an explicit scheme gets
     /// `SetTheme(SystemTheme::SystemDefault)` once — the command egui believes it sent and will
     /// not send again — unless egui's own already rides in the output, and its `last_sent`
     /// entry is dropped, so the window and egui agree and the plugin is inert (M7-02). Not

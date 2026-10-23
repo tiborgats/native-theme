@@ -315,8 +315,10 @@ impl ThemeAtlas {
     }
 
     /// The OS colour mode the atlas carries: `SystemTheme::mode` on the [`from_system`](crate::from_system) /
-    /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path, the value given to [`Builder::os_mode`], or
-    /// `None` — [`from_preset`](crate::from_preset) and [`to_theme`](crate::to_theme) carry none. The install plugin feeds it to
+    /// [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) path,
+    /// `native_theme::detect::system_is_dark()`'s reading on the [`from_preset`](crate::from_preset) path, the value
+    /// given to [`Builder::os_mode`], or `None` — [`to_theme`](crate::to_theme) and a builder atlas without
+    /// [`Builder::os_mode`] carry none. The install plugin feeds it to
     /// egui where the integration reports no OS scheme (spec §3.2, §10.3).
     #[must_use]
     pub fn os_mode(&self) -> Option<ColorMode> {
@@ -745,11 +747,12 @@ impl<'a> Builder<'a> {
     /// The OS colour mode, which the install plugin feeds to egui wherever the integration
     /// reports none — on Linux always, since winit 0.30.13 reports none there (spec §3.2).
     /// [`from_system`](crate::from_system) and [`SystemThemeExt::to_egui_atlas`](crate::SystemThemeExt::to_egui_atlas) set it from `SystemTheme::mode`.
-    /// An atlas built from a preset has none unless given one here; the OS's current mode is
+    /// [`from_preset`](crate::from_preset) sets it from the OS's current mode; an atlas built through
+    /// [`ThemeAtlas::builder`] has none unless given one here. The OS's current mode is
     /// `if native_theme::detect::system_is_dark() { ColorMode::Dark } else { ColorMode::Light }`
-    /// (`native-theme/src/detect.rs:141`), which reads `Light` wherever detection fails
-    /// (`:139`). Without this call a preset-built atlas leaves the choice to egui's
-    /// `Options::fallback_theme` on Linux.
+    /// (`native-theme/src/detect.rs:211`), which reads `Light` wherever detection fails
+    /// (`detect_is_dark_inner`, `:811` on Linux). Without this call a builder atlas leaves the
+    /// choice to egui's `Options::fallback_theme` on Linux.
     pub fn os_mode(mut self, mode: ColorMode) -> Self {
         self.os_mode = Some(mode);
         self
