@@ -3424,12 +3424,13 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
 /// the line box of `expander.font` at its scaled size and `defaults.line_height`, rounded up,
 /// plus the header's own padding (controller's ruling, 2026-10-23, M9c T6b). The Basic page's
 /// expander (the companion crate's: painted under kde-breeze and adwaita, egui's own
-/// `CollapsingHeader` under material-3 and ios-13) and the Containers page's two egui headers in
-/// the expander scope, at 1 and 1.5, where above 1 a plain title one row of a face taller than
-/// the line box grows a header past the rule, its least height (ios-13's 34 px title on egui's
-/// own face): at 1.5 kde-breeze's 13.33 px title's line box is 27.2 at
-/// its 1.36 line height, 28 rounded up, so a header with its 7 + 7 padding is 42 past the
-/// stated 40, where egui grew it to its title's 27 and its padding, 41.
+/// `CollapsingHeader` under material-3 and ios-13), whose title is one line box tall
+/// (`demo::lined`), is exactly the rule's height. The Containers page's two egui headers in the
+/// expander scope are the stated height at 1, and at 1.5 the taller of the rule and their plain
+/// title with its padding: ios-13's 34 px title, whose face's row (46) is taller than its 41 px
+/// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13.33 px title's line box
+/// is 27.2 at its 1.36 line height, 28 rounded up, so a header with its 7 + 7 padding is 42, past
+/// the stated 40, where egui grew it to its title's 27 and its padding, 41.
 #[test]
 fn the_expander_header_is_its_stated_height_by_the_row_rule() {
     let mut faults = Vec::new();
@@ -3482,10 +3483,14 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
         }
         let mut harness = open_scaled(preset, "containers", factor);
         harness.run_steps(2);
-        // egui lays a plain title out one row of its face tall, which the connector never
-        // shortens to the theme's line box (§6.15): above 1 a face whose row is taller than the
-        // line box grows the header past the rule, which is a least height there
-        let want = grown(stated, factor, size, line_height, scope + scope, 0.0);
+        // egui's own header is the taller of its least height, `interact_size.y`, and its title
+        // and its padding above and below (`egui/src/containers/collapsing_header.rs:531-532`).
+        // Above 1 the least height is the rule (`demo::grow_rows`), and the title is one row of
+        // its face, which the connector never shortens to the theme's line box (§6.15), so a face
+        // whose row is taller than the line box grows the header past the rule. The title's row
+        // is read off its painted galley: the header is exactly the taller of the two, bounded
+        // below by the rule and above by its title and padding.
+        let rule = grown(stated, factor, size, line_height, scope + scope, 0.0);
         for (kind, title) in [
             (
                 "CollapsingHeader (expander_icon)",
@@ -3496,7 +3501,27 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
             // a record is the part of the header inside the page's clip (`demo.rs`, `record`)
             harness.get_by_label(title).scroll_to_me();
             harness.run_steps(4);
-            let exact = factor <= 1.0;
+            let painted = harness
+                .output()
+                .shapes
+                .iter()
+                .find_map(|clipped| match &clipped.shape {
+                    egui::Shape::Text(text) if text.galley.text() == title => {
+                        Some(text.galley.size().y)
+                    }
+                    _ => None,
+                });
+            let Some(row) = painted else {
+                faults.push(format!(
+                    "{preset} at {factor}: {kind}'s title is not painted"
+                ));
+                continue;
+            };
+            let want = if factor > 1.0 {
+                rule.max(row + scope + scope)
+            } else {
+                stated
+            };
             match harness
                 .state()
                 .registry
@@ -3505,11 +3530,10 @@ fn the_expander_header_is_its_stated_height_by_the_row_rule() {
                 .find(|r| r.info.kind == kind)
             {
                 Some(r) if (r.rect.height() - want).abs() <= 0.05 => {}
-                Some(r) if !exact && r.rect.height() > want => {}
                 Some(r) => faults.push(format!(
-                    "{preset} at {factor}: {kind} is {} tall, want {}{want}",
-                    r.rect.height(),
-                    if exact { "" } else { "at least " }
+                    "{preset} at {factor}: {kind} is {} tall, want {want} (the rule {rule}, its \
+                     title {row} and padding {scope} + {scope})",
+                    r.rect.height()
                 )),
                 None => faults.push(format!("{preset} at {factor}: {kind} is not recorded")),
             }

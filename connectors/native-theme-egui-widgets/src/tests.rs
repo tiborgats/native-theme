@@ -817,8 +817,8 @@ fn the_header_is_its_stated_height_by_the_row_rule() {
 /// (`TextWrapMode::Truncate`, `epaint/src/text/text_layout_types.rs:707-714`; the `…`,
 /// `text_layout.rs:146-149`), inside the header and clear of a trailing arrow, as egui's own
 /// single-line labels truncate; at least as wide as what is left of it where no width is left
-/// for the title at all. Above 1 the title
-/// wraps inside the header, which grows to hold it.
+/// for the title at all. Above 1 the title wraps inside the header, which is then exactly the
+/// taller of the rule's height and the wrapped title with its padding.
 #[test]
 fn a_long_title_is_one_line_inside_the_stated_header() {
     let title = "A title far longer than the narrow column it is shown in";
@@ -868,6 +868,16 @@ fn a_long_title_is_one_line_inside_the_stated_header() {
                 assert!(
                     text.galley.rows.len() > 1,
                     "{width}: the title wraps above 1"
+                );
+                // the tallest of the stated height, the rule's line box and the wrapped title,
+                // each with the header's padding: bounded below by the rule and above by the
+                // wrapped title
+                let padding = header_padding(&t, &ctx, true);
+                let want = header_rule(&t, &prefs, padding).max(painted.height() + padding);
+                assert!(
+                    (header.rect.height() - want).abs() <= 0.05,
+                    "{width}: the header is {}, want {want}",
+                    header.rect.height()
                 );
                 assert!(
                     header.rect.contains_rect(painted),
