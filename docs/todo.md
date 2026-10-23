@@ -3846,9 +3846,6 @@ The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M
 
 ---
 
-### gpui showcase: a family the platform names no substitute for is labelled as stated
-- [ ] [v0.7.0] Found by the M9c T10 review (Minor 2, 2026-10-23): the gpui showcase labels a theme font's family by the family gpui is asked for, `native_theme_gpui::font_family` (`connectors/native-theme-gpui/src/lib.rs:752-761`), in Widget Info's listed font rows (`inspector::listed`'s lookup, `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:567` at 79769ea9), the status bar's font item and the inspector's Theme tab (`font_rows`, M9a T4). Where the system lacks the family and the platform names no substitute, `font_family` returns the stated family: on macOS and Windows always (`native_theme::fonts::substitute_family` is `None` there, `native-theme/src/fonts.rs:286-288`, `platform_substitute` `:370-381`), and in a build without `system-fonts` (`connectors/native-theme-gpui/src/lib.rs:779-783`). gpui then draws the first font of its own fallback stack that resolves, `.ZedMono` first (gpui-pre 0.3.9 `src/text_system.rs:255-266`, `resolve_font` `:370-378`), so the three sites name the stated family alone while gpui draws another: adwaita on Windows reads "Adwaita Sans". Name what gpui draws: ask gpui's text system whether the family's `font_id` resolves, and where it does not, label gpui's fallback stack (a form of the shared crate's `status::DrawnFamily`), as the egui and iced showcases name their toolkit's own face.
-
 ## Post-1.0
 
 ### Mobile readers
