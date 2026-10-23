@@ -22,7 +22,7 @@ mod tests;
 use app::{App, Page, Settings};
 
 /// The window's title: the crate's name and version, as the gpui showcase's
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:240-245`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:277-282`).
 pub(crate) const WINDOW_TITLE: &str = concat!(
     env!("CARGO_PKG_NAME"),
     " ",
@@ -32,7 +32,7 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
 
 /// The side panel's initial width. The model states no side-panel width (spec §10.4); this
 /// is the gpui showcase's `LEFT_PANEL_WIDTH_PX`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:303`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:340`).
 pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 
 /// The initial window size, 1280 × 720 logical pixels: the maintainer's default for every
@@ -52,20 +52,20 @@ pub(crate) const INFO_SETTLE: std::time::Duration = std::time::Duration::from_mi
 /// gpui's `FontWeight::SEMIBOLD`
 /// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.6/src/text_system.rs:1169`),
 /// which the gpui showcase's inspector headings take (`font_semibold()`,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:148`, `:339`). Without
+/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:154`, `:383`). Without
 /// `system-fonts` no face is looked up, and the headings keep the regular one.
 #[cfg(feature = "system-fonts")]
 pub(crate) const SEMIBOLD_WEIGHT: u16 = 600;
 
 /// The side of a colour swatch in Widget Info and on the Theme Map. The model states no swatch;
 /// this is the gpui showcase's `SWATCH_SIZE`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:356`), the square both of
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:400`), the square both of
 /// its swatches draw.
 pub(crate) const SWATCH_SIZE: f32 = 16.0;
 
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"
-/// (`connectors/native-theme-iced/examples/showcase-iced.rs:1976`). Not a style value.
+/// (`connectors/native-theme-iced/examples/showcase-iced.rs:2171`). Not a style value.
 pub(crate) const SCREENSHOT_DELAY_S: f64 = 3.0;
 
 /// What `main` runs with and `the_window_asks_for_the_os_frame` reads back (§13.2):

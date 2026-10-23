@@ -747,7 +747,7 @@ fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respons
 }
 
 /// A name over its value, one label, the gpui showcase's inspector `row` and note line
-/// (`showcase-gpui/inspector.rs:343-351`, `:654-656`): the name in the weak text colour
+/// (`showcase-gpui/inspector.rs:386-394`, `:751-752`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
 /// rule R3), the value and each line after it in the text colour, all in the side panel's font
 /// (`sidebar.font`, `Body` in the sidebar scope), wrapping.
@@ -763,9 +763,9 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
     ui.add(egui::Label::new(job).wrap())
 }
 
-/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:364-371`,
-/// `:644-648`): a `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame`
-/// in `defaults.border` (`showcase-gpui/support.rs:209-216`), beside `label` in `style` — the
+/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:409-416`,
+/// `:740-744`): a `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame`
+/// in `defaults.border` (`showcase-gpui/support.rs:228-235`), beside `label` in `style` — the
 /// leaf and the colour's hex; the lines `under` it — the verdict and the details — weak, as
 /// gpui's citation line is muted.
 pub(crate) fn swatch_row(
@@ -807,7 +807,7 @@ pub(crate) fn swatch_row(
 
 /// `rect` filled with `colour` and framed in `defaults.border`'s width and radius and its
 /// colour with `defaults.border.opacity` folded in (`native_theme_egui::border_color`), as the
-/// gpui showcase's `demo_frame` (`showcase-gpui/support.rs:209-216`), which paints the colour
+/// gpui showcase's `demo_frame` (`showcase-gpui/support.rs:228-235`), which paints the colour
 /// as stated: whether the opacity applies there is open (docs/todo.md, "Border opacity").
 fn paint_swatch(
     ui: &egui::Ui,
@@ -1094,7 +1094,7 @@ pub(crate) fn theme_tab(
     let row = |ui: &mut egui::Ui, key: &str, value: String| {
         key_value(ui, key, &[value]);
     };
-    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:187-253`).
+    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:196-240`).
     section(ui, "Theme");
     row(ui, "name", atlas.name().to_string());
     row(ui, "os_mode", format!("{:?}", atlas.os_mode()));
