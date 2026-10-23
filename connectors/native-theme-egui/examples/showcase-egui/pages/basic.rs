@@ -1254,7 +1254,8 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
     // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
     // `arrow_gap` from the title, the body `content_indent` in, framed as `frame_enabled`
     // states; the header `expander.header_height` tall (the expander scope's
-    // `interact_size.y`).
+    // `interact_size.y`) at a text scale of 1 or less, its title one line, and above 1 grown to
+    // hold its scaled line box and padding, the one rule every stated row height takes (M9-150).
     heading(reg, ui, "basic.expander.heading", "Expander");
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);

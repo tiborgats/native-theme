@@ -392,8 +392,8 @@ fn menu_modifier(
 }
 
 /// A widget inside `ui.native_scope(role, variant, ..)`: the closure adds it and
-/// returns its `Response`, which is recorded with the role seam; a menu row's least height
-/// grown above a text scale of 1 ([`grow_menu_rows`]).
+/// returns its `Response`, which is recorded with the role seam; a menu row's or an expander
+/// header's least height grown above a text scale of 1 ([`grow_rows`]).
 pub(crate) fn scoped(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -404,7 +404,7 @@ pub(crate) fn scoped(
 ) -> egui::Response {
     let response = ui
         .native_scope(role, variant, |ui| {
-            grow_menu_rows(ui, role);
+            grow_rows(ui, role);
             add(ui)
         })
         .inner;
@@ -416,30 +416,35 @@ pub(crate) fn scoped(
     response
 }
 
-/// In `role`'s scope, where it is `Role::Menu`: a stated `menu.row_height`, which the connector
-/// writes into `interact_size.y`, the least height egui's `Button` gives a row
-/// (`egui/src/widgets/button.rs:306-309`), grown above a text scale of 1 to at least the row's
-/// line box at `defaults.line_height`, rounded up, and its padding (`button_padding` above and
-/// below), as gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and the iced
-/// showcase's (`rows::scaled_height`). At a factor of 1 or less the stated height stands, and the
-/// connector fits the cell's vertical padding to it (`style::roles::fit_row_padding`), so the row
-/// is drawn that tall.
-fn grow_menu_rows(ui: &mut egui::Ui, role: Role) {
-    if role != Role::Menu {
-        return;
-    }
+/// In `role`'s scope, where it is `Role::Menu` or `Role::Expander`: a stated `menu.row_height`
+/// or `expander.header_height`, which the connector writes into `interact_size.y`, the least
+/// height egui's `Button` gives a row (`egui/src/widgets/button.rs:306-309`) and its
+/// `CollapsingHeader` a header (`egui/src/containers/collapsing_header.rs:531-532`), grown above
+/// a text scale of 1 to at least the row's line box in `menu.font` or `expander.font` at
+/// `defaults.line_height`, rounded up, and its padding (`button_padding` above and below), as
+/// gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and the iced showcase's
+/// (`rows::scaled_height`): the one rule every stated row height takes (M9-150; for the
+/// expander the controller's ruling of 2026-10-23, M9c T6b). At a factor of 1 or less the stated
+/// height stands, and the connector fits the cell's vertical padding to it
+/// (`style::roles::fit_row_padding`), so the row is drawn that tall. The companion crate's
+/// `Expander` opens the scope again and follows the rule itself.
+fn grow_rows(ui: &mut egui::Ui, role: Role) {
     let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
         return;
     };
     let t = atlas.resolved_for(ui.ctx().theme());
-    let Some(stated) = t.menu.row_height else {
-        return;
+    let size = match role {
+        Role::Menu if t.menu.row_height.is_some() => t.menu.font.size,
+        Role::Expander => t.expander.font.size,
+        _ => return,
     };
+    // the stated height as the connector wrote it, sanitised
+    let stated = ui.spacing().interact_size.y;
     let padding = 2.0 * ui.spacing().button_padding.y;
     ui.spacing_mut().interact_size.y = rows::scaled_height(
         stated,
         atlas.accessibility(),
-        t.menu.font.size,
+        size,
         t.defaults.line_height,
         padding,
         0.0,
@@ -769,7 +774,7 @@ pub(crate) fn menu_button(
 /// or `Modal`'s body, an open menu (§1.5) — recorded on that `Ui`'s own response
 /// (`egui/src/ui.rs:944`); the seam is returned as `Applied` for the widgets egui or the caller
 /// adds to that body without a scope of their own. An open menu's rows take their least height
-/// grown above a text scale of 1 ([`grow_menu_rows`]).
+/// grown above a text scale of 1 ([`grow_rows`]).
 pub(crate) fn styled(
     reg: &mut Registry,
     ui: &mut egui::Ui,
@@ -779,7 +784,7 @@ pub(crate) fn styled(
 ) -> Applied {
     let seam = Seam::Role(role, variant);
     ui.native_set_style(role, variant);
-    grow_menu_rows(ui, role);
+    grow_rows(ui, role);
     let response = ui.response();
     reg.record(&response, info(kind, vec![seam]), true);
     Applied(seam)

@@ -3409,6 +3409,105 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
     assert!(faults.is_empty(), "{faults:#?}");
 }
 
+/// M9-150's class for the expander: a stated `expander.header_height` follows the one rule every
+/// stated row height takes, the stated height at a text scale of 1 or less and above 1 at least
+/// the line box of `expander.font` at its scaled size and `defaults.line_height`, rounded up,
+/// plus the header's own padding (controller's ruling, 2026-10-23, M9c T6b). The Basic page's
+/// expander (the companion crate's: painted under kde-breeze and adwaita, egui's own
+/// `CollapsingHeader` under material-3 and ios-13) and the Containers page's two egui headers in
+/// the expander scope, at 1 and 1.5, where above 1 a plain title one row of a face taller than
+/// the line box grows a header past the rule, its least height (ios-13's 34 px title on egui's
+/// own face): at 1.5 kde-breeze's 13.33 px title's line box is 27.2 at
+/// its 1.36 line height, 28 rounded up, so a header with its 7 + 7 padding is 42 past the
+/// stated 40, where egui grew it to its title's 27 and its padding, 41.
+#[test]
+fn the_expander_header_is_its_stated_height_by_the_row_rule() {
+    let mut faults = Vec::new();
+    for (preset, factor) in ["kde-breeze", "adwaita", "material-3", "ios-13"]
+        .into_iter()
+        .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+    {
+        let mut harness = open_scaled(preset, "basic", factor);
+        harness.run_steps(2);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let e = &t.expander;
+        let (stated, size, line_height) = (e.header_height, e.font.size, t.defaults.line_height);
+        // the expander scope's vertical button padding above 1: §5's pair rule over the base
+        // style's (src/convert.rs, `to_button_padding`, `padding_with_border`), a stated side
+        // and the border's width
+        let own = harness.ctx.global_style().spacing.button_padding.y;
+        let p = &e.border.padding;
+        let side = |stated: Option<f32>| stated.map_or(own, |v| v + e.border.line_width);
+        let scope = f32::midpoint(side(p.top), side(p.bottom));
+        // the painted header pads by each stated side, the scope's padding where unstated
+        // (native-theme-egui-widgets `expander.rs`, `header`); egui's own by the scope's twice
+        let painted = e.arrow_side.is_some()
+            || e.arrow_gap.is_some()
+            || e.content_indent.is_some()
+            || e.frame_enabled.is_some();
+        let padding = if painted {
+            p.top.unwrap_or(scope) + p.bottom.unwrap_or(scope)
+        } else {
+            scope + scope
+        };
+        let want = grown(stated, factor, size, line_height, padding, 0.0);
+        match harness
+            .state()
+            .registry
+            .places()
+            .get("basic.expander.details.header")
+        {
+            Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
+            Some(rect) => faults.push(format!(
+                "{preset} at {factor}: the Basic header is {} tall, want {want}",
+                rect.height()
+            )),
+            None => faults.push(format!(
+                "{preset} at {factor}: the Basic header is not placed"
+            )),
+        }
+        let mut harness = open_scaled(preset, "containers", factor);
+        harness.run_steps(2);
+        // egui lays a plain title out one row of its face tall, which the connector never
+        // shortens to the theme's line box (§6.15): above 1 a face whose row is taller than the
+        // line box grows the header past the rule, which is a least height there
+        let want = grown(stated, factor, size, line_height, scope + scope, 0.0);
+        for (kind, title) in [
+            (
+                "CollapsingHeader (expander_icon)",
+                "CollapsingHeader with expander_icon",
+            ),
+            ("ui.collapsing", "ui.collapsing, egui's own icon"),
+        ] {
+            // a record is the part of the header inside the page's clip (`demo.rs`, `record`)
+            harness.get_by_label(title).scroll_to_me();
+            harness.run_steps(4);
+            let exact = factor <= 1.0;
+            match harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == kind)
+            {
+                Some(r) if (r.rect.height() - want).abs() <= 0.05 => {}
+                Some(r) if !exact && r.rect.height() > want => {}
+                Some(r) => faults.push(format!(
+                    "{preset} at {factor}: {kind} is {} tall, want {}{want}",
+                    r.rect.height(),
+                    if exact { "" } else { "at least " }
+                )),
+                None => faults.push(format!("{preset} at {factor}: {kind} is not recorded")),
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest
 /// and framed when hovered), which are one border width narrower at rest on each side than
 /// hovered under a theme whose buttons have a resting border: egui lays the frameless resting
