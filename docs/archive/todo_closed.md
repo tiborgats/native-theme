@@ -1600,6 +1600,46 @@ and many have since drifted, as the archive's [README](README.md) warns.
       the strict panic lints, in check_release.sh's strict-panic section and ci.yml's
       gpui, iced and egui legs.
 
+### iced showcase: Widget Info claims a substituted family
+- [x] [v0.7.0] For M9b: the iced and gpui showcases name a family the system lacks by its stated name alone while it is drawn in the platform's substitute. iced: since 2fcc26fb the family the showcase asks for (`resolved_family`, `connectors/native-theme-iced/examples/showcase-iced.rs:12466-12477` at 2fcc26fb; since d91ff927 `font_from_database` in that file, through `native_theme_iced::font`) is `system_font_family`'s, which is the platform's substitute where the system lacks the stated family; `family_label` (`:12376-12386` at 2fcc26fb) returned the stated name alone wherever the drawn family is the one asked for, so `font_row_drawn` says "button.font, family, size and weight" for windows-11's "Segoe UI" drawn in fontconfig's match (Adwaita Sans on one Linux system); before 2fcc26fb the same row said "Segoe UI (not found; drawn in generic sans-serif: …)". gpui: the inspector's Theme tab (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:215-229`) shows the stated `font.family` under `font_family` and notes "drawn as" only for macOS's `.SystemUIFont`, while `Theme::font_family` holds `font_family`'s substitute (`connectors/native-theme-gpui/src/lib.rs:311`, `:747-750`), and its `mono_font_family` row has no note at all. Widget Info and the inspector must name the drawn family in both, e.g. "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita Sans)". egui names it, in another place: its Theme panel's Notes section lists the atlas's `Note::FontFamilyUnavailable { family, substitute }` (`connectors/native-theme-egui/examples/showcase-egui/info.rs:1114-1121`), while its Fonts section just below (`:1129-1135`) prints the stated `font_family` and `mono_font_family` with no note; M9b makes the two sections agree.
+      M8 T21 (2026-10-17): each half is its showcase's milestone: iced's
+      Widget Info M9b's, gpui's inspector M9a's, egui's two Theme panel
+      sections M9c's.
+      M9a T4 (2026-10-18): gpui's status bar font item and its inspector's
+      Theme tab `font_family` and `mono_font_family` rows name the drawn
+      family through the shared crate's `status::family_label` (f3e058ee),
+      e.g. on one Linux system windows-11's "Segoe UI (not on this system;
+      drawn in the platform's substitute, Adwaita Sans)". gpui's listed Widget Info font
+      rows still print the stated family: they wait for M9c T10's
+      drawn-family argument to `values::leaf_value`. The entry stays open.
+      M9b T12 (2026-10-22): iced's own font lines name the drawn family
+      through the shared crate's `status::family_label` (d91ff927): the
+      font rows (`font_row_drawn`), the Theme fonts lines
+      (`widget_tooltip_themed`), the inspector's Theme tab and the Display
+      page's font line, and the status bar's family item through
+      `status::environment`, e.g. on one Linux system windows-11's "Segoe UI
+      (not on this system; drawn in the platform's substitute, Adwaita
+      Sans)". gpui's inspector half was M9a's (M9a T4, above). iced's listed
+      Widget Info font rows still print the stated family: they wait for
+      M9c T10's drawn-family argument to `values::leaf_value`. The entry
+      stays open.
+  *Closed by M9c T10 (2026-10-23, a02f1dd7, 337e0de0):* the egui showcase names the
+      family egui draws (`demo::DrawnFamilies`, from the atlas's
+      `Note::FontFamilyUnavailable`: its substitute, or egui's own face where it names
+      none) in the status bar's font item (`status::environment_drawn`), the Theme
+      tab's Fonts `font_family` and `mono_font_family` rows, which so agree with its
+      Notes section, and Widget Info's whole-font and `*.font.family` rows, listed and
+      `mapping.toml` alike; the three showcases' listed Widget Info font rows name it
+      through the drawn-family lookup the shared crate's `values::leaf_value` and
+      `info::ListedInfo::new` now take: gpui's `status::family_label` of the
+      connector's `font_family`, iced's label of what it draws (`listed_family`),
+      egui's `DrawnFamilies::font_label`; e.g. on one Linux system windows-11's
+      "Segoe UI (not on this system; drawn in the platform's substitute, Adwaita
+      Sans)". A host-conditioned test in each showcase reads the rows
+      (`every_font_label_names_the_drawn_family`,
+      `a_listed_font_row_names_the_family_iced_draws`,
+      `a_listed_font_row_names_the_family_gpui_draws`).
+
 ## Post-1.0 / Deferred
 
 ### Change notification
