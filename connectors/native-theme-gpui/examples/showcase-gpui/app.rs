@@ -12,6 +12,7 @@ use gpui_component::{
     color_picker::ColorPickerState,
     combobox::{ComboboxEvent, ComboboxState},
     command::CommandState,
+    diff::{DiffFile, DiffState},
     h_flex, h_resizable,
     input::{
         EditorState, InlineToken, InputState, NumberInputEvent, OtpState, StepAction, TextareaState,
@@ -30,35 +31,32 @@ use gpui_component::{
 };
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::num::NonZeroU32;
 use std::rc::Rc;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use native_theme::detect::system_is_dark;
+use native_theme::detect::{system_icon_set, system_icon_theme};
 use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
-    load_icon_indicator,
+    AnimatedIcon, FreedesktopLoader, IconData, IconRole, IconSetChoice, TransformAnimation,
+    default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::pipeline::platform_preset_name;
-use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, system_icon_set,
-    system_icon_theme,
-};
-use native_theme_gpui::icons::{animated_frames_to_image_sources, to_image_source};
+use native_theme::theme::IconSet;
+use native_theme_gpui::icons::{animated_frames_to_image_sources_for, to_image_source};
 use native_theme_gpui::to_theme;
 use native_theme_gpui::{AccessibilityPreferences, ActiveNativeTheme as _, geometry};
+use native_theme_showcase_support::rows;
 
 use crate::chrome;
 use crate::elements;
-use crate::info::{InfoRegistry, epoch_marker};
-use crate::inspector::Inspector;
+use crate::info::InfoRegistry;
+use crate::inspector::{Inspector, PanelLook};
 use crate::speech::{SilentRecognizer, SyntheticAudio};
 use crate::support::{
-    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DialogIcons, EDITOR_SAMPLE, IconEntry, IconSource,
-    PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate, SharedDialogIcons,
-    default_label, initial_chat_messages, load_all_icons, load_gpui_icons, parse_icon_set_choice,
-    release_sources,
+    CAROUSEL_SLIDES, ChatMessage, ChromeIcon, DIFF_SAMPLE, DialogIcons, EDITOR_SAMPLE, IconEntry,
+    IconSource, PresetDelegate, SampleIcon, SampleListDelegate, SampleTableDelegate,
+    SharedDialogIcons, initial_chat_messages, load_all_icons, load_gpui_icons,
+    parse_icon_set_choice, release_sources,
 };
 use crate::{
     CHROME_HANDLE, CONTENT_ALERT, CONTENT_PANEL, CONTENT_SCROLL, LEFT_PANEL_WIDTH, PAGE_ROOT,
@@ -71,6 +69,28 @@ fn gpui_theme_mode(is_dark: bool) -> gpui_component::theme::ThemeMode {
         gpui_component::theme::ThemeMode::Dark
     } else {
         gpui_component::theme::ThemeMode::Light
+    }
+}
+
+/// native-theme's colour mode for the showcase's light/dark flag.
+pub(crate) fn color_mode_of(is_dark: bool) -> native_theme_gpui::ColorMode {
+    if is_dark {
+        native_theme_gpui::ColorMode::Dark
+    } else {
+        native_theme_gpui::ColorMode::Light
+    }
+}
+
+/// The font the status bar and the inspector name where the OS theme could
+/// not be read: no source stated a family, a size or a colour.
+fn unread_font() -> native_theme::theme::ResolvedFontSpec {
+    native_theme::theme::ResolvedFontSpec {
+        family: "(default)".into(),
+        size: 0.0,
+        defined_size: None,
+        weight: 400,
+        style: native_theme::theme::FontStyle::Normal,
+        color: native_theme::color::Rgba::TRANSPARENT,
     }
 }
 
@@ -90,6 +110,33 @@ actions!(
         ReloadTheme,
         OpenPreferences,
         OpenAbout
+    ]
+);
+
+// The rows the macOS menu bar's app, File and Window menus add
+// (`chrome::macos_menus`), each with the HIG's key (`macos_bindings`):
+// gpui offers them as calls, not as menu items of its own.
+
+actions!(
+    showcase,
+    [
+        /// Hide the application (`App::hide`): the app menu's Hide ⌘H.
+        Hide,
+        /// Hide the other applications (`App::hide_other_apps`): the app
+        /// menu's Hide Others ⌥⌘H.
+        HideOthers,
+        /// Show the other applications again (`App::unhide_other_apps`): the
+        /// app menu's Show All.
+        ShowAll,
+        /// Close the window: File's Close ⌘W. The showcase has one window,
+        /// so this quits, as the title bar's X does (`demo::title_bar`).
+        CloseWindow,
+        /// Minimize the active window (`Window::minimize_window`): the
+        /// Window menu's Minimize ⌘M.
+        Minimize,
+        /// Zoom the active window (`Window::zoom_window`): the Window
+        /// menu's Zoom.
+        Zoom
     ]
 );
 
@@ -123,6 +170,9 @@ pub(crate) struct SetPreset(pub SharedString);
 /// has the focus; the actions that change the showcase are handled around
 /// the whole window, view and overlays, by `host::ShowcaseHost`, which this
 /// registers before any window opens.
+///
+/// On macOS it also binds and handles the rows the system menu bar's app,
+/// File and Window menus add (`chrome::macos_menus`, [`macos_bindings`]).
 pub(crate) fn init(cx: &mut App) {
     cx.bind_keys([
         KeyBinding::new("secondary-q", Quit, None),
@@ -131,7 +181,38 @@ pub(crate) fn init(cx: &mut App) {
         KeyBinding::new("secondary-,", OpenPreferences, None),
     ]);
     cx.on_action(|_: &Quit, cx| quit(cx));
+    if cfg!(target_os = "macos") {
+        cx.bind_keys(macos_bindings());
+        cx.on_action(|_: &Hide, cx| cx.hide());
+        cx.on_action(|_: &HideOthers, cx| cx.hide_other_apps());
+        cx.on_action(|_: &ShowAll, cx| cx.unhide_other_apps());
+        cx.on_action(|_: &CloseWindow, cx| quit(cx));
+        cx.on_action(|_: &Minimize, cx| {
+            on_active_window(cx, |window| window.minimize_window());
+        });
+        cx.on_action(|_: &Zoom, cx| on_active_window(cx, |window| window.zoom_window()));
+    }
     crate::host::register(cx);
+}
+
+/// The keys of the macOS menu bar's own rows (Apple's HIG, *The menu bar*):
+/// ⌘H Hide, ⌥⌘H Hide Others, ⌘M Minimize and ⌘W Close, which the rows show
+/// beside their titles. Show All and Zoom have none.
+pub(crate) fn macos_bindings() -> [KeyBinding; 4] {
+    [
+        KeyBinding::new("cmd-h", Hide, None),
+        KeyBinding::new("alt-cmd-h", HideOthers, None),
+        KeyBinding::new("cmd-m", Minimize, None),
+        KeyBinding::new("cmd-w", CloseWindow, None),
+    ]
+}
+
+/// Run `act` on the active window, where there is one: the Window menu acts
+/// on the window in front.
+fn on_active_window(cx: &mut App, act: impl FnOnce(&mut Window)) {
+    if let Some(window) = cx.active_window() {
+        let _ = window.update(cx, |_, window, _| act(window));
+    }
 }
 
 /// Quit the showcase: take the focus off every field, let the windows paint
@@ -176,58 +257,10 @@ const QUIT_SETTLE: std::time::Duration = std::time::Duration::from_millis(100);
 // Color mode (light / dark / system)
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) enum AppColorMode {
-    System,
-    Light,
-    Dark,
-}
-
-impl AppColorMode {
-    /// Resolve to a concrete is_dark bool.
-    fn is_dark(self) -> bool {
-        match self {
-            AppColorMode::Light => false,
-            AppColorMode::Dark => true,
-            AppColorMode::System => system_is_dark(),
-        }
-    }
-
-    /// Display label for the command palette, with system preference in
-    /// parentheses.
-    pub(crate) fn label(self) -> String {
-        match self {
-            AppColorMode::System => {
-                let actual = if system_is_dark() { "Dark" } else { "Light" };
-                format!("System ({actual})")
-            }
-            AppColorMode::Light => "Light".into(),
-            AppColorMode::Dark => "Dark".into(),
-        }
-    }
-
-    /// Every mode, in the order the colour-mode Select lists them.
-    pub(crate) const ALL: [AppColorMode; 3] = [
-        AppColorMode::System,
-        AppColorMode::Light,
-        AppColorMode::Dark,
-    ];
-
-    /// The mode whose `short_label` is `label`.
-    fn from_short_label(label: &str) -> Option<Self> {
-        Self::ALL.into_iter().find(|m| m.short_label() == label)
-    }
-
-    /// The colour-mode Select's row for this mode: the mode alone. The mode
-    /// System resolves to is in the status bar while System is chosen.
-    pub(crate) fn short_label(self) -> &'static str {
-        match self {
-            AppColorMode::System => "System",
-            AppColorMode::Light => "Light",
-            AppColorMode::Dark => "Dark",
-        }
-    }
-}
+/// The colour-mode Select's rows, the Theme menu's and the command
+/// palette's modes: the shared crate's, which `--variant` names
+/// (`cli::color_mode`).
+pub(crate) use native_theme_showcase_support::cli::ColorModeChoice as AppColorMode;
 
 // ---------------------------------------------------------------------------
 // Main view
@@ -246,6 +279,11 @@ pub(crate) struct Showcase {
     /// pipeline settled on, or `platform_preset_name` where the OS theme
     /// could not be read.
     pub(crate) default_preset: String,
+    /// The desktop's own theme as `default` last installed it, both variants
+    /// and the OS's preferences as read: a colour-mode switch under
+    /// `default` installs its other variant without reading the OS again,
+    /// which only a reload (Reload System Theme, the theme watcher) does.
+    pub(crate) system: Option<native_theme::SystemTheme>,
     pub(crate) is_dark: bool,
     pub(crate) color_mode: AppColorMode,
     /// Original native-theme font spec, for display purposes.
@@ -274,9 +312,24 @@ pub(crate) struct Showcase {
     /// The inspector, in the side panel, which shows the info the registry
     /// settles on.
     pub(crate) inspector: Entity<Inspector>,
+    /// What the inspector's Widget tab is drawn in and reads its rows' values
+    /// from under the installed native theme (`PanelLook`), built once an
+    /// install; `None` where none is installed, and from an install until
+    /// the next frame builds it. Every install --
+    /// `install_system`, `install_preset`, `demo::change_preferences`, the
+    /// connector's own re-apply after a mode switch upstream -- writes the
+    /// connector's `NativeTheme`, whose observer (`_native_theme`) drops it.
+    pub(crate) panel_look: Option<PanelLook>,
+    /// Drops `panel_look` whenever the connector's `NativeTheme` is written.
+    _native_theme: Subscription,
     /// The title the status bar's hover label showed in the last frame;
     /// `None` where it showed none.
     pub(crate) status_title_drawn: Option<SharedString>,
+    /// The layout of the status bar's environment text in the last frame:
+    /// the text it drew, cut short with an ellipsis where the bar left it
+    /// too little room (`TextLayout::text`).
+    #[cfg(test)]
+    pub(crate) status_environment_drawn: gpui::TextLayout,
     /// The decorations the self-tests say the window was granted. gpui's test
     /// platform grants server-side decorations whatever it is asked for (gpui-pre
     /// platform.rs, `PlatformWindow::window_decorations`), so this is how a test
@@ -286,7 +339,7 @@ pub(crate) struct Showcase {
     /// The accessibility preferences the self-tests say the OS has, which a
     /// preset install then reads in place of the host's
     /// (`Showcase::os_preferences`): a test cannot change the desktop's.
-    /// `install_system_theme` takes the desktop's theme, preferences and
+    /// `install_system` takes the desktop's theme, preferences and
     /// all, from its caller, so it needs none.
     #[cfg(test)]
     pub(crate) os_preferences_for_test: Option<AccessibilityPreferences>,
@@ -303,7 +356,7 @@ pub(crate) struct Showcase {
     /// Takes the focus back to the view when the focused element stops being
     /// drawn -- a page's widget whose page was left keeps its handle, and
     /// gpui would dispatch from the window's root instead (gpui-pre
-    /// window.rs:6325-6333), out of the view's handlers' reach.
+    /// window.rs:6463-6471), out of the view's handlers' reach.
     _refocus: Subscription,
 
     /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
@@ -325,9 +378,29 @@ pub(crate) struct Showcase {
 
     /// Whether a box over the whole window takes the pointer, so what is
     /// drawn does not depend on where the pointer happens to be: set for a
-    /// capture (`--capture`, `--screenshot`) that holds no pointer of its own
-    /// (`--pointer`).
+    /// capture (`--capture`, `--screenshot`) and a layout dump
+    /// (`--dump-layout`) that hold no pointer of their own (`--pointer`).
     pub(crate) pointer_shield: bool,
+
+    /// While held, every keystroke is stopped before gpui dispatches it, so
+    /// a key the desktop hands the window types into no field and runs no
+    /// binding: held for a capture (`--capture`, `--screenshot`) and a layout
+    /// dump (`--dump-layout`), which record the run as it started
+    /// (`CliArgs::shields_keyboard`). An interceptor runs before the keymap,
+    /// the key listeners and the input handler, and a stopped keystroke
+    /// reaches none of them (gpui-pre 0.3.9 `src/app.rs`,
+    /// `App::intercept_keystrokes`; `src/window.rs`, `dispatch_key_event` and
+    /// `dispatch_keystroke`).
+    ///
+    /// Its limit: an input method's commit of more than one character is no
+    /// keystroke. gpui hands it straight to the focused field's input handler
+    /// (gpui-pre-linux 0.3.9 `src/linux/wayland/client.rs:2298-2320`,
+    /// `CommitString`; `src/linux/wayland/window.rs:1469-1479`, `handle_ime`),
+    /// with no hook ahead of the handler, so where an input method runs, the
+    /// Basic page's focused field, which keeps the focus for its focus border,
+    /// still takes such a commit. A one-character commit comes as a keystroke
+    /// and is stopped.
+    pub(crate) keyboard_shield: Option<Subscription>,
 
     // Basic page
     /// The Basic page's three text fields: empty with a placeholder, filled,
@@ -373,6 +446,9 @@ pub(crate) struct Showcase {
     pub(crate) form_name_state: Entity<InputState>,
     pub(crate) form_email_state: Entity<InputState>,
     pub(crate) slider_state: Entity<SliderState>,
+    /// The Inputs page's range slider, and its vertical one.
+    pub(crate) range_slider_state: Entity<SliderState>,
+    pub(crate) vertical_slider_state: Entity<SliderState>,
     pub(crate) otp_state: Entity<OtpState>,
     pub(crate) color_picker_state: Entity<ColorPickerState>,
     /// The Inputs page's ColorSelect, empty until a colour is picked.
@@ -400,9 +476,13 @@ pub(crate) struct Showcase {
     pub(crate) carousel_state: Entity<CarouselState>,
     /// The `Stepper`'s current step, written by its `on_click`.
     pub(crate) step: usize,
+    /// The selected tab of the Folder TabBar, written by its `on_click`.
+    pub(crate) folder_tab: usize,
 
     // Typography page
     pub(crate) editor_state: Entity<EditorState>,
+    /// The Typography page's `Diff`, over `DIFF_SAMPLE`.
+    pub(crate) diff_state: Entity<DiffState>,
 
     // Data page
     pub(crate) table_state: Entity<TableState<SampleTableDelegate>>,
@@ -446,13 +526,18 @@ pub(crate) struct Showcase {
     pub(crate) gpui_icon_sources: Vec<Option<ImageSource>>,
     /// Foreground color used when building the image source caches.
     pub(crate) icon_cache_fg: Hsla,
+    /// What the loaded icons were loaded as; `None` before the first load
+    /// and, for a system set's, after a reload of the desktop's settings, so
+    /// the next loads.
+    pub(crate) icon_load: Option<IconLoad>,
     /// The icon-theme choice (library type).
     pub(crate) icon_set_choice: IconSetChoice,
     /// Whether the choice follows the preset: it is `default_icon_choice`'s
     /// for the installed theme -- its `default`, or `system` where the
     /// preset's own icon theme is not installed -- and is taken again on
     /// every theme install. False once the user picks any other row of the
-    /// icon-theme Select, or `--icon-set` names a set: that choice stays.
+    /// icon-theme Select, or `--icon-set` names a set: that choice stays;
+    /// true again after `--icon-set default`.
     pub(crate) icon_choice_follows_preset: bool,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     pub(crate) installed_themes: Vec<String>,
@@ -463,10 +548,6 @@ pub(crate) struct Showcase {
     pub(crate) current_icon_set: IconSet,
     /// Whether the current theme's TOML specified `icon_theme` (before resolution).
     pub(crate) has_toml_icon_theme: bool,
-    /// The freedesktop icon theme `--icon-theme` names, one the icon-theme
-    /// Select lists (e.g. "breeze", "breeze-dark"), which the icons load
-    /// from until the user picks an icon theme in the icon-theme Select.
-    pub(crate) icon_theme_override: Option<String>,
 
     // Animated Icons state
     /// Cached frame ImageSources for frame-based animations (set name, frames).
@@ -477,7 +558,7 @@ pub(crate) struct Showcase {
     pub(crate) animated_frame_indices: Vec<usize>,
     /// The SVG of each transform-based (spin) animation, which the page
     /// turns with `with_spin_animation` (set name, SVG bytes, duration_ms).
-    pub(crate) animated_spin_sources: Vec<(String, Vec<u8>, u32)>,
+    pub(crate) animated_spin_sources: Vec<(String, Vec<u8>, NonZeroU32)>,
     /// Timer task handle for frame cycling (dropped to cancel).
     pub(crate) animation_timer: Option<Task<()>>,
 
@@ -485,13 +566,10 @@ pub(crate) struct Showcase {
     /// content reports (spec §2.5); `None` once a theme loads.
     pub(crate) error_message: Option<String>,
 
-    // Theme watcher (runtime dark/light toggle detection)
-    /// Flag set by the ThemeSubscription background thread when the OS theme changes.
-    pub(crate) theme_change_flag: Arc<AtomicBool>,
-    /// RAII guard keeping the theme watcher background thread alive.
-    pub(crate) _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
-    /// Set by the watcher polling task; checked in render() where window access is available.
-    pub(crate) pending_system_theme_change: bool,
+    /// The OS theme watcher (`native_theme_gpui::on_theme_change`), which
+    /// stops when this is dropped.
+    #[cfg(feature = "watch")]
+    pub(crate) _theme_watcher: Option<native_theme_gpui::ThemeSubscription>,
 }
 
 /// The icon-theme Select's row for gpui-component's own icons, which no
@@ -517,33 +595,63 @@ const BASIC_TEXTAREA_TEXT: &str = "Line one\nLine two\nLine three";
 const BASIC_LIST_ROWS: usize = 8;
 const BASIC_LIST_SELECTED: usize = 1;
 
+/// The colour the system icon sets' loaders recolour a symbolic icon in
+/// (`load_all_icons`, `load_gpui_icons`): the installed native theme's
+/// `defaults.font.color`, and none without a native theme, so an icon keeps
+/// its own colours. The placeholder font shown where the OS theme could not
+/// be read is transparent black (`unread_font`), which the loaders would
+/// take as black, as they keep only its red, green and blue.
+pub(crate) fn icon_tint(
+    native_installed: bool,
+    font_colour: native_theme::Rgba,
+) -> Option<native_theme::Rgba> {
+    native_installed.then_some(font_colour)
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How often a tick of the animation timer (`start_animation_timer`)
+    /// stepped the frames and asked for a redraw on this thread; a test reads
+    /// how much an action adds to it.
+    pub(crate) static ANIMATION_STEPS: Cell<usize> = const { Cell::new(0) };
+}
+
+/// What the Icons page's icons were loaded as (`Showcase::reload_icons`),
+/// so a theme install loads them again only where this changed.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct IconLoad {
+    /// The set chosen; `None` for gpui-component's own icons.
+    set: Option<IconSet>,
+    /// The set the choice loads from.
+    effective: IconSet,
+    /// The freedesktop theme a freedesktop set loads from; `None` is the
+    /// system's own.
+    theme: Option<String>,
+    /// The colour a system set's loaders recoloured a symbolic icon in
+    /// (`icon_tint`); `None` for a bundled set, whose icons are coloured
+    /// where they are drawn.
+    tint: Option<native_theme::Rgba>,
+}
+
 /// The icon-theme Select's rows for a theme of `icon_set` naming
-/// `icon_theme`: its `default` row, where the theme names an icon theme that
-/// is available (`default_icon_choice`), then `system`, the installed
-/// freedesktop themes, gpui-component's own icons and the bundled sets.
+/// `icon_theme`: the shared crate's (`rows::icon_rows`) -- its `default` row,
+/// where the theme names an icon theme that is available
+/// (`default_icon_choice`), then `system`, the installed freedesktop themes
+/// and the bundled sets -- with gpui-component's own icons after the
+/// installed themes.
 fn icon_theme_rows(
     icon_set: IconSet,
     icon_theme: Option<&str>,
     installed: &[String],
 ) -> Vec<SharedString> {
-    let default = match default_icon_choice(icon_set, icon_theme) {
-        choice @ IconSetChoice::Default(_) => Some(choice),
-        _ => None,
-    };
-    default
+    rows::icon_rows(icon_set, icon_theme, installed)
         .into_iter()
-        .chain([IconSetChoice::System])
-        .chain(
-            installed
-                .iter()
-                .map(|name| IconSetChoice::Freedesktop(name.clone())),
-        )
-        .map(|choice| SharedString::from(choice.to_string()))
-        .chain([SharedString::from(GPUI_BUILTIN_ROW)])
-        .chain(
-            [IconSetChoice::Lucide, IconSetChoice::Material]
-                .map(|choice| SharedString::from(choice.to_string())),
-        )
+        .flat_map(|choice| {
+            let builtin = (choice == IconSetChoice::Lucide).then(|| GPUI_BUILTIN_ROW.into());
+            builtin
+                .into_iter()
+                .chain([SharedString::from(choice.to_string())])
+        })
         .collect()
 }
 
@@ -615,17 +723,21 @@ impl Showcase {
         let anim = match self.icon_set_enum {
             Some(IconSet::Freedesktop) => {
                 FreedesktopLoader::load_indicator(self.freedesktop_theme())
+                    .map(|anim| (IconSet::Freedesktop, anim))
             }
-            Some(icon_set) => load_icon_indicator(icon_set),
+            Some(icon_set) => load_icon_indicator(icon_set, None).map(|anim| (icon_set, anim)),
             None => None,
         };
         let set_name = &self.icon_theme_name;
         let fg = self.icon_cache_fg;
-        if let Some(anim) = anim {
+        if let Some((icon_set, anim)) = anim {
             match &anim {
+                // Coloured as the set colours it: a freedesktop theme's
+                // frames keep the colour their stylesheet sets, as the
+                // connector's Spinner draws them.
                 AnimatedIcon::Frames(data) => {
                     if let Some(anim_sources) =
-                        animated_frames_to_image_sources(&anim, Some(fg), None)
+                        animated_frames_to_image_sources_for(icon_set, &anim, Some(fg), None)
                     {
                         self.animated_frame_durations
                             .push(data.frame_duration_ms().get());
@@ -642,7 +754,7 @@ impl Showcase {
                         self.animated_spin_sources.push((
                             set_name.to_string(),
                             bytes.to_vec(),
-                            duration_ms.get(),
+                            *duration_ms,
                         ));
                     }
                 }
@@ -656,14 +768,17 @@ impl Showcase {
     /// Start (or restart) the frame-cycling timer for animated icons.
     ///
     /// Cancels any previous timer. Does nothing when there are no frame-based
-    /// animations cached, and a tick does nothing while gpui's
+    /// animations cached, or while a page other than Icons, the one page that
+    /// draws the frames, is shown: `show_page` starts it as the Icons page
+    /// opens and drops it as the page closes, the page showing a paused
+    /// frame from where it stopped. A tick does nothing while gpui's
     /// `reduce_motion` is on: the page then shows each animation's first
     /// frame, as gpui holds its own animations at their start.
     pub(crate) fn start_animation_timer(&mut self, cx: &mut Context<Self>) {
         // Drop old timer (cancels the task)
         self.animation_timer = None;
 
-        if self.animated_frame_sources.is_empty() {
+        if self.animated_frame_sources.is_empty() || self.active_page != Page::Icons {
             return;
         }
 
@@ -690,10 +805,14 @@ impl Showcase {
                         return;
                     }
                     for (i, (_name, frames)) in this.animated_frame_sources.iter().enumerate() {
-                        if let Some(idx) = this.animated_frame_indices.get_mut(i) {
-                            *idx = (*idx + 1) % frames.len();
+                        if let Some(idx) = this.animated_frame_indices.get_mut(i)
+                            && let Some(next) = idx.saturating_add(1).checked_rem(frames.len())
+                        {
+                            *idx = next;
                         }
                     }
+                    #[cfg(test)]
+                    ANIMATION_STEPS.with(|steps| steps.set(steps.get().saturating_add(1)));
                     cx.notify();
                 }) else {
                     break;
@@ -705,12 +824,9 @@ impl Showcase {
     }
 
     /// The freedesktop theme the page's icons load from where the set is
-    /// freedesktop: the `--icon-theme` override while it stands, else the
-    /// theme the choice names; `None` is the system's own.
+    /// freedesktop: the theme the choice names; `None` is the system's own.
     pub(crate) fn freedesktop_theme(&self) -> Option<&str> {
-        self.icon_theme_override
-            .as_deref()
-            .or(self.icon_set_choice.freedesktop_theme())
+        self.icon_set_choice.freedesktop_theme()
     }
 
     /// The content panel's width: the page's scroll area's, as the last frame
@@ -728,10 +844,12 @@ impl Showcase {
         if !self.side_panel_visible {
             return viewport;
         }
-        viewport
-            - self.side_panel_width
-            - crate::demo::splitter_reserve(cx).unwrap_or_default()
-            - crate::demo::HANDLE_SIZE
+        gpui::px(
+            f32::from(viewport)
+                - f32::from(self.side_panel_width)
+                - f32::from(crate::demo::splitter_reserve(cx).unwrap_or_default())
+                - f32::from(crate::demo::HANDLE_SIZE),
+        )
     }
 
     /// The icon set the theme-drawn Spinner draws its indicator from: the
@@ -744,6 +862,7 @@ impl Showcase {
                 .map(|t| SharedString::from(t.to_owned())),
             indicator: !self.animated_frame_sources.is_empty()
                 || !self.animated_spin_sources.is_empty(),
+            spins: !self.animated_spin_sources.is_empty(),
         }
     }
 
@@ -824,14 +943,14 @@ impl Showcase {
             .collect();
         let area = self.basic_textarea.read(cx);
         let text = area.value();
-        let mut start = 0;
+        let mut start: usize = 0;
         let mut lines: Option<gpui::Bounds<Pixels>> = None;
         for piece in text.split('\n') {
-            let end = start + piece.len();
+            let end = start.saturating_add(piece.len());
             if let Some(b) = area.range_to_bounds(&(start..end)) {
                 lines = Some(lines.map_or(b, |so_far| so_far.union(&b)));
             }
-            start = end + 1;
+            start = end.saturating_add(1);
         }
         found.extend(lines.map(|b| ("basic.text_area.field.text", b)));
         found
@@ -874,34 +993,15 @@ impl Showcase {
         }
     }
 
-    /// Load the freedesktop icons from `theme` until the user picks an icon
-    /// theme in the icon-theme Select: what `--icon-theme` asks for. The
-    /// Select shows `theme` while the override stands and a freedesktop set
-    /// is chosen (`icon_choice_row`).
-    pub(crate) fn set_icon_theme_override(
-        &mut self,
-        theme: String,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.icon_theme_override = Some(theme);
-        self.show_icon_choice(window, cx);
-        // The icons on show were loaded before the override, so the page
-        // would name this theme over another theme's icons.
-        self.reload_icons(window, cx);
-    }
-
     /// Load the icon theme the icon-theme Select names `display`, as the
-    /// Select does when it is confirmed. The user's pick: it ends the
-    /// `--icon-theme` override, and only its `default` row follows the preset
-    /// from now on.
+    /// Select does when it is confirmed. The user's pick: only its `default`
+    /// row follows the preset from now on.
     pub(crate) fn select_icon_set(
         &mut self,
         display: &str,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        self.icon_theme_override = None;
         self.choose_icon_row(display);
         self.reload_icons(window, cx);
     }
@@ -932,31 +1032,40 @@ impl Showcase {
         };
     }
 
-    /// Load the icons of the chosen set -- from the `--icon-theme` override
-    /// while it stands -- and rebuild what the Icons page draws from them.
+    /// Load the icons of the chosen set and rebuild what the Icons page
+    /// draws from them, where what they are loaded as (`IconLoad`) changed
+    /// since the last load: the set, its icon theme, or a system set's
+    /// colour. Otherwise the loaded icons stay, and what is drawn from them
+    /// is recoloured with the theme's foreground, as a bundled set's icons
+    /// are coloured where they are drawn.
     pub(crate) fn reload_icons(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let effective = self
             .icon_set_choice
             .effective_icon_set(self.current_icon_set);
-        let default_theme = self
-            .icon_set_choice
-            .freedesktop_theme()
-            .map(|s| s.to_string());
-        let cli_ref = self.icon_theme_override.as_deref();
-        let fc = self.original_font.color;
-        let fg_rgb = Some([fc.r, fc.g, fc.b]);
+        let theme = self.freedesktop_theme().map(str::to_string);
+        let fg_color = icon_tint(cx.native_theme().is_some(), self.original_font.color);
+        let load = IconLoad {
+            set: self.icon_set_enum,
+            effective,
+            theme,
+            tint: fg_color.filter(|_| crate::support::is_system_set(effective)),
+        };
+        let fg = cx.theme().foreground;
+        if self.icon_load.as_ref() == Some(&load) {
+            if fg != self.icon_cache_fg {
+                self.rebuild_icon_caches(fg, window, cx);
+                self.rebuild_animation_caches(window, cx);
+                self.start_animation_timer(cx);
+                cx.notify();
+            }
+            return;
+        }
         // gpui-builtin draws gpui-component's own icons: nothing to load.
         if self.icon_set_enum.is_some() {
-            self.loaded_icons =
-                load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
+            self.loaded_icons = load_all_icons(effective, load.theme.as_deref(), fg_color);
         }
-        self.gpui_icons = load_gpui_icons(
-            self.icon_set_enum,
-            default_theme.as_deref(),
-            cli_ref,
-            fg_rgb,
-        );
-        let fg = cx.theme().foreground;
+        self.gpui_icons = load_gpui_icons(self.icon_set_enum, load.theme.as_deref(), fg_color);
+        self.icon_load = Some(load);
         self.rebuild_icon_caches(fg, window, cx);
         self.rebuild_animation_caches(window, cx);
         self.start_animation_timer(cx);
@@ -979,18 +1088,12 @@ impl Showcase {
             .filter(|_| self.has_toml_icon_theme)
     }
 
-    /// The icon-theme Select's row for the icons drawn: the `--icon-theme`
-    /// override's while it stands and a freedesktop set is chosen, as the
-    /// icons load from it, else the current choice's.
+    /// The icon-theme Select's row for the icons drawn: the current
+    /// choice's, or gpui-component's own icons' row.
     fn icon_choice_row(&self) -> SharedString {
-        match (self.icon_set_enum, self.icon_theme_override.as_deref()) {
-            (None, _) => GPUI_BUILTIN_ROW.into(),
-            (Some(IconSet::Freedesktop), Some(theme)) => {
-                IconSetChoice::Freedesktop(theme.to_string())
-                    .to_string()
-                    .into()
-            }
-            (Some(_), _) => self.icon_set_choice.to_string().into(),
+        match self.icon_set_enum {
+            None => GPUI_BUILTIN_ROW.into(),
+            Some(_) => self.icon_set_choice.to_string().into(),
         }
     }
 
@@ -1042,7 +1145,9 @@ impl Showcase {
              window,
              cx| {
                 if let SelectEvent::Confirm(Some(value)) = event
-                    && let Some(mode) = AppColorMode::from_short_label(value)
+                    && let Some(mode) = AppColorMode::ALL
+                        .into_iter()
+                        .find(|mode| mode.short_label() == value.as_ref())
                 {
                     window.dispatch_action(Box::new(SetColorMode(mode)), cx);
                 }
@@ -1192,84 +1297,17 @@ impl Showcase {
         )
         .detach();
 
-        // Apply the initial OS Theme via native-theme pipeline.
+        let range_slider_state = cx.new(|_cx| SliderState::new().default_value(20.0..80.0));
+        let vertical_slider_state = cx.new(|_cx| SliderState::new().default_value(40.0));
+
+        // The desktop's own theme, which `install_system` installs once the
+        // view is built; where it cannot be read, gpui-component's built-in
+        // theme, so the window still renders.
         let is_dark = color_mode.is_dark();
-        let (
-            original_font,
-            original_mono_font,
-            initial_default_preset,
-            initial_icon_theme,
-            initial_icon_set,
-            initial_has_toml_icon_theme,
-            initial_layout,
-            initial_error,
-        ) = match native_theme::SystemTheme::from_system() {
-            Ok(system) => {
-                let resolved = system.pick(if is_dark {
-                    native_theme_gpui::ColorMode::Dark
-                } else {
-                    native_theme_gpui::ColorMode::Light
-                });
-                let font = resolved.defaults.font.clone();
-                let mono_font = resolved.defaults.mono_font.clone();
-                let icon_theme = system.icon_theme.clone().map(Cow::into_owned);
-                let icon_set = system.icon_set;
-                let layout = system.layout.clone();
-                // Install the OS theme with both variants stored; the showcase's own
-                // light/dark choice then goes through upstream's mode switch, which
-                // reproduces the native palette from the installed configs (D34).
-                native_theme_gpui::apply_system_theme(&system, cx);
-                if is_dark != system.mode.is_dark() {
-                    Theme::change(gpui_theme_mode(is_dark), Some(window), cx);
-                }
-                // Platform presets always specify icon_theme
-                (
-                    font,
-                    mono_font,
-                    system.preset.clone(),
-                    icon_theme,
-                    icon_set,
-                    true,
-                    layout,
-                    None,
-                )
-            }
-            Err(e) => {
-                // Fall back to gpui-component built-in theme so the window still renders
-                Theme::sync_system_appearance(Some(window), cx);
-                let font = native_theme::theme::ResolvedFontSpec {
-                    family: "(default)".into(),
-                    size: 0.0,
-                    // No theme could be read, so no source stated a size.
-                    defined_size: None,
-                    weight: 400,
-                    style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::TRANSPARENT,
-                };
-                let mono_font = native_theme::theme::ResolvedFontSpec {
-                    family: "(default)".into(),
-                    size: 0.0,
-                    // No theme could be read, so no source stated a size.
-                    defined_size: None,
-                    weight: 400,
-                    style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::TRANSPARENT,
-                };
-                let icon_theme = system_icon_theme().ok();
-                let icon_set = system_icon_set();
-                (
-                    font,
-                    mono_font,
-                    platform_preset_name().name.to_string(),
-                    icon_theme,
-                    icon_set,
-                    false,
-                    // Nothing was read, so nothing is claimed: every key stays
-                    // `None` and the layout accessors report it as such.
-                    native_theme::theme::LayoutTheme::default(),
-                    Some(format!("Failed to load OS theme: {e}")),
-                )
-            }
+        let system = crate::support::read_system_theme();
+        let initial_default_preset = match &system {
+            Ok(system) => system.preset.clone(),
+            Err(_) => platform_preset_name().name.to_string(),
         };
         let preset_combobox = cx.new(|cx| {
             ComboboxState::new(
@@ -1297,50 +1335,11 @@ impl Showcase {
         )
         .detach();
 
-        // Use the library's IconSetChoice to compute the initial icon selection.
-        let icon_theme_opt = initial_icon_theme
-            .as_deref()
-            .filter(|_| initial_has_toml_icon_theme);
-        let initial_icon_set_choice = default_icon_choice(initial_icon_set, icon_theme_opt);
-        let initial_effective_set = initial_icon_set_choice.effective_icon_set(initial_icon_set);
-        let initial_default_theme = initial_icon_set_choice
-            .freedesktop_theme()
-            .map(|s| s.to_string());
-        let initial_resolved_name = initial_effective_set.name().to_string();
+        // Its rows and the row chosen are the installed theme's, which
+        // `show_icon_choice` sets once the theme is installed.
         let installed_themes = list_freedesktop_themes();
-        let fc = original_font.color;
-        let fg = Some([fc.r, fc.g, fc.b]);
-        let loaded_icons = load_all_icons(
-            initial_effective_set,
-            initial_default_theme.as_deref(),
-            None,
-            fg,
-        );
-        let gpui_icons = load_gpui_icons(
-            Some(initial_effective_set),
-            initial_default_theme.as_deref(),
-            None,
-            fg,
-        );
-
-        // Icon theme selector -- build dropdown list using IconSetChoice
-        let initial_icon_label = initial_icon_set_choice.to_string();
-        let icon_theme_names = icon_theme_rows(initial_icon_set, icon_theme_opt, &installed_themes);
-
-        // Find the index of the initial selection label
-        let initial_icon_idx = icon_theme_names
-            .iter()
-            .position(|n| n.as_ref() == initial_icon_label)
-            .unwrap_or(0);
-        let icon_set_delegate = SearchableVec::new(icon_theme_names);
-        let icon_theme_select = cx.new(|cx| {
-            SelectState::new(
-                icon_set_delegate,
-                Some(gpui_component::IndexPath::default().row(initial_icon_idx)),
-                window,
-                cx,
-            )
-        });
+        let icon_theme_select =
+            cx.new(|cx| SelectState::new(SearchableVec::new(Vec::new()), None, window, cx));
 
         cx.subscribe_in(
             &icon_theme_select,
@@ -1399,20 +1398,23 @@ impl Showcase {
 
         // Table state with sample data
         let table_state = cx.new(|cx| {
+            let rows: Vec<[SharedString; 3]> = vec![
+                ["Alice".into(), "Engineer".into(), "Active".into()],
+                ["Bob".into(), "Designer".into(), "Away".into()],
+                ["Carol".into(), "Manager".into(), "Active".into()],
+                ["Dave".into(), "Intern".into(), "Offline".into()],
+                ["Eve".into(), "DevOps".into(), "Active".into()],
+            ];
             let delegate = SampleTableDelegate {
                 ui: info_ui.clone(),
                 columns: vec![
                     Column::new("name", "Name"),
-                    Column::new("role", "Role"),
+                    // One sortable column shows the table's sort button.
+                    Column::new("role", "Role").sortable(),
                     Column::new("status", "Status"),
                 ],
-                rows: vec![
-                    ["Alice".into(), "Engineer".into(), "Active".into()],
-                    ["Bob".into(), "Designer".into(), "Away".into()],
-                    ["Carol".into(), "Manager".into(), "Active".into()],
-                    ["Dave".into(), "Intern".into(), "Offline".into()],
-                    ["Eve".into(), "DevOps".into(), "Active".into()],
-                ],
+                unsorted: rows.clone(),
+                rows,
                 selected_row: None,
                 selection_shown: true,
                 right_clicked_row: None,
@@ -1490,11 +1492,18 @@ impl Showcase {
                 .language("rust")
                 .default_value(EDITOR_SAMPLE)
         });
+        let diff_state =
+            cx.new(|cx| DiffState::new(DiffFile::parse(DIFF_SAMPLE).unwrap_or_default(), cx));
 
         // Set up application menus: `cx.set_menus` hands them to the
-        // platform's own menu bar; the showcase draws them itself where the
-        // platform has none (`demo::menu_bar`, `demo::title_bar`).
-        cx.set_menus(chrome::menus());
+        // platform's own menu bar, which on macOS takes Apple's list
+        // (`chrome::macos_menus`); the showcase draws its own menus itself
+        // where the platform has none (`demo::menu_bar`, `demo::title_bar`).
+        cx.set_menus(if cfg!(target_os = "macos") {
+            chrome::macos_menus()
+        } else {
+            chrome::menus()
+        });
         let focus_handle = cx.focus_handle();
         focus_handle.focus(window, cx);
         // The Basic page's focused field holds the keyboard focus at start,
@@ -1505,23 +1514,36 @@ impl Showcase {
             this.focus_handle.focus(window, cx)
         });
 
-        // Start theme watcher for runtime dark/light toggle detection.
-        // Skip in screenshot mode — the watcher's background thread cleanup
-        // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
-        // Skip under `cargo test` too: the watcher puts a file watch on the
-        // desktop's own configuration, and the self-tests below build this
-        // view for real. Nothing they assert depends on it.
-        let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let no_watcher = cfg!(test) || std::env::args().any(|a| a == "--screenshot");
-        let _theme_watcher = if no_watcher {
-            None
-        } else {
-            let flag_clone = theme_change_flag.clone();
-            native_theme::watch::on_theme_change(move |_event| {
-                flag_clone.store(true, Ordering::Release);
-            })
-            .ok()
-        };
+        // Follow the OS theme's changes (feature `watch`, `on_os_theme_change`),
+        // in an interactive run only (`CliArgs::follows_os`): a
+        // capture and a layout dump show the theme the run started with, and
+        // under `--screenshot` the watcher's background thread cleanup races
+        // with the Cocoa runtime on macOS CI, causing SIGTRAP on exit, so it
+        // is never started there. Skip under `cargo test` too: the watcher
+        // puts a file watch on the desktop's own configuration, and the
+        // self-tests below build this view for real. Nothing they assert
+        // depends on it.
+        #[cfg(feature = "watch")]
+        let _theme_watcher =
+            if cfg!(test) || !crate::CliArgs::parse(std::env::args().skip(1)).follows_os() {
+                None
+            } else {
+                let showcase = cx.weak_entity();
+                // The showcase's one window, so it watches as long as it runs.
+                native_theme_gpui::on_theme_change(window, cx, move |_event, window, cx| {
+                    // Gone once the window closed; nothing to follow then.
+                    let _ = showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx));
+                })
+                .ok()
+            };
+
+        // The install below is made before this observer is active (gpui
+        // activates it at the end of this update), so the first frame builds
+        // the panel's look from `None` too.
+        let _native_theme =
+            cx.observe_global::<native_theme_gpui::NativeTheme>(|this: &mut Self, _cx| {
+                this.panel_look = None
+            });
 
         let inspector = {
             let (ui, showcase) = (info_ui.clone(), cx.weak_entity());
@@ -1534,10 +1556,11 @@ impl Showcase {
             preset_combobox,
             current_theme_name: "default".into(),
             default_preset: initial_default_preset,
+            system: None,
             is_dark,
             color_mode,
-            original_font,
-            original_mono_font,
+            original_font: unread_font(),
+            original_mono_font: unread_font(),
             active_page: Page::Basic,
             side_panel_visible: true,
             body_layout,
@@ -1546,7 +1569,11 @@ impl Showcase {
             menus,
             content_scroll: gpui::ScrollHandle::new(),
             inspector,
+            panel_look: None,
+            _native_theme,
             status_title_drawn: None,
+            #[cfg(test)]
+            status_environment_drawn: gpui::TextLayout::default(),
             #[cfg(test)]
             frame_for_test: None,
             #[cfg(test)]
@@ -1558,8 +1585,11 @@ impl Showcase {
             _refocus,
             overlay_gap: Rc::new(Cell::new(None)),
             dialog_icons: SharedDialogIcons::default(),
-            layout: initial_layout,
+            // Nothing was read yet, so nothing is claimed: every key stays
+            // `None` and the layout accessors report it as such.
+            layout: native_theme::theme::LayoutTheme::default(),
             pointer_shield: false,
+            keyboard_shield: None,
             basic_hint_state,
             basic_text_state,
             basic_disabled_state,
@@ -1584,6 +1614,8 @@ impl Showcase {
             form_name_state,
             form_email_state,
             slider_state,
+            range_slider_state,
+            vertical_slider_state,
             otp_state,
             color_picker_state,
             color_select_state,
@@ -1602,7 +1634,9 @@ impl Showcase {
             collapsible_open: true,
             carousel_state,
             step: 1,
+            folder_tab: 0,
             editor_state,
+            diff_state,
             table_state,
             list_state,
             tree_state,
@@ -1615,34 +1649,39 @@ impl Showcase {
             alert_choice: None,
             color_mode_select,
             icon_theme_select,
-            icon_theme_name: initial_resolved_name,
-            icon_set_enum: Some(initial_effective_set),
-            loaded_icons,
-            gpui_icons,
+            icon_theme_name: String::new(),
+            icon_set_enum: None,
+            loaded_icons: Vec::new(),
+            gpui_icons: Vec::new(),
             loaded_icon_sources: Vec::new(),
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
-            icon_set_choice: initial_icon_set_choice,
+            icon_load: None,
+            icon_set_choice: IconSetChoice::System,
             icon_choice_follows_preset: true,
             installed_themes,
-            current_icon_theme: initial_icon_theme,
-            current_icon_set: initial_icon_set,
-            has_toml_icon_theme: initial_has_toml_icon_theme,
-            icon_theme_override: None,
+            current_icon_theme: None,
+            current_icon_set: system_icon_set(),
+            has_toml_icon_theme: false,
             animated_frame_sources: Vec::new(),
             animated_frame_durations: Vec::new(),
             animated_frame_indices: Vec::new(),
             animated_spin_sources: Vec::new(),
             animation_timer: None,
-            error_message: initial_error,
-            theme_change_flag,
+            error_message: None,
+            #[cfg(feature = "watch")]
             _theme_watcher,
-            pending_system_theme_change: false,
         };
-        showcase.rebuild_icon_caches(fg, window, cx);
-        showcase.rebuild_animation_caches(window, cx);
-        showcase.start_animation_timer(cx);
-        showcase.start_theme_watcher(cx);
+        match system {
+            Ok(system) => showcase.install_system(system, window, cx),
+            Err(e) => {
+                Theme::sync_system_appearance(Some(window), cx);
+                showcase.current_icon_theme = system_icon_theme().ok();
+                showcase.error_message = Some(format!("Failed to load OS theme: {e}"));
+            }
+        }
+        showcase.show_icon_choice(window, cx);
+        showcase.reload_icons(window, cx);
         showcase
     }
 
@@ -1676,55 +1715,62 @@ impl Showcase {
     /// The accessibility preferences a theme is installed with: `os`, the
     /// OS's as read for this install, with the ones the user set in the
     /// Preferences sheet put over them (`PreferenceOverrides`). A preference
-    /// the user set stays; one the user did not follows the OS, read again
-    /// at every install.
+    /// the user set stays; one the user did not follows the OS.
     fn install_preferences(cx: &App, os: AccessibilityPreferences) -> AccessibilityPreferences {
         demo::PreferenceOverrides::of(cx).over(os)
     }
 
-    /// The OS's accessibility preferences, read now; in the self-tests, the
-    /// ones `os_preferences_for_test` holds, where it holds any.
+    /// The OS's accessibility preferences as last read, from the detection
+    /// cache that the last system read filled and a reload clears
+    /// (`reload_system_theme`), so a preset switch runs no platform reader;
+    /// in the self-tests, the ones `os_preferences_for_test` holds, where it
+    /// holds any.
     fn os_preferences(&self) -> AccessibilityPreferences {
         #[cfg(test)]
         if let Some(prefs) = &self.os_preferences_for_test {
             return prefs.clone();
         }
-        AccessibilityPreferences::from_system()
+        native_theme::detect::accessibility_preferences()
     }
 
     /// Install `system`, the desktop's own theme as `SystemTheme::from_system`
-    /// read it: what `default` installs. Its accessibility preferences are
+    /// read it, in the mode shown, and keep it (`Showcase::system`): what
+    /// `default` installs, at startup too. Its accessibility preferences are
     /// the OS's it read, with the user's over them.
     ///
     /// The preset the pipeline settled on is what the preset switch's
     /// `default` row and the status bar name, so a change of it relabels
     /// that row.
-    pub(crate) fn install_system_theme(
+    pub(crate) fn install_system(
         &mut self,
         mut system: native_theme::SystemTheme,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        let os = std::mem::take(&mut system.accessibility);
-        system.accessibility = Self::install_preferences(cx, os);
-        let resolved = system.pick(if self.is_dark {
-            native_theme_gpui::ColorMode::Dark
-        } else {
-            native_theme_gpui::ColorMode::Light
-        });
+        let mode = color_mode_of(self.is_dark);
+        let resolved = system.pick(mode);
         self.original_font = resolved.defaults.font.clone();
         self.original_mono_font = resolved.defaults.mono_font.clone();
-        self.current_icon_theme = system.icon_theme.clone().map(Cow::into_owned);
+        // The mode shown's own variant's: `system.icon_theme` is the one of
+        // the mode the OS is in.
+        self.current_icon_theme = system.icon_theme_for(mode).map(str::to_owned);
         self.current_icon_set = system.icon_set;
         self.layout = system.layout.clone();
         // Platform presets always specify icon_theme
         self.has_toml_icon_theme = true;
+        // Installed with both variants stored, so the showcase's own
+        // light/dark choice goes through upstream's mode switch, which
+        // reproduces the native palette from the installed configs (D34).
+        // Kept with the OS's preferences as read.
+        let prefs = Self::install_preferences(cx, system.accessibility.clone());
+        let os = std::mem::replace(&mut system.accessibility, prefs);
         native_theme_gpui::apply_system_theme(&system, cx);
+        system.accessibility = os;
         if self.is_dark != system.mode.is_dark() {
             Theme::change(gpui_theme_mode(self.is_dark), Some(window), cx);
         }
         if self.default_preset != system.preset {
-            self.default_preset = system.preset;
+            self.default_preset = system.preset.clone();
             let rows = PresetDelegate::new(&self.default_preset);
             self.preset_combobox.update(cx, |combobox, cx| {
                 let chosen = combobox.selected_values();
@@ -1733,6 +1779,7 @@ impl Showcase {
             });
         }
         self.error_message = None;
+        self.system = Some(system);
     }
 
     /// Install the preset of `name`. False, with the error reported and the
@@ -1745,12 +1792,7 @@ impl Showcase {
                 return false;
             }
         };
-        let mode = if self.is_dark {
-            native_theme_gpui::ColorMode::Dark
-        } else {
-            native_theme_gpui::ColorMode::Light
-        };
-        let r = match nt.resolve(mode) {
+        let r = match nt.resolve(color_mode_of(self.is_dark)) {
             Ok(r) => r,
             Err(e) => {
                 self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
@@ -1767,7 +1809,7 @@ impl Showcase {
         // installed with the OS's preferences and the user's over them, as
         // the desktop's own theme is.
         let prefs = Self::install_preferences(cx, self.os_preferences());
-        let theme = to_theme(&r.variant, name, self.is_dark, &prefs);
+        let theme = to_theme(&r.variant, &nt.name, r.mode.is_dark(), &prefs);
         native_theme_gpui::apply(theme, &r.variant, &prefs, cx);
         self.error_message = None;
         true
@@ -1778,6 +1820,11 @@ impl Showcase {
     /// installs through here. A theme that fails to load leaves the
     /// installed one -- its name, layout, mode and every colour
     /// (`Showcase::keep_installed_theme`) -- and false is returned.
+    ///
+    /// `default` installs the desktop's theme kept from its last install
+    /// (`Showcase::system`), in the mode now shown, and reads the OS only
+    /// where none is kept: at the first install, where the last read
+    /// failed, and after a reload (`reload_system_theme`).
     pub(crate) fn apply_theme_by_name(
         &mut self,
         name: &str,
@@ -1786,9 +1833,10 @@ impl Showcase {
     ) -> bool {
         self.info_ui.update(cx, |r, _| r.screen_changed());
         let installed = if name == "default" {
-            match native_theme::SystemTheme::from_system() {
+            let kept = self.system.take();
+            match kept.map_or_else(crate::support::read_system_theme, Ok) {
                 Ok(system) => {
-                    self.install_system_theme(system, window, cx);
+                    self.install_system(system, window, cx);
                     true
                 }
                 Err(e) => {
@@ -1806,8 +1854,6 @@ impl Showcase {
         }
         self.show_installed_theme(window, cx);
         self.show_icon_choice(window, cx);
-        // Always, whichever set is chosen: a recoloured icon takes the new
-        // theme's text colour.
         self.reload_icons(window, cx);
         installed
     }
@@ -1828,34 +1874,7 @@ impl Showcase {
     /// The preset switch's and the status bar's name for `default`: the
     /// platform preset it is built on.
     pub(crate) fn default_label(&self) -> String {
-        default_label(&self.default_preset)
-    }
-
-    /// Spawn a background task that polls the theme change flag and triggers
-    /// a theme rebuild when the OS color scheme changes at runtime.
-    fn start_theme_watcher(&self, cx: &mut Context<Self>) {
-        if self._theme_watcher.is_none() {
-            return;
-        }
-        let flag = self.theme_change_flag.clone();
-        cx.spawn(async move |this, cx| {
-            loop {
-                cx.background_executor()
-                    .timer(Duration::from_millis(500))
-                    .await;
-                if flag.swap(false, Ordering::AcqRel) {
-                    let Ok(()) = this.update(cx, |this, cx| {
-                        if matches!(this.color_mode, AppColorMode::System) {
-                            this.pending_system_theme_change = true;
-                            cx.notify();
-                        }
-                    }) else {
-                        break;
-                    };
-                }
-            }
-        })
-        .detach();
+        rows::default_label(&self.default_preset)
     }
 
     /// Install `mode`: the current theme again, in that mode. Where that
@@ -1904,25 +1923,46 @@ impl Showcase {
         });
     }
 
+    /// What the theme watcher does when the OS theme changes, in every colour
+    /// mode: read the desktop's settings again and re-install the current
+    /// theme in the mode chosen (`reload_system_theme`). A chosen Light or
+    /// Dark picks only the variant; the OS still owns the accent, the fonts
+    /// and the icon theme `default` shows.
+    #[cfg(any(test, feature = "watch"))]
+    pub(crate) fn on_os_theme_change(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        self.reload_system_theme(window, cx);
+        cx.notify();
+    }
+
     /// Read the desktop's settings again and re-install the current theme
-    /// from them: what the theme watcher does when the OS theme changes, and
-    /// what `ReloadTheme` asks for.
+    /// from them, in the mode chosen: what the theme watcher does when the
+    /// OS theme changes, and what `ReloadTheme` asks for.
     fn reload_system_theme(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         native_theme::detect::invalidate_caches();
+        // The desktop's theme is read again, and a system set's icons
+        // loaded again: the system icon theme may have changed with it. A
+        // bundled set's cannot, and stay.
+        self.system = None;
+        self.icon_load = self
+            .icon_load
+            .take()
+            .filter(|load| !load.set.is_some_and(crate::support::is_system_set));
         self.is_dark = self.color_mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
     }
 
     /// Show `page`. Every way to a page -- the page TabBar, the View menu,
-    /// the command palette, the Layout page's Breadcrumb -- goes through
-    /// here, so the info of what
-    /// the page change takes off the screen does not stay on show (spec
-    /// §4.3.4).
+    /// the command palette, the Layout page's Breadcrumb, `--tab` -- goes
+    /// through here, so the info of what the page change takes off the
+    /// screen does not stay on show (spec §4.3.4), and the animation timer
+    /// runs while the Icons page is shown, and only then.
     pub(crate) fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
         if self.active_page != page {
             self.active_page = page;
             self.info_ui.update(cx, |r, _| r.screen_changed());
+            // Running on the Icons page alone, which draws its frames.
+            self.start_animation_timer(cx);
         }
         cx.notify();
     }
@@ -1963,13 +2003,13 @@ impl Showcase {
     /// So the width the side panel has now is kept here, and a new state
     /// takes over, the panel taking that width again as its first size. A new
     /// state, not the old one cleared: `ResizableState::clear` leaves the
-    /// index of a handle being dragged (gpui-base resizable/mod.rs:242-245),
+    /// index of a handle being dragged (gpui-base resizable/mod.rs:266-269),
     /// and the next pointer move would look that panel up in a state that no
-    /// longer has it (resizable/panel.rs:452). The old state stays with the
+    /// longer has it (resizable/panel.rs:485). The old state stays with the
     /// listeners the last frame painted, whole.
     fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
         let sizes = self.body_layout.read(cx).sizes().clone();
-        let panels = usize::from(self.side_panel_visible) + 1;
+        let panels = usize::from(self.side_panel_visible).saturating_add(1);
         if self.side_panel_visible
             && sizes.len() == panels
             && let Some(&width) = sizes.first()
@@ -2045,22 +2085,19 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        // Apply deferred system theme change (set by the watcher polling task).
-        // Done here because apply_theme_by_name needs window access.
-        if self.pending_system_theme_change {
-            self.pending_system_theme_change = false;
-            self.reload_system_theme(window, cx);
-        }
-
         self.overlay_gap.set(geometry::widget_gap(&self.layout));
+        // Before the inspector, a child view, renders and borrows it.
+        if self.panel_look.is_none() {
+            self.panel_look = PanelLook::of(self, cx);
+        }
         self.dialog_icons.set(DialogIcons {
             dialog: self.sample_icon(IconName::CircleX),
             alert: self.sample_icon(IconName::TriangleAlert),
         });
-        let theme = cx.theme().clone();
+        let (foreground, background) = (cx.theme().foreground, cx.theme().background);
         // Ensure icon image caches match the current foreground color
-        if theme.foreground != self.icon_cache_fg {
-            self.rebuild_icon_caches(theme.foreground, window, cx);
+        if foreground != self.icon_cache_fg {
+            self.rebuild_icon_caches(foreground, window, cx);
         }
 
         let active_page = self.active_page;
@@ -2166,10 +2203,15 @@ impl Render for Showcase {
             // strip the panel keeps clear for it (`demo::splitter_reserve`).
             // As wide as the side panel and the strip it keeps clear for the
             // splitter's line, so the side panel keeps its width whatever
-            // the line's.
+            // the line's; fixed, so a window resize goes to the content
+            // panel, as the iced and egui showcases' do (gpui-base
+            // resizable/panel.rs, `ResizablePanel::fixed`).
             let reserve = demo::splitter_reserve(cx).unwrap_or_default();
             resizable_panel()
-                .size(self.side_panel_width + reserve)
+                .size(gpui::px(
+                    f32::from(self.side_panel_width) + f32::from(reserve),
+                ))
+                .fixed()
                 .flex_none()
                 .child(
                     div()
@@ -2211,6 +2253,12 @@ impl Render for Showcase {
             .shown_title(cx)
             .map(SharedString::from);
         self.status_title_drawn = shown.clone();
+        let environment = SharedString::from(chrome::status_environment(self, cx).join(" · "));
+        let environment_text = gpui::StyledText::new(environment.clone());
+        #[cfg(test)]
+        {
+            self.status_environment_drawn = environment_text.layout().clone();
+        }
 
         // Main layout: the title bar or the menu-bar row (spec S8), the
         // toolbar, the body and the status bar. Dialogs, sheets and
@@ -2222,17 +2270,19 @@ impl Render for Showcase {
         div()
             .relative()
             .size_full()
-            .bg(theme.background)
-            .text_color(theme.foreground)
+            .bg(background)
+            .text_color(foreground)
             .track_focus(&self.focus_handle)
-            // First, so its prepaint opens the frame for every target
-            // (info/registry.rs, epoch_marker).
-            .child(epoch_marker(&self.info_ui))
             .child(elements::record(&self.info_ui, "chrome.window"))
             .child(
                 v_flex()
                     .size_full()
-                    .children(chrome::window_top(self, self.frame(window), cx))
+                    .children(chrome::window_top(
+                        self,
+                        self.frame(window),
+                        window.is_window_active(),
+                        cx,
+                    ))
                     .child(chrome::toolbar(self, cx))
                     .child(
                         h_flex()
@@ -2244,7 +2294,13 @@ impl Render for Showcase {
                             .overflow_hidden()
                             .child(div().flex_1().min_w_0().h_full().child(body)),
                     )
-                    .child(chrome::status_bar(self, cx, shown)),
+                    .child(chrome::status_bar(
+                        self,
+                        cx,
+                        &environment,
+                        environment_text,
+                        shown,
+                    )),
             )
             // Deferred at the highest priority, so it is the topmost hitbox:
             // dialogs, menus and popovers paint deferred themselves (gpui-base

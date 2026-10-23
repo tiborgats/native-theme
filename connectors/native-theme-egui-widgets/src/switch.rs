@@ -5,7 +5,7 @@ use native_theme_egui::egui::widget_style::Classes;
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::ResolvedSwitchTheme;
-use native_theme_egui::{Role, ThemeAtlas, register_focus_shape};
+use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas, register_focus_shape};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -28,19 +28,25 @@ use crate::scope;
 ///   `hover_unchecked_background` composited over it while hovered.
 /// * The thumb is a `switch.thumb_diameter` circle in `thumb_background`, centred on the
 ///   track's axis and inset `0.5 · (track_height − thumb_diameter)` from its ends; a thumb
-///   larger than its track overhangs it, as those numbers state. While off it is
+///   taller than its track overhangs it above and below and sits flush with its ends, as
+///   qqc2-desktop-style's handle does (docs/platform-facts.md §2.21). While off it is
 ///   `unchecked_thumb_diameter` across in `unchecked_thumb_background` where the theme
 ///   states them (Material's 16 in `outline`, against 24 in `on-primary`). It moves, and
 ///   grows or shrinks, over the scope's `Style::animation_time`, which the connector sets to
 ///   `0.0` under reduced motion.
+/// * The track is outlined inside its edge, `track_border_line_width` wide, in
+///   `checked_track_border_color` or `unchecked_track_border_color`, and the thumb inside its
+///   edge, `thumb_border_line_width` wide, in `thumb_border_color`, where the theme states the
+///   colour and the width (docs/platform-facts.md §2.21).
 /// * The label is text of no widget font of its own, so in `defaults.font.color`: the switch
 ///   role's cell carries no text colour of the switch's.
-/// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`
-///   and `disabled_thumb_color` (a `None` copies the colour it stands for) and the label in
+/// * `.enabled(false)` paints `disabled_checked_background`, `disabled_unchecked_background`,
+///   `disabled_thumb_color` and the tracks' `disabled_*_track_border_color` (a `None` copies
+///   the colour it stands for) and the label in
 ///   `defaults.disabled_text_color`, faded by `switch.disabled_opacity` as one widget over
 ///   the backdrop (the crate's *Disabled*): the thumb on the track, the pair over
-///   [`Switch::backdrop`]; under `ui.add_enabled(false, ..)` the fade is the calling `Ui`'s
-///   `disabled_alpha`.
+///   [`Switch::backdrop`]. Under `ui.add_enabled(false, ..)` it is faded as one by the
+///   calling `Ui`'s `disabled_alpha`, the fade egui gave the painter taken back.
 ///
 /// The focus ring surrounds the track (`register_focus_shape`). AccessKit sees a
 /// `Role::Switch`, toggled as the value is.
@@ -97,6 +103,10 @@ struct Geometry {
     thumb: f32,
     /// The thumb while off: `unchecked_thumb_diameter`, or `thumb`.
     unchecked_thumb: f32,
+    /// `track_border_line_width`; `None` draws no track outline.
+    track_border: Option<f32>,
+    /// `thumb_border_line_width`; `None` draws no thumb outline.
+    thumb_border: Option<f32>,
 }
 
 impl Geometry {
@@ -106,6 +116,10 @@ impl Geometry {
             Some(d) => scope::length(d)?,
             None => thumb,
         };
+        let border = |width: Option<f32>| match width {
+            Some(w) => scope::length(w).map(Some),
+            None => Some(None),
+        };
         Some(Self {
             track: egui::vec2(
                 scope::length(sw.track_width)?,
@@ -114,18 +128,70 @@ impl Geometry {
             radius: scope::length(sw.track_radius)?,
             thumb,
             unchecked_thumb,
+            track_border: border(sw.track_border_line_width)?,
+            thumb_border: border(sw.thumb_border_line_width)?,
         })
+    }
+}
+
+/// The colours a switch reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    pub(crate) checked_background: Rgba,
+    pub(crate) hover_checked_background: Option<Rgba>,
+    pub(crate) unchecked_background: Rgba,
+    pub(crate) hover_unchecked_background: Option<Rgba>,
+    pub(crate) disabled_checked_background: Option<Rgba>,
+    pub(crate) disabled_unchecked_background: Option<Rgba>,
+    pub(crate) thumb_background: Rgba,
+    pub(crate) unchecked_thumb_background: Option<Rgba>,
+    pub(crate) disabled_thumb_color: Option<Rgba>,
+    pub(crate) unchecked_track_border_color: Option<Rgba>,
+    pub(crate) checked_track_border_color: Option<Rgba>,
+    pub(crate) disabled_unchecked_track_border_color: Option<Rgba>,
+    pub(crate) disabled_checked_track_border_color: Option<Rgba>,
+    pub(crate) thumb_border_color: Option<Rgba>,
+    /// `defaults.font.color`: the label.
+    pub(crate) text: Rgba,
+    /// `defaults.disabled_text_color`: a disabled switch's label.
+    pub(crate) disabled_text: Rgba,
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        let sw = &t.switch;
+        Self {
+            checked_background: sw.checked_background,
+            hover_checked_background: sw.hover_checked_background,
+            unchecked_background: sw.unchecked_background,
+            hover_unchecked_background: sw.hover_unchecked_background,
+            disabled_checked_background: sw.disabled_checked_background,
+            disabled_unchecked_background: sw.disabled_unchecked_background,
+            thumb_background: sw.thumb_background,
+            unchecked_thumb_background: sw.unchecked_thumb_background,
+            disabled_thumb_color: sw.disabled_thumb_color,
+            unchecked_track_border_color: sw.unchecked_track_border_color,
+            checked_track_border_color: sw.checked_track_border_color,
+            disabled_unchecked_track_border_color: sw.disabled_unchecked_track_border_color,
+            disabled_checked_track_border_color: sw.disabled_checked_track_border_color,
+            thumb_border_color: sw.thumb_border_color,
+            text: t.defaults.font.color,
+            disabled_text: t.defaults.disabled_text_color,
+            background: t.defaults.background_color,
+        }
     }
 }
 
 /// What a switch paints with, read from the atlas before its scope opens.
 struct Paint {
     geometry: Geometry,
-    sw: ResolvedSwitchTheme,
-    text: Rgba,
-    disabled_text: Rgba,
-    /// The colour a switch disabled by its own `.enabled(false)` is faded over as one widget;
-    /// `None` where it is enabled, or its calling `Ui` faded it already.
+    sw: Look,
+    /// The colour a disabled switch is faded over as one widget, by its own `.enabled(false)`
+    /// or under a disabled calling `Ui`; `None` where it is enabled, or nothing is to be faded
+    /// as one (`crate::fade::outer_fade`).
     ground: Option<egui::Color32>,
 }
 
@@ -137,17 +203,16 @@ impl egui::Widget for Switch<'_> {
             enabled,
             backdrop,
         } = self;
-        // Faded here, as one widget, only where the calling `Ui` has not faded it already.
-        let own_fade = !enabled && ui.is_enabled();
+        // Faded as one where disabled here, or under a disabled calling `Ui` whose fade it
+        // takes back.
+        let as_one = (!enabled && ui.is_enabled()) || crate::fade::outer_fade(ui).is_some();
         let paint = ThemeAtlas::from_ctx(ui.ctx()).and_then(|atlas| {
             let t = atlas.resolved_for(ui.ctx().theme());
+            let sw = Look::of(t);
             Geometry::of(&t.switch).map(|geometry| Paint {
                 geometry,
-                sw: t.switch.clone(),
-                text: t.defaults.font.color,
-                disabled_text: t.defaults.disabled_text_color,
-                ground: own_fade
-                    .then(|| backdrop.unwrap_or_else(|| to_color32(t.defaults.background_color))),
+                sw,
+                ground: as_one.then(|| backdrop.unwrap_or_else(|| to_color32(sw.background))),
             })
         });
         match paint {
@@ -176,8 +241,6 @@ fn switch_ui(
     let Paint {
         geometry: g,
         sw,
-        text: label_text,
-        disabled_text,
         ground,
     } = paint;
     // Faded as one over `ground` (the painter's opacity kept), or not at all here: where the
@@ -197,10 +260,9 @@ fn switch_ui(
         .unwrap_or_default();
     let style = ui.style().checkbox_style(&Classes::default(), state);
 
-    // The atom holds the track and a thumb that overhangs it.
+    // The atom holds the track and a thumb that overhangs it above and below.
     let largest = g.thumb.max(g.unchecked_thumb);
-    let overhang = (largest - g.track.y).max(0.0);
-    let atom = egui::vec2(g.track.x + overhang, g.track.y.max(largest));
+    let atom = egui::vec2(g.track.x, g.track.y.max(largest));
     let mut min_size = egui::Vec2::splat(ui.spacing().interact_size.y);
     min_size.y = min_size.y.max(atom.y);
     let text = label.as_ref().map(|l| l.text().to_string());
@@ -256,7 +318,7 @@ fn switch_ui(
     let position = ui
         .ctx()
         .animate_bool_with_time(prepared.response.id, checked, time);
-    let text = to_color32(if enabled { *label_text } else { *disabled_text });
+    let text = to_color32(if enabled { sw.text } else { sw.disabled_text });
     prepared.fallback_text_color = ground.map_or(text, |ground| as_one(ground, text));
     let laid = prepared.paint(ui);
     let Some(atom_rect) = laid.rect(rect_id) else {
@@ -288,6 +350,18 @@ fn switch_ui(
         Some(layer) if hovered => composite_over(layer, fill),
         _ => to_color32(fill),
     };
+    let rest_edge = if checked {
+        sw.checked_track_border_color
+    } else {
+        sw.unchecked_track_border_color
+    };
+    let edge = match (checked, enabled) {
+        (true, false) => sw.disabled_checked_track_border_color.or(rest_edge),
+        (false, false) => sw.disabled_unchecked_track_border_color.or(rest_edge),
+        _ => rest_edge,
+    };
+    let edge = edge.zip(g.track_border);
+    let thumb_edge = sw.thumb_border_color.zip(g.thumb_border);
     let rest_thumb = if checked {
         sw.thumb_background
     } else {
@@ -301,21 +375,42 @@ fn switch_ui(
     // The thumb grows from its off diameter to its on one as it travels.
     let diameter = egui::lerp(g.unchecked_thumb..=g.thumb, position);
     // The thumb's centre travels between the two ends of the track's axis, each half the
-    // track's height in from its end: the thumb inset `0.5 · (track_height − thumb_diameter)`.
-    let half = 0.5 * g.track.y;
+    // track's height in from its end: the thumb inset `0.5 · (track_height − thumb_diameter)`;
+    // a thumb taller than the track half its own diameter in, flush with the end.
+    let half = 0.5 * g.track.y.max(diameter);
     let ends = (track.left() + half)..=(track.right() - half);
     let centre = egui::pos2(egui::lerp(ends, position), track.center().y);
-    // Faded as one: the track over the ground, the thumb over the track.
-    let (fill, thumb) = match ground {
-        Some(ground) => {
-            let on_ground = ground.blend(fill);
-            (as_one(*ground, fill), as_one(on_ground, to_color32(thumb)))
-        }
-        None => (fill, to_color32(thumb)),
+    // Faded as one: the track over the ground; its outline, drawn inside it, and the thumb and
+    // its outline over the track.
+    let on_ground = ground.map(|ground| ground.blend(fill));
+    let faded = |under: Option<egui::Color32>, colour: egui::Color32| match under {
+        Some(under) => as_one(under, colour),
+        None => colour,
     };
+    let edge =
+        edge.map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
+    let thumb_edge = thumb_edge
+        .map(|(colour, width)| egui::Stroke::new(width, faded(on_ground, to_color32(colour))));
+    let (fill, thumb) = (faded(*ground, fill), faded(on_ground, to_color32(thumb)));
     let painter = ui.painter();
-    painter.rect_filled(track, radius, fill);
-    painter.circle_filled(centre, 0.5 * diameter, thumb);
+    painter.rect(
+        track,
+        radius,
+        fill,
+        edge.unwrap_or(egui::Stroke::NONE),
+        egui::StrokeKind::Inside,
+    );
+    // epaint strokes a circle outside its radius (`epaint/src/tessellator.rs:1531`), so the
+    // thumb's outline is drawn inside its diameter. An outline as wide as the thumb's radius
+    // fills it, and epaint draws no circle whose radius is not above 0
+    // (`tessellator.rs:1494-1496`), so that thumb is a disc in the outline's colour.
+    let stroke = thumb_edge.unwrap_or(egui::Stroke::NONE);
+    let inner = 0.5 * diameter - stroke.width;
+    if inner > 0.0 {
+        painter.circle(centre, inner, thumb, stroke);
+    } else {
+        painter.circle_filled(centre, 0.5 * diameter, stroke.color);
+    }
     let mut parts = Parts::default();
     parts.push("track", track);
     parts.push(

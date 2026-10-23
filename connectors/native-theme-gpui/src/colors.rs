@@ -5,8 +5,8 @@
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations in this module are verified against gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
@@ -26,6 +26,31 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
         a: a.clamp(0.0, 1.0),
     };
     gpui_rgba.into()
+}
+
+/// `layer` composited over `base`, source-over with straight alpha in sRGB
+/// ([`native_theme::color::composite_over`], through `gpui::Rgba`): the result
+/// covers `a = layer.a + base.a * (1 - layer.a)`. An opaque layer composites
+/// to itself, a transparent one to `base`, and a layer over a transparent
+/// base to the layer; where the composite is one of the two, that `Hsla` is
+/// returned as it is, with no round trip through `Rgba`.
+///
+/// Where `base` or `layer` is opaque this is `Hsla::blend` bit for bit (the
+/// same products, added in the same order, and `a` is exactly 1); `blend`
+/// keeps the base's alpha instead (gpui-pre `src/color.rs:58-71`, reached
+/// through `:580-593`), which a translucent layer over a translucent base
+/// shows.
+pub(crate) fn over(base: Hsla, layer: Hsla) -> Hsla {
+    let channels = |c: Hsla| {
+        let gpui::Rgba { r, g, b, a } = c.into();
+        [r, g, b, a]
+    };
+    let (below, above) = (channels(base), channels(layer));
+    match native_theme::color::composite_over(above, below) {
+        mixed if mixed == above => layer,
+        mixed if mixed == below => base,
+        [r, g, b, a] => gpui::Rgba { r, g, b, a }.into(),
+    }
 }
 
 /// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`
@@ -88,6 +113,7 @@ struct ResolvedColors {
     input: Hsla,
     sidebar: Hsla,
     sidebar_fg: Hsla,
+    sidebar_border: Hsla,
     popover: Hsla,
     popover_fg: Hsla,
     list_bg: Hsla,
@@ -153,7 +179,7 @@ pub fn to_theme_color(
     let d = &resolved.defaults;
     // The window's own fill, which the model states and which inherits
     // `defaults.background_color`; upstream's `background` token is the window
-    // surface (`title_bar.rs:341`, `tab/tab.rs:249`).
+    // surface (`title_bar.rs:344`, `tab/tab.rs:301`).
     let bg = rgba_to_hsla(resolved.window.background_color);
     let fg = rgba_to_hsla(d.text_color);
 
@@ -187,7 +213,7 @@ pub fn to_theme_color(
         info: rgba_to_hsla(d.info_color),
         info_fg: rgba_to_hsla(d.info_text_color),
         // Upstream's `selection` is the *input* selection background
-        // (`theme_color.rs:228`, `input/input.rs:562`), which the model states
+        // (`theme_color.rs:228`, `input/input.rs:567`), which the model states
         // as `input.selection_background`; `defaults.selection_background` is
         // the row-selection colour `list_active` and `sidebar_accent` take.
         selection: rgba_to_hsla(resolved.input.selection_background),
@@ -198,6 +224,7 @@ pub fn to_theme_color(
         input: rgba_to_hsla(resolved.input.border.color),
         sidebar: rgba_to_hsla(resolved.sidebar.background_color),
         sidebar_fg: rgba_to_hsla(resolved.sidebar.font.color),
+        sidebar_border: rgba_to_hsla(resolved.sidebar.border.color),
         popover: rgba_to_hsla(resolved.popover.background_color),
         popover_fg: rgba_to_hsla(resolved.popover.font.color),
         list_bg: rgba_to_hsla(resolved.list.background_color),
@@ -256,7 +283,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     // `accent` is upstream's item highlight, not the platform's accent colour
     // (gpui-component `src/theme/schema.rs:254-255`); see `ResolvedColors`.
     // `Toggle` reads the same token for its pressed state
-    // (`src/button/toggle.rs:155, 202`), where Adwaita, Windows 11 and Material
+    // (`src/button/toggle.rs:163, 210`), where Adwaita, Windows 11 and Material
     // would want `segmented_control.active_background`; the menu family has
     // seven readers to its one, and no value serves both. Tier U.
     tc.accent = c.menu_hover_bg;
@@ -270,7 +297,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1182, 1258, 1300` against `:1176, 1253, 1293`), so
+    // (`button/button.rs:1205, 1281, 1323` against `:1199, 1276, 1316`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -328,7 +355,7 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 /// The 28 `button*` fields gpui-component reads for `Button`
-/// (`src/button/button.rs:972-1037`) take the values the semantic fields their
+/// (`src/button/button.rs:995-1060`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:642-647, 936-941`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
@@ -338,25 +365,24 @@ fn assign_buttons(tc: &mut ThemeColor) {
     tc.button = tc.secondary;
     // A filled button paints its own fill and upstream replaces that fill per
     // state, while the platform *layers* its hover and pressed colours over it
-    // (spec §3.2, C17). So the layer is composited over the idle fill; for an
-    // opaque value `blend` is the identity, so there is no branch. Windows 11
-    // is the one preset where it shows: 4% black over `#fdfdfd` is `#f3f3f3`,
-    // not 4% black over whatever is behind the button.
+    // (spec §3.2, C17). So the layer is composited over the idle fill,
+    // source-over (`over`); an opaque layer composites to itself, so there is
+    // no branch. windows-11 states its hover and pressed fills, WinUI's
+    // replacing fills, flattened over the window, so both are opaque
+    // (docs/todo.md, *Hover fills: a layer or a replacement*).
     //
-    // `Hsla::blend` is not quite source-over: it lerps the channels by the
-    // layer's alpha and keeps the *base's* alpha (`gpui-pre` color.rs:58-70,
-    // reached through `:580-593`), where source-over would give the result
-    // `layer.a + base.a * (1 - layer.a)`. The two agree exactly whenever the
-    // base is opaque, and every base here is: no bundled preset states a
-    // translucent `button.background_color` or `defaults.background_color`,
-    // and the Windows reader builds its `COLOR_BTNFACE` with `Rgba::rgb`,
-    // which is alpha 255.
-    tc.button_hover = tc.button.blend(tc.secondary_hover);
-    tc.button_active = tc.button.blend(tc.secondary_active);
+    // Over a translucent idle fill (`TRANSLUCENT_BUTTON_FILL`: windows-11,
+    // macos-monterey dark, macos-tahoe; the reader's `COLOR_BTNFACE` is
+    // opaque) a translucent layer covers more than the fill alone,
+    // `layer.a + base.a * (1 - layer.a)`: macos-tahoe's derived pressed fill
+    // does. The widgets composite their hover states with the same `over`, so
+    // a widget's states match the button's.
+    tc.button_hover = over(tc.button, tc.secondary_hover);
+    tc.button_active = over(tc.button, tc.secondary_active);
     tc.button_foreground = tc.secondary_foreground;
     tc.button_secondary = tc.secondary;
-    tc.button_secondary_hover = tc.button_secondary.blend(tc.secondary_hover);
-    tc.button_secondary_active = tc.button_secondary.blend(tc.secondary_active);
+    tc.button_secondary_hover = over(tc.button_secondary, tc.secondary_hover);
+    tc.button_secondary_active = over(tc.button_secondary, tc.secondary_active);
     tc.button_secondary_foreground = tc.secondary_foreground;
 
     tc.button_primary = tc.primary;
@@ -393,7 +419,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     // The column header's own fill, which upstream paints as the header row
-    // (`table/column.rs:278`, `table/state.rs:1579, :1819`,
+    // (`table/column.rs:282`, `table/state.rs:1751, :1998`,
     // `table/table.rs:199`) and the model states as `list.header_background`.
     // The window background it used to take is the surface the header sits
     // on, not the header.
@@ -406,17 +432,17 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.table_even = tc.list_even;
     tc.table_head = c.list_header_bg;
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1820`): `list.header_font.color`, not the muted
+    // `table/state.rs:1999`): `list.header_font.color`, not the muted
     // foreground upstream falls back to (`theme/schema.rs:1011`).
     tc.table_head_foreground = c.list_header_fg;
     // The grid line between rows and columns (`table/table.rs:203`,
-    // `table/state.rs:1475`), which the model states as `list.grid_color`.
+    // `table/state.rs:1618`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
     // platform-facts §2.15 states as macOS `gridColor` and Material's
     // `outline-variant`, and which elsewhere inherits `defaults.border.color`
-    // (`docs/inheritance-rules.toml:238`).
+    // (`docs/inheritance-rules.toml:245`).
     tc.chart_grid = c.list_grid;
     // Derivation (spec §6.2): upstream paints a table footer
     // (`table/table.rs:340-341`) and the model states no footer colour of any
@@ -433,11 +459,11 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.tab_active_foreground = c.tab_active_fg;
     tc.tab_bar = c.tab_bar_bg;
     // The track a `TabBar` paints for its `Segmented` variant
-    // (`tab/tab_bar.rs:391`). `ResolvedTabTheme` has no segmented field, but
+    // (`tab/tab_bar.rs:410`). `ResolvedTabTheme` has no segmented field, but
     // `SegmentedControlTheme` is the model's struct for exactly this control,
     // so the token takes its background (Issue 42). The active segment is not
     // reachable: upstream fills it with `tokens.background`
-    // (`tab/tab.rs:249`) and labels it `tab_active_foreground` (`:247`).
+    // (`tab/tab.rs:301`) and labels it `tab_active_foreground` (`:299`).
     tc.tab_bar_segmented = c.segmented_bg;
     tc.tab_foreground = c.tab_fg;
 
@@ -445,7 +471,7 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.sidebar_foreground = c.sidebar_fg;
     tc.sidebar_accent = c.sidebar_selection_bg;
     tc.sidebar_accent_foreground = c.sidebar_selection_fg;
-    tc.sidebar_border = c.window_border;
+    tc.sidebar_border = c.sidebar_border;
     tc.sidebar_primary = c.primary;
     tc.sidebar_primary_foreground = c.primary_fg;
 
@@ -514,7 +540,7 @@ fn assign_misc(
     // `accessibilityDisplayShouldReduceTransparency` asks for no
     // semitransparent backgrounds ("use only opaque windows"), and an opaque
     // scrim would hide the whole window. Transparent black is upstream's own
-    // colour for no overlay (dialog/dialog.rs:319-321); the backdrop still
+    // colour for no overlay (dialog/dialog.rs:322-324); the backdrop still
     // takes the clicks, whatever its colour.
     let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
     tc.overlay = if reduce_transparency {
@@ -884,12 +910,14 @@ mod tests {
         // C17: a filled button replaces its fill per state, so the platform's
         // hover layer is composited over that fill; `secondary_hover` keeps it
         // raw for its transparent-idle readers, which
-        // `direct_theme_reads_match_resolved_fields` covers. Over all sixteen
+        // `direct_theme_reads_match_resolved_fields` covers. Over all seventeen
         // presets both claims are contract rows.
         assert_eq!(
             tc.button_hover,
-            rgba_to_hsla(resolved.button.background_color)
-                .blend(rgba_to_hsla(resolved.button.hover_background)),
+            over(
+                rgba_to_hsla(resolved.button.background_color),
+                rgba_to_hsla(resolved.button.hover_background)
+            ),
             "button_hover should composite button.hover_background over the button's own fill"
         );
         // Phase 54: list_hover comes from the resolved theme
@@ -1013,7 +1041,7 @@ mod tests {
         // `defaults.accent_text_color`, which both used to take, because
         // catppuccin-mocha gives all three the same white. The source itself
         // is pinned by the `accent_foreground` and `sidebar_accent_foreground`
-        // rows of the contract table, over the sixteen presets in both modes.
+        // rows of the contract table, over the seventeen presets in both modes.
         assert_eq!(
             tc.accent_foreground,
             rgba_to_hsla(resolved.menu.hover_text_color),
@@ -1201,7 +1229,7 @@ mod tests {
 
     #[test]
     fn theme_color_field_count_tripwire() {
-        // ThemeColor has 139 Hsla fields in gpui-component 0.7.1 (each 16 bytes
+        // ThemeColor has 139 Hsla fields in gpui-component 0.8.0 (each 16 bytes
         // = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
@@ -1397,13 +1425,94 @@ mod tests {
         );
     }
 
+    /// A pressed layer over a translucent fill is composited source-over, so
+    /// the pressed button covers more than its idle fill (C17).
+    ///
+    /// macos-tahoe light is the combination where both are translucent: macOS
+    /// 26 draws the push button in `#00000014` (docs/platform-facts.md:1177),
+    /// and with no stated pressed fill the connector derives one from it, as
+    /// translucent. A blend that keeps the base's alpha leaves the pressed
+    /// fill at the idle fill's 0.0784 (docs/todo.md, M6).
+    #[test]
+    fn pressed_fill_over_a_translucent_fill_is_source_over() {
+        let resolved = resolved_preset("macos-tahoe", ColorMode::Light);
+        let tc = to_theme_color(&resolved, false, false);
+        let base = rgba_to_hsla(resolved.button.background_color);
+        let layer = tc.secondary_active;
+        assert!(
+            base.a < 1.0 && layer.a > 0.0 && layer.a < 1.0,
+            "macos-tahoe light no longer discriminates: its button fill is {base:?} \
+             and its pressed fill {layer:?}, not both translucent"
+        );
+        let expected = layer.a + base.a * (1.0 - layer.a);
+        for (slot, actual) in [
+            ("button_active", tc.button_active),
+            ("button_secondary_active", tc.button_secondary_active),
+        ] {
+            assert_eq!(
+                actual.a, expected,
+                "{slot}'s alpha should be the source-over of the pressed fill's \
+                 {} over the button fill's {}",
+                layer.a, base.a
+            );
+        }
+    }
+
+    /// `over` is `Hsla::blend` bit for bit wherever the base or the layer is
+    /// opaque, so only a translucent layer over a translucent base moves; there
+    /// it covers both, and a transparent base leaves the layer as it is.
+    #[test]
+    fn over_is_blend_unless_both_are_translucent() {
+        let hsla = |r: f32, g: f32, b: f32, a: f32| Hsla::from(gpui::Rgba { r, g, b, a });
+        let opaque = [hsla(0.2, 0.4, 0.6, 1.0), hsla(1.0, 1.0, 1.0, 1.0)];
+        let layers = [
+            hsla(0.0, 0.0, 0.0, 0.078_431_375),
+            hsla(0.9, 0.1, 0.3, 0.5),
+            hsla(0.3, 0.7, 0.1, 1.0),
+            hsla(0.5, 0.5, 0.5, 0.0),
+        ];
+        for base in opaque {
+            for layer in layers {
+                assert_eq!(
+                    over(base, layer),
+                    base.blend(layer),
+                    "{layer:?} over {base:?}"
+                );
+            }
+        }
+        let opaque_layer = hsla(0.3, 0.7, 0.1, 1.0);
+        let translucent_base = hsla(1.0, 1.0, 1.0, 0.25);
+        assert_eq!(
+            over(translucent_base, opaque_layer),
+            translucent_base.blend(opaque_layer)
+        );
+
+        let layer = hsla(0.8, 0.2, 0.4, 0.5);
+        let mixed = over(translucent_base, layer);
+        assert_eq!(mixed.a, layer.a + translucent_base.a * (1.0 - layer.a));
+        let clear = hsla(0.0, 0.0, 0.0, 0.0);
+        let alone = gpui::Rgba::from(over(clear, layer));
+        let want = gpui::Rgba::from(layer);
+        for (got, expected) in [
+            (alone.r, want.r),
+            (alone.g, want.g),
+            (alone.b, want.b),
+            (alone.a, want.a),
+        ] {
+            assert!(
+                (got - expected).abs() < 1e-6,
+                "{layer:?} over nothing is {alone:?}, not {want:?}"
+            );
+        }
+    }
+
     /// A status label is the platform's own, never a colour of ours.
     ///
     /// catppuccin-latte light is one of the combinations where the removed
     /// enforcement replaced the platform's danger label; white and black are
     /// all it could emit, so a label with any saturation left proves the
     /// replacement is gone. The contract table asserts the same over all
-    /// sixteen presets in both modes.
+    /// seventeen presets in both modes.
     #[test]
     fn status_foreground_is_the_platforms_own() {
         let resolved = resolved_preset("catppuccin-latte", ColorMode::Light);
@@ -1447,7 +1556,7 @@ mod tests {
         let presets = [
             "catppuccin-latte",
             "adwaita",
-            "material",
+            "material-3",
             "solarized",
             "gruvbox",
         ];

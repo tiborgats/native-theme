@@ -1,10 +1,13 @@
 name: CI
 
+# A `v*` tag runs this workflow inside publish.yml, which calls it
+# (`workflow_call`) and uploads only when every job here passed on the tag's
+# commit; a tag trigger here would run it a second time beside that run.
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
+  workflow_call:
 
 env:
   CARGO_TERM_COLOR: always
@@ -29,6 +32,7 @@ jobs:
       matrix:
         include:
           - { name: "native-theme", package: "native-theme" }
+          - { name: "native-theme-derive", package: "native-theme-derive" }
           - { name: "native-theme-build", package: "native-theme-build" }
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "iced connector", package: "native-theme-iced" }
@@ -46,15 +50,152 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo clippy -p ${{ matrix.package }} --all-targets
-      - name: Clippy (iced connector, iced_aw)
+      - name: Clippy (gpui connector, gpui-fast, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
+      - name: Clippy (iced connector, iced_aw, watch, native)
         if: matrix.package == 'native-theme-iced'
-        run: cargo clippy -p native-theme-iced --all-targets --features iced_aw
+        run: cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native
+      - name: Clippy (iced connector, the showcase's required features)
+        if: matrix.package == 'native-theme-iced'
+        run: cargo clippy -p native-theme-iced --all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping
       - name: Clippy (egui connector, all features)
         if: matrix.package == 'native-theme-egui'
         run: cargo clippy -p native-theme-egui --all-targets --all-features
       - name: Clippy (egui widgets, all features)
         if: matrix.package == 'native-theme-egui-widgets'
         run: cargo clippy -p native-theme-egui-widgets --all-targets --all-features
+      # The test fixtures (tools/test-fixtures) and the showcases' shared crate
+      # (tools/showcase-support), never published and with no leg of their
+      # own: their tests and Linux-only code, as scripts/check_release.sh
+      # lints every workspace crate.
+      - name: Clippy (the test fixtures and the showcase support)
+        if: matrix.package == 'native-theme'
+        run: |
+          cargo clippy -p native-theme-test-fixtures --all-targets
+          cargo clippy -p native-theme-showcase-support --all-targets
+      # The strict panic lints on library code, as scripts/check_release.sh
+      # runs them: native-theme and the connectors deny unwrap_used and
+      # expect_used in their crate roots, and scripts/check_strict_panic.sh
+      # holds the rest of the list (indexing_slicing, arithmetic_side_effects,
+      # panic, ...). native-theme with check_release.sh's NT_FEATURES and with
+      # none; native-theme-derive, the test fixtures (tools/test-fixtures) and
+      # the showcases' shared crate (tools/showcase-support), which have no leg
+      # of their own, here too.
+      - name: Strict panic lints (native-theme)
+        if: matrix.package == 'native-theme'
+        run: |
+          bash scripts/check_strict_panic.sh -p native-theme --lib --features kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
+          bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
+          bash scripts/check_strict_panic.sh -p native-theme-derive --lib
+          bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
+          bash scripts/check_strict_panic.sh -p native-theme-showcase-support --lib
+      # The same lints on the macOS and Windows code, which a Linux run never
+      # compiles, the showcases' shared crate's window capture with it. Clippy
+      # builds no binary, so each target needs only its standard library, no
+      # linker or SDK.
+      - name: Strict panic lints (native-theme and the showcase support, macOS and Windows targets)
+        if: matrix.package == 'native-theme'
+        run: |
+          rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+          bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme --lib --features macos,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
+          bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme --lib --no-default-features
+          bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --features windows,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts
+          bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme --lib --no-default-features
+          bash scripts/check_strict_panic.sh --target x86_64-apple-darwin -p native-theme-showcase-support --lib
+          bash scripts/check_strict_panic.sh --target x86_64-pc-windows-msvc -p native-theme-showcase-support --lib
+      # Every lint on that code, its tests and examples included, as
+      # scripts/check_release.sh runs it; the OS probe (tools/os-probe, never
+      # published) is all platform code, and the showcases' shared crate
+      # (tools/showcase-support, never published) holds their macOS and
+      # Windows capture. The targets are the step's above.
+      - name: Clippy (native-theme, the OS probe and the showcase support, macOS and Windows targets)
+        if: matrix.package == 'native-theme'
+        run: |
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            cargo clippy --target "$target" -p native-theme --all-targets --all-features
+            cargo clippy --target "$target" -p native-theme --all-targets --no-default-features
+            cargo clippy --target "$target" -p native-theme-os-probe --all-targets
+            cargo clippy --target "$target" -p native-theme-showcase-support --all-targets
+          done
+      - name: Strict panic lints (native-theme-build)
+        if: matrix.package == 'native-theme-build'
+        run: bash scripts/check_strict_panic.sh -p native-theme-build --lib
+      # A connector's library and its showcase example are steps of their
+      # own, so a library failure does not hide the showcase's run; the
+      # showcase examples are applications the repo ships, so the lints hold
+      # them as they hold the libraries.
+      - name: Strict panic lints (iced connector)
+        if: matrix.package == 'native-theme-iced'
+        run: bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
+      - name: Strict panic lints (iced showcase)
+        if: matrix.package == 'native-theme-iced'
+        run: bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
+      # The showcase's default build, whose code without iced_aw (the Basic
+      # page's tab strip and number field drawn of iced's own widgets) the
+      # run above never compiles.
+      - name: Strict panic lints (iced showcase, default features)
+        if: matrix.package == 'native-theme-iced'
+        run: bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced
+      # The showcase's macOS and Windows code (its window capture through the
+      # shared crate, the system icon sets, and on macOS the system menu bar),
+      # which a Linux run never compiles, under the strict panic lints; with
+      # iced_aw, as the screenshot workflow builds it. Clippy builds no
+      # binary, so each target needs only its standard library.
+      - name: Strict panic lints (iced showcase, iced_aw, macOS and Windows targets)
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            bash scripts/check_strict_panic.sh --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw
+          done
+      # One step per core, so a gpui-pre failure does not hide the GPUI Fast run.
+      - name: Strict panic lints (gpui connector, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
+      - name: Strict panic lints (gpui showcase, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch
+      - name: Strict panic lints (gpui connector, gpui-fast, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
+      - name: Strict panic lints (gpui showcase, gpui-fast, native, watch)
+        if: matrix.package == 'native-theme-gpui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
+      - name: Strict panic lints (egui connector)
+        if: matrix.package == 'native-theme-egui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
+      - name: Strict panic lints (egui showcase)
+        if: matrix.package == 'native-theme-egui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --all-features
+      # The showcase without features, whose code without system-fonts the
+      # run above never compiles.
+      - name: Strict panic lints (egui showcase, no features)
+        if: matrix.package == 'native-theme-egui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --no-default-features
+      # The showcase's macOS code (its menus in the system menu bar), which a
+      # Linux run never compiles, and its Windows build, as the iced
+      # showcase's, under the strict panic lints, with every feature, as
+      # scripts/generate_screenshots_egui.sh builds it. Clippy builds no
+      # binary, so each target needs only its standard library.
+      - name: Strict panic lints (egui showcase, all features, macOS and Windows targets)
+        if: matrix.package == 'native-theme-egui'
+        run: |
+          rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            bash scripts/check_strict_panic.sh --target "$target" -p native-theme-egui --example showcase-egui --all-features
+          done
+      # The connector's and its showcase's macOS code (the showcase's menus in
+      # the system menu bar and its macOS-only dev-dependencies), which no Linux
+      # run compiles, as scripts/check_release.sh checks it.
+      - name: Check egui connector (macOS target, all targets, all features)
+        if: matrix.package == 'native-theme-egui'
+        run: |
+          rustup target add x86_64-apple-darwin
+          cargo check --target x86_64-apple-darwin -p native-theme-egui --all-targets --all-features
+      - name: Strict panic lints (egui widgets)
+        if: matrix.package == 'native-theme-egui-widgets'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui-widgets --lib --all-features
 
   test:
     name: Test ${{ matrix.name }}
@@ -70,12 +211,16 @@ jobs:
           - { name: "Linux (linux-kde)", os: ubuntu-latest, flags: "--features linux-kde" }
           - { name: "Linux (linux-portal)", os: ubuntu-latest, flags: "--features linux-portal" }
           - { name: "Linux (linux)", os: ubuntu-latest, flags: "--features linux" }
+          - { name: "Linux (linux, watch)", os: ubuntu-latest, flags: "--features linux,watch" }
           - { name: "Linux (native)", os: ubuntu-latest, flags: "--features native" }
           - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
+          - { name: "Linux (icons, system-fonts)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize,system-fonts" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
+          - { name: "Windows (windows, watch, system-icons)", os: windows-latest, flags: "--features windows,watch,system-icons" }
           - { name: "macOS (no features)", os: macos-latest, flags: "--no-default-features" }
           - { name: "macOS (macos)", os: macos-latest, flags: "--features macos" }
+          - { name: "macOS (macos, watch, system-icons)", os: macos-latest, flags: "--features macos,watch,system-icons" }
           - { name: "Linux (system-fonts)", os: ubuntu-latest, flags: "--features system-fonts" }
           - { name: "Windows (system-fonts)", os: windows-latest, flags: "--features system-fonts" }
           - { name: "macOS (system-fonts)", os: macos-latest, flags: "--features system-fonts" }
@@ -111,20 +256,31 @@ jobs:
       # all features; scripts/check_release.sh runs the same script.
       - run: bash scripts/check_features.sh
 
+  # A lint can fire at an MSRV and not on stable (native-theme without its
+  # Linux readers once warned of an unused binding at 1.95.0 alone), so the
+  # whole job denies warnings, and native-theme is checked without its
+  # readers, its default features, at its own MSRV too.
   msrv:
     runs-on: ubuntu-latest
+    env:
+      RUSTFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@1.88.0
       - run: cargo check --workspace --exclude native-theme-gpui --exclude native-theme-egui --exclude native-theme-egui-widgets --all-features --locked
+      - run: cargo check -p native-theme --locked
       - uses: dtolnay/rust-toolchain@1.95.0
       - run: cargo check -p native-theme-egui -p native-theme-egui-widgets --all-features --locked
       - name: Install system dependencies (gpui)
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
-      - run: cargo check -p native-theme-gpui --all-features --locked
+      # `--all-features` would turn on `gpui-fast`, which changes the GPUI
+      # core: the default core and GPUI Fast are checked one at a time.
+      - run: cargo check -p native-theme-gpui --locked
+      - run: cargo check -p native-theme-gpui --features native,watch --locked
+      - run: cargo check -p native-theme-gpui --features gpui-fast,native,watch --locked
 
   test-build-crate:
-    name: Test native-theme-build
+    name: Test native-theme-build and native-theme-derive
     needs: fmt
     runs-on: ubuntu-latest
     steps:
@@ -132,6 +288,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme-build
+      - run: cargo test -p native-theme-derive
+      - run: cargo test -p native-theme-test-fixtures
+      - run: cargo test -p native-theme-showcase-support
 
   test-connectors:
     name: Test ${{ matrix.name }}
@@ -159,7 +318,7 @@ jobs:
         if: matrix.package == 'native-theme-iced'
         run: |
           cargo test -p native-theme-iced --no-default-features
-          cargo test -p native-theme-iced --features iced_aw
+          cargo test -p native-theme-iced --features iced_aw,watch,native
       # The connector's other two supported configurations (spec §11), gated by
       # scripts/check_release.sh as well so a release cannot pass on one CI never ran.
       - name: Test the egui connector's other configurations
@@ -178,6 +337,16 @@ jobs:
       - name: Test the gpui connector without default features
         if: matrix.package == 'native-theme-gpui'
         run: cargo test -p native-theme-gpui --lib --no-default-features
+      # `on_theme_change`'s tests and the showcase's `watch` code; the tests
+      # start no OS watcher.
+      - name: Test the gpui connector with native and watch
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo test -p native-theme-gpui --features native,watch
+      # On GPUI Fast, with native and watch. Doctests excluded: each is a
+      # crate of its own that names gpui-pre as `gpui`, not GPUI through gpui-kit.
+      - name: Test the gpui connector on GPUI Fast
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
       # Reads the toolkits' sources through `cargo metadata` and fails when an
       # upstream release adds a widget that no showcase renders or
       # docs/showcase-exceptions.toml excepts. Runs here because this leg already
@@ -188,7 +357,67 @@ jobs:
         run: |
           python3 --version
           python3 scripts/check_widget_coverage.py
+          python3 scripts/check_widget_coverage.py --self-test
+      # Fails on a connector accessor named unlike the `ResolvedTheme` leaf it
+      # reads, or a function absent from a sibling connector or present there
+      # under another signature, unless
+      # scripts/connector_parity_exceptions.toml lists it. Reads sources only.
+      - name: Connector parity
+        if: matrix.package == 'native-theme-iced'
+        run: |
+          python3 --version
+          python3 scripts/check_connector_parity.py
+          python3 scripts/check_connector_parity.py --self-test
 
+  # The gpui connector on GPUI Fast is built for Windows and macOS too: no
+  # other job on push builds it there, and linking the showcase catches what
+  # a check cannot (one Windows manifest per binary, which GPUI Kit 0.7.3
+  # fixed; gpui-base and gpui-component enable
+  # `windows-manifest-provided-by-host` on gpui-fast).
+  gpui-fast-build:
+    name: Build gpui showcase on GPUI Fast (${{ matrix.os }})
+    needs: fmt
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # With `native` and `watch`, so `on_theme_change` and the showcase's
+      # `watch` code build on macOS and Windows too.
+      - run: cargo build -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
+
+  # The showcase-parity comparator's static modes, as scripts/check_release.sh
+  # runs them: --check-list validates docs/showcase-elements.toml and the
+  # [parity] exceptions, --self-test runs the comparator's scenarios on
+  # synthetic dumps and captures. Neither needs a display or a build.
+  # ubuntu-latest ships Python 3.12 (>= the 3.11 tomllib needs); the self-test
+  # needs Pillow, installed from the distribution.
+  parity:
+    name: Showcase parity (static)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install Pillow
+        run: sudo apt-get update && sudo apt-get install -y python3-pil
+      - run: python3 --version
+      - run: python3 scripts/check_showcase_parity.py --check-list
+      - run: python3 scripts/check_showcase_parity.py --self-test
+      # The data documents' checks, as scripts/check_release.sh runs them: a
+      # registry field without a platform-facts row, [wrong_safety_nets] and
+      # its [uniform] marks, a § reference to no platform-facts section, a
+      # docs/todo.md preset citation that does not hold.
+      - run: python3 scripts/check_platform_facts_rows.py
+      - run: python3 scripts/check_platform_facts_rows.py --self-test
+      - run: python3 scripts/check_wrong_safety_nets.py
+      - run: python3 scripts/check_wrong_safety_nets.py --self-test
+      - run: python3 scripts/check_section_refs.py
+      - run: python3 scripts/check_section_refs.py --self-test
+      - run: python3 scripts/check_todo_citations.py
+      - run: python3 scripts/check_todo_citations.py --self-test
 
   doc:
     name: Documentation
@@ -202,7 +431,25 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev libfontconfig1-dev libfreetype-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      # Fails on a `native-theme*` dependency a README's `toml` block states
+      # at another `major.minor` than the workspace version's, and on a crate
+      # a README's Rust code, or a doc example under that crate's src/, names
+      # that the README states no dependency on.
+      # Reads files only; ubuntu-latest's Python 3.12 has the `tomllib` it needs.
+      - name: README versions and crates
+        run: |
+          python3 --version
+          python3 scripts/check_readme_versions.py
+          python3 scripts/check_readme_versions.py --self-test
       - run: cargo doc --workspace --no-deps
+      # `--workspace` unifies the members' features, so native-theme is
+      # documented there with the features the connectors turn on; each
+      # published crate is documented alone too, as a dependent builds it.
+      - name: Documentation, each published crate alone
+        run: |
+          for crate in native-theme-derive native-theme native-theme-build native-theme-iced native-theme-gpui native-theme-egui native-theme-egui-widgets; do
+            cargo doc -p "$crate" --no-deps
+          done
       # docs.rs builds native-theme-iced with every feature, and a doc item
       # behind a feature gate can only break in that configuration.
       - run: cargo doc -p native-theme-iced --no-deps --all-features

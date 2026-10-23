@@ -1,13 +1,14 @@
 //! iced toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::theme::ResolvedTheme`] data to iced's theming system.
+//! Maps [`ResolvedTheme`] data to iced's theming system.
 //!
 //! # Quick Start
 //!
 //! ```rust,no_run
 //! use native_theme_iced::from_preset;
 //!
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true).unwrap();
+//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! Or from the OS-detected theme:
@@ -15,7 +16,9 @@
 //! ```rust,no_run
 //! use native_theme_iced::from_system;
 //!
-//! let (theme, resolved, is_dark, accessibility) = from_system().unwrap();
+//! let loaded = from_system()?;
+//! let (theme, resolved) = (loaded.theme, loaded.resolved);
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! # Manual Path
@@ -23,12 +26,14 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```rust
-//! use native_theme::theme::{ColorMode, Theme};
-//! use native_theme_iced::to_theme;
+//! use native_theme_iced::{ColorMode, Theme, to_theme_in};
 //!
-//! let nt = Theme::preset("catppuccin-mocha").unwrap();
-//! let resolved = nt.into_variant(ColorMode::Light).unwrap().resolve_system().unwrap();
-//! let theme = to_theme(&resolved, "My App");
+//! let nt = Theme::preset("catppuccin-mocha")?;
+//! // `resolved.mode` is the mode of the variant resolved: the other one where
+//! // the preset has only that.
+//! let resolved = nt.resolve(ColorMode::Light)?;
+//! let theme = to_theme_in(&resolved.variant, "My App", resolved.mode);
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! # Kerning
@@ -85,12 +90,14 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator` and `tab_indicator_line`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`, `tab_indicator_line` and `tab_flares`, through `iced_widget` |
 //! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
-//! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, through `native-theme/system-fonts` |
+//! | `system-fonts` | yes | `system_font_family`, the family iced's font database holds for a theme font, and `font`, the whole iced `Font` of one, through `native-theme/system-fonts` |
 //! | `advanced-shaping` | yes | kerned text in the whole application: `iced_core`'s `advanced-shaping`, which makes `Shaping::Advanced` every text's default (see [Kerning](#kerning)) |
+//! | `native` | no | the OS readers, `native-theme/native`; without one (or native-theme's `kde`, `portal`, `macos`, `windows`), [`from_system()`] is the platform preset on Linux and an error on macOS and Windows |
+//! | `watch` | no | `theme_changes`, the OS theme's changes as an iced `Subscription`, through `native-theme/watch` and `iced_futures` (see [Runtime theme change](#runtime-theme-change)) |
 //!
 //! Every feature adds coverage. `default-features = false` leaves the palette
 //! and the metric helpers that need `iced_core` only; `button_padding`,
@@ -101,51 +108,91 @@
 //!
 //! # Accessibility
 //!
-//! [`from_system()`] returns the user's [`AccessibilityPreferences`] as its
-//! fourth value. The OS text-scaling factor applies to every text size:
+//! [`from_system()`] returns the user's [`AccessibilityPreferences`] in
+//! [`Loaded::accessibility`]. The OS text-scaling factor applies to every text size:
 //! [`scaled_text_size()`] scales any size the resolved theme states (a
 //! widget's font, a `text_scale` role), and [`font_size()`] and
 //! [`mono_font_size()`] are that for the default fonts; a factor that is not
 //! finite and positive is ignored. With a preset there is no OS reading:
-//! `AccessibilityPreferences::default()` scales by one.
+//! `AccessibilityPreferences::default()` scales by one, and
+//! `native_theme_iced::native_theme::detect::accessibility_preferences()` (the
+//! source crate, re-exported) gives the OS's under the preset, cached;
+//! `AccessibilityPreferences::from_system()` runs the platform reader each
+//! time. [`is_reduced_motion()`], [`is_high_contrast()`],
+//! [`is_reduced_transparency()`] and [`text_scaling_factor()`] read the four
+//! preferences of a [`SystemTheme`], as in the gpui and egui connectors.
 //!
-//! The other two preferences, reduced transparency and reduced motion, have no
-//! receiver in iced: a `Theme` is a palette, with nothing for either to act
-//! on. An application reads them from the same struct where it draws
-//! translucent surfaces or animates.
+//! # What each flag does
+//!
+//! | Flag | The connector applies | The application forwards |
+//! |------|-----------------------|--------------------------|
+//! | `text_scaling_factor` | nothing on its own: a `Theme` is a palette, with no text size | each text size, through [`font_size()`], [`mono_font_size()`] or [`scaled_text_size()`] ([`AccessibilityPreferences::scaled`]) |
+//! | `reduce_motion` | `Spinner::view` (feature `spinner`) holds the spinner still when passed `true` | the flag to `Spinner::view` and to its own animations |
+//! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/archive/todo_closed.md`, the item "`to_theme` takes no `AccessibilityPreferences`") | the flag where it draws translucent surfaces |
+//! | `high_contrast` | nothing | its own colours, if they should change |
+//!
+//! # Runtime theme change
+//!
+//! With the `watch` feature and a reader feature (`native`), `theme_changes()`
+//! is an iced `Subscription` of the OS theme's changes. Return it from the
+//! application's `subscription()`; on each change call
+//! `native_theme_iced::native_theme::detect::invalidate_caches()` (the source
+//! crate, re-exported, so no second dependency names it), read the theme
+//! again with the entry point the application used ([`from_system()`], or
+//! `SystemTheme::from_system_with_preset(name)` and
+//! [`SystemThemeExt::to_iced_theme`] for a pinned preset), and rebuild what
+//! was built from the old theme, such as the `Spinner`:
+//!
+//! ```rust,ignore
+//! fn subscription(_state: &State) -> iced::Subscription<Message> {
+//!     native_theme_iced::theme_changes()
+//!         .filter_map(|changed| changed.ok().map(|_| Message::ThemeChanged))
+//! }
+//!
+//! // In update():
+//! Message::ThemeChanged => {
+//!     native_theme_iced::native_theme::detect::invalidate_caches();
+//!     if let Ok(loaded) = native_theme_iced::from_system() {
+//!         state.spinner = Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
+//!         state.loaded = loaded;
+//!     }
+//! }
+//! ```
 //!
 //! # Font Configuration
 //!
-//! A font in the resolved theme is a family, a size and a CSS weight. iced's
-//! `Family::Name` takes a `&'static str` (`iced_core` 0.14 `font.rs:46`)
-//! while a family name is an `Arc<str>`, so leak each distinct family once
-//! and reuse it; `intern_font_family` gives one `Arc<str>` per name to key
-//! that by. [`to_iced_weight`] turns the weight into iced's:
+//! A font in the resolved theme is a family, a size, a CSS weight and a
+//! style. With `system-fonts`, `font` makes the iced `Font` of one: the
+//! family iced's font database holds for it (`system_font_family`), its
+//! weight ([`to_iced_weight`]) and its style. iced's `Family::Name` takes a
+//! `&'static str` (`iced_core` 0.14 `font.rs:46`) while a family name is an
+//! `Arc<str>`, so `font` leaks each distinct family once and reuses it.
+//! Without the feature, do the same with the stated family;
+//! `intern_font_family` gives one `Arc<str>` per name to key that by:
 //!
 //! ```rust,no_run
-//! use native_theme::theme::intern_font_family;
-//! use std::collections::HashMap;
-//! use std::sync::Arc;
-//!
 //! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
-//! let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
 //! let spec = &resolved.defaults.font;
-//! // The family iced's font database holds for the face: on macOS the
-//! // system UI font, stated "SF Pro", is filed as `.SF NS`.
 //! #[cfg(feature = "system-fonts")]
-//! let family_name: Arc<str> = native_theme_iced::system_font_family(spec);
+//! let font = native_theme_iced::font(spec);
 //! #[cfg(not(feature = "system-fonts"))]
-//! let family_name: Arc<str> = spec.family.clone();
-//! let family: &'static str = *families
-//!     .entry(intern_font_family(&family_name))
-//!     .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
-//! let font = iced_core::Font {
-//!     family: iced_core::font::Family::Name(family),
-//!     weight: native_theme_iced::to_iced_weight(spec.weight),
-//!     ..iced_core::Font::DEFAULT
+//! let font = {
+//!     use native_theme_iced::native_theme::theme::intern_font_family;
+//!     use std::collections::HashMap;
+//!     use std::sync::Arc;
+//!
+//!     let mut families: HashMap<Arc<str>, &'static str> = HashMap::new();
+//!     let family: &'static str = *families
+//!         .entry(intern_font_family(&spec.family))
+//!         .or_insert_with_key(|name| Box::leak(name.to_string().into_boxed_str()));
+//!     iced::Font {
+//!         family: iced::font::Family::Name(family),
+//!         weight: native_theme_iced::to_iced_weight(spec.weight),
+//!         ..iced::Font::DEFAULT
+//!     }
 //! };
 //! # let _ = font;
-//! # Ok::<(), native_theme::error::Error>(())
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! iced 0.14 draws text with cosmic-text 0.15, which takes a face only where
@@ -182,11 +229,25 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
-//! | `styles` (25 functions) | every `Style` field of button (six classes), text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, tooltip, card container, segmented control and its segments, expander header; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width | Per-widget resolved fields |
-//! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
-//! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
+//! | `styles` (28 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame; scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`) | Per-widget resolved fields |
+//! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
+//! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
+//!
+//! The theme values of the widgets neither iced 0.14 nor `iced_aw` 0.14.1
+//! has reach no receiver here: the dialog's, `dialog.entrance` among them
+//! (whether an `iced_aw` `Card` is a dialog's receiver is a docs/todo.md
+//! item), the popover's, the toolbar's and the status bar's; and the window
+//! frame's colours, which iced takes no colour for (`decorations: bool`,
+//! `iced_core` 0.14 `window/settings.rs:65-66`).
+//!
+//! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
+//! scaled by the text-scaling factor, is named after the leaf's path, without
+//! the leading `defaults.` and a unit suffix: `defaults.border.corner_radius`
+//! is `border_corner_radius`, `scrollbar.groove_width` is
+//! `scrollbar_groove_width`, the same name in the iced, gpui and egui
+//! connectors (`scripts/check_connector_parity.py` checks it).
 //!
 //! Per-widget geometry that is not a `Style` field (e.g. an indicator's size,
 //! a track's height, a label gap) is not mapped, because iced takes it through
@@ -214,27 +275,60 @@ mod compat;
 #[cfg(test)]
 mod contract;
 pub(crate) mod extended;
+// The freedesktop icon-theme fixture the tests run in a child process.
+#[cfg(all(test, target_os = "linux", feature = "system-icons"))]
+use native_theme_test_fixtures as icon_fixture;
 pub mod icons;
 pub mod palette;
 #[cfg(feature = "spinner")]
 pub mod spinner;
 #[cfg(feature = "widgets")]
 pub mod styles;
+#[cfg(feature = "widgets")]
+mod tab_flares;
+#[cfg(feature = "watch")]
+mod watch;
 
 #[cfg(feature = "spinner")]
 pub use spinner::Spinner;
+#[cfg(feature = "watch")]
+pub use watch::theme_changes;
+
+// The source crate, re-exported as the egui connector does, so an
+// application reaches the rest of native-theme's API
+// (`native_theme_iced::native_theme::detect::invalidate_caches()`) without a
+// dependency of its own: a downstream `Cargo.toml` need not add a second
+// one, whose version could drift from the connector's.
+pub use native_theme;
 
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
+pub use native_theme::icons::{AnimatedIcon, IconData, IconProvider, IconRole, TransformAnimation};
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
-    ResolvedTheme, Theme, ThemeMode, TransformAnimation,
+    ColorMode, DialogButtonOrder, IconSet, ResolvedTheme, Theme, ThemeMode,
 };
+#[cfg(feature = "watch")]
+pub use native_theme::watch::ThemeChangeEvent;
 pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
+
+/// The README's code blocks, compiled as doctests so they cannot drift from the API; the
+/// runtime-theme-change block needs feature `watch`, the `iced_aw` block `iced_aw`, the
+/// spinner blocks `spinner` and the fonts block `system-fonts`.
+#[cfg(all(
+    doctest,
+    feature = "watch",
+    feature = "iced_aw",
+    feature = "spinner",
+    feature = "system-fonts"
+))]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
+use std::borrow::Cow;
 
 /// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::theme::ResolvedTheme`].
 ///
@@ -257,12 +351,53 @@ pub use native_theme::detect::LinuxDesktop;
 /// For the common case, use [`from_preset()`] to derive the name automatically.
 ///
 /// Note: iced has no `info` color family in its Extended palette, so
-/// `info` / `info_foreground` are not mapped automatically. Use
-/// [`info_color()`] and [`info_foreground_color()`] helpers to access them.
+/// `info_color` / `info_text_color` are not mapped automatically. Use
+/// [`info_color()`] and [`info_text_color()`] helpers to access them.
+///
+/// A [`ResolvedTheme`] carries no colour mode, so the theme's light/dark
+/// flag (`Extended::is_dark`, which iced uses for the window title bar) is
+/// iced's lightness test of the background here; [`to_theme_in()`] sets it
+/// from a mode the caller has, as [`from_preset()`], [`from_system()`] and
+/// [`SystemThemeExt::to_iced_theme`] do.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
     resolved: &native_theme::theme::ResolvedTheme,
     name: &str,
+) -> iced_core::theme::Theme {
+    build_theme(resolved, name, None)
+}
+
+/// [`to_theme()`] in `mode`: the theme's light/dark flag
+/// (`Extended::is_dark`, which iced uses for the window title bar) is
+/// `mode`'s, not iced's guess from the background's lightness.
+///
+/// For a theme the application resolves itself, which knows the mode it
+/// resolved: [`Resolved::mode`](native_theme::Resolved::mode) is the mode of
+/// the variant `Theme::resolve` returned.
+///
+/// ```rust
+/// use native_theme_iced::{ColorMode, Theme, to_theme_in};
+///
+/// let spec = Theme::preset("adwaita")?;
+/// let resolved = spec.resolve(ColorMode::Dark)?;
+/// let theme = to_theme_in(&resolved.variant, &spec.name, resolved.mode);
+/// assert!(theme.extended_palette().is_dark);
+/// # Ok::<(), native_theme_iced::Error>(())
+/// ```
+#[must_use = "this returns the theme; it does not apply it"]
+pub fn to_theme_in(
+    resolved: &native_theme::theme::ResolvedTheme,
+    name: &str,
+    mode: ColorMode,
+) -> iced_core::theme::Theme {
+    build_theme(resolved, name, Some(mode))
+}
+
+/// [`to_theme()`], with `Extended::is_dark` set from `mode` where one is given.
+fn build_theme(
+    resolved: &native_theme::theme::ResolvedTheme,
+    name: &str,
+    mode: Option<ColorMode>,
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
@@ -281,6 +416,9 @@ pub fn to_theme(
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
         let mut ext = iced_core::theme::palette::Extended::generate(p);
         extended::apply_overrides(&mut ext, &colors);
+        if let Some(mode) = mode {
+            ext.is_dark = mode.is_dark();
+        }
         ext
     })
 }
@@ -288,7 +426,9 @@ pub fn to_theme(
 /// Load a bundled preset and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
 /// Handles the full pipeline: load preset, pick variant, resolve, validate, convert.
-/// The `Theme` display name is used as the theme display name.
+/// The `Theme` display name is used as the theme display name. The iced
+/// theme is dark when the variant resolved is the dark one, so a light-only
+/// preset asked for dark gives a light theme.
 ///
 /// # Errors
 ///
@@ -298,60 +438,129 @@ pub fn from_preset(
     name: &str,
     is_dark: bool,
 ) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
-    let spec = native_theme::theme::Theme::preset(name)?;
-    let display_name = spec.name.clone();
-    let variant = spec.into_variant(if is_dark {
+    from_spec(&native_theme::theme::Theme::preset(name)?, is_dark)
+}
+
+/// [`from_preset()`] of a theme already loaded.
+fn from_spec(
+    spec: &native_theme::theme::Theme,
+    is_dark: bool,
+) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
+    let resolved = spec.resolve(if is_dark {
         ColorMode::Dark
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.resolve_system()?;
-    let theme = to_theme(&resolved, &display_name);
-    Ok((theme, resolved))
+    let theme = to_theme_in(&resolved.variant, &spec.name, resolved.mode);
+    Ok((theme, resolved.variant))
+}
+
+/// The OS theme as [`from_system()`] and [`SystemThemeExt::to_iced_theme`]
+/// return it: the iced theme of the OS colour mode's variant, with what the
+/// OS reading detected beside it.
+///
+/// `#[non_exhaustive]`, so a field added later is not a breaking change;
+/// read it by field, or destructure it with `..`.
+#[derive(Clone, Debug)]
+#[non_exhaustive]
+pub struct Loaded {
+    /// The iced theme, built by [`to_theme_in()`] from
+    /// [`resolved`](Self::resolved) in [`mode`](Self::mode).
+    pub theme: iced_core::theme::Theme,
+    /// The resolved variant of the OS colour mode, for the metric helpers.
+    pub resolved: ResolvedTheme,
+    /// The OS colour mode, the OS preference rather than a guess from the
+    /// background colour; [`resolved`](Self::resolved) is its variant.
+    pub mode: ColorMode,
+    /// The OS accessibility preferences, which [`font_size()`],
+    /// [`mono_font_size()`] and [`scaled_text_size()`] take.
+    pub accessibility: AccessibilityPreferences,
+    /// The icon set the theme names ([`SystemTheme::icon_set`]).
+    pub icon_set: IconSet,
+    /// The icon theme of the OS colour mode's variant
+    /// ([`SystemTheme::icon_theme_for`]), for a freedesktop icon or spinner;
+    /// `None` where that variant states none and detection failed.
+    pub icon_theme: Option<Cow<'static, str>>,
 }
 
 /// Detect the OS theme and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
-/// Returns the iced theme, the resolved variant, whether the system is in
-/// dark mode, and the OS accessibility preferences. The `is_dark` flag comes
-/// from the OS preference, not from background color analysis. The
-/// preferences are returned because [`font_size()`] and [`mono_font_size()`]
-/// need them.
+/// Returns the iced theme, the resolved variant, the OS colour mode, the OS
+/// accessibility preferences, and the icon set and icon theme, as a
+/// [`Loaded`]. The mode comes from the OS preference, not from background
+/// color analysis. The preferences are returned because [`font_size()`] and
+/// [`mono_font_size()`] need them.
 ///
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read.
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> Result<(
-    iced_core::theme::Theme,
-    native_theme::theme::ResolvedTheme,
-    bool,
-    AccessibilityPreferences,
-)> {
+pub fn from_system() -> Result<Loaded> {
     let sys = native_theme::SystemTheme::from_system()?;
-    let is_dark = sys.mode.is_dark();
+    let mode = sys.mode;
+    let icon_theme = sys.icon_theme_for(mode).map(|s| Cow::Owned(s.to_owned()));
     let name = sys.name;
-    let accessibility = sys.accessibility;
-    let resolved = if is_dark { sys.dark } else { sys.light };
-    let theme = to_theme(&resolved, &name);
-    Ok((theme, resolved, is_dark, accessibility))
+    let resolved = if mode.is_dark() { sys.dark } else { sys.light };
+    let theme = to_theme_in(&resolved, &name, mode);
+    Ok(Loaded {
+        theme,
+        resolved,
+        mode,
+        accessibility: sys.accessibility,
+        icon_set: sys.icon_set,
+        icon_theme,
+    })
+}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for native_theme::SystemTheme {}
 }
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
-pub trait SystemThemeExt {
-    /// Convert this system theme to an iced [`iced_core::theme::Theme`] and its [`ResolvedTheme`].
+///
+/// Sealed, as the egui connector's `SystemThemeExt` is: [`SystemTheme`] is
+/// its one implementor, so a method added to it later is not a breaking
+/// change.
+pub trait SystemThemeExt: sealed::Sealed {
+    /// Convert this system theme to an iced [`iced_core::theme::Theme`] of
+    /// its OS colour mode, as a [`Loaded`].
     ///
-    /// Returns both the iced theme and the resolved variant, so callers can
-    /// access per-widget metrics without re-resolving.
+    /// Returns the iced theme with the resolved variant, so callers can
+    /// access per-widget metrics without re-resolving, and the mode, the
+    /// accessibility preferences, the icon set and the icon theme beside
+    /// them. The variant is cloned out of `self`; [`from_system()`] moves it.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::theme::ResolvedTheme);
+    fn to_iced_theme(&self) -> Loaded;
 }
 
+/// A type outside the crate cannot implement [`SystemThemeExt`]:
+///
+/// ```compile_fail,E0277
+/// struct Mine;
+/// impl native_theme_iced::SystemThemeExt for Mine {
+///     fn to_iced_theme(&self) -> native_theme_iced::Loaded {
+///         unimplemented!()
+///     }
+/// }
+/// ```
+#[cfg(doctest)]
+pub struct SystemThemeExtIsSealed;
+
 impl SystemThemeExt for native_theme::SystemTheme {
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::theme::ResolvedTheme) {
+    fn to_iced_theme(&self) -> Loaded {
         let resolved = self.pick(self.mode).clone();
-        let theme = to_theme(&resolved, &self.name);
-        (theme, resolved)
+        let theme = to_theme_in(&resolved, &self.name, self.mode);
+        Loaded {
+            theme,
+            resolved,
+            mode: self.mode,
+            accessibility: self.accessibility.clone(),
+            icon_set: self.icon_set,
+            icon_theme: self
+                .icon_theme_for(self.mode)
+                .map(|s| Cow::Owned(s.to_owned())),
+        }
     }
 }
 
@@ -399,7 +608,8 @@ pub fn stated_padding(stated: &native_theme::theme::ResolvedPadding) -> Option<i
 }
 
 /// Returns each side a widget border's padding states, plus the border's line
-/// width, and `default`'s side where it states none.
+/// width, and `default`'s side where it states none: [`padding_or()`] of
+/// `ResolvedWidgetBorder::padding_outside`.
 ///
 /// The model's padding lies inside the border (`ResolvedWidgetBorder::padding`,
 /// "padding inside the border"), while iced lays a widget's content out
@@ -416,17 +626,7 @@ pub fn padding_inside_border(
     border: &native_theme::theme::ResolvedWidgetBorder,
     default: iced_core::Padding,
 ) -> iced_core::Padding {
-    let side = |stated: Option<f32>, default: f32| match stated {
-        Some(v) => v + border.line_width,
-        None => default,
-    };
-    let stated = &border.padding;
-    iced_core::Padding {
-        top: side(stated.top, default.top),
-        right: side(stated.right, default.right),
-        bottom: side(stated.bottom, default.bottom),
-        left: side(stated.left, default.left),
-    }
+    padding_or(&border.padding_outside(), default)
 }
 
 /// Returns button padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
@@ -576,20 +776,27 @@ pub fn button_content_min_size(resolved: &native_theme::theme::ResolvedTheme) ->
 /// `.track_height`, holding a thumb `switch.thumb_diameter` across
 /// (`.unchecked_thumb_diameter`, where the theme states one, while not
 /// `is_toggled`), inset by half the difference of the two heights, at the
-/// right end while `is_toggled`. `on_toggle` is the message a press sends; `None` is a
+/// right end while `is_toggled`; a thumb taller than the track overhangs it
+/// above and below and sits flush with its ends, and the switch is the
+/// thumb's height. `on_toggle` is the message a press sends; `None` is a
 /// disabled switch.
 ///
 /// iced's `Toggler` lays its track out as twice its height
 /// (`iced_widget` 0.14.2 `src/toggler.rs:287`) and has no width setter, so
-/// every platform whose track is not twice its height -- material's 52 by 32,
-/// adwaita's 46 by 26 -- would get a wider track than it states. This switch
-/// is a button and two containers instead, coloured by
-/// [`styles::toggler()`] for the toggler status each button status stands
-/// for: `Hovered` and `Pressed` are the toggler's `Hovered` (iced's toggler
-/// has no pressed state), `Disabled` its `Disabled`, and `Active` its
-/// `Active`. The thumb takes the toggler's foreground for `Active` or
-/// `Disabled`, as the toggler's own thumb does in every state, and both take
-/// its `border_radius`, as iced paints them (`toggler.rs:435`, `:461`).
+/// every platform whose track is not twice its height -- material-3's 52 by 32,
+/// adwaita's 46 by 26 -- would get a wider track than it states, and its thumb
+/// cannot overhang the track, as kde-breeze's does. This switch is a widget
+/// of its own, as the toggler is, the size of its track and of a thumb that
+/// overhangs it, all of which is hovered and pressed; a press toggles it, as
+/// the toggler's does (`toggler.rs:333-343`). It is coloured by
+/// [`styles::toggler()`] for its status: `Hovered` under the pointer,
+/// `Disabled` without `on_toggle`, `Active` otherwise. The thumb takes the toggler's foreground for `Active` or
+/// `Disabled`, as the toggler's own thumb does in every state. The track
+/// takes its `border_radius`; the thumb is round, as gpui's and egui's
+/// switches draw it, where iced's toggler gives it the track's radius
+/// (`toggler.rs:435`, `:461`): the model states no thumb radius, and
+/// qqc2-desktop-style's 18 handle on its 12 track is `Math.floor(width / 2)`
+/// (docs/platform-facts.md §2.21).
 ///
 /// The switch has no label: `SwitchTheme` states no font and no gap for one.
 ///
@@ -630,13 +837,8 @@ where
     Message: Clone + 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    use iced_widget::toggler::Status as Toggler;
-    use iced_widget::{button, container};
-
     let s = &resolved.switch;
-    let enabled = on_toggle.is_some();
     let track = styles::toggler_over(resolved, backdrop);
-    let thumb_style = track.clone();
     let round = iced_core::border::Radius::new(s.track_height / 2.0);
     let diameter = if is_toggled {
         s.thumb_diameter
@@ -644,65 +846,230 @@ where
         s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
     };
 
-    let thumb = container(iced_widget::Space::new())
-        .width(diameter)
-        .height(diameter)
-        .style(move |theme| {
-            let status = if enabled {
-                Toggler::Active { is_toggled }
-            } else {
-                Toggler::Disabled { is_toggled }
-            };
-            let t = thumb_style(theme, status);
-            container::Style {
-                background: Some(t.foreground),
-                border: iced_core::Border {
-                    color: t.foreground_border_color,
-                    width: t.foreground_border_width,
-                    radius: t.border_radius.unwrap_or(round),
-                },
-                ..container::Style::default()
-            }
-        });
-    let seat = container(thumb)
-        .padding(((s.track_height - diameter) / 2.0).max(0.0))
-        .width(iced_core::Length::Fill)
-        .height(iced_core::Length::Fill)
-        .align_x(if is_toggled {
-            iced_core::alignment::Horizontal::Right
-        } else {
-            iced_core::alignment::Horizontal::Left
-        })
-        .align_y(iced_core::alignment::Vertical::Center);
+    // A thumb taller than the track overhangs it above and below, and sits
+    // flush with its ends (docs/platform-facts.md §2.21), so the switch is
+    // as tall as the taller of the two, and the whole of it, the overhang
+    // included, is hovered and pressed.
+    iced_core::Element::new(SwitchBox {
+        is_toggled,
+        on_toggle,
+        style: Box::new(track),
+        width: s.track_width,
+        track_height: s.track_height,
+        round,
+        diameter,
+        last_status: None,
+    })
+}
 
-    button(seat)
-        .padding(0)
-        .width(s.track_width)
-        .height(s.track_height)
-        .on_press_maybe(on_toggle)
-        .style(move |theme, status| {
-            let status = match status {
-                button::Status::Active => Toggler::Active { is_toggled },
-                button::Status::Hovered | button::Status::Pressed => {
-                    Toggler::Hovered { is_toggled }
-                }
-                button::Status::Disabled => Toggler::Disabled { is_toggled },
-            };
-            let t = track(theme, status);
-            let iced = button::Style::default();
-            button::Style {
-                background: Some(t.background),
-                text_color: t.text_color.unwrap_or(iced.text_color),
+/// The style a [`SwitchBox`] is coloured by: [`styles::toggler_over()`]'s.
+#[cfg(feature = "widgets")]
+type SwitchStyle<'a> = Box<
+    dyn Fn(&iced_core::Theme, iced_widget::toggler::Status) -> iced_widget::toggler::Style + 'a,
+>;
+
+/// The switch [`switch_over()`] draws: one widget, as iced's `Toggler` is
+/// (`toggler.rs:251-466`), the size of the track and of a thumb that
+/// overhangs it, painting the track and then the thumb over it in
+/// [`styles::toggler_over()`]'s colours for its status.
+#[cfg(feature = "widgets")]
+struct SwitchBox<'a, Message> {
+    is_toggled: bool,
+    on_toggle: Option<Message>,
+    style: SwitchStyle<'a>,
+    width: f32,
+    track_height: f32,
+    /// The track's corner radius where the style states none.
+    round: iced_core::border::Radius,
+    diameter: f32,
+    /// The status of the last frame, which a change of asks for a redraw, as
+    /// iced's `Toggler` keeps it (`toggler.rs:351-363`).
+    last_status: Option<iced_widget::toggler::Status>,
+}
+
+#[cfg(feature = "widgets")]
+impl<Message> SwitchBox<'_, Message> {
+    fn height(&self) -> f32 {
+        self.track_height.max(self.diameter)
+    }
+
+    /// The status under `cursor` in a switch at `bounds`.
+    fn status(
+        &self,
+        bounds: iced_core::Rectangle,
+        cursor: iced_core::mouse::Cursor,
+    ) -> iced_widget::toggler::Status {
+        use iced_widget::toggler::Status;
+        let is_toggled = self.is_toggled;
+        if self.on_toggle.is_none() {
+            Status::Disabled { is_toggled }
+        } else if cursor.is_over(bounds) {
+            Status::Hovered { is_toggled }
+        } else {
+            Status::Active { is_toggled }
+        }
+    }
+}
+
+/// The track and the thumb of a switch at `bounds`: the track
+/// `track_width` by `track_height`, the thumb `diameter` across, both centred
+/// on its axis; the thumb inset by half the difference of the two heights from
+/// the track's ends, at the right end while toggled, flush with them where it
+/// overhangs the track.
+#[cfg(feature = "widgets")]
+fn switch_parts(
+    bounds: iced_core::Rectangle,
+    track_height: f32,
+    diameter: f32,
+    is_toggled: bool,
+) -> (iced_core::Rectangle, iced_core::Rectangle) {
+    let track = iced_core::Rectangle {
+        x: bounds.x,
+        y: bounds.center_y() - track_height / 2.0,
+        width: bounds.width,
+        height: track_height,
+    };
+    let end = ((track_height - diameter) / 2.0).max(0.0);
+    let thumb = iced_core::Rectangle {
+        x: if is_toggled {
+            bounds.x + bounds.width - end - diameter
+        } else {
+            bounds.x + end
+        },
+        y: bounds.center_y() - diameter / 2.0,
+        width: diameter,
+        height: diameter,
+    };
+    (track, thumb)
+}
+
+#[cfg(feature = "widgets")]
+impl<Message, Renderer> iced_core::Widget<Message, iced_core::Theme, Renderer>
+    for SwitchBox<'_, Message>
+where
+    Message: Clone,
+    Renderer: iced_core::Renderer,
+{
+    fn size(&self) -> iced_core::Size<iced_core::Length> {
+        iced_core::Size::new(
+            iced_core::Length::Fixed(self.width),
+            iced_core::Length::Fixed(self.height()),
+        )
+    }
+
+    fn layout(
+        &mut self,
+        _tree: &mut iced_core::widget::Tree,
+        _renderer: &Renderer,
+        limits: &iced_core::layout::Limits,
+    ) -> iced_core::layout::Node {
+        let size = iced_core::Size::new(self.width, self.height());
+        iced_core::layout::Node::new(limits.resolve(
+            iced_core::Length::Fixed(size.width),
+            iced_core::Length::Fixed(size.height),
+            size,
+        ))
+    }
+
+    fn update(
+        &mut self,
+        _tree: &mut iced_core::widget::Tree,
+        event: &iced_core::Event,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _renderer: &Renderer,
+        _clipboard: &mut dyn iced_core::Clipboard,
+        shell: &mut iced_core::Shell<'_, Message>,
+        _viewport: &iced_core::Rectangle,
+    ) {
+        use iced_core::{Event, mouse, touch, window};
+        let bounds = layout.bounds();
+        if let Some(on_toggle) = &self.on_toggle {
+            // A press toggles it, as iced's `Toggler` (`toggler.rs:333-343`).
+            if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) = event
+                && cursor.is_over(bounds)
+            {
+                shell.publish(on_toggle.clone());
+                shell.capture_event();
+            }
+        }
+        let status = self.status(bounds, cursor);
+        if let Event::Window(window::Event::RedrawRequested(_)) = event {
+            self.last_status = Some(status);
+        } else if self.last_status.is_some_and(|last| last != status) {
+            shell.request_redraw();
+        }
+    }
+
+    fn mouse_interaction(
+        &self,
+        _tree: &iced_core::widget::Tree,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _viewport: &iced_core::Rectangle,
+        _renderer: &Renderer,
+    ) -> iced_core::mouse::Interaction {
+        // As the button it replaces (`button.rs`, `mouse_interaction`).
+        if self.on_toggle.is_some() && cursor.is_over(layout.bounds()) {
+            iced_core::mouse::Interaction::Pointer
+        } else {
+            iced_core::mouse::Interaction::default()
+        }
+    }
+
+    fn draw(
+        &self,
+        _tree: &iced_core::widget::Tree,
+        renderer: &mut Renderer,
+        theme: &iced_core::Theme,
+        _style: &iced_core::renderer::Style,
+        layout: iced_core::Layout<'_>,
+        cursor: iced_core::mouse::Cursor,
+        _viewport: &iced_core::Rectangle,
+    ) {
+        use iced_widget::toggler::Status;
+        let bounds = layout.bounds();
+        let is_toggled = self.is_toggled;
+        let (track, thumb) = switch_parts(bounds, self.track_height, self.diameter, is_toggled);
+        let t = (self.style)(theme, self.status(bounds, cursor));
+        // The thumb takes the Active or the Disabled foreground, as iced's
+        // toggler draws one thumb in every enabled status.
+        let thumb_style = (self.style)(
+            theme,
+            if self.on_toggle.is_some() {
+                Status::Active { is_toggled }
+            } else {
+                Status::Disabled { is_toggled }
+            },
+        );
+        renderer.fill_quad(
+            iced_core::renderer::Quad {
+                bounds: track,
                 border: iced_core::Border {
                     color: t.background_border_color,
                     width: t.background_border_width,
-                    radius: t.border_radius.unwrap_or(round),
+                    radius: t.border_radius.unwrap_or(self.round),
                 },
-                shadow: iced.shadow,
-                snap: iced.snap,
-            }
-        })
-        .into()
+                shadow: iced_widget::button::Style::default().shadow,
+                snap: iced_widget::button::Style::default().snap,
+            },
+            t.background,
+        );
+        renderer.fill_quad(
+            iced_core::renderer::Quad {
+                bounds: thumb,
+                border: iced_core::Border {
+                    color: thumb_style.foreground_border_color,
+                    width: thumb_style.foreground_border_width,
+                    radius: iced_core::border::Radius::new(self.diameter / 2.0),
+                },
+                shadow: iced_widget::container::Style::default().shadow,
+                snap: iced_widget::container::Style::default().snap,
+            },
+            thumb_style.foreground,
+        );
+    }
 }
 
 /// A radio button at the platform's size, with the platform's dot: `radio`
@@ -722,7 +1089,7 @@ where
 /// (`stack.rs:180-187`) and whose upper layers take no input
 /// (`stack.rs:249-275`): layout, input, hover and label stay the radio's.
 /// Where the theme states no dot size -- macOS publishes none
-/// (`docs/platform-facts.md:1220`) -- the dot is iced's own.
+/// (`docs/platform-facts.md:1241`) -- the dot is iced's own.
 ///
 /// Set the label's `text_size` and `font` on `radio` before passing it.
 ///
@@ -781,6 +1148,20 @@ where
 /// the same font's `SCROLL_DOWN_ICON` (U+E803, `:727`), the renderer's own
 /// downward chevron, at the size and line height `Handle::Arrow` takes, so no
 /// glyph of another icon set is drawn.
+///
+/// Name the renderer: the handle's font type is the renderer's, which the
+/// call cannot infer.
+///
+/// ```
+/// use iced::widget::pick_list;
+/// use native_theme_iced::{from_preset, pick_list_handle};
+///
+/// let (_theme, resolved) = from_preset("adwaita", false)?;
+/// let _choice: iced::Element<'_, ()> = pick_list(["One", "Two"], Some("One"), |_| ())
+///     .handle(pick_list_handle::<iced::Renderer>(&resolved))
+///     .into();
+/// # Ok::<(), native_theme_iced::Error>(())
+/// ```
 ///
 /// Requires the `widgets` feature (on by default).
 #[cfg(feature = "widgets")]
@@ -885,17 +1266,7 @@ where
     use native_theme::theme::TabIndicatorSide;
 
     let t = &resolved.tab;
-    let (Some(color), Some(width), Some(side)) = (
-        t.active_indicator_color,
-        t.active_indicator_width,
-        t.active_indicator_side,
-    ) else {
-        return None;
-    };
-    if !(width.is_finite() && width > 0.0) {
-        return None;
-    }
-    let color = palette::to_color(color);
+    let (color, width, side) = tab_indicator_strip(t)?;
     let (align, radius) = match side {
         TabIndicatorSide::Top => {
             let r = t.border.corner_radius;
@@ -931,22 +1302,139 @@ where
     )
 }
 
+/// The strip [`tab_indicator_line()`] draws: its colour, its thickness and
+/// the side it runs along, or `None` where the theme leaves any of the three
+/// unstated, or states a width that is not a positive, finite length.
+#[cfg(feature = "widgets")]
+pub(crate) fn tab_indicator_strip(
+    t: &native_theme::theme::ResolvedTabTheme,
+) -> Option<(iced_core::Color, f32, native_theme::theme::TabIndicatorSide)> {
+    let (Some(color), Some(width), Some(side)) = (
+        t.active_indicator_color,
+        t.active_indicator_width,
+        t.active_indicator_side,
+    ) else {
+        return None;
+    };
+    (width.is_finite() && width > 0.0).then(|| (palette::to_color(color), width, side))
+}
+
+/// `tabs`, a row of tabs, with the selected tab's outward bottom corners
+/// drawn over it, as WinUI 3's `TabView` draws its selected tab, where the
+/// theme states `tab.active_outward_corner_radius` (docs/platform-facts.md
+/// §2.11, `active_outward_corner_radius`); `tabs` as it is where the theme
+/// states none, or one that is not a positive, finite length.
+///
+/// `selected` is the layout path from `tabs` to the selected tab, a child
+/// index at each level: `&[i]` for the `i`-th tab of a `row` of tabs or of
+/// an `iced_aw` `TabBar`, `&[0, i]` for an `iced_aw` `Tabs` with its bar on
+/// top, whose layout is the bar and then the content (iced_aw 0.14.1
+/// `src/widget/tabs.rs:386-394`); an empty path names `tabs` itself. A path
+/// that names no node draws nothing more. The wrapper hands `tabs` its tree,
+/// its layout and every event as they are, so wrapping keeps its state and
+/// its place. Inside a scrollable, wrap its row, not the scrollable: the
+/// wrapper draws in the place it is laid out in, so over a scrollable it
+/// would reach the tabs' unscrolled layout and draw outside the scrollable's
+/// translation and clip.
+///
+/// With `r` the radius and `w` `tab.border.line_width`, after `tabs` it
+/// draws:
+/// - a strip `tab.active_background` over the selected tab's bottom edge
+///   between its side edges, `w` tall, since iced's `Border` takes one width
+///   for all four sides: the tab's outline has no bottom edge (none where a
+///   bottom-side indicator, [`tab_indicator_line()`], covers that edge
+///   already);
+/// - at each of its feet a flare, in an `r` by `r` square at its bottom set
+///   `w` in from its outer edge: the square less the quarter disc of radius
+///   `r` about its upper outer corner, filled `tab.active_background`, and,
+///   where `w` is positive, the outline continued down the curve on the
+///   disc's side to the bar's bottom edge, `w` wide, in `tab.border.color`.
+///
+/// They are drawn after every tab of the row, over a hovered neighbour too.
+/// Each flare reaches `r - w` past the tab, so give the row room of `r` at
+/// both ends, inside its clip, or the end tabs' flares are cut: a `row`'s
+/// own padding, or a container's padding outside the wrapper for an
+/// `iced_aw` bar, which takes none around itself. iced's layers do not nest
+/// their clips, so each flare is clipped to its square cut by the viewport
+/// the wrapper is drawn in (a scrollable's visible area): a scrolled-away
+/// tab's flares go with it. iced clips to whole physical pixels, rounding
+/// each edge of a clip to the nearest (iced_wgpu 0.14.0 `src/lib.rs:479`,
+/// iced_core 0.14.0 `src/rectangle.rs:249-266`, `src/point.rs:133-138`), so
+/// at a fractional scale at most half a physical pixel of the fill can show
+/// beside a square; and the flares are not snapped to the pixel grid while
+/// the tab is (iced_core 0.14.0 `src/renderer.rs:89-100`, the `crisp`
+/// feature), so there the curve can lie up to half a physical pixel off the
+/// side edge it continues.
+///
+/// It is the counterpart of [`tab_indicator_line()`]: iced draws nothing
+/// outside a widget's bounds but in a widget of its own, and the flares lie
+/// outside the selected tab's. An application drawing its own tab bar wraps
+/// it in this, as it lays the indicator line. Under `iced_aw` the selected
+/// tab under the pointer arrives as `Hovered`, which `styles::aw::tab_bar`
+/// draws with no outline and square corners, as iced_aw does not say it is
+/// the selected one; its flares, their outline and the strip stay.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn tab_flares<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    tabs: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+    selected: &[usize],
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let tabs = tabs.into();
+    match tab_flares::tab_flares_look(&resolved.tab) {
+        Some(look) => tab_flares::TabFlares::new(tabs, look, selected).into(),
+        None => tabs,
+    }
+}
+
 /// Returns the standard border radius from the resolved theme.
 #[must_use]
-pub fn border_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn border_corner_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius
 }
 
 /// Returns the large border radius from the resolved theme.
 #[must_use]
-pub fn border_radius_lg(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn border_corner_radius_lg(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius_lg
 }
 
 /// Returns the scrollbar groove width from the resolved theme.
 #[must_use]
-pub fn scrollbar_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn scrollbar_groove_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
+}
+
+/// Returns `tooltip.show_delay` as a `Duration`, for `Tooltip::delay`
+/// (iced_widget 0.14.2 `src/tooltip.rs:126`), or `None` where the theme
+/// states none: a `Tooltip` then keeps iced's own delay, `Duration::ZERO`
+/// (`:106`), and opens at once.
+#[must_use]
+pub fn tooltip_show_delay(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> Option<std::time::Duration> {
+    resolved
+        .tooltip
+        .show_delay
+        .map(|ms| std::time::Duration::from_millis(u64::from(ms)))
+}
+
+/// Returns `list.header_height`, the height of a table's header row in
+/// logical pixels, or `None` where the theme states none. iced's `table` has
+/// no row height of its own: it makes each row as tall as its tallest cell
+/// (iced_widget 0.14.2 `src/table.rs:312`, `:410`) and pads it by
+/// `padding_y` above and below, so the height reaches a header through its
+/// cells' height, less that padding. Where the theme states none, the header
+/// keeps the height the caller gives it otherwise (the showcase's: a row's).
+#[must_use]
+pub fn list_header_height(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
+    resolved.list.header_height
 }
 
 /// Returns the primary UI font family name from the resolved theme: the
@@ -995,9 +1483,14 @@ pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 
 /// The family iced's font database holds for a theme font: the family
 /// fontdb records for the face `native_theme::fonts::system_face` chooses
-/// for the stated family, weight and style, or the stated family where the
-/// system has no such face — which iced then draws as it draws any family
-/// its database lacks.
+/// for the stated family, weight and style; where the system has no such
+/// face, the family of the face it chooses for the family the platform
+/// draws in the stated one's place (`native_theme::fonts::substitute_family_cached`:
+/// fontconfig's match on Linux and the other non-Apple, non-Android unix
+/// systems, the font every native application of the system gets), as the
+/// gpui and egui connectors draw it; and the stated family where neither
+/// has a face — which iced then draws as it draws any family its database
+/// lacks, in cosmic-text's own fallback.
 ///
 /// iced draws through cosmic-text over fontdb 0.23, the version
 /// native-theme selects the face with, and cosmic-text takes a face when any
@@ -1009,13 +1502,78 @@ pub fn mono_font_family(resolved: &native_theme::theme::ResolvedTheme) -> &str {
 /// The first call in a process loads the system font database, which
 /// native-theme keeps for the process; every call selects a face among it
 /// and copies its bytes, so call it when the theme changes, not per frame.
+/// The platform is asked for a missing family's substitute once per family
+/// and the answer kept for the process: the first ask runs on the calling
+/// thread, on Linux and the other non-Apple, non-Android unix systems one
+/// `fc-match` process, about 12.5 ms measured on one Linux machine, with a
+/// 2 s timeout. A thread asking for another family, or for one already
+/// answered, does not wait for it.
 #[cfg(feature = "system-fonts")]
 #[must_use]
 pub fn system_font_family(spec: &native_theme::theme::ResolvedFontSpec) -> std::sync::Arc<str> {
-    match native_theme::fonts::system_face(&spec.family, spec.weight, spec.style) {
-        Some(face) => face.family,
-        None => spec.family.clone(),
+    drawn_family(spec, native_theme::fonts::substitute_family_cached)
+}
+
+/// [`system_font_family`] with the platform's substitute for a missing
+/// family asked of `substitute`.
+#[cfg(feature = "system-fonts")]
+fn drawn_family(
+    spec: &native_theme::theme::ResolvedFontSpec,
+    substitute: impl FnOnce(&str) -> Option<String>,
+) -> std::sync::Arc<str> {
+    let face = |family: &str| native_theme::fonts::system_face(family, spec.weight, spec.style);
+    face(&spec.family)
+        .or_else(|| substitute(&spec.family).and_then(|substitute| face(&substitute)))
+        .map_or_else(|| spec.family.clone(), |face| face.family)
+}
+
+/// The iced `Font` a theme font is drawn in: the family
+/// [`system_font_family`] gives for it, the weight [`to_iced_weight`] makes
+/// of its CSS weight, and its style; iced's normal stretch, as the model
+/// states none. iced's styles carry no font, so this is how a widget's
+/// stated font (`button.font`, `input.font`, `menu.font`, …) reaches the
+/// widget, through its `font` (`Text::font`, `text_input`'s `font`, …), as
+/// the gpui connector's `geometry` builders carry each stated font's.
+///
+/// iced's `Family::Name` takes a `&'static str` (`iced_core` 0.14
+/// `font.rs:46`), so the family's name is leaked the first time the process
+/// asks for it and kept for the process, and every later call for that
+/// family is given the same one: the names leaked are the distinct family
+/// names `system_font_family` returns for the fonts drawn. Each call selects
+/// a face as `system_font_family` does, so build a theme's fonts when the
+/// theme changes, not per frame.
+#[cfg(feature = "system-fonts")]
+#[must_use]
+pub fn font(spec: &native_theme::theme::ResolvedFontSpec) -> iced_core::Font {
+    use iced_core::font::Style;
+    use native_theme::theme::FontStyle;
+    iced_core::Font {
+        family: iced_core::font::Family::Name(leaked_family(&system_font_family(spec))),
+        weight: to_iced_weight(spec.weight),
+        style: match spec.style {
+            FontStyle::Normal => Style::Normal,
+            FontStyle::Italic => Style::Italic,
+            FontStyle::Oblique => Style::Oblique,
+        },
+        ..iced_core::Font::DEFAULT
     }
+}
+
+/// `family` as a `&'static str`: leaked the first time the process asks for
+/// it, and the same one every time after.
+#[cfg(feature = "system-fonts")]
+fn leaked_family(family: &str) -> &'static str {
+    static LEAKED: std::sync::Mutex<std::collections::BTreeSet<&'static str>> =
+        std::sync::Mutex::new(std::collections::BTreeSet::new());
+    let mut leaked = LEAKED
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(&name) = leaked.get(family) {
+        return name;
+    }
+    let name: &'static str = Box::leak(family.to_owned().into_boxed_str());
+    leaked.insert(name);
+    name
 }
 
 /// Returns the monospace font size in logical pixels, scaled by the user's
@@ -1038,24 +1596,60 @@ pub fn mono_font_size(
 /// widget's font (`resolved.button.font.size`, …) and a `text_scale` role's
 /// size (`resolved.text_scale.caption.size`, …) are the theme's own sizes,
 /// unscaled, as `defaults.font.size` is. A factor that is not finite and
-/// positive is ignored.
+/// positive is ignored, and a size whose product with the factor is not a
+/// normal positive number is returned as it is
+/// ([`AccessibilityPreferences::scaled`]). `native_theme_egui::scaled_text_size`
+/// returns that product as it is, by the egui connector's spec, §8.6, and the
+/// egui atlas writes egui's own size in its place, with a `Note::ValueSanitised`.
 ///
 /// # Example
 ///
 /// ```rust,no_run
-/// let (_, resolved, _, prefs) = native_theme_iced::from_system().unwrap();
-/// let label = native_theme_iced::scaled_text_size(resolved.button.font.size, &prefs);
+/// let loaded = native_theme_iced::from_system().unwrap();
+/// let label = native_theme_iced::scaled_text_size(
+///     loaded.resolved.button.font.size,
+///     &loaded.accessibility,
+/// );
 /// ```
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
-    size * text_scale_factor(prefs)
+    prefs.scaled(size)
 }
 
-/// Text-scaling multiplier from the preferences: the factor when it is finite
-/// and positive, else `1.0` (spec §4.1).
-fn text_scale_factor(prefs: &AccessibilityPreferences) -> f32 {
-    let s = prefs.text_scaling_factor;
-    if s.is_finite() && s > 0.0 { s } else { 1.0 }
+// The four readers take a `SystemTheme`, where the OS preferences live, as
+// the gpui and egui connectors' do; a `Loaded` carries the same preferences
+// in `accessibility`.
+
+/// `accessibility.reduce_motion` of the `SystemTheme`: whether the OS asks for
+/// reduced motion, the flag `Spinner::view` (feature `spinner`) and the
+/// application's own animations take.
+#[must_use]
+pub fn is_reduced_motion(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_motion
+}
+
+/// `accessibility.high_contrast` of the `SystemTheme`: whether the OS asks for
+/// high contrast. The connector applies nothing for it (see *What each flag
+/// does* in the crate docs).
+#[must_use]
+pub fn is_high_contrast(sys: &SystemTheme) -> bool {
+    sys.accessibility.high_contrast
+}
+
+/// `accessibility.reduce_transparency` of the `SystemTheme`: whether the OS
+/// asks for less transparency, for the translucent surfaces the application
+/// draws.
+#[must_use]
+pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_transparency
+}
+
+/// `accessibility.text_scaling_factor` as the OS reported it (1.0 = no
+/// scaling), unfiltered; [`scaled_text_size()`] is what ignores a factor that
+/// is not finite and positive.
+#[must_use]
+pub fn text_scaling_factor(sys: &SystemTheme) -> f32 {
+    sys.accessibility.text_scaling_factor
 }
 
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.
@@ -1114,7 +1708,7 @@ pub fn expander_arrow_color(resolved: &native_theme::theme::ResolvedTheme) -> ic
 
 /// Returns the selection highlight background color from the resolved theme.
 #[must_use]
-pub fn selection_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn selection_background(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.selection_background)
 }
 
@@ -1129,7 +1723,7 @@ pub fn info_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::C
 
 /// Returns the text color for info-colored backgrounds from the resolved theme.
 #[must_use]
-pub fn info_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn info_text_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.info_text_color)
 }
 
@@ -1138,7 +1732,7 @@ pub fn info_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> i
 /// The warning base color is already mapped to `palette.warning`. This returns
 /// the text color intended for use on warning-colored backgrounds.
 #[must_use]
-pub fn warning_foreground_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+pub fn warning_text_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.warning_text_color)
 }
 
@@ -1150,17 +1744,28 @@ pub fn icon_sizes(
     &resolved.defaults.icon_sizes
 }
 
+/// Returns a reference to the text scale from the resolved theme: its four
+/// roles, `caption`, `section_heading`, `dialog_title` and `display`, each a
+/// size, weight and line height as the theme states them, unscaled; scale a
+/// size with [`scaled_text_size()`].
+#[must_use]
+pub fn text_scale(
+    resolved: &native_theme::theme::ResolvedTheme,
+) -> &native_theme::theme::ResolvedTextScale {
+    &resolved.text_scale
+}
+
 /// Returns the line height multiplier from the resolved theme.
 ///
 /// The raw multiplier (e.g., 1.4). Use with iced's
-/// `LineHeight::Relative(native_theme_iced::line_height_multiplier(&r))`
+/// `LineHeight::Relative(native_theme_iced::line_height(&r))`
 /// for Text widgets. Font-size agnostic -- works correctly for both
 /// the primary UI font and monospace text.
 ///
 /// For absolute pixels (layout math), multiply by the appropriate
-/// font size: `line_height_multiplier(&r) * font_size(&r, &prefs)`.
+/// font size: `line_height(&r) * font_size(&r, &prefs)`.
 #[must_use]
-pub fn line_height_multiplier(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+pub fn line_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -1231,21 +1836,122 @@ mod tests {
             .unwrap()
     }
 
-    /// A family the system has no face of stays as stated: the family is
-    /// never substituted (egui spec §8.8, §8.2).
+    /// A family the system has no face of stays as stated where the
+    /// platform substitutes none for it, or one the system has no face of
+    /// either: iced then draws it in cosmic-text's own fallback.
     #[cfg(feature = "system-fonts")]
     #[test]
     fn system_font_family_keeps_a_family_no_system_has() {
         let mut spec = make_resolved_preset("catppuccin-mocha", true).defaults.font;
         spec.family = std::sync::Arc::from("native-theme-no-such-family-7f3c1a");
         assert_eq!(
-            system_font_family(&spec).as_ref(),
+            drawn_family(&spec, |_| None).as_ref(),
+            "native-theme-no-such-family-7f3c1a"
+        );
+        assert_eq!(
+            drawn_family(&spec, |_| Some(
+                "native-theme-no-such-family-9e2b4d".to_owned()
+            ))
+            .as_ref(),
             "native-theme-no-such-family-7f3c1a"
         );
     }
 
+    /// `font` carries a theme font's family, as `system_font_family` gives
+    /// it, its weight and its style, and leaks the family's name once: a
+    /// second call for the family is given the same `&'static str`.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn font_carries_the_spec_and_leaks_one_name_per_family() {
+        use iced_core::font::{Family, Style};
+        let name = |font: iced_core::Font| match font.family {
+            Family::Name(name) => name,
+            other => panic!("a generic family, {other:?}"),
+        };
+        let resolved = make_resolved_preset("adwaita", false);
+        let mut spec = resolved.button.font.clone();
+        spec.style = native_theme::theme::FontStyle::Italic;
+        let built = font(&spec);
+        assert_eq!(name(built), system_font_family(&spec).as_ref());
+        assert_eq!(built.weight, to_iced_weight(spec.weight));
+        assert_eq!(built.style, Style::Italic);
+        assert_eq!(built.stretch, iced_core::Font::DEFAULT.stretch);
+        assert!(
+            std::ptr::eq(name(built), name(font(&spec))),
+            "the family's name is leaked once"
+        );
+        let bolder = native_theme::theme::ResolvedFontSpec {
+            weight: 700,
+            style: native_theme::theme::FontStyle::Normal,
+            ..spec.clone()
+        };
+        if system_font_family(&bolder) == system_font_family(&spec) {
+            assert!(
+                std::ptr::eq(name(built), name(font(&bolder))),
+                "another face of the family takes the same name"
+            );
+        }
+    }
+
+    /// A stated family the system lacks comes back as the family of the face
+    /// `system_face` gives for the platform's substitute, as the gpui and
+    /// egui connectors draw it: windows-11's "Segoe UI" on a Linux system
+    /// without it is fontconfig's match for it.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn system_font_family_takes_the_platform_substitute_for_a_family_the_system_lacks() {
+        let spec = make_resolved_preset("windows-11", false).defaults.font;
+        if native_theme::fonts::system_face(&spec.family, spec.weight, spec.style).is_some() {
+            eprintln!("this system has {:?}: nothing to substitute", spec.family);
+            return;
+        }
+        let Some(face) =
+            native_theme::fonts::substitute_family_cached(&spec.family).and_then(|substitute| {
+                native_theme::fonts::system_face(&substitute, spec.weight, spec.style)
+            })
+        else {
+            eprintln!(
+                "the platform substitutes no family held for {:?}",
+                spec.family
+            );
+            return;
+        };
+        let drawn = system_font_family(&spec);
+        assert_ne!(drawn, spec.family, "the stated family is not drawn");
+        assert_eq!(drawn, face.family);
+    }
+
     fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
+    }
+
+    /// A stated `slider.thumb_hover_color` is a layer over the thumb (C17), as
+    /// the gpui connector's `SliderLook` lays it: a translucent one is
+    /// composited, not emitted as given. Every bundled hover is opaque, so the
+    /// layer here is set by hand: black at `0x40`, over adwaita's opaque thumb,
+    /// is the plain mix `thumb × (1 − a)` per channel, opaque, written out
+    /// here rather than taken from the composite under test.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_hovered_slider_handle_lays_the_hover_over_the_thumb() {
+        use iced_widget::slider::Status;
+        let mut r = make_resolved_preset("adwaita", false);
+        r.slider.thumb_hover_color = Some(native_theme::color::Rgba::new(0, 0, 0, 0x40));
+        let thumb = palette::to_color(r.slider.thumb_color);
+        assert_eq!(thumb.a, 1.0, "precondition: adwaita's thumb is opaque");
+        let theme = to_theme(&r, "adwaita");
+        let iced_core::Background::Color(got) = styles::slider(&r)(&theme, Status::Hovered)
+            .handle
+            .background
+        else {
+            panic!("the hovered handle is not a colour");
+        };
+        let a = f32::from(0x40_u8) / 255.0;
+        let mix = |c: f32| c * (1.0 - a);
+        let want = [mix(thumb.r), mix(thumb.g), mix(thumb.b), 1.0];
+        for (got, want) in [got.r, got.g, got.b, got.a].into_iter().zip(want) {
+            assert!((got - want).abs() < 1e-6, "{got:?} against {want:?}");
+        }
     }
 
     /// docs/platform-facts.md §2.1.6: libadwaita fades a disabled switch as
@@ -1284,6 +1990,186 @@ mod tests {
         );
     }
 
+    /// docs/platform-facts.md §2.21: qqc2-desktop-style's handle is the 18 of
+    /// the indicator on a 12-tall track, so `switch` overhangs the track by 3
+    /// above and below with it and seats it flush with the track's ends
+    /// (`SwitchIndicator.qml:41-48`, `:65-76`, `:68`); laid out headlessly
+    /// (iced's null renderer, `()`).
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_thumb_taller_than_its_track_sits_flush_with_its_ends() {
+        use iced_core::widget::Tree;
+        let r = make_resolved_preset("kde-breeze", false);
+        let s = &r.switch;
+        assert!(
+            s.thumb_diameter > s.track_height,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        for checked in [false, true] {
+            let mut element: iced_core::Element<'_, (), iced_core::Theme, ()> =
+                switch(&r, checked, Some(()));
+            let mut tree = Tree::new(&element);
+            let limits = iced_core::layout::Limits::new(
+                iced_core::Size::ZERO,
+                iced_core::Size::new(1000.0, 1000.0),
+            );
+            let node = element.as_widget_mut().layout(&mut tree, &(), &limits);
+            let bounds = iced_core::Layout::new(&node).bounds();
+            assert_eq!(
+                (bounds.width, bounds.height),
+                (s.track_width, s.thumb_diameter),
+                "checked {checked}: the switch is the track's width and the thumb's height"
+            );
+            let (track, thumb) = switch_parts(bounds, s.track_height, s.thumb_diameter, checked);
+            assert_eq!(track.height, s.track_height);
+            assert_eq!(
+                thumb.y - track.y,
+                (s.track_height - s.thumb_diameter) / 2.0,
+                "checked {checked}: overhangs above and below alike"
+            );
+            if checked {
+                assert_eq!(
+                    thumb.x + thumb.width,
+                    track.x + track.width,
+                    "on: flush right"
+                );
+            } else {
+                assert_eq!(thumb.x, track.x, "off: flush left");
+            }
+        }
+    }
+
+    /// The whole switch takes the pointer, the thumb's overhang included:
+    /// under kde-breeze the 18 thumb stands 3 above and below the 12 track
+    /// (docs/platform-facts.md §2.21), and a press there toggles it, as a
+    /// press on qqc2-desktop-style's indicator does; driven headlessly
+    /// (`iced_test`'s simulator).
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn a_press_on_the_thumbs_overhang_toggles_the_switch() {
+        let r = make_resolved_preset("kde-breeze", false);
+        let s = &r.switch;
+        let overhang = (s.thumb_diameter - s.track_height) / 2.0;
+        assert!(
+            overhang > 0.0,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        for checked in [false, true] {
+            let element: iced_core::Element<'_, bool, iced_core::Theme, iced::Renderer> =
+                switch(&r, checked, Some(!checked));
+            let mut ui = iced_test::Simulator::with_size(
+                iced_core::Settings::default(),
+                iced_core::Size::new(200.0, 100.0),
+                element,
+            );
+            // Above the track, inside the thumb: its centre column, half the
+            // overhang down from its top.
+            let x = if checked {
+                s.track_width - s.thumb_diameter / 2.0
+            } else {
+                s.thumb_diameter / 2.0
+            };
+            ui.point_at(iced_core::Point::new(x, overhang / 2.0));
+            let _ = ui.simulate(iced_test::simulator::click());
+            let sent: Vec<bool> = ui.into_messages().collect();
+            assert_eq!(
+                sent,
+                [!checked],
+                "checked {checked}: a press on the overhang"
+            );
+        }
+    }
+
+    /// docs/platform-facts.md §2.21: the track is outlined in the colour the
+    /// theme states for its state, `switch.track_border_line_width` wide,
+    /// composited over the track's fill, which iced's quad paints the border
+    /// in place of, and the thumb in `thumb_border_color`,
+    /// `thumb_border_line_width` wide; a part whose colour or width is unset
+    /// keeps iced's own. Under
+    /// kde-breeze (both tracks and the thumb outlined), windows-11 and
+    /// material-3 (the off track only), on and off, at rest, hovered and
+    /// disabled.
+    #[cfg(feature = "widgets")]
+    #[test]
+    fn the_switch_draws_the_stated_outlines() {
+        use iced_widget::toggler::Status;
+        for preset in ["kde-breeze", "windows-11", "material-3"] {
+            for dark in [false, true] {
+                let r = make_resolved_preset(preset, dark);
+                let s = &r.switch;
+                let theme = to_theme(&r, preset);
+                let style = styles::toggler(&r);
+                for is_toggled in [false, true] {
+                    for status in [
+                        Status::Active { is_toggled },
+                        Status::Hovered { is_toggled },
+                        Status::Disabled { is_toggled },
+                    ] {
+                        let state = format!("{preset} dark {dark} {status:?}");
+                        assert_eq!(s.disabled_opacity, 1.0, "{state}: drawn unfaded");
+                        assert!(
+                            s.unchecked_track_border_color.is_some()
+                                && s.track_border_line_width.is_some(),
+                            "{state}: {preset} no longer states the off track's outline \
+                             (docs/platform-facts.md §2.21)"
+                        );
+                        let rest = if is_toggled {
+                            s.checked_track_border_color
+                        } else {
+                            s.unchecked_track_border_color
+                        };
+                        let colour = match (status, is_toggled) {
+                            (Status::Disabled { .. }, true) => {
+                                s.disabled_checked_track_border_color.or(rest)
+                            }
+                            (Status::Disabled { .. }, false) => {
+                                s.disabled_unchecked_track_border_color.or(rest)
+                            }
+                            _ => rest,
+                        };
+                        let iced = iced_widget::toggler::default(&theme, status);
+                        let stated =
+                            |colour: Option<native_theme::color::Rgba>,
+                             width: Option<f32>,
+                             unset: (f32, iced_core::Color)| {
+                                colour
+                                    .zip(width)
+                                    .map_or(unset, |(c, w)| (w, palette::to_color(c)))
+                            };
+                        let got = style(&theme, status);
+                        let iced_core::Background::Color(track) = got.background else {
+                            panic!("{state}: the track is not one colour");
+                        };
+                        let expected = stated(
+                            colour,
+                            s.track_border_line_width,
+                            (iced.background_border_width, iced.background_border_color),
+                        );
+                        let expected = if colour.zip(s.track_border_line_width).is_some() {
+                            (expected.0, styles::composite_over(expected.1, track))
+                        } else {
+                            expected
+                        };
+                        assert_eq!(
+                            (got.background_border_width, got.background_border_color),
+                            expected,
+                            "{state}: the track"
+                        );
+                        assert_eq!(
+                            (got.foreground_border_width, got.foreground_border_color),
+                            stated(
+                                s.thumb_border_color,
+                                s.thumb_border_line_width,
+                                (iced.foreground_border_width, iced.foreground_border_color)
+                            ),
+                            "{state}: the thumb"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     /// The active tab's line exists exactly where the theme states its
     /// colour, width and side (docs/platform-facts.md §2.11): Breeze, GNOME
     /// and Material draw one, Windows none; a width that is not a positive,
@@ -1295,7 +2181,7 @@ mod tests {
         for (preset, drawn) in [
             ("kde-breeze", true),
             ("adwaita", true),
-            ("material", true),
+            ("material-3", true),
             ("windows-11", false),
         ] {
             let r = make_resolved_preset(preset, false);
@@ -1309,10 +2195,9 @@ mod tests {
     }
 
     fn scaled_prefs(text_scaling_factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = text_scaling_factor;
+        prefs
     }
 
     // === to_theme tests ===
@@ -1386,28 +2271,56 @@ mod tests {
     // === Widget metric helper tests ===
 
     #[test]
-    fn border_radius_returns_resolved_value() {
+    fn border_corner_radius_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let r = border_radius(&resolved);
+        let r = border_corner_radius(&resolved);
         assert!(r > 0.0, "resolved radius should be > 0");
     }
 
     #[test]
-    fn border_radius_lg_returns_resolved_value() {
+    fn border_corner_radius_lg_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let r = border_radius_lg(&resolved);
+        let r = border_corner_radius_lg(&resolved);
         assert!(r > 0.0, "resolved radius_lg should be > 0");
         assert!(
-            r >= border_radius(&resolved),
+            r >= border_corner_radius(&resolved),
             "radius_lg should be >= radius"
         );
     }
 
     #[test]
-    fn scrollbar_width_returns_resolved_value() {
+    fn scrollbar_groove_width_returns_resolved_value() {
         let resolved = make_resolved(false);
-        let w = scrollbar_width(&resolved);
+        let w = scrollbar_groove_width(&resolved);
         assert!(w > 0.0, "scrollbar width should be > 0");
+    }
+
+    /// `tooltip_show_delay` is `tooltip.show_delay` as a `Duration` and
+    /// `list_header_height` is `list.header_height`, each `None` where the
+    /// theme states none.
+    #[test]
+    fn the_delay_and_header_height_accessors_return_their_leaves() {
+        for (preset, delay, header) in [
+            ("kde-breeze", Some(700_u64), None),
+            ("adwaita", Some(500), Some(30.0_f32)),
+            ("material-3", Some(0), Some(56.0)),
+            ("macos-monterey", None, Some(28.0)),
+            ("catppuccin-mocha", None, None),
+        ] {
+            for is_dark in [false, true] {
+                let resolved = make_resolved_preset(preset, is_dark);
+                assert_eq!(
+                    tooltip_show_delay(&resolved),
+                    delay.map(std::time::Duration::from_millis),
+                    "{preset} dark={is_dark}"
+                );
+                assert_eq!(
+                    list_header_height(&resolved),
+                    header,
+                    "{preset} dark={is_dark}"
+                );
+            }
+        }
     }
 
     /// A padding stated on two sides and not on the other two.
@@ -1768,9 +2681,9 @@ mod tests {
     }
 
     #[test]
-    fn selection_color_returns_concrete_value() {
+    fn selection_background_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = selection_color(&resolved);
+        let c = selection_background(&resolved);
         assert!(c.a > 0.0, "selection color should have non-zero alpha");
     }
 
@@ -1785,16 +2698,16 @@ mod tests {
     }
 
     #[test]
-    fn info_foreground_color_returns_concrete_value() {
+    fn info_text_color_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = info_foreground_color(&resolved);
+        let c = info_text_color(&resolved);
         assert!(c.a > 0.0, "info foreground should have non-zero alpha");
     }
 
     #[test]
-    fn warning_foreground_color_returns_concrete_value() {
+    fn warning_text_color_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let c = warning_foreground_color(&resolved);
+        let c = warning_text_color(&resolved);
         assert!(c.a > 0.0, "warning foreground should have non-zero alpha");
     }
 
@@ -1804,6 +2717,17 @@ mod tests {
         let is = icon_sizes(&resolved);
         assert!(is.small > 0.0, "small icon size should be > 0");
         assert!(is.toolbar > 0.0, "toolbar icon size should be > 0");
+    }
+
+    #[test]
+    fn text_scale_is_the_themes() {
+        let resolved = make_resolved(false);
+        let ts = text_scale(&resolved);
+        assert!(
+            std::ptr::eq(ts, &resolved.text_scale),
+            "text_scale should hand over the resolved theme's own text scale"
+        );
+        assert!(ts.caption.size > 0.0, "caption size should be > 0");
     }
 
     // === Font helper tests ===
@@ -1918,9 +2842,9 @@ mod tests {
     }
 
     #[test]
-    fn line_height_multiplier_returns_concrete_value() {
+    fn line_height_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let lh = line_height_multiplier(&resolved);
+        let lh = line_height(&resolved);
         assert!(lh > 0.0, "line height multiplier should be > 0");
         assert!(
             lh < 5.0,
@@ -1982,6 +2906,91 @@ mod tests {
         );
     }
 
+    /// A dark variant whose background iced's lightness test calls light.
+    fn dark_variant_with_light_background() -> Theme {
+        let mut spec = Theme::preset("catppuccin-mocha").unwrap();
+        let light_bg = spec.light.as_ref().unwrap().defaults.background_color;
+        spec.dark.as_mut().unwrap().defaults.background_color = light_bg;
+        spec
+    }
+
+    #[test]
+    fn from_preset_takes_is_dark_from_the_resolved_mode() {
+        let (theme, resolved) = from_spec(&dark_variant_with_light_background(), true).unwrap();
+        assert!(!iced_core::theme::palette::is_dark(
+            palette::to_palette(&resolved).background
+        ));
+        assert!(theme.extended_palette().is_dark);
+
+        let (theme, _) = from_spec(&dark_variant_with_light_background(), false).unwrap();
+        assert!(!theme.extended_palette().is_dark);
+    }
+
+    /// A light-only theme whose background iced's lightness test calls dark:
+    /// catppuccin-mocha's light variant on its dark variant's background.
+    #[test]
+    fn from_preset_light_only_asked_for_dark_is_light() {
+        let mut spec = Theme::preset("catppuccin-mocha").unwrap();
+        let dark_bg = spec.dark.as_ref().unwrap().defaults.background_color;
+        spec.light.as_mut().unwrap().defaults.background_color = dark_bg;
+        spec.dark = None;
+        let (theme, resolved) = from_spec(&spec, true).unwrap();
+        assert!(iced_core::theme::palette::is_dark(
+            palette::to_palette(&resolved).background
+        ));
+        assert!(!theme.extended_palette().is_dark);
+    }
+
+    /// The mode given sets `is_dark`, whatever the background: a light
+    /// variant built in `ColorMode::Dark` is dark, and in `ColorMode::Light`
+    /// light, where `to_theme` leaves it to iced's lightness test.
+    #[test]
+    fn to_theme_in_takes_is_dark_from_the_mode_given() {
+        let resolved = make_resolved_preset("adwaita", false);
+        assert!(!iced_core::theme::palette::is_dark(
+            palette::to_palette(&resolved).background
+        ));
+        assert!(!to_theme(&resolved, "test").extended_palette().is_dark);
+        assert!(
+            to_theme_in(&resolved, "test", ColorMode::Dark)
+                .extended_palette()
+                .is_dark
+        );
+        assert!(
+            !to_theme_in(&resolved, "test", ColorMode::Light)
+                .extended_palette()
+                .is_dark
+        );
+    }
+
+    /// The OS theme, for a test that reads it. On Linux it is never an
+    /// error: a desktop with no reader falls back to the platform preset
+    /// (native-theme `pipeline.rs`, `linux_fallback`), so an error there
+    /// fails the test rather than skip it. Off Linux a build without a
+    /// reader feature has no OS theme, and the test skips.
+    fn system_theme() -> Result<SystemTheme> {
+        let sys = SystemTheme::from_system();
+        if cfg!(target_os = "linux") {
+            return Ok(sys.expect("Linux falls back to the platform preset"));
+        }
+        sys
+    }
+
+    #[test]
+    fn to_iced_theme_takes_is_dark_from_the_system_mode() {
+        let Ok(mut sys) = system_theme() else {
+            return;
+        };
+        sys.dark.defaults.background_color = sys.light.defaults.background_color;
+        sys.mode = ColorMode::Dark;
+        assert!(!iced_core::theme::palette::is_dark(
+            palette::to_palette(&sys.dark).background
+        ));
+        assert!(sys.to_iced_theme().theme.extended_palette().is_dark);
+        sys.mode = ColorMode::Light;
+        assert!(!sys.to_iced_theme().theme.extended_palette().is_dark);
+    }
+
     #[test]
     fn from_preset_invalid_name() {
         let result = from_preset("nonexistent-preset", false);
@@ -1997,28 +3006,65 @@ mod tests {
         assert!(result.is_err());
     }
 
+    /// Each reader returns its own preference: with one flag set, only its
+    /// reader is `true`, and the factor is the one stated.
     #[test]
-    fn system_theme_ext_to_iced_theme() {
-        // May fail on CI -- skip gracefully
-        let Ok(sys) = native_theme::SystemTheme::from_system() else {
+    fn the_accessibility_readers_read_their_own_preference() {
+        let Ok(mut sys) = system_theme() else {
             return;
         };
-        let (_theme, _resolved) = sys.to_iced_theme();
-    }
-
-    #[test]
-    fn from_system_does_not_panic() {
-        let _ = from_system();
-    }
-
-    #[test]
-    fn from_system_returns_is_dark_and_preferences() {
-        // If system theme is available, verify it returns a quadruple
-        if let Ok((_theme, _resolved, is_dark, accessibility)) = from_system() {
-            // is_dark should be a valid bool (always true, but verify the return)
-            let _ = is_dark;
-            let _ = accessibility.text_scaling_factor;
+        type Reader = fn(&SystemTheme) -> bool;
+        let readers: [(&str, Reader); 3] = [
+            ("reduce_motion", is_reduced_motion),
+            ("high_contrast", is_high_contrast),
+            ("reduce_transparency", is_reduced_transparency),
+        ];
+        for (set, _) in readers {
+            let a11y = &mut sys.accessibility;
+            a11y.reduce_motion = set == "reduce_motion";
+            a11y.high_contrast = set == "high_contrast";
+            a11y.reduce_transparency = set == "reduce_transparency";
+            for (name, reader) in readers {
+                assert_eq!(reader(&sys), name == set, "{name} with only {set} set");
+            }
         }
+        sys.accessibility.text_scaling_factor = 1.25;
+        assert_eq!(text_scaling_factor(&sys), 1.25);
+    }
+
+    #[test]
+    fn system_theme_ext_to_iced_theme() {
+        let Ok(sys) = system_theme() else {
+            return;
+        };
+        let loaded = sys.to_iced_theme();
+        assert_eq!(&loaded.resolved, sys.pick(sys.mode));
+        assert_eq!(loaded.mode, sys.mode);
+        assert_eq!(loaded.accessibility, sys.accessibility);
+        assert_eq!(loaded.icon_set, sys.icon_set);
+        assert_eq!(loaded.icon_theme.as_deref(), sys.icon_theme_for(sys.mode));
+    }
+
+    /// `from_system` is a theme wherever the OS theme is one, on Linux
+    /// always ([`system_theme`]).
+    #[test]
+    fn from_system_is_ok_where_the_os_theme_is() {
+        assert_eq!(from_system().is_ok(), system_theme().is_ok());
+    }
+
+    #[test]
+    fn from_system_matches_system_theme_ext() {
+        let Ok(sys) = system_theme() else {
+            return;
+        };
+        let loaded = from_system().expect("the OS theme was read");
+        let expected = sys.to_iced_theme();
+        assert_eq!(loaded.resolved, expected.resolved);
+        assert_eq!(loaded.mode, expected.mode);
+        assert_eq!(loaded.accessibility, expected.accessibility);
+        assert_eq!(loaded.icon_set, expected.icon_set);
+        assert_eq!(loaded.icon_theme, expected.icon_theme);
+        assert_eq!(loaded.theme.palette(), expected.theme.palette());
     }
 
     #[test]

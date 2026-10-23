@@ -804,6 +804,7 @@ mod tests {
             "visuals.window_shadow.color",
             "spacing.scroll.bar_width",
             "visuals.selection.stroke.width",
+            "interaction.tooltip_delay",
         ] {
             assert!(set.contains(&want.to_owned()), "{want}");
         }

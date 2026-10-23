@@ -92,9 +92,16 @@ For each preset and variant, across the three kinds:
   page's panel does), each rectangle from the same dump. Elsewhere its value
   is `not visible`: the sample is left out of the comparison for that
   showcase, not a difference, and the run counts the element samples it left
-  out so under "not visible". Geometry is compared wherever the dumps hold
-  the element, visible or not, so every showcase dumps off-screen elements
-  too.
+  out so under "not visible". A fill sample (one named `fill` or
+  `track`, OFF_TEXT_SAMPLES below) is kept off the element's text parts:
+  its descendants the list names a text run (TEXT_RUNS below) whose
+  rectangles lie inside its own in that dump. Where its point lies on one
+  of them, it is read at the nearest pixel of its row, inside the element
+  and the visible area, that none of them covers, so a bar's fill is not
+  read on the glyph of a label that happens to reach its point; the report
+  lists every fill sample so moved. A border, line or edge sample is read
+  where its point is. Geometry is compared wherever the dumps hold the element, visible
+  or not, so every showcase dumps off-screen elements too.
 
 Numbers are compared under the rules below, colours too; what no rule covers
 is compared exactly (numbers at 1/100 of a logical pixel: the dumps are f32
@@ -204,7 +211,7 @@ of the element properties it excepts.
     reason = "..."
     keys = [
         "chrome.splitter.w",
-        "material:basic.expander.details.header.y",
+        "material-3:basic.expander.details.header.y",
     ]
 
     [[parity.group]]
@@ -237,7 +244,7 @@ The key is `[<run>@][<preset>[/<variant>]:]<element id>.<property>`:
 
 The preset is a file name of native-theme/src/presets/ without `.toml`. Two
 keys for the same element property whose scopes overlap (`x.w` and
-`material:x.w`; `hover@x.w` and `material:x.w`) are an error, so at most one
+`material-3:x.w`; `hover@x.w` and `material-3:x.w`) are an error, so at most one
 exception holds for a difference; so is a key naming no element, property,
 preset, variant or run. An exception whose scope the run compared but that
 matched no difference is listed at the end, so a stale one is seen.
@@ -780,12 +787,72 @@ def visible_area(ident, elements, rects, scale):
     return left, top, right, bottom
 
 
-def sample_colour(capture, scale, rect, spec, area=None):
+# The point samples kept off an element's text parts: a surface's fill, read
+# where no label lies on it. A border, a line or an edge is read where its
+# point is.
+OFF_TEXT_SAMPLES = frozenset({"fill", "track"})
+
+
+def text_parts(elements):
+    """For each element, its descendants the list names a text run
+    (TEXT_RUNS): the candidates for the text parts its fill is kept off,
+    which `parts_inside` narrows to those the element holds in a dump."""
+    parts = {ident: [] for ident in elements}
+    for ident, element in elements.items():
+        if element["name"] not in TEXT_RUNS:
+            continue
+        parent = element["parent"]
+        while parent != WINDOW:
+            parts[parent].append(ident)
+            parent = elements[parent]["parent"]
+    return parts
+
+
+def parts_inside(rect, parts, rects, scale):
+    """The rectangles of `parts` that `rects` holds and that lie inside
+    `rect`, on R-snap edges: the text an element holds, where `parent` (a
+    measurement anchor, not a container) also names text elsewhere."""
+    left, top, right, bottom = snapped_edges(rect, scale)
+    inside = []
+    for part in parts:
+        if part not in rects:
+            continue
+        l, t, r, b = snapped_edges(rects[part], scale)
+        if left <= l and top <= t and r <= right and b <= bottom:
+            inside.append(rects[part])
+    return inside
+
+
+def off_text(px, py, row, avoid):
+    """The device pixel of the row `py` nearest to `px` that none of the
+    `avoid` boxes (left, top, right, bottom, device pixels, right and bottom
+    excluded) covers, searched within `row` (start, end, end excluded), the
+    nearer side first and the right one on a tie; `px` where no box covers
+    it, and where every pixel of the row is covered."""
+    def covered(x):
+        return any(l <= x < r and t <= py < b for l, t, r, b in avoid)
+
+    if not covered(px):
+        return px
+    start, end = row
+    for d in range(1, max(px - start, end - px) + 1):
+        for x in (px + d, px - d):
+            if start <= x < end and not covered(x):
+                return x
+    return px
+
+
+def sample_colour(capture, scale, rect, spec, area=None, avoid=(), moved=None):
     """The colour a sample point shows, or a note saying why there is none:
     `not visible` where the point, or a glyph box, is not all inside `area`
     (logical left, top, right, bottom; `visible_area`). Fractions are taken
     of the rectangle's R-snap edges, where it is painted, not of the dump's
-    fractional ones."""
+    fractional ones. A point that lies on one of the `avoid` rectangles (the
+    element's text parts, `text_parts`, from the same dump) is taken at the
+    nearest pixel of its row inside the rectangle and `area` that none of
+    them covers (`off_text`), so a fill is read beside a label that happens
+    to reach its point, not on the label's glyphs; a sample so moved is
+    appended to `moved`, where given, as (from, to) device x."""
     image, pixels, (ox, oy) = capture["image"], capture["pixels"], capture["offset"]
     content_w = round(WINDOW_SIZE[0] * scale)
     content_h = round(WINDOW_SIZE[1] * scale)
@@ -800,6 +867,12 @@ def sample_colour(capture, scale, rect, spec, area=None):
         py = math.floor((top + fy * h + dy) * scale)
         if not (a_left <= px < a_right and a_top <= py < a_bottom):
             return NOT_VISIBLE
+        boxes = [tuple(round(v * scale) for v in snapped_edges(part, scale)) for part in avoid]
+        row = (max(round(left * scale), a_left), min(round(right * scale), a_right))
+        to = off_text(px, py, row, boxes)
+        if to != px and moved is not None:
+            moved.append((px, to))
+        px = to
         if not (0 <= px < content_w and 0 <= py < content_h):
             return "outside"
         return hex_colour(pixels[ox + px, oy + py])
@@ -943,7 +1016,8 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
     exception keys that matched, the elements no kind drew, per group, how
     many differences each rule covered, and every (group, "<id>.<property>")
     compared."""
-    rows, used, unseen, ruled_out, compared = [], set(), {}, {}, set()
+    rows, used, unseen, ruled_out, compared, moved = [], set(), {}, {}, set(), []
+    parts = text_parts(elements)
     by_target = {}
     for key, entry in exceptions.items():
         by_target.setdefault(entry["target"], {})[key] = entry
@@ -990,8 +1064,15 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                 snapped[k] = geometry(element, rects, scale, True)
                 if dumps[k]["capture"] is not None:
                     area = visible_area(ident, elements, rects, scale)
+                    held = parts_inside(rects[ident], parts[ident], rects, scale)
                     for name, spec in element["samples"].items():
-                        values[name] = sample_colour(dumps[k]["capture"], scale, rects[ident], spec, area)
+                        avoid = held if name in OFF_TEXT_SAMPLES else ()
+                        shifted = []
+                        values[name] = sample_colour(
+                            dumps[k]["capture"], scale, rects[ident], spec, area, avoid, shifted
+                        )
+                        if shifted:
+                            moved.append((group, f"{ident}.{name}", k))
                 measured[k] = values
             for prop in ("x", "y", "w", "h", *element["samples"]):
                 if any(v.get(prop) == NOT_VISIBLE for v in measured.values()):
@@ -1013,7 +1094,7 @@ def compare(groups, elements, exceptions, kinds, rules=RULES):
                         if number(value) != shown[k]:
                             shown[k] = f"{number(value)} ({shown[k]})"
                 differ(group, f"{ident}.{prop}", shown)
-    return rows, used, unseen, ruled_out, compared
+    return rows, used, unseen, ruled_out, compared, moved
 
 
 def print_table(rows, kinds):
@@ -1133,7 +1214,7 @@ def merge(groups, elements, presets, sources, kinds, out, write=None):
     in `sources` (path, [(key, reason)]), to `out` and, with `write`, as the
     `[parity]` section of that exceptions file; see the module's docstring.
     Returns the exit status."""
-    rows, _, _, _, compared = compare(groups, elements, {}, kinds)
+    rows, _, _, _, compared, _ = compare(groups, elements, {}, kinds)
     occurs, universe, loose = {}, {}, []
     for group, target in compared:
         universe.setdefault(target, set()).add(group)
@@ -1361,16 +1442,30 @@ def self_test():
         )
         report(name, ok, rows)
 
-    def sampled(name, rect, spec, ground, boxes, expect):
+    def moved_by(name, change, expect):
+        """The samples `compare` reads beside a text part, as (key, kind),
+        in dumps and captures `change` makes, must be exactly `expect`."""
+        with tempfile.TemporaryDirectory() as tmp:
+            elements = load_test_elements(tmp)
+            directory = os.path.join(tmp, "run")
+            write_run(directory, change)
+            groups = load_run(directory, KINDS, None)
+            got = sorted((key, kind) for _, key, kind in compare(groups, elements, {}, KINDS)[5])
+        report(name, got == sorted(expect))
+        if got != sorted(expect):
+            print(f"    expected {sorted(expect)}\n    got      {got}")
+
+    def sampled(name, rect, spec, ground, boxes, expect, avoid=()):
         """`spec` sampled on `rect` in a capture of `ground` with each
         (x0, y0, x1, y1, colour) of `boxes` painted over it, inclusive device
-        pixels at scale 1, must show `expect`."""
+        pixels at scale 1, kept off the text parts `avoid`, must show
+        `expect`."""
         image = Image.new("RGB", WINDOW_SIZE, ground)
         draw = ImageDraw.Draw(image)
         for *box, colour in boxes:
             draw.rectangle(box, fill=colour)
         capture = {"image": image, "pixels": image.load(), "offset": (0, 0)}
-        got = sample_colour(capture, 1.0, rect, parse_sample(name, "sample", spec))
+        got = sample_colour(capture, 1.0, rect, parse_sample(name, "sample", spec), None, avoid)
         report(name, got == expect)
         if got != expect:
             print(f"    expected {expect}\n    got      {got}")
@@ -1472,6 +1567,25 @@ def self_test():
         if kind == "iced":
             rects["t.panel.label"]["x"] += 1.2
 
+    def label_on_fill(kind, rects, *_):
+        # The label reaches the panel's fill point (120, 60) in every kind,
+        # its stem on it; iced's ink is 5 per channel off, which R-glyph's 8
+        # covers for the glyph and a fill's 1 would not.
+        rects["t.panel.label"]["x"], rects["t.panel.label"]["y"] = 118.0, 52.0
+        return {"ink": tuple(c + 5 for c in INK)} if kind == "iced" else None
+
+    def label_out_of_panel(kind, rects, *_):
+        # As label_on_fill, the label running on below the panel's foot: the
+        # panel does not hold it, so its fill is read where its point is.
+        label_on_fill(kind, rects)
+        rects["t.panel.label"]["h"] = 60.0
+        return {"ink": tuple(c + 5 for c in INK)} if kind == "iced" else None
+
+    def label_on_border(kind, rects, *_):
+        # The label's box over the panel's left border sample (20, 60),
+        # inside the panel: a border is read where its point is.
+        rects["t.panel.label"]["x"], rects["t.panel.label"]["y"] = 20.0, 52.0
+
     def ink_off(by):
         def change(kind, rects, *_):
             return {"ink": tuple(c + by for c in INK)} if kind == "gpui" else None
@@ -1568,6 +1682,56 @@ def self_test():
         "a sample outside a `clip` ancestor is not visible, and not a difference",
         False,
         change=label_clipped,
+    )
+    scenario(
+        "a fill sample is taken beside a text part that reaches its point, not on its glyph",
+        False,
+        change=label_on_fill,
+        absent_keys=("t.panel.fill",),
+    )
+    scenario(
+        "a fill sample is not kept off a text part the element does not hold",
+        True,
+        ("t.panel.fill",),
+        label_out_of_panel,
+    )
+    moved_by(
+        "the run lists each fill sample it read beside a text part",
+        label_on_fill,
+        [("t.panel.fill", kind) for kind in KINDS],
+    )
+    moved_by("a border sample on a text part is read where its point is", label_on_border, [])
+    # A label box from x 100 to 140 over the panel's fill point (120, 60),
+    # its glyph a solid block: the fill is read at the nearest pixel of the
+    # row the box leaves free, 140 on its right (99 on its left is a pixel
+    # farther).
+    on_fill = ((20, 30, 219, 89, FILL), (100, 50, 139, 69, INK))
+    label_box = {"x": 100.0, "y": 50.0, "w": 40.0, "h": 20.0}
+    sampled(
+        "a point sample on a text part's box reads the nearest pixel beside it",
+        {"x": 20.0, "y": 30.0, "w": 200.0, "h": 60.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(FILL),
+        avoid=(label_box,),
+    )
+    sampled(
+        "a point sample with no text part on it is read where it lies",
+        {"x": 20.0, "y": 30.0, "w": 200.0, "h": 60.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(INK),
+    )
+    sampled(
+        "a point sample whose whole row a text part covers is read where it lies",
+        {"x": 100.0, "y": 50.0, "w": 40.0, "h": 20.0},
+        [0.5, 0.5],
+        BACKGROUND,
+        on_fill,
+        hex_colour(INK),
+        avoid=(label_box,),
     )
     # A row highlight painted on rows 40 to 55 (y = 39.6, h = 16 rounded)
     # over a darker ground, a glyph stem in it: a floor of 39.6 would take in
@@ -1908,7 +2072,7 @@ def main():
             groups, elements, presets, sources, kinds, args.merge, args.exceptions if args.write else None
         )
 
-    rows, used, unseen, ruled_out, _ = compare(groups, elements, exceptions, kinds)
+    rows, used, unseen, ruled_out, _, moved = compare(groups, elements, exceptions, kinds)
     if rows:
         print_table(rows, kinds)
     for group, idents in sorted(unseen.items()):
@@ -1927,6 +2091,17 @@ def main():
     if stale:
         print("\nParity exceptions that matched no difference in this run:")
         print("\n".join("  " + key for key in stale))
+    if moved:
+        beside = {}
+        for group, key, kind in moved:
+            beside.setdefault((group, key), []).append(kind)
+        print("\nFill samples read beside a text part that lay on their point:")
+        print(
+            "\n".join(
+                f"  {group_label(group)}  {key}  ({', '.join(seen)})"
+                for (group, key), seen in sorted(beside.items())
+            )
+        )
     covered_by = ", ".join(f"{rule} {count}" for rule, count in sorted(ruled_out.items())) or "none"
     print(
         f"\n{len(groups)} preset/variant group(s), {len(rows)} difference(s), "

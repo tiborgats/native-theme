@@ -4,13 +4,16 @@ set -euo pipefail
 # Pre-release visual asset pipeline
 #
 # Triggers CI for macOS/Windows screenshots first, then generates local
-# Linux assets in parallel while CI runs, and finally downloads the
+# Linux assets in parallel while CI runs, compares the three showcases at rest
+# from the layout dumps the Linux screenshots' runs write
+# (scripts/check_showcase_parity.py), and finally downloads the
 # CI results into the per-connector docs/assets/ directories and stamps
 # docs/assets/PROVENANCE.toml (scripts/update_provenance.sh) with the sources the
-# assets came from. scripts/check_release.sh and the crates.io workflow's CI gate
+# assets came from. scripts/check_release.sh and the crates.io workflow's release gate
 # verify that stamp against HEAD.
 #
-# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland);
+# Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland),
+# ImageMagick 7;
 # HEAD pushed and the asset sources committed (captures run on HEAD).
 #
 # Usage: bash scripts/generate_assets_release.sh
@@ -46,23 +49,26 @@ echo ""
 info "Checking prerequisites..."
 command -v gh >/dev/null 2>&1 || fail "gh CLI not found"
 command -v python3 >/dev/null 2>&1 || fail "python3 not found"
-# The last step, update_compatibility.sh run, runs scripts/check_widget_coverage.py,
-# whose tomllib import needs Python 3.11; fail here rather than after the
-# captures.
+# Step 6's scripts/check_showcase_parity.py and the last step's
+# scripts/check_widget_coverage.py (update_compatibility.sh run) import tomllib,
+# which needs Python 3.11; fail here rather than after the captures.
 python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' \
-    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
+    || fail "python3 is $(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])') — scripts/check_showcase_parity.py and scripts/check_widget_coverage.py need 3.11+ (tomllib)"
 command -v spectacle >/dev/null 2>&1 || fail "spectacle not found (needed for the Linux captures)"
 for tool in kscreen-doctor qdbus6 dbus-monitor dbus-send; do
     command -v "$tool" >/dev/null 2>&1 || fail "$tool not found (scripts/capture_window.sh needs it for the Linux captures)"
 done
 python3 -c "from PIL import Image" 2>/dev/null || fail "Pillow not installed (pip install Pillow)"
+# Step 2's generate_gifs_spinners.py rasterizes the spinner SVGs with ImageMagick
+# 7's `magick`; fail here rather than after the CI screenshots run was dispatched.
+command -v magick >/dev/null 2>&1 || fail "magick (ImageMagick 7) not found (scripts/generate_gifs_spinners.py needs it for the spinner GIFs)"
 gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"
 echo ""
 
 # ── Step 1: Trigger CI early (runs in parallel with local work) ──────
 
-echo "=== Step 1/6: Trigger macOS & Windows screenshots via CI ==="
+echo "=== Step 1/7: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
 # Ensure local changes are pushed so CI uses the latest code
@@ -109,27 +115,49 @@ echo ""
 
 # ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
-echo "=== Step 2/6: Spinner GIFs ==="
+echo "=== Step 2/7: Spinner GIFs ==="
 python3 "$SCRIPT_DIR/generate_gifs_spinners.py"
 ok "Spinner GIFs generated"
 echo ""
 
-echo "=== Step 3/6: Iced Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_iced.sh"
-ok "Iced Linux screenshots generated"
+# Each Linux screenshot's run also writes its layout dump, at rest, with the
+# capture beside it, here, for Step 6's comparison; kept when the comparison
+# fails, for the comparator's --merge.
+DUMP_DIR=$(mktemp -d)
+
+# linux_screenshots KIND LABEL: Step 3, 4 or 5. A step that fails leaves dumps
+# of part of the run, which no comparison reads, so DUMP_DIR is named and
+# removed before the script stops.
+linux_screenshots() {
+    bash "$SCRIPT_DIR/generate_screenshots_$1.sh" "$DUMP_DIR" || {
+        rm -rf "$DUMP_DIR"
+        fail "$2 Linux screenshots failed (see above); removed the layout dump directory $DUMP_DIR"
+    }
+    ok "$2 Linux screenshots generated"
+    echo ""
+}
+
+echo "=== Step 3/7: Iced Linux screenshots ==="
+linux_screenshots iced Iced
+
+echo "=== Step 4/7: gpui Linux screenshots ==="
+linux_screenshots gpui gpui
+
+echo "=== Step 5/7: egui Linux screenshots ==="
+linux_screenshots egui egui
+
+# The three showcases at rest under the six captured presets, element by
+# element: sizes, positions and the colours of their captures, each difference
+# either within the comparator's rules or listed with its reason in
+# docs/showcase-exceptions.toml.
+echo "=== Step 6/7: Showcase parity at rest ==="
+python3 "$SCRIPT_DIR/check_showcase_parity.py" "$DUMP_DIR" \
+    || fail "The showcases differ where docs/showcase-exceptions.toml lists no reason (the dumps and captures are in $DUMP_DIR; scripts/check_showcase_parity.py --merge proposes the exceptions)"
+rm -rf "$DUMP_DIR"
+ok "The three showcases agree at rest"
 echo ""
 
-echo "=== Step 4/6: gpui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_gpui.sh"
-ok "gpui Linux screenshots generated"
-echo ""
-
-echo "=== Step 5/6: egui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots_egui.sh"
-ok "egui Linux screenshots generated"
-echo ""
-
-echo "=== Step 6/6: Theme-switching GIFs (iced + gpui + egui) ==="
+echo "=== Step 7/7: Theme-switching GIFs (iced + gpui + egui) ==="
 bash "$SCRIPT_DIR/generate_gifs_theme_switching.sh"
 ok "Theme-switching GIFs generated"
 echo ""
@@ -178,6 +206,11 @@ fi
 
 # Download macOS and Windows screenshots
 info "Downloading macOS and Windows screenshots..."
+# Each job's OS-version sidecar, kept for the provenance stamp as
+# <toolkit>-<os>.txt; not an asset, so it goes nowhere under docs/. Made
+# before TMPDIR is reassigned: an exported TMPDIR would put it inside the
+# download directory, which is removed before the stamp is written.
+OS_VERSIONS=$(mktemp -d)
 TMPDIR=$(mktemp -d)
 gh run download "$RUN_ID" --dir "$TMPDIR"
 
@@ -198,6 +231,13 @@ for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-
         DOWNLOADED=$((DOWNLOADED + 1))
         echo "  $(basename "$f") → $(realpath --relative-to="$PROJECT_ROOT" "$dest")"
     done
+    sidecar=$(find "$artifact_dir" -maxdepth 1 -name '*-os-version.txt' -print -quit)
+    if [ -n "$sidecar" ]; then
+        cp "$sidecar" "$OS_VERSIONS/${base#screenshots-}.txt"
+        echo "  $(basename "$sidecar"): $(tr -d '\r' < "$sidecar")"
+    else
+        info "$base carries no OS-version sidecar; the stamp has no version from it"
+    fi
 done
 
 rm -rf "$TMPDIR"
@@ -210,7 +250,8 @@ ok "Downloaded $DOWNLOADED screenshots from CI"
 # ── Stamp the provenance ─────────────────────────────────────────────
 
 info "Recording provenance..."
-bash "$SCRIPT_DIR/update_provenance.sh" write
+bash "$SCRIPT_DIR/update_provenance.sh" write "$OS_VERSIONS"
+rm -rf "$OS_VERSIONS"
 ok "docs/assets/PROVENANCE.toml written for $EXPECTED_SHA"
 
 # ── Refresh the compatibility claim ──────────────────────────────────────

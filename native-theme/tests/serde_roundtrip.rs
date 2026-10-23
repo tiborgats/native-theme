@@ -409,6 +409,28 @@ fn serialization_skips_none_fields() {
     );
 }
 
+#[test]
+fn json_serialization_skips_none_widget_fields() {
+    assert_eq!(
+        serde_json::to_string(&ButtonTheme::default()).unwrap(),
+        "{}"
+    );
+    assert_eq!(
+        serde_json::to_string(&LayoutTheme::default()).unwrap(),
+        "{}"
+    );
+
+    for info in Theme::list_presets() {
+        let theme = Theme::preset(info.key).unwrap();
+        let json = serde_json::to_string(&theme).unwrap();
+        assert!(
+            !json.contains("null"),
+            "{}: JSON should not contain null (None fields are skipped)",
+            info.key
+        );
+    }
+}
+
 // ---------------------------------------------------------------------------
 // TOML structure readability
 // ---------------------------------------------------------------------------

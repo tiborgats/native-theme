@@ -1,7 +1,10 @@
-//! `RoleVariant::Selected` and `RoleVariant::Disabled` cells (spec §6.2, §6.3).
+//! `RoleVariant::Selected`, `RoleVariant::Disabled` and `RoleVariant::SelectedDisabled` cells
+//! (spec §6.2, §6.3).
 //!
-//! Each cell starts from its role's `Normal` cell and writes only the variant's leaves (§3.4).
-//! A role with no variant data returns `None`, and `compile` then shares the `Normal` `Arc`.
+//! Each cell starts from its role's `Normal` cell, a `SelectedDisabled` one from its `Selected`
+//! cell, and writes only the variant's leaves (§3.4). A role with no variant data returns
+//! `None`, and `compile` then shares the `Normal` `Arc`, for `SelectedDisabled` the `Disabled`
+//! one.
 
 use crate::convert::to_color32;
 use crate::style::{BuildInput, note_transparent_fill};
@@ -37,6 +40,38 @@ pub(crate) fn selected_cell(
     ] {
         entry.bg_fill = fill;
         entry.bg_stroke.color = outline;
+    }
+    Some(style)
+}
+
+/// The `SelectedDisabled` cell of `role`, from its `Selected` cell `selected`, or `None` where
+/// the role's checked look is not a cell of its own: every role but `Checkbox`, whose
+/// `SelectedDisabled` cell is its `Disabled` one.
+pub(crate) fn selected_disabled_cell(
+    role: Role,
+    selected: &egui::Style,
+    input: &BuildInput<'_>,
+    notes: &mut Vec<Note>,
+) -> Option<egui::Style> {
+    if role != Role::Checkbox {
+        return None;
+    }
+    let t = input.theme;
+    let mut style = selected.clone();
+    let v = &mut style.visuals;
+    // The label in the disabled text colour, as the `Disabled` cell's (§6.3), checked or not.
+    let text = to_color32(t.checkbox.disabled_text_color);
+    v.override_text_color = Some(text);
+    // The disabled rule (docs/platform-facts.md §2.1.6): where the theme states a disabled
+    // fill the box takes it, and the mark the disabled text colour, as the `Disabled` cell's
+    // box does; where it states none the platform dims by opacity alone, and the box is its
+    // checked self, `checked_background` and the `indicator_color` mark, which
+    // `disabled_alpha` fades. The outline stays the checked box's, `checkbox.border.color`.
+    if let Some(fill) = t.checkbox.disabled_background {
+        let fill = to_color32(fill);
+        note_transparent_fill(fill, "checkbox.disabled_background", notes);
+        v.widgets.inactive.bg_fill = fill;
+        v.widgets.inactive.fg_stroke.color = text;
     }
     Some(style)
 }
@@ -191,6 +226,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();
@@ -232,6 +268,64 @@ mod tests {
         }
     }
 
+    /// The `SelectedDisabled` cell, per role: every role but `Checkbox` shares its `Disabled`
+    /// `Arc`. The checkbox's is its `Selected` cell with the label in `disabled_text_color`,
+    /// and, where the theme states a disabled fill (kde-breeze), that fill and the mark in
+    /// `disabled_text_color` too; where it states none (adwaita) the box keeps its checked
+    /// fill and its `indicator_color` mark, which `disabled_alpha` fades (the disabled rule,
+    /// docs/platform-facts.md §2.1.6).
+    #[test]
+    fn the_selected_disabled_cell_is_the_checked_box_disabled() {
+        for (preset, stated) in [("kde-breeze", true), ("adwaita", false)] {
+            let t = resolved(preset, ColorMode::Light);
+            assert_eq!(t.checkbox.disabled_background.is_some(), stated, "{preset}");
+            let (s, _) = build(&t);
+            for role in Role::all() {
+                let both = s.cell(*role, RoleVariant::SelectedDisabled);
+                let disabled = s.cell(*role, RoleVariant::Disabled);
+                assert_eq!(
+                    Arc::ptr_eq(both, disabled),
+                    *role != Role::Checkbox,
+                    "{preset} {role:?}"
+                );
+            }
+            let sel = s.cell(Role::Checkbox, RoleVariant::Selected);
+            let both = s.cell(Role::Checkbox, RoleVariant::SelectedDisabled);
+            let text = to_color32(t.checkbox.disabled_text_color);
+            assert_eq!(both.visuals.override_text_color, Some(text), "{preset}");
+            let (fill, mark) = match t.checkbox.disabled_background {
+                Some(fill) => (to_color32(fill), text),
+                None => (
+                    to_color32(t.checkbox.checked_background),
+                    to_color32(t.checkbox.indicator_color),
+                ),
+            };
+            let (w, sw) = (&both.visuals.widgets, &sel.visuals.widgets);
+            assert_eq!(w.inactive.bg_fill, fill, "{preset}");
+            assert_eq!(w.inactive.fg_stroke.color, mark, "{preset}");
+            assert_eq!(
+                w.inactive.bg_stroke.color,
+                to_color32(t.checkbox.border.color),
+                "{preset}: the checked outline"
+            );
+            assert_eq!(
+                both.visuals.disabled_alpha,
+                crate::convert::unit_interval(t.checkbox.disabled_opacity),
+                "{preset}"
+            );
+            for (e, se) in [
+                (w.noninteractive, sw.noninteractive),
+                (w.hovered, sw.hovered),
+                (w.active, sw.active),
+                (w.open, sw.open),
+            ] {
+                assert_eq!(e, se, "{preset}: only `inactive` moves");
+            }
+            assert_eq!(both.spacing, sel.spacing);
+            assert_eq!(both.visuals.selection, sel.visuals.selection);
+        }
+    }
+
     /// §6.2: the checked box fills from `checked_background` in all five entries, its outline is
     /// `checkbox.border.color`, the mark keeps `indicator_color`, and nothing else moves.
     #[test]
@@ -266,7 +360,7 @@ mod tests {
     }
 
     /// §6.3, §6.4: windows-11 states a fully transparent disabled checkbox fill, `#f9f9f900`
-    /// (`native-theme/src/presets/windows-11.toml:146`; dark `#33333300`, `:554`); it is written
+    /// (`native-theme/src/presets/windows-11.toml:210`; dark `#33333300`, `:810`); it is written
     /// as given into the `Disabled` cell's `inactive.bg_fill` and reported once, for the leaf.
     #[test]
     fn a_transparent_disabled_fill_is_written_and_noted_once() {

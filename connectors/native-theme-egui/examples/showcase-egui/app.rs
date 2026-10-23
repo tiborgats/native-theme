@@ -1,27 +1,37 @@
 //! The application: its settings, its atlas, and the `eframe::App` impl (spec §10.4).
 
 #[cfg(feature = "watch")]
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError, RwLock};
 
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
+use native_theme_showcase_support::capture::{Content, FrameCapture};
+use native_theme_showcase_support::cli::{self, Output, Outputs};
+use native_theme_showcase_support::{CAPTURE_WAIT, Kind, dump, rows};
 
 use crate::chrome::{self, Action, InspectorTab, PaletteState};
-use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, info, pages};
+use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, elements, info, pages};
+
+/// The colour mode the Mode row, the Theme menu and `--variant` choose (`cli::color_mode`), and
+/// the theme the Theme row and `--theme` choose (`cli::theme_key`): the shared crate's, which
+/// the gpui and iced showcases choose from too.
+pub(crate) use native_theme_showcase_support::cli::{
+    ColorModeChoice as ModeChoice, ThemeKey as ThemeChoice,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Page {
     Basic,
     Buttons,
-    Selection,
     Inputs,
+    Selection,
     Range,
-    Text,
-    Colour,
-    Containers,
     Data,
+    Text,
+    Containers,
     Overlays,
+    Colour,
     Icons,
     ThemeMap,
 }
@@ -30,18 +40,20 @@ impl Page {
     pub(crate) const ALL: [Page; 12] = [
         Page::Basic,
         Page::Buttons,
-        Page::Selection,
         Page::Inputs,
+        Page::Selection,
         Page::Range,
-        Page::Text,
-        Page::Colour,
-        Page::Containers,
         Page::Data,
+        Page::Text,
+        Page::Containers,
         Page::Overlays,
+        Page::Colour,
         Page::Icons,
         Page::ThemeMap,
     ];
-    /// The `--tab` name (§10.4's palette table).
+    /// The `--tab` name (§10.4's palette table): the page's label in lower case with each space
+    /// a `-`, the key the three showcases give the pages that correspond (the counterpart table
+    /// in `docs/showcase-elements.toml`'s header).
     pub(crate) fn key(self) -> &'static str {
         match self {
             Page::Basic => "basic",
@@ -74,31 +86,15 @@ impl Page {
             Page::ThemeMap => "Theme Map",
         }
     }
+    /// The page `--tab` names (`cli::page_key`, whose error lists every page's key).
     pub(crate) fn from_key(key: &str) -> Result<Page, String> {
+        let keys = Page::ALL.map(Page::key);
+        let key = cli::page_key(key, &keys)?;
         Page::ALL
             .into_iter()
-            .find(|p| p.key() == key)
-            .ok_or_else(|| {
-                let keys: Vec<&str> = Page::ALL.iter().map(|p| p.key()).collect();
-                format!(
-                    "--tab {key}: no such page; the pages are: {}",
-                    keys.join(", ")
-                )
-            })
+            .find(|page| page.key() == key)
+            .ok_or_else(|| format!("--tab {key}: no such page"))
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ModeChoice {
-    System,
-    Light,
-    Dark,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) enum ThemeChoice {
-    Default,
-    Preset(String),
 }
 
 /// What the pickers, the command line and Preferences select. Pure: T11 (c)
@@ -112,7 +108,8 @@ pub(crate) struct Settings {
     /// Whether `icon` is re-derived from each theme installed: until the user picks an icon
     /// theme, and again after a pick of the `default` row (§10.4).
     pub icon_follows_theme: bool,
-    /// Preferences' overrides; `None` is the OS's own.
+    /// Preferences' overrides, the user's requests; `None` is the OS's own. An install builds
+    /// with their [`effective_preferences`] over the OS's.
     pub prefs: Option<AccessibilityPreferences>,
     pub page: Page,
     pub screenshot: Option<String>,
@@ -141,61 +138,6 @@ impl Settings {
             ..Self::initial()
         }
     }
-    pub(crate) fn mode_choice(variant: &str) -> Result<ModeChoice, String> {
-        match variant {
-            "light" => Ok(ModeChoice::Light),
-            "dark" => Ok(ModeChoice::Dark),
-            "system" => Ok(ModeChoice::System),
-            other => Err(format!("--variant {other}: not light, dark or system")),
-        }
-    }
-    /// `default`, or a preset the Theme row offers on this platform.
-    pub(crate) fn theme_choice(name: &str) -> Result<ThemeChoice, String> {
-        if name == "default" {
-            return Ok(ThemeChoice::Default);
-        }
-        let offered = native_theme::theme::Theme::list_presets_for_platform();
-        if offered.iter().any(|info| info.key == name) {
-            return Ok(ThemeChoice::Preset(name.to_string()));
-        }
-        let names: Vec<&str> = std::iter::once("default")
-            .chain(offered.iter().map(|info| info.key))
-            .collect();
-        let names = names.join(", ");
-        if native_theme::theme::Theme::list_presets()
-            .iter()
-            .any(|info| info.key == name)
-        {
-            Err(format!(
-                "--theme {name}: a preset of another platform; only this platform's presets run here: {names}"
-            ))
-        } else {
-            Err(format!(
-                "--theme {name}: no such preset; the presets are: {names}"
-            ))
-        }
-    }
-    /// What the icon-theme picker offers: `default` (`None`: follow the theme), a bundled set,
-    /// `system` or `freedesktop` (the OS's icon theme), or an installed freedesktop theme.
-    pub(crate) fn icon_choice(&self, name: &str) -> Result<Option<IconSetChoice>, String> {
-        match name {
-            "default" => Ok(None),
-            "material" => Ok(Some(IconSetChoice::Material)),
-            "lucide" => Ok(Some(IconSetChoice::Lucide)),
-            "system" | "freedesktop" => Ok(Some(IconSetChoice::System)),
-            theme if self.installed_themes.iter().any(|t| t == theme) => {
-                Ok(Some(IconSetChoice::Freedesktop(theme.to_string())))
-            }
-            other => Err(format!(
-                "--icon-set {other}: not default, material, lucide, system, freedesktop or an installed icon theme; installed: {}",
-                if self.installed_themes.is_empty() {
-                    "none".to_string()
-                } else {
-                    self.installed_themes.join(", ")
-                }
-            )),
-        }
-    }
     /// A pick: `None` is the `default` row, which follows the theme again (re-derived at the
     /// next `theme_installed`); a `Default(_)` row picked from the list follows too
     /// (`IconSetChoice::follows_preset`); anything else stays chosen.
@@ -218,51 +160,70 @@ impl Settings {
     }
 }
 
+/// What the watcher's `rebuild` reads: the settings the UI thread last installed or tried to
+/// install, so a hand-off it builds is a rebuild of the choice the Theme row names, and their
+/// generation, which each publish bumps. A mode switch publishes nothing, since the rebuild
+/// reads only `theme` and `prefs` (`App::rebuild_atlas`), so `settings.mode` here can be stale.
+#[cfg(feature = "watch")]
+#[derive(Debug)]
+pub(crate) struct Selection {
+    pub(crate) generation: u64,
+    pub(crate) settings: Settings,
+}
+
+/// The watcher's rebuilds, as its `rebuild` records them under one lock, before the connector's
+/// hand-off stores the atlas it returns (`Handoff::on_change`, `src/watch.rs`), so the atlas
+/// `ThemeWatcher::take` signals is recorded by then: how many have returned, `Ok` or `Err`, and
+/// the last that returned an atlas, as its number, the generation of the selection it was built
+/// for, and the atlas.
+#[cfg(feature = "watch")]
+#[derive(Debug, Default)]
+pub(crate) struct Rebuilt {
+    pub(crate) rebuilds: u64,
+    pub(crate) built: Option<(u64, u64, ThemeAtlas)>,
+}
+
 /// `--screenshot`: where the capture goes, when the first pass ran, the capture while under
-/// way, whether it was written.
+/// way (the shared crate's `FrameCapture`), whether it was written.
 struct Screenshot {
     path: String,
     started: Option<f64>,
-    capture: Option<crate::capture::FrameCapture>,
+    capture: Option<FrameCapture>,
     written: bool,
 }
 
-/// `--dump-layout`: where the dump goes, whether the showcase keeps running after it, the layout
-/// of the last pass and the input time it was first seen at, and whether it was written.
+/// `--dump-layout`: where the dump goes, the input time of its first pass, the layout of the last
+/// pass and the input time it was first seen at, and whether it was written.
 struct LayoutDump {
     path: String,
-    keep_running: bool,
+    started: Option<f64>,
     last: Option<(std::collections::BTreeMap<String, egui::Rect>, f64)>,
     written: bool,
 }
 
-/// The layout dump's JSON (`docs/showcase-elements.toml`, "The layout dump"): each placed
-/// element's rectangle in logical pixels, window-content coordinates.
+/// The layout dump's JSON (`dump::layout_json`, the object `docs/showcase-elements.toml`'s
+/// "The layout dump" describes): each placed element's rectangle in logical pixels,
+/// window-content coordinates.
 pub(crate) fn layout_json(
     places: &std::collections::BTreeMap<String, egui::Rect>,
     preset: &str,
     theme: egui::Theme,
     scale: f32,
 ) -> serde_json::Value {
-    let elements: serde_json::Map<String, serde_json::Value> = places
-        .iter()
-        .map(|(id, r)| {
-            (
-                id.clone(),
-                serde_json::json!({"x": r.min.x, "y": r.min.y, "w": r.width(), "h": r.height()}),
-            )
-        })
-        .collect();
-    serde_json::json!({
-        "kind": "egui",
-        "preset": preset,
-        "variant": match theme {
-            egui::Theme::Light => "light",
-            egui::Theme::Dark => "dark",
-        },
-        "scale": scale,
-        "elements": elements,
-    })
+    let variant = match theme {
+        egui::Theme::Light => "light",
+        egui::Theme::Dark => "dark",
+    };
+    let rects = places.iter().map(|(id, r)| {
+        let rect = dump::Rect {
+            x: r.min.x,
+            y: r.min.y,
+            w: r.width(),
+            h: r.height(),
+        };
+        (id.clone(), rect)
+    });
+    dump::layout_json(Kind::Egui, preset, variant, scale, rects)
 }
 
 /// The pointer `--pointer` holds at a point of the window, and whether `--press` holds the
@@ -281,11 +242,25 @@ impl HeldPointer {
     /// How long, in seconds of egui's input time, the pointer is held before the press: long
     /// enough for the window to open at its size and the page to be laid out under the pointer.
     /// No repository script passes `--press`. The capture scripts capture a showcase at least
-    /// four seconds after starting it (`DELAY=3` in `scripts/generate_screenshots_*.sh`, then
-    /// `capture_showcase`'s `sleep 1` in `scripts/capture_window.sh`), so a press three seconds
+    /// four seconds after starting it (`SHOWCASE_START_DELAY=3`, then `capture_showcase`'s
+    /// `sleep 1`, in `scripts/capture_window.sh`), so a press three seconds
     /// after the first frame lands about a second before such a capture; a capture with
     /// `--press` should wait longer.
     const PRESS_AFTER: f64 = 3.0;
+}
+
+/// Whether `event` is the keyboard's: a key, typed or composed text, or the clipboard keys'
+/// cut, copy and paste.
+fn keyboard_event(event: &egui::Event) -> bool {
+    matches!(
+        event,
+        egui::Event::Key { .. }
+            | egui::Event::Text(_)
+            | egui::Event::Ime(_)
+            | egui::Event::Paste(_)
+            | egui::Event::Copy
+            | egui::Event::Cut
+    )
 }
 
 /// Whether `event` moves, presses, touches or leaves with the window's own pointer.
@@ -300,13 +275,35 @@ fn pointer_event(event: &egui::Event) -> bool {
     )
 }
 
+/// The preferences an install builds with, from the OS's reading `os` and Preferences'
+/// `overrides` (`None` until the user changes one): every preference the override's where one
+/// is set, except Reduce motion, whose switch off is no request, so an OS request still stops
+/// the animations (the Step 4 ruling: the gpui showcase's switch through native-theme-gpui's
+/// `forward_reduce_motion`, spec v0.5.9 §5, and the iced showcase's `motion_reduced`). High
+/// contrast and Reduce transparency keep the override's value, since the atlas builds no
+/// differently for them.
+pub(crate) fn effective_preferences(
+    os: &AccessibilityPreferences,
+    overrides: Option<&AccessibilityPreferences>,
+) -> AccessibilityPreferences {
+    match overrides {
+        Some(overrides) => {
+            let mut prefs = overrides.clone();
+            prefs.reduce_motion |= os.reduce_motion;
+            prefs
+        }
+        None => os.clone(),
+    }
+}
+
 pub(crate) struct App {
     /// The one field for theme state (§10.4's third rule).
     pub(crate) atlas: ThemeAtlas,
     pub(crate) settings: Settings,
     /// The platform preset `default` builds on, `SystemTheme::preset` since the last read of
     /// the OS: the name the Theme row, the command palette and the status bar give `default`,
-    /// "default (kde-breeze)", as the gpui showcase's (`showcase-gpui/support.rs:1112-1117`).
+    /// "default (kde-breeze)", as the gpui showcase's `default_label`
+    /// (`showcase-gpui/app.rs:1808-1812`).
     pub(crate) default_preset: String,
     /// The OS's semibold face of the theme's family, registered after each install.
     pub(crate) semibold: demo::Semibold,
@@ -326,7 +323,7 @@ pub(crate) struct App {
     /// The embedded `mapping.toml`, parsed once; an error is shown in the inspector (§10.4).
     pub(crate) manifest: Result<info::Manifest, String>,
     /// `docs/showcase-elements.toml`, parsed once; an error is shown in the inspector.
-    pub(crate) elements: Result<Vec<crate::elements::ShowcaseElement>, String>,
+    pub(crate) elements: Result<Vec<elements::ShowcaseElement>, String>,
     /// The installed atlas's JSON per scheme, emptied on each install.
     pub(crate) json: info::JsonCache,
     /// The inspector's content rect this pass: Widget Info's hold zone (§10.4).
@@ -342,21 +339,45 @@ pub(crate) struct App {
     screenshot: Option<Screenshot>,
     /// `--dump-layout`, until the dump is written.
     dump: Option<LayoutDump>,
+    /// The files the run writes, and whether it quits once they are written (`cli::Outputs`, the
+    /// three showcases' exit rule).
+    outputs: Outputs,
     /// `--pointer` and `--press`: the pointer held at a point, and the primary button held down.
     held_pointer: Option<HeldPointer>,
-    /// `--capture` or `--screenshot`: the window is captured, so the real pointer draws nothing
-    /// (`raw_input_hook`).
-    capturing: bool,
+    /// `--capture`, `--screenshot` or `--dump-layout`: the window is captured or its layout
+    /// dumped, so the real pointer draws nothing (`raw_input_hook`, `CliArgs::shields_pointer`).
+    shields_pointer: bool,
+    /// `--capture`, `--screenshot` or `--dump-layout`: the window takes no keyboard input, so a
+    /// key typed while it is captured or dumped changes nothing it shows (`raw_input_hook`,
+    /// `CliArgs::shields_keyboard`).
+    shields_keyboard: bool,
     /// `--open-menu <title>`: the menu bar's menu of that title (lower case) still to be opened;
     /// the menu bar opens it at its first pass and clears this. On macOS the menus are the
     /// system menu bar's, which the flag does not reach.
     #[cfg_attr(all(target_os = "macos", not(test)), allow(dead_code))]
     pub(crate) open_menu: Option<String>,
-    /// What the watcher's `rebuild` reads: the UI thread writes it on each install.
+    /// What the watcher's `rebuild` reads: the UI thread publishes it on each install, failed
+    /// or not.
     #[cfg(feature = "watch")]
-    selection: Arc<std::sync::RwLock<Settings>>,
+    pub(crate) selection: Arc<RwLock<Selection>>,
+    /// What the watcher's `rebuild` has returned.
+    #[cfg(feature = "watch")]
+    pub(crate) rebuilt: Arc<Mutex<Rebuilt>>,
+    /// The watcher's rebuilds an install has covered: the record's `rebuilds` when an `install`
+    /// read it, or the number of the rebuilt atlas the hand-off installed.
+    #[cfg(feature = "watch")]
+    installed_rebuild: u64,
     #[cfg(feature = "watch")]
     watcher: Option<native_theme_egui::ThemeWatcher>,
+    /// Why the watcher did not start: shown as a note, which no install clears, since the OS's
+    /// changes stay unfollowed whatever is installed.
+    #[cfg(feature = "watch")]
+    pub(crate) watcher_error: Option<String>,
+    /// The tests' stand-in for the running watcher's `ThemeWatcher::last_error`: the tests start
+    /// no watcher. Unlike the watcher's, it is never reset by a later rebuild, so the tests prove
+    /// the record's count gates the banner's line.
+    #[cfg(all(test, feature = "watch"))]
+    pub(crate) watcher_last_error: Option<String>,
     /// The macOS system menu bar, owned here: a muda `Menu` holds `Rc`s and is not `Send`.
     #[cfg(all(target_os = "macos", not(test)))]
     system_menu: Option<crate::chrome::system_menu::SystemMenu>,
@@ -402,13 +423,16 @@ impl App {
             written: false,
         });
         #[cfg(feature = "watch")]
-        let selection = Arc::new(std::sync::RwLock::new(settings.clone()));
+        let selection = Arc::new(RwLock::new(Selection {
+            generation: 0,
+            settings: settings.clone(),
+        }));
         let mut app = Self {
-            atlas,
+            atlas: atlas.clone(),
             settings,
             default_preset,
             semibold: demo::Semibold::default(),
-            theme_error,
+            theme_error: None,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
             side_panel_visible: true,
@@ -419,7 +443,7 @@ impl App {
             quit_requested: false,
             pending: Vec::new(),
             manifest: info::Manifest::parse(include_str!("../../mapping.toml")),
-            elements: crate::elements::showcase_elements(),
+            elements: elements::showcase_elements(),
             json: info::JsonCache::default(),
             hold_zone: None,
             #[cfg(test)]
@@ -430,36 +454,52 @@ impl App {
             screenshot,
             dump: cli.dump_layout.clone().map(|path| LayoutDump {
                 path,
-                keep_running: cli.capturing(),
+                started: None,
                 last: None,
                 written: false,
             }),
+            outputs: Outputs::new(cli),
             held_pointer: cli.pointer.map(|(x, y)| HeldPointer {
                 at: egui::pos2(f32::from(x), f32::from(y)),
                 press: cli.press,
                 moved: false,
                 pressed: false,
             }),
-            capturing: cli.capturing(),
-            open_menu: cli.open_menu.clone().filter(|menu| {
-                let known = crate::chrome::Action::MENUS
+            shields_pointer: cli.shields_pointer(),
+            shields_keyboard: cli.shields_keyboard(),
+            // On macOS outside `cfg(test)` the menus are the system menu bar's, which no flag
+            // holds open, so every name is reported and none kept.
+            open_menu: cli.open_menu.as_deref().and_then(|menu| {
+                let titles: Vec<&str> = crate::chrome::Action::MENUS
                     .iter()
-                    .any(|(title, _)| title.to_lowercase() == *menu);
-                if !known {
-                    eprintln!("--open-menu {menu:?}: the menu bar has no such menu; ignored");
-                }
-                known
+                    .map(|(title, _)| *title)
+                    .collect();
+                cli::reported(cli::open_menu(
+                    menu,
+                    &titles,
+                    cfg!(all(target_os = "macos", not(test))),
+                ))
             }),
             #[cfg(feature = "watch")]
             selection,
             #[cfg(feature = "watch")]
+            rebuilt: Arc::default(),
+            #[cfg(feature = "watch")]
+            installed_rebuild: 0,
+            #[cfg(feature = "watch")]
             watcher: None,
+            #[cfg(feature = "watch")]
+            watcher_error: None,
+            #[cfg(all(test, feature = "watch"))]
+            watcher_last_error: None,
             #[cfg(all(target_os = "macos", not(test)))]
             system_menu: None,
             #[cfg(all(target_os = "macos", not(test)))]
             menu_rx: None,
         };
-        app.apply(&cc.egui_ctx);
+        app.apply(&cc.egui_ctx, atlas);
+        // After the install, which clears it: the platform's preset stands in for the selection.
+        app.theme_error = theme_error;
         #[cfg(all(target_os = "macos", not(test)))]
         {
             let (tx, rx) = std::sync::mpsc::channel();
@@ -472,18 +512,23 @@ impl App {
             }
         }
         #[cfg(feature = "watch")]
-        if !cfg!(test) && app.settings.screenshot.is_none() {
+        if !cfg!(test) && cli.follows_os() {
             app.start_watcher(&cc.egui_ctx);
         }
         Ok(app)
     }
 
     /// The atlas `settings` select (§10.4): `default` is `SystemTheme::from_system` through
-    /// `to_egui_atlas`, with Preferences' overrides on its public `accessibility`
-    /// (`native-theme/src/lib.rs:500`) after `invalidate_caches()`; a preset is `from_preset`,
-    /// whose `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
+    /// `to_egui_atlas` after `invalidate_caches()`, its public `accessibility`
+    /// (`native-theme/src/lib.rs:500`) the [`effective_preferences`] of the OS's reading it
+    /// holds and Preferences' overrides; a preset is `from_preset` with the effective
+    /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
+    /// watcher and `ReloadTheme` clear before they rebuild) and the overrides. `from_preset`'s
+    /// `is_dark` selects only the `ResolvedTheme` this discards — the atlas carries both
     /// variants and egui picks the scheme (§4.6) — so `false` is passed. With the atlas comes,
-    /// for `default`, the platform preset it builds on (`SystemTheme::preset`).
+    /// for `default`, the platform preset it builds on (`SystemTheme::preset`). It reads
+    /// `theme` and `prefs` alone, not `mode`, which the watcher's selection relies on: a mode
+    /// switch publishes nothing to it.
     pub(crate) fn rebuild_atlas(
         settings: &Settings,
     ) -> native_theme::Result<(ThemeAtlas, Option<String>)> {
@@ -491,58 +536,81 @@ impl App {
             ThemeChoice::Default => {
                 native_theme::detect::invalidate_caches();
                 let mut sys = SystemTheme::from_system()?;
-                if let Some(overrides) = &settings.prefs {
-                    sys.accessibility = overrides.clone();
-                }
+                sys.accessibility =
+                    effective_preferences(&sys.accessibility, settings.prefs.as_ref());
                 let preset = sys.preset.clone();
                 Ok((sys.to_egui_atlas(), Some(preset)))
             }
             ThemeChoice::Preset(name) => {
-                let prefs = settings
-                    .prefs
-                    .clone()
-                    .unwrap_or_else(AccessibilityPreferences::from_system);
+                let prefs = effective_preferences(
+                    &native_theme::detect::accessibility_preferences(),
+                    settings.prefs.as_ref(),
+                );
                 from_preset(name, false, &prefs).map(|(atlas, _)| (atlas, None))
             }
         }
     }
 
     /// Rebuild what `settings` select and install it; a failure keeps the installed atlas and
-    /// is shown on the page (§10.4, the theme error in the content).
+    /// is shown on the page (§10.4, the theme error in the content). A success covers the
+    /// watcher's rebuilds returned before it read the record: a rebuild still running counts as
+    /// newer, since it may carry an OS change this rebuild did not read.
     pub(crate) fn install(&mut self, ctx: &egui::Context) {
+        #[cfg(feature = "watch")]
+        let rebuilds = self.rebuilds();
         match Self::rebuild_atlas(&self.settings) {
             Ok((atlas, preset)) => {
-                self.atlas = atlas;
                 if let Some(preset) = preset {
                     self.default_preset = preset;
                 }
-                self.theme_error = None;
+                self.apply(ctx, atlas);
+                #[cfg(feature = "watch")]
+                {
+                    self.installed_rebuild = rebuilds;
+                }
             }
-            Err(error) => self.theme_error = Some(error.to_string()),
+            Err(error) => {
+                // The installed atlas, its fonts and the semibold faces stay as they are; the
+                // failed choice is published, so a rebuild of the theme still drawn is stale
+                // and keeps this error.
+                self.theme_error = Some(error.to_string());
+                #[cfg(feature = "watch")]
+                self.publish_selection();
+            }
         }
-        self.apply(ctx);
     }
 
-    /// Install the held atlas and the mode's theme preference (egui's own call, §10.3).
-    fn apply(&mut self, ctx: &egui::Context) {
-        self.atlas.install(ctx);
-        self.semibold.register(ctx, &self.atlas);
+    /// Install `atlas` and the mode's theme preference (egui's own call, §10.3).
+    fn apply(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
+        self.adopt(ctx, atlas);
         ctx.set_theme(self.theme_preference());
+        #[cfg(feature = "watch")]
+        self.publish_selection();
+    }
+
+    /// The steps every install of an atlas takes, and nothing else: `atlas` installed into
+    /// `ctx` and held, the OS's semibold faces of its family registered, the JSON cache and the
+    /// scheme the icon choice was derived for forgotten, the shown Widget Info released, and the
+    /// theme error cleared, since a theme now loaded. `apply` runs it, so does the watcher's
+    /// hand-off, which leaves the mode as it is, and so do the tests that install an atlas of
+    /// their own; it sets no theme preference, so a test that holds a scheme keeps it.
+    pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
+        atlas.install(ctx);
+        self.semibold.register(ctx, &atlas);
+        self.atlas = atlas;
         self.json = info::JsonCache::default();
         self.last_scheme = None;
         self.registry.screen_changed();
-        #[cfg(feature = "watch")]
-        self.publish_selection();
+        self.theme_error = None;
     }
 
     /// Switch the mode: egui's own theme call and nothing else (§10.4's side-panel row). The
     /// atlas carries both schemes and egui picks one (§4.6), so nothing is rebuilt, the OS is
-    /// not read again, and a mode switch cannot fail.
+    /// not read again, and a mode switch cannot fail. Nothing is published to the watcher, whose
+    /// rebuild reads no mode, so a rebuild under way stays current.
     pub(crate) fn set_mode(&mut self, mode: ModeChoice, ctx: &egui::Context) {
         self.settings.mode = mode;
         ctx.set_theme(self.theme_preference());
-        #[cfg(feature = "watch")]
-        self.publish_selection();
     }
 
     fn theme_preference(&self) -> egui::ThemePreference {
@@ -553,25 +621,15 @@ impl App {
         }
     }
 
-    /// What the Theme row and the command palette offer, as `(choice, display name)`: `default`
-    /// named by the preset it builds on, then this platform's presets by their display names,
-    /// as the gpui showcase's `preset_items` (`showcase-gpui/support.rs:1119-1140`).
+    /// What the Theme row and the command palette offer, as `(choice, display name)`: the
+    /// shared crate's preset rows (`rows::preset_rows`), `default` named by the preset it builds
+    /// on, then this platform's presets by their display names, as the gpui and iced showcases
+    /// offer them.
     pub(crate) fn theme_rows(&self) -> Vec<(ThemeChoice, String)> {
-        std::iter::once((
-            ThemeChoice::Default,
-            format!("default ({})", self.default_preset),
-        ))
-        .chain(
-            native_theme::theme::Theme::list_presets_for_platform()
-                .into_iter()
-                .map(|info| {
-                    (
-                        ThemeChoice::Preset(info.key.to_string()),
-                        info.display_name.to_string(),
-                    )
-                }),
-        )
-        .collect()
+        rows::preset_rows(&self.default_preset)
+            .into_iter()
+            .filter_map(|row| Some((cli::theme_key(&row.key).ok()?, row.display_name)))
+            .collect()
     }
 
     /// The key of the preset the atlas is built from — `default_preset` for `default` — the key
@@ -595,10 +653,7 @@ impl App {
                 .and_then(|all| all.iter().find(|e| e.id == id))
         });
         match element {
-            Some(element) => match element.states.first() {
-                Some(state) => format!("{} · {state}", element.name),
-                None => element.name.clone(),
-            },
+            Some(element) => element.title(),
             None => shown.info.kind.to_string(),
         }
     }
@@ -617,46 +672,174 @@ impl App {
         let mut guard = self
             .selection
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        *guard = self.settings.clone();
+            .unwrap_or_else(PoisonError::into_inner);
+        guard.generation = guard.generation.wrapping_add(1);
+        guard.settings = self.settings.clone();
+    }
+
+    /// The generation of the selection last published.
+    #[cfg(feature = "watch")]
+    pub(crate) fn generation(&self) -> u64 {
+        self.selection
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .generation
+    }
+
+    /// How many of the watcher's rebuilds have returned.
+    #[cfg(feature = "watch")]
+    fn rebuilds(&self) -> u64 {
+        self.rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .rebuilds
     }
 
     /// One watcher for every selection, never dropped and restarted (§10.2, §10.4).
     #[cfg(feature = "watch")]
     fn start_watcher(&mut self, ctx: &egui::Context) {
-        let selection = Arc::clone(&self.selection);
+        let (selection, rebuilt) = (Arc::clone(&self.selection), Arc::clone(&self.rebuilt));
         let started = native_theme_egui::ThemeWatcher::start(ctx, move || {
-            let settings = selection
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
-            App::rebuild_atlas(&settings).map(|(atlas, _)| atlas)
+            App::rebuild_selected(&selection, &rebuilt)
         });
+        self.watcher_started(started);
+    }
+
+    /// The watcher held, or why it did not start kept for the note.
+    #[cfg(feature = "watch")]
+    pub(crate) fn watcher_started(
+        &mut self,
+        started: native_theme::Result<native_theme_egui::ThemeWatcher>,
+    ) {
         match started {
             Ok(watcher) => self.watcher = Some(watcher),
-            Err(error) => self.theme_error = Some(format!("theme watcher: {error}")),
+            Err(error) => self.watcher_error = Some(error.to_string()),
         }
+    }
+
+    /// The watcher's `rebuild`, on the watcher thread: the selection read with its generation,
+    /// the detection caches cleared, as `ThemeWatcher::system_rebuild` does, so a preset's
+    /// rebuild reads the OS accessibility preferences again, then the atlas it selects built and
+    /// recorded.
+    #[cfg(feature = "watch")]
+    pub(crate) fn rebuild_selected(
+        selection: &RwLock<Selection>,
+        rebuilt: &Mutex<Rebuilt>,
+    ) -> native_theme::Result<ThemeAtlas> {
+        let (generation, settings) = {
+            let guard = selection.read().unwrap_or_else(PoisonError::into_inner);
+            (guard.generation, guard.settings.clone())
+        };
+        native_theme::detect::invalidate_caches();
+        let result = App::rebuild_atlas(&settings).map(|(atlas, _)| atlas);
+        App::record_rebuild(rebuilt, generation, result)
+    }
+
+    /// A rebuild for the selection of `generation` returned `result`: counted, and an atlas
+    /// recorded as the last built, before the connector's hand-off holds it.
+    #[cfg(feature = "watch")]
+    pub(crate) fn record_rebuild(
+        rebuilt: &Mutex<Rebuilt>,
+        generation: u64,
+        result: native_theme::Result<ThemeAtlas>,
+    ) -> native_theme::Result<ThemeAtlas> {
+        let mut record = rebuilt.lock().unwrap_or_else(PoisonError::into_inner);
+        record.rebuilds = record.rebuilds.saturating_add(1);
+        if let Ok(atlas) = &result {
+            record.built = Some((record.rebuilds, generation, atlas.clone()));
+        }
+        result
+    }
+
+    /// The watcher's hand-off, which `ThemeWatcher::take` signals; the atlas is read from the
+    /// record, with the generation it was built for. A rebuild no install has covered is
+    /// installed where it was built for the current selection; built for an earlier one, it is
+    /// dropped and the current selection rebuilt, which also reads the OS change it announced
+    /// (M9-115). A rebuild an install has covered installs nothing.
+    #[cfg(feature = "watch")]
+    pub(crate) fn take_rebuilt(&mut self, ctx: &egui::Context) {
+        let built = self
+            .rebuilt
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .built
+            .clone();
+        let Some((number, generation, atlas)) =
+            built.filter(|(number, ..)| *number > self.installed_rebuild)
+        else {
+            return;
+        };
+        if generation == self.generation() {
+            self.adopt(ctx, atlas);
+            self.installed_rebuild = number;
+        } else {
+            self.install(ctx);
+        }
+    }
+
+    /// The watcher's last rebuild error, `None` again once a later rebuild succeeds.
+    #[cfg(feature = "watch")]
+    fn watcher_last_error(&self) -> Option<String> {
+        #[cfg(test)]
+        if let Some(error) = &self.watcher_last_error {
+            return Some(error.clone());
+        }
+        self.watcher
+            .as_ref()
+            .and_then(native_theme_egui::ThemeWatcher::last_error)
+    }
+
+    /// The theme errors the banner shows: the last install's, then the watcher's last failed
+    /// rebuild as `theme watcher: …` while no install has covered it. The record's count decides,
+    /// not the error's text, which a repeat failure keeps.
+    pub(crate) fn theme_errors(&self) -> Vec<String> {
+        let errors = self.theme_error.iter().cloned();
+        #[cfg(feature = "watch")]
+        let errors = errors.chain(
+            self.watcher_last_error()
+                .filter(|_| self.rebuilds() > self.installed_rebuild)
+                .map(|error| format!("theme watcher: {error}")),
+        );
+        errors.collect()
+    }
+
+    /// The note the banner shows under the errors: why the watcher did not start.
+    pub(crate) fn watcher_note(&self) -> Option<String> {
+        #[cfg(feature = "watch")]
+        if let Some(error) = &self.watcher_error {
+            return Some(format!("OS theme changes are not followed: {error}"));
+        }
+        None
     }
 }
 
 impl App {
-    /// Whether the system menu bar holds exactly the menus the showcase built:
-    /// `Some(true)` or `Some(false)` on macOS outside `cfg(test)`.
+    /// Whether the system menu bar AppKit holds is the showcase's (`system_menu::menus`), on
+    /// macOS outside `cfg(test)`: the showcase's installed, and the five titles read back are
+    /// the ones the shared crate gives, in order (`menu::check_main_menu`). The error says
+    /// which does not hold.
     #[cfg(all(target_os = "macos", not(test)))]
-    pub(crate) fn menu_installed(&self) -> Option<bool> {
-        let built = self.system_menu.as_ref().map(|m| m.top_level())?;
-        let installed = crate::chrome::system_menu::main_menu_item_count()?;
-        Some(usize::try_from(installed).ok() == Some(built))
+    pub(crate) fn menu_installed(&self) -> Result<(), String> {
+        if self.system_menu.is_none() {
+            return Err("the showcase's macOS menu bar did not install".to_string());
+        }
+        native_theme_showcase_support::menu::check_main_menu(
+            crate::chrome::system_menu::APP_NAME,
+            native_theme_showcase_support::menu::main_menu_titles(),
+        )
     }
-    /// `None` wherever there is no system menu bar to read back.
+    /// `Ok` wherever there is no system menu bar to read back.
     #[cfg(not(all(target_os = "macos", not(test))))]
-    pub(crate) fn menu_installed(&self) -> Option<bool> {
-        None
+    pub(crate) fn menu_installed(&self) -> Result<(), String> {
+        Ok(())
     }
 
-    /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it,
-    /// then close the window unless it is being captured. A failed write is reported and ends
-    /// the run with 1, as a failed `--screenshot` does.
+    /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it
+    /// (`dump::write_layout`), then close the window once every file the run asked for is
+    /// written, unless `--capture` keeps it for the tool that captures it (`cli::Outputs`). A
+    /// failed write is reported and ends the run with 1, as a failed `--screenshot` does
+    /// (`cli::refuse`), and so does a layout that has not settled `CAPTURE_WAIT` after the first
+    /// pass (`dump_given_up`).
     fn dump_layout(&mut self, ctx: &egui::Context) {
         let preset = self.preset_key().to_string();
         let Some(dump) = self.dump.as_mut().filter(|d| !d.written) else {
@@ -671,21 +854,21 @@ impl App {
                 now
             }
         };
+        let started = *dump.started.get_or_insert(now);
         ctx.request_repaint();
         if now - since < crate::DUMP_SETTLE_S {
+            if let Some(failure) = dump_given_up(&self.outputs, &dump.path, now - started) {
+                cli::refuse(&failure);
+            }
             return;
         }
         let json = layout_json(places, &preset, ctx.theme(), ctx.pixels_per_point());
-        let written = serde_json::to_string_pretty(&json)
-            .map_err(|e| e.to_string())
-            .and_then(|text| std::fs::write(&dump.path, text).map_err(|e| e.to_string()));
-        if let Err(error) = written {
-            eprintln!("ERROR: --dump-layout {}: {error}", dump.path);
-            std::process::exit(1);
+        if let Err(error) = dump::write_layout(&dump.path, &json) {
+            cli::refuse(&error);
         }
         eprintln!("Layout dumped to {}", dump.path);
         dump.written = true;
-        if !dump.keep_running {
+        if self.outputs.written(Output::Dump) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
     }
@@ -698,7 +881,10 @@ impl App {
             }
             Action::ToggleSidePanel => self.side_panel_visible = !self.side_panel_visible,
             Action::OpenCommandPalette => self.palette = Some(PaletteState::default()),
-            Action::ReloadTheme => self.install(ctx),
+            Action::ReloadTheme => {
+                native_theme::detect::invalidate_caches();
+                self.install(ctx);
+            }
             Action::SetMode(mode) => self.set_mode(mode, ctx),
             Action::OpenPreferences => self.preferences_open = true,
             Action::OpenAbout => self.about_open = true,
@@ -711,12 +897,53 @@ impl App {
     }
 }
 
+/// Why `--dump-layout` to `path` failed, where `outputs` still waits for the dump `waited`
+/// seconds of input time after its first pass, once that reaches the shared crate's
+/// `CAPTURE_WAIT`, the bound the gpui and iced showcases give up theirs at: a layout that never
+/// stays the same for `DUMP_SETTLE_S` fails the run (exit 1) rather than keep it open,
+/// `--screenshot` written or not. `None` before then, once the dump is written, or where the
+/// run asked for none.
+pub(crate) fn dump_given_up(outputs: &Outputs, path: &str, waited: f64) -> Option<String> {
+    (outputs.pending(Output::Dump) && waited >= CAPTURE_WAIT.as_secs_f64()).then(|| {
+        Output::Dump.failure(
+            path,
+            &format!(
+                "no layout was written within {} s: the layout did not stay the same for {} s",
+                CAPTURE_WAIT.as_secs(),
+                crate::DUMP_SETTLE_S
+            ),
+        )
+    })
+}
+
+/// The window's content in physical pixels and the display's scale factor, as egui has them
+/// when the capture asks (`FrameCapture::poll`); a scale egui does not know is refused here, so
+/// the frame check (`capture::check_frame_capture`) always has one to measure against.
+pub(crate) fn content_px(ctx: &egui::Context) -> Result<Content, String> {
+    let (inner, scale) = ctx.input(|i| {
+        (
+            i.viewport().inner_rect,
+            i.viewport().native_pixels_per_point,
+        )
+    });
+    let inner = inner.ok_or("the window's content rect is unknown")?;
+    let scale = scale.ok_or("the display's scale factor is unknown")?;
+    let px = |points: f32| (points * scale).round() as i64;
+    Ok(((px(inner.width()), px(inner.height())), f64::from(scale)))
+}
+
 impl eframe::App for App {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
+        // A captured or dumped window shows the run as it started whatever is typed while it
+        // runs: a key the desktop hands it types into no field and runs no shortcut.
+        if self.shields_keyboard {
+            raw_input.events.retain(|e| !keyboard_event(e));
+        }
         let Some(held) = &mut self.held_pointer else {
-            // A captured window shows the page at rest wherever the real pointer is: no control
-            // hovered or pressed under it, no Widget Info chosen by it, nothing scrolled by it.
-            if self.capturing {
+            // A captured or dumped window shows the page at rest wherever the real pointer is:
+            // no control hovered or pressed under it, no Widget Info chosen by it, nothing
+            // scrolled by it.
+            if self.shields_pointer {
                 raw_input
                     .events
                     .retain(|e| !pointer_event(e) && !matches!(e, egui::Event::MouseWheel { .. }));
@@ -780,13 +1007,13 @@ impl eframe::App for App {
             self.run_action(action, ctx);
         }
         #[cfg(feature = "watch")]
-        if let Some(atlas) = self.watcher.as_ref().and_then(|w| w.take()) {
-            atlas.install(ctx);
-            self.semibold.register(ctx, &atlas);
-            self.atlas = atlas;
-            self.json = info::JsonCache::default();
-            self.last_scheme = None;
-            self.registry.screen_changed();
+        if self
+            .watcher
+            .as_ref()
+            .and_then(native_theme_egui::ThemeWatcher::take)
+            .is_some()
+        {
+            self.take_rebuilt(ctx);
         }
         // A new theme or a scheme switch re-derives a following icon choice (§10.4:
         // `breeze` to `breeze-dark` on `kde-breeze`); a pass on the same scheme does nothing.
@@ -795,44 +1022,41 @@ impl eframe::App for App {
             self.settings.theme_installed(&self.atlas, scheme);
             self.last_scheme = Some(scheme);
         }
-        // Read before the screenshot's `&mut` borrow of `self` (§10.4's fourth rule).
-        let menu_installed = self.menu_installed();
-        if let Some(shot) = &mut self.screenshot {
-            let now = ctx.input(|i| i.time);
+        let now = ctx.input(|i| i.time);
+        let due = self.screenshot.as_mut().is_some_and(|shot| {
             let started = *shot.started.get_or_insert(now);
-            if !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S {
-                // The macOS runner's check (§13): a capture step fails when the menu did not install.
-                if menu_installed == Some(false) {
-                    eprintln!(
-                        "ERROR: the macOS main menu holds a different number of menus than the showcase built"
-                    );
-                    std::process::exit(1);
+            !shot.written && shot.capture.is_none() && now - started >= SCREENSHOT_DELAY_S
+        });
+        // The macOS runner's check (§13), read on the pass the capture is due alone, and before
+        // the screenshot's `&mut` borrow of `self` (§10.4's fourth rule): a capture step fails
+        // where the menu bar AppKit holds is not the showcase's.
+        let menu_installed = due.then(|| self.menu_installed());
+        if let Some(shot) = &mut self.screenshot {
+            if due {
+                if let Some(Err(error)) = &menu_installed {
+                    cli::refuse(&Output::Screenshot.failure(&shot.path, error));
                 }
-                match crate::capture::FrameCapture::start(&shot.path) {
+                match FrameCapture::start(crate::WINDOW_TITLE, &shot.path) {
                     Ok(capture) => shot.capture = Some(capture),
-                    Err(error) => {
-                        eprintln!(
-                            "ERROR: screenshot capture failed for {}: {error}",
-                            shot.path
-                        );
-                        std::process::exit(1);
-                    }
+                    Err(error) => cli::refuse(&Output::Screenshot.failure(&shot.path, &error)),
                 }
             }
-            match shot.capture.as_mut().and_then(|c| c.poll(ctx)) {
+            match shot
+                .capture
+                .as_mut()
+                .and_then(|c| c.poll(|| content_px(ctx)))
+            {
                 None => {}
                 Some(Ok(())) => {
                     eprintln!("Screenshot saved to {}", shot.path);
                     shot.capture = None;
                     shot.written = true;
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    if self.outputs.written(Output::Screenshot) {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
                 }
                 Some(Err(error)) => {
-                    eprintln!(
-                        "ERROR: screenshot capture failed for {}: {error}",
-                        shot.path
-                    );
-                    std::process::exit(1);
+                    cli::refuse(&Output::Screenshot.failure(&shot.path, &error));
                 }
             }
             // egui repaints only on demand (`egui/src/memory/mod.rs:341`): keep the passes

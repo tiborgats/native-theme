@@ -12,17 +12,18 @@
 //! record where they were laid out (`crate::elements`).
 
 use gpui::{
-    AnyElement, AvailableSpace, Context, IntoElement, ParentElement, Pixels, Styled, Window, div,
-    prelude::*, px, size,
+    AnyElement, AvailableSpace, Axis, Context, IntoElement, ParentElement, Pixels, Styled, Window,
+    div, prelude::*, px, size,
 };
-use gpui_component::{h_flex, v_flex};
+use gpui_component::{IconName, h_flex, v_flex};
 
-use native_theme::theme::IconRole;
+use native_theme::icons::IconRole;
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{
-    self, ButtonKind, ButtonState, DemoButton, InputField, SeparatorKind, SpinnerKind, TypeRole,
+    self, ButtonKind, ButtonState, DemoButton, ExpanderArrows, ExpanderSpec, InputField,
+    SeparatorKind, SpinnerKind, StepIcons, TypeRole,
 };
 use crate::elements;
 use crate::support::{native_value, with_gap, with_padding};
@@ -178,7 +179,7 @@ pub(crate) const BASIC_GROUPS: [BasicGroup; 20] = [
 /// the page's five, four and three columns (docs/showcase-elements.toml, the
 /// Basic page): four columns end the other four with the fifth's groups,
 /// three put the fourth's too, balanced by the groups' heights under the
-/// material preset, the tallest.
+/// material-3 preset, the tallest.
 pub(crate) const BASIC_FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
     &[4, 5, 6],
@@ -216,7 +217,10 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
 /// widest fixed-width control the theme states on the page --
 /// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH` -- where `page` is
+/// apart with room for both of the selected tab's flares,
+/// `2 * tab.active_outward_corner_radius` where `widgets::TabBar` draws them
+/// (`TabLook::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` -- where
+/// `page` is
 /// `content_width` less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
 /// scrolling page keeps free. Three where not even three do: the page is then
@@ -236,7 +240,8 @@ pub(crate) fn basic_column_count(
     };
     let page = content_width - margin - margin - gutter;
     let t = &resolved.tab;
-    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let flare = outward_radius(resolved);
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default() + flare + flare;
     let widest = resolved
         .combo_box
         .min_width
@@ -250,6 +255,24 @@ pub(crate) fn basic_column_count(
             (page - (n - 1.0) * gap) / n >= widest
         })
         .unwrap_or(MIN_COLUMNS)
+}
+
+/// The radius of the selected tab's flares as `widgets::TabBar` draws them,
+/// 0 where it draws none: a radius the theme leaves unstated, states as 0,
+/// or states as a length the bar does not take, or a build without the
+/// `widgets` feature, whose Basic tabs are gpui-component's.
+fn outward_radius(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    #[cfg(feature = "widgets")]
+    {
+        native_theme_gpui::widgets::TabLook::of(resolved)
+            .and_then(|look| look.outward_radius)
+            .map_or(0.0, f32::from)
+    }
+    #[cfg(not(feature = "widgets"))]
+    {
+        let _ = resolved;
+        0.0
+    }
 }
 
 /// The elements of docs/showcase-elements.toml the page and its columns
@@ -289,8 +312,9 @@ impl Showcase {
             .flatten()
             .map(px);
 
-        let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
+        let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_radio = Some(*ix);
+            cx.notify();
         });
         let on_tab = cx.listener(|this, ix: &usize, _w, cx| {
             this.basic_tab = *ix;
@@ -501,8 +525,16 @@ impl Showcase {
             group(
                 slider,
                 vec![
-                    demo::slider(ui, cx, "basic-slider", &self.basic_slider_state, width)
-                        .into_any_element(),
+                    demo::slider(
+                        ui,
+                        cx,
+                        "basic-slider",
+                        "Sample value",
+                        &self.basic_slider_state,
+                        Axis::Horizontal,
+                        width,
+                    )
+                    .into_any_element(),
                 ],
             ),
         ];
@@ -525,8 +557,13 @@ impl Showcase {
                     cx,
                     window,
                     "basic-number",
+                    "Sample number",
                     &self.basic_number_state,
                     width,
+                    &StepIcons {
+                        up: self.sample_icon(IconName::ChevronUp),
+                        down: self.sample_icon(IconName::ChevronDown),
+                    },
                 )
                 .into_any_element(),
             ],
@@ -586,7 +623,7 @@ impl Showcase {
                         cx,
                         "basic-progress",
                         "Progress bar",
-                        BASIC_PROGRESS,
+                        Some(BASIC_PROGRESS),
                     ))
                     .into_any_element(),
             ],
@@ -679,14 +716,20 @@ impl Showcase {
                 demo::expander(
                     ui,
                     cx,
-                    "basic-expander",
-                    [
-                        ("Details", "basic-expander-body", "Expanded content"),
-                        ("More", "basic-expander-more-body", "More content"),
-                    ],
-                    self.basic_expanded,
-                    wide,
-                    widget_gap,
+                    ExpanderSpec {
+                        id: "basic-expander",
+                        items: [
+                            ("Details", "basic-expander-body", "Expanded content"),
+                            ("More", "basic-expander-more-body", "More content"),
+                        ],
+                        open: self.basic_expanded,
+                        width: wide,
+                        gap: widget_gap,
+                        arrows: ExpanderArrows {
+                            leading: self.sample_icon(IconName::ChevronRight),
+                            trailing: self.sample_icon(IconName::ChevronDown),
+                        },
+                    },
                     on_expander,
                 )
                 .into_any_element(),
@@ -797,6 +840,6 @@ impl Showcase {
             cx,
         );
         let frame = px(native_value(cx, |n| n.resolved.list.border.line_width).unwrap_or_default());
-        measured.height * BASIC_LIST_VISIBLE + frame + frame
+        px(f32::from(measured.height) * BASIC_LIST_VISIBLE + f32::from(frame) + f32::from(frame))
     }
 }

@@ -7,10 +7,12 @@ use gpui::{
 use gpui_component::StyledExt as _;
 use native_theme::theme::ResolvedTheme;
 
-use super::{color, length, native};
+use super::{color, length};
+use crate::ActiveNativeTheme;
 
 /// What a separator paints, from `SeparatorTheme`.
 #[derive(Clone, Copy, Debug, PartialEq)]
+#[non_exhaustive]
 pub struct SeparatorLook {
     /// `separator.line_color`.
     pub color: Hsla,
@@ -80,7 +82,7 @@ impl Styled for Separator {
 
 impl RenderOnce for Separator {
     fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
-        let Some(look) = native(cx).and_then(|n| SeparatorLook::of(n.resolved)) else {
+        let Some(look) = cx.native().and_then(|n| SeparatorLook::of(n.resolved)) else {
             return self.fallback();
         };
         let line = div().flex_none().bg(look.color);

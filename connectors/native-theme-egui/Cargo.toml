@@ -22,15 +22,22 @@ targets = [
 ]
 
 [features]
-# The native look is not opt-in (§12.1): everything that serves it without
-# application code is on by default. `svg-rasterize` and `watch` stay opt-in.
+# The native look of a preset is not opt-in (§12.1): the icons and fonts that
+# serve it without application code are on by default. `svg-rasterize` stays
+# opt-in. Reading the OS theme (`native`) and following it (`watch`) are off by
+# default, as in native-theme and the iced and gpui connectors.
 default = ["material-icons", "lucide-icons", "system-icons", "system-fonts"]
 material-icons = ["native-theme/material-icons"]
 lucide-icons  = ["native-theme/lucide-icons"]
 system-icons  = ["native-theme/system-icons"]
 svg-rasterize = ["native-theme/svg-rasterize"]
 system-fonts  = ["native-theme/system-fonts"]
-watch         = ["native-theme/watch"]
+# The OS readers: without one, `from_system()` is the platform preset on Linux
+# (with the light/dark preference and reduced motion still read) and an error
+# on macOS and Windows. native-theme's finer `kde`, `portal`,
+# `macos` and `windows` pick one.
+native        = ["native-theme/native"]
+watch         = ["native-theme/watch"]  # enables `ThemeWatcher`
 
 [dependencies]
 egui = "0.36.2"
@@ -43,15 +50,21 @@ native-theme = { workspace = true }
 # `skrifa` for both — checked by `cargo tree -d` (§13 T7).
 skrifa = { version = "0.44.0", default-features = false, features = ["std"] }
 
-[target.'cfg(target_os = "linux")'.dependencies]
-native-theme = { workspace = true, features = ["linux"] }
-[target.'cfg(target_os = "macos")'.dependencies]
-native-theme = { workspace = true, features = ["macos"] }
-[target.'cfg(target_os = "windows")'.dependencies]
-native-theme = { workspace = true, features = ["windows"] }
-
 [dev-dependencies]
+# The freedesktop icon-theme fixture the tests run in a child process
+# (tools/test-fixtures, never published). A path with no version: `cargo
+# package` strips it.
+native-theme-test-fixtures = { path = "../../tools/test-fixtures" }
+# What the three showcases share: the command line, the window capture, the
+# layout dump, the element list, the Widget Info values and rows, the side
+# panel's picker rows and the status bar's text (tools/showcase-support, never
+# published). A path with no version: `cargo package` strips it.
+native-theme-showcase-support = { path = "../../tools/showcase-support" }
 eframe = "0.36.2"
+# The OS readers, so the showcase, install_tests.rs and every test build read
+# the OS theme without the `native` feature named; `ThemeWatcher` and the
+# showcase's watcher still need this crate's own `watch` feature.
+native-theme = { workspace = true, features = ["native", "watch"] }
 # The showcase's palette is every widget egui_extras offers (§10.4): `svg` for
 # the icons, `datepicker` for `DatePickerButton`. Not `syntect`: without it
 # `code_view_ui` highlights with egui_extras's own fallback.
@@ -91,25 +104,11 @@ test = true
 # The showcase's menus in the macOS system menu bar (§10.4): winit for
 # `EventLoopBuilderExtMacOS::with_default_menu`, which eframe does not
 # re-export, at eframe's own requirement (`eframe/Cargo.toml:266-268`); muda
-# for the menu; objc2 and objc2-app-kit, at the versions `native-theme`
-# requires (`native-theme/Cargo.toml:61`, `:71`), to read back
-# `NSApplication::mainMenu` for the macOS runner's check (§13).
+# for the menu. The macOS runner's check (§13) reads `NSApplication::mainMenu`
+# back through the shared crate (`menu::main_menu_titles`).
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 winit = { version = "0.30.13", default-features = false }
 # Off: muda's default `libxdo` and `gtk3` are Linux/BSD-only (its `Cargo.toml` lines 45-51,
 # 96-107), change nothing on macOS, and would add the gtk-rs 0.18 stack to `Cargo.lock`.
 muda = { version = "0.20.0", default-features = false }
-objc2 = "0.6.4"
-objc2-app-kit = { version = "0.3.2", features = ["NSApplication", "NSMenu", "NSResponder"] }
 
-# `--screenshot` captures the window with its frame, as the gpui and iced
-# showcases do, through xcap's safe API: its window list finds the showcase's
-# window (on macOS its `CGWindowID` for `screencapture -l <id> -o`, the
-# siblings' capture; on Windows its `DWMWA_EXTENDED_FRAME_BOUNDS`, which a
-# monitor-region `BitBlt` then captures, as the siblings' `BitBlt` does). No
-# default features: `image` is `image/default`, `wgc` Windows.Graphics.Capture.
-# `image` reads the size of the PNG `screencapture` wrote and writes the
-# Windows capture as a PNG (§10.4).
-[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dev-dependencies]
-xcap = { version = "0.9.8", default-features = false }
-image = { version = "0.25.10", default-features = false, features = ["png"] }

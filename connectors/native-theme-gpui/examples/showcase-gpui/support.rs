@@ -13,22 +13,21 @@ use gpui_component::{
     attachment::AttachmentStatus,
     list::{ListDelegate, ListState},
     searchable_list::{SearchableListChange, SearchableListDelegate, SearchableListItem},
-    table::{Column, TableDelegate, TableEvent, TableState},
+    table::{Column, ColumnSort, TableDelegate, TableEvent, TableState},
 };
 
 #[cfg(target_os = "linux")]
-use native_theme::detect::parse_linux_desktop;
+use native_theme::detect::system_icon_theme;
 use native_theme::icons::{
-    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
-    SfSymbolsLoader, load_icon,
+    FreedesktopLoader, IconData, IconRole, IconSetChoice, LucideLoader, MaterialLoader,
+    SegoeFluentLoader, SfSymbolsLoader, load_icon,
 };
-use native_theme::theme::{IconData, IconRole, IconSet};
+use native_theme::theme::IconSet;
 #[cfg(target_os = "linux")]
-use native_theme::theme::{icon_name as native_icon_name, system_icon_theme};
-#[cfg(target_os = "linux")]
-use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
+use native_theme_gpui::icons::freedesktop_name_candidates;
 use native_theme_gpui::icons::{lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{ActiveNativeTheme, Native};
+use native_theme_showcase_support::rows;
 
 use crate::demo::{self, BodyRow, DataTableRow};
 use crate::info::InfoRegistry;
@@ -123,6 +122,41 @@ fn install(cx: &mut App) -> native_theme::Result<()> {
 }
 "#;
 
+/// Who draws the frame of a window granted server-side decorations, on the
+/// platform `os` names (`std::env::consts::OS`): the system on macOS and
+/// Windows, whose title bar gpui's default window options keep
+/// (`window_options`), and the window manager on Linux.
+pub(crate) fn frame_drawer(os: &str) -> &'static str {
+    match os {
+        "macos" | "windows" => "the system",
+        _ => "the window manager",
+    }
+}
+
+/// The patch the Typography page's `Diff` shows: one Rust file, with
+/// removed, added and context lines.
+pub(crate) const DIFF_SAMPLE: &str = r#"diff --git a/src/install.rs b/src/install.rs
+--- a/src/install.rs
++++ b/src/install.rs
+@@ -5,12 +5,12 @@
+ /// Install the desktop's colors, fonts and geometry into gpui-component.
+ fn install(cx: &mut App) -> native_theme::Result<()> {
+     let system = SystemTheme::from_system()?;
+-    let mode = match system.mode.is_dark() {
+-        true => ColorMode::Dark,
+-        false => ColorMode::Light,
++    let mode = if system.mode.is_dark() {
++        ColorMode::Dark
++    } else {
++        ColorMode::Light
+     };
+     let resolved = system.pick(mode);
+-    println!("{} {}px", resolved.defaults.font.family, resolved.defaults.font.size);
+     apply_system_theme(&system, cx);
+     Ok(())
+ }
+"#;
+
 /// The Markdown source rendered by the `TextView` of the Typography page.
 pub(crate) const MARKDOWN_SAMPLE: &str = r#"## What native-theme maps
 
@@ -148,23 +182,6 @@ apply_system_theme(&system, cx);
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// A font size in the unit its source stated, never converted.
-///
-/// A platform that reports points (KDE, GNOME, Windows) and a preset written
-/// in pixels both resolve to logical pixels, and 10.5pt at 96 DPI is exactly
-/// 14px -- so dividing the resolved size by the DPI would print "10.5pt" for
-/// a preset whose author wrote `size_px = 14`. `ResolvedFontSpec::defined_size`
-/// carries what the source actually said, so this converts nothing.
-pub(crate) fn defined_size(font: &native_theme::theme::ResolvedFontSpec) -> String {
-    match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        // Validation records a missing size rather than inventing one; say so
-        // instead of presenting the resolved fallback as a definition.
-        None => "(size not stated)".to_string(),
-    }
-}
-
 /// The geometry refinement a builder produces for the installed native theme,
 /// or `None` before `apply` ran (spec §9.1). Returns an owned value so the
 /// borrow of `cx` ends at once.
@@ -172,7 +189,7 @@ pub(crate) fn native_geometry<F: FnOnce(Native<'_>) -> StyleRefinement>(
     cx: &App,
     build: F,
 ) -> Option<StyleRefinement> {
-    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+    cx.native().map(build)
 }
 
 /// Applies a geometry refinement when one is available; the widget keeps
@@ -232,7 +249,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:2924-2934`). The showcase rebuilds these caches on every
+/// `src/app.rs:3103-3113`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -260,7 +277,7 @@ pub(crate) fn refined<W: Styled>(widget: W, style: Option<&StyleRefinement>) -> 
 /// The value a size or length builder gives for the installed native theme,
 /// or `None` before `apply` ran (spec §9.3, §9.4).
 pub(crate) fn native_value<T, F: FnOnce(Native<'_>) -> T>(cx: &App, build: F) -> Option<T> {
-    cx.native_theme().and_then(|nt| nt.native(cx)).map(build)
+    cx.native().map(build)
 }
 
 /// A colour of the installed native theme, as gpui paints it, or `None`
@@ -277,10 +294,11 @@ pub(crate) fn native_color<F: FnOnce(Native<'_>) -> native_theme::color::Rgba>(
 }
 
 /// `v_flex`/`h_flex` sized by one of the layout accessors, which are `None`
-/// wherever the platform specifies nothing (platform-facts §2.20). All 16
-/// bundled presets state `layout.widget_gap`, so the `None` arm is reached
-/// only on the `from_system()` error branch; there the widget keeps gpui's own
-/// default gap, because nothing native is known to set.
+/// wherever the platform specifies nothing (platform-facts §2.20). Where it
+/// is `None` no gap is set, so none is drawn: nothing native is known to
+/// set, and the showcase invents none. Every bundled preset states
+/// `widget_gap` and `window_margin`; macos-tahoe states no `section_gap` (nor
+/// `container_margin`), so its pages' sections touch.
 pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
     match gap {
         Some(g) => widget.gap(g),
@@ -289,12 +307,13 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 }
 
 /// A box `id` that scrolls `content` vertically: the structure
-/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:147-196, a
+/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:153-206, a
 /// root the caller sizes, a scroll area filling it, the content at least the
-/// area's height, the scrollbar laid over the root), on the application's
+/// area's height, the scrollbar laid over the root; this one leaves out the
+/// `gpui_base::ScrollBounce` 0.8.0 wraps the area in, :187-194), on the application's
 /// own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
 /// free only while it overflows the area. gpui-base hides the bar while the
-/// content fits (gpui-base src/scrollbar.rs:1402-1406), and the platform's
+/// content fits (gpui-base src/scrollbar.rs:1416-1419), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
 /// overflow; a frame whose layout changes it calls `relayout`, which asks
 /// the view for another frame.
@@ -315,7 +334,7 @@ pub(crate) fn gutter_scroll(
         content
     };
     let watched = handle.clone();
-    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:227-262):
+    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:248-283):
     // a flex item that is not keeps its content's height as its minimum and
     // grows to it instead of scrolling.
     gpui::div()
@@ -348,6 +367,8 @@ pub(crate) fn gutter_scroll(
         )
 }
 
+/// `widget` padded on every side by one of the layout accessors, and not at
+/// all where it is `None`, as [`with_gap`] spaces.
 pub(crate) fn with_padding<W: Styled>(widget: W, padding: Option<Pixels>) -> W {
     match padding {
         Some(p) => widget.p(p),
@@ -403,74 +424,67 @@ pub(crate) fn parse_icon_set_choice(display: &str) -> IconSetChoice {
     }
 }
 
+/// Whether `set` is one of the platforms' own icon sets -- freedesktop, SF
+/// Symbols, Segoe Fluent -- whose loaders colour a symbolic icon as they
+/// load it (`color_opt`), where a bundled set's SVGs are coloured as they
+/// are drawn (`Showcase::rebuild_icon_caches`).
+pub(crate) fn is_system_set(set: IconSet) -> bool {
+    matches!(
+        set,
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeFluent
+    )
+}
+
+/// The desktop's own theme, read: `SystemTheme::from_system`, which
+/// `default` installs. Counted in the self-tests (`SYSTEM_READS`).
+pub(crate) fn read_system_theme() -> native_theme::Result<native_theme::SystemTheme> {
+    #[cfg(test)]
+    SYSTEM_READS.with(|reads| reads.set(reads.get().saturating_add(1)));
+    native_theme::SystemTheme::from_system()
+}
+
+#[cfg(test)]
+thread_local! {
+    /// How often the showcase read the desktop's theme
+    /// (`read_system_theme`) on this thread; a test reads how much an action
+    /// adds to it.
+    pub(crate) static SYSTEM_READS: Cell<usize> = const { Cell::new(0) };
+    /// How often the showcase loaded a set's icons (`load_all_icons`) on
+    /// this thread; a test reads how much an action adds to it.
+    pub(crate) static ICON_LOADS: Cell<usize> = const { Cell::new(0) };
+}
+
 /// Pre-load the icon of each of the 42 `IconRole`s from the given icon set,
 /// tracking its source.
 ///
-/// `default_theme`: when this is `Some(theme_name)` and `icon_set` is
-/// `Freedesktop`, icons are loaded via `FreedesktopLoader` with `.theme()` so they come
-/// from the specific theme rather than the system default.  This is used for
-/// the "default" dropdown selection.  `None` means use the plain `load_icon(role, icon_set)`.
-///
-/// `cli_override`: the `--icon-theme` theme while it stands
-/// (`Showcase::icon_theme_override`), which a freedesktop set loads from in
-/// place of `default_theme`. Freedesktop themes load on Linux only
-/// (native-theme `FreedesktopLoader::load`), so elsewhere it is unused.
+/// `theme`: the freedesktop theme a freedesktop set loads from
+/// (`Showcase::freedesktop_theme`), the system's own where `None`; the
+/// loader looks each role's name up itself (native-theme
+/// `FreedesktopLoader::load`), which loads nothing off Linux.
 pub(crate) fn load_all_icons(
     icon_set: IconSet,
-    default_theme: Option<&str>,
-    cli_override: Option<&str>,
-    fg_color: Option<[u8; 3]>,
+    theme: Option<&str>,
+    fg_color: Option<native_theme::Rgba>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
-    #[cfg(not(target_os = "linux"))]
-    let _ = cli_override;
-    let is_system_set = matches!(
-        icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
-    );
+    #[cfg(test)]
+    ICON_LOADS.with(|loads| loads.set(loads.get().saturating_add(1)));
+    let is_system_set = is_system_set(icon_set);
 
     IconRole::ALL
         .iter()
         .map(|role| {
-            // When a CLI override is specified and we're using freedesktop,
-            // load from that specific theme via FreedesktopLoader with .theme().
-            // When a default theme is specified (from the TOML), use
-            // FreedesktopLoader with .theme() which handles freedesktop themes properly.
-            #[cfg(target_os = "linux")]
             let data = match icon_set {
                 IconSet::Freedesktop => {
-                    let mut l = FreedesktopLoader::new(*role).color_opt(fg_color);
-                    if let Some(t) = cli_override.or(default_theme) {
-                        // cli_override takes priority; name-based lookup via native_icon_name
-                        // is only needed when overriding explicitly
-                        if cli_override.is_some() {
-                            if let Some(name) = native_icon_name(*role, IconSet::Freedesktop) {
-                                l = FreedesktopLoader::new(name).theme(t).color_opt(fg_color);
-                            }
-                        } else {
-                            l = l.theme(t);
-                        }
+                    let loader = FreedesktopLoader::new(*role).color_opt(fg_color);
+                    match theme {
+                        Some(theme) => loader.theme(theme).load(),
+                        None => loader.load(),
                     }
-                    l.load()
                 }
                 IconSet::Material => MaterialLoader::new(*role).load(),
                 IconSet::Lucide => LucideLoader::new(*role).load(),
                 IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
-                _ => None,
-            };
-            #[cfg(not(target_os = "linux"))]
-            let data = match icon_set {
-                IconSet::Freedesktop => {
-                    let mut l = FreedesktopLoader::new(*role).color_opt(fg_color);
-                    if let Some(t) = default_theme {
-                        l = l.theme(t);
-                    }
-                    l.load()
-                }
-                IconSet::Material => MaterialLoader::new(*role).load(),
-                IconSet::Lucide => LucideLoader::new(*role).load(),
-                IconSet::SfSymbols => SfSymbolsLoader::new(*role).color_opt(fg_color).load(),
-                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).color_opt(fg_color).load(),
+                IconSet::SegoeFluent => SegoeFluentLoader::new(*role).color_opt(fg_color).load(),
                 _ => None,
             };
 
@@ -495,52 +509,21 @@ pub(crate) fn is_native_icon_set(name: &str) -> bool {
     }
 }
 
-/// Reverse lookup: find the IconRole for a gpui-component icon name string.
-///
-/// Maps gpui icon display names back to IconRole for showcase. When multiple roles
-/// map to the same icon (e.g., DialogError and StatusError both -> CircleX), the
-/// first listed role is used.
-///
-/// We match by Lucide icon name string since `IconName` doesn't implement `PartialEq`.
-fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
-    // Static table mapping gpui-component icon names to IconRole, derived from
-    // the connector's icon_name() mapping.
-    match gpui_name {
-        "TriangleAlert" => Some(IconRole::DialogWarning),
-        "CircleX" => Some(IconRole::DialogError), // also maps StatusError (issue 46/55)
-        "Info" => Some(IconRole::DialogInfo),
-        "CircleCheck" => Some(IconRole::DialogSuccess),
-        "WindowClose" => Some(IconRole::WindowClose),
-        "WindowMinimize" => Some(IconRole::WindowMinimize),
-        "WindowMaximize" => Some(IconRole::WindowMaximize),
-        "WindowRestore" => Some(IconRole::WindowRestore),
-        "Delete" => Some(IconRole::ActionDelete),
-        "Copy" => Some(IconRole::ActionCopy),
-        "Undo2" => Some(IconRole::ActionUndo),
-        "Redo2" => Some(IconRole::ActionRedo),
-        "Search" => Some(IconRole::ActionSearch),
-        "Settings" => Some(IconRole::ActionSettings),
-        "Plus" => Some(IconRole::ActionAdd),
-        "Minus" => Some(IconRole::ActionRemove),
-        "RefreshCw" => Some(IconRole::ActionRefresh),
-        "ChevronLeft" => Some(IconRole::NavBack),
-        "ChevronRight" => Some(IconRole::NavForward),
-        "ChevronUp" => Some(IconRole::NavUp),
-        "ChevronDown" => Some(IconRole::NavDown),
-        "Menu" => Some(IconRole::NavMenu),
-        "File" => Some(IconRole::FileGeneric),
-        "FolderClosed" => Some(IconRole::FolderClosed),
-        "FolderOpen" => Some(IconRole::FolderOpen),
-        "Loader" => Some(IconRole::StatusBusy),
-        "Check" => Some(IconRole::StatusCheck),
-        "User" => Some(IconRole::UserAccount),
-        "Bell" => Some(IconRole::Notification),
-        _ => None,
-    }
+/// The `IconRole` the gallery shows `icon` under, and loads it by: the
+/// first of `IconRole::ALL` whose `native_theme_gpui::icons::icon_name` is
+/// `icon`, so where two roles map to one icon (`DialogError` and
+/// `StatusError` to `CircleX`) the first listed wins; `None` where no role
+/// maps to it. `IconName` has no `PartialEq`, so the two are compared by
+/// their asset paths.
+pub(crate) fn role_for_gpui_icon(icon: &IconName) -> Option<IconRole> {
+    let path = icon.clone().path();
+    IconRole::ALL.iter().copied().find(|role| {
+        native_theme_gpui::icons::icon_name(*role).is_some_and(|named| named.path() == path)
+    })
 }
 
-/// The 106 gpui-component 0.7.1 IconName variants shown in the gallery.
-const GPUI_ICONS: &[(&str, IconName)] = &[
+/// The 106 gpui-component 0.8.0 IconName variants shown in the gallery.
+pub(crate) const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),
     ("ArrowLeft", IconName::ArrowLeft),
@@ -661,19 +644,13 @@ pub(crate) type IconEntry = (
 
 /// Pre-load native-theme icons for gpui-component IconName variants.
 ///
-/// `default_theme`: when `Some(theme)` and icon_set is Freedesktop, uses
-/// `FreedesktopLoader` with `.theme()` to load from the specified theme (for the "default"
-/// dropdown selection).
-///
-/// `cli_override`: the `--icon-theme` theme while it stands
-/// (`Showcase::icon_theme_override`), which a freedesktop set loads from in
-/// place of `default_theme`. Freedesktop themes load on Linux only
-/// (native-theme `FreedesktopLoader::load`), so elsewhere it is unused.
+/// `theme`: the freedesktop theme a freedesktop set loads from
+/// (`Showcase::freedesktop_theme`), the system's own where `None`, as
+/// `load_all_icons` takes it.
 pub(crate) fn load_gpui_icons(
     icon_set: Option<IconSet>,
-    default_theme: Option<&str>,
-    cli_override: Option<&str>,
-    fg_color: Option<[u8; 3]>,
+    theme: Option<&str>,
+    fg_color: Option<native_theme::Rgba>,
 ) -> Vec<IconEntry> {
     let icon_set = match icon_set {
         Some(set) => set,
@@ -682,87 +659,55 @@ pub(crate) fn load_gpui_icons(
             return GPUI_ICONS
                 .iter()
                 .map(|(name, icon)| {
-                    let role = role_for_gpui_icon(name);
+                    let role = role_for_gpui_icon(icon);
                     (*name, icon.clone(), role, None, IconSource::Bundled)
                 })
                 .collect();
         }
     };
 
-    #[cfg(not(target_os = "linux"))]
-    let _ = cli_override;
-    let is_system_set = matches!(
-        icon_set,
-        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
-    );
+    let is_system_set = is_system_set(icon_set);
 
-    // On Linux with freedesktop, detect DE + theme once for the whole batch.
-    // Use the CLI override first, then the default_theme, then system fallback.
+    // On Linux with freedesktop, pick the theme once for the whole batch:
+    // `theme`, else the system's. No theme where the system's cannot be
+    // detected: then no icon loads.
     #[cfg(target_os = "linux")]
-    let (linux_de, fd_theme) = if is_system_set && icon_set == IconSet::Freedesktop {
-        // No theme where the system's cannot be detected: then no icon loads.
-        let theme = cli_override
-            .or(default_theme)
+    let fd_theme = if icon_set == IconSet::Freedesktop {
+        theme
             .map(|s| s.to_string())
-            .or_else(|| system_icon_theme().ok());
-        (
-            Some(parse_linux_desktop(
-                &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
-            )),
-            theme,
-        )
+            .or_else(|| system_icon_theme().ok())
     } else {
-        (None, None)
+        None
+    };
+    // An icon's freedesktop names, each tried in the one theme: the theme's
+    // convention decides which it has, not the desktop's (no theme mixing).
+    #[cfg(target_os = "linux")]
+    let load_by_name = |icon: &IconName, theme: &str| {
+        FreedesktopLoader::any(freedesktop_name_candidates(icon.clone()))
+            .theme(theme)
+            .color_opt(fg_color)
+            .load()
     };
 
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
-            let role = role_for_gpui_icon(name);
+            let role = role_for_gpui_icon(icon);
 
             // Try loading by IconRole first (existing path)
             if let Some(r) = role {
-                // When a CLI override is specified and we're using freedesktop,
-                // load from that specific theme via FreedesktopLoader with .theme().
-                // When a default theme is specified (from the TOML), use
-                // FreedesktopLoader with .theme().
-                #[cfg(target_os = "linux")]
                 let data = match icon_set {
                     IconSet::Freedesktop => {
-                        if let Some(theme) = cli_override {
-                            native_icon_name(r, IconSet::Freedesktop).and_then(|n| {
-                                FreedesktopLoader::new(n)
-                                    .theme(theme)
-                                    .color_opt(fg_color)
-                                    .load()
-                            })
-                        } else {
-                            let mut l = FreedesktopLoader::new(r).color_opt(fg_color);
-                            if let Some(theme) = default_theme {
-                                l = l.theme(theme);
-                            }
-                            l.load()
+                        let loader = FreedesktopLoader::new(r).color_opt(fg_color);
+                        match theme {
+                            Some(theme) => loader.theme(theme).load(),
+                            None => loader.load(),
                         }
                     }
                     IconSet::Material => MaterialLoader::new(r).load(),
                     IconSet::Lucide => LucideLoader::new(r).load(),
                     IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
-                    _ => None,
-                };
-                #[cfg(not(target_os = "linux"))]
-                let data = match icon_set {
-                    IconSet::Freedesktop => {
-                        let mut l = FreedesktopLoader::new(r).color_opt(fg_color);
-                        if let Some(theme) = default_theme {
-                            l = l.theme(theme);
-                        }
-                        l.load()
-                    }
-                    IconSet::Material => MaterialLoader::new(r).load(),
-                    IconSet::Lucide => LucideLoader::new(r).load(),
-                    IconSet::SfSymbols => SfSymbolsLoader::new(r).color_opt(fg_color).load(),
-                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).color_opt(fg_color).load(),
+                    IconSet::SegoeFluent => SegoeFluentLoader::new(r).color_opt(fg_color).load(),
                     _ => None,
                 };
                 let source = match &data {
@@ -770,18 +715,13 @@ pub(crate) fn load_gpui_icons(
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(_) => IconSource::System,
                 };
-                // If the system set has no icon for the role, try
-                // freedesktop_name_for_gpui_icon before giving up (no theme mixing)
+                // If the system set has no icon for the role, try the icon's
+                // freedesktop names in the same theme before giving up
                 #[cfg(target_os = "linux")]
                 if source == IconSource::NotFound
-                    && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
+                    && let Some(theme) = &fd_theme
                 {
-                    if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                        && let Some(fd_data) = FreedesktopLoader::new(fd_name)
-                            .theme(theme)
-                            .color_opt(fg_color)
-                            .load()
-                    {
+                    if let Some(fd_data) = load_by_name(icon, theme) {
                         return (
                             *name,
                             icon.clone(),
@@ -798,13 +738,8 @@ pub(crate) fn load_gpui_icons(
 
             // No IconRole mapping — try by-name lookup for the active icon set
             #[cfg(target_os = "linux")]
-            if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
-                if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                    && let Some(data) = FreedesktopLoader::new(fd_name)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
-                {
+            if let Some(theme) = &fd_theme {
+                if let Some(data) = load_by_name(icon, theme) {
                     return (*name, icon.clone(), None, Some(data), IconSource::System);
                 }
                 // System set but no system icon — do NOT fall back to bundled
@@ -943,7 +878,11 @@ impl SharedDialogIcons {
 pub(crate) struct SampleTableDelegate {
     pub(crate) ui: Entity<InfoRegistry>,
     pub(crate) columns: Vec<Column>,
+    /// The rows in the order the table shows them.
     pub(crate) rows: Vec<[SharedString; 3]>,
+    /// The rows in the order they were given, which an unsorted column
+    /// restores.
+    pub(crate) unsorted: Vec<[SharedString; 3]>,
     /// The table's selected row (`TableState::selected_row`).
     pub(crate) selected_row: Option<usize>,
     /// Whether the table selects rows rather than a column, so paints its
@@ -973,7 +912,7 @@ impl SampleTableDelegate {
             }
             TableEvent::RightClickedRow(row) => self.right_clicked_row = *row,
             // A right-clicked cell clears the right-clicked row (table/
-            // state.rs:800). Only a `cell_selectable` table emits it.
+            // state.rs:845). Only a `cell_selectable` table emits it.
             TableEvent::RightClickedCell(..) => self.right_clicked_row = None,
             _ => {}
         }
@@ -1005,6 +944,41 @@ impl TableDelegate for SampleTableDelegate {
         demo::data_table_header(&self.ui, cx, &names.join(", "))
     }
 
+    /// Sort the rows as the sort button of column `col_ix` asks; upstream
+    /// only cycles the button's state (table/state.rs,
+    /// `TableState::perform_sort`).
+    fn perform_sort(
+        &mut self,
+        col_ix: usize,
+        sort: ColumnSort,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) {
+        match sort {
+            ColumnSort::Ascending => self.rows.sort_by(|a, b| a.get(col_ix).cmp(&b.get(col_ix))),
+            ColumnSort::Descending => self.rows.sort_by(|a, b| b.get(col_ix).cmp(&a.get(col_ix))),
+            ColumnSort::Default => self.rows.clone_from(&self.unsorted),
+        }
+    }
+
+    /// Move column `col_ix` to `to_ix` with its cells, in `rows` and in
+    /// `unsorted`, as upstream asks (table/delegate.rs, `move_column`): the
+    /// table moves only its own header (table/state.rs,
+    /// `TableState::move_column`), and asks the delegate for each cell and
+    /// each sort by the column's new index.
+    fn move_column(
+        &mut self,
+        col_ix: usize,
+        to_ix: usize,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) {
+        move_item(&mut self.columns, col_ix, to_ix);
+        for row in self.rows.iter_mut().chain(self.unsorted.iter_mut()) {
+            move_item(row, col_ix, to_ix);
+        }
+    }
+
     fn render_tr(
         &mut self,
         row_ix: usize,
@@ -1012,13 +986,13 @@ impl TableDelegate for SampleTableDelegate {
         cx: &mut Context<TableState<Self>>,
     ) -> Stateful<Div> {
         // `demo::data_table` stripes the table, which shades its odd rows
-        // (table/state.rs:2009).
+        // (table/state.rs:2177).
         let striped = !row_ix.is_multiple_of(2);
         let (row, cells) = match self.rows.get(row_ix) {
             Some(cells) => (
                 DataTableRow::Body(BodyRow {
                     striped,
-                    last: row_ix + 1 == self.rows.len(),
+                    last: row_ix.saturating_add(1) == self.rows.len(),
                     selected: self.selected_row == Some(row_ix),
                     selection_shown: self.selection_shown,
                     right_clicked: self.right_clicked_row == Some(row_ix),
@@ -1047,6 +1021,18 @@ impl TableDelegate for SampleTableDelegate {
         // this showcase's text_sm on its own element (label.rs:211), over what
         // the table gives the row.
         text
+    }
+}
+
+/// Move the item at `from` to `to`, the items between shifting over by one;
+/// nothing where either index is past `items`.
+fn move_item<T>(items: &mut [T], from: usize, to: usize) {
+    if from < to {
+        if let Some(span) = items.get_mut(from..=to) {
+            span.rotate_left(1);
+        }
+    } else if let Some(span) = items.get_mut(to..=from) {
+        span.rotate_right(1);
     }
 }
 
@@ -1113,33 +1099,19 @@ pub(crate) struct PresetItem {
     pub(crate) display_name: SharedString,
 }
 
-/// The name the preset switch, the command palette and the status bar give
-/// `default`, the desktop's own theme, built on the platform preset
-/// `default_preset`.
-pub(crate) fn default_label(default_preset: &str) -> String {
-    format!("default ({default_preset})")
-}
-
-/// The presets the showcase offers, in the order it offers them: the
-/// desktop's own theme, keyed `default` and labelled with `default_preset`,
-/// the preset it builds on (`Showcase::default_preset`), then the presets
-/// meant for this platform. The theme settings' preset switch and the
-/// command palette both list these, so neither can offer a preset the other
-/// does not.
+/// The presets the showcase offers, in the order it offers them: the shared
+/// crate's rows (`rows::preset_rows`), the desktop's own theme first, keyed
+/// `default` and labelled with `default_preset`, the preset it builds on
+/// (`Showcase::default_preset`), then the presets meant for this platform.
+/// The theme settings' preset switch and the command palette both list
+/// these, so neither can offer a preset the other does not.
 pub(crate) fn preset_items(default_preset: &str) -> Vec<PresetItem> {
-    let default = PresetItem {
-        key: "default".into(),
-        display_name: default_label(default_preset).into(),
-    };
-    std::iter::once(default)
-        .chain(
-            native_theme::theme::Theme::list_presets_for_platform()
-                .iter()
-                .map(|info| PresetItem {
-                    key: info.key.into(),
-                    display_name: info.display_name.into(),
-                }),
-        )
+    rows::preset_rows(default_preset)
+        .into_iter()
+        .map(|row| PresetItem {
+            key: row.key.into(),
+            display_name: row.display_name.into(),
+        })
         .collect()
 }
 

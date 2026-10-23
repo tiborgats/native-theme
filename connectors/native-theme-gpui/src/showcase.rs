@@ -99,10 +99,6 @@ const SHOWCASE_FILES: &[(&str, &str)] = &[
         include_str!("../examples/showcase-gpui/info/typography.rs"),
     ),
     (
-        "info/values.rs",
-        include_str!("../examples/showcase-gpui/info/values.rs"),
-    ),
-    (
         "inspector.rs",
         include_str!("../examples/showcase-gpui/inspector.rs"),
     ),
@@ -620,6 +616,207 @@ fn every_geometry_builder_has_a_note() {
     );
 }
 
+/// The `pub fn`s of geometry.rs whose refinement sets a font's text: each
+/// that calls `with_text` or `with_coloured_text`, and each that calls
+/// another such builder (`toggle` is `button_label`'s), in source order.
+fn text_builders() -> Vec<&'static str> {
+    let code = blanked(GEOMETRY);
+    let items = fn_items(GEOMETRY, &code);
+    let calls = |name: &str, callee: &str| {
+        items
+            .iter()
+            .find(|f| f.name == name)
+            .and_then(|f| code.get(f.body.clone()))
+            .is_some_and(|body| {
+                body.match_indices(&format!("{callee}(")).any(|(at, _)| {
+                    body.get(..at)
+                        .and_then(|t| t.chars().next_back())
+                        .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+                })
+            })
+    };
+    let public = public_fns(GEOMETRY);
+    let mut found: Vec<&str> = Vec::new();
+    loop {
+        let more: Vec<&str> = public
+            .iter()
+            .copied()
+            .filter(|name| !found.contains(name))
+            .filter(|name| {
+                ["with_text", "with_coloured_text"]
+                    .iter()
+                    .chain(&found)
+                    .any(|callee| calls(name, callee))
+            })
+            .collect();
+        if more.is_empty() {
+            break;
+        }
+        found.extend(more);
+    }
+    public
+        .into_iter()
+        .filter(|name| found.contains(name))
+        .collect()
+}
+
+/// The words that list a font's parts. `size` is not among them: a note
+/// uses it as a verb too (`text_area`'s "the rows its state holds size it").
+const FONT_PART_WORDS: &[&str] = &["family", "weight", "style"];
+
+/// What `with_text` sets of a font, as a note names it whole.
+const WHOLE_FONT: &str = "family, size, weight and style";
+
+/// A line for each `entries` note of a builder in `builders` that lists its
+/// font's parts -- names one of [`FONT_PART_WORDS`] -- without naming all of
+/// them as [`WHOLE_FONT`] does.
+fn understated_font_notes(entries: &[(usize, &str, &str)], builders: &[&str]) -> Vec<String> {
+    entries
+        .iter()
+        .filter(|(_, name, text)| {
+            builders.contains(name)
+                && FONT_PART_WORDS.iter().any(|word| mentions(text, word))
+                && !text.contains(WHOLE_FONT)
+        })
+        .map(|(line, name, _)| {
+            format!(
+                "{GEOMETRY_NOTES_FILE}:{line}: geometry::{name} sets its font's {WHOLE_FONT} \
+                 (geometry.rs, with_text), but its note names only some of them"
+            )
+        })
+        .collect()
+}
+
+/// A builder that sets a font's text sets all of it -- `with_text` gives the
+/// family, size, weight and style (and `with_coloured_text` the colour) --
+/// so its `GEOMETRY_NOTES` entry, where it lists the font's parts at all (it
+/// names the family, the weight or the style), lists every one: a note that
+/// names a size and a weight alone hides the family the KDE reader states
+/// for the menu, toolbar and title-bar fonts (M9-039). A note naming the
+/// font spec alone (`input.font`) names all of it. A note naming the size
+/// alone is not caught: `size` is a verb in a note too.
+#[test]
+fn every_text_builders_note_names_the_whole_font() {
+    let builders = text_builders();
+    assert!(
+        !builders.is_empty(),
+        "no geometry.rs builder calls with_text, so this test would pass vacuously"
+    );
+    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    assert!(
+        unreadable.is_empty(),
+        "GEOMETRY_NOTES could not be read:\n  {}",
+        unreadable.join("\n  ")
+    );
+    let findings = understated_font_notes(&entries, &builders);
+    assert!(
+        findings.is_empty(),
+        "a text builder's note understates the font it carries:\n  {}",
+        findings.join("\n  ")
+    );
+}
+
+/// The rule behind `every_text_builders_note_names_the_whole_font`, on
+/// planted notes: one naming the family alone, the weight alone or the
+/// style alone is caught; one naming all four, one naming the font spec
+/// alone, and one of a builder that sets no text are not.
+#[test]
+fn the_font_note_rule_does_its_job() {
+    let builders = ["toggle", "link"];
+    let planted = [
+        (1, "toggle", "\"button.font's family on the Toggle\""),
+        (2, "toggle", "\"button.font's weight on the Toggle\""),
+        (3, "link", "\"link.font's style, and no underline\""),
+        (4, "link", "\"link.font's family, size, weight and style\""),
+        (5, "link", "\"link.font, including its colour\""),
+        (6, "button", "\"button.font.weight but not its size\""),
+    ];
+    let caught: Vec<usize> = understated_font_notes(&planted, &builders)
+        .iter()
+        .filter_map(|line| {
+            line.strip_prefix(&format!("{GEOMETRY_NOTES_FILE}:"))
+                .and_then(|rest| rest.split(':').next())
+                .and_then(|n| n.parse().ok())
+        })
+        .collect();
+    assert_eq!(
+        caught,
+        [1, 2, 3],
+        "the font-note rule caught the wrong notes"
+    );
+}
+
+/// The reader behind `every_text_builders_note_names_the_whole_font`: the
+/// builders that call `with_text` directly and through `button_label`, and
+/// not `button`, which sets the weight alone.
+#[test]
+fn the_text_builder_reader_does_its_job() {
+    let builders = text_builders();
+    for name in [
+        "button_label",
+        "toggle",
+        "title_bar",
+        "toolbar",
+        "link",
+        "tooltip",
+    ] {
+        assert!(
+            builders.contains(&name),
+            "geometry::{name} sets a font's text, but the reader missed it: {builders:?}"
+        );
+    }
+    for name in ["button", "tooltip_content", "icon_size_small"] {
+        assert!(
+            !builders.contains(&name),
+            "geometry::{name} sets no font's text, but the reader took it: {builders:?}"
+        );
+    }
+}
+
+/// The tooltip builders' notes name what geometry.rs sets beyond the font
+/// and the colours: `geometry::tooltip` draws the edge
+/// `tooltip.border.line_width` wide over upstream's `border_1`, and
+/// `shadow_md`'s layers in `defaults.shadow_color` where
+/// `tooltip.border.shadow_enabled` holds; `geometry::tooltip_content`
+/// subtracts that width on each side, which a `1px border` would misstate
+/// under any other (material-3 states 0) (M9-038, M9-039).
+#[test]
+fn the_tooltip_notes_name_the_edge_and_the_shadow() {
+    let (entries, unreadable) = geometry_note_entries(geometry_notes_source());
+    assert!(
+        unreadable.is_empty(),
+        "GEOMETRY_NOTES could not be read:\n  {}",
+        unreadable.join("\n  ")
+    );
+    let note = |builder: &str| {
+        entries
+            .iter()
+            .find(|(_, name, _)| *name == builder)
+            .map_or("", |(_, _, text)| *text)
+    };
+    let tooltip = note("tooltip");
+    let missing: Vec<&str> = [
+        "tooltip.border.line_width",
+        "border_1",
+        "shadow_md",
+        "defaults.shadow_color",
+        "tooltip.border.shadow_enabled",
+    ]
+    .into_iter()
+    .filter(|part| !tooltip.contains(part))
+    .collect();
+    assert!(
+        missing.is_empty(),
+        "geometry::tooltip's note does not name {missing:?}: {tooltip}"
+    );
+    let content = note("tooltip_content");
+    assert!(
+        content.contains("tooltip.border.line_width on each side")
+            && !content.contains("1px border"),
+        "geometry::tooltip_content's note does not subtract tooltip.border.line_width on each side: {content}"
+    );
+}
+
 /// Spec §5.2: every `native_info(w, cx, geometry::X, "Y", info)` records the
 /// builder it applies, `X == Y`.
 #[test]
@@ -1064,7 +1261,11 @@ const DRAWN_TRAITS: &[&str] = &["RenderOnce", "Render", "Element", "IntoElement"
 
 /// Calls of a widget type's associated functions outside the helpers that put
 /// no widget on screen, as (file, `Type::function`, why).
-const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[];
+const NOT_WIDGET_CONSTRUCTORS: &[(&str, &str, &str)] = &[(
+    "pages/feedback.rs",
+    "Kbd::format",
+    "the shortcut tooltip's text: a String, the keystroke as a Kbd draws it (kbd.rs, Kbd::format)",
+)];
 
 /// Whether `file` is one the first rule of `every_widget_reports_itself`
 /// leaves out: a helper file, the inspector, the test module, or an info file.
@@ -1612,7 +1813,10 @@ fn token_rows<'a>(source: &'a str, open: &str) -> Vec<(&'a str, &'a str)> {
                 .is_some_and(|t| t.trim_start().starts_with("=>"))
         })
         .collect();
-    let claims = code_calls(source, "claim");
+    let claims: Vec<usize> = claim_opens(source)
+        .into_iter()
+        .map(|(open, _)| open)
+        .collect();
     arms.iter()
         .enumerate()
         .map(|(ix, &at)| {
@@ -1821,7 +2025,7 @@ fn the_theme_token_readers_do_their_jobs() {
 // A line and not a symbol, although `file.rs, Symbol` is the form the prose
 // notes use. `ButtonVariant::text_color` holds `Self::Link => link` and
 // `Self::Text => foreground.opacity(0.9)` two lines apart
-// (`button.rs:1036-1037`), so a symbol-scoped check finds `foreground` inside
+// (`button.rs:1059-1060`), so a symbol-scoped check finds `foreground` inside
 // that function and passes Button (Link)'s claim of it. Only a line separates
 // variants that share a function. The cost is drift -- an insertion earlier
 // in a file moves every later line -- so a failure prints what the cited line
@@ -1842,7 +2046,19 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 /// The crates a citation may name, by package name.
-const CITED_CRATES: &[&str] = &["gpui-component", "gpui-base", "gpui-pre"];
+const CITED_CRATES: &[&str] = &[
+    "gpui-component",
+    "gpui-base",
+    "gpui-pre",
+    "gpui-pre-wgpu",
+    "native-theme",
+    "egui",
+];
+
+/// The cited crates a citation reaches only by naming them
+/// (`native-theme/icons.rs`): their `icons.rs`, `lib.rs` and the like would
+/// otherwise join every bare name's candidates, which say nothing about them.
+const NAMED_ONLY: &[&str] = &["gpui-pre-wgpu", "native-theme", "egui"];
 
 /// Set once the citation pass has finished, so an uncited claim fails too
 /// (spec section 6.6). Until then the count is reported.
@@ -1920,42 +2136,119 @@ struct Claim<'a> {
     file: &'a str,
     line: usize,
     widget: &'a str,
+    /// The call it is written with.
+    call: ClaimCall,
     role: &'a str,
     field: &'a str,
-    /// The value expression, as written.
+    /// The value expression, as written: the colour, or an `Option` of it
+    /// for a `stated_claim` or an `edge_claim`.
     value: &'a str,
+    /// An `edge_claim`'s width, as written.
+    width: Option<&'a str>,
+    /// The file's text before the claim, where a binding its value reads
+    /// is bound.
+    before: &'a str,
     cited_at: &'a str,
 }
 
-/// Every `claim(` call in `raw` that is code: the line it is on and its
-/// arguments.
-fn claim_calls(raw: &str) -> Vec<(usize, Vec<&str>)> {
+/// The calls a colour claim is written with (`info/mod.rs`): `claim` with
+/// its colour, `stated_claim` with a colour the theme may leave unstated,
+/// and `edge_claim` with the colour of a line and the width it is drawn at,
+/// each of which claims nothing where there is nothing to show.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ClaimCall {
+    Claim,
+    Stated,
+    Edge,
+}
+
+impl ClaimCall {
+    const ALL: [Self; 3] = [Self::Claim, Self::Stated, Self::Edge];
+
+    fn name(self) -> &'static str {
+        match self {
+            Self::Claim => "claim",
+            Self::Stated => "stated_claim",
+            Self::Edge => "edge_claim",
+        }
+    }
+
+    /// The one shape a gate can read (spec §3.2): the role, the field and
+    /// the citation string literals.
+    fn shape(self) -> &'static str {
+        match self {
+            Self::Claim => r#"claim("role", "field", value, "cite")"#,
+            Self::Stated => r#"stated_claim("role", "field", colour, "cite")"#,
+            Self::Edge => r#"edge_claim("role", "field", colour, width, "cite")"#,
+        }
+    }
+}
+
+/// The `(` of every claim call in `raw` that is code, in the order they are
+/// written, with the call it opens. The call in the body of each helper is
+/// the helper's own, passing its arguments on, not a claim of a panel, and
+/// is left out.
+fn claim_opens(raw: &str) -> Vec<(usize, ClaimCall)> {
+    let helpers = [ClaimCall::Stated, ClaimCall::Edge].map(ClaimCall::name);
+    let mut out: Vec<(usize, ClaimCall)> = ClaimCall::ALL
+        .iter()
+        .flat_map(|&call| {
+            code_calls(raw, call.name())
+                .into_iter()
+                .map(move |open| (open, call))
+        })
+        .filter(|&(open, _)| !helpers.contains(&enclosing_fn(raw, open)))
+        .collect();
+    out.sort_by_key(|(open, _)| *open);
+    out
+}
+
+/// Every claim call in `raw` that is code: the line it is on, the call, and
+/// its arguments.
+fn claim_calls(raw: &str) -> Vec<(usize, ClaimCall, Vec<&str>)> {
     let starts = line_offsets(raw);
-    code_calls(raw, "claim")
+    claim_opens(raw)
         .into_iter()
-        .map(|open| {
+        .map(|(open, call)| {
             (
                 line_at(&starts, open),
+                call,
                 call_args(raw, open).unwrap_or_default(),
             )
         })
         .collect()
 }
 
-/// A `claim(` call's role, field, value and citation, or `None` unless it
-/// has four arguments and the three besides the value are string literals --
-/// the one shape spec §3.2 allows, and the only one a gate can read. The
-/// value is returned as written, for `value_reads_field`.
-fn claim_literals<'a>(args: &[&'a str]) -> Option<(&'a str, &'a str, &'a str, &'a str)> {
-    let &[role, field, value, cited] = args else {
-        return None;
+/// A claim call's arguments as a gate reads them.
+struct ClaimArgs<'a> {
+    role: &'a str,
+    field: &'a str,
+    value: &'a str,
+    width: Option<&'a str>,
+    cited: &'a str,
+}
+
+/// A claim call's role, field, value, width and citation, or `None` unless
+/// it is in `call`'s shape (`ClaimCall::shape`): the arguments it takes, the
+/// role, the field and the citation string literals. The value and the
+/// width are returned as written, for `value_reads_field`.
+fn claim_literals<'a>(call: ClaimCall, args: &[&'a str]) -> Option<ClaimArgs<'a>> {
+    let (role, field, value, width, cited) = match (call, args) {
+        (ClaimCall::Claim | ClaimCall::Stated, &[role, field, value, cited]) => {
+            (role, field, value, None, cited)
+        }
+        (ClaimCall::Edge, &[role, field, value, width, cited]) => {
+            (role, field, value, Some(width.trim()), cited)
+        }
+        _ => return None,
     };
-    Some((
-        unquote(role)?,
-        unquote(field)?,
-        value.trim(),
-        unquote(cited)?,
-    ))
+    Some(ClaimArgs {
+        role: unquote(role)?,
+        field: unquote(field)?,
+        value: value.trim(),
+        width,
+        cited: unquote(cited)?,
+    })
 }
 
 /// The helpers a claim's value may be built with in place of naming its
@@ -1976,9 +2269,8 @@ const VALUE_HELPERS: &[&str] = &["opaque(", ".input_background("];
 
 /// Whether a claim's `value` reads the `field` it names -- `t.<field>`,
 /// `t.colors.<field>`, `base.tokens.colors.<field>`, or the field through
-/// any other path -- or is built with one of `VALUE_HELPERS`. A swatch
-/// whose value reads another field shows a colour its field line does not
-/// name.
+/// any other path -- or is built with one of `VALUE_HELPERS`. A swatch whose
+/// value reads another field shows a colour its field line does not name.
 fn value_reads_field(value: &str, field: &str) -> bool {
     let code = without_comments_or_strings(value);
     let named = code.match_indices('.').any(|(at, _)| {
@@ -1986,6 +2278,139 @@ fn value_reads_field(value: &str, field: &str) -> bool {
         leading_ident(rest) == field
     });
     named || VALUE_HELPERS.iter().any(|helper| code.contains(helper))
+}
+
+/// Whether `code` reads `field` through a path, `.<field>`.
+fn reads_path(code: &str, field: &str) -> bool {
+    code.match_indices('.').any(|(at, _)| {
+        let rest = code.get(at + 1..).unwrap_or("");
+        leading_ident(rest) == field
+    })
+}
+
+/// Whether a claim's `value` reads a binding named after its `field` that
+/// the code `before` it binds from that field, as a stated soft option is
+/// read: the closure of `….<field>.map(|<field>| claim(..))`, or the pattern
+/// of `if let Some(<field>) = s.<field>` (one of a tuple's, `if let
+/// (Some(<field>), ..) = (s.<field>, ..)`). The last binding of that name
+/// before the claim is the one read; one bound otherwise -- `let <field> =
+/// s.<another>` -- is a colour its field line does not name.
+fn value_reads_bound_field(before: &str, value: &str, field: &str) -> bool {
+    if !mentions(&without_comments_or_strings(value), field) {
+        return false;
+    }
+    let code = without_comments_or_strings(before);
+    let last = |binder: String| {
+        code.match_indices(binder.as_str())
+            .map(|(at, _)| at)
+            .filter(|&at| {
+                // The name, not a longer one ending in it.
+                code.get(..at)
+                    .and_then(|t| t.chars().next_back())
+                    .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            })
+            .last()
+    };
+    let closure = last(format!("|{field}|"));
+    let pattern = last(format!("Some({field})"));
+    match (closure, pattern) {
+        // A closure's receiver: the expression back to the arm, statement or
+        // block it starts in.
+        (Some(at), p) if p.is_none_or(|p| p < at) => {
+            let head = code.get(..at).unwrap_or("");
+            let from = ["=>", ";", "{"]
+                .iter()
+                .filter_map(|mark| head.rfind(mark))
+                .max()
+                .unwrap_or(0);
+            reads_path(head.get(from..).unwrap_or(""), field)
+        }
+        // A pattern's scrutinee: the expression after its `=`, up to the
+        // block it opens.
+        (_, Some(at)) => {
+            let tail = code.get(at..).unwrap_or("");
+            let Some(eq) = tail.find('=') else {
+                return false;
+            };
+            let scrutinee = tail.get(eq..).unwrap_or("");
+            let end = scrutinee.find('{').unwrap_or(scrutinee.len());
+            reads_path(scrutinee.get(..end).unwrap_or(""), field)
+        }
+        _ => false,
+    }
+}
+
+/// The connector's public Looks, from the `pub use` lines of
+/// `widgets/mod.rs`: what a theme-drawn control paints, per state, which the
+/// widget draws from and its Widget Info prints from.
+fn connector_looks() -> Vec<&'static str> {
+    include_str!("widgets/mod.rs")
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("pub use "))
+        .flat_map(|names| names.split(|c: char| !(c.is_alphanumeric() || c == '_')))
+        .filter(|name| name.ends_with("Look"))
+        .collect()
+}
+
+/// The fields a claim's `value` reads off a connector Look bound in the
+/// function the claim is in, the code `before` it: `<name>.<field>`, where
+/// `<name>` is bound by `let <name> =` or `let Some(<name>) =` to an
+/// expression that builds a Look (`CheckboxLook::radio(..)`) or fades one
+/// (`.faded_over(..)`, a Look's), or, bound by no `let`, is a parameter
+/// typed as one (`look: &CheckboxLook`). The last binding of the name is
+/// the one read.
+///
+/// A theme-drawn control's info claims its colours from the Look the widget
+/// draws from, never from the leaf by hand (the M9 rulings' drawn-value
+/// class): the swatch is then the colour painted -- a disabled control's
+/// faded -- and no `.<field>` names the leaf. The claim still names the leaf
+/// the Look reads, and cites the line it reads it at; the showcase's
+/// `a_theme_drawn_controls_info_prints_its_look` holds each swatch to the
+/// Look's field.
+fn look_fields_read(before: &str, value: &str) -> Vec<String> {
+    let looks = connector_looks();
+    let code = without_comments_or_strings(before);
+    let code = code
+        .rfind("fn ")
+        .and_then(|at| code.get(at..))
+        .unwrap_or(&code);
+    let builds_a_look = |expr: &str| {
+        expr.contains(".faded_over(")
+            || looks.iter().any(|look| expr.contains(&format!("{look}::")))
+    };
+    let is_look = |name: &str| {
+        let bound = [format!("let {name} ="), format!("let Some({name}) =")]
+            .iter()
+            .filter_map(|binder| code.rfind(binder.as_str()).map(|at| at + binder.len()))
+            .max();
+        match bound {
+            Some(from) => {
+                let expr = code.get(from..).unwrap_or("");
+                builds_a_look(
+                    expr.get(..expr.find(';').unwrap_or(expr.len()))
+                        .unwrap_or(""),
+                )
+            }
+            None => looks.iter().any(|look| {
+                code.contains(&format!("{name}: &{look}"))
+                    || code.contains(&format!("{name}: {look}"))
+            }),
+        }
+    };
+    let value = without_comments_or_strings(value);
+    value
+        .match_indices('.')
+        .filter_map(|(at, _)| {
+            let name = trailing_ident(value.get(..at).unwrap_or(""));
+            let starts_a_path = value
+                .get(..at.saturating_sub(name.len()))
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| c != '.');
+            let field = leading_ident(value.get(at + 1..).unwrap_or(""));
+            (!name.is_empty() && !field.is_empty() && starts_a_path && is_look(name))
+                .then(|| field.to_string())
+        })
+        .collect()
 }
 
 /// The methods a note is written with (spec §3.2).
@@ -2080,21 +2505,34 @@ fn showcase_claims() -> (Vec<Claim<'static>>, Vec<Prose<'static>>) {
 fn claims_in<'a>(file: &'a str, raw: &'a str) -> (Vec<Claim<'a>>, Vec<Prose<'a>>) {
     let mut claims = Vec::new();
     let mut prose = Vec::new();
-    for (line, args) in claim_calls(raw) {
-        let Some((role, field, value, cited_at)) = claim_literals(&args) else {
+    for (line, call, args) in claim_calls(raw) {
+        let Some(ClaimArgs {
+            role,
+            field,
+            value,
+            width,
+            cited,
+        }) = claim_literals(call, &args)
+        else {
             continue;
         };
         let widget = args
             .first()
             .map_or("?", |arg| enclosing_fn(raw, offset_in(raw, arg)));
+        let before = args
+            .first()
+            .map_or("", |arg| raw.get(..offset_in(raw, arg)).unwrap_or(""));
         claims.push(Claim {
             file,
             line,
             widget,
+            call,
             role,
             field,
             value,
-            cited_at,
+            width,
+            before,
+            cited_at: cited,
         });
     }
     for (line, _, text) in note_calls(raw).0 {
@@ -2120,10 +2558,17 @@ fn parse_citation(text: &str) -> Option<(&str, usize, usize)> {
 
 /// Every file a citation could name, across the crates searched.
 ///
-/// A citation gives a path, not a crate: `button.rs` is gpui-component's
-/// `button/button.rs`, `resizable/mod.rs` is gpui-base's, and `geometry.rs`
-/// names a file here *and* one in gpui-pre. Rather than guess, every
-/// candidate is returned and the claim holds if any bears it out.
+/// A citation gives a path, not always a crate. One that starts with a
+/// crate's name is that crate's file alone: `gpui-component/button/button.rs`.
+/// One that names a directory is the file at that path in each crate, or,
+/// where none has it, every file of its name below one -- a citation that
+/// names its directory has said which file it means, and a basename sweep
+/// would drag the other crates' same-named files back in. A bare name is
+/// every file of that name in every crate searched: gpui-component has
+/// `button/button.rs` and `speech/button.rs`, gpui-base `src/button.rs`, and
+/// no first match can say which of them the author read. Rather than guess,
+/// every candidate is returned; the gate keeps those that bear the citation
+/// out, and where more than one does, it asks for the crate.
 fn candidates(citation: &str, roots: &[(String, PathBuf)]) -> Vec<PathBuf> {
     // A leading crate name picks one root: `radio.rs` sits at `src/radio.rs`
     // in gpui-component *and* gpui-base, so no directory can tell them
@@ -2139,21 +2584,25 @@ fn candidates(citation: &str, roots: &[(String, PathBuf)]) -> Vec<PathBuf> {
         };
     }
 
+    let searched = roots
+        .iter()
+        .filter(|(name, _)| !NAMED_ONLY.contains(&name.as_str()))
+        .map(|(_, root)| root);
     let mut out = Vec::new();
-    for (_, root) in roots {
-        let direct = root.join(citation);
-        if direct.is_file() {
-            out.push(direct);
+    if citation.contains('/') {
+        for root in searched.clone() {
+            let direct = root.join(citation);
+            if direct.is_file() {
+                out.push(direct);
+            }
+        }
+        if !out.is_empty() {
+            return out;
         }
     }
-    // Only when the path as written matches nothing: a citation that names
-    // its directory has said which file it means, and a basename sweep would
-    // drag the other crates' same-named files back in.
-    if out.is_empty() {
-        let base = citation.rsplit('/').next().unwrap_or(citation);
-        for (_, root) in roots {
-            collect_named(root, base, &mut out);
-        }
+    let base = citation.rsplit('/').next().unwrap_or(citation);
+    for root in searched {
+        collect_named(root, base, &mut out);
     }
     out
 }
@@ -2164,7 +2613,11 @@ fn shorten(path: &Path) -> String {
     let mut parts: Vec<&str> = Vec::new();
     for part in path.iter().rev().filter_map(|p| p.to_str()) {
         parts.push(part);
-        if part.starts_with("gpui-") || part == "native-theme-gpui" {
+        if part.starts_with("gpui-")
+            || part.starts_with("egui-")
+            || part == "native-theme-gpui"
+            || part == "native-theme"
+        {
             break;
         }
     }
@@ -2239,6 +2692,125 @@ fn cited_source_dirs() -> Result<Vec<(String, PathBuf)>, String> {
     Ok(roots)
 }
 
+/// What is wrong with `claim`, if anything: its value reads another field
+/// than the one it names, or the line it cites does not read that field.
+/// `roots` are the crates a citation may name, `code` the showcase's files
+/// with comments and strings removed. A claim with no citation is counted
+/// by the caller, not judged here.
+fn claim_finding(
+    claim: &Claim<'_>,
+    roots: &[(String, PathBuf)],
+    code: &[String],
+) -> Option<String> {
+    value_finding(claim).or_else(|| citation_finding(claim, roots, code))
+}
+
+/// What is wrong with `claim`'s value, if anything: the value is what the
+/// swatch paints, and it has to be the field the claim names, or the line
+/// cited vouches for a colour nobody shows.
+fn value_finding(claim: &Claim<'_>) -> Option<String> {
+    if value_reads_field(claim.value, claim.field)
+        || value_reads_bound_field(claim.before, claim.value, claim.field)
+        || !look_fields_read(claim.before, claim.value).is_empty()
+    {
+        return None;
+    }
+    Some(format!(
+        "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}`, \
+         uses none of VALUE_HELPERS and reads no connector Look",
+        claim.widget, claim.role, claim.file, claim.line, claim.field, claim.value, claim.field
+    ))
+}
+
+/// What is wrong with the line `claim` cites, if anything: it does not read
+/// the field the claim names, or it cannot be found.
+fn citation_finding(
+    claim: &Claim<'_>,
+    roots: &[(String, PathBuf)],
+    code: &[String],
+) -> Option<String> {
+    // `showcase` with no line: the *application* chooses this colour, so
+    // there is no upstream read to point at. A line would be worse than
+    // useless -- the showcase is what is being edited, so every edit
+    // above a self-citation silently invalidates it, which is exactly
+    // what happened when this was first tried.
+    if claim.cited_at == "showcase" {
+        if code.iter().any(|text| mentions(text, claim.field)) {
+            return None;
+        }
+        return Some(format!(
+            "{} [{}] {}:{}: cited as the application's own, but the \
+             showcase never sets `{}`",
+            claim.widget, claim.role, claim.file, claim.line, claim.field
+        ));
+    }
+    let Some((path, first, last)) = parse_citation(claim.cited_at) else {
+        return Some(format!(
+            "{} [{}] {}:{}: `{}` is not <file>.rs:<line>",
+            claim.widget, claim.role, claim.file, claim.line, claim.cited_at
+        ));
+    };
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {path}, which does not exist",
+            claim.widget, claim.role, claim.file, claim.line
+        ));
+    }
+    // A line number against the wrong file means nothing, and a bare
+    // name can match several crates -- `toggle.rs` is gpui-component's
+    // `button/toggle.rs` and gpui-base's `toggle.rs`. The author knows
+    // which one they read, so the citation has to say.
+    if files.len() > 1 {
+        return Some(format!(
+            "{} [{}] {}:{}: `{path}` is ambiguous; name the directory too. \
+             It matches: {}",
+            claim.widget,
+            claim.role,
+            claim.file,
+            claim.line,
+            files
+                .iter()
+                .map(|f| shorten(f))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    let file = files.first()?;
+    let Ok(text) = std::fs::read_to_string(file) else {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {path}, which could not be read",
+            claim.widget, claim.role, claim.file, claim.line
+        ));
+    };
+    let lines: Vec<&str> = text.lines().collect();
+    let span = if first == 0 || first > last || last > lines.len() {
+        None
+    } else {
+        lines.get(first - 1..last)
+    };
+    let Some(span) = span else {
+        return Some(format!(
+            "{} [{}] {}:{}: cites {}, but {} has {} lines",
+            claim.widget,
+            claim.role,
+            claim.file,
+            claim.line,
+            claim.cited_at,
+            shorten(file),
+            lines.len()
+        ));
+    };
+    if mentions(&span.join("\n"), claim.field) {
+        return None;
+    }
+    let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
+    Some(format!(
+        "{} [{}] {}:{}: claims `{}` at {}\n      that line now reads: {}",
+        claim.widget, claim.role, claim.file, claim.line, claim.field, claim.cited_at, shown
+    ))
+}
+
 /// Spec section 4.2: every colour claim's cited line reads the field it names.
 ///
 /// A claim with no citation is counted, not failed: the citation pass runs
@@ -2272,131 +2844,24 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
     // A `claim(` call in any other shape is one this gate cannot read, and a
     // claim nothing reads is a claim nothing checks.
     for (file, raw) in SHOWCASE_FILES {
-        for (line, args) in claim_calls(raw) {
-            if claim_literals(&args).is_none() {
+        for (line, call, args) in claim_calls(raw) {
+            if claim_literals(call, &args).is_none() {
                 wrong.push(format!(
-                    "{file}:{line}: not claim(\"role\", \"field\", value, \"cite\"), so \
-                     nothing can check it"
+                    "{file}:{line}: not {}, so nothing can check it",
+                    call.shape()
                 ));
             }
         }
     }
-    // The value is what the swatch paints, and it has to be the field the
-    // claim names, or the line cited vouches for a colour nobody shows.
-    for claim in &claims {
-        if !value_reads_field(claim.value, claim.field) {
-            wrong.push(format!(
-                "{} [{}] {}:{}: claims `{}`, but its value `{}` reads no `.{}` and \
-                 uses none of VALUE_HELPERS",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.field,
-                claim.value,
-                claim.field
-            ));
-        }
-    }
     let mut uncited = 0usize;
     for claim in &claims {
+        // A swatch reads its field whether or not its line is cited yet.
+        wrong.extend(value_finding(claim));
         if claim.cited_at.is_empty() {
             uncited += 1;
             continue;
         }
-        // `showcase` with no line: the *application* chooses this colour, so
-        // there is no upstream read to point at. A line would be worse than
-        // useless -- the showcase is what is being edited, so every edit
-        // above a self-citation silently invalidates it, which is exactly
-        // what happened when this was first tried.
-        if claim.cited_at == "showcase" {
-            if code.iter().any(|text| mentions(text, claim.field)) {
-                continue;
-            }
-            wrong.push(format!(
-                "{} [{}] {}:{}: cited as the application's own, but the \
-                 showcase never sets `{}`",
-                claim.widget, claim.role, claim.file, claim.line, claim.field
-            ));
-            continue;
-        }
-        let Some((path, first, last)) = parse_citation(claim.cited_at) else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: `{}` is not <file>.rs:<line>",
-                claim.widget, claim.role, claim.file, claim.line, claim.cited_at
-            ));
-            continue;
-        };
-        let files = candidates(path, &roots);
-        if files.is_empty() {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {path}, which does not exist",
-                claim.widget, claim.role, claim.file, claim.line
-            ));
-            continue;
-        }
-        // A line number against the wrong file means nothing, and a bare
-        // name can match several crates -- `toggle.rs` is gpui-component's
-        // `button/toggle.rs` and gpui-base's `toggle.rs`. The author knows
-        // which one they read, so the citation has to say.
-        if files.len() > 1 {
-            wrong.push(format!(
-                "{} [{}] {}:{}: `{path}` is ambiguous; name the directory too. \
-                 It matches: {}",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                files
-                    .iter()
-                    .map(|f| shorten(f))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ));
-            continue;
-        }
-        let Some(file) = files.first() else {
-            continue;
-        };
-        let Ok(text) = std::fs::read_to_string(file) else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {path}, which could not be read",
-                claim.widget, claim.role, claim.file, claim.line
-            ));
-            continue;
-        };
-        let lines: Vec<&str> = text.lines().collect();
-        let span = if first == 0 || first > last || last > lines.len() {
-            None
-        } else {
-            lines.get(first - 1..last)
-        };
-        let Some(span) = span else {
-            wrong.push(format!(
-                "{} [{}] {}:{}: cites {}, but {} has {} lines",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.cited_at,
-                shorten(file),
-                lines.len()
-            ));
-            continue;
-        };
-        if !mentions(&span.join("\n"), claim.field) {
-            let shown = span.first().map(|l| l.trim()).unwrap_or("(blank)");
-            wrong.push(format!(
-                "{} [{}] {}:{}: claims `{}` at {}\n      that line now reads: {}",
-                claim.widget,
-                claim.role,
-                claim.file,
-                claim.line,
-                claim.field,
-                claim.cited_at,
-                shown
-            ));
-        }
+        wrong.extend(citation_finding(claim, &roots, &code));
     }
 
     assert!(
@@ -2418,6 +2883,177 @@ fn every_colour_claim_is_read_at_the_line_it_cites() {
             claims.len()
         );
     }
+}
+
+/// The claims of an edge's colour that are no edge, by the panel function
+/// and the role, each with its reason: a colour the theme gives a line,
+/// painted where no line is drawn, so no line width can hide it.
+const EDGE_COLOURS_NOT_EDGES: &[(&str, &str, &str)] = &[
+    (
+        "native_number_input",
+        "step button hovered, the edge colour at 40%",
+        "a fill: upstream tints a hovered step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+    ),
+    (
+        "native_number_input",
+        "step button pressed, the edge colour at 60%",
+        "a fill: upstream tints a pressed step button with its input token, which the connector fills from input.border.color (input/number_input.rs, NumberInput::render; native-theme-gpui colors.rs)",
+    ),
+];
+
+/// Whether a claim's `value` reads a colour the resolved theme gives a
+/// line: a `<widget>.border.color`, or a `<widget>.<part>_border_color`,
+/// through a path or a binding named after it. An upstream token --
+/// `t.border`, `t.input`, `t.ring` -- is neither.
+fn reads_edge_colour(value: &str) -> bool {
+    let code = without_comments_or_strings(value);
+    let border_colour = code.match_indices("border.color").any(|(at, m)| {
+        let before = code.get(..at).and_then(|t| t.chars().next_back());
+        let after = code.get(at + m.len()..).and_then(|t| t.chars().next());
+        before.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+            && after.is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+    });
+    border_colour
+        || code
+            .split(|c: char| !(c.is_alphanumeric() || c == '_'))
+            .any(|ident| ident.ends_with("_border_color"))
+}
+
+/// Whether a claim's `value` reads the `color` of a binding the code
+/// `before` it binds to a resolved border, `let <b> = &<path>.border;`, as
+/// `info/` binds one: `stated(b.color)` is `<path>.border.color` by another
+/// name. The last binding of the name in the function the claim is in is
+/// the one read.
+fn reads_bound_border_colour(before: &str, value: &str) -> bool {
+    let code = without_comments_or_strings(before);
+    let code = code
+        .rfind("fn ")
+        .and_then(|at| code.get(at..))
+        .unwrap_or(&code);
+    let value = without_comments_or_strings(value);
+    value.match_indices(".color").any(|(at, m)| {
+        let after = value.get(at + m.len()..).and_then(|t| t.chars().next());
+        if after.is_some_and(|c| c.is_alphanumeric() || c == '_') {
+            return false;
+        }
+        let name = trailing_ident(value.get(..at).unwrap_or(""));
+        let starts_a_path = value
+            .get(..at.saturating_sub(name.len()))
+            .and_then(|t| t.chars().next_back())
+            .is_none_or(|c| c != '.');
+        if name.is_empty() || !starts_a_path {
+            return false;
+        }
+        let binder = format!("let {name} =");
+        let Some(bound) = code.rfind(&binder) else {
+            return false;
+        };
+        let expr = code.get(bound + binder.len()..).unwrap_or("");
+        let expr = expr
+            .get(..expr.find(';').unwrap_or(expr.len()))
+            .unwrap_or("");
+        let expr = expr.trim();
+        expr.ends_with(".border")
+    })
+}
+
+/// Whether `claim` is of an edge colour: its value reads one by path
+/// ([`reads_edge_colour`]), through a bound border
+/// ([`reads_bound_border_colour`]), or off a connector Look, whose edge
+/// colours are its `border` and its `<part>_border` ([`look_fields_read`]).
+fn is_edge_claim(claim: &Claim<'_>) -> bool {
+    reads_edge_colour(claim.value)
+        || reads_bound_border_colour(claim.before, claim.value)
+        || look_fields_read(claim.before, claim.value)
+            .iter()
+            .any(|field| field == "border" || field.ends_with("_border"))
+}
+
+/// The edge class (the M9 rulings): a claim whose value reads a colour the
+/// resolved theme gives a line goes through `edge_claim`, with the width the
+/// drawing strokes that colour at, so it claims no edge where the line is
+/// drawn at no width -- material-3's buttons and popups, a card where the
+/// theme states no card edge. A `claim` or a `stated_claim` of such a
+/// colour is the unconditional edge M8 T5 and M9 found by hand, one panel
+/// at a time.
+///
+/// Keyed on the value, not the role: a role says what the reader is told,
+/// and "line" or "ring" names a focus ring, a tab's indicator or a chart's
+/// axis as well. A claim of such a colour that is not a line takes its
+/// reason in `EDGE_COLOURS_NOT_EDGES`. Every claim it classes, every
+/// exemption and every width an `edge_claim` pairs its colour with is
+/// printed, for the reviewer who reads that the width is the drawing's.
+///
+/// Run it with `cargo test -p native-theme-gpui --lib
+/// every_edge_colour_is_claimed_through_edge_claim -- --nocapture`.
+#[test]
+fn every_edge_colour_is_claimed_through_edge_claim() {
+    let (claims, _) = showcase_claims();
+    let mut wrong = Vec::new();
+    let mut classed = Vec::new();
+    let mut exempted = Vec::new();
+    let mut edges = 0usize;
+    for claim in claims.iter().filter(|c| is_edge_claim(c)) {
+        let at = format!(
+            "{}:{} {} [{}]",
+            claim.file, claim.line, claim.widget, claim.role
+        );
+        if claim.call == ClaimCall::Edge {
+            edges += 1;
+            let flat = |text: &str| text.split_whitespace().collect::<Vec<_>>().join(" ");
+            classed.push(format!(
+                "{at}: {} at {}",
+                flat(claim.value),
+                flat(claim.width.unwrap_or("?"))
+            ));
+            continue;
+        }
+        match EDGE_COLOURS_NOT_EDGES
+            .iter()
+            .find(|(widget, role, _)| *widget == claim.widget && *role == claim.role)
+        {
+            Some((_, _, why)) => exempted.push(format!("{at}: {why}")),
+            None => wrong.push(format!(
+                "{at}: {} of an edge colour, `{}`; claim it through edge_claim with the \
+                 width it is drawn at, or give EDGE_COLOURS_NOT_EDGES the reason it is no line",
+                claim.call.name(),
+                claim.value
+            )),
+        }
+    }
+    let unused: Vec<String> = EDGE_COLOURS_NOT_EDGES
+        .iter()
+        .filter(|(widget, role, _)| {
+            !claims.iter().any(|c| {
+                c.widget == *widget
+                    && c.role == *role
+                    && c.call != ClaimCall::Edge
+                    && is_edge_claim(c)
+            })
+        })
+        .map(|(widget, role, _)| format!("{widget} [{role}]"))
+        .collect();
+    println!(
+        "\nEdge claims: {edges} through edge_claim, {} exempt\n  {}\n  Exempt:\n  {}",
+        exempted.len(),
+        classed.join("\n  "),
+        exempted.join("\n  ")
+    );
+    assert!(
+        wrong.is_empty(),
+        "{} claims of an edge colour do not go through edge_claim:\n  {}",
+        wrong.len(),
+        wrong.join("\n  ")
+    );
+    assert!(
+        unused.is_empty(),
+        "EDGE_COLOURS_NOT_EDGES names claims of an edge colour that are gone: {}",
+        unused.join(", ")
+    );
+    assert!(
+        edges > 0,
+        "no edge_claim was found, so this test would pass vacuously for every edge the showcase claims"
+    );
 }
 
 /// Every `theme().<field>` and `theme().tokens.<field>` read in `text`.
@@ -2532,7 +3168,7 @@ fn the_omission_report() {
     // lines' texts.
     let mut said: Vec<&str> = Vec::new();
     for (_, raw) in demo_files().filter(|(file, _)| is_widget_panel(file)) {
-        said.extend(claim_calls(raw).into_iter().flat_map(|(_, args)| args));
+        said.extend(claim_calls(raw).into_iter().flat_map(|(_, _, args)| args));
         said.extend(
             note_calls(raw)
                 .0
@@ -2619,12 +3255,429 @@ fn prose_citations(text: &str) -> Vec<(&str, &str)> {
     out
 }
 
-/// Spec section 4.6: a symbol a "Not themeable" note cites still exists.
+/// One cited range of lines, `(first, last)`, and the symbol the citation
+/// names for it, which the range has to hold.
+type CitedRange<'a> = ((usize, usize), Option<&'a str>);
+
+/// Every `file.rs:N` and `file.rs:N-M` in a panel's prose, as the path and
+/// its line ranges. A `, A`, `, A-B` or `, :A-B` straight after one is
+/// another range of the same file (`button.rs:102-141, 1185`); a `, Symbol`
+/// after the ranges names what they hold, as a colour claim names its field
+/// (`button.rs:1110-1115, shadow`); a `; :A-B` after that opens another group
+/// of the same file's ranges, with a symbol of its own
+/// (`styled.rs:179-184, focus_ring_style; :250-298, focus_style`). A
+/// symbol's citation followed by the lines inside it, `file.rs, Symbol,
+/// lines N-M` (or `: line N`, and `lines A and B`), cites those lines of the
+/// file too; the symbol names what they are inside, not what they say, so
+/// those ranges carry none.
+fn line_citations(text: &str) -> Vec<(&str, Vec<CitedRange<'_>>)> {
+    /// A line number at the start of `s` and what follows it, where the
+    /// number ends a word: `3px` and `9.5` are no line, the `42` that ends a
+    /// sentence at `42.` is.
+    fn number(s: &str) -> Option<(usize, &str)> {
+        let end = s.find(|c: char| !c.is_ascii_digit()).unwrap_or(s.len());
+        let rest = s.get(end..)?;
+        let decimal = rest
+            .strip_prefix('.')
+            .is_some_and(|after| after.starts_with(|c: char| c.is_alphanumeric() || c == '_'));
+        if end == 0 || decimal || rest.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
+            return None;
+        }
+        Some((s.get(..end)?.parse().ok()?, rest))
+    }
+    /// A range `N` or `N-M` at the start of `s`, and what follows it.
+    fn range(s: &str) -> Option<((usize, usize), &str)> {
+        let (first, rest) = number(s)?;
+        match rest.strip_prefix('-').and_then(number) {
+            Some((last, rest)) => Some(((first, last), rest)),
+            None => Some(((first, first), rest)),
+        }
+    }
+    /// A symbol at the start of `s` -- an identifier or a `::` path -- and
+    /// what follows it.
+    fn symbol(s: &str) -> Option<(&str, &str)> {
+        if !s.starts_with(char::is_alphabetic) {
+            return None;
+        }
+        let end = s
+            .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+            .unwrap_or(s.len());
+        let name = s.get(..end)?.trim_end_matches(':');
+        Some((name, s.get(name.len()..)?))
+    }
+    /// The path that ends in the `.rs` at `dot`.
+    fn path_at(text: &str, dot: usize) -> Option<&str> {
+        let head = text.get(..dot)?;
+        let start = match head
+            .rfind(|c: char| !(c.is_alphanumeric() || c == '_' || c == '/' || c == '.' || c == '-'))
+        {
+            Some(i) => i + 1,
+            None => 0,
+        };
+        text.get(start..dot + 3)
+    }
+    let mut out = Vec::new();
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs:")) {
+        let dot = from + ix;
+        from = dot + ".rs:".len();
+        let (Some(path), Some(after)) = (path_at(text, dot), text.get(from..)) else {
+            continue;
+        };
+        let Some((first, mut rest)) = range(after) else {
+            continue;
+        };
+        let mut ranges: Vec<CitedRange<'_>> = vec![(first, None)];
+        let mut group = 0usize;
+        loop {
+            if let Some((next, tail)) = rest
+                .strip_prefix(", ")
+                .map(|t| t.strip_prefix(':').unwrap_or(t))
+                .and_then(range)
+            {
+                ranges.push((next, None));
+                rest = tail;
+            } else if let Some((name, tail)) = rest.strip_prefix(", ").and_then(symbol) {
+                for cited in ranges.iter_mut().skip(group) {
+                    cited.1 = Some(name);
+                }
+                rest = tail;
+                let Some((next, tail)) = rest.strip_prefix("; :").and_then(range) else {
+                    break;
+                };
+                group = ranges.len();
+                ranges.push((next, None));
+                rest = tail;
+            } else {
+                break;
+            }
+        }
+        from = text.len() - rest.len();
+        out.push((path, ranges));
+    }
+    let mut from = 0usize;
+    while let Some(ix) = text.get(from..).and_then(|t| t.find(".rs, ")) {
+        let dot = from + ix;
+        from = dot + ".rs, ".len();
+        let (Some(path), Some(after)) = (path_at(text, dot), text.get(from..)) else {
+            continue;
+        };
+        let Some(rest) = symbol(after)
+            .map(|(_, rest)| rest)
+            .and_then(|rest| rest.strip_prefix(", ").or_else(|| rest.strip_prefix(": ")))
+            .and_then(|rest| {
+                rest.strip_prefix("lines ")
+                    .or_else(|| rest.strip_prefix("line "))
+            })
+        else {
+            continue;
+        };
+        let Some((first, mut rest)) = range(rest) else {
+            continue;
+        };
+        let mut ranges: Vec<CitedRange<'_>> = vec![(first, None)];
+        while let Some((next, tail)) = rest.strip_prefix(" and ").and_then(range) {
+            ranges.push((next, None));
+            rest = tail;
+        }
+        from = text.len() - rest.len();
+        out.push((path, ranges));
+    }
+    out
+}
+
+/// What is wrong with the citation of `symbol` in `path`, if anything: no
+/// file of that name has it, or more than one does and the citation does not
+/// say which.
+fn symbol_citation_finding(
+    path: &str,
+    symbol: &str,
+    roots: &[(String, PathBuf)],
+) -> Option<String> {
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!("cites {path}, which does not exist"));
+    }
+    let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
+    let holding: Vec<String> = files
+        .iter()
+        .filter(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)))
+        .map(|f| shorten(f))
+        .collect();
+    match holding.as_slice() {
+        [] => Some(format!(
+            "cites {path}, {symbol} — `{leaf}` is in none of them"
+        )),
+        [_] => None,
+        many => Some(format!(
+            "cites {path}, {symbol}, which is ambiguous; name the crate. It matches: {}",
+            many.join(", ")
+        )),
+    }
+}
+
+/// What is wrong with the citation of `ranges` in `path`, if anything: no
+/// file of that name holds every range with the symbol the citation names for
+/// it, or more than one does and the citation does not say which. A range
+/// that moved inside its file passes an existence check; the symbol it no
+/// longer holds is what shows it moved.
+fn line_citation_finding(
+    path: &str,
+    ranges: &[CitedRange<'_>],
+    roots: &[(String, PathBuf)],
+) -> Option<String> {
+    let files = candidates(path, roots);
+    if files.is_empty() {
+        return Some(format!("cites {path}, which does not exist"));
+    }
+    let lines_of = |file: &PathBuf| -> Option<Vec<String>> {
+        let text = std::fs::read_to_string(file).ok()?;
+        Some(text.lines().map(str::to_string).collect())
+    };
+    let span = |lines: &[String], (first, last): (usize, usize)| -> Option<String> {
+        (first > 0 && first <= last)
+            .then(|| lines.get(first - 1..last))
+            .flatten()
+            .map(|span| span.join("\n"))
+    };
+    let named = |files: &[&PathBuf]| {
+        files
+            .iter()
+            .map(|f| shorten(f))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
+    let cited = ranges
+        .iter()
+        .map(|&((a, b), symbol)| {
+            let lines = if a == b {
+                a.to_string()
+            } else {
+                format!("{a}-{b}")
+            };
+            match symbol {
+                Some(symbol) => format!("{lines} ({symbol})"),
+                None => lines,
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    let all: Vec<&PathBuf> = files.iter().collect();
+    let in_range: Vec<(&PathBuf, Vec<String>)> = all
+        .iter()
+        .filter_map(|file| {
+            let lines = lines_of(file)?;
+            ranges
+                .iter()
+                .all(|&(range, _)| span(&lines, range).is_some())
+                .then_some((*file, lines))
+        })
+        .collect();
+    if in_range.is_empty() {
+        return Some(format!(
+            "cites {path}:{cited}, past the end of {}",
+            named(&all)
+        ));
+    }
+    let holds = |lines: &[String]| {
+        ranges.iter().all(|&(range, symbol)| match symbol {
+            Some(symbol) => span(lines, range)
+                .is_some_and(|text| mentions(&text, symbol.rsplit("::").next().unwrap_or(symbol))),
+            None => true,
+        })
+    };
+    let holding: Vec<&PathBuf> = in_range
+        .iter()
+        .filter(|(_, lines)| holds(lines))
+        .map(|(file, _)| *file)
+        .collect();
+    match holding.as_slice() {
+        [] => {
+            let now: Vec<String> = in_range
+                .iter()
+                .flat_map(|(file, lines)| {
+                    ranges.iter().filter_map(move |&(range, symbol)| {
+                        let symbol = symbol?;
+                        let text = span(lines, range)?;
+                        let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
+                        (!mentions(&text, leaf)).then(|| {
+                            format!(
+                                "{}:{} holds no `{leaf}`; it now reads: {}",
+                                shorten(file),
+                                range.0,
+                                text.lines().next().unwrap_or("").trim()
+                            )
+                        })
+                    })
+                })
+                .collect();
+            Some(format!(
+                "cites {path}:{cited}, but the range has moved: {}",
+                now.join("; ")
+            ))
+        }
+        [_] => None,
+        many => Some(format!(
+            "cites {path}:{cited}, which is ambiguous; name the crate. It matches: {}",
+            named(many)
+        )),
+    }
+}
+
+/// The prose readers read both citation forms, and the resolver asks for the
+/// crate where a bare name could be several files: a bare `button.rs` whose
+/// lines gpui-base's `src/button.rs` and gpui-component's `button/button.rs`
+/// both hold is ambiguous, where the first-match rule read gpui-base's alone
+/// and said nothing; a range only one holds picks it; a range that has moved
+/// off the symbol it names fails though its lines exist; a crate the
+/// bare-name sweep leaves out is reached by naming it.
+#[test]
+fn the_prose_citation_readers_do_their_jobs() {
+    assert_eq!(
+        line_citations(
+            "x (button.rs:102-141, 1185) y (status_bar.rs:88, :96) z (a/b.rs:7, 3px) \
+             (c.rs:9.5) (d.rs:) (e.rs:1110-1115, shadow) \
+             (styled.rs:179-184, focus_ring_style; :250-298, focus_style) \
+             (f.rs:3, 5, a::B; g)"
+        ),
+        [
+            ("button.rs", vec![((102, 141), None), ((1185, 1185), None)]),
+            ("status_bar.rs", vec![((88, 88), None), ((96, 96), None)]),
+            ("a/b.rs", vec![((7, 7), None)]),
+            ("e.rs", vec![((1110, 1115), Some("shadow"))]),
+            (
+                "styled.rs",
+                vec![
+                    ((179, 184), Some("focus_ring_style")),
+                    ((250, 298), Some("focus_style"))
+                ]
+            ),
+            ("f.rs", vec![((3, 3), Some("a::B")), ((5, 5), Some("a::B"))]),
+        ]
+    );
+    // A citation that ends a sentence, and the lines a symbol's citation
+    // names inside it, in each form the notes write them.
+    assert_eq!(
+        line_citations(
+            "ends at h.rs:42. Then (i.rs, Sym, lines 3-5) (j.rs, a::B: line 7) \
+             (k.rs, c, lines 8 and 10) (l.rs, Sym) (m.rs, Sym, lineage 4)"
+        ),
+        [
+            ("h.rs", vec![((42, 42), None)]),
+            ("i.rs", vec![((3, 5), None)]),
+            ("j.rs", vec![((7, 7), None)]),
+            ("k.rs", vec![((8, 8), None), ((10, 10), None)]),
+        ]
+    );
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let finding =
+        |path: &str, ranges: &[CitedRange<'_>]| line_citation_finding(path, ranges, &roots);
+    let planted = finding("button.rs", &[((10, 20), None)]);
+    assert!(
+        planted.as_deref().is_some_and(|f| f.contains("ambiguous")
+            && f.contains("gpui-base-")
+            && f.contains("/src/button.rs")
+            && f.contains("/src/button/button.rs")),
+        "a bare button.rs both crates' files hold is not reported ambiguous: {planted:?}"
+    );
+    let custom = "gpui-component/button/button.rs";
+    assert_eq!(finding(custom, &[((10, 20), None)]), None);
+    // Where `ButtonCustomVariant`'s setters start, and the same range moved
+    // past its `impl` line: the lines exist, the symbol is gone.
+    let at = std::fs::read_to_string(
+        roots
+            .iter()
+            .find(|(n, _)| n == "gpui-component")
+            .map(|(_, r)| r.join("button/button.rs"))
+            .unwrap_or_default(),
+    )
+    .unwrap_or_default()
+    .lines()
+    .position(|l| l.trim_start().starts_with("impl ButtonCustomVariant"))
+    .map(|ix| ix + 1);
+    assert!(
+        at.is_some(),
+        "gpui-component's button/button.rs has no `impl ButtonCustomVariant`"
+    );
+    let at = at.unwrap_or_default();
+    assert_eq!(
+        finding(custom, &[((at, at + 40), Some("ButtonCustomVariant"))]),
+        None
+    );
+    let drifted = finding(custom, &[((at + 4, at + 44), Some("ButtonCustomVariant"))]);
+    assert!(
+        drifted
+            .as_deref()
+            .is_some_and(|f| f.contains("has moved") && f.contains("ButtonCustomVariant")),
+        "a range moved off the symbol it names is not reported: {drifted:?}"
+    );
+    let base_lines = std::fs::read_to_string(
+        roots
+            .iter()
+            .find(|(n, _)| n == "gpui-base")
+            .map(|(_, r)| r.join("button.rs"))
+            .unwrap_or_default(),
+    )
+    .map(|t| t.lines().count())
+    .unwrap_or_default();
+    assert!(base_lines > 0, "gpui-base has no src/button.rs");
+    let past = base_lines + 1;
+    // A line past gpui-base's file, which gpui-component's longer one holds:
+    // the one file with the line is the citation's.
+    assert_eq!(finding("button.rs", &[((past, past), None)]), None);
+    assert!(
+        finding("gpui-base/button.rs", &[((past, past), None)])
+            .is_some_and(|f| f.contains("past the end"))
+    );
+    // Both forms reach the finding: a line past the file's end is caught at
+    // a sentence's end and inside a symbol's citation.
+    for text in [
+        format!("ends at gpui-base/button.rs:{past}."),
+        format!("(gpui-base/button.rs, Button, lines {past}-{})", past + 1),
+    ] {
+        let cited = line_citations(&text);
+        assert!(
+            cited.len() == 1
+                && cited.iter().all(|(path, ranges)| finding(path, ranges)
+                    .is_some_and(|f| f.contains("past the end"))),
+            "a line past gpui-base's button.rs in {text:?} is not caught: {cited:?}"
+        );
+    }
+    assert!(
+        symbol_citation_finding("link.rs", "Link", &roots).is_some_and(|f| f.contains("ambiguous"))
+    );
+    assert_eq!(
+        symbol_citation_finding("native-theme/sficons.rs", "load_sf_icon_by_name", &roots),
+        None
+    );
+    assert!(
+        symbol_citation_finding("sficons.rs", "load_sf_icon_by_name", &roots)
+            .is_some_and(|f| f.contains("does not exist")),
+        "native-theme's files joined the bare-name sweep"
+    );
+}
+
+/// Spec section 4.6: a symbol a "Not themeable" note cites still exists, and
+/// a line it cites is still in the file.
 ///
 /// A note written as a call is read whichever section it fills -- a config
 /// line or an instance note citing upstream is as exposed to a deletion -- and
 /// so is every `GEOMETRY_NOTES` text, which reaches the inspector as a config
-/// line.
+/// line, and every `HOW` line, which Widget Info shows under a listed leaf.
+/// Both forms are read: `file.rs, Symbol` holds where exactly one file of
+/// that name has the symbol, `file.rs:N-M, Symbol` where exactly one has the
+/// lines and the symbol inside them; where several do, the citation has to
+/// name its crate. The lines a symbol's citation names inside it
+/// (`file.rs, Symbol, lines N-M`) have to exist in its file, and a citation
+/// that ends a sentence (`file.rs:N.`) is read as any other. A note's line
+/// citation may leave the symbol out; a `HOW` line's may not, so a range that
+/// drifts inside its file is caught there.
 ///
 /// Existence, never semantics. What a note *says* about upstream is a human's
 /// to keep true; a note pointing at something upstream has **deleted** is one
@@ -2664,6 +3717,21 @@ fn every_prose_citation_still_exists() {
         let line = line_at(&starts, offset_in(info, text));
         prose.push((GEOMETRY_NOTES_FILE, line, name, text));
     }
+    // The route lines, which a listed element's info shows under each leaf.
+    let how = how_lines(how_source());
+    assert!(
+        how.is_ok(),
+        "{}",
+        how.as_ref().err().cloned().unwrap_or_default()
+    );
+    let how = how.unwrap_or_default();
+    let how_citations: usize = how
+        .iter()
+        .map(|h| line_citations(h.text).len() + prose_citations(h.text).len())
+        .sum();
+    for h in &how {
+        prose.push((HOW_FILE, h.line, h.leaf, h.text));
+    }
 
     let unreadable: Vec<String> = SHOWCASE_FILES
         .iter()
@@ -2687,21 +3755,22 @@ fn every_prose_citation_still_exists() {
     for (file, line, widget, text) in &prose {
         for (path, symbol) in prose_citations(text) {
             checked += 1;
-            let files = candidates(path, &roots);
-            if files.is_empty() {
-                missing.push(format!(
-                    "{widget} {file}:{line}: cites {path}, which does not exist"
-                ));
-                continue;
+            if let Some(finding) = symbol_citation_finding(path, symbol, &roots) {
+                missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
-            let leaf = symbol.rsplit("::").next().unwrap_or(symbol);
-            let found = files
-                .iter()
-                .any(|f| std::fs::read_to_string(f).is_ok_and(|t| mentions(&t, leaf)));
-            if !found {
+        }
+        for (path, ranges) in line_citations(text) {
+            checked += 1;
+            // A route line names what each range holds, so a range that
+            // moves inside its file is caught too.
+            if *file == HOW_FILE && ranges.iter().any(|(_, symbol)| symbol.is_none()) {
                 missing.push(format!(
-                    "{widget} {file}:{line}: cites {path}, {symbol} — `{leaf}` is in none of them"
+                    "{widget} {file}:{line}: cites {path}:… without the symbol its lines \
+                     hold; write `{path}:N-M, Symbol`"
                 ));
+            }
+            if let Some(finding) = line_citation_finding(path, &ranges, &roots) {
+                missing.push(format!("{widget} {file}:{line}: {finding}"));
             }
         }
     }
@@ -2717,11 +3786,360 @@ fn every_prose_citation_still_exists() {
          went unchecked"
     );
     assert!(
+        how_citations > 0,
+        "no citation found in a HOW line, so its texts went unchecked"
+    );
+    assert!(
         missing.is_empty(),
         "{} of {checked} prose citations point at something that is gone:\n  {}",
         missing.len(),
         missing.join("\n  ")
     );
+}
+
+// ---------------------------------------------------------------------------
+// The route lines: info::leaves::HOW
+// ---------------------------------------------------------------------------
+//
+// Under each `<leaf> <value>` row of a listed element, Widget Info shows how
+// gpui applies the leaf: the first `HOW` entry whose prefix the element's id
+// starts with and whose leaf matches (`info::leaves::how`). The table is a
+// `const` of string tuples, so no note call carries its texts and the prose
+// gates would not read them; it is read here, from the file as written.
+
+/// The file that holds `HOW`, as `SHOWCASE_FILES` names it.
+const HOW_FILE: &str = "info/leaves.rs";
+
+/// The line that opens `HOW`.
+const HOW_OPEN: &str = "pub const HOW: &[(&str, &str, &str)] = &[";
+
+/// One entry of `HOW`, and the line its first string is written on.
+struct HowLine<'a> {
+    line: usize,
+    prefix: &'a str,
+    leaf: &'a str,
+    text: &'a str,
+}
+
+/// `HOW`'s source as written.
+fn how_source() -> &'static str {
+    SHOWCASE_FILES
+        .iter()
+        .find(|(path, _)| *path == HOW_FILE)
+        .map_or("", |(_, text)| *text)
+}
+
+/// Every entry of the `HOW` table in `raw`, in order: its strings read three
+/// at a time, comments skipped. An error where the table is missing, does
+/// not close, or holds a string count that is no multiple of three.
+fn how_lines(raw: &str) -> Result<Vec<HowLine<'_>>, String> {
+    let open = raw
+        .find(HOW_OPEN)
+        .map(|at| at + HOW_OPEN.len())
+        .ok_or_else(|| format!("{HOW_FILE} holds no `{HOW_OPEN}`"))?;
+    let close = blanked(raw)
+        .get(open..)
+        .and_then(|code| code.find("\n];"))
+        .map(|ix| open + ix)
+        .ok_or_else(|| format!("{HOW_FILE}'s HOW does not close"))?;
+    let starts = line_offsets(raw);
+    let mut strings = Vec::new();
+    let mut at = open;
+    while let Some(rest) = raw.get(at..close).filter(|rest| !rest.is_empty()) {
+        if let Some(after) = rest.strip_prefix("//") {
+            at += 2 + after.find('\n').unwrap_or(after.len());
+        } else if let Some(body) = rest.strip_prefix('"') {
+            let len = end_of_string(body, "\"");
+            let text = body.get(..len.saturating_sub(1)).unwrap_or("");
+            strings.push((line_at(&starts, at), text));
+            at += 1 + len;
+        } else {
+            at += char_len(rest);
+        }
+    }
+    if strings.len() % 3 != 0 {
+        return Err(format!(
+            "{HOW_FILE}'s HOW holds {} strings, not three to an entry",
+            strings.len()
+        ));
+    }
+    Ok(strings
+        .as_chunks::<3>()
+        .0
+        .iter()
+        .map(|&[(line, prefix), (_, leaf), (_, text)]| HowLine {
+            line,
+            prefix,
+            leaf,
+            text,
+        })
+        .collect())
+}
+
+/// The index in `lines` of the entry `info::leaves::how` picks for `leaf` of
+/// the element `element`: the first whose leaf matches and whose prefix the
+/// id starts with.
+fn chosen_how(lines: &[HowLine<'_>], element: &str, leaf: &str) -> Option<usize> {
+    lines
+        .iter()
+        .position(|h| h.leaf == leaf && element.starts_with(h.prefix))
+}
+
+/// Every `HOW` entry is the line Widget Info shows for at least one leaf of
+/// one element of docs/showcase-elements.toml. An entry every lister of its
+/// leaf reaches a more specific entry before is a line no reader ever sees,
+/// and one nobody reads either, so it drifts unnoticed.
+#[test]
+fn every_how_entry_is_shown() {
+    let lines = how_lines(how_source());
+    assert!(
+        lines.is_ok(),
+        "{}",
+        lines.as_ref().err().cloned().unwrap_or_default()
+    );
+    let lines = lines.unwrap_or_default();
+    let elements = native_theme_showcase_support::elements::showcase_elements();
+    assert!(
+        elements.is_ok(),
+        "docs/showcase-elements.toml does not parse: {}",
+        elements.as_ref().err().cloned().unwrap_or_default()
+    );
+    let elements = elements.unwrap_or_default();
+    assert!(
+        lines.len() > 1 && !elements.is_empty(),
+        "{} HOW entries and {} elements read, so this would pass vacuously",
+        lines.len(),
+        elements.len()
+    );
+    let shown: BTreeSet<usize> = elements
+        .iter()
+        .flat_map(|e| e.leaves.iter().map(move |leaf| (e.id.as_str(), leaf)))
+        .filter_map(|(id, leaf)| chosen_how(&lines, id, leaf))
+        .collect();
+    let unseen: Vec<String> = lines
+        .iter()
+        .enumerate()
+        .filter(|(ix, _)| !shown.contains(ix))
+        .map(|(_, h)| format!("{HOW_FILE}:{}: (\"{}\", \"{}\")", h.line, h.prefix, h.leaf))
+        .collect();
+    assert!(
+        unseen.is_empty(),
+        "{} of {} HOW entries are the shown line for no listed element's leaf -- every \
+         element that lists the leaf takes an earlier entry:\n  {}",
+        unseen.len(),
+        lines.len(),
+        unseen.join("\n  ")
+    );
+}
+
+/// The `HOW` reader reads each entry, written on three lines or one, and
+/// skips a comment between them; a stray string is an error.
+#[test]
+fn the_how_reader_does_its_job() {
+    let source = "x\npub const HOW: &[(&str, &str, &str)] = &[\n    // --- a \"b\" ---\n    (\n        \"basic.a\",\n        \"a.b\",\n        \"gpui: c (demo::d)\",\n    ),\n    (\"\", \"a.b\", \"gpui: e\"),\n];\n";
+    let lines = how_lines(source).unwrap_or_default();
+    let read: Vec<(usize, &str, &str, &str)> = lines
+        .iter()
+        .map(|h| (h.line, h.prefix, h.leaf, h.text))
+        .collect();
+    assert_eq!(
+        read,
+        [
+            (5, "basic.a", "a.b", "gpui: c (demo::d)"),
+            (9, "", "a.b", "gpui: e")
+        ]
+    );
+    assert_eq!(chosen_how(&lines, "basic.a.x", "a.b"), Some(0));
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.b"), Some(1));
+    assert_eq!(chosen_how(&lines, "chrome.y", "a.c"), None);
+    assert!(
+        how_lines("pub const HOW: &[(&str, &str, &str)] = &[\n    (\"a\", \"b\"),\n];\n").is_err()
+    );
+    assert!(how_lines("const NOT: u8 = 1;").is_err());
+}
+
+/// The field a leaf names, as code reads it: its last segment without the
+/// unit suffix, and `padding` for a padding side (`border.padding_top_px`
+/// is read as `padding.top`).
+fn leaf_field(leaf: &str) -> &str {
+    let last = leaf.rsplit('.').next().unwrap_or(leaf);
+    let bare = last
+        .strip_suffix("_px")
+        .or_else(|| last.strip_suffix("_ms"))
+        .unwrap_or(last);
+    if bare.starts_with("padding_") {
+        "padding"
+    } else {
+        bare
+    }
+}
+
+/// The identifiers that follow `module::` in `text`, in order.
+fn paths_after<'a>(text: &'a str, module: &str) -> Vec<&'a str> {
+    let open = format!("{module}::");
+    text.match_indices(&open)
+        .filter(|(ix, _)| {
+            text.get(..*ix)
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_' || c == ':'))
+        })
+        .map(|(ix, _)| leading_ident(text.get(ix + open.len()..).unwrap_or("")))
+        .filter(|name| !name.is_empty())
+        .collect()
+}
+
+/// The bodies, in `code` (a [`blanked`] text), of the `impl` blocks for the
+/// type `name`.
+fn impl_bodies(code: &str, name: &str) -> Vec<std::ops::Range<usize>> {
+    code.match_indices("impl")
+        .filter(|(ix, _)| {
+            code.get(..*ix)
+                .and_then(|t| t.chars().next_back())
+                .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+        })
+        .filter_map(|(ix, _)| {
+            let open = ix + code.get(ix..)?.find('{')?;
+            let header = code.get(ix..open)?;
+            let ty = header.split_whitespace().last()?;
+            let ty = ty.split('<').next().unwrap_or(ty);
+            (ty == name).then(|| open..block_end(code, open).unwrap_or(open))
+        })
+        .collect()
+}
+
+/// What a `HOW` line says applies its leaf: each showcase function it names
+/// (`demo::name`, or a `demo::Type`'s methods), each showcase file it names
+/// whole (`(inspector.rs)`), each connector builder (`geometry::name`) and
+/// each connector control (`widgets::Name`, its file), as (the route, its
+/// code). A route this cannot find is listed with no code.
+fn how_routes(text: &str, widgets: &[(String, String)]) -> Vec<(String, Option<String>)> {
+    let file = |path: &str| {
+        SHOWCASE_FILES
+            .iter()
+            .find(|(p, _)| *p == path)
+            .map(|(_, raw)| *raw)
+    };
+    let mut out = Vec::new();
+    if let Some(demo) = file("demo.rs") {
+        let code = blanked(demo);
+        let items = fn_items(demo, &code);
+        for name in paths_after(text, "demo") {
+            let bodies: Vec<std::ops::Range<usize>> = if name.starts_with(char::is_uppercase) {
+                impl_bodies(&code, name)
+            } else {
+                items
+                    .iter()
+                    .filter(|f| f.name == name)
+                    .map(|f| f.body.clone())
+                    .collect()
+            };
+            let body: String = bodies
+                .iter()
+                .filter_map(|range| code.get(range.clone()))
+                .collect();
+            out.push((format!("demo::{name}"), (!body.is_empty()).then_some(body)));
+        }
+    }
+    for (path, raw) in SHOWCASE_FILES {
+        if !path.contains('/') && text.contains(&format!("({path})")) {
+            out.push(((*path).to_string(), Some(blanked(raw))));
+        }
+    }
+    let code = blanked(GEOMETRY);
+    let items = fn_items(GEOMETRY, &code);
+    for name in paths_after(text, "geometry") {
+        let body = items
+            .iter()
+            .find(|f| f.name == name)
+            .and_then(|f| code.get(f.body.clone()))
+            .map(str::to_string);
+        out.push((format!("geometry::{name}"), body));
+    }
+    for name in paths_after(text, "widgets") {
+        let declared = format!("pub struct {name}");
+        let body = widgets
+            .iter()
+            .find(|(_, code)| {
+                code.match_indices(&declared).any(|(ix, _)| {
+                    code.get(ix + declared.len()..)
+                        .and_then(|t| t.chars().next())
+                        .is_none_or(|c| !(c.is_alphanumeric() || c == '_'))
+                })
+            })
+            .map(|(_, code)| code.clone());
+        out.push((format!("widgets::{name}"), body));
+    }
+    out
+}
+
+/// Evidence for the reviewer, not a gate: for every `HOW` line that names
+/// what applies its leaf -- a showcase function, file, builder or control --
+/// whether that code reads the leaf's field. A route's text is prose and a
+/// read is a substring, so a line that reads it by coincidence passes and
+/// one that reaches it through a helper does not; the list says which is
+/// which for a human to judge. A line saying "not applied" or "not
+/// reachable" names no route that applies the leaf, and is listed apart.
+#[test]
+fn every_how_route_reads_its_leaf() {
+    let lines = how_lines(how_source());
+    assert!(
+        lines.is_ok(),
+        "{}",
+        lines.as_ref().err().cloned().unwrap_or_default()
+    );
+    let lines = lines.unwrap_or_default();
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("src/widgets");
+    let mut widgets: Vec<(String, String)> = std::fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| path.extension().is_some_and(|e| e == "rs"))
+        .filter_map(|path| {
+            let raw = std::fs::read_to_string(&path).ok()?;
+            Some((shorten(&path), blanked(&raw)))
+        })
+        .collect();
+    widgets.sort();
+    let mut read = Vec::new();
+    let mut unread = Vec::new();
+    let mut exempt = Vec::new();
+    for h in &lines {
+        let at = format!("{HOW_FILE}:{} (\"{}\", {})", h.line, h.prefix, h.leaf);
+        if h.text.contains("not applied") || h.text.contains("not reachable") {
+            exempt.push(format!("{at}: {}", h.text));
+            continue;
+        }
+        let field = leaf_field(h.leaf);
+        for (route, code) in how_routes(h.text, &widgets) {
+            match code {
+                Some(code) if mentions(&code, field) => {
+                    read.push(format!("{at}: {route} reads `{field}`"));
+                }
+                Some(_) => unread.push(format!("{at}: {route} does not read `{field}`")),
+                None => unread.push(format!("{at}: {route} not found")),
+            }
+        }
+    }
+    assert!(
+        !read.is_empty() && !widgets.is_empty(),
+        "no HOW route was found reading its leaf, so the list below says nothing"
+    );
+    println!(
+        "HOW routes: {} read their leaf's field, {} do not or were not found, {} lines \
+         exempt",
+        read.len(),
+        unread.len(),
+        exempt.len()
+    );
+    println!("  Not read or not found (a reviewer reads each against the code):");
+    for line in &unread {
+        println!("    {line}");
+    }
+    println!("  Exempt (\"not applied\" or \"not reachable\"):");
+    for line in &exempt {
+        println!("    {line}");
+    }
 }
 
 /// The `pub(crate)` constants of gpui-base the showcase names again, as
@@ -2839,11 +4257,14 @@ pub fn tag(t: &Theme) -> WidgetInfo {
 fn config(self, what: &'static str, text: String) {}
 config("free", "fn, not a method");
 "#;
-    let calls: Vec<usize> = claim_calls(source).iter().map(|(line, _)| *line).collect();
+    let calls: Vec<usize> = claim_calls(source)
+        .iter()
+        .map(|(line, _, _)| *line)
+        .collect();
     assert_eq!(calls, vec![7, 8, 14]);
     let readable: Vec<bool> = claim_calls(source)
         .iter()
-        .map(|(_, args)| claim_literals(args).is_some())
+        .map(|(_, call, args)| claim_literals(*call, args).is_some())
         .collect();
     assert_eq!(readable, vec![true, true, false]);
 
@@ -2904,6 +4325,141 @@ config("free", "fn, not a method");
     );
     assert!(unreadable.is_empty(), "{unreadable:?}");
 
+    // The helpers' calls are claims too, each in its own shape, and the call
+    // in each helper's body is the helper's own, not a panel's.
+    let helpers = r#"pub fn edge_claim(role: &'static str, colour: Option<Rgba>) -> Option<ColorClaim> {
+    stated_claim(role, field, colour.filter(|_| drawn), cited_at)
+}
+pub fn stated_claim(role: &'static str, colour: Option<Rgba>) -> Option<ColorClaim> {
+    colour.map(|c| claim(role, field, stated(c), cited_at))
+}
+pub fn frame(r: &ResolvedTheme, t: &Theme) -> WidgetInfo {
+    WidgetInfo::new("Frame")
+        .colors(edge_claim("edge", "border", Some(r.frame.border.color), Some(r.frame.border.line_width), "showcase"))
+        .colors(stated_claim("hover", "hover_background", r.frame.hover_background, "showcase"))
+        .color(claim("edge", "border", stated(r.frame.border.color), "showcase"))
+        .colors(edge_claim("edge", "border", Some(r.frame.border.color), "showcase"))
+        .colors(stated_claim("bg", "danger", Some(t.danger), "gpui-component/tag.rs:1"))
+        .colors(edge_claim("hovered edge", "hover_border_color", Some(r.frame.border.color), Some(1.), "showcase"))
+}
+"#;
+    let calls: Vec<(usize, ClaimCall, bool)> = claim_calls(helpers)
+        .iter()
+        .map(|(line, call, args)| (*line, *call, claim_literals(*call, args).is_some()))
+        .collect();
+    assert_eq!(
+        calls,
+        vec![
+            (9, ClaimCall::Edge, true),
+            (10, ClaimCall::Stated, true),
+            (11, ClaimCall::Claim, true),
+            (12, ClaimCall::Edge, false),
+            (13, ClaimCall::Stated, true),
+            (14, ClaimCall::Edge, true),
+        ]
+    );
+    let (claims, _) = claims_in("h.rs", helpers);
+    let read: Vec<_> = claims
+        .iter()
+        .map(|c| {
+            (
+                c.line,
+                c.call,
+                c.role,
+                c.field,
+                c.width,
+                reads_edge_colour(c.value),
+            )
+        })
+        .collect();
+    assert_eq!(
+        read,
+        vec![
+            (
+                9,
+                ClaimCall::Edge,
+                "edge",
+                "border",
+                Some("Some(r.frame.border.line_width)"),
+                true
+            ),
+            (
+                10,
+                ClaimCall::Stated,
+                "hover",
+                "hover_background",
+                None,
+                false
+            ),
+            (11, ClaimCall::Claim, "edge", "border", None, true),
+            (13, ClaimCall::Stated, "bg", "danger", None, false),
+            (
+                14,
+                ClaimCall::Edge,
+                "hovered edge",
+                "hover_border_color",
+                Some("Some(1.)"),
+                true
+            ),
+        ]
+    );
+    // A helper's claim is held to its field and its citation as any claim
+    // is: the swatch of line 14 reads another field than the one it names,
+    // and the line line 13 cites reads no `danger`.
+    let located = cited_source_dirs();
+    assert!(
+        located.is_ok(),
+        "the vendored sources could not be located, so nothing was checked: {}",
+        located.as_ref().err().cloned().unwrap_or_default()
+    );
+    let Ok(roots) = located else { return };
+    let code = vec![without_comments_or_strings(helpers)];
+    let found: Vec<(usize, bool)> = claims
+        .iter()
+        .map(|c| (c.line, claim_finding(c, &roots, &code).is_some()))
+        .collect();
+    assert_eq!(
+        found,
+        vec![(9, false), (10, false), (11, false), (13, true), (14, true)]
+    );
+    // An edge colour is a `border.color` or a `_border_color`, through a path
+    // or a binding; an upstream token, or a longer name, is not.
+    assert!(reads_edge_colour(
+        "Some(k.unchecked_border_color.unwrap_or(k.border.color))"
+    ));
+    assert!(reads_edge_colour("stated(hover_border_color)"));
+    assert!(reads_edge_colour("stated(border.color)"));
+    assert!(!reads_edge_colour("t.border"));
+    assert!(!reads_edge_colour("stated(r.card.background_color)"));
+    assert!(!reads_edge_colour("stated(r.frame.border.colorful)"));
+    assert!(!reads_edge_colour("stated(r.frame.sideborder.color)"));
+    // A border bound to a name is read through it: the claim of
+    // `stated(b.color)` with `let b = &r.popover.border;` before it is an
+    // edge, as `stated(r.popover.border.color)` is; a font's, a binding of
+    // another name or a path through another struct is not.
+    let planted = "pub fn menus(r: &ResolvedTheme) -> WidgetInfo {\n    let b = &r.popover.border;\n    let f = &r.menu.font;\n    WidgetInfo::new(\"Menus\")\n        .color(claim(\"menu edge\", \"color\", stated(b.color), \"showcase\"))\n        .color(claim(\"text\", \"color\", stated(f.color), \"showcase\"))\n}\n";
+    let (planted, _) = claims_in("p.rs", planted);
+    let classed: Vec<(&str, bool)> = planted.iter().map(|c| (c.role, is_edge_claim(c))).collect();
+    assert_eq!(classed, vec![("menu edge", true), ("text", false)]);
+    let bound = "let b = &r.popover.border;\n    info.color(claim(";
+    assert!(!reads_edge_colour("stated(b.color)"));
+    assert!(reads_bound_border_colour(bound, "stated(b.color)"));
+    assert!(reads_bound_border_colour(bound, "Some(b.color)"));
+    assert!(!reads_bound_border_colour(bound, "stated(m.b.color)"));
+    assert!(!reads_bound_border_colour(bound, "stated(c.color)"));
+    assert!(!reads_bound_border_colour(
+        "let b = &r.popover.border;\nlet b = &r.menu.font;\n",
+        "stated(b.color)"
+    ));
+    assert!(!reads_bound_border_colour(
+        "let b = &r.slider.thumb_border;\n",
+        "stated(b.color)"
+    ));
+    assert!(!reads_bound_border_colour(
+        "fn one() {\n    let b = &r.popover.border;\n}\nfn two() {\n    info.color(claim(",
+        "stated(b.color)"
+    ));
+
     // A value reads the field its claim names, as a whole identifier, by any
     // path; another field, or a longer one that starts with it, does not.
     assert!(value_reads_field("t.popover", "popover"));
@@ -2913,6 +4469,89 @@ config("free", "fn, not a method");
     assert!(!value_reads_field("t.background", "popover"));
     assert!(!value_reads_field("t.popover_foreground", "popover"));
     assert!(!value_reads_field("red", "danger"));
+    // A binding named after the field is not the field, wherever it came
+    // from; it is where it is bound from that field, as the switch's
+    // outline claims bind a stated soft option.
+    assert!(!value_reads_field(
+        "stated(thumb_border_color)",
+        "thumb_border_color"
+    ));
+    let value = "stated(thumb_border_color)";
+    let field = "thumb_border_color";
+    assert!(!value_reads_bound_field(
+        "let thumb_border_color = s.thumb_background;\n    info.color(claim(",
+        value,
+        field
+    ));
+    assert!(value_reads_bound_field(
+        "(true, false) => s\n    .thumb_border_color\n    .map(|thumb_border_color| {\n    claim(",
+        value,
+        field
+    ));
+    assert!(value_reads_bound_field(
+        "let info = if let (Some(thumb_border_color), Some(_)) =\n    (s.thumb_border_color, s.thumb_border_line_width)\n{\n    info.color(claim(",
+        value,
+        field
+    ));
+    // Bound from another field, by either form.
+    assert!(!value_reads_bound_field(
+        "x => s.thumb_background.map(|thumb_border_color| {\n    claim(",
+        value,
+        field
+    ));
+    assert!(!value_reads_bound_field(
+        "if let Some(thumb_border_color) = s.thumb_background {\n    claim(",
+        value,
+        field
+    ));
+    // The last binding of the name is the one read.
+    assert!(!value_reads_bound_field(
+        "if let Some(thumb_border_color) = s.thumb_border_color {}\nlet x = s.thumb_background.map(|thumb_border_color| claim(",
+        value,
+        field
+    ));
+
+    // A value read off a connector Look stands for the leaf its claim names
+    // (the drawn-value class): a parameter typed as a Look, a binding that
+    // builds one or fades one. A binding of anything else does not, and a
+    // Look's `border` or `<part>_border` is an edge colour.
+    let looks = connector_looks();
+    assert!(
+        ["CheckboxLook", "SwitchLook", "TabLook"]
+            .iter()
+            .all(|look| looks.contains(look)),
+        "widgets/mod.rs's `pub use` lines no longer name the Looks: {looks:?}"
+    );
+    let planted = "pub fn check(r: &ResolvedTheme, look: &CheckboxLook) -> WidgetInfo {\n    let rest = SwitchLook::of(r, true, false);\n    let faded = other.faded_over(ground);\n    let k = &r.checkbox;\n    WidgetInfo::new(\"Check\")\n        .color(claim(\"fill\", \"checked_background\", look.fill, \"showcase\"))\n        .color(claim(\"track\", \"checked_background\", faded.track, \"showcase\"))\n        .color(claim(\"mark\", \"indicator_color\", k.fill, \"showcase\"))\n        .colors(stated_claim(\"edge\", \"border\", rest.track_border, \"showcase\"))\n}\nfn other(k: &ResolvedCheckboxTheme) -> WidgetInfo {\n    WidgetInfo::new(\"Other\").color(claim(\"fill\", \"checked_background\", look.fill, \"showcase\"))\n}\n";
+    let (planted, _) = claims_in("l.rs", planted);
+    let read: Vec<(&str, &str, Vec<String>, bool, bool)> = planted
+        .iter()
+        .map(|c| {
+            (
+                c.widget,
+                c.role,
+                look_fields_read(c.before, c.value),
+                value_finding(c).is_some(),
+                is_edge_claim(c),
+            )
+        })
+        .collect();
+    assert_eq!(
+        read,
+        vec![
+            ("check", "fill", vec!["fill".to_string()], false, false),
+            ("check", "track", vec!["track".to_string()], false, false),
+            ("check", "mark", Vec::new(), true, false),
+            (
+                "check",
+                "edge",
+                vec!["track_border".to_string()],
+                false,
+                true
+            ),
+            ("other", "fill", Vec::new(), true, false),
+        ]
+    );
 }
 
 // ---------------------------------------------------------------------------

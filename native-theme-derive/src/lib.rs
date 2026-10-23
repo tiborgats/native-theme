@@ -1,12 +1,18 @@
-// native-theme-derive: proc-macro crate for ThemeWidget and ThemeFields derives.
-//
-// `ThemeWidget` generates paired Option/Resolved struct hierarchies, FIELD_NAMES,
-// merge/is_empty, validate_widget, and check_ranges from field attributes.
-//
-// `ThemeFields` (Phase 93-05 G5) generates a single `inventory::submit!` call
-// that registers a plain struct's serialized field names in the
-// `crate::resolve::FieldInfo` registry for TOML linting. Replaces the
-// hand-authored `FIELD_NAMES` constants on non-widget model types.
+//! Derive macros internal to [`native-theme`](https://docs.rs/native-theme).
+//!
+//! **Do not depend on this crate directly; depend on `native-theme`.** The
+//! derives exist for `native-theme`'s own model types: their expansions name
+//! `crate::resolve::*` paths (`WidgetFieldInfo`, `FieldInfo`,
+//! `validate_helpers`, the inheritance-rule registries) that exist only
+//! inside `native-theme`, so they compile nowhere else.
+//!
+//! - [`ThemeWidget`](derive@ThemeWidget) generates, from one annotated
+//!   struct, its paired `Resolved` struct, `FIELD_NAMES`, `merge` and
+//!   `is_empty`, `validate_widget`, `check_ranges` and the struct's
+//!   inheritance rules; its documentation is the reference for the
+//!   `#[theme]`, `#[theme_layer]` and `#[theme_inherit]` attributes.
+//! - [`ThemeFields`](derive@ThemeFields) registers a plain struct's
+//!   serialized field names for TOML linting.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -17,6 +23,7 @@ mod gen_ranges;
 mod gen_structs;
 mod gen_validate;
 mod parse;
+mod util;
 
 /// Derive macro that generates a companion Resolved struct and impl blocks
 /// for theme widget types.
@@ -76,14 +83,19 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         .cloned()
         .collect();
 
+    let resolved_name = layer
+        .resolved_name
+        .clone()
+        .unwrap_or_else(|| quote::format_ident!("Resolved{}", opt_name));
+
     // Generate code
-    let structs = gen_structs::gen_structs(opt_name, &fields, &layer, &doc_attrs);
+    let structs = gen_structs::gen_structs(opt_name, &resolved_name, &fields, &doc_attrs);
     let merge = gen_merge::gen_merge(opt_name, &fields);
-    let validate = gen_validate::gen_validate(opt_name, &fields, &layer);
-    let ranges = gen_ranges::gen_ranges(opt_name, &fields, &layer);
+    let validate = gen_validate::gen_validate(opt_name, &resolved_name, &fields, &layer);
+    let ranges = gen_ranges::gen_ranges(&resolved_name, &fields);
     let inherit = gen_inherit::gen_inherit(opt_name, &fields, &layer);
-    let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta);
-    let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta);
+    let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta, &layer);
+    let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta, &layer);
     let inventory = gen_inventory_submit(opt_name, &layer);
 
     Ok(quote::quote! {
@@ -113,8 +125,7 @@ fn gen_inventory_submit(
         return proc_macro2::TokenStream::new();
     }
 
-    let name_str = opt_name.to_string();
-    let widget_name = to_snake_case(name_str.strip_suffix("Theme").unwrap_or(&name_str));
+    let widget_name = util::widget_name(opt_name);
 
     quote::quote! {
         inventory::submit!(crate::resolve::WidgetFieldInfo {
@@ -122,18 +133,6 @@ fn gen_inventory_submit(
             field_names: #opt_name::FIELD_NAMES,
         });
     }
-}
-
-/// Convert a PascalCase identifier to snake_case.
-fn to_snake_case(s: &str) -> String {
-    let mut result = String::with_capacity(s.len().saturating_add(4));
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_uppercase() && i > 0 {
-            result.push('_');
-        }
-        result.push(ch.to_ascii_lowercase());
-    }
-    result
 }
 
 /// Derive macro that registers a plain struct's serialized field names in the
@@ -171,8 +170,12 @@ fn to_snake_case(s: &str) -> String {
 /// pub struct HasProxy { /* ... */ }
 /// ```
 ///
-/// This derive emits ONLY an `inventory::submit!` call; it does not emit a
-/// `FIELD_NAMES` associated constant. To also get widget-style codegen
+/// On the introspection path it also emits `toml_key(field)`, which maps a
+/// field's name to its TOML key, so validation can name the key a theme
+/// author writes.
+///
+/// This derive does not emit a `FIELD_NAMES` associated constant. To also
+/// get widget-style codegen
 /// (Resolved pair + merge + validate + `FIELD_NAMES`), combine with
 /// `#[derive(ThemeWidget)]`.
 #[proc_macro_derive(ThemeFields, attributes(theme_layer))]
@@ -189,6 +192,7 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
     let struct_name = &input.ident;
     let layer = parse::parse_layer_attrs(&input.attrs)?;
 
+    let mut renames = Vec::new();
     let field_names: Vec<String> = if let Some(ref explicit) = layer.explicit_fields {
         explicit.clone()
     } else {
@@ -201,19 +205,50 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
                 ));
             }
         };
-        parse::parse_fields(&data.fields)?
+        let fields = parse::parse_fields(&data.fields)?;
+        renames = fields
             .iter()
-            .map(|f| {
-                f.serde_rename
-                    .clone()
-                    .unwrap_or_else(|| f.ident.to_string())
+            .filter_map(|f| {
+                let rename = f.serde_rename.as_ref()?;
+                Some((f.ident.to_string(), rename.clone()))
             })
-            .collect()
+            .collect();
+        fields.iter().map(parse::FieldMeta::toml_key).collect()
     };
 
     let struct_name_str = struct_name.to_string();
     let entries: Vec<proc_macro2::TokenStream> =
         field_names.iter().map(|n| quote::quote! { #n, }).collect();
+
+    // An explicit field list has no field-to-key mapping: no `toml_key`.
+    let toml_key = if layer.explicit_fields.is_some() {
+        proc_macro2::TokenStream::new()
+    } else {
+        let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
+        let arms = renames
+            .iter()
+            .map(|(name, key)| quote::quote! { #name => #key, });
+        let body = if renames.is_empty() {
+            quote::quote! { field }
+        } else {
+            quote::quote! {
+                match field {
+                    #(#arms)*
+                    _ => field,
+                }
+            }
+        };
+        quote::quote! {
+            impl #impl_generics #struct_name #ty_generics #where_clause {
+                /// The TOML key of the field named `field`: its serde
+                /// rename, else `field` itself.
+                #[allow(dead_code)]
+                pub(crate) fn toml_key(field: &'static str) -> &'static str {
+                    #body
+                }
+            }
+        }
+    };
 
     // Emit at item level directly -- mirrors the pattern used by the widget
     // derive at line 111 above. The inventory registry path
@@ -224,5 +259,29 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
             struct_name: #struct_name_str,
             field_names: &[#(#entries)*],
         });
+        #toml_key
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn skip_inventory_skips_inheritance_registrations() {
+        let input: DeriveInput = syn::parse_quote! {
+            #[theme_layer(skip_inventory)]
+            #[theme_inherit(border_kind = "full", font = "font")]
+            struct ProbeTheme {
+                #[theme(nested, resolved_type = "ResolvedWidgetBorder")]
+                border: Option<WidgetBorderSpec>,
+                #[theme(nested, resolved_type = "ResolvedFontSpec")]
+                font: Option<FontSpec>,
+            }
+        };
+        let output = derive_inner(input).expect("should derive").to_string();
+        assert!(output.contains("resolve_border_from_defaults"), "{output}");
+        assert!(output.contains("resolve_font_from_defaults"), "{output}");
+        assert!(!output.contains("inventory"), "{output}");
+    }
 }

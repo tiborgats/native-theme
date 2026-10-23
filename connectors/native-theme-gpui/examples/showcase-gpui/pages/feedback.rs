@@ -1,12 +1,13 @@
 //! The Feedback page.
 
-use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*, px};
-use gpui_component::{IconName, h_flex, v_flex};
+use gpui::{Context, IntoElement, Keystroke, ParentElement, Styled, Window, prelude::*, px};
+use gpui_component::{IconName, h_flex, kbd::Kbd, v_flex};
 
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
+use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
     FEEDBACK_ALERT_INFO, FEEDBACK_BADGE_COUNT, FEEDBACK_BADGE_DOT, FEEDBACK_CIRCLE_LOADING,
@@ -82,7 +83,7 @@ const SPINNERS: [(&str, &str, SpinnerKind); 3] = [
 ];
 
 /// The Tags, as `(id, variant, outlined, label)`.
-const TAGS: [(&str, TagKind, bool, &str); 8] = [
+pub(crate) const TAGS: [(&str, TagKind, bool, &str); 8] = [
     (FEEDBACK_TAG_PRIMARY, TagKind::Primary, false, "Primary"),
     (
         "feedback-tag-secondary",
@@ -108,6 +109,41 @@ const TAGS: [(&str, TagKind, bool, &str); 8] = [
     ),
 ];
 
+/// The Tags section's heading, counting the colours from [`TAGS`]: one
+/// filled Tag per colour, then the outlined ones.
+pub(crate) fn tags_heading() -> String {
+    let colours = TAGS
+        .iter()
+        .filter(|&&(_, _, outlined, _)| !outlined)
+        .count();
+    format!("Tags ({colours} colors + outline)")
+}
+
+/// The Markers section's heading, counting [`MARKERS`]: its variants, then
+/// its loading styles ([`MarkerKind::is_loading`]).
+pub(crate) fn markers_heading() -> String {
+    let loading = MARKERS
+        .iter()
+        .filter(|&&(_, kind, _)| kind.is_loading())
+        .count();
+    let variants = MARKERS.len().saturating_sub(loading);
+    format!("Marker ({variants} variants, {loading} loading styles)")
+}
+
+/// The keystroke the shortcut tooltip names, a sample and no binding of the
+/// showcase's: on gpui's `secondary` modifier, the one the showcase's
+/// bindings take (`app::init`), Ctrl off macOS and Cmd on it.
+pub(crate) const SAVE_KEYS: &str = "secondary-s";
+
+/// The shortcut tooltip's text: [`SAVE_KEYS`] as a `Kbd` draws it on this
+/// platform (gpui-component kbd.rs, Kbd::format), "Ctrl+S" off macOS. The
+/// keys as written where gpui cannot parse them.
+pub(crate) fn save_tooltip() -> String {
+    let keys = Keystroke::parse(SAVE_KEYS)
+        .map_or_else(|_| SAVE_KEYS.to_string(), |stroke| Kbd::format(&stroke));
+    format!("Save file ({keys})")
+}
+
 /// The Badges, as `(id, count or a dot, the badged Button's label)`.
 const BADGES: [(&str, Option<usize>, &str); 3] = [
     (FEEDBACK_BADGE_COUNT, Some(5), "Messages"),
@@ -116,7 +152,7 @@ const BADGES: [(&str, Option<usize>, &str); 3] = [
 ];
 
 /// The Markers, as `(id, kind, text)`.
-const MARKERS: [(&str, MarkerKind, &str); 5] = [
+pub(crate) const MARKERS: [(&str, MarkerKind, &str); 5] = [
     ("feedback-marker-plain", MarkerKind::Plain, "Theme applied"),
     ("feedback-marker-separator", MarkerKind::Separator, "Today"),
     (
@@ -172,9 +208,7 @@ impl Showcase {
         let spinner_icons = self.spinner_icons();
         let marker_icon = self.sample_icon(IconName::CircleCheck);
         let widget_gap = geometry::widget_gap(&self.layout);
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -193,19 +227,38 @@ impl Showcase {
                 "feedback-heading-progress",
                 "Progress Bars",
             ))
-            .child(v_flex().gap_3().w(px(360.0)).children(BARS.map(
-                |(id, label_id, label, value_id, value)| {
-                    v_flex()
-                        .gap_3()
-                        .child(
-                            h_flex()
-                                .justify_between()
-                                .child(demo::label(ui, cx, label_id, label))
-                                .child(demo::label(ui, cx, value_id, format!("{value}%"))),
-                        )
-                        .child(demo::progress(ui, cx, id, label, value))
-                },
-            )))
+            .child(
+                with_gap(v_flex(), widget_gap)
+                    .w(px(360.0))
+                    .children(BARS.map(|(id, label_id, label, value_id, value)| {
+                        with_gap(v_flex(), widget_gap)
+                            .child(
+                                h_flex()
+                                    .justify_between()
+                                    .child(demo::label(ui, cx, label_id, label))
+                                    .child(demo::label(ui, cx, value_id, format!("{value}%"))),
+                            )
+                            .child(demo::progress(ui, cx, id, label, Some(value)))
+                    })),
+            )
+            // Indeterminate: the fill sweeps the track.
+            .child(
+                with_gap(v_flex(), widget_gap)
+                    .w(px(360.0))
+                    .child(demo::label(
+                        ui,
+                        cx,
+                        "feedback-progress-loading-label",
+                        "Loading",
+                    ))
+                    .child(demo::progress(
+                        ui,
+                        cx,
+                        "feedback-progress-loading",
+                        "Loading",
+                        None,
+                    )),
+            )
             .child(demo::heading(
                 ui,
                 cx,
@@ -256,15 +309,16 @@ impl Showcase {
                 "feedback-heading-spinner",
                 "Spinner (3 sizes)",
             ))
-            .child(h_flex().gap_6().items_center().children(SPINNERS.map(
-                |(id, label_id, kind)| {
-                    h_flex()
-                        .gap_2()
-                        .items_center()
-                        .child(demo::spinner(ui, cx, id, kind, &spinner_icons))
-                        .child(demo::label(ui, cx, label_id, kind.name()))
-                },
-            )))
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_center()
+                    .children(SPINNERS.map(|(id, label_id, kind)| {
+                        with_gap(h_flex(), widget_gap)
+                            .items_center()
+                            .child(demo::spinner(ui, cx, id, kind, &spinner_icons))
+                            .child(demo::label(ui, cx, label_id, kind.name()))
+                    })),
+            )
             .child(demo::heading(
                 ui,
                 cx,
@@ -272,8 +326,7 @@ impl Showcase {
                 "Skeleton Placeholders",
             ))
             .child(
-                v_flex()
-                    .gap_2()
+                with_gap(v_flex(), widget_gap)
                     .w(px(360.0))
                     // The block keeps the larger of the two roundings this
                     // section always had.
@@ -362,30 +415,30 @@ impl Showcase {
                 ui,
                 cx,
                 "feedback-heading-tags",
-                "Tags (7 colors + outline)",
+                tags_heading(),
             ))
-            .child(h_flex().gap_2().flex_wrap().children(
+            .child(with_gap(h_flex(), widget_gap).flex_wrap().children(
                 TAGS.map(|(id, kind, outline, label)| demo::tag(ui, cx, id, kind, outline, label)),
             ))
             .child(demo::heading(ui, cx, "feedback-heading-badge", "Badge"))
             .child(
-                h_flex().gap_8().children(
-                    BADGES.map(|(id, count, label)| demo::badge(ui, cx, id, count, label)),
-                ),
+                h_flex().children(BADGES.iter().enumerate().map(|(ix, &(id, count, label))| {
+                    let next = (ix.saturating_add(1) < BADGES.len()).then_some(widget_gap);
+                    demo::badge(ui, cx, id, count, label, next)
+                })),
             )
             .child(demo::heading(
                 ui,
                 cx,
                 "feedback-heading-marker",
-                "Marker (3 variants, 2 loading styles)",
+                markers_heading(),
             ))
             .child(with_gap(v_flex(), widget_gap).w(px(360.0)).children(
                 MARKERS.map(|(id, kind, text)| demo::marker(ui, cx, id, kind, text, &marker_icon)),
             ))
             .child(demo::heading(ui, cx, "feedback-heading-tooltip", "Tooltip"))
             .child(
-                h_flex()
-                    .gap_4()
+                with_gap(h_flex(), widget_gap)
                     .child(demo::tooltip_button(
                         ui,
                         cx,
@@ -398,7 +451,7 @@ impl Showcase {
                         cx,
                         "feedback-tooltip-shortcut",
                         "With tooltip",
-                        "Save file (Cmd+S)",
+                        save_tooltip(),
                     ))
                     .child(demo::built_tooltip_button(
                         ui,
@@ -417,8 +470,7 @@ impl Showcase {
                 "Notification (push via WindowExt)",
             ))
             .child(
-                h_flex()
-                    .gap_3()
+                with_gap(h_flex(), widget_gap)
                     .child(probe(
                         PROBE_NOTIFICATION,
                         demo::notification_button(

@@ -10,32 +10,50 @@ jobs:
   screenshots:
     strategy:
       fail-fast: false
+      # The macOS entries name macos-26, the image `macos-latest` resolves to in
+      # GitHub's runner-images list (README, read 2026-10-11:
+      # https://github.com/actions/runner-images/blob/main/README.md), so a move
+      # of `macos-latest` cannot change the captures unnoticed. It is not
+      # macOS 14: `macos-14` is fully unsupported from 2026-11-02, with brownouts
+      # in October (https://github.com/actions/runner-images/issues/13518, read
+      # 2026-10-11). The `macos-monterey` captures show that preset (its header says
+      # which macOS versions it covers, 12 to 15) drawn on the runner's macOS 26, and the
+      # `macos-tahoe` captures macOS 26's own generation; each job records the runner's
+      # macOS version beside its captures (below).
+      # The Windows entries name windows-2025 (Windows Server 2025, build 26100),
+      # the image `windows-latest` resolves to; GitHub's one Windows 11 image is
+      # arm64 (`windows-11-arm`). The `windows-11` captures claim the preset drawn
+      # on Windows Server 2025, whose metrics, fonts and system colours the OS
+      # probe found equal to Windows 11 25H2's, the animation and drop-shadow
+      # settings aside (docs/evidence/os-probe/2026-10-11-run-38129819806; M2b,
+      # docs/todo_code-review-findings.md). Each job records its runner's OS
+      # version beside its captures (below).
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: iced
             # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: gpui
             features: ""
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: iced
             # The showcase's iced_aw pages, as scripts/generate_screenshots_iced.sh builds it.
             features: --features iced_aw
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: gpui
             features: ""
-          - os: macos-latest
+          - os: macos-26
             os_name: macos
             toolkit: egui
             # Every connector feature, as the capture scripts build it.
             features: --all-features
-          - os: windows-latest
+          - os: windows-2025
             os_name: windows
             toolkit: egui
             features: --all-features
@@ -128,18 +146,40 @@ jobs:
         run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
         shell: bash
 
+      # The runner's OS version, uploaded with the captures as
+      # `<os_name>-os-version.txt`; scripts/generate_assets_release.sh copies it
+      # out of the run and scripts/update_provenance.sh writes it into
+      # docs/assets/PROVENANCE.toml (`macos_version`, `windows_version`).
+      - name: Record the OS version (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          version="$(sw_vers -productVersion)"
+          echo "macOS $version"
+          printf '%s\n' "$version" > "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt"
+
+      - name: Record the OS version (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = [System.Environment]::OSVersion.Version.ToString()
+          Write-Output "Windows $version"
+          Set-Content -Path "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt" -Value $version
+
       # `--screenshot` opens the window at the showcases' default 1280 x 720
       # and exits non-zero, with the measured and the expected size, unless
       # the capture is of that window: each showcase's OS capture is the
       # window with its frame and title bar, the content 1280 x 720 times the
-      # display's scale factor (egui's through xcap: `screencapture -l` of the
-      # window it lists on macOS, a BitBlt of its frame on Windows).
+      # display's scale factor (the three showcases' through the shared
+      # crate's capture, xcap: `screencapture -l` of the window it lists on
+      # macOS, a BitBlt of its frame on Windows).
       - name: Capture screenshots (macOS)
         if: runner.os == 'macOS'
         run: |
           themes=(
-            "macos-sonoma:light:system"
-            "macos-sonoma:dark:system"
+            "macos-monterey:light:system"
+            "macos-monterey:dark:system"
+            "macos-tahoe:light:system"
+            "macos-tahoe:dark:system"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
@@ -171,4 +211,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: screenshots-${{ matrix.toolkit }}-${{ matrix.os_name }}
-          path: connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png
+          path: |
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt

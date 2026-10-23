@@ -236,8 +236,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
     let leaves = leaf_paths(&resolved("adwaita", ColorMode::Light));
     assert_eq!(
         leaves.len(),
-        505,
-        "501 ResolvedTheme leaves + 4 layout leaves (§5.7)"
+        516,
+        "512 ResolvedTheme leaves + 4 layout leaves (§5.7)"
     );
 
     let mut problems: Vec<String> = Vec::new();
@@ -263,10 +263,14 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 
     let role_keys: BTreeSet<&str> = Role::all().iter().map(|r| r.key()).collect();
     let surface_keys: BTreeSet<&str> = Surface::all().iter().map(|s| s.key()).collect();
-    let variant_keys: BTreeSet<&str> = [RoleVariant::Selected, RoleVariant::Disabled]
-        .iter()
-        .map(|v| v.key())
-        .collect();
+    let variant_keys: BTreeSet<&str> = [
+        RoleVariant::Selected,
+        RoleVariant::Disabled,
+        RoleVariant::SelectedDisabled,
+    ]
+    .iter()
+    .map(|v| v.key())
+    .collect();
     let presets: BTreeSet<&str> = Theme::list_presets().iter().map(|p| p.key).collect();
     let sub_tags = [
         "egui-limited",
@@ -433,7 +437,8 @@ fn every_leaf_has_exactly_one_row_and_every_row_is_well_formed() {
 }
 
 /// §5.7: the transcription carries the specification's verdicts, group by group, and its
-/// sub-tags (15 + 5 + 54). Read through the typed reader.
+/// sub-tags (16 source-side gap, 22 widgets-crate, 52 egui-limited, 1 source-void). Read
+/// through the typed reader.
 #[test]
 fn verdict_totals_match_the_specification() {
     let group_of = |leaf: &str| -> &'static str {
@@ -467,11 +472,11 @@ fn verdict_totals_match_the_specification() {
     // [direct, scoped, derived, unmappable] per group: §5.7's table
     let expected = [
         ("foundation", [18, 1, 36, 11]),
-        ("surfaces", [8, 55, 31, 14]),
-        ("buttons", [11, 46, 31, 18]),
-        ("inputs", [4, 35, 35, 12]),
-        ("indicators", [6, 17, 8, 9]),
-        ("chrome", [0, 54, 26, 19]),
+        ("surfaces", [8, 55, 32, 15]),
+        ("buttons", [11, 46, 31, 25]),
+        ("inputs", [4, 35, 36, 12]),
+        ("indicators", [5, 17, 9, 9]),
+        ("chrome", [0, 54, 27, 19]),
     ];
     for (group, want) in expected {
         let got = counts.get(group).copied().unwrap_or([0; 4]);
@@ -482,8 +487,8 @@ fn verdict_totals_match_the_specification() {
         "a leaf outside the six groups"
     );
     assert_eq!(tags.get("source-side gap").copied().unwrap_or_default(), 16);
-    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 15);
-    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 51);
+    assert_eq!(tags.get("widgets-crate").copied().unwrap_or_default(), 22);
+    assert_eq!(tags.get("egui-limited").copied().unwrap_or_default(), 52);
     assert_eq!(
         tags.get("source-void").copied().unwrap_or_default(),
         1,
@@ -596,7 +601,13 @@ const HOSTILE: [f32; 6] = [
 const PER_LEAF: [&str; 2] = ["kde-breeze", "adwaita"];
 
 /// Mutated all at once, and walked through `dnd_drop_zone`.
-const PLATFORM: [&str; 4] = ["kde-breeze", "adwaita", "macos-sonoma", "windows-11"];
+const PLATFORM: [&str; 5] = [
+    "kde-breeze",
+    "adwaita",
+    "macos-monterey",
+    "macos-tahoe",
+    "windows-11",
+];
 
 const MODES: [ColorMode; 2] = [ColorMode::Light, ColorMode::Dark];
 
@@ -622,7 +633,7 @@ fn collect_floats(v: &toml::Value, path: &str, out: &mut Vec<String>) {
 }
 
 /// Every `f32` leaf of `t`, as a TOML path. A colour is a string
-/// (`native-theme/src/color.rs:250-252`) and a weight an integer, so only the theme's `f32`s
+/// (`native-theme/src/color.rs:306-310`) and a weight an integer, so only the theme's `f32`s
 /// are floats; an `Option<f32>` that is `None` is absent.
 fn float_leaves(t: &ResolvedTheme) -> Vec<String> {
     let mut out = Vec::new();
@@ -783,7 +794,7 @@ fn dedup(notes: &[Note]) -> Vec<&Note> {
 
 /// `got` equals the unmutated atlas's notes (`baseline`) plus `predicted`, as sets, over every
 /// note kind: a kind a hostile float does not cause — `TransparentFill` (windows-11's
-/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:146`), the font notes — must
+/// `#f9f9f900` checkbox, `native-theme/src/presets/windows-11.toml:210`), the font notes — must
 /// be exactly the baseline's.
 fn assert_same_notes(got: &[Note], baseline: &[Note], predicted: Vec<Note>, ctx: &str) {
     let mut want = baseline.to_vec();
@@ -889,16 +900,20 @@ fn t4b_every_hostile_visuals_survives_egui_s_own_disable_assert() {
     });
 }
 
-/// The preset pairs T2 splices between, in both modes: the four platform presets pairwise,
+/// The preset pairs T2 splices between, in both modes: the five platform presets pairwise,
 /// and two community pairs.
-const PAIRS: [(&str, &str); 8] = [
+const PAIRS: [(&str, &str); 12] = [
     ("kde-breeze", "adwaita"),
-    ("kde-breeze", "macos-sonoma"),
+    ("kde-breeze", "macos-monterey"),
+    ("kde-breeze", "macos-tahoe"),
     ("kde-breeze", "windows-11"),
-    ("adwaita", "macos-sonoma"),
+    ("adwaita", "macos-monterey"),
+    ("adwaita", "macos-tahoe"),
     ("adwaita", "windows-11"),
-    ("macos-sonoma", "windows-11"),
-    ("material", "catppuccin-mocha"),
+    ("macos-monterey", "macos-tahoe"),
+    ("macos-monterey", "windows-11"),
+    ("macos-tahoe", "windows-11"),
+    ("material-3", "catppuccin-mocha"),
     ("dracula", "solarized"),
 ];
 
@@ -972,6 +987,19 @@ pub(crate) fn variant_by_key(key: &str) -> RoleVariant {
         .iter()
         .find(|v| v.key() == key)
         .unwrap_or_else(|| panic!("no variant {key}"))
+}
+
+/// The cell a role's `variant` cell is built from (§3.4; §13.1, *Inheritance*): `None` for a
+/// `Normal` cell, which is built from the base style; the `Normal` cell for `Selected` and
+/// `Disabled`; for `SelectedDisabled` the checkbox's `Selected` cell, and every other role's
+/// `Disabled` cell, which it shares.
+pub(crate) fn built_from(role: Role, variant: RoleVariant) -> Option<RoleVariant> {
+    match variant {
+        RoleVariant::Selected | RoleVariant::Disabled => Some(RoleVariant::Normal),
+        RoleVariant::SelectedDisabled if role == Role::Checkbox => Some(RoleVariant::Selected),
+        RoleVariant::SelectedDisabled => Some(RoleVariant::Disabled),
+        _ => None,
+    }
 }
 
 pub(crate) fn surface_by_key(key: &str) -> Surface {
@@ -1087,21 +1115,14 @@ fn carried_by(
                     continue;
                 }
                 let at_normal = required && normal == Own::Carries;
-                out.push((
-                    Location::Cell(theme, *role, RoleVariant::Normal),
-                    s.path.clone(),
+                carried_from_cell(
+                    m,
+                    a,
+                    (theme, *role, RoleVariant::Normal),
+                    &s.path,
                     at_normal,
-                ));
-                for v in [RoleVariant::Selected, RoleVariant::Disabled] {
-                    let own = cell_own(m, a, *role, v, &s.path);
-                    if own != Own::Overrides {
-                        out.push((
-                            Location::Cell(theme, *role, v),
-                            s.path.clone(),
-                            at_normal && own == Own::Carries,
-                        ));
-                    }
-                }
+                    &mut out,
+                );
             }
             for surface in Surface::all() {
                 for (field, base_path) in preset_reads(*surface) {
@@ -1122,23 +1143,7 @@ fn carried_by(
         (Some(scope), None) => {
             let role = role_by_key(scope);
             let variant = variant_by_key(s.variant.as_deref().unwrap_or("normal"));
-            out.push((
-                Location::Cell(theme, role, variant),
-                s.path.clone(),
-                required,
-            ));
-            if variant == RoleVariant::Normal {
-                for v in [RoleVariant::Selected, RoleVariant::Disabled] {
-                    let own = cell_own(m, a, role, v, &s.path);
-                    if own != Own::Overrides {
-                        out.push((
-                            Location::Cell(theme, role, v),
-                            s.path.clone(),
-                            required && own == Own::Carries,
-                        ));
-                    }
-                }
-            }
+            carried_from_cell(m, a, (theme, role, variant), &s.path, required, &mut out);
         }
         (None, Some(surface)) => {
             out.push((
@@ -1152,6 +1157,40 @@ fn carried_by(
         }
     }
     out
+}
+
+/// The cell `at` carrying `path`, and every cell built from it (`built_from`) that does not
+/// write `path` itself, `required` there only where nothing between writes it either.
+fn carried_from_cell(
+    m: &Manifest,
+    a: &Cached,
+    at: (egui::Theme, Role, RoleVariant),
+    path: &str,
+    required: bool,
+    out: &mut Vec<(Location, String, bool)>,
+) {
+    let (theme, role, variant) = at;
+    out.push((
+        Location::Cell(theme, role, variant),
+        path.to_owned(),
+        required,
+    ));
+    for v in RoleVariant::all() {
+        if built_from(role, *v) != Some(variant) {
+            continue;
+        }
+        let own = cell_own(m, a, role, *v, path);
+        if own != Own::Overrides {
+            carried_from_cell(
+                m,
+                a,
+                (theme, role, *v),
+                path,
+                required && own == Own::Carries,
+                out,
+            );
+        }
+    }
 }
 
 fn json(t: &ResolvedTheme) -> serde_json::Value {

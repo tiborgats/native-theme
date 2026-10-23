@@ -138,7 +138,7 @@ pub struct ThemeDefaults {
     /// Precedence at resolve time:
     /// 1. `ThemeDefaults::icon_theme` (this field, per-variant override) — if set
     /// 2. [`crate::Theme::icon_theme`] (shared across variants) — if set
-    /// 3. [`crate::model::icons::system_icon_theme()`] (runtime detection;
+    /// 3. [`crate::detect::system_icon_theme()`] (runtime detection;
     ///    none where it fails)
     ///
     /// See `docs/archive/v0.5.7_gaps.md` §G4 for the rationale.

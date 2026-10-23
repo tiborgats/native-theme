@@ -22,8 +22,9 @@ egui's own types, and hands them to egui through egui's own seams:
 2. **Role styles.** One `Arc<egui::Style>` per `Role` and `RoleVariant`, reached
    where the application asks for it: `ui.native_scope(role, variant, ..)` or
    `ui.native_set_style(role, variant)` from the `NativeThemeUiExt` trait, and
-   `ThemeAtlas::role_modifier` for a popup or a menu. A button in a
-   `Role::Button` scope takes the button's own padding, radius and fills.
+   `ThemeAtlas::role_modifier`, or `role_modifier(ui, role, variant)` from a
+   `Ui`, for a popup or a menu. A button in a `Role::Button` scope takes the
+   button's own padding, radius and fills.
 3. **Surface frames.** One `egui::Frame` per `Surface` — window, title bar,
    dialog, popover, tooltip, card, side and central panels — from
    `ui.native_frame(surface)` or `ThemeAtlas::surface_frame`.
@@ -31,15 +32,16 @@ egui's own types, and hands them to egui through egui's own seams:
 The install also registers a plugin that paints the platform's focus ring
 around the widget with keyboard focus and, where the platform integration
 reports no colour scheme (Linux), tells egui the OS one when the atlas carries
-it (`from_system`, `to_egui_atlas`, `Builder::os_mode`). The values no `Style` field carries — the
-info and warning colours, the text-scale roles, a `TextEdit`'s margin and
-frame, the dialog button order, icon sizes — are free functions of the crate
-root and of `icons`.
+it (`from_system`, `to_egui_atlas`, `from_preset`, `Builder::os_mode`). The
+values no `Style` field carries — the info and warning colours, the text-scale
+roles, a `TextEdit`'s margin and frame, the dialog button order, icon sizes —
+are free functions of the crate root and of `icons`.
 
 ## How it fits
 
 Depend on this crate; it re-exports `egui` and `native_theme`, so your
-`Cargo.toml` cannot pull in a second copy of either.
+`Cargo.toml` need not add a second dependency on either, whose version could
+drift from the connector's.
 
 It ships no `egui::Widget`, no image decoder, no font database of its own and
 no fork of any egui type. System-font lookup is native-theme's
@@ -81,7 +83,7 @@ the default and all features, and the widget-coverage script against. The script
 writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against ecolor 0.36.2, eframe 0.36.2, egui 0.36.2, egui-wgpu 0.36.2, egui-winit 0.36.2, egui_extras 0.36.2, egui_kittest 0.36.2, emath 0.36.2, epaint 0.36.2, epaint_default_fonts 0.36.2 and kittest 0.4.0 on 2026-10-08.
+Verified against ecolor 0.36.2, eframe 0.36.2, egui 0.36.2, egui-wgpu 0.36.2, egui-winit 0.36.2, egui_extras 0.36.2, egui_kittest 0.36.2, emath 0.36.2, epaint 0.36.2, epaint_default_fonts 0.36.2 and kittest 0.4.0 on 2026-10-14.
 <!-- compat:end -->
 
 ### Semver
@@ -118,16 +120,24 @@ not only the field list.
 
 ## Quick start
 
+Add the crate to your `Cargo.toml`, with the OS readers (`native`):
+
 ```toml
 [dependencies]
 eframe = "0.36.2"
-native-theme-egui = "0.6"
+native-theme-egui = { version = "0.6", features = ["native"] }
 ```
+
+The examples name egui through the connector's re-export,
+`native_theme_egui::egui`, which the Quick start's dependencies resolve. eframe's
+`eframe::egui` is the same crate; the examples name the connector's, the egui
+its `Style`s and frames are built for, as [How it fits](#how-it-fits) says.
 
 Install the OS theme once, where eframe hands you the `Context`, and let egui
 follow the OS light/dark preference:
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::from_system;
 
 struct MyApp;
@@ -143,8 +153,8 @@ fn main() -> eframe::Result {
         "my-app",
         eframe::NativeOptions::default(),
         Box::new(|cc| {
-            if let Ok((atlas, _resolved, _is_dark)) = from_system() {
-                atlas.install(&cc.egui_ctx);
+            if let Ok(loaded) = from_system() {
+                loaded.atlas.install(&cc.egui_ctx);
             }
             cc.egui_ctx.set_theme(egui::ThemePreference::System);
             Ok(Box::new(MyApp))
@@ -155,15 +165,19 @@ fn main() -> eframe::Result {
 
 Or a bundled preset, with both its variants in one atlas. `is_dark` picks the
 `ResolvedTheme` returned beside the atlas; egui's own `set_theme` picks the
-scheme on screen:
+scheme on screen. This recipe pins the scheme `is_dark` named. The atlas also
+carries the OS colour mode, so with `ThemePreference::System` the preset
+follows the OS instead, as `from_system`'s atlas does:
 
 ```rust,no_run
+use native_theme_egui::egui::{self, ThemePreference};
 use native_theme_egui::{AccessibilityPreferences, from_preset};
 
-fn install_preset(ctx: &egui::Context) -> native_theme_egui::Result<()> {
+fn install_preset(ctx: &egui::Context, is_dark: bool) -> native_theme_egui::Result<()> {
     let prefs = AccessibilityPreferences::default();
-    let (atlas, _resolved) = from_preset("catppuccin-mocha", true, &prefs)?;
+    let (atlas, _resolved) = from_preset("catppuccin-mocha", is_dark, &prefs)?;
     atlas.install(ctx);
+    ctx.set_theme(if is_dark { ThemePreference::Dark } else { ThemePreference::Light });
     Ok(())
 }
 ```
@@ -172,25 +186,55 @@ fn install_preset(ctx: &egui::Context) -> native_theme_egui::Result<()> {
 layout, the accessibility preferences, a font plan, the OS colour mode, the icon
 set and theme, and a `style_patch` applied after the mapping.
 
+## Window background
+
+eframe paints `App::clear_color` behind every panel: its root `Ui` has no
+margin or background colour (eframe `src/epi.rs:173`), and the default clear
+colour is a translucent near-black, `rgba(12, 12, 12, 180)` (`:248-252`). A
+panel fill the theme states translucent or transparent — `windows-11`'s
+sidebar, WinUI's docked `NavigationView` pane over the window backdrop — lies
+over that colour, so return the base style's `panel_fill`, the theme's
+`defaults.background_color`, as the showcase does:
+
+```rust,no_run
+use native_theme_egui::egui;
+
+struct MyApp;
+
+impl eframe::App for MyApp {
+    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        ui.label("Hello");
+    }
+
+    fn clear_color(&self, visuals: &egui::Visuals) -> [f32; 4] {
+        visuals.panel_fill.to_normalized_gamma_f32()
+    }
+}
+```
+
 ## Core concepts
 
 - **`Role`** names what a region of the interface is — a button, an input, a
   menu, a sidebar, a toolbar — and **`RoleVariant`** its state: `Normal`,
-  `Selected` or `Disabled`. Each pair is one pre-built style.
+  `Selected`, `Disabled` or `SelectedDisabled` (a checked box that is
+  disabled). Each pair is one pre-built style.
 - **`Surface`** names a container's chrome; `Surface::Panel(PanelSide)` takes
   the side the panel is anchored to.
 - **Containers built on `egui::Area`** — `Window`, `Modal`, `Popup`, tooltips,
   menus and `ComboBox` popups — build their content from the `Context`'s style,
   so a scope wrapped *around* one does not reach it. Give a popup or a menu
-  `ThemeAtlas::role_modifier`; give a `Window` or a `Modal` its frame from
+  `ThemeAtlas::role_modifier` (`role_modifier(ui, ..)` with a `Ui` at hand);
+  give a `Window` or a `Modal` its frame from
   `native_frame`, and make `ui.native_set_style(role, variant)` the first
   statement *inside* its closure for the body.
 - **Without an atlas** every call degrades to egui's own behaviour; none
-  panics.
+  panics. `role_modifier(ui, ..)` returns `None` then: pass the popup or the
+  menu no style, and it keeps egui's own.
 
 ## Per-widget geometry
 
 ```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::{NativeThemeUiExt, ResolvedTheme, Role, RoleVariant, Surface};
 
 fn form(ui: &mut egui::Ui, t: &ResolvedTheme, name: &mut String) {
@@ -212,9 +256,12 @@ The free accessors cover what no `Style` field holds: `input_margin` and
 a multi-line one, `expander_icon` for a `CollapsingHeader`'s
 arrow, `text_role_font` and `text_role_line_height` for the caption, heading,
 dialog-title and display roles, `window_title_bar_font` and
-`window_title_bar_text_color`, `dialog_button_order`, `icons::icon_size`, and
-the colours egui has no slot for (`info_color`, `warning_text_color`, …). A
-leaf that needs no conversion is read from the `ResolvedTheme` itself
+`window_title_bar_text_color`, `dialog_button_order`, `list_header_height`
+for `TableBuilder::header`, `icons::icon_size`, and the colours egui has no
+slot for (`info_color`, `warning_text_color`, …). `tooltip_show_delay` is the
+delay the atlas writes into `Style::interaction.tooltip_delay`, as a
+`Duration`, for a tooltip the application times itself. A leaf that needs no
+conversion is read from the `ResolvedTheme` itself
 (`ThemeAtlas::resolved_for`).
 
 ## Fonts
@@ -223,52 +270,126 @@ With the `system-fonts` feature (on by default) `from_preset`, `from_system`
 and `to_egui_atlas` attach `fonts::FontPlan::from_system`, which asks
 native-theme for the faces of the theme's font families and installs them as
 the head of egui's `Proportional` and `Monospace` families. An
-application with fonts of its own passes them as the base:
-`FontPlan::from_system(&light).with_base(its_definitions)` into
-`Builder::fonts`. This crate never emits a `FontFamily::Name`. A family the
-platform does not have is drawn in the family the platform draws in its place
-(`native_theme::fonts::substitute_family`: fontconfig's best match on Linux,
-what every native application there gets; none yet on macOS and Windows) and
-is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
+application with fonts of its own passes them as the plan's base. On the OS
+theme, `SystemThemeExt::to_egui_builder` is the builder `to_egui_atlas` builds,
+before its `build()`, so every OS input stays and the second `fonts` call
+replaces the first:
+
+```rust,no_run
+use native_theme_egui::egui;
+use native_theme_egui::fonts::FontPlan;
+use native_theme_egui::native_theme::SystemTheme;
+use native_theme_egui::{SystemThemeExt, ThemeAtlas};
+
+fn atlas(defs: egui::FontDefinitions) -> native_theme_egui::Result<ThemeAtlas> {
+    let sys = SystemTheme::from_system()?;
+    Ok(sys
+        .to_egui_builder()
+        .fonts(FontPlan::from_system(&sys.light).with_base(defs))
+        .build())
+}
+```
+
+A `Builder::style_patch` of the application's own goes on the same builder,
+and `ThemeAtlas::builder` takes the same plan for any other theme.
+Installing the installed atlas again (the one `ThemeAtlas::from_ctx` returns)
+keeps the fonts and icons the application added since, restoring only the base
+styles, its own `TextStyle::Name` keys kept; `ThemeAtlas::clear` then `install`
+brings back the atlas's fonts. This crate never emits a `FontFamily::Name`. A
+family the platform does not have is drawn in the family the platform draws in
+its place (`native_theme::fonts::substitute_family_cached`: fontconfig's best
+match on Linux, what every native application there gets, asked once per family
+per process; none yet on macOS and Windows)
+and is reported in `ThemeAtlas::notes` as `Note::FontFamilyUnavailable`, whose
 `substitute` names it. A family with no substitute the platform has a face of,
 or a face epaint could not read, leaves egui's own and is reported too
 (`Note::FontFamilyUnavailable` with no `substitute`, `Note::FontDataInvalid`).
 
 ## Icons
 
-```rust,no_run
-use native_theme_egui::icons::{IconContext, IconKey, icon_size, to_image};
-use native_theme_egui::{IconRole, IconSet, ResolvedTheme};
-
-fn warning_icon(ui: &mut egui::Ui, t: &ResolvedTheme) {
-    let set = IconSet::Lucide;
-    let key = IconKey::role(IconRole::DialogWarning, set).tint(ui.visuals().warn_fg_color);
-    let Some(data) = native_theme_egui::native_theme::icons::load_icon(IconRole::DialogWarning, set)
-    else {
-        return;
-    };
-    if let Some(image) = to_image(ui.ctx(), &key, &data) {
-        let side = icon_size(t, IconContext::Toolbar);
-        ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
-    }
-}
-```
-
 Install `egui_extras`' image loaders with its `svg` feature
 (`egui_extras::install_image_loaders`). An SVG icon's URI is the hash of its
 final bytes, so it changes whenever the pixels do: the tint is baked into a
 bundled monochrome icon's bytes, and a freedesktop icon that leaves its colour
-to `currentColor` is drawn in the theme's text colour. An icon no theme holds
-is `None`; nothing is substituted. `install` releases the icons this crate
-cached (`icons::forget_icons`) and leaves the application's own images alone.
+to `currentColor` is drawn in the key's tint, else the theme's text colour. An
+icon no theme holds is `None`; nothing is substituted. Installing another
+atlas, and `ThemeAtlas::clear`, release the icons this crate cached
+(`icons::forget_icons`) and leave the application's own images alone; a raster
+icon's texture is freed then, so call `to_image_source` in each pass rather
+than keeping its result (the texture is cached, a pass uploads nothing new).
+`icons::custom_icon_to_image_source` keeps the icon a provider's name loads,
+per icon theme, size and colour, until then, so a freedesktop icon is read from
+disk once, not in every pass.
+Installing the installed atlas again restores its base styles and does nothing
+else: it sets no fonts, forgets no icon and requests no repaint.
 
-## Runtime theme change
+## Features
 
-With the `watch` feature, `ThemeWatcher::start(ctx, rebuild)` rebuilds the
-atlas on the watcher thread on every OS theme change and wakes egui; the UI
-thread installs it:
+| Feature | Default | Effect |
+|---|---|---|
+| `material-icons` | on | the bundled Material icon set |
+| `lucide-icons` | on | the bundled Lucide icon set |
+| `system-icons` | on | freedesktop, SF Symbols and Windows system icon lookup |
+| `system-fonts` | on | `FontPlan::from_system`, and the system typeface in `from_preset`, `from_system` and `to_egui_atlas` |
+| `svg-rasterize` | off | native-theme's in-process SVG rasteriser, whose output `icons::to_color_image` converts |
+| `native` | off | the OS readers, so `from_system`, `native_theme_egui::native_theme::SystemTheme::from_system` and `ThemeWatcher::system_rebuild` read the OS theme |
+| `watch` | off | `ThemeWatcher` |
+
+Each forwards to the `native-theme` feature of the same name.
+`default-features = false` and the list you keep gives a smaller build.
+The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
+`macos` and `windows`, one platform each), off by default as in native-theme;
+without one, `from_system()` is the platform preset on Linux and an error on
+macOS and Windows. `watch` watches with a reader feature only.
+
+## Accessibility
+
+`Builder::accessibility` — and `from_preset`'s `prefs`, `from_system` and
+`to_egui_atlas` with the OS's own preferences — carries the text-scaling factor
+and reduced motion into the atlas. Every text size the atlas installs is
+multiplied by the factor; geometry is not: paddings, radii, widths and icon
+sizes keep the theme's values. Reduced motion sets egui's animation time to
+zero and turns scroll animation off. The accessors that return a text size take the same preferences, and
+`scaled_text_size` scales a size read from the `ResolvedTheme` directly.
+`Context::set_zoom_factor` is the user's zoom, and this crate never touches it.
+
+## Common recipes
+
+### Apply user overrides to the OS theme
+
+An overlay states only what it changes, in both variants: the atlas holds
+both, and egui draws the one of its colour scheme, so an overlay of
+`[light.defaults]` alone changes nothing on screen under a dark scheme.
 
 ```rust,no_run
+use native_theme_egui::SystemThemeExt;
+use native_theme_egui::egui;
+use native_theme_egui::native_theme::{SystemTheme, Theme};
+
+fn install_customised(ctx: &egui::Context) -> native_theme_egui::Result<()> {
+    let sys = SystemTheme::from_system()?;
+    let overlay = Theme::from_toml(r##"
+[light.defaults]
+accent_color = "#ff6600"
+
+[dark.defaults]
+accent_color = "#ff6600"
+"##)?;
+    let customised = sys.with_overlay(&overlay)?;
+    customised.to_egui_atlas().install(ctx);
+    ctx.set_theme(egui::ThemePreference::System);
+    Ok(())
+}
+```
+
+### Runtime theme change
+
+With the `watch` feature and a reader feature (`native`),
+`ThemeWatcher::start(ctx, rebuild)` rebuilds the atlas on the watcher thread on
+every OS theme change and wakes egui; the UI thread installs it:
+
+```rust,no_run
+use native_theme_egui::egui;
 use native_theme_egui::ThemeWatcher;
 
 struct MyApp {
@@ -297,35 +418,147 @@ impl eframe::App for MyApp {
 
 `system_rebuild` is the rebuild for an application on the OS theme; one that
 built its atlas with inputs of its own passes a closure that builds the same
-again. A failed rebuild keeps the installed theme and reports its message
-through `last_error`. Dropping the watcher stops it. KDE Plasma, GNOME and
-Budgie, macOS and Windows are watched; another Linux desktop returns an error
-from `start`.
+again: with fonts or a `style_patch` of its own, which `system_rebuild` would
+drop, it adds them to `SystemThemeExt::to_egui_builder`, as in [Fonts](#fonts).
+`system_rebuild` reads with `from_system()`, which picks the running OS
+version's preset, so an application that pinned a preset with
+`native_theme_egui::native_theme::SystemTheme::from_system_with_preset(name)`
+passes a closure that reads with it again:
+`native_theme_egui::native_theme::detect::invalidate_caches()`, then
+`from_system_with_preset(name)` and `SystemThemeExt::to_egui_atlas` (or
+`to_egui_builder`). A failed rebuild keeps the installed theme, reports its
+message through `last_error` and requests a repaint, as a successful one does.
+Dropping the watcher stops it. KDE Plasma, GNOME and Budgie, macOS and Windows
+are watched; another Linux desktop returns an error from `start`.
 
-## Accessibility
+### Custom icons
 
-`Builder::accessibility` — and `from_preset`'s `prefs`, `from_system` and
-`to_egui_atlas` with the OS's own preferences — carries the text-scaling factor
-and reduced motion into the atlas. Every text size the atlas installs is
-multiplied by the factor; geometry is not: paddings, radii, widths and icon
-sizes keep the theme's values. Reduced motion sets egui's animation time to
-zero and turns scroll animation off. The accessors that return a text size take the same preferences, and
-`scaled_text_size` scales a size read from the `ResolvedTheme` directly.
-`Context::set_zoom_factor` is the user's zoom, and this crate never touches it.
+For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build).
+The code it generates names native-theme's paths through the crate path it is
+given, so give it the re-exported source crate, and the connector stays the
+one dependency: `IconGenerator::new().crate_path("native_theme_egui::native_theme")`.
+An `IconKey` names the icon by the provider's own name for the set, where it
+has one, which is also its alt text:
 
-## Features
+```rust,no_run
+use native_theme_egui::egui;
+use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
+use native_theme_egui::{IconProvider, ThemeAtlas};
+# use std::borrow::Cow;
+# use native_theme_egui::IconSet;
+# #[derive(Debug)]
+# enum AppIcon { PlayPause }
+# impl IconProvider for AppIcon {
+#     fn icon_name(&self, _: IconSet) -> Option<&str> { None }
+#     fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> { None }
+# }
 
-| Feature | Default | Effect |
-|---|---|---|
-| `material-icons` | on | the bundled Material icon set |
-| `lucide-icons` | on | the bundled Lucide icon set |
-| `system-icons` | on | freedesktop, SF Symbols and Windows system icon lookup |
-| `system-fonts` | on | `FontPlan::from_system`, and the system typeface in `from_preset`, `from_system` and `to_egui_atlas` |
-| `svg-rasterize` | off | native-theme's in-process SVG rasteriser, whose output `icons::to_color_image` converts |
-| `watch` | off | `ThemeWatcher` |
+fn play_pause_icon(ui: &mut egui::Ui) {
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return;
+    };
+    let scheme = ui.ctx().theme();
+    let set = atlas.icon_set();
+    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let icon = AppIcon::PlayPause;
+    let mut key = IconKey::name(icon.icon_name(set).unwrap_or("play-pause"), set)
+        .size(side)
+        .tint(ui.visuals().text_color());
+    if let Some(name) = atlas.icon_theme(scheme) {
+        key = key.icon_theme(name);
+    }
+    if let Some(image) = custom_icon_to_image(ui.ctx(), &icon, &key) {
+        ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
+    }
+}
+```
 
-Each forwards to the `native-theme` feature of the same name.
-`default-features = false` and the list you keep gives a smaller build.
+### Role icons
+
+An icon by its role, in the installed theme's icon set and a tint:
+
+```rust,no_run
+use native_theme_egui::egui;
+use native_theme_egui::icons::{IconContext, IconKey, custom_icon_to_image, icon_size};
+use native_theme_egui::{IconRole, ThemeAtlas};
+
+fn warning_icon(ui: &mut egui::Ui) {
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return;
+    };
+    let scheme = ui.ctx().theme();
+    let role = IconRole::DialogWarning;
+    let side = icon_size(atlas.resolved_for(scheme), IconContext::Toolbar);
+    let mut key = IconKey::role(role, atlas.icon_set())
+        .size(side)
+        .tint(ui.visuals().warn_fg_color);
+    if let Some(name) = atlas.icon_theme(scheme) {
+        key = key.icon_theme(name);
+    }
+    if let Some(image) = custom_icon_to_image(ui.ctx(), &role, &key) {
+        ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
+    }
+}
+```
+
+The icon comes from the installed theme's icon set (`ThemeAtlas::icon_set`) and,
+for a freedesktop set, its icon theme for the scheme egui draws
+(`ThemeAtlas::icon_theme`), at the theme's size. An `IconRole` is an
+`IconProvider`, so `icons::custom_icon_to_image` (and
+`custom_icon_to_image_source`, its `ImageSource`) load a role as they load an
+application's own icon; `icons::to_image` takes icon data the application
+loaded itself.
+
+### Animated spinners
+
+`native_theme_egui_widgets::spinner::Spinner`, of the widgets crate, draws the
+icon set's indicator itself. To draw one of your own, load the indicator of
+the atlas's set once per installed atlas, and draw its frame for the moment
+through `icons::to_image` under one key, coloured as that set is coloured:
+
+```rust,no_run
+use native_theme_egui::egui;
+use native_theme_egui::icons::{IconKey, animated_frame_index, spin_angle, to_image};
+use native_theme_egui::native_theme::icons::load_icon_indicator;
+use native_theme_egui::{AnimatedIcon, ThemeAtlas};
+
+// Once per installed atlas, kept with the application's state.
+fn load_indicator(atlas: &ThemeAtlas, scheme: egui::Theme) -> Option<AnimatedIcon> {
+    load_icon_indicator(atlas.icon_set(), atlas.icon_theme(scheme))
+}
+
+fn spinner(ui: &mut egui::Ui, anim: &AnimatedIcon) {
+    let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
+        return;
+    };
+    let scheme = ui.ctx().theme();
+    let side = atlas.resolved_for(scheme).spinner.diameter;
+    let reduce_motion = atlas.accessibility().reduce_motion;
+    // The text colour: a Material or Lucide frame is tinted it, and a
+    // freedesktop frame's `currentColor` takes it where the frame sets no
+    // colour of its own.
+    let mut key = IconKey::name("indicator", atlas.icon_set())
+        .size(side)
+        .tint(ui.visuals().text_color());
+    if let Some(name) = atlas.icon_theme(scheme) {
+        key = key.icon_theme(name);
+    }
+    // The frame of the moment, or the first one, standing still, under
+    // reduced motion; a turning icon has one frame and an angle.
+    let frame = animated_frame_index(ui.ctx(), anim, reduce_motion)
+        .and_then(|i| anim.frame_list()?.get(i))
+        .unwrap_or_else(|| anim.first_frame());
+    if let Some(mut image) = to_image(ui.ctx(), &key, frame) {
+        if let Some(angle) = spin_angle(ui.ctx(), anim, reduce_motion) {
+            image = image.rotate(angle, egui::Vec2::splat(0.5));
+        }
+        ui.add(image.fit_to_exact_size(egui::Vec2::splat(side)));
+    }
+}
+```
+
+`animated_frame_index` and `spin_angle` schedule egui's next repaint
+themselves, and return `None` under reduced motion.
 
 ## Limits
 
@@ -334,10 +567,22 @@ no `Style` field, and some containers paint parts no style reaches. Each such
 leaf is a `mapping.toml` row marked `unmappable`, with the reason, and the
 mapping document in the API reference lists them all.
 
+One egui colour, `visuals.extreme_bg_color`, fills the scroll-bar groove, a
+`ProgressBar`'s track and `Frame::canvas`. The base style puts the theme's
+scroll-bar track there; a `ProgressBar` inside `Role::ProgressBar` takes
+`progress_bar.track_color`. Where the scroll bar is an overlay one with a fully
+transparent track (macOS), the groove's opacities are 0 and the slot takes the
+input background instead. A solid scroll bar's groove is painted at full
+opacity, so its track stays in the slot even when the theme states it
+transparent, as `windows-11` does: there a canvas frame and a progress bar
+outside its role have no fill.
+
 ## Showcase
 
 ```sh
 cargo run -p native-theme-egui --example showcase-egui
+# following the OS theme's changes, through `ThemeWatcher`:
+cargo run -p native-theme-egui --example showcase-egui --features watch
 ```
 
 The gpui showcase's application built from egui's own containers, with
@@ -359,7 +604,8 @@ The elements the three showcases share are listed once, in
 `docs/showcase-elements.toml`: `--dump-layout FILE` writes their rectangles
 for `scripts/check_showcase_parity.py`, and `--open-menu theme` opens the
 Theme menu before the first settled frame, so the capture and the dump hold
-its popup and rows.
+its popup and rows. Add `--features watch` to have it follow the OS theme's
+changes.
 
 ## Gallery
 
@@ -381,14 +627,17 @@ its popup and rows.
 
 ### Windows
 
+The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Server 2025 (build 26100): GitHub has no x64 Windows 11 image. On that image the OS reports the same metrics, fonts and system colours as Windows 11 25H2 (build 26200), except the animation and drop-shadow settings, which are off on Server.
+
 ![Windows 11 Light](docs/assets/windows-windows-11-light.png)
 ![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
 ## Links
 
 - [API reference on docs.rs](https://docs.rs/native-theme-egui)
+- [Showcase source](examples/showcase-egui/)
 - [The mapping manifest](mapping.toml)
-- [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
+- [CHANGELOG](../../CHANGELOG.md)
 
 ## License
 
@@ -397,3 +646,5 @@ Licensed under any of
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
 - [0BSD License](https://opensource.org/license/0bsd)
+
+at your option.

@@ -25,6 +25,12 @@
 //! sized with `geometry::data_table_size` whose container is refined with
 //! `geometry::table`.
 //!
+//! A DataTable cell's text lies inside its row under every native preset at
+//! text scales 1, 1.1 and 2.
+//!
+//! A tooltip's text wrapped to two lines under `geometry::tooltip` is two
+//! lines of the platform's `defaults.line_height` tall.
+//!
 //! Four sweeps run every native preset at its own font DPI: the drawn content
 //! inset of an Input, a Select and a Combobox is the stated left padding
 //! side; an Input with no suffix is laid out with the stated right side; a
@@ -34,6 +40,10 @@
 //! arrow column (kde-breeze, windows-11) a Select's and a Combobox's right
 //! inset is upstream's own, and without one the stated right side is drawn.
 //! Every other builder rests on the source citation in its doc comment.
+
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
 
 use gpui::{
     AbsoluteLength, AnyElement, App, AppContext as _, Bounds, Context, DefiniteLength,
@@ -56,10 +66,9 @@ use native_theme::{AccessibilityPreferences, ResolutionContext};
 use native_theme_gpui::{ActiveNativeTheme as _, Native, apply, geometry, to_theme};
 
 fn scaled_by(factor: f32) -> AccessibilityPreferences {
-    AccessibilityPreferences {
-        text_scaling_factor: factor,
-        ..AccessibilityPreferences::default()
-    }
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
+    prefs
 }
 
 /// The text scale the seam tests run at.
@@ -94,10 +103,11 @@ fn resolved_at(preset: &str, dpi: f32) -> ResolvedTheme {
 /// The native presets, each with the font DPI its platform resolves at:
 /// macOS at 72, where a point is a pixel (native-theme `detect.rs`,
 /// `detect_system_font_dpi`), the others at the 96 `for_tests` pins.
-const NATIVE: [(&str, f32); 4] = [
+const NATIVE: [(&str, f32); 5] = [
     ("kde-breeze", 96.0),
     ("adwaita", 96.0),
-    ("macos-sonoma", 72.0),
+    ("macos-monterey", 72.0),
+    ("macos-tahoe", 72.0),
     ("windows-11", 96.0),
 ];
 
@@ -111,7 +121,7 @@ struct Harness {
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // What gpui-component's `WindowState` root plugin does for an
-        // application's window (`root.rs:436`, `:444`): the installed font size is the rem, which
+        // application's window (`root.rs:538`, `:546`): the installed font size is the rem, which
         // the connector scales by the text-scaling factor, and the installed
         // family is the text's.
         window.set_rem_size(cx.theme().font_size);
@@ -256,7 +266,7 @@ mod first_draw {
         Context, ImageSource, InteractiveElement as _, IntoElement, ParentElement as _, Render,
         Styled as _, TestAppContext, Window, div, px,
     };
-    use native_theme::theme::{AnimatedIcon, IconData};
+    use native_theme::icons::{AnimatedIcon, IconData};
     use native_theme_gpui::icons;
 
     /// The size one animation frame is rasterised at here; a size this file names,
@@ -357,10 +367,7 @@ fn tooltip_of(
     window: &mut Window,
     cx: &mut Context<Harness>,
 ) -> AnyElement {
-    let content = cx
-        .native_theme()
-        .and_then(|nt| nt.native(cx))
-        .map(geometry::tooltip_content);
+    let content = cx.native().map(geometry::tooltip_content);
     let tooltip = Tooltip::element(move |_, _| {
         let body = div().debug_selector(|| TOOLTIP_TEXT.into()).child(text);
         match &content {
@@ -451,10 +458,10 @@ seam!(
 /// The tooltip's seam is a width, and the text has to keep to it.
 ///
 /// A tooltip's text sits in a bare `div()` inside upstream's `h_flex()`
-/// (`src/tooltip.rs:126-132`), so it is a flex item with an automatic minimum
+/// (`src/tooltip.rs:131-137`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.8/src/elements/text.rs:656-663`). The item's minimum is
+/// width (`gpui-pre-0.3.9/src/elements/text.rs:656-663`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]
@@ -507,6 +514,61 @@ fn tooltip_text_keeps_inside_the_bubble(cx: &mut TestAppContext) {
     );
 }
 
+/// windows-11 states a 320 px tooltip at 9 pt and the platform's widest line
+/// height, 1.43, so the gap to gpui's own (1.618) is widest there.
+const LINE_HEIGHT_PRESET: &str = "windows-11";
+/// Two lines at windows-11's tooltip width: wider than one, well short of three.
+const TWO_LINE_TOOLTIP: &str =
+    "Saves the document under its current name, in the folder it was opened from.";
+
+fn two_line_tooltip(
+    s: Option<&StyleRefinement>,
+    w: &mut Window,
+    cx: &mut Context<Harness>,
+) -> AnyElement {
+    tooltip_of(TWO_LINE_TOOLTIP, s, w, cx)
+}
+
+/// A tooltip's text wraps at `geometry::tooltip_content`'s width, so its lines
+/// are spaced by the line height the bubble gives the text: the platform's
+/// `defaults.line_height`, which `geometry::tooltip` carries, not gpui's
+/// default, the golden ratio (gpui-pre `src/style.rs:494`), which upstream's
+/// tooltip leaves in place (`src/tooltip.rs:114-137` sets none).
+#[gpui::test]
+fn wrapped_tooltip_text_takes_the_platform_line_height(cx: &mut TestAppContext) {
+    let r = resolved(LINE_HEIGHT_PRESET);
+    let style = native_style(LINE_HEIGHT_PRESET, geometry::tooltip);
+    let [one] = laid_out(
+        cx,
+        LINE_HEIGHT_PRESET,
+        Some(style.clone()),
+        short_tooltip,
+        [TOOLTIP_TEXT],
+    );
+    let [two] = laid_out(
+        cx,
+        LINE_HEIGHT_PRESET,
+        Some(style),
+        two_line_tooltip,
+        [TOOLTIP_TEXT],
+    );
+    assert_eq!(
+        two.size.height,
+        one.size.height * 2.0,
+        "the text is not two lines of the one-line tooltip's {:?}: pick another text",
+        one.size.height
+    );
+    let expected = 2.0 * r.tooltip.font.size * r.defaults.line_height;
+    let drawn = f32::from(two.size.height);
+    assert!(
+        (drawn - expected).abs() <= 1.0,
+        "two lines of {LINE_HEIGHT_PRESET} tooltip text are {drawn} px tall, not 2 × {} px × {} \
+         = {expected} px",
+        r.tooltip.font.size,
+        r.defaults.line_height
+    );
+}
+
 // --- The drawn content inset and the control-height rule ----------------------
 
 /// The debug selector on the element around a sample's text.
@@ -550,7 +612,7 @@ fn probed_button(
     styled(Button::new("b").child(text_probe()), s)
 }
 /// An Input whose prefix is the text probe: the prefix is the root's first
-/// child (`input/input.rs:798`), so its left edge is where the root's
+/// child (`input/input.rs:821`), so its left edge is where the root's
 /// padding ends, and it lays out one line of the root's text style.
 fn probed_input(
     s: Option<&StyleRefinement>,
@@ -604,15 +666,10 @@ fn probed_menu_row(
     styled(div().flex().items_center().child(text_probe()), s)
 }
 
-/// Upstream draws a one-pixel border round the Select and Combobox triggers
-/// (`select.rs:542`, `combobox.rs:987`, `border_1()`), which the drawn inset
-/// includes; `geometry::select`/`combobox` set no border width.
-const TRIGGER_BORDER: f32 = 1.0;
-
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
-/// upstream pads each root before the refinement (`input/input.rs:775` then
-/// `:793`, `select.rs:551` then `:553`, `combobox.rs:996` then `:998`), so the
+/// upstream pads each root before the refinement (`input/input.rs:798` then
+/// `:816`, `select.rs:578` then `:580`, `combobox.rs:996` then `:998`), so the
 /// platform's side is the one drawn.
 ///
 /// The left side is measured: it is where the first child starts. At least
@@ -633,7 +690,14 @@ fn input_select_and_combobox_draw_the_stated_padding(cx: &mut TestAppContext) {
             let prefs = scaled_by(1.0);
             let (stated, border) = match widget {
                 "input" => (r.input.border.padding.left, r.input.border.line_width),
-                _ => (r.combo_box.border.padding.left, TRIGGER_BORDER),
+                // `geometry::select`/`combobox` give the trigger
+                // `combo_box.border.line_width` over upstream's `border_1()`
+                // (`select.rs:569`, `combobox.rs:987`), which the drawn inset
+                // includes.
+                _ => (
+                    r.combo_box.border.padding.left,
+                    r.combo_box.border.line_width,
+                ),
             };
             let Some(stated) = stated else {
                 continue;
@@ -722,7 +786,7 @@ fn filled_combobox(
 /// title's box ends to where the trigger ends. It is the trailing slot (the
 /// caret, or a Combobox's empty slot under a custom trigger), the row's gap
 /// before it, the right padding and the border, all inside the trigger
-/// (`select.rs:564-606`, `combobox.rs:1009-1028`), so two layouts of the same
+/// (`select.rs:591-633`, `combobox.rs:1009-1028`), so two layouts of the same
 /// widget differ in it by their right padding alone.
 fn right_inset(
     cx: &mut TestAppContext,
@@ -737,8 +801,8 @@ fn right_inset(
 
 /// D2: where the theme states `combo_box.arrow_area_width`, the right padding
 /// side is measured to an arrow column, and gpui's triggers have none: the
-/// caret sits inside the padded row (`select.rs:599-600` in the row at
-/// `:564-606`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
+/// caret sits inside the padded row (`select.rs:626-627` in the row at
+/// `:591-633`, `combobox.rs:655-656` in the row at `:1009-1028`). So under
 /// kde-breeze and windows-11, which state the column and a right side of 0,
 /// the right inset a Select and a Combobox draw is upstream's own, measured
 /// on the unstyled widget. A theme that states no arrow column states its
@@ -821,8 +885,8 @@ fn without_right(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, an Input with no suffix is laid
 /// out with the stated right padding side: upstream pads a single-line root
-/// (`input/input.rs:774-776`) before the refinement (`:793`), and only a
-/// suffix pads the right side again after it (`:810`). The right side has no
+/// (`input/input.rs:797-799`) before the refinement (`:816`), and only a
+/// suffix pads the right side again after it (`:833`). The right side has no
 /// child to measure it by, so it is measured as the width it adds: the
 /// Input's width under the refinement, less its width under the same
 /// refinement with a right side of 0. At least one preset states a right side
@@ -871,14 +935,14 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, a Textarea refined as
 /// `geometry::input`'s doc says -- the padding sides cleared -- draws no
-/// padding: upstream pads only a single-line root (`input/input.rs:774-776`),
+/// padding: upstream pads only a single-line root (`input/input.rs:797-799`),
 /// so a multi-line root's inset is 0, and the refinement's padding must not
 /// reach it. The inset has no child to measure it by, so it is measured as
 /// the size it adds: the Textarea's size with the padding cleared equals its
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:793`): at least
+/// Left in, the refinement's padding would reach the root (`:816`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]
@@ -1045,7 +1109,7 @@ fn bare_label(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harne
 /// label passed as a Medium Button's child and refined with
 /// `geometry::button_label` is as wide as the same text refined alone.
 /// Upstream sets the label's size on the content element
-/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:749`), which
+/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:766`), which
 /// is `text_sm` at Medium and which the child's own size overrules; unstyled,
 /// the child takes that `text_sm`.
 #[gpui::test]
@@ -1091,7 +1155,7 @@ fn toggled_probe(
 /// Under every native preset, at its own DPI, at text scale 1 and 1.5: the
 /// text inside a Medium Toggle refined with `geometry::toggle` is as wide as
 /// the same text refined alone. Upstream sets `text_sm` on a Medium Toggle's
-/// root (`button/toggle.rs:174-179`) before the caller's refinement (`:214`);
+/// root (`button/toggle.rs:182-187`) before the caller's refinement (`:222`);
 /// unrefined, the text takes that `text_sm`.
 #[gpui::test]
 fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {
@@ -1118,6 +1182,9 @@ fn a_toggle_takes_the_button_font(cx: &mut TestAppContext) {
 
 // --- The DataTable ------------------------------------------------------------
 
+/// The debug selector on the [`OneCell`] table's row.
+const ROW: &str = "row";
+
 /// One column, one row, whose cell is the text probe.
 struct OneCell;
 
@@ -1132,6 +1199,15 @@ impl TableDelegate for OneCell {
 
     fn column(&self, _: usize, _: &App) -> Column {
         Column::new("c", "C")
+    }
+
+    fn render_tr(
+        &mut self,
+        row_ix: usize,
+        _: &mut Window,
+        _: &mut Context<TableState<Self>>,
+    ) -> gpui::Stateful<gpui::Div> {
+        div().id(("row", row_ix)).debug_selector(|| ROW.into())
     }
 
     fn render_td(
@@ -1180,8 +1256,7 @@ fn native_table(
     cx: &mut Context<Harness>,
 ) -> AnyElement {
     let size = cx
-        .native_theme()
-        .and_then(|nt| nt.native(cx))
+        .native()
         .map(geometry::data_table_size)
         .expect("the native theme is installed");
     one_cell_table(size, s, window, cx)
@@ -1217,6 +1292,70 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
                 e,
                 &format!("{preset} data table cell at text scale {factor}"),
             );
+        }
+    }
+}
+
+/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2198`,
+/// `border_b_1()`), inside the row's height.
+const ROW_BORDER: f32 = 1.0;
+
+/// Under every native preset, at its own DPI: the text of a cell in a
+/// `DataTable` sized with `geometry::data_table_size`, whose container is
+/// refined with `geometry::table`, lies inside its row at text scales 1, 1.1
+/// and 2, and at 1 the row is `data_table_size`'s stated height. Upstream sets
+/// a `Size::Size` row's height verbatim (`table/state.rs:2182`, `:2196`;
+/// `sizing.rs:57-64`), so above a text scale of 1 the builder grows the row
+/// around the scaled text, which at 2 overruns every native preset's row.
+/// Above 1 the text lies inside the cell's padding too, the cell's own
+/// (`table_cell_padding`, `sizing.rs:89-94`) above it and the padding and
+/// the row's bottom border ([`ROW_BORDER`]) below it, which a row that holds
+/// only the line and the padding overlaps.
+#[gpui::test]
+fn a_data_table_row_holds_its_text_at_every_scale(cx: &mut TestAppContext) {
+    for (preset, dpi) in NATIVE {
+        let r = resolved_at(preset, dpi);
+        for factor in [1.0, 1.1, 2.0] {
+            let prefs = scaled_by(factor);
+            let n = Native {
+                resolved: &r,
+                accessibility: &prefs,
+            };
+            let [text, row] = laid_out_as(
+                cx,
+                preset,
+                &r,
+                &prefs,
+                Some(geometry::table(n)),
+                native_table,
+                [TEXT, ROW],
+            );
+            if factor <= 1.0 {
+                let gpui_component::Size::Size(stated) = geometry::data_table_size(n) else {
+                    panic!("{preset}: data_table_size is not a Size::Size");
+                };
+                assert_eq!(
+                    row.size.height, stated,
+                    "{preset}: at text scale 1 the row is not data_table_size's {stated:?}"
+                );
+            }
+            assert!(
+                text.top() >= row.top() && text.bottom() <= row.bottom(),
+                "{preset}: at text scale {factor} the cell text at {text:?} is not inside its \
+                 row at {row:?}"
+            );
+            if factor > 1.0 {
+                let gpui_component::Size::Size(stated) = geometry::data_table_size(n) else {
+                    panic!("{preset}: data_table_size is not a Size::Size");
+                };
+                let pad = gpui_component::Size::Size(stated).table_cell_padding();
+                assert!(
+                    text.top() >= row.top() + pad.top
+                        && text.bottom() <= row.bottom() - pad.bottom - px(ROW_BORDER),
+                    "{preset}: at text scale {factor} the cell text at {text:?} is not inside \
+                     the padding, {pad:?}, and the bottom border of its row at {row:?}"
+                );
+            }
         }
     }
 }

@@ -13,9 +13,13 @@ use crate::demo::{
     self, ButtonKind, ButtonState, DemoButton, DemoCollapsible, GroupBoxKind, SeparatorKind,
     SidebarSample, SpacingBox, StepperKind,
 };
-use crate::support::{NativeStyled as _, STEPPER_STEPS, SampleIcon, layout_value, with_gap};
+use crate::pages::{CAROUSEL_SIDE_ROOM, page_root};
+use crate::support::{
+    NativeStyled as _, STEPPER_STEPS, SampleIcon, frame_drawer, layout_value, with_gap,
+};
 use crate::{
     LAYOUT_BREADCRUMB, LAYOUT_COLLAPSIBLE, LAYOUT_COLLAPSIBLE_CONTENT, LAYOUT_COLLAPSIBLE_TOGGLE,
+    LAYOUT_FOLDER_TAB_DISABLED, LAYOUT_FOLDER_TAB_LABELS, LAYOUT_FOLDER_TABS,
     LAYOUT_GROUP_BOX_NORMAL, LAYOUT_GROUP_BOX_OUTLINE, LAYOUT_SEPARATOR_DASHED,
     LAYOUT_SEPARATOR_SOLID, LAYOUT_SIDEBAR_COLLAPSED, LAYOUT_SIDEBAR_EXPANDED,
     LAYOUT_SIDEBAR_ITEMS, LAYOUT_TITLE_BAR, PROBE_STEPPER, Page, WINDOW_TITLE, probe,
@@ -67,8 +71,45 @@ const SIDEBAR_HEADER: &str = "Workspace";
 /// which takes the height it is given (sidebar/mod.rs, `RenderOnce for
 /// Sidebar`), so a sample needs one. The model states none, so this is the
 /// showcase's own: room for the header and the three items, in rems, so it
-/// grows with the text as the rows do (`h_7`, sidebar/menu.rs:323).
+/// grows with the text as the rows do (`h_7`, sidebar/menu.rs:329).
 const SIDEBAR_HEIGHT: Rems = rems(12.);
+
+/// The toolkits native-theme has a connector for, as `(toolkit, crate)`:
+/// the workspace's `connectors/` members less the widget crate beside one
+/// (native-theme-egui-widgets, beside native-theme-egui), which a test holds
+/// to the root Cargo.toml.
+pub(crate) const CONNECTORS: [(&str, &str); 3] = [
+    ("gpui", "native-theme-gpui"),
+    ("iced", "native-theme-iced"),
+    ("egui", "native-theme-egui"),
+];
+
+/// The Accordion's "Supported toolkits" answer, counted and named from
+/// [`CONNECTORS`], so it cannot go stale as the presets' answer cannot.
+pub(crate) fn supported_toolkits() -> String {
+    let names: Vec<String> = CONNECTORS
+        .iter()
+        .map(|(toolkit, krate)| format!("{toolkit} ({krate})"))
+        .collect();
+    let named = match names.split_last() {
+        Some((last, [])) => last.clone(),
+        Some((last, rest)) => format!("{} and {last}", rest.join(", ")),
+        None => String::new(),
+    };
+    format!(
+        "{} toolkits, each through its own connector crate: {named}.",
+        CONNECTORS.len()
+    )
+}
+
+/// The heading of the `TitleBar` sample, on the platform `os` names
+/// (`std::env::consts::OS`).
+pub(crate) fn title_bar_heading(os: &str) -> String {
+    format!(
+        "TitleBar (a sample: {} draws this window's frame)",
+        frame_drawer(os)
+    )
+}
 
 /// The pages the Breadcrumb leads through to this one.
 const BREADCRUMB_PAGES: [Page; 4] = [Page::Buttons, Page::Inputs, Page::Data, Page::Feedback];
@@ -85,8 +126,8 @@ impl Showcase {
         let ui = &self.info_ui;
         let collapsible_open = self.collapsible_open;
         // The four layout accessors. `None` where the platform specifies
-        // nothing (platform-facts §2.20), and then the showcase's own spacing
-        // stands — nothing is invented to fill the gap.
+        // nothing (platform-facts §2.20), and then no space is drawn for
+        // it, here or round the page -- nothing is invented to fill the gap.
         let widget_gap = geometry::widget_gap(&self.layout);
         let container_margin = geometry::container_margin(&self.layout);
         let window_margin = geometry::window_margin(&self.layout);
@@ -117,6 +158,10 @@ impl Showcase {
             this.step = *step;
             cx.notify();
         });
+        let pick_folder_tab = cx.listener(|this, ix: &usize, _w, cx| {
+            this.folder_tab = *ix;
+            cx.notify();
+        });
         let spacing_row = demo::spacing_box(
             ui,
             cx,
@@ -139,9 +184,9 @@ impl Showcase {
                 .into_any_element()
             }),
         );
-        v_flex()
-            .gap_5()
-            .p_4()
+        // The page is laid out by the window margin and the section gap it
+        // prints.
+        page_root(&self.layout)
             .flex_1()
             // The four layout accessors, applied rather than printed: the outer
             // box takes the platform's window margin, the row inside it the
@@ -162,7 +207,7 @@ impl Showcase {
                 section_gap,
                 [
                     spacing_row.into_any_element(),
-                    demo::label(ui, cx, "layout-spacing-summary", spacing_summary)
+                    demo::printed_label(ui, cx, "layout-spacing-summary", spacing_summary)
                         .into_any_element(),
                 ],
             ))
@@ -173,8 +218,7 @@ impl Showcase {
                 "Separator (solid / labelled / dashed)",
             ))
             .child(
-                v_flex()
-                    .gap_3()
+                with_gap(v_flex(), widget_gap)
                     .children(SEPARATORS.map(|(id, kind)| demo::separator(ui, cx, id, kind))),
             )
             .child(demo::heading(
@@ -184,7 +228,7 @@ impl Showcase {
                 "Sidebar (expanded / collapsed to its icons)",
             ))
             .child(
-                h_flex().items_start().gap_4().children(
+                with_gap(h_flex(), widget_gap).items_start().children(
                     [
                         (LAYOUT_SIDEBAR_EXPANDED, false),
                         (LAYOUT_SIDEBAR_COLLAPSED, true),
@@ -216,7 +260,7 @@ impl Showcase {
                     ui,
                     cx,
                     "layout-heading-title-bar",
-                    "TitleBar (a sample: the window manager draws this window's frame)",
+                    title_bar_heading(std::env::consts::OS),
                 ))
                 .child(
                     demo::title_bar_sample(ui, cx, LAYOUT_TITLE_BAR, WINDOW_TITLE)
@@ -235,16 +279,14 @@ impl Showcase {
                 "layout-group-box-container",
                 GroupBoxKind::Fill,
                 "Contained Content",
-                v_flex()
-                    .gap_2()
+                with_gap(v_flex(), widget_gap)
                     .child(
                         div()
                             .text_sm()
                             .child("GroupBox can wrap any content as a visual container."),
                     )
                     .child(
-                        h_flex()
-                            .gap_2()
+                        with_gap(h_flex(), widget_gap)
                             .child(demo::button(
                                 ui,
                                 cx,
@@ -269,6 +311,7 @@ impl Showcase {
                             )),
                     ),
                 "a line of plain text, which takes group_box_foreground from the content box, over two Buttons, which report themselves",
+                container_margin,
             ))
             .child(demo::heading(
                 ui,
@@ -304,7 +347,7 @@ impl Showcase {
                     (
                         "Supported toolkits",
                         "layout-accordion-answer-2",
-                        "gpui-component and iced; an egui connector is planned for v0.6.0.".into(),
+                        supported_toolkits().into(),
                     ),
                     (
                         "How many presets?",
@@ -356,7 +399,7 @@ impl Showcase {
                 )
                 // The slide controls are positioned outside the frame, so
                 // the section leaves a button's width on either side.
-                .px_16(),
+                .px(CAROUSEL_SIDE_ROOM),
             )
             .child(demo::heading(
                 ui,
@@ -364,7 +407,7 @@ impl Showcase {
                 "layout-heading-group-box",
                 "GroupBox (3 variants)",
             ))
-            .child(h_flex().gap_4().children(GROUP_BOXES.map(
+            .child(with_gap(h_flex(), widget_gap).children(GROUP_BOXES.map(
                 |(id, kind, title, content)| {
                     demo::group_box(
                         ui,
@@ -374,6 +417,7 @@ impl Showcase {
                         title,
                         div().text_sm().child(content),
                         "a line of plain text, which takes group_box_foreground from the content box",
+                        container_margin,
                     )
                     .w(px(180.0))
                 },
@@ -397,8 +441,8 @@ impl Showcase {
                 "layout-heading-stepper",
                 format!(
                     "Stepper (step {} of {steps}: {step} completed, one current, {} pending)",
-                    step + 1,
-                    steps.saturating_sub(step + 1),
+                    step.saturating_add(1),
+                    steps.saturating_sub(step.saturating_add(1)),
                 ),
             ))
             .child(
@@ -442,6 +486,21 @@ impl Showcase {
             .child(demo::heading(
                 ui,
                 cx,
+                "layout-heading-folder-tabs",
+                "TabBar (Folder variant)",
+            ))
+            .child(demo::folder_tab_row(
+                ui,
+                cx,
+                LAYOUT_FOLDER_TABS,
+                &LAYOUT_FOLDER_TAB_LABELS,
+                self.folder_tab,
+                LAYOUT_FOLDER_TAB_DISABLED,
+                pick_folder_tab,
+            ))
+            .child(demo::heading(
+                ui,
+                cx,
                 "layout-heading-settings",
                 "Settings (page with field types)",
             ))
@@ -451,9 +510,7 @@ impl Showcase {
                     .debug_selector(|| "settings-frame".into())
                     .h(px(320.0))
                     .w_full()
-                    .occlude()
                     .demo_frame(cx)
-                    .overflow_y_scroll()
                     .child(demo::settings(ui, cx, "layout-settings")),
             )
     }

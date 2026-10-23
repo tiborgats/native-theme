@@ -19,8 +19,9 @@ pub(crate) fn open<R>(
     open_selected(ui, role, false, enabled, add)
 }
 
-/// [`open`], with the `Selected` variant for an enabled control that is `selected`: the
-/// checked appearance of a `Checkbox` or `RadioButton` (the connector's `RoleVariant`).
+/// [`open`], with the `Selected` variant for an enabled control that is `selected`, the
+/// checked appearance of a `Checkbox` or `RadioButton` (the connector's `RoleVariant`), and
+/// `SelectedDisabled` for a disabled one that is selected.
 pub(crate) fn open_selected<R>(
     ui: &mut egui::Ui,
     role: Role,
@@ -32,7 +33,9 @@ pub(crate) fn open_selected<R>(
 }
 
 /// [`open_selected`], and where `ground` is given a control disabled here is faded as one
-/// widget over it ([`crate::fade::fade_as_one`]) instead of by `Ui::disable` alone.
+/// widget over it ([`crate::fade::fade_as_one`]) instead of by `Ui::disable` alone, and one
+/// whose calling `Ui` is disabled is faded as one by that `Ui`'s `disabled_alpha`, the fade
+/// egui gave its painter taken back ([`crate::fade::outer_fade`]).
 pub(crate) fn open_faded<R>(
     ui: &mut egui::Ui,
     role: Role,
@@ -45,8 +48,10 @@ pub(crate) fn open_faded<R>(
     // opacity again on every call (`egui/src/ui.rs:497-502`), so only an enabled one is
     // disabled here.
     let outer = ui.is_enabled();
+    let under = crate::fade::outer_fade(ui);
     let variant = match (enabled && outer, selected) {
-        (false, _) => RoleVariant::Disabled,
+        (false, true) => RoleVariant::SelectedDisabled,
+        (false, false) => RoleVariant::Disabled,
         (true, true) => RoleVariant::Selected,
         (true, false) => RoleVariant::Normal,
     };
@@ -56,6 +61,8 @@ pub(crate) fn open_faded<R>(
                 Some(ground) => crate::fade::fade_as_one(ui, ground),
                 None => ui.disable(),
             }
+        } else if let (Some(ground), Some(under)) = (ground, under) {
+            crate::fade::fade_as_one_under(ui, ground, under);
         }
         add(ui)
     })

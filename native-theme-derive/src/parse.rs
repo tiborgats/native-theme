@@ -37,8 +37,27 @@ pub(crate) struct FieldMeta {
     pub serde_rename: Option<String>,
     pub range_check: Option<RangeCheck>,
     pub min_max_pair: Option<Ident>,
-    pub inherit_from: Option<String>,
+    pub inherit_from: Option<InheritFrom>,
     pub doc_attrs: Vec<Attribute>,
+}
+
+/// A uniform inheritance source from `#[theme(inherit_from = "defaults.X")]`.
+#[derive(Debug, Clone)]
+pub(crate) struct InheritFrom {
+    /// The path as written: `defaults.border.color`.
+    pub path: String,
+    /// The path's segments after `defaults.`: `border`, `color`.
+    pub segments: Vec<Ident>,
+}
+
+impl FieldMeta {
+    /// The key a theme author writes for this field in TOML: its serde
+    /// rename, else its name.
+    pub(crate) fn toml_key(&self) -> String {
+        self.serde_rename
+            .clone()
+            .unwrap_or_else(|| self.ident.to_string())
+    }
 }
 
 /// Class-level border validation mode from `#[theme_layer(border_kind = "...")]`.
@@ -125,7 +144,7 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
             } else if meta.path.is_ident("resolved_name") {
                 let value = meta.value()?;
                 let lit: LitStr = value.parse()?;
-                resolved_name = Some(Ident::new(&lit.value(), lit.span()));
+                resolved_name = Some(parse_ident(&lit.value(), "resolved_name", &lit)?);
                 Ok(())
             } else if meta.path.is_ident("skip_inventory") {
                 skip_inventory = true;
@@ -219,19 +238,7 @@ pub(crate) fn parse_inherit_attrs(attrs: &[Attribute]) -> Result<InheritMeta> {
             } else if nested.path.is_ident("font") {
                 let value = nested.value()?;
                 let lit: LitStr = value.parse()?;
-                let ident_str = lit.value();
-                // Valid Rust identifier check: syn::parse_str::<Ident> rejects
-                // reserved words + empty + invalid starting chars.
-                let ident: Ident = syn::parse_str(&ident_str).map_err(|_| {
-                    Error::new(
-                        lit.span(),
-                        format!(
-                            "theme_inherit font = \"{ident_str}\" is not a valid \
-                             Rust identifier for a struct field name"
-                        ),
-                    )
-                })?;
-                meta.font.push(ident);
+                meta.font.push(parse_ident(&lit.value(), "font", &lit)?);
                 Ok(())
             } else {
                 Err(nested
@@ -266,10 +273,11 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
     let ty = field.ty.clone();
 
     let mut category: Option<FieldCategory> = None;
+    let mut nested = false;
     let mut serde_rename: Option<String> = None;
     let mut range_check: Option<RangeCheck> = None;
     let mut min_max_pair: Option<Ident> = None;
-    let mut inherit_from: Option<String> = None;
+    let mut inherit_from: Option<InheritFrom> = None;
     let mut resolved_ty: Option<Type> = None;
     let mut doc_attrs = Vec::new();
 
@@ -308,7 +316,16 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
         // Parse #[theme(...)] attributes
         if attr.path().is_ident("theme") {
             attr.parse_nested_meta(|meta| {
+                let is_range_check = meta.path.is_ident("check")
+                    || meta.path.is_ident("range")
+                    || meta.path.is_ident("range_u16");
+                if is_range_check && range_check.is_some() {
+                    return Err(meta.error("only one of check, range and range_u16 may be given"));
+                }
                 if meta.path.is_ident("category") {
+                    if nested || resolved_ty.is_some() {
+                        return Err(meta.error(NESTED_CATEGORY_CONFLICT));
+                    }
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
                     category = Some(match lit.value().as_str() {
@@ -323,12 +340,10 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                     });
                     Ok(())
                 } else if meta.path.is_ident("nested") {
-                    // Mark as nested; resolved_type parsed separately
-                    if category.is_none() {
-                        category = Some(FieldCategory::Nested {
-                            resolved_ty: Box::new(ty.clone()), // placeholder, replaced below
-                        });
+                    if category.is_some() {
+                        return Err(meta.error(NESTED_CATEGORY_CONFLICT));
                     }
+                    nested = true;
                     Ok(())
                 } else if meta.path.is_ident("border_partial") {
                     Err(meta.error(
@@ -339,6 +354,9 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                         "border_optional is no longer needed -- use #[theme_layer(border_kind = \"none\")] on the struct instead",
                     ))
                 } else if meta.path.is_ident("resolved_type") {
+                    if category.is_some() {
+                        return Err(meta.error(NESTED_CATEGORY_CONFLICT));
+                    }
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
                     let parsed: Type = syn::parse_str(&lit.value())?;
@@ -361,24 +379,31 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                 } else if meta.path.is_ident("range") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
-                    let (min, max) = parse_range_f64(&lit)?;
+                    let (min, max) = parse_range::<f64>(&lit)?;
+                    // The generated check compares in f32.
+                    if !(min as f32).is_finite() || !(max as f32).is_finite() {
+                        return Err(Error::new(
+                            lit.span(),
+                            "range bounds must be finite f32 values",
+                        ));
+                    }
                     range_check = Some(RangeCheck::Range { min, max });
                     Ok(())
                 } else if meta.path.is_ident("range_u16") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
-                    let (min, max) = parse_range_u16(&lit)?;
+                    let (min, max) = parse_range::<u16>(&lit)?;
                     range_check = Some(RangeCheck::RangeU16 { min, max });
                     Ok(())
                 } else if meta.path.is_ident("min_max_pair") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
-                    min_max_pair = Some(Ident::new(&lit.value(), lit.span()));
+                    min_max_pair = Some(parse_ident(&lit.value(), "min_max_pair", &lit)?);
                     Ok(())
                 } else if meta.path.is_ident("inherit_from") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
-                    inherit_from = Some(lit.value());
+                    inherit_from = Some(parse_inherit_from(&lit)?);
                     Ok(())
                 } else {
                     Err(meta.error("unknown #[theme(...)] attribute"))
@@ -387,25 +412,16 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
         }
     }
 
-    // If resolved_type was specified, update the category
-    if let Some(ref rt) = resolved_ty {
-        match category {
-            Some(FieldCategory::Nested { .. }) => {
-                category = Some(FieldCategory::Nested {
-                    resolved_ty: Box::new(rt.clone()),
-                });
-            }
-            None => {
-                // resolved_type without nested: treat as nested
-                category = Some(FieldCategory::Nested {
-                    resolved_ty: Box::new(rt.clone()),
-                });
-            }
-            _ => {} // option/soft_option ignore resolved_type
-        }
-    }
-
-    let category = category.unwrap_or(FieldCategory::Option);
+    // `resolved_type` implies `nested`; `nested` alone keeps the field's type.
+    let category = match (resolved_ty, nested) {
+        (Some(rt), _) => FieldCategory::Nested {
+            resolved_ty: Box::new(rt),
+        },
+        (None, true) => FieldCategory::Nested {
+            resolved_ty: Box::new(ty.clone()),
+        },
+        (None, false) => category.unwrap_or(FieldCategory::Option),
+    };
 
     Ok(FieldMeta {
         ident,
@@ -419,8 +435,8 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
     })
 }
 
-/// Parse "MIN..=MAX" range for f64.
-fn parse_range_f64(lit: &LitStr) -> Result<(f64, f64)> {
+/// Parse a "MIN..=MAX" range whose MIN does not exceed its MAX.
+fn parse_range<T: std::str::FromStr + PartialOrd>(lit: &LitStr) -> Result<(T, T)> {
     let s = lit.value();
     let parts: Vec<&str> = s.split("..=").collect();
     let [min_s, max_s] = parts.as_slice() else {
@@ -429,37 +445,53 @@ fn parse_range_f64(lit: &LitStr) -> Result<(f64, f64)> {
             "expected range format: \"MIN..=MAX\"",
         ));
     };
-    let min: f64 = min_s
+    let min: T = min_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid min value in range"))?;
-    let max: f64 = max_s
+    let max: T = max_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid max value in range"))?;
+    if min > max {
+        return Err(Error::new(lit.span(), "range MIN exceeds its MAX"));
+    }
     Ok((min, max))
 }
 
-/// Parse "MIN..=MAX" range for u16.
-fn parse_range_u16(lit: &LitStr) -> Result<(u16, u16)> {
-    let s = lit.value();
-    let parts: Vec<&str> = s.split("..=").collect();
-    let [min_s, max_s] = parts.as_slice() else {
+/// Parse `value`, attribute `key`'s literal `lit` or a part of it, as an
+/// identifier. An error is spanned at the literal.
+fn parse_ident(value: &str, key: &str, lit: &LitStr) -> Result<Ident> {
+    let mut ident: Ident = syn::parse_str(value).map_err(|_| {
+        Error::new(
+            lit.span(),
+            format!("{key}: \"{value}\" is not a valid Rust identifier"),
+        )
+    })?;
+    ident.set_span(lit.span());
+    Ok(ident)
+}
+
+/// Parse an `inherit_from` path: `defaults.` and one or more identifiers
+/// separated by dots.
+fn parse_inherit_from(lit: &LitStr) -> Result<InheritFrom> {
+    let path = lit.value();
+    let Some(rest) = path.strip_prefix("defaults.") else {
         return Err(Error::new(
             lit.span(),
-            "expected range format: \"MIN..=MAX\"",
+            format!("inherit_from: \"{path}\" does not start with \"defaults.\""),
         ));
     };
-    let min: u16 = min_s
-        .trim()
-        .parse()
-        .map_err(|_| Error::new(lit.span(), "invalid min value in range"))?;
-    let max: u16 = max_s
-        .trim()
-        .parse()
-        .map_err(|_| Error::new(lit.span(), "invalid max value in range"))?;
-    Ok((min, max))
+    let segments = rest
+        .split('.')
+        .map(|segment| parse_ident(segment, "inherit_from", lit))
+        .collect::<Result<Vec<_>>>()?;
+    Ok(InheritFrom { path, segments })
 }
+
+/// A field's `category` cannot be combined with `nested` or `resolved_type`.
+const NESTED_CATEGORY_CONFLICT: &str =
+    "category conflicts with nested or resolved_type: a nested field has no category";
 
 #[cfg(test)]
 mod tests {
@@ -527,6 +559,156 @@ mod tests {
             err_msg.contains("border_optional is no longer needed"),
             "error message should guide to border_kind, got: {err_msg}"
         );
+    }
+
+    /// Helper: the error message parsing a field yields; fails the test if
+    /// it parses.
+    fn field_error(tokens: proc_macro2::TokenStream) -> String {
+        parse_field_from_tokens(tokens)
+            .expect_err("the attribute must not parse")
+            .to_string()
+    }
+
+    #[test]
+    fn min_max_pair_not_an_identifier_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(min_max_pair = "max width")]
+            pub min_width: Option<f32>
+        });
+        assert!(err.contains("min_max_pair"), "got: {err}");
+    }
+
+    #[test]
+    fn inherit_from_path_parsed_into_segments() {
+        let meta = parse_field_from_tokens(quote::quote! {
+            #[theme(inherit_from = "defaults.border.color")]
+            pub color: Option<Rgba>
+        })
+        .expect("should parse");
+        let source = meta.inherit_from.expect("inherit_from is set");
+        assert_eq!(source.path, "defaults.border.color");
+        let segments: Vec<String> = source.segments.iter().map(|i| i.to_string()).collect();
+        assert_eq!(segments, vec!["border".to_string(), "color".to_string()]);
+    }
+
+    #[test]
+    fn inherit_from_without_defaults_prefix_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(inherit_from = "accent_color")]
+            pub color: Option<Rgba>
+        });
+        assert!(err.contains("defaults."), "got: {err}");
+    }
+
+    #[test]
+    fn inherit_from_empty_segment_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(inherit_from = "defaults..color")]
+            pub color: Option<Rgba>
+        });
+        assert_eq!(err, "inherit_from: \"\" is not a valid Rust identifier");
+    }
+
+    #[test]
+    fn inherit_from_non_identifier_segment_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(inherit_from = "defaults.border-color")]
+            pub color: Option<Rgba>
+        });
+        assert_eq!(
+            err,
+            "inherit_from: \"border-color\" is not a valid Rust identifier"
+        );
+    }
+
+    #[test]
+    fn category_after_nested_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(nested, category = "soft_option")]
+            pub font: Option<FontSpec>
+        });
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
+    }
+
+    #[test]
+    fn nested_after_category_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(category = "soft_option", nested)]
+            pub font: Option<FontSpec>
+        });
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
+    }
+
+    #[test]
+    fn resolved_type_with_category_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(category = "soft_option", resolved_type = "ResolvedFontSpec")]
+            pub font: Option<FontSpec>
+        });
+        assert_eq!(
+            err,
+            "category conflicts with nested or resolved_type: a nested field has no category"
+        );
+    }
+
+    #[test]
+    fn second_range_attribute_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(check = "positive", range = "0.0..=1.0")]
+            pub opacity: Option<f32>
+        });
+        assert!(err.contains("only one"), "got: {err}");
+    }
+
+    #[test]
+    fn range_min_above_max_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range = "1.0..=0.0")]
+            pub opacity: Option<f32>
+        });
+        assert!(err.contains("exceeds"), "got: {err}");
+    }
+
+    #[test]
+    fn range_nan_bound_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range = "NaN..=1.0")]
+            pub opacity: Option<f32>
+        });
+        assert!(err.contains("finite"), "got: {err}");
+    }
+
+    #[test]
+    fn range_infinite_bound_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range = "0.0..=inf")]
+            pub opacity: Option<f32>
+        });
+        assert!(err.contains("finite"), "got: {err}");
+    }
+
+    #[test]
+    fn range_bound_beyond_f32_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range = "0.0..=1e39")]
+            pub opacity: Option<f32>
+        });
+        assert_eq!(err, "range bounds must be finite f32 values");
+    }
+
+    #[test]
+    fn range_u16_min_above_max_errors() {
+        let err = field_error(quote::quote! {
+            #[theme(range_u16 = "900..=100")]
+            pub weight: Option<u16>
+        });
+        assert!(err.contains("exceeds"), "got: {err}");
     }
 
     // === explicit_fields parsing (Phase 93-05 G5) ===
@@ -611,6 +793,24 @@ mod tests {
             layer.explicit_fields.as_deref(),
             Some(["a".to_string(), "b".to_string()].as_slice())
         );
+    }
+
+    #[test]
+    fn resolved_name_empty_errors() {
+        let result = parse_layer_from_tokens(quote::quote! {
+            #[theme_layer(resolved_name = "")]
+        });
+        let err = result.expect_err("an empty resolved_name must error");
+        assert!(err.to_string().contains("resolved_name"), "got: {err}");
+    }
+
+    #[test]
+    fn resolved_name_not_an_identifier_errors() {
+        let result = parse_layer_from_tokens(quote::quote! {
+            #[theme_layer(resolved_name = "Resolved Button")]
+        });
+        let err = result.expect_err("a non-identifier resolved_name must error");
+        assert!(err.to_string().contains("resolved_name"), "got: {err}");
     }
 
     // === theme_inherit parsing (Phase 94-01 G6) ===

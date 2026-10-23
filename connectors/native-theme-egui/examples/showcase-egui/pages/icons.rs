@@ -1,19 +1,19 @@
 //! Icons (spec §10.4's palette table), laid out as the gpui showcase's Icons page
-//! (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:15-277`): the chosen icon
+//! (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:19-280`): the chosen icon
 //! theme's folder icon at each size `defaults.icon_sizes` states, the loading indicator the theme
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
 
-use native_theme::icons::FreedesktopLoader;
-use native_theme::theme::{IconRole, IconSet, TransformAnimation};
+use native_theme::icons::{FreedesktopLoader, IconRole, TransformAnimation};
+use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
-use native_theme_egui::{ThemeAtlas, border_color, border_radius};
+use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
-/// (`showcase-gpui/demo.rs:7495-7521`).
+/// (`showcase-gpui/demo.rs:8096-8158`).
 const CONTEXTS: [(IconContext, &str); 5] = [
     (IconContext::Toolbar, "toolbar"),
     (IconContext::Small, "small"),
@@ -35,10 +35,10 @@ pub(crate) fn show(
     let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
-    // (`showcase-gpui/demo.rs:7565-7607`); where the set has no folder icon, the name alone.
+    // (`showcase-gpui/demo.rs:8166-8207`); where the set has no folder icon, the name alone.
     caption(reg, ui, "Icon Sizes");
     // One height for every cell, its content from the bottom, so the names share a line, as
-    // gpui's `items_end` row has them (`showcase-gpui/pages/icons.rs:29`).
+    // gpui's `items_end` row has them (`showcase-gpui/pages/icons.rs:35`).
     let tallest = CONTEXTS
         .iter()
         .map(|(context, _)| icons::icon_size(t, *context))
@@ -70,8 +70,8 @@ pub(crate) fn show(
     icons_indicator(reg, atlas, ui, chosen, &set_label);
 
     // Every role's icon at `defaults.icon_sizes.small` above the role's name
-    // (`showcase-gpui/pages/icons.rs:131-204`); where the set has none, gpui's placeholder: a
-    // square in `skeleton` — `button.background_color` (`connectors/native-theme-gpui/src/colors.rs:179`,
+    // (`showcase-gpui/pages/icons.rs:138-210`); where the set has none, gpui's placeholder: a
+    // square in `skeleton` — `button.background_color` (`connectors/native-theme-gpui/src/colors.rs:174`,
     // `:556`) — at the theme's radius, never another set's icon.
     let size = icons::icon_size(t, IconContext::Small);
     let images: Vec<(IconRole, Option<egui::Image<'static>>)> = IconRole::ALL
@@ -96,7 +96,7 @@ pub(crate) fn show(
         ),
     );
     let skeleton = native_theme_egui::convert::to_color32(t.button.background_color);
-    let radius = border_radius(t);
+    let radius = border_corner_radius(t);
     ui.horizontal_wrapped(|ui| {
         for (role, image) in images {
             let name = format!("{role:?}");
@@ -113,12 +113,6 @@ pub(crate) fn show(
                                 .allocate_exact_size(egui::Vec2::splat(size), egui::Sense::hover());
                             ui.painter().rect_filled(rect, radius, skeleton);
                             response
-                        });
-                        reg.amend_last(|i| {
-                            i.read.push((
-                                "button.background_color",
-                                t.button.background_color.to_string(),
-                            ));
                         });
                     }
                 }
@@ -166,7 +160,7 @@ fn small_width(ui: &egui::Ui, text: &str) -> f32 {
 
 /// A cell `width` wide holding an icon of at most `icon` points over a `Small` name, its content
 /// centred in a column as the gpui showcase's icon cells are (`items_center`,
-/// `showcase-gpui/demo.rs:7430-7450`), laid out by `layout`, and padded by `pad` —
+/// `showcase-gpui/demo.rs:8032-8051`), laid out by `layout`, and padded by `pad` —
 /// `layout.container_margin` in a gallery, standing in for the gpui cell's own `px_2`/`py_2`.
 fn cell(
     ui: &mut egui::Ui,
@@ -179,7 +173,8 @@ fn cell(
     let height = icon + ui.spacing().item_spacing.y + ui.text_style_height(&egui::TextStyle::Small);
     // The padding is part of the cell's own size, not a `Frame` around it: a frame places its
     // rect where the row's cursor is, past a wrapping row's end (`Frame::show`).
-    let size = egui::vec2(width, height) + egui::Vec2::splat(pad + pad);
+    let both = pad + pad;
+    let size = egui::vec2(width + both, height + both);
     // The whole cell is used, so the row advances past it whatever the cell holds.
     ui.allocate_ui_with_layout(size, layout, |ui| {
         ui.set_min_size(size);
@@ -189,7 +184,7 @@ fn cell(
     });
 }
 
-/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:746-757`): a
+/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:808-822`): a
 /// freedesktop set with the theme its icons load from — where that is the system's and it
 /// cannot be detected, why — else the set's name.
 fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
@@ -198,19 +193,19 @@ fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
     }
     match icon_theme {
         Some(theme) => format!("freedesktop ({theme})"),
-        None => match native_theme::theme::system_icon_theme() {
+        None => match native_theme::detect::system_icon_theme() {
             Ok(theme) => format!("freedesktop ({theme})"),
             Err(error) => format!("freedesktop (unavailable: {error})"),
         },
     }
 }
 
-/// Whether `set` is this platform's own, or bundled (`showcase-gpui/support.rs:486-494`).
+/// Whether `set` is this platform's own, or bundled (`showcase-gpui/support.rs:502-510`).
 fn native_here(set: IconSet) -> bool {
     match set {
         IconSet::Freedesktop => cfg!(target_os = "linux"),
         IconSet::SfSymbols => cfg!(any(target_os = "macos", target_os = "ios")),
-        IconSet::SegoeIcons => cfg!(target_os = "windows"),
+        IconSet::SegoeFluent => cfg!(target_os = "windows"),
         _ => true,
     }
 }
@@ -218,7 +213,7 @@ fn native_here(set: IconSet) -> bool {
 /// The loading indicator the chosen icon theme ships (§10.4, the Icons row), in a card framed
 /// as the gpui showcase's `demo_frame` in `defaults.border` and padded by
 /// `layout.container_margin`, at `defaults.icon_sizes.dialog`, above what it is — the gpui
-/// showcase's animated-icon card (`showcase-gpui/demo.rs:7634-7691`); where the theme ships
+/// showcase's animated-icon card (`showcase-gpui/demo.rs:8237-8294`); where the theme ships
 /// none, gpui's caption.
 fn icons_indicator(
     reg: &mut Registry,
@@ -231,7 +226,7 @@ fn icons_indicator(
     let (set, icon_theme) = chosen;
     let indicator = match set {
         IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme.as_deref()),
-        set => native_theme::icons::load_icon_indicator(*set),
+        set => native_theme::icons::load_icon_indicator(*set, None),
     };
     let reduce_motion = atlas.accessibility().reduce_motion;
     let Some(anim) = indicator else {
@@ -285,7 +280,7 @@ fn icons_indicator(
             t.defaults.border.line_width,
             border_color(t),
         ))
-        .corner_radius(border_radius(t))
+        .corner_radius(border_corner_radius(t))
         .inner_margin(margin);
     demo::contained(reg, ui, "animated icon card", |ui, reg| {
         card.show(ui, |ui| {
@@ -304,21 +299,5 @@ fn icons_indicator(
             });
         })
         .response
-    });
-    reg.amend_last(|i| {
-        i.read.extend([
-            ("defaults.border.color", t.defaults.border.color.to_string()),
-            (
-                "defaults.border.line_width",
-                t.defaults.border.line_width.to_string(),
-            ),
-            (
-                "layout.container_margin",
-                atlas
-                    .layout()
-                    .container_margin
-                    .map_or_else(|| "not stated: no padding".to_string(), |m| m.to_string()),
-            ),
-        ]);
     });
 }

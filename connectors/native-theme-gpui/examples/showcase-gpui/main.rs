@@ -12,6 +12,14 @@
 //! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
 //!
+//! To have it follow the OS theme's changes (its accent, fonts and icon
+//! theme in every colour mode, and its light or dark under System), add the
+//! `watch` feature, which `native_theme_gpui::on_theme_change` needs:
+//!
+//! ```sh
+//! cargo run -p native-theme-gpui --example showcase-gpui --features watch
+//! ```
+//!
 //! # What to look for
 //!
 //! - The side panel's theme settings switch theme presets, color modes and
@@ -27,18 +35,24 @@
 //!
 //! # How the source is organised
 //!
-//! `main.rs` holds the entry point, the command line and the screenshot
-//! capture; `app.rs` the `Showcase` view, its state and theme switching;
-//! `pages/` one module per page; `chrome.rs` and `demo.rs` the window's
-//! chrome and the helpers that build a widget with its info; `info/` what
-//! each widget reports; `inspector.rs` the inspector; `elements.rs` the
-//! elements the three showcases share and the `--dump-layout` dump; `host.rs`
+//! `main.rs` holds the entry point and what the command line does to the
+//! window, its screenshot and its layout dump, whose flags, capture and dump
+//! format are the ones the three showcases share
+//! (`native_theme_showcase_support`); `app.rs` the `Showcase` view, its
+//! state and theme switching; `pages/` one module per page; `chrome.rs` and
+//! `demo.rs` the window's chrome and the helpers that build a widget with
+//! its info; `info/` what each widget reports; `inspector.rs` the
+//! inspector; `elements.rs` the elements the three showcases share; `host.rs`
 //! the actions hosted around the whole window; `speech.rs` the synthetic
 //! audio input and the silent recognizer the Inputs page's SpeechWaveform
 //! runs on; `tests.rs` the self-tests; and `support.rs` the sample content,
 //! helpers, icon loading and delegates the pages share. Within a file,
 //! section-divider blocks (`// ─────`) separate one widget category, page or
 //! view from the next.
+
+// GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
+// or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
+extern crate gpui_kit as gpui;
 
 mod app;
 mod chrome;
@@ -51,10 +65,10 @@ mod pages;
 mod speech;
 mod support;
 
+use std::cell::Cell;
+use std::rc::Rc;
 use std::time::Duration;
 
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-use gpui::Window;
 use gpui::{
     AnyWindowHandle, App, Bounds, Div, IntoElement, Modifiers, MouseButton, MouseDownEvent,
     MouseMoveEvent, ParentElement, Pixels, PlatformInput, WindowBounds, WindowDecorations,
@@ -62,9 +76,12 @@ use gpui::{
 };
 use gpui_component::IconName;
 
-use native_theme::icons::IconSetChoice;
+use native_theme_showcase_support::cli::{
+    self, CliArgs, IconPick, Output, Outputs, ThemeKey, reported,
+};
+use native_theme_showcase_support::{Kind, capture, dump};
 
-use crate::app::{AppColorMode, Showcase};
+use crate::app::Showcase;
 
 // ---------------------------------------------------------------------------
 // Pages
@@ -172,6 +189,18 @@ impl Page {
         }
     }
 
+    /// The page `--tab` names: the one whose [`Page::flag`] it is
+    /// (`cli::page_key`, whose error lists every page's).
+    fn named(name: &str) -> Result<Self, String> {
+        let flags = Self::ALL.map(Self::flag);
+        cli::page_key(name, &flags).and_then(|flag| {
+            Self::ALL
+                .into_iter()
+                .find(|page| page.flag() == flag)
+                .ok_or_else(|| format!("--tab {flag}: no page has that key"))
+        })
+    }
+
     /// The icon the page's command-palette entry shows.
     const fn icon(self) -> IconName {
         match self {
@@ -210,22 +239,27 @@ impl Page {
 
 /// `Page::ALL` is in TabBar order and holds each page once.
 const _: () = {
+    let mut pages: &[Page] = &Page::ALL;
     let mut i = 0;
-    while i < Page::ALL.len() {
+    while let [page, rest @ ..] = pages {
         assert!(
-            Page::ALL[i].index() == i,
+            page.index() == i,
             "Page::ALL is not the pages in TabBar order"
         );
+        pages = rest;
         i += 1;
     }
 };
 
-/// The window the showcase opens, width × height in logical pixels:
-/// 1280 × 720, the maintainer's default for every showcase, as the egui and
-/// iced showcases' `WINDOW_SIZE`. The model states no window size (spec
-/// §1.3); a page taller than the window scrolls. `f32`s, because gpui's
-/// `Pixels` has no `const` arithmetic; `WINDOW_SIZE` is this size.
-const WINDOW_SIZE_PX: (f32, f32) = (1280., 720.);
+/// The window the showcase opens, width × height in logical pixels: the
+/// shared crate's `WINDOW_SIZE_PX`, 1280 × 720, the maintainer's default for
+/// every showcase. The model states no window size (spec §1.3); a page
+/// taller than the window scrolls. `f32`s, because gpui's `Pixels` has no
+/// `const` arithmetic; `WINDOW_SIZE` is this size.
+const WINDOW_SIZE_PX: (f32, f32) = (
+    native_theme_showcase_support::WINDOW_SIZE_PX.0 as f32,
+    native_theme_showcase_support::WINDOW_SIZE_PX.1 as f32,
+);
 
 /// The width, in logical pixels, the content panel opens at: the window's
 /// width less `LEFT_PANEL_WIDTH`.
@@ -238,8 +272,8 @@ pub(crate) const PAGE_WIDTH_PX: f32 = WINDOW_SIZE_PX.0 - LEFT_PANEL_WIDTH_PX;
 pub(crate) const WINDOW_SIZE: gpui::Size<Pixels> = size(px(WINDOW_SIZE_PX.0), px(WINDOW_SIZE_PX.1));
 
 /// The window's title: this crate's name and version. The title bar's label,
-/// the title the OS shows, and the Windows screenshot capture, which finds
-/// the window by it, all take this one string.
+/// the title the OS shows, and `--screenshot`'s capture, which finds the
+/// window by it (`capture::FrameCapture`), all take this one string.
 pub(crate) const WINDOW_TITLE: &str = concat!(
     env!("CARGO_PKG_NAME"),
     " ",
@@ -311,7 +345,7 @@ pub(crate) const PAGE_ROOT: &str = "page-root";
 
 /// The debug selector the content pane's scrolled element carries. Its right
 /// edge is the scroll area's, which is where a vertical scrollbar's track ends
-/// (gpui-base `src/scrollbar.rs:1408-1432`), so
+/// (gpui-base `src/scrollbar.rs:1422-1446`), so
 /// `a_non_overlay_scrollbar_keeps_off_the_content` can see whether the page
 /// reaches under the bar.
 pub(crate) const CONTENT_SCROLL: &str = "content-scroll";
@@ -491,6 +525,13 @@ pub(crate) const LAYOUT_BREADCRUMB: &str = "layout-breadcrumb";
 pub(crate) const LAYOUT_COLLAPSIBLE: &str = "layout-collapsible";
 pub(crate) const LAYOUT_COLLAPSIBLE_TOGGLE: &str = "layout-collapsible-toggle";
 pub(crate) const LAYOUT_COLLAPSIBLE_CONTENT: &str = "layout-collapsible-content";
+/// The id and debug selector of the Layout page's Folder TabBar, its tabs'
+/// labels and the one of them disabled, which
+/// `the_folder_tab_bar_paints_its_bar_and_separators_in_their_claims` and
+/// `a_click_selects_a_folder_tab_and_not_the_disabled_one` measure and click.
+pub(crate) const LAYOUT_FOLDER_TABS: &str = "layout-folder-tabs";
+pub(crate) const LAYOUT_FOLDER_TAB_LABELS: [&str; 4] = ["One", "Two", "Three", "Disabled"];
+pub(crate) const LAYOUT_FOLDER_TAB_DISABLED: usize = 3;
 /// The id and debug selector of the Layout page's TitleBar sample, drawn
 /// while the window manager draws the window's own frame (spec S8).
 pub(crate) const LAYOUT_TITLE_BAR: &str = "layout-title-bar";
@@ -611,107 +652,18 @@ pub(crate) fn window_options(bounds: Bounds<Pixels>) -> WindowOptions {
 /// `--capture`): it opens at `WINDOW_SIZE` whatever size a desktop stored for
 /// the showcase's window. gpui itself stores none; a desktop can, by the
 /// window's app id (a KWin script that remembers window geometry, say), so
-/// the window takes an app id of this process's own, which nothing stored.
+/// the window takes an app id of this process's own, which nothing stored
+/// (`capture::app_id`).
 pub(crate) fn capture_window_options(bounds: Bounds<Pixels>) -> WindowOptions {
     WindowOptions {
-        app_id: Some(format!("showcase-gpui-capture-{}", std::process::id())),
+        app_id: Some(capture::app_id(Kind::Gpui)),
         ..window_options(bounds)
     }
 }
 
-/// Whether an OS capture of the window with its frame, `captured` pixels, is
-/// the frame of a window whose content is `WINDOW_SIZE` at the display's
-/// scale factor `scale`: the capture less the content the window has now,
-/// `content` pixels, is the frame, and around a `WINDOW_SIZE` content it
-/// makes the size the capture must be. Any other size is a window that did
-/// not open at its default size -- on a display too small for it, say.
-#[cfg_attr(
-    not(any(target_os = "macos", target_os = "windows", test)),
-    allow(dead_code)
-)]
-pub(crate) fn check_frame_capture(
-    captured: (i64, i64),
-    content: (i64, i64),
-    scale: f64,
-) -> Result<(), String> {
-    let default = (
-        (f64::from(WINDOW_SIZE_PX.0) * scale).round() as i64,
-        (f64::from(WINDOW_SIZE_PX.1) * scale).round() as i64,
-    );
-    let expected = (
-        default.0 + captured.0 - content.0,
-        default.1 + captured.1 - content.1,
-    );
-    if captured == expected {
-        Ok(())
-    } else {
-        Err(format!(
-            "the capture is {}x{} px, expected {}x{}: a {}x{} content area \
-             ({}x{} at scale {scale}) in the frame's {}x{} px, but the content \
-             is {}x{} px, so the window did not open at its default size",
-            captured.0,
-            captured.1,
-            expected.0,
-            expected.1,
-            default.0,
-            default.1,
-            WINDOW_SIZE_PX.0,
-            WINDOW_SIZE_PX.1,
-            captured.0 - content.0,
-            captured.1 - content.1,
-            content.0,
-            content.1,
-        ))
-    }
-}
-
 // ---------------------------------------------------------------------------
-// CLI argument parsing
+// The command line (`native_theme_showcase_support::cli`)
 // ---------------------------------------------------------------------------
-
-/// Optional CLI arguments for launching the showcase in a specific state.
-///
-/// Parsed from `std::env::args()` — no external crate dependency.
-/// With no arguments the showcase opens in its defaults, on the Basic page.
-#[derive(Default)]
-struct CliArgs {
-    theme: Option<String>,
-    variant: Option<String>,
-    tab: Option<String>,
-    icon_set: Option<String>,
-    icon_theme: Option<String>,
-    screenshot: Option<String>,
-    /// `--capture`: a tool outside the showcase captures its window, which
-    /// opens as a `--screenshot` run's does (`capture_window_options`).
-    capture: bool,
-    /// `--pointer X,Y`: the pointer is held at that point of the window's
-    /// content, in logical pixels, so a capture shows the control under it
-    /// hovered (`hold_pointer`). For captures where no pointer can be driven,
-    /// as in a nested compositor.
-    pointer: Option<(u16, u16)>,
-    /// A `--pointer` value that is not `X,Y`, or its missing value: `main`
-    /// reports it and exits with 1, as a failed `--screenshot` does, rather
-    /// than capture the window at rest.
-    bad_pointer: Option<String>,
-    /// `--press`: with `--pointer`, the primary button is held down there,
-    /// so a capture shows the control pressed.
-    press: bool,
-    /// `--dump-layout <file.json>`: once the window's layout has settled,
-    /// where each element of docs/showcase-elements.toml was drawn is
-    /// written there (`dump_layout`); with `--capture` the window stays
-    /// open for the capture, without it the showcase quits.
-    dump_layout: Option<String>,
-    /// `--open-menu <title>`: the menu of that title (`theme` for the Theme
-    /// menu) is open from the first frame, so a capture and a layout dump
-    /// show its popup and rows.
-    open_menu: Option<String>,
-}
-
-/// `X,Y` as two whole logical pixels, or `None`.
-fn parse_point(value: &str) -> Option<(u16, u16)> {
-    let (x, y) = value.split_once(',')?;
-    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
-}
 
 /// How often `hold_pointer` hands the window the held pointer again, which
 /// the window's own pointer events could otherwise move away. The model
@@ -721,8 +673,8 @@ const HELD_POINTER_PERIOD: Duration = Duration::from_millis(250);
 /// How long `hold_pointer` holds the pointer before the press: long enough for
 /// the window to open at its size and the page to be laid out under the
 /// pointer. No repository script passes `--press`. The capture scripts
-/// capture a showcase at least four seconds after starting it (`DELAY=3` in
-/// `scripts/generate_screenshots_*.sh`, then `capture_showcase`'s `sleep 1` in
+/// capture a showcase at least four seconds after starting it
+/// (`SHOWCASE_START_DELAY=3`, then `capture_showcase`'s `sleep 1`, in
 /// `scripts/capture_window.sh`), so a press three seconds after the first
 /// frame lands about a second before such a capture; a capture with `--press`
 /// should wait longer.
@@ -731,7 +683,7 @@ const HELD_PRESS_AFTER: Duration = Duration::from_secs(3);
 /// `--pointer` and `--press`: hands the window a pointer move to `at` every
 /// `HELD_POINTER_PERIOD`, and after `HELD_PRESS_AFTER` a press of the primary
 /// button there when `press`, through `Window::dispatch_event`, the entry the
-/// platform's own input takes (gpui-pre 0.3.8 `src/window.rs`), until the
+/// platform's own input takes (gpui-pre 0.3.9 `src/window.rs`), until the
 /// window closes.
 fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bool) {
     let position = gpui::point(px(f32::from(at.0)), px(f32::from(at.1)));
@@ -740,7 +692,7 @@ fn hold_pointer(cx: &mut App, window: AnyWindowHandle, at: (u16, u16), press: bo
         let mut pressed = false;
         loop {
             cx.background_executor().timer(HELD_POINTER_PERIOD).await;
-            held += HELD_POINTER_PERIOD;
+            held = held.saturating_add(HELD_POINTER_PERIOD);
             let press_now = press && !pressed && held >= HELD_PRESS_AFTER;
             let delivered = cx.update_window(window, |_view, window, cx| {
                 window.dispatch_event(
@@ -782,582 +734,250 @@ const DUMP_POLL: Duration = Duration::from_millis(250);
 /// and fonts loaded after the first frame to have taken their place.
 const DUMP_SETTLED_READINGS: usize = 4;
 
+/// How many readings `dump_layout` takes at most before it gives the dump
+/// up as failed, so a layout that never settles fails the run (exit 1)
+/// rather than hold it open: 80 readings `DUMP_POLL` apart, the shared
+/// crate's `CAPTURE_WAIT`, 20 s, the time `scripts/capture_window.sh` waits
+/// for a dump before it fails the capture (`wait_for_dump`), which
+/// `the_dump_readings_take_the_capture_wait` holds. The showcase's own
+/// bound; the model states none.
+const DUMP_MAX_READINGS: usize = 80;
+
+/// What `dump_layout` does after a reading ([`DumpSettle::read`]).
+#[derive(Debug, PartialEq)]
+pub(crate) enum DumpStep {
+    /// The layout has not settled yet: read again after `DUMP_POLL`.
+    Wait,
+    /// `DUMP_SETTLED_READINGS` readings in a row found this layout: write it.
+    Write(serde_json::Value),
+    /// `DUMP_MAX_READINGS` readings found no settled layout: the dump fails.
+    GiveUp,
+}
+
+/// The readings `dump_layout` has taken: the last one, how many in a row
+/// found it, and how many there were.
+#[derive(Default)]
+pub(crate) struct DumpSettle {
+    last: Option<serde_json::Value>,
+    same: usize,
+    readings: usize,
+}
+
+impl DumpSettle {
+    /// Takes `reading`, one more of the last frame's layout dumps: a dump
+    /// with no element, or one unlike the last, starts the count again.
+    pub(crate) fn read(&mut self, reading: serde_json::Value) -> DumpStep {
+        self.readings = self.readings.saturating_add(1);
+        let empty = reading
+            .get("elements")
+            .and_then(serde_json::Value::as_object)
+            .is_none_or(serde_json::Map::is_empty);
+        if empty || self.last.as_ref() != Some(&reading) {
+            self.last = Some(reading);
+            self.same = 1;
+        } else {
+            self.same = self.same.saturating_add(1);
+        }
+        if !empty
+            && self.same >= DUMP_SETTLED_READINGS
+            && let Some(settled) = self.last.take()
+        {
+            return DumpStep::Write(settled);
+        }
+        if self.readings >= DUMP_MAX_READINGS {
+            DumpStep::GiveUp
+        } else {
+            DumpStep::Wait
+        }
+    }
+}
+
+/// The layout dump of the last frame `window` drew (`dump::layout_json`):
+/// where each element of docs/showcase-elements.toml was drawn, the theme,
+/// its variant and the scale factor.
+fn layout_dump(s: &Showcase, window: &gpui::Window, cx: &App) -> serde_json::Value {
+    let mut drawn = s.info_ui.read(cx).layout_drawn();
+    // The fields' text, which their states report
+    // (`Showcase::field_text_bounds`), on the Basic page.
+    if s.active_page == Page::Basic {
+        drawn.extend(s.field_text_bounds(cx));
+    }
+    let variant = if s.is_dark { "dark" } else { "light" };
+    let rects = drawn.into_iter().map(|(id, b)| {
+        let rect = dump::Rect {
+            x: b.origin.x.as_f32(),
+            y: b.origin.y.as_f32(),
+            w: b.size.width.as_f32(),
+            h: b.size.height.as_f32(),
+        };
+        (id.to_string(), rect)
+    });
+    dump::layout_json(
+        Kind::Gpui,
+        &s.current_theme_name,
+        variant,
+        window.scale_factor(),
+        rects,
+    )
+}
+
+/// The files the run asked for and which are written yet (`cli::Outputs`),
+/// shared by the tasks that write them.
+pub(crate) type RunOutputs = Rc<Cell<Outputs>>;
+
+/// Records `output` as written in `outputs`, and quits once every file the
+/// run asked for is written and no `--capture` keeps the window
+/// (`cli::Outputs::written`): the showcases' exit rule, so the last of
+/// `--dump-layout F` and `--screenshot P` to be written quits.
+fn output_written(outputs: &RunOutputs, output: Output, cx: &mut App) {
+    let mut now = outputs.get();
+    let quit = now.written(output);
+    outputs.set(now);
+    if quit {
+        app::quit(cx);
+    }
+}
+
 /// `--dump-layout`: once `DUMP_SETTLED_READINGS` readings in a row find the
 /// last frame's layout of the list's elements unchanged, writes it to
 /// `path` as docs/showcase-elements.toml's "The layout dump" describes, then
-/// quits when `quit`. A write that fails is reported and exits with 1, as a
-/// failed `--screenshot` does.
-fn dump_layout(
+/// records it in `outputs` (`output_written`). A write that fails, or a
+/// layout that has not settled after `DUMP_MAX_READINGS` readings, is
+/// reported naming `--dump-layout` and the path (`cli::Output::failure`)
+/// and exits with 1 (`cli::refuse`), as a failed `--screenshot` does.
+pub(crate) fn dump_layout(
     cx: &mut App,
     window: AnyWindowHandle,
     showcase: gpui::Entity<Showcase>,
     path: String,
-    quit: bool,
+    outputs: RunOutputs,
 ) {
     cx.spawn(async move |cx| {
-        let mut last = None;
-        let mut same = 0;
+        let mut settle = DumpSettle::default();
         loop {
             cx.background_executor().timer(DUMP_POLL).await;
             let reading = cx.update_window(window, |_view, window, cx| {
-                let s = showcase.read(cx);
-                let mut drawn = s.info_ui.read(cx).layout_drawn();
-                // The fields' text, which their states report
-                // (`Showcase::field_text_bounds`), on the Basic page.
-                if s.active_page == Page::Basic {
-                    drawn.extend(s.field_text_bounds(cx));
-                }
-                let variant = if s.is_dark { "dark" } else { "light" };
-                (
-                    drawn,
-                    s.current_theme_name.clone(),
-                    variant,
-                    window.scale_factor(),
-                )
+                layout_dump(showcase.read(cx), window, cx)
             });
             let Ok(reading) = reading else { break };
-            if reading.0.is_empty() || last.as_ref() != Some(&reading) {
-                last = Some(reading);
-                same = 0;
-                continue;
+            match settle.read(reading) {
+                DumpStep::Wait => {}
+                DumpStep::Write(settled) => {
+                    if let Err(error) = dump::write_layout(&path, &settled) {
+                        cli::refuse(&error);
+                    }
+                    cx.update(|cx| output_written(&outputs, Output::Dump, cx));
+                    break;
+                }
+                DumpStep::GiveUp => cli::refuse(&dump_unsettled(&path)),
             }
-            same += 1;
-            if same + 1 < DUMP_SETTLED_READINGS {
-                continue;
-            }
-            let (drawn, preset, variant, scale) = reading;
-            let json = elements::dump_json(&preset, variant, scale, &drawn);
-            let written = serde_json::to_string_pretty(&json)
-                .map_err(|e| e.to_string())
-                .and_then(|text| std::fs::write(&path, text).map_err(|e| e.to_string()));
-            if let Err(error) = written {
-                eprintln!("ERROR: --dump-layout {path}: {error}");
-                std::process::exit(1);
-            }
-            if quit {
-                cx.update(app::quit);
-            }
-            break;
         }
     })
     .detach();
 }
 
-impl CliArgs {
-    /// Whether the window is captured with the pointer kept off every
-    /// widget (`Showcase::pointer_shield`): a capture, by an outside tool
-    /// or `--screenshot`, that holds no pointer of its own. Wherever the
-    /// desktop's pointer happens to be, it then hovers nothing, so two
-    /// captures of one theme draw the same.
-    fn shields_pointer(&self) -> bool {
-        (self.capture || self.screenshot.is_some()) && self.pointer.is_none()
-    }
+/// Why `--dump-layout` to `path` failed when its layout never settled.
+pub(crate) fn dump_unsettled(path: &str) -> String {
+    let waited = DUMP_POLL.saturating_mul(u32::try_from(DUMP_MAX_READINGS).unwrap_or(u32::MAX));
+    Output::Dump.failure(
+        path,
+        &format!(
+            "the layout did not settle: no {DUMP_SETTLED_READINGS} readings in a row agreed \
+             within {} s",
+            waited.as_secs()
+        ),
+    )
+}
 
-    fn parse() -> Self {
-        let mut args = Self::default();
-        let argv: Vec<String> = std::env::args().collect();
-        let mut i = 1; // skip binary name
-        while i < argv.len() {
-            match argv[i].as_str() {
-                "--theme" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.theme = Some(argv[i].clone());
-                    }
-                }
-                "--variant" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.variant = Some(argv[i].to_lowercase());
-                    }
-                }
-                "--tab" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.tab = Some(argv[i].to_lowercase());
-                    }
-                }
-                "--icon-set" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.icon_set = Some(argv[i].clone());
-                    }
-                }
-                "--icon-theme" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.icon_theme = Some(argv[i].clone());
-                    }
-                }
-                "--screenshot" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.screenshot = Some(argv[i].clone());
-                    }
-                }
-                "--capture" => args.capture = true,
-                "--dump-layout" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.dump_layout = Some(argv[i].clone());
-                    }
-                }
-                "--open-menu" => {
-                    i += 1;
-                    if i < argv.len() {
-                        args.open_menu = Some(argv[i].clone());
-                    }
-                }
-                "--press" => args.press = true,
-                "--pointer" => {
-                    i += 1;
-                    let value = argv.get(i).map_or("", String::as_str);
-                    match parse_point(value) {
-                        Some(point) => args.pointer = Some(point),
-                        None => args.bad_pointer = Some(value.to_string()),
-                    }
-                }
-                _ => {} // ignore unknown args
-            }
-            i += 1;
-        }
-        args
-    }
+/// How often `screenshot` asks whether the capture is done: on Windows the
+/// second run finding the window takes a moment. The showcase's own
+/// period, as `DUMP_POLL` is.
+const SCREENSHOT_POLL: Duration = Duration::from_millis(50);
 
-    /// The colour mode `--variant` names: `light`, `dark`, or `system`,
-    /// which follows the OS.
-    fn color_mode(variant: &str) -> Result<AppColorMode, String> {
-        match variant {
-            "light" => Ok(AppColorMode::Light),
-            "dark" => Ok(AppColorMode::Dark),
-            "system" => Ok(AppColorMode::System),
-            other => Err(format!("--variant {other}: not light, dark or system")),
-        }
-    }
+/// How long `screenshot` waits after the window opened before it captures
+/// it: on macOS a 200 ms nudge of the content size and 1300 ms after it
+/// (`capture::nudge_content_size`), on Windows 1500 ms, as the macOS and
+/// Windows runners' captures were timed. The showcase's own delays.
+#[cfg(target_os = "macos")]
+const SCREENSHOT_NUDGE: Duration = Duration::from_millis(200);
+#[cfg(target_os = "macos")]
+const SCREENSHOT_SETTLE: Duration = Duration::from_millis(1300);
+#[cfg(not(target_os = "macos"))]
+const SCREENSHOT_SETTLE: Duration = Duration::from_millis(1500);
 
-    /// The key of the theme `--theme` names: one the preset switch offers
-    /// (`preset_items`) -- `default`, the desktop's own, or a preset meant
-    /// for this platform. A preset of another platform is not offered.
-    fn theme_key(name: &str, default_preset: &str) -> Result<String, String> {
-        let offered: Vec<String> = support::preset_items(default_preset)
-            .into_iter()
-            .map(|item| item.key.to_string())
-            .collect();
-        if offered.iter().any(|key| key == name) {
-            return Ok(name.to_string());
-        }
-        let names = offered.join(", ");
-        if native_theme::theme::Theme::list_presets()
-            .iter()
-            .any(|info| info.key == name)
+/// The window's content in physical pixels and the display's scale factor,
+/// which `capture::FrameCapture` checks a capture of the window against.
+fn content_size(window: &gpui::Window) -> capture::Content {
+    let scale = f64::from(window.scale_factor());
+    let content = window.viewport_size();
+    (
+        (
+            (f64::from(content.width) * scale).round() as i64,
+            (f64::from(content.height) * scale).round() as i64,
+        ),
+        scale,
+    )
+}
+
+/// `--screenshot`: captures `window` with its frame to `path` once it has
+/// settled (`capture::FrameCapture`), then records it in `outputs`
+/// (`output_written`). A capture that fails, or fails the frame check, is
+/// reported and exits with 1 (`cli::refuse`). `main` refuses the flag
+/// before the window opens where the frame cannot be captured
+/// (`cli::screenshot_support`).
+fn screenshot(cx: &mut App, window: AnyWindowHandle, path: String, outputs: RunOutputs) {
+    cx.spawn(async move |cx| {
+        // The Retina nudge, again once the window has been laid out: calls
+        // `-[NSWindow setContentSize:]` directly (synchronous) rather than
+        // gpui's `window.resize()`, which is async and may not run before
+        // the capture.
+        #[cfg(target_os = "macos")]
         {
-            Err(format!(
-                "--theme {name}: a preset of another platform; only this platform's \
-                 presets run here: {names}"
-            ))
-        } else {
-            Err(format!(
-                "--theme {name}: no such preset; the presets are: {names}"
-            ))
+            capture::nudge_content_size(-1.0, 0.0);
+            cx.background_executor().timer(SCREENSHOT_NUDGE).await;
+            capture::nudge_content_size(1.0, 0.0);
         }
-    }
-
-    /// The icon-theme Select's row `--icon-set` names: a bundled set,
-    /// `gpui-builtin` (gpui-component's own icons), `system` or
-    /// `freedesktop` (the system icon theme), or one of `installed_themes`,
-    /// the freedesktop themes the Select lists.
-    fn icon_set_row(name: &str, installed_themes: &[String]) -> Result<String, String> {
-        match name {
-            "material" => Ok(IconSetChoice::Material.to_string()),
-            "lucide" => Ok(IconSetChoice::Lucide.to_string()),
-            "gpui-builtin" => Ok(app::GPUI_BUILTIN_ROW.to_string()),
-            "system" | "freedesktop" => Ok(IconSetChoice::System.to_string()),
-            theme if installed_themes.iter().any(|installed| installed == theme) => {
-                Ok(IconSetChoice::Freedesktop(theme.to_string()).to_string())
-            }
-            other => Err(format!(
-                "--icon-set {other}: not material, lucide, gpui-builtin, system, freedesktop \
-                 or an installed icon theme; {}",
-                Self::installed_icon_themes(installed_themes)
-            )),
-        }
-    }
-
-    /// The freedesktop theme `--icon-theme` names: one of
-    /// `installed_themes`, the freedesktop themes the icon-theme Select
-    /// lists.
-    fn icon_theme(name: &str, installed_themes: &[String]) -> Result<String, String> {
-        if installed_themes.iter().any(|installed| installed == name) {
-            Ok(name.to_string())
-        } else {
-            Err(format!(
-                "--icon-theme {name}: not an installed icon theme; {}",
-                Self::installed_icon_themes(installed_themes)
-            ))
-        }
-    }
-
-    /// The end of an icon flag's report: the freedesktop themes the
-    /// icon-theme Select lists, or that there are none.
-    fn installed_icon_themes(installed_themes: &[String]) -> String {
-        if installed_themes.is_empty() {
-            "none are installed".to_string()
-        } else {
-            format!(
-                "the installed icon themes are: {}",
-                installed_themes.join(", ")
-            )
-        }
-    }
-
-    /// The page `--tab` names: a page's [`Page::flag`], or `text-inputs`
-    /// for the Inputs page. The flag keeps its name: the screenshot scripts
-    /// pass it.
-    fn page(name: &str) -> Result<Page, String> {
-        let flag = match name {
-            "text-inputs" => "inputs",
-            other => other,
-        };
-        Page::ALL
-            .into_iter()
-            .find(|page| page.flag() == flag)
-            .ok_or_else(|| {
-                let pages: Vec<&str> = Page::ALL.iter().map(|page| page.flag()).collect();
-                format!(
-                    "--tab {name}: no such page; the pages are: {}",
-                    pages.join(", ")
-                )
-            })
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Self-capture screenshot (macOS only)
-// ---------------------------------------------------------------------------
-
-/// Get the NSWindow pointer for the main window via NSApplication.
-#[cfg(target_os = "macos")]
-fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
-    let ns_app_class = objc2::runtime::AnyClass::get(c"NSApplication")?;
-    unsafe {
-        let ns_app: *mut objc2::runtime::AnyObject =
-            objc2::msg_send![ns_app_class, sharedApplication];
-        // Try mainWindow first, then keyWindow, then first element of the
-        // windows array.  On CI runners the second GUI process launched in
-        // sequence may not get mainWindow promoted even after
-        // cx.activate(true) and a 1.5 s delay.
-        let main: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
-        if !main.is_null() {
-            return Some(main);
-        }
-        let key: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, keyWindow];
-        if !key.is_null() {
-            return Some(key);
-        }
-        let windows: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, windows];
-        let count: usize = objc2::msg_send![windows, count];
-        if count > 0 {
-            let first: *mut objc2::runtime::AnyObject =
-                objc2::msg_send![windows, objectAtIndex: 0usize];
-            if !first.is_null() {
-                return Some(first);
-            }
-        }
-        None
-    }
-}
-
-/// Minimal Core Graphics types for ObjC interop.
-/// Based on objc2's encode_core_graphics example.
-#[cfg(target_os = "macos")]
-mod cg_types {
-    use objc2::encode::{Encode, Encoding};
-
-    #[repr(C)]
-    pub struct CGPoint {
-        pub x: f64,
-        pub y: f64,
-    }
-    // SAFETY: repr(C) struct with correct encoding.
-    unsafe impl Encode for CGPoint {
-        const ENCODING: Encoding = Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
-    }
-
-    #[repr(C)]
-    pub struct CGSize {
-        pub width: f64,
-        pub height: f64,
-    }
-    // SAFETY: repr(C) struct with correct encoding.
-    unsafe impl Encode for CGSize {
-        const ENCODING: Encoding = Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
-    }
-
-    #[repr(C)]
-    pub struct CGRect {
-        pub origin: CGPoint,
-        pub size: CGSize,
-    }
-    // SAFETY: repr(C) struct with correct encoding.
-    unsafe impl Encode for CGRect {
-        const ENCODING: Encoding =
-            Encoding::Struct("CGRect", &[CGPoint::ENCODING, CGSize::ENCODING]);
-    }
-}
-
-/// Force the Metal drawable to update by nudging the window content size.
-///
-/// gpui initialises the Metal drawable at logical-pixel dimensions, ignoring
-/// the Retina backing scale factor.  The correct device-pixel size is only
-/// set inside the `setFrameSize:` callback, which early-returns when the
-/// old size equals the new size.  A 1 px nudge-and-restore forces two real
-/// resize events so `update_drawable_size` runs with the correct scale.
-///
-/// IMPORTANT: calls `[NSWindow setContentSize:]` directly via ObjC because
-/// gpui's `window.resize()` spawns an async task that may not execute before
-/// the screenshot capture.  Must be called **outside** `cx.update_window` to
-/// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
-/// it internally).
-#[cfg(target_os = "macos")]
-fn nudge_content_size(delta_w: f64, delta_h: f64) {
-    if let Some(main_window) = get_main_window_ptr() {
-        unsafe {
-            let content_view: *mut objc2::runtime::AnyObject =
-                objc2::msg_send![main_window, contentView];
-            let frame: cg_types::CGRect = objc2::msg_send![content_view, frame];
-            let new_size = cg_types::CGSize {
-                width: frame.size.width + delta_w,
-                height: frame.size.height + delta_h,
-            };
-            let _: () = objc2::msg_send![main_window, setContentSize: new_size];
-        }
-    }
-}
-
-/// Capture the gpui window including decorations using macOS `screencapture -l`.
-///
-/// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
-/// shells out to `screencapture -l <id> -o <path>`. This avoids the deprecated
-/// `CGWindowListCreateImage` API and produces a PNG with full title bar and
-/// window chrome. False, too, when the PNG is not the size
-/// `check_frame_capture` expects.
-#[cfg(target_os = "macos")]
-fn capture_own_window_macos(window: &mut Window, output_path: &str) -> bool {
-    screencapture_own_window(output_path) && checked_capture(window, output_path)
-}
-
-/// `check_frame_capture` for the PNG at `path`, a capture of `window` with
-/// its frame, reported on stderr.
-#[cfg(any(target_os = "macos", target_os = "windows"))]
-fn checked_capture(window: &Window, path: &str) -> bool {
-    let checked = image::image_dimensions(path)
-        .map_err(|e| format!("{path}: {e}"))
-        .and_then(|(width, height)| {
-            let scale = f64::from(window.scale_factor());
-            let content = window.viewport_size();
-            check_frame_capture(
-                (i64::from(width), i64::from(height)),
-                (
-                    (f64::from(content.width) * scale).round() as i64,
-                    (f64::from(content.height) * scale).round() as i64,
-                ),
-                scale,
-            )
-        });
-    match checked {
-        Ok(()) => true,
-        Err(error) => {
-            eprintln!("ERROR: {error}");
-            false
-        }
-    }
-}
-
-/// `screencapture -l <window> -o <path>` of the main window.
-#[cfg(target_os = "macos")]
-fn screencapture_own_window(output_path: &str) -> bool {
-    let Some(window_ptr) = get_main_window_ptr() else {
-        eprintln!("No main window found");
-        return false;
-    };
-    let window_id: i64 = unsafe { objc2::msg_send![window_ptr, windowNumber] };
-    let status = std::process::Command::new("screencapture")
-        .args(["-l", &format!("{}", window_id), "-o", output_path])
-        .status();
-    match status {
-        Ok(s) if s.success() => {
-            eprintln!("Screenshot saved to {output_path}");
-            true
-        }
-        Ok(s) => {
-            eprintln!("screencapture exited with {s}");
-            false
-        }
-        Err(e) => {
-            eprintln!("Failed to run screencapture: {e}");
-            false
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Self-capture screenshot (Windows only)
-// ---------------------------------------------------------------------------
-
-/// Capture the gpui window including decorations using Windows BitBlt.
-///
-/// Uses `FindWindowW` with `WINDOW_TITLE` to locate the correct HWND
-/// (more reliable than `GetForegroundWindow` which may return a console or
-/// other window on CI), then `BitBlt` + `GetDIBits` to extract pixel data.
-/// False, too, when the PNG is not the size `check_frame_capture` expects.
-#[cfg(target_os = "windows")]
-fn capture_own_window_windows(window: &mut Window, output_path: &str) -> bool {
-    bitblt_own_window(output_path) && checked_capture(window, output_path)
-}
-
-/// `BitBlt` of the window found by `WINDOW_TITLE`, its visible frame
-/// included, written to `output_path` as a PNG.
-#[cfg(target_os = "windows")]
-fn bitblt_own_window(output_path: &str) -> bool {
-    use windows::Win32::Foundation::*;
-    use windows::Win32::Graphics::Dwm::*;
-    use windows::Win32::Graphics::Gdi::*;
-    use windows::Win32::UI::WindowsAndMessaging::*;
-    use windows::core::PCWSTR;
-
-    unsafe {
-        let title_w: Vec<u16> = WINDOW_TITLE
-            .encode_utf16()
-            .chain(std::iter::once(0))
-            .collect();
-        let hwnd = match FindWindowW(None, PCWSTR(title_w.as_ptr())) {
-            Ok(h) => h,
-            Err(e) => {
-                eprintln!("FindWindowW failed: {e}");
-                return false;
-            }
-        };
-
-        // DWMWA_EXTENDED_FRAME_BOUNDS gives visible bounds in physical
-        // screen pixels (excluding the invisible DWM border), matching
-        // the screen DC coordinate space.  Fall back to GetWindowRect.
-        let mut rect = RECT::default();
-        if DwmGetWindowAttribute(
-            hwnd,
-            DWMWA_EXTENDED_FRAME_BOUNDS,
-            &mut rect as *mut _ as *mut std::ffi::c_void,
-            std::mem::size_of::<RECT>() as u32,
-        )
-        .is_err()
-        {
-            if let Err(e) = GetWindowRect(hwnd, &mut rect) {
-                eprintln!("GetWindowRect failed: {e}");
-                return false;
-            }
-        }
-
-        let width = rect.right - rect.left;
-        let height = rect.bottom - rect.top;
-        if width <= 0 || height <= 0 {
-            eprintln!("Invalid window dimensions: {width}x{height}");
-            return false;
-        }
-        eprintln!(
-            "windows capture: rect=({},{},{},{}), size={}x{}",
-            rect.left, rect.top, rect.right, rect.bottom, width, height
-        );
-
-        let screen_dc = GetDC(None);
-        let mem_dc = CreateCompatibleDC(Some(screen_dc));
-        let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
-        let old_obj = SelectObject(mem_dc, bitmap.into());
-
-        let blt_result = BitBlt(
-            mem_dc,
-            0,
-            0,
-            width,
-            height,
-            Some(screen_dc),
-            rect.left,
-            rect.top,
-            SRCCOPY | CAPTUREBLT,
-        );
-
-        if blt_result.is_err() {
-            SelectObject(mem_dc, old_obj);
-            let _ = DeleteObject(bitmap.into());
-            let _ = DeleteDC(mem_dc);
-            ReleaseDC(None, screen_dc);
-            eprintln!("BitBlt failed");
-            return false;
-        }
-
-        let mut bmi = BITMAPINFO {
-            bmiHeader: BITMAPINFOHEADER {
-                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
-                biWidth: width,
-                biHeight: -height,
-                biPlanes: 1,
-                biBitCount: 32,
-                biCompression: BI_RGB.0 as u32,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        let mut pixels = vec![0u8; (width * height * 4) as usize];
-        let lines = GetDIBits(
-            mem_dc,
-            bitmap,
-            0,
-            height as u32,
-            Some(pixels.as_mut_ptr() as *mut std::ffi::c_void),
-            &mut bmi,
-            DIB_RGB_COLORS,
-        );
-
-        SelectObject(mem_dc, old_obj);
-        let _ = DeleteObject(bitmap.into());
-        let _ = DeleteDC(mem_dc);
-        ReleaseDC(None, screen_dc);
-
-        if lines == 0 {
-            eprintln!("GetDIBits returned 0 lines");
-            return false;
-        }
-
-        for chunk in pixels.as_chunks_mut::<4>().0 {
-            chunk.swap(0, 2); // BGRA -> RGBA
-            chunk[3] = 255; // force opaque
-        }
-
-        match image::save_buffer(
-            output_path,
-            &pixels,
-            width as u32,
-            height as u32,
-            image::ColorType::Rgba8,
+        cx.background_executor().timer(SCREENSHOT_SETTLE).await;
+        let failed = |error: &str| Output::Screenshot.failure(&path, error);
+        // The macOS runner's check: the menu bar AppKit holds is the
+        // showcase's (`chrome::macos_menus`), by its titles in order, or the
+        // capture fails. On the main thread, where this task runs.
+        #[cfg(target_os = "macos")]
+        if let Err(error) = native_theme_showcase_support::menu::check_main_menu(
+            crate::chrome::APP_NAME,
+            native_theme_showcase_support::menu::main_menu_titles(),
         ) {
-            Ok(()) => {
-                eprintln!("Screenshot saved to {output_path}");
-                true
-            }
-            Err(e) => {
-                eprintln!("Failed to save PNG: {e}");
-                false
+            cli::refuse(&failed(&error));
+        }
+        let mut capture = match capture::FrameCapture::start(WINDOW_TITLE, &path) {
+            Ok(capture) => capture,
+            Err(error) => cli::refuse(&failed(&error)),
+        };
+        loop {
+            let polled = cx.update_window(window, |_view, window, _cx| {
+                capture.poll(|| Ok(content_size(window)))
+            });
+            match polled {
+                Ok(None) => cx.background_executor().timer(SCREENSHOT_POLL).await,
+                Ok(Some(Ok(()))) => break,
+                Ok(Some(Err(error))) => cli::refuse(&failed(&error)),
+                Err(error) => cli::refuse(&failed(&error.to_string())),
             }
         }
-    }
+        eprintln!("Screenshot saved to {path}");
+        cx.update(|cx| output_written(&outputs, Output::Screenshot, cx));
+    })
+    .detach();
 }
 
 /// Put the showcase `main` opened into the state the command line asks for:
-/// its colour mode, theme, page and icons.
+/// its colour mode, theme, page, icons and open menu.
 ///
-/// Each flag takes exactly what its Select offers: `--variant` a row of the
-/// colour-mode Select, `--theme` one of the preset switch, `--icon-set` and
-/// `--icon-theme` one of the icon-theme Select. A value it does not offer is
-/// reported on stderr and ignored, so the setting stays what it would have
+/// Each flag takes exactly what its Select offers, through the shared
+/// crate's one validator per flag (`cli`): `--variant` a row of the
+/// colour-mode Select, `--theme` one of the preset switch, `--icon-set` one
+/// of the icon-theme Select. A value it does not offer is reported on stderr
+/// and ignored (`cli::reported`), so the setting stays what it would have
 /// been without the flag: a rejected `--theme` leaves `--variant` to install
 /// the theme `Showcase::new` installed, in its mode.
 ///
@@ -1373,14 +993,21 @@ fn apply_cli_args(
     cx: &mut gpui::Context<Showcase>,
 ) {
     s.pointer_shield = cli_args.shields_pointer();
+    s.keyboard_shield = cli_args
+        .shields_keyboard()
+        .then(|| cx.intercept_keystrokes(|_event, _window, cx| cx.stop_propagation()));
     let mode = cli_args
         .variant
         .as_deref()
-        .and_then(|variant| reported(CliArgs::color_mode(variant)));
+        .and_then(|variant| reported(cli::color_mode(variant)));
     let theme = cli_args
         .theme
         .as_deref()
-        .and_then(|name| reported(CliArgs::theme_key(name, &s.default_preset)));
+        .and_then(|name| reported(cli::theme_key(name)))
+        .map(|key| match key {
+            ThemeKey::Default => "default".to_string(),
+            ThemeKey::Preset(preset) => preset,
+        });
     match (theme, mode) {
         (theme, Some(mode)) => {
             let theme = theme.unwrap_or_else(|| s.current_theme_name.clone());
@@ -1395,43 +1022,44 @@ fn apply_cli_args(
     if let Some(page) = cli_args
         .tab
         .as_deref()
-        .and_then(|name| reported(CliArgs::page(name)))
+        .and_then(|name| reported(Page::named(name)))
     {
-        s.active_page = page;
+        s.show_page(page, cx);
     }
 
-    if let Some(theme) = cli_args
-        .icon_theme
-        .as_deref()
-        .and_then(|name| reported(CliArgs::icon_theme(name, &s.installed_themes)))
-    {
-        s.set_icon_theme_override(theme, window, cx);
-    }
-
-    // `--icon-set` names a set, which stays chosen across theme switches
-    // as a pick in the icon-theme Select does.
-    if let Some(row) = cli_args
-        .icon_set
-        .as_deref()
-        .and_then(|name| reported(CliArgs::icon_set_row(name, &s.installed_themes)))
-    {
-        s.choose_icon_row(&row);
+    // `--icon-set` names a row of the icon-theme Select: `default`, which
+    // follows the theme from now on, or a set, which stays chosen across
+    // theme switches as a pick in the Select does.
+    if let Some(pick) = cli_args.icon_set.as_deref().and_then(|name| {
+        reported(cli::icon_set_choice(
+            name,
+            &s.installed_themes,
+            &[GPUI_BUILTIN_FLAG],
+        ))
+    }) {
+        match pick {
+            IconPick::FollowTheme => s.icon_choice_follows_preset = true,
+            IconPick::Choice(choice) => s.choose_icon_row(&choice.to_string()),
+            IconPick::Toolkit(_) => s.choose_icon_row(app::GPUI_BUILTIN_ROW),
+        }
         s.show_icon_choice(window, cx);
         s.reload_icons(window, cx);
     }
 
+    // On macOS the menus are the system menu bar's, which the window does
+    // not draw (`chrome::window_top`, `demo::title_bar`).
     if let Some(name) = cli_args.open_menu.as_deref() {
-        let opened = s
-            .menus
-            .update(cx, |menus, cx| menus.open_named(name, window, cx));
+        let opened = s.menus.update(cx, |menus, cx| {
+            menus.open_named(name, cfg!(target_os = "macos"), window, cx)
+        });
         reported(opened);
     }
 }
 
-/// The value of `result`; its error reported on stderr, and `None`.
-fn reported<T>(result: Result<T, String>) -> Option<T> {
-    result.map_err(|error| eprintln!("{error}; ignored")).ok()
-}
+/// The name `--icon-set` takes for gpui-component's own icons, the
+/// icon-theme Select's `app::GPUI_BUILTIN_ROW`, the row only this
+/// showcase's Select has.
+const GPUI_BUILTIN_FLAG: &str = "gpui-builtin";
 
 // ---------------------------------------------------------------------------
 // Main
@@ -1439,10 +1067,22 @@ fn reported<T>(result: Result<T, String>) -> Option<T> {
 
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 fn main() {
-    let cli_args = CliArgs::parse();
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    // The second run `--screenshot` starts on Windows to find the window
+    // (`capture::run_finder`), before any window opens.
+    if let Some(code) = capture::run_finder(&args, WINDOW_TITLE) {
+        std::process::exit(code);
+    }
+    let cli_args = CliArgs::parse(args);
     if let Some(value) = &cli_args.bad_pointer {
-        eprintln!("ERROR: --pointer {value:?}: not X,Y in whole logical pixels");
-        std::process::exit(1);
+        cli::refuse(&format!(
+            "--pointer {value:?}: not X,Y in whole logical pixels"
+        ));
+    }
+    if cli_args.screenshot.is_some()
+        && let Err(error) = cli::screenshot_support(Kind::Gpui)
+    {
+        cli::refuse(&error);
     }
 
     gpui_kit::application()
@@ -1452,13 +1092,13 @@ fn main() {
             app::init(cx);
 
             // Centred on whole pixels: `Bounds::centered` centres on the display's visible
-            // bounds (gpui-pre 0.3.8 `src/geometry.rs:740-749`), which exclude the macOS menu
+            // bounds (gpui-pre 0.3.9 `src/geometry.rs:740-749`), which exclude the macOS menu
             // bar, so the origin can fall on a half pixel, and AppKit then grows the window to
             // whole pixels -- the 720 px content came out 721 px on the macOS runner
             // (screenshots run 36352884582).
             let mut bounds = Bounds::centered(None, WINDOW_SIZE, cx);
             bounds.origin = gpui::point(bounds.origin.x.round(), bounds.origin.y.round());
-            let options = if cli_args.capture || cli_args.screenshot.is_some() {
+            let options = if cli_args.capturing() {
                 capture_window_options(bounds)
             } else {
                 window_options(bounds)
@@ -1473,21 +1113,21 @@ fn main() {
                     s
                 })
             });
-            let Ok((window_handle, showcase_entity)) = opened else {
-                eprintln!("Fatal: failed to open main application window");
-                cx.quit();
-                return;
+            let (window_handle, showcase_entity) = match opened {
+                Ok(opened) => opened,
+                Err(error) => cli::refuse(&format!("the main window did not open: {error}")),
             };
             window_handle
                 .update(cx, |_, window, _| name_window(window))
                 .ok();
+            let outputs = Rc::new(Cell::new(Outputs::new(&cli_args)));
             if let Some(path) = &cli_args.dump_layout {
                 dump_layout(
                     cx,
                     window_handle,
                     showcase_entity.clone(),
                     path.clone(),
-                    !cli_args.capture,
+                    outputs.clone(),
                 );
             }
             if let Some(at) = cli_args.pointer {
@@ -1495,94 +1135,34 @@ fn main() {
             }
 
             // Force Metal drawable to adopt the Retina scale factor by
-            // nudging the content size synchronously via ObjC.  Must happen
-            // outside update() to avoid deadlocking the window-state mutex.
+            // nudging the content size synchronously.  Must happen outside
+            // update() to avoid deadlocking the window-state mutex.
             #[cfg(target_os = "macos")]
             {
-                nudge_content_size(-1.0, 0.0);
-                nudge_content_size(1.0, 0.0);
+                capture::nudge_content_size(-1.0, 0.0);
+                capture::nudge_content_size(1.0, 0.0);
             }
             cx.activate(true);
 
-            // Schedule delayed self-capture if --screenshot was provided
-            if let Some(screenshot_path) = cli_args.screenshot.as_ref() {
+            if let Some(path) = &cli_args.screenshot {
+                // Whether gpui's font names hold the stated monospace family,
+                // "SF Mono" under macos-monterey: UNVERIFIED (egui spec §15).
+                // Printed for Task 39's log, never asserted. In the
+                // application because a `#[gpui::test]` cannot ask:
+                // `TestAppContext::build` gives gpui's `NoopTextSystem`
+                // (gpui-pre 0.3.9 src/app/test_context.rs:131,
+                // src/platform/test/platform.rs:127-134).
                 #[cfg(target_os = "macos")]
                 {
-                    // Whether gpui's font names hold the stated monospace
-                    // family, "SF Mono" under macos-sonoma: UNVERIFIED (egui
-                    // spec §15). Printed for Task 39's log, never asserted.
-                    // In the application because a `#[gpui::test]` cannot
-                    // ask: `TestAppContext::build` gives gpui's
-                    // `NoopTextSystem` (gpui-pre 0.3.8
-                    // src/app/test_context.rs:131, src/platform/test/platform.rs:125-132).
-                    {
-                        let mono = showcase_entity.read(cx).original_mono_font.family.clone();
-                        let names = cx.text_system().all_font_names();
-                        let held = names.iter().any(|name| name.as_str() == mono.as_ref());
-                        println!(
-                            "font-names: stated mono family {mono:?} in gpui's font names: {held}"
-                        );
-                    }
-                    let path = screenshot_path.clone();
-                    let any_handle = window_handle;
-                    cx.spawn(async move |cx| {
-                        // Force Metal drawable to update on Retina displays.
-                        // Calls [NSWindow setContentSize:] directly (synchronous)
-                        // rather than gpui's window.resize() which is async and
-                        // may not execute before the capture.
-                        nudge_content_size(-1.0, 0.0);
-                        cx.background_executor()
-                            .timer(Duration::from_millis(200))
-                            .await;
-                        nudge_content_size(1.0, 0.0);
-                        cx.background_executor()
-                            .timer(Duration::from_millis(1300))
-                            .await;
-                        let captured = cx
-                            .update_window(any_handle, |_view, window, _cx| {
-                                capture_own_window_macos(window, &path)
-                            })
-                            .unwrap_or(false);
-                        if !captured {
-                            eprintln!("ERROR: screenshot capture failed for {path}");
-                            std::process::exit(1);
-                        }
-                        cx.update(app::quit);
-                    })
-                    .detach();
-                }
-                #[cfg(target_os = "windows")]
-                {
-                    let path = screenshot_path.clone();
-                    let any_handle = window_handle;
-                    cx.spawn(async move |cx| {
-                        cx.background_executor()
-                            .timer(Duration::from_millis(1500))
-                            .await;
-                        let captured = cx
-                            .update_window(any_handle, |_view, window, _cx| {
-                                capture_own_window_windows(window, &path)
-                            })
-                            .unwrap_or(false);
-                        if !captured {
-                            eprintln!("ERROR: screenshot capture failed for {path}");
-                            std::process::exit(1);
-                        }
-                        cx.update(app::quit);
-                    })
-                    .detach();
-                }
-                #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-                {
-                    let _ = &screenshot_path;
-                    eprintln!(
-                        "Self-capture not supported on this platform. \
-                         Use spectacle or generate_screenshots_gpui.sh instead."
+                    let mono = showcase_entity.read(cx).original_mono_font.family.clone();
+                    let names = cx.text_system().all_font_names();
+                    let held = names.iter().any(|name| name.as_str() == mono.as_ref());
+                    println!(
+                        "font-names: stated mono family {mono:?} in gpui's font names: {held}"
                     );
-                    // Continue running -- let the user capture manually
                 }
+                screenshot(cx, window_handle, path.clone(), outputs);
             }
-            let _ = &window_handle; // suppress unused warning when not used for capture
         });
 }
 

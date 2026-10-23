@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Sourced by the Linux capture scripts (generate_screenshots_{iced,gpui,egui}.sh,
-# generate_gifs_theme_switching.sh): `capture_showcase` captures a showcase's
-# own window with spectacle, and fails unless the capture is of that window at
-# the showcases' default size.
+# generate_gifs_theme_switching.sh): `capture_showcases` runs a showcase once
+# per entry and captures its own window with spectacle (`capture_showcase`), and
+# fails unless each capture is of that window at the showcases' default size.
 #
 # spectacle captures the active window, and the window a script launched need
 # not be the active one: KWin's focus stealing prevention can keep a new window
@@ -25,10 +25,9 @@
 # Requires: spectacle, kscreen-doctor, qdbus6 (KDE Plasma 6), dbus-monitor and
 # dbus-send (D-Bus), python3 with Pillow.
 
-# The showcases' default window size in logical pixels: `WINDOW_SIZE` in
-# connectors/native-theme-egui/examples/showcase-egui/main.rs and
-# connectors/native-theme-iced/examples/showcase-iced.rs, `WINDOW_SIZE_PX` in
-# connectors/native-theme-gpui/examples/showcase-gpui/main.rs.
+# The showcases' default window size in logical pixels:
+# `native_theme_showcase_support::WINDOW_SIZE_PX` (tools/showcase-support),
+# which the three showcases open at.
 SHOWCASE_WINDOW_WIDTH=1280
 SHOWCASE_WINDOW_HEIGHT=720
 
@@ -308,9 +307,10 @@ EOF
 # The showcase is stopped (SIGSTOP) during the two captures, so both hold the
 # same frame of its window: a window that animates (gpui's loading button
 # spins) would otherwise differ between them. KWin keeps showing the last frame
-# the window committed. A caller's EXIT trap sends the showcase SIGCONT before
-# it kills it: a script interrupted between the two signals would otherwise
-# leave it stopped, where SIGTERM waits until it runs again.
+# the window committed. stop_showcase, which a caller's EXIT trap calls, sends
+# the showcase SIGCONT before it kills it: a script interrupted between the two
+# signals would otherwise leave it stopped, where SIGTERM waits until it runs
+# again.
 capture_showcase() {
     local kind="$1" pid="$2" capture="$3" app_id content status=0
     app_id="showcase-$kind-capture-$pid"
@@ -337,4 +337,150 @@ capture_showcase() {
         return 1
     fi
     rm -f "$content"
+}
+
+# How long, in seconds, capture_showcases lets a showcase run before it makes
+# its window the active one and captures it: for the window to open and the
+# showcase to lay out its page and load its fonts and icons.
+SHOWCASE_START_DELAY=3
+
+# The presets the Linux screenshots capture (generate_screenshots_*.sh), which
+# the release asset run's parity step also compares at rest: three, dark and
+# light, each with its icon set, as `theme:variant:icon-set:icon-theme`.
+# kde-breeze names its freedesktop icon theme per variant, breeze and
+# breeze-dark (native-theme/src/presets/kde-breeze.toml:16, :478).
+SCREENSHOT_ENTRIES=(
+    "kde-breeze:dark:freedesktop:breeze-dark"
+    "kde-breeze:light:freedesktop:breeze"
+    "material-3:dark:material:"
+    "material-3:light:material:"
+    "catppuccin-mocha:dark:lucide:"
+    "catppuccin-mocha:light:lucide:"
+)
+
+# The showcase capture_showcases started, while it runs.
+SHOWCASE_PID=""
+
+# The repository root, from which capture_showcases runs cargo.
+SHOWCASE_PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# stop_showcase: stops the showcase capture_showcases started, if one runs. It
+# is continued first: capture_showcase stops it (SIGSTOP) during its captures,
+# and SIGTERM waits until a stopped process runs again. A caller's EXIT trap
+# calls it, so a script that fails or is interrupted leaves no showcase behind;
+# `set -e` holds inside a trap too, so each kill of a showcase that already
+# exited needs its `|| true`.
+stop_showcase() {
+    if [ -n "$SHOWCASE_PID" ]; then
+        kill -CONT "$SHOWCASE_PID" 2>/dev/null || true
+        kill "$SHOWCASE_PID" 2>/dev/null || true
+        wait "$SHOWCASE_PID" 2>/dev/null || true
+        SHOWCASE_PID=""
+    fi
+}
+
+# wait_for_dump PID FILE: waits until FILE, the layout dump of the showcase run
+# as process PID (`--dump-layout`), holds a whole JSON object. Fails when PID
+# exits first, or when none is written within SHOWCASE_WINDOW_TIMEOUT seconds.
+wait_for_dump() {
+    local pid="$1" file="$2" deadline
+    deadline=$((SECONDS + SHOWCASE_WINDOW_TIMEOUT))
+    until python3 -c 'import json, sys; json.load(open(sys.argv[1]))' "$file" 2>/dev/null; do
+        if ! kill -0 "$pid" 2>/dev/null; then
+            echo "ERROR: the showcase (pid $pid) exited before it wrote its layout dump $file" >&2
+            return 1
+        fi
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "ERROR: the showcase (pid $pid) wrote no layout dump $file within ${SHOWCASE_WINDOW_TIMEOUT} s" >&2
+            return 1
+        fi
+        sleep 0.5
+    done
+}
+
+# capture_showcases KIND FEATURES OUTPUT DUMPS ENTRY...: builds the showcase
+# KIND (egui, gpui or iced) in release mode with the cargo flags FEATURES, then
+# runs it once per ENTRY, `theme:variant:icon-set:icon-theme` (the icon theme
+# may be empty), on its Basic page with `--capture`, and captures its window to
+# OUTPUT (capture_showcase), in which `{theme}`, `{variant}` and `{index}` (the
+# entry's, from 00) stand for the entry's. The caller fails on the first
+# capture that fails. `--capture` opens the showcase at its default size
+# whatever the desktop remembers for its window, with an app id of its own.
+# It runs cargo from the repository root, so it leaves the caller there.
+#
+# The three showcases take an installed freedesktop theme's name as their
+# `--icon-set`, so an entry's icon theme, where it has one, is theirs.
+# FEATURES differ by showcase, as the callers and the screenshot workflow build
+# them: iced with `--features iced_aw` (its Extra page), egui with
+# `--all-features`, gpui with its defaults ("").
+#
+# With a directory DUMPS ("" for none; created if missing, a relative one
+# taken from the directory the caller is in), each run also writes its layout
+# dump (`--dump-layout`, the chrome at rest wherever the pointer is) to
+# DUMPS/KIND-THEME-VARIANT.json, and once it is written, the capture and the
+# content's offset in it (the identity check's `+dx+dy`) beside it as .png and
+# .offset, so the two are of one settled frame: the files
+# scripts/check_showcase_parity.py reads from a run's directory.
+capture_showcases() {
+    local kind="$1" features="$2" output="$3" dumps="$4"
+    shift 4
+    local crate="native-theme-$kind" example="showcase-$kind" total=$# index=0
+    local feature_args=() args entry theme variant icon_set icon_theme file name dump report offset
+    read -ra feature_args <<< "$features"
+    if [ -n "$dumps" ]; then
+        if ! mkdir -p -- "$dumps" || [ ! -d "$dumps" ] || [ ! -w "$dumps" ]; then
+            echo "ERROR: the layout dump directory '$dumps' cannot be created or written" >&2
+            return 1
+        fi
+        dumps="$(cd -- "$dumps" && pwd)"
+    fi
+    cd "$SHOWCASE_PROJECT_ROOT"
+
+    echo "--- Building the $kind showcase (release mode) ---"
+    cargo build -p "$crate" --example "$example" --release "${feature_args[@]}"
+    echo ""
+
+    # A spectacle left running would answer the captures' D-Bus calls itself.
+    pkill spectacle 2>/dev/null || true
+
+    echo "--- Capturing the $kind showcase ---"
+    echo "WARNING: Do not interact with the desktop during capture."
+    echo ""
+    for entry in "$@"; do
+        IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
+        file="${output//\{theme\}/$theme}"
+        file="${file//\{variant\}/$variant}"
+        file="${file//\{index\}/$(printf '%02d' "$index")}"
+        index=$((index + 1))
+        echo "[$index/$total] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$file")"
+
+        args=(--theme "$theme" --variant "$variant" --tab basic --capture \
+            --icon-set "${icon_theme:-$icon_set}")
+        dump=""
+        if [ -n "$dumps" ]; then
+            name="$kind-$theme-$variant"
+            dump="$dumps/$name.json"
+            rm -f "$dump" "$dumps/$name.png" "$dumps/$name.offset"
+            args+=(--dump-layout "$dump")
+        fi
+
+        cargo run -p "$crate" --example "$example" --release "${feature_args[@]}" -- "${args[@]}" &
+        SHOWCASE_PID=$!
+        sleep "$SHOWCASE_START_DELAY"
+        if [ -n "$dump" ]; then
+            wait_for_dump "$SHOWCASE_PID" "$dump" || return 1
+        fi
+        report="$(capture_showcase "$kind" "$SHOWCASE_PID" "$file")" || return 1
+        printf '%s\n' "$report"
+        if [ -n "$dump" ]; then
+            offset="$(printf '%s\n' "$report" | sed -n 's/.* content at \(+[0-9]*+[0-9]*\) (.*/\1/p')"
+            if [ -z "$offset" ]; then
+                echo "ERROR: the identity check of $file printed no offset of the content" >&2
+                return 1
+            fi
+            cp "$file" "$dumps/$name.png"
+            printf '%s\n' "$offset" > "$dumps/$name.offset"
+        fi
+        stop_showcase
+    done
 }

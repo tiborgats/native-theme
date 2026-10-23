@@ -9,7 +9,8 @@
 //! time, so no test has to find them at run time -- and compared in both
 //! directions: a floor the README misstates fails, and so does a floor it
 //! leaves out. The dependency lines of the README's **Quick start** are held
-//! to the same floors.
+//! to the same floors; its dependencies on this workspace's crates are
+//! `scripts/check_readme_versions.py`'s, with every other README's.
 //!
 //! The manifest is the authority. Nothing in this module carries a version of
 //! its own; `REQUIRED` names the crates whose floor the README must state, and
@@ -33,12 +34,17 @@ const CRATE: &str = env!("CARGO_PKG_NAME");
 /// package name -- `gpui-pre` is named `gpui` in the manifest, and answers to
 /// its package name in both files.
 ///
-/// `gpui-kit` is a dev-dependency: it is what the showcase builds against, and
-/// the version a consumer reads in the Quick start.
+/// `gpui-kit` is a dependency: the crate roots name GPUI through it, and it is
+/// what the showcase builds against and the version a consumer reads in the
+/// Quick start.
 const REQUIRED: &[&str] = &["gpui-base", "gpui-component", "gpui-kit", "gpui-pre"];
 
 /// The row the table states for the toolchain, beside the crates.
 const RUST_VERSION: &str = "rust-version";
+
+/// The feature that moves the crate to another GPUI core rather than adding
+/// to it, which docs.rs must leave off: the documentation is gpui-pre's.
+const BACKEND_SWITCH: &str = "gpui-fast";
 
 /// What this crate requires, by the key the README's table names each floor
 /// with: a package name, or `rust-version`.
@@ -102,8 +108,8 @@ fn manifest_versions(manifest: &str) -> BTreeMap<String, BTreeSet<String>> {
 /// version of its own.
 ///
 /// Three shapes appear in this workspace: `iced_core = "0.14"`,
-/// `gpui-kit = { version = "0.7.1", features = [..] }` and
-/// `gpui = { package = "gpui-pre", version = "0.3.8" }`, whose package name is
+/// `gpui-kit = { version = "0.8.0", features = [..] }` and
+/// `gpui = { package = "gpui-pre", version = "0.3.9" }`, whose package name is
 /// not its key. A dependency inherited from the workspace
 /// (`native-theme = { workspace = true }`) states no version and is not one of
 /// these floors.
@@ -160,6 +166,35 @@ fn section<'a>(manifest: &'a str, header: &str) -> Vec<&'a str> {
         }
     }
     lines
+}
+
+/// The features a manifest's `[features]` table declares, `default`
+/// excepted: the key of every line that is not a comment.
+fn manifest_features(manifest: &str) -> BTreeSet<String> {
+    section(manifest, "[features]")
+        .into_iter()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .filter_map(|line| line.split_once(" = "))
+        .map(|(name, _)| name.trim().to_string())
+        .filter(|name| name != "default")
+        .collect()
+}
+
+/// The lines of a manifest's `[package.metadata.docs.rs]` table that are not
+/// comments.
+fn docs_rs_lines(manifest: &str) -> Vec<&str> {
+    section(manifest, "[package.metadata.docs.rs]")
+        .into_iter()
+        .filter(|line| !line.trim_start().starts_with('#'))
+        .collect()
+}
+
+/// The `features` list of a manifest's `[package.metadata.docs.rs]` table,
+/// written on one line or over several.
+fn docs_rs_features(manifest: &str) -> Option<BTreeSet<String>> {
+    let table = format!("\n{}", docs_rs_lines(manifest).join("\n"));
+    let list = table.split_once("\nfeatures = [")?.1.split_once(']')?.0;
+    Some(list.split(',').filter_map(quoted).collect())
 }
 
 /// The string literal `value` opens with, if it opens with one.
@@ -364,6 +399,57 @@ fn the_verified_line_is_the_stamps() {
              one run writes both, and neither is edited by hand"
         );
     }
+}
+
+/// docs.rs documents every feature but the backend switch, so the published
+/// page shows all of the crate's API on its default core; `all-features` would
+/// turn the switch on and document the crate on GPUI Fast.
+#[test]
+fn docs_rs_documents_every_feature_but_the_backend_switch() {
+    let mut expected = manifest_features(MANIFEST);
+    assert!(
+        expected.remove(BACKEND_SWITCH),
+        "Cargo.toml declares no `{BACKEND_SWITCH}` feature, so this test would pass vacuously"
+    );
+    let lines = docs_rs_lines(MANIFEST);
+    assert!(
+        !lines
+            .iter()
+            .any(|line| line.trim_start().starts_with("all-features")),
+        "Cargo.toml's [package.metadata.docs.rs] sets `all-features`, which turns `{BACKEND_SWITCH}` on"
+    );
+    assert_eq!(
+        docs_rs_features(MANIFEST),
+        Some(expected),
+        "Cargo.toml's [package.metadata.docs.rs] `features` is not the [features] table \
+         without `default` and `{BACKEND_SWITCH}`"
+    );
+}
+
+/// The two feature readers the docs.rs test rests on find what a manifest
+/// states, and nothing in a comment.
+#[test]
+fn the_feature_parsers_do_their_jobs() {
+    let manifest = "[package.metadata.docs.rs]\n\
+                    # features = [\"commented\"]\n\
+                    features = [\n    \"one\",\n    \"two\",\n]\n\
+                    \n\
+                    [features]\n\
+                    default = [\"one\"]\n\
+                    # three = []\n\
+                    one = []\n\
+                    two = [\"dep/two\"]\n";
+    let both: BTreeSet<String> = ["one", "two"].into_iter().map(String::from).collect();
+    assert_eq!(manifest_features(manifest), both);
+    assert_eq!(docs_rs_features(manifest), Some(both.clone()));
+    assert_eq!(
+        docs_rs_features("[package.metadata.docs.rs]\nfeatures = [\"one\", \"two\"]\n"),
+        Some(both)
+    );
+    assert_eq!(
+        docs_rs_features("[package.metadata.docs.rs]\nall-features = true\n"),
+        None
+    );
 }
 
 /// Both halves of the test above have to be real: a stamp parser that found no

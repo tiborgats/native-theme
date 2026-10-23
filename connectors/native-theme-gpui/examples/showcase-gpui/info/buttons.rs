@@ -1,11 +1,13 @@
 //! What the Buttons page's widgets report about themselves (spec §3.4).
 
 use gpui_component::{Colorize as _, Size, theme::Theme};
+use native_theme::theme::ResolvedButtonTheme;
+use native_theme_gpui::ResolvedTheme;
 
 use super::{
     ColorClaim, WidgetInfo,
     chrome::{GhostContent, chrome_icon_note, ghost_colours, input_background},
-    claim, px_text,
+    claim, edge_claim, percent_text, px_text,
 };
 use crate::demo::{ButtonKind, ButtonState};
 use crate::support::ChromeIcon;
@@ -19,13 +21,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button",
                 t.button,
-                "gpui-component/button/button.rs:978",
+                "gpui-component/button/button.rs:1001",
             ),
             claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:992",
+                "gpui-component/button/button.rs:1015",
             ),
         ],
         ButtonKind::Primary => vec![
@@ -33,13 +35,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_primary",
                 t.button_primary,
-                "gpui-component/button/button.rs:979",
+                "gpui-component/button/button.rs:1002",
             ),
             claim(
                 "text",
                 "button_primary_foreground",
                 t.button_primary_foreground,
-                "gpui-component/button/button.rs:997",
+                "gpui-component/button/button.rs:1020",
             ),
         ],
         ButtonKind::Secondary => vec![
@@ -47,13 +49,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_secondary",
                 t.button_secondary,
-                "gpui-component/button/button.rs:980",
+                "gpui-component/button/button.rs:1003",
             ),
             claim(
                 "text",
                 "button_secondary_foreground",
                 t.button_secondary_foreground,
-                "gpui-component/button/button.rs:1004",
+                "gpui-component/button/button.rs:1027",
             ),
         ],
         ButtonKind::Danger => vec![
@@ -61,13 +63,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_danger",
                 t.button_danger,
-                "gpui-component/button/button.rs:981",
+                "gpui-component/button/button.rs:1004",
             ),
             claim(
                 "text",
                 "button_danger_foreground",
                 t.button_danger_foreground,
-                "gpui-component/button/button.rs:1012",
+                "gpui-component/button/button.rs:1035",
             ),
         ],
         ButtonKind::Success => vec![
@@ -75,13 +77,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_success",
                 t.button_success,
-                "gpui-component/button/button.rs:983",
+                "gpui-component/button/button.rs:1006",
             ),
             claim(
                 "text",
                 "button_success_foreground",
                 t.button_success_foreground,
-                "gpui-component/button/button.rs:1026",
+                "gpui-component/button/button.rs:1049",
             ),
         ],
         ButtonKind::Warning => vec![
@@ -89,13 +91,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_warning",
                 t.button_warning,
-                "gpui-component/button/button.rs:982",
+                "gpui-component/button/button.rs:1005",
             ),
             claim(
                 "text",
                 "button_warning_foreground",
                 t.button_warning_foreground,
-                "gpui-component/button/button.rs:1019",
+                "gpui-component/button/button.rs:1042",
             ),
         ],
         ButtonKind::Info => vec![
@@ -103,13 +105,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "bg",
                 "button_info",
                 t.button_info,
-                "gpui-component/button/button.rs:984",
+                "gpui-component/button/button.rs:1007",
             ),
             claim(
                 "text",
                 "button_info_foreground",
                 t.button_info_foreground,
-                "gpui-component/button/button.rs:1033",
+                "gpui-component/button/button.rs:1056",
             ),
         ],
         ButtonKind::Ghost => vec![claim(
@@ -122,13 +124,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             "text",
             "link",
             t.link,
-            "gpui-component/button/button.rs:1036",
+            "gpui-component/button/button.rs:1059",
         )],
         ButtonKind::Text => vec![claim(
             "text, foreground at 90%",
             "foreground",
             t.foreground.opacity(0.9),
-            "gpui-component/button/button.rs:1037",
+            "gpui-component/button/button.rs:1060",
         )],
         ButtonKind::DefaultOutline => vec![
             input_background(t),
@@ -136,7 +138,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:992",
+                "gpui-component/button/button.rs:1015",
             ),
         ],
         ButtonKind::PrimaryOutline => vec![
@@ -144,13 +146,13 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "fill, primary at 10%",
                 "primary",
                 t.primary.opacity(0.1),
-                "gpui-component/button/button.rs:914",
+                "gpui-component/button/button.rs:937",
             ),
             claim(
                 "text",
                 "primary",
                 t.primary,
-                "gpui-component/button/button.rs:995",
+                "gpui-component/button/button.rs:1018",
             ),
         ],
     }
@@ -164,13 +166,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_hover",
                 t.button_hover,
-                "gpui-component/button/button.rs:1122",
+                "gpui-component/button/button.rs:1145",
             ),
             claim(
                 "active",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1206",
+                "gpui-component/button/button.rs:1229",
             ),
         ],
         ButtonKind::Primary => vec![
@@ -178,13 +180,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_primary_hover",
                 t.button_primary_hover,
-                "gpui-component/button/button.rs:1129",
+                "gpui-component/button/button.rs:1152",
             ),
             claim(
                 "active",
                 "button_primary_active",
                 t.button_primary_active,
-                "gpui-component/button/button.rs:1213",
+                "gpui-component/button/button.rs:1236",
             ),
         ],
         ButtonKind::Secondary => vec![
@@ -192,13 +194,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_secondary_hover",
                 t.button_secondary_hover,
-                "gpui-component/button/button.rs:1136",
+                "gpui-component/button/button.rs:1159",
             ),
             claim(
                 "active",
                 "button_secondary_active",
                 t.button_secondary_active,
-                "gpui-component/button/button.rs:1220",
+                "gpui-component/button/button.rs:1243",
             ),
         ],
         ButtonKind::Danger => vec![
@@ -206,13 +208,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_danger_hover",
                 t.button_danger_hover,
-                "gpui-component/button/button.rs:1143",
+                "gpui-component/button/button.rs:1166",
             ),
             claim(
                 "active",
                 "button_danger_active",
                 t.button_danger_active,
-                "gpui-component/button/button.rs:1228",
+                "gpui-component/button/button.rs:1251",
             ),
         ],
         ButtonKind::Success => vec![
@@ -220,13 +222,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_success_hover",
                 t.button_success_hover,
-                "gpui-component/button/button.rs:1157",
+                "gpui-component/button/button.rs:1180",
             ),
             claim(
                 "active",
                 "button_success_active",
                 t.button_success_active,
-                "gpui-component/button/button.rs:1242",
+                "gpui-component/button/button.rs:1265",
             ),
         ],
         ButtonKind::Warning => vec![
@@ -234,13 +236,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_warning_hover",
                 t.button_warning_hover,
-                "gpui-component/button/button.rs:1150",
+                "gpui-component/button/button.rs:1173",
             ),
             claim(
                 "active",
                 "button_warning_active",
                 t.button_warning_active,
-                "gpui-component/button/button.rs:1235",
+                "gpui-component/button/button.rs:1258",
             ),
         ],
         ButtonKind::Info => vec![
@@ -248,13 +250,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover",
                 "button_info_hover",
                 t.button_info_hover,
-                "gpui-component/button/button.rs:1164",
+                "gpui-component/button/button.rs:1187",
             ),
             claim(
                 "active",
                 "button_info_active",
                 t.button_info_active,
-                "gpui-component/button/button.rs:1249",
+                "gpui-component/button/button.rs:1272",
             ),
         ],
         ButtonKind::Ghost => vec![
@@ -276,13 +278,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover text",
                 "link_hover",
                 t.link_hover,
-                "gpui-component/button/button.rs:1182",
+                "gpui-component/button/button.rs:1205",
             ),
             claim(
                 "pressed text",
                 "link_active",
                 t.link_active,
-                "gpui-component/button/button.rs:1258",
+                "gpui-component/button/button.rs:1281",
             ),
         ],
         ButtonKind::Text => vec![
@@ -290,13 +292,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover text",
                 "foreground",
                 t.foreground,
-                "gpui-component/button/button.rs:1183",
+                "gpui-component/button/button.rs:1206",
             ),
             claim(
                 "pressed text, foreground at 70%",
                 "foreground",
                 t.foreground.opacity(0.7),
-                "gpui-component/button/button.rs:1259",
+                "gpui-component/button/button.rs:1282",
             ),
         ],
         ButtonKind::DefaultOutline => vec![
@@ -304,13 +306,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg, 50% input mixed with 50% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.5),
-                "gpui-component/button/button.rs:903-907",
+                "gpui-component/button/button.rs:926-930",
             ),
             claim(
                 "active bg, 70% input mixed with 30% transparent",
                 "input",
                 t.input.mix_oklab(t.transparent, 0.7),
-                "gpui-component/button/button.rs:908-912",
+                "gpui-component/button/button.rs:931-935",
             ),
         ],
         ButtonKind::PrimaryOutline => vec![
@@ -318,59 +320,75 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg, primary_hover at 20%",
                 "primary_hover",
                 t.primary_hover.opacity(0.2),
-                "gpui-component/button/button.rs:917",
+                "gpui-component/button/button.rs:940",
             ),
             claim(
                 "active bg, primary_active at 40%",
                 "primary_active",
                 t.primary_active.opacity(0.4),
-                "gpui-component/button/button.rs:920",
+                "gpui-component/button/button.rs:943",
             ),
         ],
     }
 }
 
-/// The edge of a Button of `kind` that upstream draws: only Default and an
-/// outlined Button have one (button/button.rs:699-704). `styled` is whether
-/// `geometry::button` refined it, which paints the edge at rest with the
-/// platform's colour and leaves upstream's to hover and press.
-fn edge(t: &Theme, kind: ButtonKind, styled: bool) -> Option<ColorClaim> {
-    match (kind, styled) {
+/// The edge of a Button of `kind`: upstream's, which only Default and an
+/// outlined Button have (button/button.rs:710-715), or, refined from
+/// `native`, `button.border` at rest and upstream's colour under the pointer
+/// at `button.border`'s width, which replaces upstream's: none at 0.
+fn edge(t: &Theme, kind: ButtonKind, native: Option<&ResolvedButtonTheme>) -> Vec<ColorClaim> {
+    if native.is_some_and(|b| b.border.line_width <= 0.0) {
+        return Vec::new();
+    }
+    let rest = native.and_then(|b| {
+        edge_claim(
+            "border at rest",
+            "border",
+            Some(b.border.color),
+            Some(b.border.line_width),
+            "native-theme-gpui/geometry.rs:230",
+        )
+    });
+    let hovered = match (kind, native.is_some()) {
         (ButtonKind::Default | ButtonKind::DefaultOutline, true) => Some(claim(
             "border, hovered or pressed",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1044",
+            "gpui-component/button/button.rs:1067",
         )),
         (ButtonKind::Default | ButtonKind::DefaultOutline, false) => Some(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1044",
+            "gpui-component/button/button.rs:1067",
         )),
         (ButtonKind::PrimaryOutline, true) => Some(claim(
             "border, hovered or pressed",
             "primary",
             t.primary,
-            "gpui-component/button/button.rs:1046",
+            "gpui-component/button/button.rs:1069",
         )),
         (ButtonKind::PrimaryOutline, false) => Some(claim(
             "border",
             "primary",
             t.primary,
-            "gpui-component/button/button.rs:1046",
+            "gpui-component/button/button.rs:1069",
         )),
         _ => None,
-    }
+    };
+    rest.into_iter().chain(hovered).collect()
 }
 
-/// `info` with what a Button of `kind` paints at rest, its edge, and what it
-/// paints under the pointer.
-fn colours(info: WidgetInfo, t: &Theme, kind: ButtonKind, styled: bool) -> WidgetInfo {
+/// `info` with what a Button of `kind` paints at rest, its [`edge`], and
+/// what it paints under the pointer.
+fn colours(
+    info: WidgetInfo,
+    t: &Theme,
+    kind: ButtonKind,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
     let info = at_rest(t, kind).into_iter().fold(info, WidgetInfo::color);
-    let info = edge(t, kind, styled)
-        .into_iter()
-        .fold(info, WidgetInfo::color);
+    let info = info.colors(edge(t, kind, native));
     under_the_pointer(t, kind)
         .into_iter()
         .fold(info, WidgetInfo::color)
@@ -387,7 +405,7 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             "bg, at 15%",
             "button_primary",
             t.button_primary.opacity(0.15),
-            "gpui-component/button/button.rs:1319",
+            "gpui-component/button/button.rs:1342",
         )),
         // `opacity(1.5)`: gpui clamps the factor to 1 (gpui-pre
         // color.rs:637-644), so the fill is the token as it stands, in both
@@ -396,15 +414,15 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
             "bg, button_secondary at 150% (clamped to 100%)",
             "button_secondary",
             t.button_secondary.opacity(1.5),
-            "gpui-component/button/button.rs:1324",
+            "gpui-component/button/button.rs:1347",
         )),
         ButtonKind::Danger => Some(claim(
             "bg, at 15%",
             "button_danger",
             t.button_danger.opacity(0.15),
-            "gpui-component/button/button.rs:1320",
+            "gpui-component/button/button.rs:1343",
         )),
-        // `input_background()` at 0.5 (button/button.rs:1334-1338), which
+        // `input_background()` at 0.5 (button/button.rs:1357-1361), which
         // reads a different field in each mode (theme/mod.rs:485-490).
         ButtonKind::Default if t.is_dark() => Some(claim(
             "bg (input mixed toward transparent), at 50%",
@@ -423,8 +441,8 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
 }
 
 /// What a loading Button of `kind` paints: its colours at rest, faded with
-/// the whole element to 80% (button/button.rs:825). It is not interactive,
-/// so it takes no hover or press style (:514-516, :712).
+/// the whole element to 80% (button/button.rs:842). It is not interactive,
+/// so it takes no hover or press style (:524-526, :723, :741).
 ///
 /// Only the variant the page shows loading has an arm: read another's rest
 /// arms before the page loads one.
@@ -432,16 +450,16 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
     match kind {
         ButtonKind::Primary => vec![
             claim(
-                "bg, at 80% (the whole Button fades, button.rs:825)",
+                "bg, at 80% (the whole Button fades, button/button.rs:842)",
                 "button_primary",
                 t.button_primary.opacity(0.8),
-                "gpui-component/button/button.rs:979",
+                "gpui-component/button/button.rs:1002",
             ),
             claim(
-                "text, at 80% (the whole Button fades, button.rs:825)",
+                "text, at 80% (the whole Button fades, button/button.rs:842)",
                 "button_primary_foreground",
                 t.button_primary_foreground.opacity(0.8),
-                "gpui-component/button/button.rs:997",
+                "gpui-component/button/button.rs:1020",
             ),
         ],
         _ => Vec::new(),
@@ -449,7 +467,7 @@ fn loading(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
 }
 
 /// The name `size` has in the `Size` enum.
-fn size_name(size: Size) -> &'static str {
+pub(crate) fn size_name(size: Size) -> &'static str {
     match size {
         Size::XSmall => "XSmall",
         Size::Small => "Small",
@@ -464,8 +482,8 @@ fn size_name(size: Size) -> &'static str {
 ///
 /// `size` is `Some` only in the row that shows upstream's size scale, which
 /// is built without `geometry::button`; every other Button is built at the
-/// default size and refined by it where a native theme is installed, which
-/// is what `styled` says. Its geometry line is recorded by `native_info`
+/// default size and refined by it from `native`, the `button.*`, where a
+/// native theme is installed. Its geometry line is recorded by `native_info`
 /// where `demo::button` applies the builder.
 pub fn button(
     t: &Theme,
@@ -473,8 +491,9 @@ pub fn button(
     state: ButtonState,
     icon: bool,
     size: Option<Size>,
-    styled: bool,
+    native: Option<&ResolvedButtonTheme>,
 ) -> WidgetInfo {
+    let styled = native.is_some();
     let name = kind.name();
     let variant = match (size, state) {
         (Some(size), _) => format!("{name}, {}", size_name(size)),
@@ -485,7 +504,7 @@ pub fn button(
     };
     let info = WidgetInfo::new("Button").variant(variant);
     let info = match state {
-        ButtonState::Idle => colours(info, t, kind, styled),
+        ButtonState::Idle => colours(info, t, kind, native),
         ButtonState::Loading => loading(t, kind).into_iter().fold(info, WidgetInfo::color),
         // geometry::button_disabled's line is recorded where demo::button
         // applies it, over the fill and label upstream paints first.
@@ -493,7 +512,7 @@ pub fn button(
         ButtonState::Disabled => {
             let info = match kind {
                 ButtonKind::Primary | ButtonKind::Danger => info.not_themeable("fill", "the variant's own token at 0.15, a literal -- not 0.5, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
-                ButtonKind::Secondary => info.not_themeable("fill", "the variant's own token at 1.5, a literal that gpui clamps to 1 (color.rs, Hsla::opacity), so a disabled Secondary keeps its fill while a disabled Primary or Danger fades to 0.15 -- and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
+                ButtonKind::Secondary => info.not_themeable("fill", "the variant's own token at 1.5, a literal that gpui clamps to 1 (gpui-pre/color.rs, Hsla::opacity), so a disabled Secondary keeps its fill while a disabled Primary or Danger fades to 0.15 -- and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 ButtonKind::Default => info.not_themeable("fill", "input_background() at 0.5, a literal, and not a disabled token: the model carries button.disabled_background and the platform states one, and upstream reads neither (button/button.rs, ButtonVariant::disabled)"),
                 _ => info,
             };
@@ -504,14 +523,15 @@ pub fn button(
                     "text, at 50%",
                     "muted_foreground",
                     t.muted_foreground.opacity(0.5),
-                    "gpui-component/button/button.rs:1327",
+                    "gpui-component/button/button.rs:1350",
                 ))
         }
     };
     let info = if styled {
         info.config("font-weight", "geometry::button carries button.font.weight. The label is a child that sets its own size from the Size enum (sizing.rs, button_text_size) and would overrule a size from here, but it sets no weight and neither does anything else on that path, so the platform's weight cascades (button/button.rs, Button::render)")
-            .not_themeable("edge", match state {
-                ButtonState::Idle => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
+            .not_themeable("edge", match (state, native) {
+                (_, Some(b)) if b.border.line_width <= 0.0 => "none in any state: button.border.line_width is 0, and geometry::button's width replaces upstream's border_1, whose hover and press styles only recolour (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Idle, _) => format!("button.border.color at rest: geometry::button gives every variant a border, and upstream's hover and press styles repaint it {} -- gpui applies a hover style after the refinement (gpui-pre/elements/div.rs, hover_style)", match kind {
                     ButtonKind::Default | ButtonKind::DefaultOutline => "input",
                     ButtonKind::Primary | ButtonKind::PrimaryOutline => "primary",
                     ButtonKind::Secondary => "border",
@@ -521,8 +541,8 @@ pub fn button(
                     ButtonKind::Info => "button_info",
                     ButtonKind::Ghost | ButtonKind::Link | ButtonKind::Text => "transparent, so it vanishes under the pointer",
                 }),
-                ButtonState::Disabled => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
-                ButtonState::Loading => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: the opacity(0.8) at :813)".to_string(),
+                (ButtonState::Disabled, _) => "button.border.color, as at rest: upstream's disabled style sets an edge colour of its own and then replays the caller's style over it, so geometry::button's colour wins (button/button.rs, RenderOnce for Button)".to_string(),
+                (ButtonState::Loading, _) => "button.border.color, and it stays: a loading Button takes no hover or press style, so nothing repaints it (button/button.rs, Button::interactive). It is painted at 80% all the same: while loading, the whole element fades, border included (button/button.rs, Button::render: line 842, the opacity(0.8))".to_string(),
             })
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
@@ -535,7 +555,7 @@ pub fn button(
     let info = if styled {
         info.config("label size", "button.font.size through geometry::button_label on the label, which the showcase passes as the Button's child: upstream sizes a .label() from the Size enum on the content element (sizing.rs, button_text_size; button/button.rs, Button::render), which a style on the Button does not reach and a child's own size overrules")
     } else {
-        info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
+        info.not_themeable("label size", "a fixed ratio of the platform's base, not a value of its own: the label takes button_text_size (sizing.rs, button_text_size), which is text_xs for XSmall, text_sm for Small and Medium, and text_base for Large and Size::Size -- all rems -- and gpui-component's WindowState root plugin sets the rem to Theme::font_size (gpui-component/root.rs, WindowState::prepare set_rem_size), which this connector fills from the platform font. So it scales with font.size and cannot be set apart from it: button_text_size has no Size::Size arm")
     };
     let info = match kind {
         ButtonKind::Default => info.instance("variant", "no variant method, so ButtonVariant::Default -- the button family, whose own edge colour is input, not border (button/button.rs, ButtonVariant::border_color)"),
@@ -556,20 +576,24 @@ pub fn button(
         | ButtonKind::Warning
         | ButtonKind::Info => info,
     };
-    let info = match state {
-        ButtonState::Idle => info,
-        ButtonState::Disabled if styled => info
+    let info = match (state, native) {
+        (ButtonState::Idle, _) => info,
+        (ButtonState::Disabled, Some(b)) => info
             .instance("fill and text", "button.disabled_background (button.background_color where none is stated) and button.disabled_text_color, through geometry::button_disabled: upstream paints its own literals -- input_background() or the variant's token faded, and muted_foreground at 0.5 -- and then replays the caller's refinement over them (button/button.rs, ButtonVariant::disabled and RenderOnce for Button)")
-            .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; the stated disabled colours are painted as they are, as the iced and egui connectors paint them, with no further fade")
+            .config("opacity", if b.disabled_opacity < 1. {
+                format!("button.disabled_opacity {}: geometry::button_disabled fades the whole Button by it, over the stated pair", percent_text(b.disabled_opacity))
+            } else {
+                format!("button.disabled_opacity {}: no fade, the stated pair painted as it is", percent_text(b.disabled_opacity))
+            })
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
-        ButtonState::Disabled => info
+        (ButtonState::Disabled, None) => info
             .not_themeable("text", "muted_foreground at 0.5, so a disabled button does not keep its variant's text colour. button.disabled_text_color is modelled and carried, and upstream reads it nowhere (button/button.rs, ButtonVariant::disabled)")
             .not_themeable("opacity", "button.disabled_opacity is modelled and inherits defaults.disabled_opacity; upstream multiplies its own literals instead, so the platform's figure has no receiver -- Tier U, not an absence")
             .not_themeable("cursor", "the default arrow, not not-allowed: Button sets cursor_default, and only a link or text variant asks for a pointer (button/button.rs, Button::render)"),
-        ButtonState::Loading if icon => info
-            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (spinner.rs, Spinner::new)")
+        (ButtonState::Loading, _) if icon => info
+            .not_themeable("spinner", "stands in for the button's icon, so only a button with one shows it. This one's icon is the chosen icon theme's loading icon, which the Button is also given as its loading icon, so the Spinner turns it in place of upstream's own Loader (button/button.rs, Button::loading_icon; button/button_icon.rs, ButtonIcon). It inherits the button's text colour and turns every 0.8s, a literal (gpui-component/spinner.rs, Spinner::new)")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
-        ButtonState::Loading => info
+        (ButtonState::Loading, _) => info
             .not_themeable("spinner", "none: a Button shows its spinner in place of its icon, so only a button with one shows it (button/button_icon.rs, ButtonIcon), and the chosen icon theme has no loading icon to give this one; upstream's own Loader would be another icon theme's")
             .not_themeable("interaction", "inert, as a disabled button is, but not styled as one: it keeps its variant's colours and the whole button fades to 0.8 (button/button.rs, Button::interactive)"),
     };
@@ -599,7 +623,7 @@ fn ghost_variant(info: WidgetInfo) -> WidgetInfo {
 /// side-panel toggle are that Ghost too, and take it from here so they
 /// cannot drift apart.
 pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
-    ghost_variant(colours(info, t, ButtonKind::Ghost, false))
+    ghost_variant(colours(info, t, ButtonKind::Ghost, None))
 }
 
 /// `info` with what a selected Button built with
@@ -607,8 +631,9 @@ pub(super) fn native_ghost(info: WidgetInfo, t: &Theme) -> WidgetInfo {
 /// Upstream fills a selected Button with its variant's selected style,
 /// which for a custom variant is the variant's active colour and its
 /// foreground (button/button.rs, ButtonVariant::selected), and gives it no
-/// hover or press style: those apply only while it is neither disabled nor
-/// selected (button/button.rs, RenderOnce for Button).
+/// hover or press style: it registers the hover on every Button, but paints
+/// it, as it paints the press, only while the Button is neither disabled,
+/// loading nor selected (button/button.rs:716-748, RenderOnce for Button).
 pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     ghost_variant(
         info.color(claim(
@@ -626,9 +651,119 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     )
 }
 
+/// The Size a tool button is built at: what upstream lays a labelled Button
+/// of it out at (button/button.rs, RenderOnce for Button).
+#[derive(Clone, Copy)]
+pub(crate) enum ToolSize {
+    /// The default Size, `Size::Medium`: `h_8` with `px_2p5`.
+    Medium,
+    /// `Size::Small`: `h_6` with `px_2`.
+    Small,
+}
+
+impl ToolSize {
+    /// Upstream's height, its side padding, and the Size's name.
+    fn upstream(self) -> (&'static str, &'static str, &'static str) {
+        match self {
+            Self::Medium => ("h_8", "px_2p5", "the default Size"),
+            Self::Small => ("h_6", "px_2", "Size::Small"),
+        }
+    }
+}
+
+/// `info` given a tool button's size and corners, a Ghost at `size` refined
+/// by `demo::tool_box_of` where `native` is installed: rounded by
+/// `button.border.corner_radius` and padded by the `button.border.padding`
+/// sides it states, with no fixed height where a top or bottom side is
+/// stated, upstream's height and side padding standing only for what it
+/// leaves unstated; with no native theme, upstream's whole. `icon_child` is
+/// whether the icon is the Button's child, which has upstream lay it out as
+/// a labelled Button.
+pub(crate) fn tool_button_size(
+    info: WidgetInfo,
+    size: ToolSize,
+    icon_child: bool,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
+    let (height, across, at) = size.upstream();
+    let labelled = if icon_child {
+        "; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button"
+    } else {
+        ""
+    };
+    // The size note's tail, the same under either form.
+    let upstream_size = |what: String| {
+        format!(
+            "{what} -- rems, so the platform's font{labelled} (button/button.rs, RenderOnce for Button)"
+        )
+    };
+    let Some(b) = native else {
+        return info.not_themeable(
+            "size",
+            upstream_size(format!("{height} with {across} at {at}")),
+        );
+    };
+    let p = &b.border.padding;
+    let stated: Vec<String> = [
+        ("top", p.top),
+        ("right", p.right),
+        ("bottom", p.bottom),
+        ("left", p.left),
+    ]
+    .into_iter()
+    .filter_map(|(side, v)| v.map(|v| format!("{side} {}px", px_text(v))))
+    .collect();
+    let vertical = p.top.is_some() || p.bottom.is_some();
+    let radius = format!(
+        "button.border.corner_radius, {}px",
+        px_text(b.border.corner_radius.max(0.))
+    );
+    let sets = "which the showcase sets on the Button (demo::tool_box_of)";
+    let text = match (stated.is_empty(), vertical) {
+        (true, _) => {
+            format!("{radius}, {sets}; the theme states no button.border.padding side")
+        }
+        (false, false) => format!(
+            "{radius}, and button.border.padding: {}, {sets}",
+            stated.join(", ")
+        ),
+        (false, true) => format!(
+            "{radius}, and button.border.padding: {}, {sets}, with no fixed height: the content's, padded by the stated top and bottom (h_auto){}",
+            stated.join(", "),
+            if p.top.is_none() || p.bottom.is_none() {
+                ", an unstated one none, as upstream pads a Button only across"
+            } else {
+                ""
+            }
+        ),
+    };
+    let info = info.config("radius and padding", text);
+    let unstated_across = match (p.left.is_none(), p.right.is_none()) {
+        (true, true) => Some(across.to_string()),
+        (true, false) => Some(format!("{across} on the left")),
+        (false, true) => Some(format!("{across} on the right")),
+        (false, false) => None,
+    };
+    let upstream = match (vertical, unstated_across) {
+        (true, None) => None,
+        (true, Some(across)) => Some(across),
+        (false, None) => Some(height.to_string()),
+        (false, Some(across)) => Some(format!("{height} with {across}")),
+    };
+    match upstream {
+        Some(what) => info.not_themeable(
+            "size",
+            upstream_size(format!(
+                "{what} at {at}, upstream's for what button.border.padding leaves unstated"
+            )),
+        ),
+        None => info,
+    }
+}
+
 /// A `ButtonGroup` of Default Buttons, which report through the group.
 pub fn button_group(t: &Theme) -> WidgetInfo {
-    colours(WidgetInfo::new("ButtonGroup"), t, ButtonKind::Default, false)
+    colours(WidgetInfo::new("ButtonGroup"), t, ButtonKind::Default, None)
         .config("border-radius", format!("radius: {}px", t.radius.as_f32()))
         .not_themeable("gap", "no gap to set: a ButtonGroup joins its buttons by turning edges off rather than by spacing them (button/button_group.rs, ButtonGroup)")
         .instance("variant", "no variant given, so Default: its edge is input, not border")
@@ -641,9 +776,7 @@ pub fn dropdown_button(t: &Theme, kind: ButtonKind) -> WidgetInfo {
         WidgetInfo::new("DropdownButton").variant(kind.name()),
         WidgetInfo::color,
     );
-    edge(t, kind, false)
-        .into_iter()
-        .fold(info, WidgetInfo::color)
+    info.colors(edge(t, kind, None))
         .color(claim(
             "menu bg",
             "popover",
@@ -674,30 +807,30 @@ pub(super) fn toggle_hover(info: WidgetInfo, t: &Theme) -> WidgetInfo {
         "hover bg",
         "accent",
         t.accent,
-        "gpui-component/button/toggle.rs:202",
+        "gpui-component/button/toggle.rs:210",
     ))
     .color(claim(
         "hover text",
         "accent_foreground",
         t.accent_foreground,
-        "gpui-component/button/toggle.rs:203",
+        "gpui-component/button/toggle.rs:211",
     ))
 }
 
 /// The colours of a checked Toggle, of either variant, which is not
-/// hoverable (button/toggle.rs:153), and why they are what they are.
+/// hoverable (button/toggle.rs:161), and why they are what they are.
 pub(super) fn toggle_checked(info: WidgetInfo, t: &Theme) -> WidgetInfo {
     info.color(claim(
         "checked bg",
         "accent",
         t.accent,
-        "gpui-component/button/toggle.rs:155",
+        "gpui-component/button/toggle.rs:163",
     ))
     .color(claim(
         "checked text",
         "accent_foreground",
         t.accent_foreground,
-        "gpui-component/button/toggle.rs:156",
+        "gpui-component/button/toggle.rs:164",
     ))
     .not_themeable("checked fill", "accent, the menu highlight, by default -- but not out of reach: a Toggle folds the caller's refinement into its checked style too (button/toggle.rs, Toggle::render), so an application that refines a checked Toggle with segmented_control.active_background and active_text_color gets them. Only an unchecked one's hover is Tier U. Nothing applies them: geometry::toggle carries the Toggle's text alone")
 }
@@ -754,37 +887,91 @@ pub fn clipboard(t: &Theme, value: &'static str) -> WidgetInfo {
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component's own
 /// at its default Small Size, refined by `geometry::toolbar`, whose line
 /// `demo::component_toolbar` records; `item_gap` is the `toolbar.item_gap`
-/// the theme states. Its Buttons report themselves (`toolbar_item`).
-pub fn toolbar(item_gap: Option<f32>) -> WidgetInfo {
+/// the theme states, and `native` the theme the builder refined it from,
+/// where a native theme is installed. Its Buttons report themselves
+/// (`toolbar_item`).
+pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetInfo {
     let group_gap = match item_gap {
         Some(g) => format!("{}px, toolbar.item_gap", px_text(g)),
-        None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
+        None => "gap_1, the Toolbar's own Small gap, which the showcase gives each group: the theme states no toolbar.item_gap, and a ToolbarGroup spaces nothing itself (gpui-base/toolbar.rs, RenderOnce for ToolbarGroup)".to_string(),
     };
-    WidgetInfo::new("Toolbar")
+    let info = WidgetInfo::new("Toolbar")
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
-            "h_8, p_1, gap_1 and text_sm at its default Small Size (toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
-        )
-        .not_themeable(
-            "fill",
-            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (toolbar.rs, Toolbar); geometry::toolbar fills it with toolbar.background_color",
+            "h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
         )
         .not_themeable(
             "items",
             "added with content(), not child(): child() would make a Button a compact ghost and wrap it in an input_h box, 1.5 rem at Small (toolbar.rs, ToolbarItem; button/button.rs, Button::prepare_for_toolbar; sizing.rs, input_h)",
-        )
-        .instance("group gap", group_gap)
+        );
+    let info = match native {
+        Some(_) => info.config(
+            "fill",
+            "toolbar.background_color, through geometry::toolbar: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
+        ),
+        None => info.not_themeable(
+            "fill",
+            "none of its own: upstream's Toolbar is transparent and leaves its surface to the caller (gpui-component/toolbar.rs, Toolbar)",
+        ),
+    };
+    let info = match native {
+        Some(r) if r.toolbar.border.line_width > 0.0 => info.config(
+            "edge",
+            format!(
+                "the bar's bottom rule, toolbar.border.color at toolbar.border.line_width, {}px, inside the bar, through geometry::toolbar: upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+                px_text(r.toolbar.border.line_width)
+            ),
+        ),
+        Some(_) => info.config(
+            "edge",
+            "none: toolbar.border.line_width is 0, so geometry::toolbar draws no rule, and upstream's Toolbar draws no edge of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+        ),
+        None => info.not_themeable(
+            "edge",
+            "none of its own (gpui-component/toolbar.rs, RenderOnce for Toolbar)",
+        ),
+    };
+    info.instance("group gap", group_gap)
         .instance(
             "groups",
             "Edit (Undo2, Redo2, Copy) and View (Search, Maximize, Settings), each a ToolbarGroup with its accessible label, a vertical Separator between them; each Button reports itself",
         )
 }
 
+/// One of the Basic page's icon buttons (`demo::icon_button`), showing its
+/// icon where `drawn`, else its name: the Ghost the window's toolbar buttons
+/// are, given `native`'s `button.border` radius and stated padding sides by
+/// the showcase (`demo::tool_box_of`) where a native theme is installed, as
+/// [`tool_button_size`] says -- not `geometry::button`, so the edge stays
+/// upstream's, none.
+pub fn icon_button(t: &Theme, drawn: bool, native: Option<&ResolvedButtonTheme>) -> WidgetInfo {
+    let info = WidgetInfo::new("Button").variant(if drawn {
+        "Ghost, icon"
+    } else {
+        "Ghost, labelled"
+    });
+    let info = native_ghost(info, t).not_themeable(
+        "edge",
+        "none: upstream gives a border width only to a Default or an outlined Button, and a Ghost is a custom variant (button/button.rs, RenderOnce for Button); the showcase sets none",
+    );
+    let info = match native {
+        Some(_) => info,
+        None => info.config("border-radius", format!("radius: {}px", t.radius.as_f32())),
+    };
+    tool_button_size(info, ToolSize::Medium, drawn, native)
+}
+
 /// One of the component `Toolbar`'s Ghost Buttons, showing `icon` of the
-/// icon theme named `set`; it runs nothing. Its icon-size line is recorded
+/// icon theme named `set`, sized as [`tool_button_size`] says under
+/// `native`'s `button`; it runs nothing. Its icon-size line is recorded
 /// where `demo::toolbar_item` applies the builder.
-pub fn toolbar_item(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
+pub fn toolbar_item(
+    t: &Theme,
+    icon: &ChromeIcon,
+    set: &str,
+    native: Option<&ResolvedButtonTheme>,
+) -> WidgetInfo {
     let drawn = !matches!(icon, ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_));
     let info = WidgetInfo::new("Button").variant(if drawn {
         "Ghost, icon"
@@ -800,22 +987,16 @@ pub fn toolbar_item(t: &Theme, icon: &ChromeIcon, set: &str) -> WidgetInfo {
             "icon",
             "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
         )
-        .not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font; with its icon a child rather than its icon it is laid out as a labelled Button, not a square icon Button (button/button.rs, RenderOnce for Button)",
-        )
     } else {
-        info.not_themeable(
-            "size",
-            "h_8 with px_2p5 at the default Size -- rems, so the platform's font (button/button.rs, RenderOnce for Button)",
-        )
+        info
     };
-    info.instance(
-        "icon",
-        chrome_icon_note(icon, set, "the button shows its name as its label instead"),
-    )
-    .instance(
-        "action",
-        "none: the section shows the Toolbar, so its Buttons run nothing",
-    )
+    tool_button_size(info, ToolSize::Medium, drawn, native)
+        .instance(
+            "icon",
+            chrome_icon_note(icon, set, "the button shows its name as its label instead"),
+        )
+        .instance(
+            "action",
+            "none: the section shows the Toolbar, so its Buttons run nothing",
+        )
 }

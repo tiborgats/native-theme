@@ -45,7 +45,10 @@
 # no showcase drew it.
 #
 # Sample points, for the comparator (all relative to the element's rectangle):
-#   name = [fx, fy]            the pixel at fraction (fx, fy) of the rectangle
+#   name = [fx, fy]            the pixel at fraction (fx, fy) of the rectangle; for a `fill` or
+#                              `track` sample, where that lies on a text part the element holds
+#                              (a descendant whose name is a text run, inside its rectangle),
+#                              the nearest pixel of its row beside the text parts
 #   name = [fx, fy, dx, dy]    the same, moved (dx, dy) logical px; an edge is sampled half a
 #                              pixel inside, e.g. the left border at [0.0, 0.5, 0.5, 0.0]
 #   name = "glyph"             the text colour: the pixel of the rectangle farthest in colour
@@ -72,74 +75,23 @@
 #   rows, `layout.section_gap` before a section. The same in all three showcases.
 # The per-toolkit "how" lines may differ; everything else must be identical for the same element and theme.
 #
-# The `<leaf path>` a row shows is the entry of `leaves` as written here.
+# The `<leaf path>` a row shows is the entry of `leaves` as written here. A `_px` leaf's value is
+# its number and ` px` (`12 px`), a `_ms` leaf's its number and ` ms` (`700 ms`).
 #
 # ---------------------------------------------------------------------------------------------
 # How a showcase reads the list
 # ---------------------------------------------------------------------------------------------
 #
-# With `include_str!` and the `toml` crate, parsed into an untyped `toml::Table` and walked by
-# hand, as the egui showcase also reads its mapping.toml (showcase-egui/info.rs). All three
-# connectors have `toml = { workspace = true }` in their [dev-dependencies]. That adds no crate to Cargo.lock: `toml` 1.1.5 is already
-# there as a dependency of native-theme (native-theme/Cargo.toml, `toml.workspace = true`),
-# which re-exports none of it, so the examples cannot reach it without naming it. The path is
-# relative to the file holding the `include_str!`:
-#   gpui: examples/showcase-gpui/<file>.rs -> "../../../../docs/showcase-elements.toml"
-#   iced: examples/showcase-iced.rs        -> "../../../docs/showcase-elements.toml"
-#   egui: examples/showcase-egui/<file>.rs -> "../../../../docs/showcase-elements.toml"
-#
-#   /// One element of `docs/showcase-elements.toml`.
-#   #[derive(Debug, Clone)]
-#   pub struct ShowcaseElement {
-#       pub id: String,
-#       pub name: String,
-#       pub parent: String,
-#       pub leaves: Vec<String>,
-#       pub states: Vec<String>,
-#       pub part: bool,
-#       pub when: Option<String>,
-#   }
-#
-#   const SHOWCASE_ELEMENTS: &str = include_str!("../../../../docs/showcase-elements.toml");
-#
-#   pub fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
-#       let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
-#       let rows = table
-#           .get("element")
-#           .and_then(toml::Value::as_array)
-#           .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
-#       rows.iter()
-#           .map(|row| {
-#               let text = |key: &str| {
-#                   row.get(key)
-#                       .and_then(toml::Value::as_str)
-#                       .map(str::to_owned)
-#                       .ok_or_else(|| format!("an element has no `{key}`"))
-#               };
-#               let list = |key: &str| {
-#                   row.get(key)
-#                       .and_then(toml::Value::as_array)
-#                       .ok_or_else(|| format!("an element has no `{key}`"))?
-#                       .iter()
-#                       .map(|v| {
-#                           v.as_str()
-#                               .map(str::to_owned)
-#                               .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
-#                       })
-#                       .collect::<Result<Vec<_>, _>>()
-#               };
-#               Ok(ShowcaseElement {
-#                   id: text("id")?,
-#                   name: text("name")?,
-#                   parent: text("parent")?,
-#                   leaves: list("leaves")?,
-#                   states: list("states")?,
-#                   part: row.get("part").and_then(toml::Value::as_bool).unwrap_or(false),
-#                   when: row.get("when").and_then(toml::Value::as_str).map(str::to_owned),
-#               })
-#           })
-#           .collect()
-#   }
+# Through native-theme-showcase-support (tools/showcase-support, never published), the crate
+# the three showcases share, which is the list's reader: `elements::showcase_elements()` parses
+# it into `ShowcaseElement`s (every field above but `clip` and `sample`), `elements::elements()`
+# parses it once for a running showcase, and `values::leaf_value` gives a leaf's value in the
+# Widget Info format above. The crate holds the list through
+# `include_str!("../../../docs/showcase-elements.toml")` (in tools/showcase-support/src/) and reads
+# it with the `toml` crate into an untyped `toml::Table`, walked by hand, as the egui showcase
+# also reads its mapping.toml (showcase-egui/info.rs). That adds no crate to Cargo.lock: `toml`
+# 1.1.5 is already there as a dependency of native-theme (native-theme/Cargo.toml,
+# `toml.workspace = true`), which re-exports none of it.
 #
 # The sample points are the comparator's alone; a showcase ignores them. A showcase's own test
 # checks that every id it records is in this list and that it records every element it draws.
@@ -156,7 +108,11 @@
 #
 # Rectangles in logical px, in window-content coordinates ((0, 0) is the top-left of the
 # window's content area); `scale` is physical px per logical px; one entry per element of this
-# list the showcase draws, and none for anything else. All three connectors have
+# list the showcase draws, and none for anything else. A dump records the chrome at rest
+# wherever the desktop's pointer is: each showcase keeps the window's own pointer off its
+# widgets under `--dump-layout`, as under `--capture`, so the Widget Info rows hold their
+# hint (`chrome.info.hint`) and `chrome.status_bar.shown` is not drawn; a dump of the
+# hovered state holds a pointer of its own (`--pointer X,Y`). All three connectors have
 # `serde_json = "1.0.151"` in their [dev-dependencies] (`serde_json::json!` builds the object),
 # the version Cargo.lock already holds for native-theme's own [dev-dependencies]. The comparator reads `<kind>-<preset>-<variant>.json` and, beside it,
 # the capture `<kind>-<preset>-<variant>.png`; see scripts/check_showcase_parity.py.
@@ -164,6 +120,35 @@
 # Shared elements only: a page tab, a menu or a menu row the three do not all have is not here.
 # The chrome's page tabs share Basic and Buttons (first and second in all three); the Theme menu
 # is the one menu whose rows the three share.
+#
+# The pages' counterparts. The three showcases list their pages in one order, gpui's, with a
+# page gpui has no counterpart for after its nearest counterpart and a toolkit's own pages
+# before Icons. A row is one counterpart: the tab label each showcase gives it, `-` where it has
+# none. A row's pages are the ones whose content is nearest; each page's content follows its
+# toolkit's widget catalogue, so they differ (iced's Display holds tooltips, cards and the
+# spacing demo besides its text, which is why it keeps its name). A page's `--tab` key is its
+# label in lower case with each space a `-`, but iced's Extra widgets page's, `extra`. Each
+# showcase's own test reads this table against its page list, through `elements::page_order`.
+#
+#   | Counterpart | gpui       | iced                    | egui       |
+#   |-------------|------------|-------------------------|------------|
+#   | Basic       | Basic      | Basic                   | Basic      |
+#   | Buttons     | Buttons    | Buttons                 | Buttons    |
+#   | Inputs      | Inputs     | Inputs                  | Inputs     |
+#   | Selection   | -          | Selection               | Selection  |
+#   | Range       | -          | Range                   | Range      |
+#   | Data        | Data       | -                       | Data       |
+#   | Feedback    | Feedback   | -                       | -          |
+#   | Typography  | Typography | Display                 | Text       |
+#   | Layout      | Layout     | Layout                  | Containers |
+#   | Overlays    | Overlays   | -                       | Overlays   |
+#   | Charts      | Charts     | Graphics                | -          |
+#   | egui's own  | -          | -                       | Colour     |
+#   | iced's own  | -          | Extra widgets (iced_aw) | -          |
+#   | Icons       | Icons      | Icons                   | Icons      |
+#   | Theme Map   | Theme Map  | Theme Map               | Theme Map  |
+#
+# iced's Extra widgets page is in a build with the iced connector's `iced_aw` feature only.
 
 # =============================================================================================
 # Chrome
@@ -438,14 +423,14 @@ sample = { line = [0.5, 0.5] }
 id = "chrome.side_panel.inspector_tabs"
 name = "Tab bar"
 parent = "chrome.side_panel.separator"
-leaves = ["tab.bar_background", "tab.item_gap_px", "layout.container_margin_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
 states = ["Normal"]
 
 [[element]]
 id = "chrome.side_panel.inspector_tabs.widget"
 name = "Tab"
 parent = "chrome.side_panel.inspector_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -567,14 +552,14 @@ clip = true
 id = "chrome.page_tabs"
 name = "Tab bar"
 parent = "chrome.content"
-leaves = ["tab.bar_background", "tab.item_gap_px", "layout.container_margin_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "layout.container_margin_px"]
 states = ["Normal"]
 
 [[element]]
 id = "chrome.page_tabs.basic"
 name = "Tab"
 parent = "chrome.page_tabs"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -659,10 +644,11 @@ sample = { text = "glyph" }
 # The Basic page (v6): columns, each a stack of groups; a group is its heading over its rows.
 # The column count n is the theme's, never measured text's: the largest n of 5, 4 and 3 whose
 # column, (page width - (n - 1) * layout.section_gap) / n, holds the widest fixed-width control
-# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap,
-# BASIC_WIDE, BASIC_WIDTH); the page width is the content area's less twice
-# layout.window_margin and, where scrollbar.overlay_mode is false, scrollbar.groove_width. The
-# page scrolls vertically where it is taller than its area (at rest at the top), never sideways.
+# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap +
+# 2 * tab.active_outward_corner_radius, BASIC_WIDE, BASIC_WIDTH); the page width is the
+# content area's less twice layout.window_margin and, where scrollbar.overlay_mode is false,
+# scrollbar.groove_width. The page scrolls vertically where it is taller than its area (at
+# rest at the top), never sideways.
 # n = 5: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text
 # area, Slider. Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4:
 # Typography, Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
@@ -680,7 +666,7 @@ sample = { text = "glyph" }
 id = "basic.page"
 name = "Basic page"
 parent = "chrome.content"
-leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "combo_box.min_width_px"]
+leaves = ["layout.window_margin_px", "layout.section_gap_px", "scrollbar.groove_width_px", "scrollbar.overlay_mode", "tab.min_width_px", "tab.item_gap_px", "tab.active_outward_corner_radius_px", "combo_box.min_width_px"]
 states = ["Normal"]
 
 [[element]]
@@ -802,7 +788,7 @@ sample = { text = "glyph" }
 id = "basic.buttons.tooltip.bubble"
 name = "Tooltip"
 parent = "basic.buttons.tooltip"
-leaves = ["tooltip.background_color", "tooltip.font", "tooltip.font.color", "tooltip.max_width_px", "tooltip.border.color", "tooltip.border.corner_radius_px", "tooltip.border.line_width_px", "tooltip.border.shadow_enabled", "tooltip.border.padding_top_px", "tooltip.border.padding_right_px", "tooltip.border.padding_bottom_px", "tooltip.border.padding_left_px", "defaults.line_height"]
+leaves = ["tooltip.background_color", "tooltip.font", "tooltip.font.color", "tooltip.max_width_px", "tooltip.show_delay_ms", "tooltip.border.color", "tooltip.border.corner_radius_px", "tooltip.border.line_width_px", "tooltip.border.shadow_enabled", "tooltip.border.padding_top_px", "tooltip.border.padding_right_px", "tooltip.border.padding_bottom_px", "tooltip.border.padding_left_px", "defaults.line_height"]
 states = ["Shown"]
 when = "the Tooltip button is hovered"
 sample = { fill = [0.5, 1.0, 0.0, -2.5], border = [0.0, 0.5, 0.5, 0.0] }
@@ -1041,14 +1027,14 @@ sample = { text = "glyph" }
 id = "basic.switches.off"
 name = "Switch"
 parent = "basic.switches.heading"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.track_radius_px", "switch.unchecked_background", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.hover_unchecked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.unchecked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["Off"]
 
 [[element]]
 id = "basic.switches.off.track"
 name = "Switch track"
 parent = "basic.switches.off"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.unchecked_background", "switch.hover_unchecked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.unchecked_background", "switch.hover_unchecked_background", "switch.unchecked_track_border_color", "switch.track_border_line_width_px"]
 states = ["Off"]
 part = true
 sample = { fill = [0.75, 0.5] }
@@ -1057,7 +1043,7 @@ sample = { fill = [0.75, 0.5] }
 id = "basic.switches.off.thumb"
 name = "Switch thumb"
 parent = "basic.switches.off.track"
-leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background"]
+leaves = ["switch.thumb_diameter_px", "switch.unchecked_thumb_diameter_px", "switch.thumb_background", "switch.unchecked_thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["Off"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1075,14 +1061,14 @@ sample = { text = "glyph" }
 id = "basic.switches.on"
 name = "Switch"
 parent = "basic.switches.off"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.hover_checked_background", "defaults.font", "defaults.font.color", "defaults.line_height", "switch.checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On"]
 
 [[element]]
 id = "basic.switches.on.track"
 name = "Switch track"
 parent = "basic.switches.on"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.hover_checked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.hover_checked_background", "switch.checked_track_border_color", "switch.track_border_line_width_px"]
 states = ["On"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1091,7 +1077,7 @@ sample = { fill = [0.25, 0.5] }
 id = "basic.switches.on.thumb"
 name = "Switch thumb"
 parent = "basic.switches.on.track"
-leaves = ["switch.thumb_diameter_px", "switch.thumb_background"]
+leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1109,14 +1095,14 @@ sample = { text = "glyph" }
 id = "basic.switches.disabled"
 name = "Switch"
 parent = "basic.switches.on"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.disabled_thumb_color", "defaults.font", "defaults.line_height", "defaults.disabled_text_color"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.thumb_diameter_px", "switch.track_radius_px", "switch.checked_background", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.disabled_thumb_color", "defaults.font", "defaults.line_height", "defaults.disabled_text_color", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On, disabled"]
 
 [[element]]
 id = "basic.switches.disabled.track"
 name = "Switch track"
 parent = "basic.switches.disabled"
-leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.disabled_opacity", "switch.disabled_checked_background"]
+leaves = ["switch.track_width_px", "switch.track_height_px", "switch.track_radius_px", "switch.checked_background", "switch.disabled_opacity", "switch.disabled_checked_background", "switch.checked_track_border_color", "switch.disabled_checked_track_border_color", "switch.track_border_line_width_px"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.25, 0.5] }
@@ -1125,7 +1111,7 @@ sample = { fill = [0.25, 0.5] }
 id = "basic.switches.disabled.thumb"
 name = "Switch thumb"
 parent = "basic.switches.disabled.track"
-leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_thumb_color"]
+leaves = ["switch.thumb_diameter_px", "switch.thumb_background", "switch.disabled_opacity", "switch.disabled_thumb_color", "switch.thumb_border_color", "switch.thumb_border_line_width_px"]
 states = ["On, disabled"]
 part = true
 sample = { fill = [0.5, 0.5] }
@@ -1413,14 +1399,14 @@ sample = { text = "glyph" }
 id = "basic.tabs.bar"
 name = "Tab bar"
 parent = "basic.tabs.heading"
-leaves = ["tab.bar_background", "tab.item_gap_px"]
+leaves = ["tab.bar_background", "tab.item_gap_px", "tab.active_outward_corner_radius_px"]
 states = ["Normal"]
 
 [[element]]
 id = "basic.tabs.one"
 name = "Tab"
 parent = "basic.tabs.bar"
-leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "defaults.line_height"]
+leaves = ["tab.active_background", "tab.active_text_color", "tab.min_width_px", "tab.min_height_px", "tab.font", "tab.border.color", "tab.border.corner_radius_px", "tab.border.line_width_px", "tab.border.padding_top_px", "tab.border.padding_right_px", "tab.border.padding_bottom_px", "tab.border.padding_left_px", "tab.active_indicator_color", "tab.active_indicator_width_px", "tab.active_indicator_side", "tab.active_outward_corner_radius_px", "defaults.line_height"]
 states = ["Selected"]
 sample = { fill = [0.0, 0.5, 2.5, 0.0], border = [0.0, 0.5, 0.5, 0.0], line_top = [0.5, 0.0, 0.0, 1.5], line_bottom = [0.5, 1.0, 0.0, -1.5], text = { glyph = [0.1, 0.2, 0.9, 0.8] } }
 
@@ -1847,7 +1833,7 @@ sample = { text = "glyph" }
 id = "basic.table.frame"
 name = "Table"
 parent = "basic.table.heading"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.selection_background", "list.selection_text_color", "list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.hover_background", "list.hover_text_color", "list.border.color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Row 2 selected"]
 sample = { border = [0.0, 0.5, 0.5, 0.0] }
 
@@ -1855,7 +1841,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.table.header"
 name = "Table header"
 parent = "basic.table.frame"
-leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "list.row_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5] }

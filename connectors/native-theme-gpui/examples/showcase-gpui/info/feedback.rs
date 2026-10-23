@@ -1,10 +1,13 @@
 //! What the Feedback page's widgets report about themselves (spec §3.4).
 
-use gpui::transparent_white;
-use gpui_component::{Colorize as _, theme::Theme};
+use std::time::Duration;
+
+use gpui::{Pixels, px, transparent_white};
+use gpui_base::TooltipDefaults;
+use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, claim, hsla_to_hex, percent_text, stated};
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, edge_claim, percent_text, px_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 
@@ -123,24 +126,23 @@ pub fn alert(t: &Theme, severity: Severity, banner: bool) -> WidgetInfo {
 pub fn severity_alert(t: &Theme, severity: Severity) -> WidgetInfo {
     alert(t, severity, false).not_themeable(
         "own icons",
-        match severity {
-            Severity::Info => super::own_icons("its severity's icon, Info (alert.rs, Alert::info)"),
-            Severity::Success => {
-                super::own_icons("its severity's icon, CircleCheck (alert.rs, Alert::success)")
+        super::own_icons(&format!(
+            "its severity's icon, {} ({})",
+            severity.upstream_icon(),
+            match severity {
+                Severity::Info => "alert.rs, Alert::info",
+                Severity::Success => "alert.rs, Alert::success",
+                Severity::Warning => "alert.rs, Alert::warning",
+                Severity::Error => "alert.rs, Alert::error",
             }
-            Severity::Warning => {
-                super::own_icons("its severity's icon, TriangleAlert (alert.rs, Alert::warning)")
-            }
-            Severity::Error => {
-                super::own_icons("its severity's icon, CircleX (alert.rs, Alert::error)")
-            }
-        },
+        )),
     )
 }
 
-/// A `Progress` bar at `value` percent, labelled `label` beside it, drawn
-/// while gpui's `reduce_motion` is as given.
-pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> WidgetInfo {
+/// A `Progress` bar at `value` percent, or loading where `value` is `None`,
+/// labelled `label` beside it, drawn while gpui's `reduce_motion` is as
+/// given.
+pub fn progress(t: &Theme, label: &str, value: Option<f32>, reduce_motion: bool) -> WidgetInfo {
     let info = WidgetInfo::new("Progress")
         .color(claim(
             "bar",
@@ -155,6 +157,14 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
             "gpui-component/progress/progress.rs:86",
         ))
         .not_themeable("animation", "not hardcoded upstream: the fill transitions over the theme's duration_normal and easing_move (progress/progress.rs, Progress). Theme::motion is a writable field (theme/mod.rs, MotionTokens) the connector leaves at its default, because native-theme models no motion -- our model's gap, not upstream's");
+    let Some(value) = value else {
+        return loading(
+            info,
+            reduce_motion,
+            "progress/progress.rs, Progress::render",
+        )
+        .instance("label", label.to_string());
+    };
     let info = if reduce_motion {
         info.instance("reduced motion", "on, so a change of value jumps to it, unanimated (gpui-base/motion.rs, transition_with_status)")
     } else {
@@ -164,22 +174,52 @@ pub fn progress(t: &Theme, label: &str, value: f32, reduce_motion: bool) -> Widg
         .instance("label", label.to_string())
 }
 
-/// A theme-drawn `widgets::ProgressBar` at `value` (spec §2.5 of
-/// docs/archive/todo_gpui-widgets-spec.md).
+/// A loading bar's motion, `source` the upstream code that runs it: the
+/// sweep, or under reduced motion the still fill.
+fn loading(info: WidgetInfo, reduce_motion: bool, source: &str) -> WidgetInfo {
+    let info = info
+        .variant("loading")
+        .instance("value", "none: indeterminate, so a screen reader is given no value (gpui-base/progress.rs, Progress::indeterminate)");
+    if reduce_motion {
+        info.instance("reduced motion", format!("on, so the fill stands still in the middle of the track, 0.325 of it in from either end ({source})"))
+    } else {
+        info.instance("motion", format!("the fill sweeps the track once a second, eased in and out ({source}, \"progress-loading\")"))
+    }
+}
+
+/// A theme-drawn `widgets::ProgressBar` at `value`, or loading where `value`
+/// is `None` (spec §2.5 of docs/archive/todo_gpui-widgets-spec.md), drawn
+/// while gpui's `reduce_motion` is as given.
 #[cfg(feature = "widgets")]
-pub fn native_progress(r: &ResolvedTheme, label: &str, value: f32) -> WidgetInfo {
+pub fn native_progress(
+    r: &ResolvedTheme,
+    label: &str,
+    value: Option<f32>,
+    reduce_motion: bool,
+) -> WidgetInfo {
     let p = &r.progress_bar;
-    WidgetInfo::new("ProgressBar")
+    let info = WidgetInfo::new("ProgressBar")
         .config("drawn by", "native_theme_gpui::widgets::ProgressBar, on gpui-base's headless Progress, every part from the theme (docs/archive/todo_gpui-widgets-spec.md)")
-        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:49"))
-        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:48"))
-        .color(claim("frame", "border", stated(p.border.color), "native-theme-gpui/widgets/progress.rs:47"))
+        .color(claim("fill", "fill_color", stated(p.fill_color), "native-theme-gpui/widgets/progress.rs:79"))
+        .color(claim("track", "track_color", stated(p.track_color), "native-theme-gpui/widgets/progress.rs:78"))
+        .colors(edge_claim("frame", "border", Some(p.border.color), Some(p.border.line_width), "native-theme-gpui/widgets/progress.rs:77"))
         .config("height", format!("progress_bar.track_height: {}px, the frame inside it", p.track_height))
         .config("minimum width", format!("progress_bar.min_width: {}px", p.min_width))
-        .config("frame", format!("progress_bar.border: {}px, radius {}px (whether a platform draws the frame is open, OPEN O4)", p.border.line_width, p.border.corner_radius))
-        .not_themeable("animation", "gpui-component's eased transition to a new value (progress/progress.rs, Progress): native-theme models no motion")
-        .instance("value", format!("{value}%"))
-        .instance("label", label.to_string())
+        .config("frame", if p.border.line_width > 0.0 {
+            format!("progress_bar.border: {}px, radius {}px, drawn over the track and the fill (native-theme-gpui widgets/progress.rs, ProgressBarLook)", px_text(p.border.line_width), px_text(p.border.corner_radius))
+        } else {
+            format!("none: progress_bar.border.line_width is 0; the track and the fill are still rounded by its corner_radius, {}px", px_text(p.border.corner_radius))
+        })
+        .not_themeable("animation", "gpui-component's eased transition to a new value, and a loading bar's sweep (progress/progress.rs, Progress): native-theme models no motion");
+    let info = match value {
+        Some(value) => info.instance("value", format!("{value}%")),
+        None => loading(
+            info,
+            reduce_motion,
+            "native-theme-gpui widgets/progress.rs, after gpui-component's progress/progress.rs",
+        ),
+    };
+    info.instance("label", label.to_string())
 }
 
 /// A theme-drawn `widgets::Spinner` (spec §2.6) of `kind`, drawn while
@@ -223,10 +263,21 @@ pub fn native_spinner(
                 "indicator",
                 "fill_color",
                 stated(s.fill_color),
-                "native-theme-gpui/widgets/spinner.rs:415",
+                "native-theme-gpui/widgets/spinner.rs:465",
             ))
+        } else if icons.spins {
+            // An SVG element draws the icon's alpha mask in its text colour
+            // (gpui-pre 0.3.9 src/svg_renderer.rs:241-250,
+            // src/window.rs:5007, :5032), the only element gpui turns.
+            info.color(claim(
+                "indicator",
+                "text_color",
+                stated(r.defaults.text_color),
+                "native-theme-gpui/widgets/spinner.rs:466",
+            ))
+            .not_themeable("icon pixels", "the icon theme's one indicator icon, turned: gpui turns an SVG element but not an image (an image's sprite carries no transformation, gpui-pre/scene.rs, PolychromeSprite), and an SVG element is drawn as a mask in one colour, so the icon's own colours are lost")
         } else {
-            info.config("colour", "the icon's own colours; a currentColor it sets no colour for is defaults.text_color")
+            info.config("colour", "the icon theme's own colours, its frames drawn as images; a currentColor it sets no colour for is defaults.text_color (native-theme/icons.rs, fill_current_color)")
         };
         return info
             .not_themeable("motion", "the indicator's own frames or turn (native-theme's AnimatedIcon); native-theme models no motion")
@@ -237,9 +288,9 @@ pub fn native_spinner(
             });
     }
     info.config("drawn by", "native_theme_gpui::widgets::Spinner: an arc, as the icon set has no loading indicator, on gpui-base's headless Progress")
-        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:89"))
+        .color(claim("arc", "fill_color", stated(s.fill_color), "native-theme-gpui/widgets/spinner.rs:93"))
         .config("stroke", format!("spinner.stroke_width: {}px", s.stroke_width))
-        .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/src/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
+        .not_themeable("motion", "a 240° arc, the widest egui's Spinner draws (egui/widgets/spinner.rs:49), turning a turn a second; native-theme models no motion")
         .instance("animation", if reduce_motion {
             "none: reduced motion is on, so the arc stands still"
         } else {
@@ -259,7 +310,7 @@ pub fn progress_circle(
 ) -> WidgetInfo {
     let info = WidgetInfo::new("ProgressCircle").variant(kind.name());
     // Under reduced motion an indeterminate circle holds its loop's start,
-    // where both ends are at 0 (progress_circle.rs:183-187), and an arc of
+    // where both ends are at 0 (progress_circle.rs:186-190), and an arc of
     // no length is not painted (:108): only the track shows.
     let arc_drawn = kind != CircleKind::Indeterminate || !reduce_motion;
     let info = if arc_drawn {
@@ -267,7 +318,7 @@ pub fn progress_circle(
             "arc",
             "progress_bar",
             t.progress_bar,
-            "gpui-component/progress/progress_circle.rs:158",
+            "gpui-component/progress/progress_circle.rs:161",
         ))
     } else {
         info
@@ -276,7 +327,7 @@ pub fn progress_circle(
         "track, progress_bar at 20% (progress/progress_circle.rs:103)",
         "progress_bar",
         t.progress_bar.opacity(0.2),
-        "gpui-component/progress/progress_circle.rs:158",
+        "gpui-component/progress/progress_circle.rs:161",
     ));
     let determinate_size = "size_2 to size_5 per Size, rems, so it follows the platform font; the model carries no circular-progress diameter";
     let info = match kind {
@@ -320,7 +371,7 @@ pub fn spinner(
         .variant(kind.name())
         .not_themeable(
             "own icons",
-            super::own_icons("Loader, the icon it turns (spinner.rs, Spinner::new)"),
+            super::own_icons("Loader, the icon it turns (gpui-component/spinner.rs, Spinner::new)"),
         );
     let info = match native {
         Some(r) => info.color(claim(
@@ -343,13 +394,13 @@ pub fn spinner(
         SpinnerKind::Small => info.instance("size", "Small via the Size enum: size_3p5, a rem (icon.rs, Icon::into_svg)"),
         SpinnerKind::Large => info.instance("size", "Large via the Size enum: size_6, a rem (icon.rs, Icon::into_svg)"),
         SpinnerKind::Medium if styled => info,
-        SpinnerKind::Medium => info.instance("size", "Medium, upstream's default (spinner.rs, Spinner::new): size_4, a rem (icon.rs, Icon::into_svg)"),
+        SpinnerKind::Medium => info.instance("size", "Medium, upstream's default (gpui-component/spinner.rs, Spinner::new): size_4, a rem (icon.rs, Icon::into_svg)"),
     };
-    info.not_themeable("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (spinner.rs, Spinner) -- nothing to write, upstream or here")
+    info.not_themeable("animation speed", "a 0.8s private field with no setter, and not one of the theme's motion tokens (gpui-component/spinner.rs, Spinner) -- nothing to write, upstream or here")
         .instance("animation", if reduce_motion {
-            "none: reduced motion is on, so the Loader icon stands still at its start angle and no frames are drawn for it (spinner.rs, Spinner::render; gpui-pre/elements/animation.rs, AnimationExt)"
+            "none: reduced motion is on, so the Loader icon stands still at its start angle and no frames are drawn for it (gpui-component/spinner.rs, Spinner::render; gpui-pre/elements/animation.rs, AnimationExt)"
         } else {
-            "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (spinner.rs, Spinner::render)"
+            "the Loader icon turns a full circle every 0.8s; only its angle moves, its colour holds (gpui-component/spinner.rs, Spinner::render)"
         })
 }
 
@@ -435,7 +486,7 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
         )),
     };
     let info = info
-        .not_themeable("highlight", "the text colour mixed with background (light) or foreground (dark) -- or with the other one where the text's lightness is within 0.1 of it, as the Default and Reverse kinds' foreground text is in a dark theme -- at 75%/60% peak (shimmer.rs:14, :448-454, shimmer_highlight_color)")
+        .not_themeable("highlight", "the text colour mixed with background (light) or foreground (dark) -- or with the other one where the text's lightness is within 0.1 of it, as the Default and Reverse kinds' foreground text is in a dark theme -- at 75%/60% peak (gpui-component/shimmer.rs:14, MIN_HIGHLIGHT_LIGHTNESS_GAP; :448-454, MIN_HIGHLIGHT_LIGHTNESS_GAP, in shimmer_highlight_color)")
         .not_themeable("reduced motion", "gpui's App::reduce_motion: the text renders once, unanimated (shimmer.rs, ShimmerText::render)")
         .not_themeable("sweep", "2s by default, a literal rather than a motion token (shimmer.rs, ShimmerStyle)")
         .instance("animation", if reduce_motion {
@@ -451,16 +502,29 @@ pub fn shimmer_text(t: &Theme, kind: ShimmerKind, text: &str, reduce_motion: boo
     info.instance("text", text.to_string())
 }
 
-/// The `Empty` state, its media `icon` of the chosen icon theme at
-/// `geometry::icon_size_large` where a native theme is installed, whose line
-/// is recorded where `demo::empty` applies it.
-pub fn empty(t: &Theme, title: &str, description: &str, icon: &SampleIcon) -> WidgetInfo {
-    let media_frame = if icon.shown() {
-        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, which is defaults.icon_sizes.large: 32px, or 48px on KDE, so the icon outgrows the frame wherever 2rem is smaller"
-    } else {
-        "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). It is empty: the chosen icon theme has no icon for it"
+/// The `Empty` state, its media `icon` of the chosen icon theme at `large`
+/// where a native theme is installed -- `geometry::icon_size_large`, whose
+/// line is recorded where `demo::empty` applies it -- and at upstream's size
+/// where none is (`large` is `None`).
+pub fn empty(
+    t: &Theme,
+    title: &str,
+    description: &str,
+    icon: &SampleIcon,
+    large: Option<Size>,
+) -> WidgetInfo {
+    let media_frame = match (icon.shown(), large) {
+        (true, Some(_)) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). Nothing sizes it to the icon inside, so the icon outgrows the frame wherever 2rem is less than defaults.icon_sizes.large"
+        }
+        (true, None) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia)"
+        }
+        (false, _) => {
+            "2rem square -- the platform's font, not a literal -- and settable: EmptyMedia applies the caller's refinement last (empty.rs, EmptyMedia). It is empty: the chosen icon theme has no icon for it"
+        }
     };
-    WidgetInfo::new("Empty")
+    let info = WidgetInfo::new("Empty")
         .color(claim(
             "media bg",
             "muted",
@@ -495,7 +559,22 @@ pub fn empty(t: &Theme, title: &str, description: &str, icon: &SampleIcon) -> Wi
         .instance("media icon", icon.note("the media frame is empty"))
         .instance("title", title.to_string())
         .instance("description", description.to_string())
-        .instance("action", "the Refresh Button, which reports itself")
+        .instance("action", "the Refresh Button, which reports itself");
+    match (icon.shown(), large) {
+        (true, Some(Size::Size(large))) => info.config(
+            "icon size",
+            format!("defaults.icon_sizes.large, {}px, through geometry::icon_size_large", px_text(large.as_f32())),
+        ),
+        (true, Some(size)) => info.config(
+            "icon size",
+            format!("defaults.icon_sizes.large through geometry::icon_size_large, which gives gpui-component's {} size", super::buttons::size_name(size)),
+        ),
+        (true, None) => info.config(
+            "icon size",
+            format!("upstream's size, one rem: the media frame's text_base, {}px at this font_size, which the icon takes where it is given no size of its own (empty.rs, EmptyMedia), as no native theme is installed", px_text(t.font_size.as_f32())),
+        ),
+        (false, _) => info,
+    }
 }
 
 /// A `Tag` of `kind`, `outline` or not, reading `label`.
@@ -596,17 +675,11 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre window.rs:4553-4560 for fills and edges, :4697 and
-    // :4746 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre/window.rs:4687-4694 for fills and edges, :4831 and
+    // :4880 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
-        .map(|c| {
-            format!(
-                "{} {}",
-                c.role,
-                hsla_to_hex(c.value.opacity(TAG_HOVER_OPACITY))
-            )
-        })
+        .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
         .collect();
     painted
         .into_iter()
@@ -627,8 +700,16 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
 /// A `Badge` showing `count`, or a dot where it is `None`, on a Default
 /// Button reading `label`, which reports
 /// through the Badge. The Button's `geometry::button` line is recorded where
-/// `demo::badge` applies it.
-pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
+/// `demo::badge` applies it. Its count stands `overhang` past the Button's
+/// right edge, and `next`, where another Badge follows, is the gap after it,
+/// `layout.widget_gap`.
+pub fn badge(
+    t: &Theme,
+    count: Option<usize>,
+    label: &str,
+    overhang: Pixels,
+    next: Option<Option<Pixels>>,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Badge");
     let info = match count {
         Some(count) => info
@@ -644,7 +725,42 @@ pub fn badge(t: &Theme, count: Option<usize>, label: &str) -> WidgetInfo {
             .not_themeable("size", "a 6px literal at every Size, on a pill no caller can reach: Badge applies its refinement to the wrapper around the badged element, and the pill is an absolute child built after it (badge.rs, Badge::render). native-theme states no badge widget either"),
     };
     info.not_themeable("fill, overridden", "Badge::color replaces it; red is only the default")
+        // The overhang's text is written in the call, so the prose gate
+        // holds its citation to upstream's lines.
+        .instance(
+            "next badge",
+            next_badge(
+                overhang,
+                next,
+                if overhang > px(0.) {
+                    format!(
+                        "the {}px its count stands past the Button's right edge, BADGE_COUNT_OVERHANG a character (gpui-component/badge.rs:137-141, Size::Medium)",
+                        px_text(overhang.as_f32())
+                    )
+                } else {
+                    "no overhang: its dot stands inside the Button (badge.rs, Badge::render)".to_string()
+                },
+            ),
+        )
         .instance("badged element", format!("a Default Button reading {label}. The Badge is exactly as large as the Button -- its pill is an absolute child -- so the Button reports through the Badge (badge.rs, Badge::render). Its own colours are a Default Button's, which the Buttons page's Default Button states"))
+}
+
+/// The space a Badge keeps after it: `next` (`layout.widget_gap`) from its
+/// count to the next Badge, where one follows, and the `overhang` the count
+/// stands past the Button's right edge, which `count` says.
+fn next_badge(overhang: Pixels, next: Option<Option<Pixels>>, count: String) -> String {
+    match next {
+        Some(Some(gap)) => format!(
+            "{}px after the Button: layout.widget_gap, {}px, from the count to the next Badge, as the controls of a row are apart, and {count}",
+            px_text(gap.as_f32() + overhang.as_f32()),
+            px_text(gap.as_f32()),
+        ),
+        Some(None) => format!(
+            "{}px after the Button, {count}: layout.widget_gap is unstated, so nothing parts the count from the next Badge",
+            px_text(overhang.as_f32()),
+        ),
+        None => "none: the last Badge of its row".to_string(),
+    }
 }
 
 /// A `Marker` of `kind` reading `text`. A Plain one shows `plain_icon`, of
@@ -695,7 +811,7 @@ pub fn marker(
         MarkerKind::Spinner => info
             .not_themeable(
                 "own icons",
-                super::own_icons("the Loader of the Spinner it adds (spinner.rs, Spinner::new)"),
+                super::own_icons("the Loader of the Spinner it adds (gpui-component/spinner.rs, Spinner::new)"),
             )
             .color(claim(
                 "spinner, the row's text colour",
@@ -706,7 +822,7 @@ pub fn marker(
             .instance("spinner", if reduce_motion {
                 "added by the Marker itself, loading with no icon slot: an XSmall Spinner, standing still at its start angle while reduced motion is on (marker.rs, Marker::render; gpui-pre/elements/animation.rs, AnimationExt)"
             } else {
-                "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; spinner.rs, Spinner)"
+                "added by the Marker itself, loading with no icon slot: an XSmall Spinner turning every 0.8s, a literal; only its angle moves (marker.rs, Marker::render; gpui-component/spinner.rs, Spinner)"
             }),
         MarkerKind::Shimmer if reduce_motion => info
             .not_themeable("shimmer", "none while reduced motion is on: the content slot falls back to plain text (marker.rs, MarkerContent::render)")
@@ -724,8 +840,19 @@ pub fn marker(
 /// page, where nothing of the showcase can wrap it. `built` is whether the
 /// application built the tooltip itself; `styled` is whether it is refined
 /// by `geometry::tooltip`, whose lines are recorded where
-/// `demo::built_tooltip_button` applies it.
-pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) -> WidgetInfo {
+/// `demo::built_tooltip_button` applies it; `delay` is the theme's
+/// `tooltip.show_delay_ms`, which the showcase gives a built tooltip's
+/// element, and `defaults` the application-wide `TooltipDefaults` a
+/// `Button::tooltip` waits, where `apply` installed that delay.
+pub fn tooltip(
+    t: &Theme,
+    built: bool,
+    styled: bool,
+    delay: Option<Duration>,
+    defaults: TooltipDefaults,
+    label: &str,
+    text: &str,
+) -> WidgetInfo {
     let info = WidgetInfo::new("Tooltip")
         .variant(if built {
             "built by the application"
@@ -746,12 +873,24 @@ pub fn tooltip(t: &Theme, built: bool, styled: bool, label: &str, text: &str) ->
     } else {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
+    let info = match (built, delay) {
+        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1708)", delay.as_millis())),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (false, _) => info,
+    };
     let info = if built {
-        info.not_themeable("delay", "gpui's own tooltip, set on an element rather than through Button::tooltip, so it takes tooltip_show_delay (gpui-pre/elements/div.rs, tooltip_show_delay), which the showcase does not set. native-theme states no hover delay, though the platforms do -- our model's gap")
-            .not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
+        info.not_themeable("position", "gpui's own sits a pixel off the pointer (gpui-pre/window.rs, prepaint_tooltip)")
             .instance("why built", "Button::tooltip takes a string and builds the tooltip itself (button/button.rs, Button::tooltip), so the only way to a refined one is to build it with Tooltip::element: the one place the platform's tooltip padding, radius and text colour reach the popup. The width is the content element's: on the popup it would clamp the popup and not the text, which then runs out of it")
     } else {
-        info.not_themeable("delay", "500ms, and fixed for a Button's tooltip: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), whose SHOW_DELAY is a module const (gpui-base/tooltip.rs, SHOW_DELAY). native-theme states no hover delay, though the platforms do -- our model's gap")
+        let (show, grace) = (
+            defaults.show_delay().as_millis(),
+            defaults.grace_period().as_millis(),
+        );
+        let info = match delay {
+            Some(_) => info.config("delay", format!("tooltip.show_delay_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 422)")),
+            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 422). The theme states no tooltip.show_delay_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
+        };
+        info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")
     };
     info.instance(
@@ -772,13 +911,13 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip bg",
             "popover",
             t.popover,
-            "gpui-component/tooltip.rs:114",
+            "gpui-component/tooltip.rs:119",
         ),
         claim(
             "tooltip border",
             "border",
             t.border,
-            "gpui-component/tooltip.rs:118",
+            "gpui-component/tooltip.rs:123",
         ),
     ];
     if text {
@@ -786,7 +925,7 @@ pub(super) fn tooltip_colours(t: &Theme, text: bool) -> Vec<ColorClaim> {
             "tooltip text",
             "popover_foreground",
             t.popover_foreground,
-            "gpui-component/tooltip.rs:115",
+            "gpui-component/tooltip.rs:120",
         ));
     }
     claims
@@ -820,20 +959,10 @@ pub fn notification(t: &Theme, severity: Severity, label: &str, message: &str) -
             "gpui-component/notification.rs:52",
         ),
     };
-    let own = match severity {
-        Severity::Info => super::own_icons(
-            "its kind's icon, Info (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Success => super::own_icons(
-            "its kind's icon, CircleCheck (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Warning => super::own_icons(
-            "its kind's icon, TriangleAlert (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-        Severity::Error => super::own_icons(
-            "its kind's icon, CircleX (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
-        ),
-    };
+    let own = super::own_icons(&format!(
+        "its kind's icon, {} (notification.rs, NotificationType::icon), and Close on the close button it shows under the pointer (notification.rs, Notification)",
+        severity.upstream_icon()
+    ));
     WidgetInfo::new("Notification")
         .variant(severity.name())
         .not_themeable("own icons", own)

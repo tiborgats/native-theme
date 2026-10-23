@@ -55,7 +55,7 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
             .color(claim("icon", "foreground", opaque(fg), "showcase"))
             .not_themeable(
                 "icon pixels",
-                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                "the set's own SVG, bundled with native-theme, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
             )
             .instance(
                 "size",
@@ -96,6 +96,25 @@ fn drawn(info: WidgetInfo, t: &Theme, set: &str, drawn: IconDrawn, fg: Hsla) -> 
     )
 }
 
+/// The space between the cells of the Icons page's icon grids, which is
+/// `ICON_GRID_GAP`.
+fn grid_gap(t: &Theme) -> String {
+    format!(
+        "{} between the cells, ICON_GRID_GAP, the showcase's own choice rather than a platform's: the theme states no icon grid, and the cells are a gallery's, not a row of widgets for layout.widget_gap to space (spec §3.1)",
+        super::rems_text(crate::pages::ICON_GRID_GAP, t)
+    )
+}
+
+/// The padding of an Icons page gallery cell and the space between its icon
+/// and its name, which are `ICON_CELL_PADDING` and `ICON_CELL_GAP`.
+fn cell_spacing(t: &Theme) -> String {
+    format!(
+        "{} round the cell, ICON_CELL_PADDING, and {} between its icon and its name, ICON_CELL_GAP: the showcase's own choices rather than a platform's, as the theme states no icon grid, and a cell is a gallery's, not a widget (spec §3.1)",
+        super::rems_text(crate::demo::ICON_CELL_PADDING, t),
+        super::rems_text(crate::demo::ICON_CELL_GAP, t)
+    )
+}
+
 /// A cell of the Native Theme Icons grid: native-theme's icon for `role` in
 /// `set`, which calls it `name` where the showcase knows the name. Where
 /// the set is gpui-component's own (`builtin`), `name` is the asset of the
@@ -113,8 +132,10 @@ pub fn role_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid",
         )
+        .not_themeable("cell spacing", cell_spacing(t))
+        .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (builtin, name) {
         (true, Some(name)) => info.instance(
@@ -147,8 +168,10 @@ pub fn gpui_icon(
     let info = drawn(name_label(info, t), t, set, icon, fg)
         .not_themeable(
             "geometry",
-            "none: no geometry:: builder applies to an icon grid. The cell padding and the gap are the showcase's own layout",
+            "none: no geometry:: builder applies to an icon grid",
         )
+        .not_themeable("cell spacing", cell_spacing(t))
+        .not_themeable("grid gap", grid_gap(t))
         .instance("icon theme", set.to_string());
     match (icon, role) {
         (IconDrawn::Builtin, _) => info.instance(
@@ -157,11 +180,11 @@ pub fn gpui_icon(
         ),
         (_, Some(role)) => info.instance(
             "lookup",
-            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for the name the connector gives the icon there instead, never another theme (showcase-gpui/support.rs, load_gpui_icons)"),
+            format!("by IconRole::{role}, the role the showcase maps the name to (showcase-gpui/support.rs, role_for_gpui_icon); a freedesktop theme without an icon for the role is asked for each name the connector gives the icon (native-theme-gpui/icons.rs, freedesktop_name_candidates) instead, in that theme only, never another (showcase-gpui/support.rs, load_gpui_icons)"),
         ),
         (_, None) => info.instance(
             "lookup",
-            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there (showcase-gpui/support.rs, load_gpui_icons)",
+            "by name: no IconRole maps to it, so the showcase asks the set for the name the connector gives it there; a freedesktop theme for each of the icon's names in turn, in that theme only (native-theme-gpui/icons.rs, freedesktop_name_candidates; showcase-gpui/support.rs, load_gpui_icons)",
         ),
     }
 }
@@ -185,12 +208,12 @@ pub fn animated_icon(
                 info.color(claim("frames", "foreground", opaque(fg), "showcase"))
                     .not_themeable(
                         "frame pixels",
-                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black (native-theme-gpui/icons.rs, colorize_svg)",
+                        "the set's own spinner icon, bundled with native-theme and turned a step further in each frame, recoloured by the showcase with foreground, opaque: the connector writes the colour over the SVG's currentColor or black with native-theme's colouriser (native-theme/icons.rs, colorize_monochrome_svg)",
                     )
             } else {
                 info.not_themeable(
                     "frame pixels",
-                    "the icon theme's own indicator artwork, recoloured with foreground only where it is drawn in currentColor or black (native-theme-gpui/icons.rs, colorize_svg); a multi-colour sprite keeps its colours",
+                    "the icon theme's own indicator artwork, its currentColor drawn in foreground only where the artwork sets no colour of its own, so a colour its stylesheet sets (Breeze's .ColorScheme-Text) and a multi-colour sprite stay as drawn (native-theme/icons.rs, fill_current_color)",
                 )
             };
             info.instance("frames", format!("{count}, {duration_ms}ms each"))
@@ -206,7 +229,7 @@ pub fn animated_icon(
         AnimatedKind::Spin { duration_ms } => info
             .variant(format!("{set}, spin"))
             // An SVG element paints every shape in its text colour
-            // (gpui-pre elements/svg.rs, Svg::paint), which the showcase
+            // (gpui-pre/elements/svg.rs, Svg::paint), which the showcase
             // sets to foreground.
             .color(claim("icon", "foreground", t.foreground, "showcase"))
             .not_themeable(
@@ -231,6 +254,14 @@ pub fn animated_icon(
         .not_themeable(
             "geometry",
             "none: each card takes the showcase's own frame, which reads Theme::border, Theme::radius and the platform's defaults.border.line_width (showcase-gpui/support.rs, demo_frame)",
+        )
+        .not_themeable(
+            "card spacing",
+            format!(
+                "{} round the card's content, ANIMATED_CARD_PADDING, and {} between its icon and its label, ANIMATED_CARD_GAP: the showcase's own choices rather than a platform's, as the theme states no such card (spec §3.1)",
+                super::rems_text(crate::demo::ANIMATED_CARD_PADDING, t),
+                super::rems_text(crate::demo::ANIMATED_CARD_GAP, t)
+            ),
         );
     info.instance(
         "size",
@@ -274,11 +305,12 @@ enum FactsPlatform {
 }
 
 impl FactsPlatform {
-    /// The platform of the native preset `preset`, full or `-live`; `None`
-    /// for any other theme.
+    /// The platform of the native preset `preset`; `None` for any other
+    /// theme.
     fn of_preset(preset: &str) -> Option<Self> {
-        match preset.strip_suffix("-live").unwrap_or(preset) {
-            "macos-sonoma" => Some(Self::MacOs),
+        match preset {
+            "macos-monterey" => Some(Self::MacOs),
+            "macos-tahoe" => Some(Self::MacOs),
             "windows-11" => Some(Self::Windows),
             "kde-breeze" => Some(Self::Kde),
             "adwaita" => Some(Self::Gnome),
@@ -298,7 +330,7 @@ impl FactsPlatform {
     /// Whether platform-facts §2.1.8 documents a size for `context` on this
     /// platform: its (none) cells are macOS's large, dialog and panel,
     /// Windows's dialog and panel, and GNOME's dialog and panel
-    /// (platform-facts.md:1132-1136).
+    /// (platform-facts.md:1136-1140).
     fn documents(self, context: IconSizeContext) -> bool {
         !matches!(
             (self, context),
@@ -369,7 +401,8 @@ pub fn icon_size(
             },
         ),
     };
-    info.instance("field", field)
+    info.not_themeable("cell spacing", cell_spacing(t))
+        .instance("field", field)
         .instance("context", icon_size_context(context))
         .instance(
             "unstated",

@@ -1,5 +1,48 @@
+# cargo audit's configuration, read by `cargo audit` in CI and by
+# scripts/check_release.sh's security audit.
+#
+# Every advisory fails the audit, the informational ones (unmaintained,
+# unsound, yanked) too. An advisory that the lockfile cannot leave, because
+# no release a dependent accepts fixes it, passes only through an entry below
+# that says why; remove the entry when the dependency moves.
+
 [advisories]
 ignore = [
-    # rustls-webpki CRL matching bug — transitive dep from gpui, awaiting upstream fix
-    "RUSTSEC-2026-0049",
+    # instant 0.1.13, unmaintained, no patched release; reached through
+    # gpui-base and gpui-component 0.8.0 (native-theme-gpui's GPUI Kit).
+    "RUSTSEC-2024-0384",
+    # paste 1.0.15, unmaintained, no patched release; reached through
+    # gpui-component 0.8.0, metal 0.33.0 and pulp 0.22.3 (native-theme-gpui).
+    "RUSTSEC-2024-0436",
+    # rustls-pemfile 2.2.0, unmaintained, no patched release; reached through
+    # gpui-pre-reqwest 0.12.15, which gpui-kit-assets 0.8.0 (native-theme-gpui's
+    # GPUI Kit) depends on only under `cfg(target_family = "wasm")`, so no
+    # target the workspace builds compiles it.
+    "RUSTSEC-2025-0134",
+    # rustybuzz 0.20.1, unmaintained, no patched release; reached through
+    # usvg 0.45.1 and 0.46.0 (native-theme-gpui's resvg).
+    "RUSTSEC-2026-0206",
+    # ttf-parser 0.25.1, unmaintained, no patched release; reached through
+    # gpui-pre 0.3.9, rustybuzz 0.20.1 and fontdb 0.23.0. fontdb 0.24.0 no
+    # longer depends on it, but cosmic-text 0.15 and 0.19 (iced's and GPUI's
+    # text stacks) require fontdb 0.23, and native-theme stays on 0.23 by its
+    # own choice (native-theme/Cargo.toml, `fontdb`) to share their copy.
+    "RUSTSEC-2026-0192",
+    # lru 0.16.4, unsound (`LruCache::pop`), patched in 0.18.2; reached only
+    # through cryoglyph 0.1.0 (iced_wgpu 0.14.0, a dev-dependency path of
+    # native-theme-iced), which requires lru 0.16, so no fix is reachable.
+    "RUSTSEC-2026-0253",
+    # zvariant 5.15.0, zvariant_derive 5.15.0 and zbus_names 4.3.4,
+    # unmaintained since zbus 6.0.0 (2026-10-16) merged them in, no patched
+    # release; reached through zbus 5.19.0, which native-theme's `portal` and
+    # `watch` features need for ashpd 0.13.13 (the latest; it requires zbus
+    # ^5.13), and which accesskit_unix, atspi and oo7 (the connectors' winit
+    # and GPUI stacks) depend on too.
+    "RUSTSEC-2026-0370",
+    "RUSTSEC-2026-0371",
+    "RUSTSEC-2026-0372",
 ]
+
+[output]
+deny = ["warnings"]
+quiet = false

@@ -19,7 +19,7 @@ use objc2_foundation::NSString;
 use std::ffi::c_void;
 use std::ptr;
 
-/// Default icon size in pixels (suitable for toolbar/menu icons).
+/// Default icon size in points (suitable for toolbar/menu icons).
 const DEFAULT_ICON_SIZE: u32 = 24;
 
 /// Load an SF Symbol image by name with the given point size.
@@ -30,6 +30,8 @@ const DEFAULT_ICON_SIZE: u32 = 24;
 fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
     let ns_name = NSString::from_str(name);
     let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
+    // SAFETY: reading `NSFontWeightRegular` is an FFI read of an AppKit `extern`
+    // constant (a CGFloat, valid for the process's lifetime).
     let weight = unsafe { NSFontWeightRegular };
     let config = NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(
         point_size,
@@ -44,24 +46,29 @@ fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
 /// Uses a null rect to let AppKit choose the best representation,
 /// which on Retina displays will be at the full pixel resolution.
 fn extract_cgimage(image: &NSImage) -> Option<Retained<CGImage>> {
+    // SAFETY: a null `proposed_dest_rect` is allowed by the binding's contract
+    // ("a valid pointer or null"), no graphics context and no hints are passed (the
+    // `hints` type is moot for None), and a NULL result is mapped to None.
     unsafe { image.CGImageForProposedRect_context_hints(ptr::null_mut(), None, None) }
 }
 
 /// Rasterize a CGImage to an RGBA pixel buffer using CGBitmapContext.
 ///
 /// Creates a bitmap context with PremultipliedLast alpha format,
-/// draws the image into it, and returns the raw RGBA pixel buffer.
+/// draws the image into it, and returns the raw RGBA pixel buffer. `None`
+/// for a side of 0 or a raster over the decode bound
+/// ([`raster_bytes_in_bound`](crate::icons::raster_bytes_in_bound)).
 fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
-    if width == 0 || height == 0 {
-        return None;
-    }
+    let buf_size = crate::icons::raster_bytes_in_bound(width, height)?;
     let color_space = CGColorSpace::new_device_rgb()?;
-    let bytes_per_row = (width as usize) * 4;
-    let buf_size = bytes_per_row * (height as usize);
+    let bytes_per_row = usize::try_from(width).ok()?.checked_mul(4)?;
     let mut buffer = vec![0u8; buf_size];
 
     let bitmap_info = CGImageAlphaInfo::PremultipliedLast.0;
 
+    // SAFETY: `buffer` holds `height` rows of `bytes_per_row` bytes, the
+    // layout the context is created with, and outlives the context, which
+    // is dropped at the end of this function.
     let context = unsafe {
         CGBitmapContextCreate(
             buffer.as_mut_ptr() as *mut c_void,
@@ -92,31 +99,39 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// the built-in [`IconRole`](crate::IconRole) mappings. Use this when you know the
 /// exact SF Symbol name (e.g., from a custom icon mapping).
 ///
-/// The symbol is a monochrome template: with `fg_color` its pixels take that
-/// colour and keep their alpha; without it they are left as drawn.
+/// The symbol is configured at `size` points, [`DEFAULT_ICON_SIZE`] where
+/// it is `None`. It is a monochrome template: with `fg_color` its pixels
+/// take that colour and keep their alpha; without it they are left as drawn.
 ///
-/// Returns `None` if the symbol name doesn't exist on this macOS version.
+/// Returns `None` if the symbol name doesn't exist on this macOS version,
+/// or if `size` is 0 or its `size² × 4` bytes exceed the decode bound
+/// ([`raster_size_in_bound`](crate::icons::raster_size_in_bound)), or if
+/// the image AppKit draws for it does, counted in pixels (twice the points
+/// on a 2× display).
 ///
 /// # Examples
 ///
 /// ```ignore
-/// let icon = load_sf_icon_by_name("arrow.right", None);
+/// let icon = load_sf_icon_by_name("arrow.right", None, None);
 /// ```
 #[must_use]
-pub(crate) fn load_sf_icon_by_name(name: &str, fg_color: Option<[u8; 3]>) -> Option<IconData> {
-    let size = DEFAULT_ICON_SIZE;
-    let image = load_symbol(name, size as f64)?;
+pub(crate) fn load_sf_icon_by_name(
+    name: &str,
+    size: Option<u32>,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
+    let size = size.unwrap_or(DEFAULT_ICON_SIZE);
+    if !crate::icons::raster_size_in_bound(size) {
+        return None;
+    }
+    let image = load_symbol(name, f64::from(size))?;
     let cg_image = extract_cgimage(&image)?;
-    let w = CGImage::width(Some(&cg_image)) as u32;
-    let h = CGImage::height(Some(&cg_image)) as u32;
+    let w = u32::try_from(CGImage::width(Some(&cg_image))).ok()?;
+    let h = u32::try_from(CGImage::height(Some(&cg_image))).ok()?;
     let mut data = rasterize(&cg_image, w, h)?;
     crate::color::unpremultiply_alpha(&mut data);
     crate::color::tint_monochrome(&mut data, fg_color);
-    Some(IconData::Rgba {
-        width: w,
-        height: h,
-        data,
-    })
+    IconData::rgba(w, h, data)
 }
 
 #[cfg(test)]
@@ -128,7 +143,7 @@ mod tests {
     /// Load a role's icon the way `IconLoader::load` does: by the name
     /// `icon_name` gives it in the SF Symbols set.
     fn load_role(role: IconRole) -> Option<IconData> {
-        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?, None)
+        load_sf_icon_by_name(icon_name(role, IconSet::SfSymbols)?, None, None)
     }
 
     #[test]
@@ -170,15 +185,10 @@ mod tests {
     #[cfg(target_os = "macos")]
     #[test]
     fn rgba_dimensions_correct() {
-        if let Some(IconData::Rgba {
-            width,
-            height,
-            data,
-        }) = load_role(IconRole::ActionCopy)
-        {
+        if let Some(IconData::Rgba(rgba)) = load_role(IconRole::ActionCopy) {
             assert_eq!(
-                (width * height * 4) as usize,
-                data.len(),
+                (rgba.width() * rgba.height() * 4) as usize,
+                rgba.data().len(),
                 "RGBA buffer size must equal width * height * 4"
             );
         }
@@ -191,7 +201,7 @@ mod tests {
     #[test]
     fn load_sf_icon_by_name_returns_some() {
         // "doc.on.doc" is the SF Symbol for copy
-        let result = load_sf_icon_by_name("doc.on.doc", None);
+        let result = load_sf_icon_by_name("doc.on.doc", None, None);
         assert!(
             result.is_some(),
             "doc.on.doc should resolve to an SF Symbol"
@@ -200,8 +210,42 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
+    fn load_sf_icon_by_name_size_scales_the_raster() {
+        let small = load_sf_icon_by_name("doc.on.doc", Some(16), None);
+        let large = load_sf_icon_by_name("doc.on.doc", Some(64), None);
+        let (Some(IconData::Rgba(small)), Some(IconData::Rgba(large))) = (small, large) else {
+            panic!("doc.on.doc should load as RGBA at 16 and 64 points");
+        };
+        assert!(
+            large.height() > small.height(),
+            "64 pt ({}) should be taller than 16 pt ({})",
+            large.height(),
+            small.height()
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn load_sf_icon_by_name_size_out_of_bound_returns_none() {
+        assert!(load_sf_icon_by_name("doc.on.doc", Some(0), None).is_none());
+        assert!(load_sf_icon_by_name("doc.on.doc", Some(u32::MAX), None).is_none());
+    }
+
+    /// The bound is on the pixels drawn, not the points asked for.
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn rasterize_over_the_decode_bound_returns_none() {
+        let image = load_symbol("doc.on.doc", f64::from(DEFAULT_ICON_SIZE)).unwrap();
+        let cg_image = extract_cgimage(&image).unwrap();
+        assert!(rasterize(&cg_image, 8192, 2049).is_none());
+        assert!(rasterize(&cg_image, 0, 16).is_none());
+        assert!(rasterize(&cg_image, 16, 16).is_some());
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
     fn load_sf_icon_by_name_nonexistent_returns_none() {
-        let result = load_sf_icon_by_name("zzz.nonexistent.symbol", None);
+        let result = load_sf_icon_by_name("zzz.nonexistent.symbol", None, None);
         assert!(result.is_none(), "nonexistent symbol should return None");
     }
 }

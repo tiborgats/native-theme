@@ -1,12 +1,14 @@
 //! The Overlays page.
 
 use gpui::{Context, IntoElement, ParentElement, Styled, Window, prelude::*};
-use gpui_component::{IconName, Placement, WindowExt, h_flex, v_flex};
+use gpui_component::{IconName, Placement, WindowExt, h_flex};
 
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, Overlay, SheetSide};
+use crate::pages::page_root;
+use crate::support::with_gap;
 use crate::{
     OVERLAYS_DIALOG_TRIGGER, OVERLAYS_SHEET_BOTTOM, OVERLAYS_SHEET_BOTTOM_TITLE,
     OVERLAYS_SHEET_RIGHT, OVERLAYS_SHEET_RIGHT_TITLE, PROBE_ALERT_DIALOG, probe,
@@ -103,9 +105,7 @@ impl Showcase {
                 )
             });
         });
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             // Dialog
             .child(demo::heading(ui, cx, "overlays-heading-dialog", "Dialog"))
@@ -152,8 +152,7 @@ impl Showcase {
                 "Sheet (slide-in panel)",
             ))
             .child(
-                h_flex()
-                    .gap_3()
+                with_gap(h_flex(), widget_gap)
                     .child(demo::overlay_button(
                         ui,
                         cx,

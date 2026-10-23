@@ -20,7 +20,7 @@ pub(crate) fn show(
     let theme = ui.ctx().theme();
     let json = json.get(atlas, theme);
     // The page's heading, as the gpui Theme Map's "All ThemeColor Fields"
-    // (`showcase-gpui/pages/theme_map.rs:280-285`).
+    // (`showcase-gpui/pages/theme_map.rs:271-276`).
     caption(reg, ui, "All mapping.toml Rows");
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
     demo::contained(reg, ui, "verdict filter", |ui, reg| {
@@ -54,11 +54,15 @@ pub(crate) fn show(
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
     let t = atlas.resolved_for(theme);
-    let row_height = t.list.row_height;
-    // The header as the Data page's table has it: `list_header_font` in `list.header_font.color`
-    // (§10.4's Data row), not `RichText::strong`, which is the scope's active-state text colour
-    // (`egui/src/style.rs:1147-1149`).
-    let header_font = list_header_font(t, atlas.accessibility());
+    let (row_height, header_height) = super::data::table_heights(atlas, t);
+    // The header as the Data page's table has it: `list.header_font` at its weight
+    // (`demo::weighted_family`) and scaled size (`list_header_font`), in
+    // `list.header_font.color` (§10.4's Data row), not `RichText::strong`, which is the scope's
+    // active-state text colour (`egui/src/style.rs:1147-1149`).
+    let header_font = egui::FontId::new(
+        list_header_font(t, atlas.accessibility()).size,
+        demo::weighted_family(ui, t.list.header_font.weight, t.defaults.font.weight),
+    );
     let header_color = to_color32(t.list.header_font.color);
     demo::scoped_container(
         reg,
@@ -68,6 +72,7 @@ pub(crate) fn show(
         "theme map",
         |ui, list, reg| {
             let height = row_height.unwrap_or(ui.spacing().interact_size.y);
+            let header = header_height.unwrap_or(height);
             let out = ui.scope(|ui| {
                 egui_extras::TableBuilder::new(ui)
                     .striped(true)
@@ -75,7 +80,7 @@ pub(crate) fn show(
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::remainder())
-                    .header(height, |mut header| {
+                    .header(header, |mut header| {
                         for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
                             header.col(|ui| {
                                 list.add(reg, ui, "theme map header", |ui| {
@@ -92,7 +97,7 @@ pub(crate) fn show(
                         body.rows(height, rows.len(), |mut row| {
                             if let Some(r) = rows.get(row.index()) {
                                 // A colour value beside its swatch, as the gpui Theme Map shows
-                                // every colour (`showcase-gpui/demo.rs:7846-7867`).
+                                // every colour (`showcase-gpui/demo.rs:8449-8473`).
                                 let colour = crate::info::value_at(json, &r.leaf)
                                     .as_ref()
                                     .and_then(crate::info::swatch_colour);

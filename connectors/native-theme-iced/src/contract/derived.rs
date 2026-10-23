@@ -1,5 +1,6 @@
-//! The two declared-data tables that say what the rows do *not* claim: every
-//! emitted field iced fills for us, and the native values iced cannot take.
+//! The declared-data tables that say what the rows do *not* claim: every
+//! emitted field iced fills for us, the native values iced cannot take, and
+//! the colour leaves of the model no row reads.
 //!
 //! Test-only, like the rest of `contract`. Nothing here is logic beyond the
 //! one-line readers `UNREACHABLE` names its values with: the tests that read
@@ -8,21 +9,21 @@
 
 use super::*;
 
-/// How many of the 32 preset/mode combinations emit a substitute for the
+/// How many of the 34 preset/mode combinations emit a substitute for the
 /// platform's own label in `extended.secondary.base.text`, and which ones do
 /// not -- the two numbers the `extended.secondary.base.text` entry below
 /// quotes in prose.
 ///
 /// They live here, beside the sentence that cites them, so that a new preset
 /// moves the count and turns
-/// `readable_substitutes_the_secondary_label_on_every_combination_but_one`
+/// `readable_substitution_of_the_secondary_label_matches_the_declared_count`
 /// red instead of letting the sentence rot. The measurement is that test's,
 /// not a note of one made elsewhere.
-pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 31;
+pub(super) const SECONDARY_LABEL_SUBSTITUTED: usize = 34;
 
 /// The combinations that emit `defaults.text_color` exactly as the platform
-/// states it -- the exception the entry below names.
-pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &["ios/light"];
+/// states it -- none, as the entry below says.
+pub(super) const SECONDARY_LABEL_AS_STATED: &[&str] = &[];
 
 /// Every field the tripwire walks that no row claims, with the derivation that
 /// fills it instead. A field is in the rows or here, never both and never
@@ -42,10 +43,10 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
          (iced_core theme/palette.rs:440-445), and a label that is not \
          readable on that fill is lightened, darkened, or replaced by black or \
          white (palette.rs:692-720). So the emitted value is the platform's \
-         text colour only where it clears iced's contrast bar, and mostly it \
-         does not: over all 32 bundled preset/mode combinations, 31 emit a \
-         substitute of iced's own, ios light being the only one that does \
-         not. Those are SECONDARY_LABEL_SUBSTITUTED and \
+         text colour only where it clears iced's contrast bar, and it does \
+         not: over all 34 bundled preset/mode combinations, all 34 emit a \
+         substitute of iced's own and none emits the label as stated. \
+         Those are SECONDARY_LABEL_SUBSTITUTED and \
          SECONDARY_LABEL_AS_STATED above, counted again on every run by the \
          test named there rather than asserted here. Placeholder grey and \
          window text are close by construction, which is exactly the pair \
@@ -184,30 +185,6 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "styles::text_input.icon",
         "iced default: text_input::default(theme, status).icon -- the model \
          carries no input-icon color",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.background_border_width",
-        "iced default: toggler::default(theme, status).background_border_width \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.background_border_color",
-        "iced default: toggler::default(theme, status).background_border_color \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.foreground_border_width",
-        "iced default: toggler::default(theme, status).foreground_border_width \
-         -- SwitchTheme carries no border",
-    ),
-    #[cfg(feature = "widgets")]
-    (
-        "styles::toggler.foreground_border_color",
-        "iced default: toggler::default(theme, status).foreground_border_color \
-         -- SwitchTheme carries no border",
     ),
     #[cfg(feature = "widgets")]
     (
@@ -656,6 +633,80 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
         "iced default: button::Style::default().snap -- a renderer setting, \
          cfg!(feature = \"crisp\")",
     ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.text_color",
+        "iced default: container::Style::default().text_color -- ExpanderTheme \
+         states no label for the frame, and iced's None inherits the label \
+         color of whatever the expander sits in",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.background",
+        "iced default: container::Style::default().background, none -- \
+         ExpanderTheme states no fill for the frame",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::expander_frame.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.background",
+        "iced default: pane_grid::default(theme).hovered_region.background -- \
+         the highlight under a pane dragged over another; SplitterTheme states \
+         the split lines and no drop target",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.color",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.width",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.top_left",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.top_right",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.bottom_right",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::pane_grid.hovered_region.border.radius.bottom_left",
+        "iced default: pane_grid::default(theme).hovered_region.border -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_toggle.shadow",
+        "iced default: button::Style::default().shadow, through styles::button \
+         -- the model has a shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::button_toggle.snap",
+        "iced default: button::Style::default().snap, through styles::button \
+         -- a renderer setting, cfg!(feature = \"crisp\")",
+    ),
     #[cfg(feature = "iced_aw")]
     (
         "styles::aw::menu.bar_shadow",
@@ -830,11 +881,14 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// with its evidence.
 ///
 /// Not a way out of a row: an entry here says the toolkit cannot carry the
-/// value at all, so approximating it would state something untrue. The list
-/// holds values with no receiver anywhere in iced or `iced_aw`, which is
-/// narrower than what the `styles` doc comments call receiverless: those
-/// speak of one widget's `Style`, and several of their values are carried
-/// elsewhere or left to the consumer on purpose.
+/// value, so approximating it would state something untrue. The list holds
+/// values with no receiver anywhere in iced or `iced_aw`, which is narrower
+/// than what the `styles` doc comments call receiverless: those speak of one
+/// widget's `Style`, and several of their values are carried elsewhere or
+/// left to the consumer on purpose. A value carried for some combinations
+/// and not others is listed too, with the combinations iced does draw it
+/// for as its declared exceptions (`defaults.focus_ring_offset`: an inset
+/// ring is drawn, one outside or across the edge is not).
 ///
 /// - `menu.font.color` and `.hover_text_color` have no receiver in `iced_aw`'s
 ///   `menu_bar::Style`, but iced's own menu takes both: `styles::menu` emits
@@ -897,6 +951,38 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// `scrollbar.min_thumb_length` is listed for another reason: iced sizes the
 /// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
+    Unreachable {
+        field: "defaults.focus_ring_offset",
+        evidence: "a focused text field draws the theme's focus ring only where the \
+             ring is inset at its edge (`focus_ring_offset` is minus \
+             `focus_ring_width`), as its border: iced paints a quad's border \
+             inside the quad's bounds (iced_wgpu 0.14.0 \
+             `src/shader/quad/solid.wgsl:78-83`) and a `text_input::Style` has \
+             one border and no outline (iced_widget 0.14.2 \
+             `src/text_input.rs:1713-1726`). A ring outside the edge (KDE's +2, \
+             Windows' and the colour schemes' +1), across it (macOS's -1 with \
+             width 3) or inset with a gap has nowhere to be drawn, so a focused \
+             field recolours its rest line in `input.focus_border_color` instead",
+        lost: |_, r| {
+            let d = &r.defaults;
+            (d.focus_ring_width > 0.0 && d.focus_ring_offset != -d.focus_ring_width).then(|| {
+                format!(
+                    "a {}px ring at offset {}px",
+                    d.focus_ring_width, d.focus_ring_offset
+                )
+            })
+        },
+        exceptions: &[
+            (
+                "adwaita/light",
+                "an inset ring, 2px at -2: drawn as the focused field's border",
+            ),
+            (
+                "adwaita/dark",
+                "an inset ring, 2px at -2: drawn as the focused field's border",
+            ),
+        ],
+    },
     Unreachable {
         field: "scrollbar.min_thumb_length",
         evidence: "iced sizes the scroller itself and exposes no minimum: \
@@ -1044,8 +1130,315 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
                 "defaults.text_color is white, the color iced_aw paints",
             ),
             ("windows-11/dark", "the same"),
-            ("macos-sonoma/dark", "the same"),
-            ("ios/dark", "the same"),
+            ("ios-13/dark", "the same"),
         ],
+    },
+];
+
+/// Why a colour leaf of `ResolvedTheme` reaches no row: the classes of
+/// `UNREAD_COLOURS`, each with its evidence.
+#[cfg(feature = "iced_aw")]
+pub(super) enum Unread {
+    /// iced 0.14 and `iced_aw` 0.14.1 have nowhere to draw the value as the
+    /// model states it. The evidence cites the upstream source, `file.rs:line`.
+    NoReceiver(&'static str),
+    /// The value reaches iced through the widget leaves that inherit it, which
+    /// rows read. The evidence cites `docs/inheritance-rules.toml:line`.
+    Inherited(&'static str),
+    /// A widget neither iced nor `iced_aw` has; the entry names the widget, a
+    /// prefix of every leaf it covers.
+    NoWidget(&'static str),
+    /// iced has a receiver, and a ruling of the M5 review fills it from
+    /// another leaf, or leaves it to iced. The evidence cites the source,
+    /// `file.rs:line`.
+    Ruled(&'static str),
+    /// The value is a soft option's fallback, which the connector draws where
+    /// the option is unstated, and every bundled preset states the option.
+    /// The evidence cites the connector's `file.rs:line` that falls back, and
+    /// the walk proves it: with `option` cleared in a base, splicing the leaf
+    /// must move a row.
+    Fallback {
+        /// The soft option's dotted path, which the leaf stands in for.
+        option: &'static str,
+        evidence: &'static str,
+    },
+}
+
+/// One colour leaf no row reads, or one widget none of whose colour leaves a
+/// row reads, and why.
+#[cfg(feature = "iced_aw")]
+pub(super) struct UnreadColour {
+    /// The leaf's dotted path in the serialised `ResolvedTheme`, or a widget's
+    /// name for every colour leaf under it.
+    pub(super) leaf: &'static str,
+    pub(super) why: Unread,
+}
+
+/// The title bar and the window's outline are the OS's decorations.
+#[cfg(feature = "iced_aw")]
+const WINDOW_FRAME: &str = "iced's window takes `decorations: bool` -- whether the \
+     OS draws a border and a title bar at all -- and nothing to colour them \
+     with (`iced_core-0.14.0/src/window/settings.rs:65-66`)";
+
+/// iced's text fields draw the selected text in the value colour: the
+/// selection is a fill behind it.
+#[cfg(feature = "iced_aw")]
+const SELECTED_TEXT: &str = "`text_input::Style.selection` and \
+     `text_editor::Style.selection` are the fill of a quad drawn behind the \
+     text (`iced_widget-0.14.2/src/text_input.rs:561-571`, \
+     `text_editor.rs:1049-1059`), and the text over it is drawn whole in \
+     `value` (`text_input.rs:615-627`, `text_editor.rs:1010-1015`): no \
+     colour for the selected run";
+
+/// The colour leaves of `ResolvedTheme` that reach no contract row in any of
+/// the 34 bundled combinations and that `UNREACHABLE` does not name, each
+/// with its reason.
+///
+/// `every_colour_leaf_reaches_a_row_or_is_named` holds the list to the model:
+/// a colour leaf that reaches no row and is named nowhere fails it, and so
+/// does an entry that names a leaf a row now reads, or no colour leaf at all.
+/// It is a table of its own rather than more of `UNREACHABLE`, whose entries
+/// claim that iced cannot carry a value and prove it per preset through
+/// `lost`: several entries here are values iced can carry and the connector,
+/// by a ruling, does not fill from this leaf, or values that reach iced
+/// through the leaves that inherit them, and a widget entry names a prefix.
+#[cfg(feature = "iced_aw")]
+pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
+    UnreadColour {
+        leaf: "defaults.disabled_text_color",
+        why: Unread::Inherited(
+            "iced has no application-wide disabled colour. The disabled text \
+             colours of the button, the input, the check box, the list and \
+             the link inherit this one, and rows read each of them \
+             (`docs/inheritance-rules.toml:169`, `:178`, `:191`, `:282`, \
+             `:300`); the menu's and the combo box's inherit it too (`:199`, \
+             `:291`) and have no receiver, as their entries here say",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.font.color",
+        why: Unread::NoReceiver(
+            "an iced `Font` is a family, a weight, a stretch and a style \
+             (`iced_core-0.14.0/src/font.rs:6-15`), with no colour: a text is \
+             drawn in its widget's style colour or the window's \
+             `palette.text`, which is `defaults.text_color`, and each widget's \
+             own `font.color` reaches its row",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.mono_font.color",
+        why: Unread::NoReceiver(
+            "the same: an iced `Font` has no colour \
+             (`iced_core-0.14.0/src/font.rs:6-15`), and iced has no \
+             monospace text class to colour apart",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.muted_color",
+        why: Unread::Ruled(
+            "iced's secondary text, `text::secondary`, paints \
+             `extended.secondary.base.color` \
+             (`iced_core-0.14.0/src/widget/text.rs:452-456`), and the connector \
+             fills that slot from `input.placeholder_color` \
+             (`src/extended.rs:99-100`) on purpose: the slot is also \
+             `button::secondary`'s fill, and the contract counts the labels \
+             `readable()` substitutes on it (`SECONDARY_LABEL_SUBSTITUTED`). \
+             The muted colour reaches iced through the leaves that inherit it, \
+             `input.placeholder_color` among them \
+             (`docs/inheritance-rules.toml:174`, `:205`, `:206`, `:210`, \
+             `:216`). Ruling T12a C3",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_inactive_background",
+        why: Unread::NoReceiver(
+            "iced draws a text field's selection only while the field is \
+             focused (`iced_widget-0.14.2/src/text_input.rs:500-503`, \
+             `text_editor.rs:1021`), so an unfocused selection has no look to \
+             give",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.selection_text_color",
+        why: Unread::Inherited(
+            "the selected-item labels that rows read inherit it: \
+             `menu.hover_text_color`, `sidebar.selection_text_color` and \
+             `list.selection_text_color` (`docs/inheritance-rules.toml:198`, \
+             `:227`, `:243`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.shadow_color",
+        why: Unread::NoReceiver(
+            "an iced `Shadow` is a colour, an offset and a blur radius \
+             (`iced_core-0.14.0/src/shadow.rs:5-14`), and the model states the \
+             colour alone, so every `shadow` field stays iced's default (the \
+             `.shadow` entries of `DERIVED`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_background",
+        why: Unread::Inherited(
+            "`input.selection_background` inherits it \
+             (`docs/inheritance-rules.toml:175`), and `styles::text_input` and \
+             `styles::text_editor` emit that as their `selection`",
+        ),
+    },
+    UnreadColour {
+        leaf: "defaults.text_selection_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "input.selection_text_color",
+        why: Unread::NoReceiver(SELECTED_TEXT),
+    },
+    UnreadColour {
+        leaf: "input.caret_color",
+        why: Unread::NoReceiver(
+            "iced draws the caret in the value colour: a 1 px quad filled with \
+             `style.value` (`iced_widget-0.14.2/src/text_input.rs:520-533`, \
+             `text_editor.rs:1040-1046`), and neither `Style` has a caret field",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.disabled_background",
+        why: Unread::NoReceiver(
+            "`pick_list::Status` is Active, Hovered and Opened, with no \
+             disabled state (`iced_widget-0.14.2/src/pick_list.rs:838-848`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "combo_box.disabled_text_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled pick list \
+             (`iced_widget-0.14.2/src/pick_list.rs:838-848`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_fill_color",
+        why: Unread::NoReceiver(
+            "`slider::Status` is Active, Hovered and Dragged, with no disabled \
+             state (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_thumb_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled slider \
+             (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "slider.disabled_track_color",
+        why: Unread::NoReceiver(
+            "the same: no disabled slider \
+             (`iced_widget-0.14.2/src/slider.rs:578-585`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.disabled_text_color",
+        why: Unread::NoReceiver(
+            "iced's menu `Style` has a text colour and a selected one and no \
+             disabled one (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`), \
+             and an `iced_aw` menu's items are the consumer's own widgets \
+             (`iced_aw-0.14.1/src/widget/menu/menu_tree.rs:830`), its \
+             `menu_bar::Style` backgrounds, borders and shadows only \
+             (`style/menu_bar.rs:7-26`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "menu.separator_color",
+        why: Unread::NoReceiver(
+            "neither menu style has a separator: iced's menu `Style` \
+             (`iced_widget-0.14.2/src/overlay/menu.rs:598-611`) nor `iced_aw`'s \
+             `menu_bar::Style` (`iced_aw-0.14.1/src/style/menu_bar.rs:7-26`); a \
+             separator in an `iced_aw` menu is an item the consumer builds",
+        ),
+    },
+    UnreadColour {
+        leaf: "link.visited_text_color",
+        why: Unread::NoReceiver(
+            "`button::Status` is Active, Hovered, Pressed and Disabled, with \
+             no visited state (`iced_widget-0.14.2/src/button.rs:471-480`)",
+        ),
+    },
+    UnreadColour {
+        leaf: "splitter.divider_color",
+        why: Unread::NoReceiver(
+            "iced draws a split line only while it is hovered or picked \
+             (`iced_widget-0.14.2/src/pane_grid.rs:949-956`), never at rest, \
+             so a resting divider has no colour to take; `styles::pane_grid` \
+             draws the hovered and the picked line in `splitter.hover_color`",
+        ),
+    },
+    UnreadColour {
+        leaf: "window.background_color",
+        why: Unread::Ruled(
+            "iced paints the application's background from \
+             `theme::Style.background_color` \
+             (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` \
+             takes from the palette's background (`theme.rs:291-293`, \
+             `:328-336`), `defaults.background_color`; this leaf inherits that \
+             one (`docs/inheritance-rules.toml:157`) and equals it in all 34 \
+             bundled combinations. A style for `application(..).style(..)` that \
+             reads it is a docs/todo.md item. Ruling T12a C4",
+        ),
+    },
+    UnreadColour {
+        leaf: "window.border.color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.title_bar_background",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.title_bar_font.color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.inactive_title_bar_background",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "window.inactive_title_bar_text_color",
+        why: Unread::NoReceiver(WINDOW_FRAME),
+    },
+    UnreadColour {
+        leaf: "dialog",
+        why: Unread::NoWidget(
+            "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether \
+             an `iced_aw` `Card` is its receiver is a docs/todo.md item \
+             (\"iced: dialog is unmapped\")",
+        ),
+    },
+    UnreadColour {
+        leaf: "popover",
+        why: Unread::NoWidget(
+            "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its \
+             `context_menu::Style.background` is the backdrop of a modal \
+             (`style/context_menu.rs:8-14`), not a surface",
+        ),
+    },
+    UnreadColour {
+        leaf: "toolbar",
+        why: Unread::NoWidget(
+            "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of \
+             the model's toolbar is a docs/todo.md item (\"The iced connector \
+             reads nothing of the model's toolbar\")",
+        ),
+    },
+    UnreadColour {
+        leaf: "status_bar",
+        why: Unread::NoWidget("iced 0.14 and `iced_aw` 0.14.1 have no status bar"),
+    },
+    UnreadColour {
+        leaf: "checkbox.background_color",
+        why: Unread::Fallback {
+            option: "checkbox.unchecked_background",
+            evidence: "`styles::checkbox` fills an unchecked box with it where \
+                       `checkbox.unchecked_background` is unset (`styles.rs:705`), \
+                       and every bundled preset states that",
+        },
     },
 ];

@@ -22,6 +22,10 @@ pub(crate) struct BuildInput<'a> {
     /// epaint's row height for the Body face at the scaled Body size (§6.15), measured by
     /// `fonts::body_row_height`. `None` leaves egui's own `extra_text_line_spacing`.
     pub row_height: Option<f32>,
+    /// The font definitions the atlas installs, which a role cell measures its Body row on
+    /// (`fonts::body_row_height`) to fit a stated row height (`roles::fit_row_padding`); `None`
+    /// fits nothing.
+    pub defs: Option<&'a egui::FontDefinitions>,
     /// `Builder::style_patch`'s closure, applied last to every style (§4.3); `None` without one.
     pub patch: Option<&'a dyn Fn(&mut egui::Style)>,
 }
@@ -64,22 +68,35 @@ pub(crate) fn egui_preset(surface: Surface, base: &egui::Style) -> egui::Frame {
 /// `surface_frame` write the theme's values.
 pub(crate) fn compile(input: &BuildInput<'_>, notes: &mut Vec<Note>) -> SchemeStyles {
     let base = Arc::new(base::base_style(input, notes));
-    let mut cells: [[Arc<egui::Style>; 3]; 25] =
-        std::array::from_fn(|_| [Arc::clone(&base), Arc::clone(&base), Arc::clone(&base)]);
+    let mut cells: [[Arc<egui::Style>; 4]; 25] = std::array::from_fn(|_| {
+        [
+            Arc::clone(&base),
+            Arc::clone(&base),
+            Arc::clone(&base),
+            Arc::clone(&base),
+        ]
+    });
     for (slot, role) in cells.iter_mut().zip(Role::all()) {
         let mut normal = roles::role_cell(*role, &base, input, notes);
         let finished = |mut style: egui::Style| {
             finish(&mut style, input);
             Arc::new(style)
         };
-        let selected = variants::selected_cell(*role, &normal, input, notes).map(finished);
+        let selected = variants::selected_cell(*role, &normal, input, notes);
+        let selected_disabled = selected
+            .as_ref()
+            .and_then(|s| variants::selected_disabled_cell(*role, s, input, notes))
+            .map(finished);
+        let selected = selected.map(finished);
         let disabled = variants::disabled_cell(*role, &normal, input, notes).map(finished);
         finish(&mut normal, input);
         let normal = Arc::new(normal);
+        let disabled = disabled.unwrap_or_else(|| Arc::clone(&normal));
         *slot = [
             Arc::clone(&normal),
             selected.unwrap_or_else(|| Arc::clone(&normal)),
-            disabled.unwrap_or_else(|| Arc::clone(&normal)),
+            Arc::clone(&disabled),
+            selected_disabled.unwrap_or(disabled),
         ];
     }
     let mut frames = [egui::Frame::NONE; 11];

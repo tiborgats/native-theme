@@ -66,10 +66,10 @@ pub(crate) struct TextSource {
 
 /// A border: its own colour as stated — the final line colour, into which the model has
 /// already folded `defaults.border.opacity` —, width and radius, into `entries`. `paths` are
-/// the colour, corner-radius and line-width leaves.
+/// the corner-radius and line-width leaves.
 pub(crate) struct BorderSource<'a> {
     pub border: &'a ResolvedWidgetBorder,
-    pub paths: [&'static str; 3],
+    pub paths: [&'static str; 2],
     pub entries: BorderEntries,
 }
 
@@ -169,14 +169,14 @@ pub(crate) fn write_states(widgets: &mut Widgets, src: &StateSource<'_>, notes: 
     }
 
     if let Some(b) = &src.border {
-        let [color_path, radius_path, width_path] = b.paths;
+        let [radius_path, width_path] = b.paths;
         // one stroke and one radius per kind of entry, each over its resting entry's own:
         // egui's stock entries differ (`egui/src/style.rs:1693-1720`), and a hover that
         // fell back to its own would show egui's look, not the platform's (§6.1)
         let over = |own: &WidgetVisuals, notes: &mut Vec<Note>| {
             (
                 stroke(
-                    [color_path, width_path],
+                    width_path,
                     own.bg_stroke,
                     to_color32(b.border.color),
                     b.border.line_width,
@@ -235,22 +235,22 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();
         (base_style(&input, &mut notes), notes)
     }
 
-    /// C17: windows-11 states a translucent hover layer (`#0000000a`,
-    /// `native-theme/src/presets/windows-11.toml:86`), which is composited over the idle fill,
-    /// not written as it stands.
+    /// C17: a translucent hover layer is composited over the idle fill, not written as it
+    /// stands. No bundled preset states one since M2b Step 7b (windows-11 states WinUI's
+    /// replacing fill flattened, `native-theme/src/presets/windows-11.toml:127`), so the
+    /// fixture is windows-11 with that brush as the resource gives it,
+    /// `ControlFillColorSecondary` `#80F9F9F9` (docs/platform-facts.md:1192).
     #[test]
     fn a_translucent_hover_layer_is_composited_over_the_idle_fill() {
-        let t = resolved("windows-11", ColorMode::Light);
-        assert!(
-            t.button.hover_background.a < 255,
-            "the fixture must be translucent"
-        );
+        let mut t = resolved("windows-11", ColorMode::Light);
+        t.button.hover_background = Rgba::new(0xf9, 0xf9, 0xf9, 0x80);
         let (s, _) = base(egui::Theme::Light, &t);
         let w = &s.visuals.widgets;
         assert_eq!(
@@ -363,7 +363,7 @@ mod tests {
                     text: None,
                     border: Some(BorderSource {
                         border: &t.button.border,
-                        paths: ["test.color", "test.corner_radius", "test.line_width"],
+                        paths: ["test.corner_radius", "test.line_width"],
                         entries: BorderEntries::All,
                     }),
                     open: OpenFrom::Inactive,

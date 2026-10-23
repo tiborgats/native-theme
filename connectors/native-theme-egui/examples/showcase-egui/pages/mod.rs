@@ -154,7 +154,9 @@ fn demo_colour() -> egui::Color32 {
 /// (`demo::heading_text`), not `ui.strong`, whose colour is the active-state text colour
 /// (`egui/src/style.rs:1147-1149`); a `Label` in the base style, recorded like any other. Every
 /// heading but a page's first is `layout.section_gap` below the section before it, where the
-/// theme states that gap: the theme's space between sections (parity item 11).
+/// theme states that gap: the theme's space between sections (parity item 11). A Basic group's
+/// heading is the first of its group's own `Ui`, and `basic::show` puts the gap between the
+/// groups.
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui::Response {
     let atlas = ThemeAtlas::from_ctx(ui.ctx());
     let section_gap = atlas.as_ref().and_then(|atlas| atlas.layout().section_gap);
@@ -166,40 +168,56 @@ pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui
             ui.add_space(space);
         }
     }
-    let response = demo::base(reg, ui, "heading", |ui| {
+    demo::base(reg, ui, "heading", |ui| {
         let heading = demo::heading_text(ui, text);
         ui.label(heading)
-    });
-    let role = atlas.map(|atlas| {
-        let t = atlas.resolved_for(ui.ctx().theme());
-        let prefs = atlas.accessibility();
-        let r = native_theme_egui::TextRole::SectionHeading;
-        let weight = native_theme_egui::text_role_weight(t, r);
+    })
+}
+
+/// The least size of a `Button` a page builds: `button.min_width`, which egui's `Button` never
+/// reads from the style, per call (connector spec §5.3, `Button::min_size`), and no least height
+/// of the page's own: a `Button` raises its height to `interact_size.y`, `button.min_height` in
+/// the button scope, unless it is small (egui 0.36.2 `src/widgets/button.rs:306-309`).
+pub(crate) fn button_min_size(t: &native_theme_egui::ResolvedTheme) -> egui::Vec2 {
+    egui::vec2(t.button.min_width, 0.0)
+}
+
+/// The least size of a `TextEdit` a page builds: `input.min_height`, which a `TextEdit` never
+/// reads from the style: one row plus its margin tall, at least its per-instance `min_size`
+/// (connector spec §5.4); and no least width of the page's own: a `TextEdit` is its
+/// `desired_width` wide, `spacing.text_edit_width` unless given one.
+pub(crate) fn input_min_size(t: &native_theme_egui::ResolvedTheme) -> egui::Vec2 {
+    egui::vec2(0.0, t.input.min_height)
+}
+
+/// A dialog extent the theme states, less the frame's own margins and stroke,
+/// floored at `0.0` and passed only when finite: `Ui::set_min_*` debug-assert a
+/// size of at least `0.0` (`egui/src/ui.rs:739-743`, `:749-753`), and
+/// `set_max_*` reach the same assert through `Placer` and `Layout`
+/// (`egui/src/placer.rs:233-234`, `egui/src/layout.rs:584-587`).
+pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -> Option<f32> {
+    let (a, b, c, d) = if horizontal {
         (
-            native_theme_egui::text_role_font(t, r, prefs),
-            native_theme_egui::text_role_line_height(t, r, prefs),
-            weight,
-            demo::weighted_family(ui, weight, t.defaults.font.weight),
+            frame.inner_margin.left,
+            frame.inner_margin.right,
+            frame.outer_margin.left,
+            frame.outer_margin.right,
         )
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "layout.section_gap",
-            section_gap.map_or_else(|| "not stated: no gap".to_string(), |g| g.to_string()),
-        ));
-        if let Some((font, line_height, weight, family)) = role {
-            i.read.push(("text_role_font", format!("{font:?}")));
-            i.read
-                .push(("text_role_line_height", format!("{line_height}")));
-            i.read.push(("text_role_weight", format!("{weight}")));
-            let drawn = match family {
-                egui::FontFamily::Proportional => "the body font's face",
-                _ => "the OS's face of the body family at that weight",
-            };
-            i.notes.push(("weight drawn in", drawn.to_string()));
-        }
-    });
-    response
+    } else {
+        (
+            frame.inner_margin.top,
+            frame.inner_margin.bottom,
+            frame.outer_margin.top,
+            frame.outer_margin.bottom,
+        )
+    };
+    let margins = f32::from(a) + f32::from(b) + f32::from(c) + f32::from(d);
+    let inner = stated - margins - 2.0 * frame.stroke.width;
+    if inner.is_finite() {
+        Some(inner.max(0.0))
+    } else {
+        None
+    }
 }
 
 /// What the page draws above its `ScrollArea`, which never scrolls: the Containers page's

@@ -9,6 +9,35 @@ This guide covers the update procedure for each platform.
 
 ---
 
+## A new generation, a new preset
+
+One platform preset per visual generation. A new OS version of the same
+generation updates the platform's preset; a new visual generation gets a new
+preset beside it, whose key is the vendor's own name for the generation's
+first OS version:
+
+| Platform | The key names | Example |
+|---|---|---|
+| macOS | Apple's codename | `macos-monterey`, `macos-tahoe` |
+| Windows | Microsoft's version number | `windows-11` |
+| iOS | the iOS version number | `ios-13` (the flat look of iOS 13 to 18) |
+| Material | the design version | `material-3` |
+| KDE, GNOME | the style, not the desktop | `kde-breeze`, `adwaita` |
+
+The preset file's first lines state which OS versions it covers and which
+versions its values were verified on, matching the version tags in
+`docs/platform-facts.md` (a version-tagged cell gives each value to its
+version's preset; see its Conventions). Both are written only from a
+version map and checks with sources for that platform, never guessed; until
+then the header names the generation and states no range. The style presets
+keep their style names, and their headers name the style version they pin
+(Breeze v6.7.5 and libadwaita 1.10.0, checked in M2e of
+`docs/todo_code-review-plan.md` on 2026-10-11): the KDE and GNOME readers
+read the installed style, so the style, not the desktop's version, is the
+generation.
+
+---
+
 ## KDE (Breeze)
 
 **Source:** `breezemetrics.h` from the KDE Breeze repository
@@ -27,6 +56,12 @@ This guide covers the update procedure for each platform.
   scrollbar width, slider groove thickness, menu item height, etc.
 - New constants added to `breezemetrics.h` that map to existing per-widget sizing fields.
 - Changes to color group names or key names in `kdeglobals` format.
+- The tooltip show delay (Qt's `SH_ToolTip_WakeUpDelay` and Kirigami's
+  `Units.toolTipDelay`, 700: `tooltip.show_delay_ms`), the in-window dialog's
+  entrance (`Kirigami.Dialog` fades in while it rises: `dialog.entrance =
+  "fade_rise"`), and whether a table header still sizes to its content
+  (Breeze's `Header_MarginWidth`; `list.header_height_px` stays unset while
+  it does): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
@@ -48,10 +83,12 @@ WinUI3 Fluent Design specifications
 
 **Files to update:**
 
-- `native-theme/src/windows.rs` -- WinUI3 spacing constants, system metric mappings,
-  `winui3_widget_sizing()`, and `read_widget_sizing()`, which reads the system
-  metrics at 96 DPI, in logical pixels
-- `native-theme/src/presets/windows-11.toml` -- bundled preset data
+- `native-theme/src/windows.rs` -- system metric mappings and `read_widget_sizing()`,
+  which reads the system metrics at 96 DPI, in logical pixels; the reader states
+  no WinUI3 design sizes
+- `native-theme/src/presets/windows-11.toml` -- bundled preset data, WinUI3's spacing
+  and sizes included; a new Windows generation is a preset plus a row in
+  `WINDOWS_GENERATIONS` (`native-theme/src/pipeline.rs`)
 
 **What to look for:**
 
@@ -60,18 +97,25 @@ WinUI3 Fluent Design specifications
 - New `UIColorType` variants for additional system colors.
 - Changes to default font (Segoe UI Variable) or font size.
 - Changes to default corner radius values.
+- The tooltip show delay (`ToolTipService` waits 2 × `SPI_GETMOUSEHOVERTIME`,
+  800 at the hover time of 400 the OS probe reads: `tooltip.show_delay_ms`),
+  `ContentDialog`'s entrance (scale and fade: `dialog.entrance =
+  "scale_fade"`), and whether WinUI has gained a column header
+  (`list.header_height_px` stays unset while it has none):
+  `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
 1. Review Windows SDK release notes for new `GetSystemMetrics` indices.
 2. Review WinUI3 Fluent Design specs for updated spacing/sizing values.
-3. Update constants in `native-theme/src/windows.rs`.
-4. Update `native-theme/src/presets/windows-11.toml` (or create a new preset, e.g.,
-   `windows-12.toml`, if the visual language changes significantly).
+3. Update system metric mappings in `native-theme/src/windows.rs`.
+4. Update `native-theme/src/presets/windows-11.toml`, or, for a new visual
+   generation, create its preset as
+   [A new generation, a new preset](#a-new-generation-a-new-preset) says.
 5. Test on the target Windows version: `cargo test -p native-theme --features windows`.
 
 **Note:** The Windows reader reads its system metrics (scrollbar width and thumb
-length, focus border, border width, icon sizes) through `GetSystemMetricsForDpi`
+length, border width, icon sizes) through `GetSystemMetricsForDpi`
 at 96 DPI (`USER_DEFAULT_SCREEN_DPI`), which gives the unscaled value in logical
 pixels, the model's unit; at the system DPI it would be device pixels. Verify
 these still return correct values on the new Windows version. The fonts
@@ -83,15 +127,23 @@ logical pixels at any display scale.
 
 ## macOS
 
-**Source:** Apple Human Interface Guidelines (HIG), AppKit release notes,
-Xcode Interface Builder measurements
+**Source:** Apple Human Interface Guidelines (HIG), AppKit release notes, the OS
+probe's API reads and renders (`tools/os-probe`)
 
 **Files to update:**
 
-- `native-theme/src/macos.rs` -- the `macos_widget_defaults()` function and the
-  `MacosReader` reader (`read_appearance_colors()` holds the `NSColor` mappings)
-- `native-theme/src/presets/macos-sonoma.toml` -- bundled preset data (or create a
-  new preset for the new macOS version)
+- `native-theme/src/macos.rs` -- the `MacosReader` reader, which states only what macOS
+  reports (`read_appearance_colors()` holds the `NSColor` mappings) and no design size
+- `native-theme/src/presets/macos-monterey.toml` -- bundled preset data, AppKit's sizes
+  included (a new visual
+  generation gets a preset of its own, named as
+  [A new generation, a new preset](#a-new-generation-a-new-preset) says)
+- `native-theme/src/presets/macos-tahoe.toml` -- the Liquid Glass generation's preset (macOS 26)
+- `native-theme/src/pipeline.rs` -- `MACOS_GENERATIONS`, the generation table: a new
+  generation is a preset plus a row (its first version and the newest version its values
+  were verified on); a newer version of the same generation, once checked against the
+  preset, raises its row's `last_verified`. Until then `SystemTheme::version_match`
+  reports `PresetOlder` on it.
 
 **What to look for:**
 
@@ -100,22 +152,27 @@ Xcode Interface Builder measurements
 - Changes to default system font family or size.
 - Changes to default corner radius (currently ~5px for controls).
 - New accessibility or Dynamic Type behaviors.
+- A documented tooltip delay or dialog motion: AppKit states neither, so
+  `tooltip.show_delay_ms` and `dialog.entrance` stay unset; and the
+  `NSTableHeaderView` height the OS probe reads (28 on macOS 14, 15 and 26:
+  `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and §2.15.
 
 **Process:**
 
 1. Review Apple HIG for the new macOS version at
    <https://developer.apple.com/design/human-interface-guidelines/>.
 2. Review AppKit release notes for changed/deprecated `NSColor` names.
-3. Measure updated control sizes in Xcode Interface Builder if HIG does not
-   provide exact values.
-4. Update constants in `macos_widget_defaults()` in `native-theme/src/macos.rs`.
-5. If semantic color names changed, update the NSColor mappings in
+3. Measure updated control sizes with the OS probe (`tools/os-probe`, dispatched
+   through `.github/workflows/os-probe.yml`) where the HIG gives no exact value.
+4. If semantic color names changed, update the NSColor mappings in
    `read_appearance_colors()`, which `MacosReader` calls.
-6. Update or create the preset TOML file.
-7. Test on the target macOS version: `cargo test -p native-theme --features macos`.
+5. Update the preset TOML file, or create the new generation's preset.
+6. Test on the target macOS version: `cargo test -p native-theme --features macos`.
 
-**Note:** The macOS module is unconditionally compiled. The `build_theme` tests run
-cross-platform using hardcoded fallback values, so basic testing works on any OS.
+**Note:** The macOS module is compiled on every OS. The reader holds no fallback
+values and no design constants: the `build_theme` tests run cross-platform on colours
+and fonts the tests construct, so basic testing works on any OS, and a value macOS does
+not report comes from the generation's preset.
 
 ---
 
@@ -130,8 +187,6 @@ GTK4 source, freedesktop portal specification
   portal's and gsettings' values (accent, color scheme, contrast, fonts,
   accessibility) onto the bundled `adwaita` preset in `build_theme()` and
   `build_gnome_variant_pure()`; it holds no color or size constants
-- `native-theme/src/presets/adwaita-live.toml` -- the live pipeline's merge base:
-  the Adwaita geometry and spacing
 - `native-theme/src/presets/adwaita.toml` -- bundled preset data
 
 **What to look for:**
@@ -142,14 +197,18 @@ GTK4 source, freedesktop portal specification
   earlier versions used "Cantarell" / "Source Code Pro").
 - New CSS custom properties (`--window-bg-color`, `--accent-bg-color`, etc.).
 - New freedesktop portal settings (accent-color, color-scheme, contrast).
+- GTK's tooltip `HOVER_TIMEOUT` (500: `tooltip.show_delay_ms`), the floating
+  `AdwDialog`'s entrance (scale and fade: `dialog.entrance = "scale_fade"`),
+  and the column view's title button, `min-height` 24 plus its padding
+  (30: `list.header_height_px`): `docs/platform-facts.md` §2.7, §2.22 and
+  §2.15.
 
 **Process:**
 
 1. Clone or pull latest libadwaita from <https://gitlab.gnome.org/GNOME/libadwaita>.
 2. Compare CSS variable defaults with the colors in `adwaita.toml`.
-3. Compare widget sizing values with those in `adwaita.toml` and
-   `adwaita-live.toml`.
-4. Update any changed values in both files.
+3. Compare widget sizing values with those in `adwaita.toml`.
+4. Update any changed values.
 5. If the portal or gsettings keys changed, update `gnome/mod.rs`.
 6. Run the test suite: `cargo test -p native-theme --features portal`.
 
@@ -170,12 +229,17 @@ Steps:
    if widget sizing changed. State a new or changed size only from a source in
    `docs/platform-facts.md`. Where the platform documents none, leave it
    unstated only if it is a gated size (a padding side, a menu or list
-   `row_height`, the toolbar `bar_height` and `item_gap`, the tab `item_gap`
-   and `active_indicator_width`, the combobox `arrow_area_width`, the expander
-   `arrow_gap` and `content_indent`, the checkbox `radio_indicator_width`,
-   `radio_dot_diameter` and `check_mark_stroke_width`, the switch
-   `unchecked_thumb_diameter`); every other size is required, and those the presets
-   state today without a source are listed in `docs/todo.md`, Table B.
+   `row_height`, the list `header_height`, the toolbar `bar_height` and
+   `item_gap`, the tab `item_gap`, `active_indicator_width` and
+   `active_outward_corner_radius`, the combobox `arrow_area_width`, the
+   expander `arrow_gap` and `content_indent`, the
+   checkbox `radio_indicator_width`, `radio_dot_diameter` and
+   `check_mark_stroke_width`, the switch `unchecked_thumb_diameter`;
+   `native-theme/src/presets/documented_sizes.rs` checks them). The switch's
+   `track_border_line_width` and `thumb_border_line_width` are stated
+   only where the platform draws that outline (`docs/platform-facts.md`
+   §2.21), and unset draw none. Every other size is required, and those the
+   presets state today without a source are listed in `docs/todo.md`, Table B.
 4. Run the full test suite: `cargo test -p native-theme` (no feature flags needed
    for preset-only changes).
 
@@ -189,8 +253,10 @@ own, taken from no platform, and are not affected by platform-specific changes.
 To add support for a new platform (e.g., a new Linux desktop environment):
 
 COSMIC is used as the running example below because it is the closest real case:
-`LinuxDesktop::CosmicDe` is already detected, but `select_reader()` returns
-`None` for it, so COSMIC currently falls through to the default preset.
+`LinuxDesktop::CosmicDe` is already detected, but `linux_reader_kind()` in
+`native-theme/src/pipeline.rs` returns `None` for it, so COSMIC gets no reader:
+`from_system()` gives the `adwaita` preset, which `linux_preset_for_de()` maps
+every desktop but KDE to, in the OS's light or dark mode.
 
 1. **Feature flag:** Add a new feature in `native-theme/Cargo.toml` with any
    required dependencies.
@@ -213,23 +279,37 @@ COSMIC is used as the running example below because it is the closest real case:
 
    Return `ReaderOutput::Single` if the platform reports only the active mode —
    the pipeline fills the other variant from the preset — or `ReaderOutput::Dual`
-   if it reports both, as macOS does.
+   if it reports both, as macOS does. `Dual`'s `is_dark` is the OS's active
+   appearance, which the reader reads uncached (the macOS reader calls
+   `detect::detect_is_dark()`).
 3. **Widget metrics:** If the platform has well-defined widget sizing constants,
    add a `populate_widget_sizing(&mut ThemeMode)` function next to the reader.
    See `native-theme/src/kde/metrics.rs` for the pattern.
 4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default
-   light and dark variants. If the reader emits a live preset, add
-   `cosmic-live.toml` alongside it.
-5. **Register preset:** Add the entry to `PRESET_ENTRIES` in
-   `native-theme/src/presets.rs`, and to `PRESET_NAMES` if it should be
-   user-facing. `Theme::preset()` and `Theme::list_presets()` in
-   `native-theme/src/model/mod.rs` read from those tables — neither needs
+   light and dark variants.
+5. **Register preset:** Add its line (key, display name, platform tags) to the
+   `bundled_presets!` table in `native-theme/src/presets.rs`; the display name
+   must equal the TOML's `name`. `Theme::preset()` and `Theme::list_presets()`
+   in `native-theme/src/model/mod.rs` read from that table — neither needs
    editing.
 6. **Update dispatch:** Add a variant to `LinuxDesktop` in
-   `native-theme/src/detect.rs` if the desktop is not recognized yet, then give
-   it an arm in `select_reader()` in `native-theme/src/pipeline.rs` returning
-   your reader and its live-preset name. Gate the arm on your feature flag, and
-   keep a `#[cfg(not(feature = "..."))]` arm returning `None`.
+   `native-theme/src/detect.rs` if the desktop is not recognised yet;
+   `linux_reader_kind()` and the icon-theme detection's `icon_theme_source()`
+   in `native-theme/src/detect/icon_theme.rs` name every variant, so the
+   compiler asks for their arms. Then, in
+   `native-theme/src/pipeline.rs`:
+   - add a variant for your reader to the `LinuxReader` enum, gated on your
+     feature flag;
+   - give the desktop an arm in `linux_reader_kind()` returning that variant,
+     gated on your feature flag, and a `#[cfg(not(feature = "..."))]` arm
+     returning `None`;
+   - box your reader in `linux_reader()`'s match on the variant;
+   - map the desktop to your preset in `linux_preset_for_de()`.
+
+   `select_reader()` needs no change: on Linux it returns `linux_reader()`'s
+   reader and preset. The theme watcher picks its backend by desktop too, in
+   `linux_backend()` in `native-theme/src/watch/mod.rs`, whose wildcard arm
+   leaves a desktop it does not name unwatched.
    `SystemTheme::from_system()` and `from_system_async()` in
    `native-theme/src/lib.rs` both route through `pipeline::from_system_inner()`,
    so neither needs a per-platform change.

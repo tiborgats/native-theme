@@ -135,6 +135,56 @@ impl Rgba {
     }
 }
 
+/// `layer` composited over `base`: source-over with straight (not
+/// premultiplied) alpha in sRGB, each colour `[r, g, b, a]` in `0.0..=1.0`
+/// as [`Rgba::to_f32_array`] gives it.
+///
+/// The result covers `a = layer.a + base.a × (1 − layer.a)`, and each channel
+/// is the two channels weighted by what each contributes, divided by `a`, so
+/// a translucent layer over a translucent base covers more than either. Where
+/// one input decides the result, that input is returned exactly, with no
+/// division to move it by an ulp:
+///
+/// - an opaque layer (`layer.a >= 1`) is the layer;
+/// - a transparent layer (`layer.a <= 0`) is `base`, a transparent one
+///   included;
+/// - a layer over a transparent base (`base.a <= 0`) is the layer.
+///
+/// This is how a platform lays a stated hover or pressed colour over a
+/// widget's fill (a state *layer*), for a toolkit that replaces the fill per
+/// state instead: the iced and gpui connectors composite with it, so an
+/// application drawing a layered state of its own matches them. The blend is
+/// in sRGB rather than linear light, because it reproduces the composite the
+/// platform performed when it measured the value a preset records, and
+/// platform compositors blend in sRGB.
+///
+/// ```
+/// use native_theme::color::composite_over;
+///
+/// let half_black = [0.0, 0.0, 0.0, 0.5];
+/// assert_eq!(composite_over(half_black, [1.0, 1.0, 1.0, 1.0]), [0.5, 0.5, 0.5, 1.0]);
+/// assert_eq!(composite_over(half_black, half_black)[3], 0.75);
+/// ```
+#[must_use]
+pub fn composite_over(layer: [f32; 4], base: [f32; 4]) -> [f32; 4] {
+    let [lr, lg, lb, la] = layer;
+    let [br, bg, bb, ba] = base;
+    if la >= 1.0 {
+        return layer;
+    }
+    if la <= 0.0 {
+        return base;
+    }
+    if ba <= 0.0 {
+        return layer;
+    }
+    // How much of `base` reaches the result, in the composite's own alpha.
+    let under = ba * (1.0 - la);
+    let a = la + under;
+    let channel = |l: f32, b: f32| (l * la + b * under) / a;
+    [channel(lr, br), channel(lg, bg), channel(lb, bb), a]
+}
+
 impl fmt::Display for Rgba {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.a == 255 {
@@ -195,10 +245,16 @@ impl FromStr for Rgba {
             return Err(ParseColorError("empty hex color string".into()));
         }
 
-        // Destructure hex bytes directly. This is both UTF-8-safe (rejects any
-        // non-ASCII input implicitly, since each non-ASCII char occupies 2+ bytes
-        // and wouldn't match the single-byte slots) and avoids panic-prone string
-        // slicing / indexing.
+        // A non-ASCII char is 2+ bytes in UTF-8, so its bytes could fill the
+        // single-byte slots below and be reported as a wrong digit or length.
+        if !hex.is_ascii() {
+            return Err(ParseColorError(format!(
+                "invalid hex color {s:?}: not ASCII hex digits"
+            )));
+        }
+
+        // Destructure hex bytes directly: with ASCII input each byte is one char,
+        // and this avoids panic-prone string slicing / indexing.
         match hex.as_bytes() {
             // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa)
             [r, g, b] => {
@@ -398,6 +454,24 @@ mod tests {
         assert!("#12345".parse::<Rgba>().is_err());
     }
 
+    #[test]
+    fn parse_non_ascii_three_bytes_names_the_input() {
+        let err = "#é0".parse::<Rgba>().unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "invalid hex color \"#é0\": not ASCII hex digits"
+        );
+    }
+
+    #[test]
+    fn parse_non_ascii_two_bytes_names_the_input() {
+        let err = "#é".parse::<Rgba>().unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "invalid hex color \"#é\": not ASCII hex digits"
+        );
+    }
+
     // === Display tests ===
 
     #[test]
@@ -506,5 +580,89 @@ mod tests {
         let mut buf = original;
         tint_monochrome(&mut buf, None);
         assert_eq!(buf, original);
+    }
+
+    // === composite_over tests ===
+
+    #[test]
+    fn composite_over_a_transparent_layer_is_the_base_exactly() {
+        let layer = [0.9, 0.1, 0.3, 0.0];
+        for base in [
+            [0.2, 0.4, 0.6, 1.0],
+            [0.2, 0.4, 0.6, 0.3],
+            // A transparent base keeps its own channels: nothing is divided.
+            [0.2, 0.4, 0.6, 0.0],
+        ] {
+            assert_eq!(composite_over(layer, base), base, "over {base:?}");
+        }
+    }
+
+    #[test]
+    fn composite_over_a_transparent_base_is_the_layer_exactly() {
+        let base = [0.2, 0.4, 0.6, 0.0];
+        for layer in [[0.9, 0.1, 0.3, 0.3], [0.1, 0.2, 0.3, 0.078_431_375]] {
+            assert_eq!(composite_over(layer, base), layer, "{layer:?}");
+        }
+    }
+
+    #[test]
+    fn composite_over_an_opaque_layer_is_the_layer() {
+        let layer = [0.3, 0.7, 0.1, 1.0];
+        for base in [[0.2, 0.4, 0.6, 1.0], [1.0, 1.0, 1.0, 0.25]] {
+            assert_eq!(composite_over(layer, base), layer, "over {base:?}");
+        }
+    }
+
+    /// Over an opaque base the result is opaque and each channel is the
+    /// plain mix `l·la + b·(1 − la)`.
+    #[test]
+    fn composite_over_an_opaque_base_is_the_plain_mix() {
+        let (layer, base) = ([0.9_f32, 0.1, 0.3, 0.5], [0.2_f32, 0.4, 0.6, 1.0]);
+        let [r, g, b, a] = composite_over(layer, base);
+        assert_eq!(a, 1.0);
+        let mix = |l: f32, b: f32| l * layer[3] + b * (1.0 - layer[3]);
+        assert_eq!(
+            [r, g, b],
+            [
+                mix(layer[0], base[0]),
+                mix(layer[1], base[1]),
+                mix(layer[2], base[2])
+            ]
+        );
+    }
+
+    /// A translucent layer over a translucent base covers more than either,
+    /// `la + ba·(1 − la)`, and its channels are un-premultiplied by that.
+    #[test]
+    fn composite_over_two_translucent_colours_covers_both() {
+        let (layer, base) = ([0.8_f32, 0.2, 0.4, 0.5], [1.0_f32, 1.0, 1.0, 0.25]);
+        let [r, g, b, a] = composite_over(layer, base);
+        assert_eq!(a, 0.5 + 0.25 * 0.5);
+        let under = 0.25 * 0.5;
+        let channel = |l: f32, b: f32| (l * 0.5 + b * under) / a;
+        assert_eq!(
+            [r, g, b],
+            [channel(0.8, 1.0), channel(0.2, 1.0), channel(0.4, 1.0)]
+        );
+        // Associative: stacked on the base first, then painted on white, is
+        // painting the base and then the layer.
+        let white = [1.0, 1.0, 1.0, 1.0];
+        let stacked = composite_over(composite_over(layer, base), white);
+        let painted = composite_over(layer, composite_over(base, white));
+        for (s, p) in stacked.into_iter().zip(painted) {
+            assert!((s - p).abs() < 1e-6, "{stacked:?} against {painted:?}");
+        }
+    }
+
+    /// macos-tahoe light's push button is `#00000014` (macos-tahoe.toml
+    /// `[light.button]`, docs/platform-facts.md:1177), and the pressed fill a
+    /// connector derives from it keeps that alpha; the pressed button is one
+    /// over the other, alpha 0.0784 → 0.1507 (the M6 T9 ruling).
+    #[test]
+    fn composite_over_macos_tahoe_lights_two_button_fills_is_source_over() {
+        let fill = Rgba::new(0, 0, 0, 0x14).to_f32_array();
+        let [.., a] = composite_over(fill, fill);
+        assert_eq!(a, fill[3] + fill[3] * (1.0 - fill[3]));
+        assert!((a - 0.1507).abs() < 5e-5, "{a}");
     }
 }

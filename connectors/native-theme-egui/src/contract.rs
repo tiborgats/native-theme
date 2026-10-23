@@ -18,14 +18,15 @@ use native_theme::theme::{ColorMode, ResolvedTheme, Theme as NativeTheme};
 use crate::convert::{self, Rgba};
 use crate::install_tests::resolved;
 use crate::mapping_tests::{
-    Manifest, Row, Sink, Verdict, covers, no_row_write, role_by_key, surface_by_key, variant_by_key,
+    Manifest, Row, Sink, Verdict, built_from, covers, no_row_write, role_by_key, surface_by_key,
+    variant_by_key,
 };
 use crate::style_diff::{
     all_frame_paths, all_frames, all_style_paths, all_styles, frame_diff, self_equal, style_diff,
 };
 use crate::{Role, RoleVariant, Surface, ThemeAtlas};
 
-// ---- the 32 combinations (C6) ---------------------------------------------------------------
+// ---- the 34 combinations (C6) ---------------------------------------------------------------
 
 struct Combination {
     key: &'static str,
@@ -76,7 +77,11 @@ impl Combination {
     /// definitions the atlas installs — the plan's (`ThemeAtlas::fonts`), else egui's default —
     /// at the Body size the atlas writes (`body_size`).
     fn row_height(&self) -> Option<f32> {
-        let size = self.body_size()?;
+        self.row_height_at(self.body_size()?)
+    }
+    /// epaint's Body row at `size` over the definitions the atlas installs, as
+    /// [`Self::row_height`] measures it at the Body size.
+    fn row_height_at(&self, size: f32) -> Option<f32> {
         match self.atlas.fonts() {
             Some(defs) => crate::fonts::body_row_height(defs, size),
             None => crate::fonts::body_row_height(&egui::FontDefinitions::default(), size),
@@ -84,8 +89,8 @@ impl Combination {
     }
 }
 
-/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:663`) — sixteen; the four `-live`
-/// merge bases are not selectable — in both modes: the 32 combinations. One atlas per preset,
+/// `Theme::list_presets()` (`native-theme/src/model/mod.rs:689`) — seventeen — in both modes:
+/// the 34 combinations. One atlas per preset,
 /// carrying both variants, built with no plan and `AccessibilityPreferences::default()`.
 fn combinations() -> Vec<Combination> {
     let mut out = Vec::new();
@@ -109,13 +114,13 @@ fn combinations() -> Vec<Combination> {
             });
         }
     }
-    assert_eq!(out.len(), 32, "C6's 32 combinations");
+    assert_eq!(out.len(), 34, "C6's 34 combinations");
     out
 }
 
 /// `json` with the four `layout.` leaves under the manifest's names, as T3's `leaf_paths` adds
 /// them: they are the builder's `LayoutTheme`, not `ResolvedTheme` fields, and `LayoutTheme`
-/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:1025-1045`).
+/// serialises them as `*_px` and skips a `None` (`native-theme/src/model/widgets/mod.rs:1088-1111`).
 fn with_layout(mut json: serde_json::Value, layout: &crate::LayoutTheme) -> serde_json::Value {
     if let Some(object) = json.as_object_mut() {
         object.insert(
@@ -264,6 +269,15 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
         }
         ["spacing", "scroll", "floating"] => Val::Bool(sp.scroll.floating),
         ["spacing", "scroll", "foreground_color"] => Val::Bool(sp.scroll.foreground_color),
+        ["spacing", "scroll", "dormant_background_opacity"] => {
+            Val::F32(sp.scroll.dormant_background_opacity)
+        }
+        ["spacing", "scroll", "active_background_opacity"] => {
+            Val::F32(sp.scroll.active_background_opacity)
+        }
+        ["spacing", "scroll", "interact_background_opacity"] => {
+            Val::F32(sp.scroll.interact_background_opacity)
+        }
         [slot, "size"] if slot.starts_with("text_styles[") => {
             let name = slot
                 .trim_start_matches("text_styles[")
@@ -283,6 +297,7 @@ fn read_style(style: &Style, path: &str) -> Option<Val> {
             Val::OptF32(style.override_font_id.as_ref().map(|f| f.size))
         }
         ["animation_time"] => Val::F32(style.animation_time),
+        ["interaction", "tooltip_delay"] => Val::F32(style.interaction.tooltip_delay),
         _ => return None,
     })
 }
@@ -306,9 +321,10 @@ fn read_frame(frame: &egui::Frame, path: &str) -> Option<Val> {
 
 /// The `Style` a sink's location starts from before any row writes it — §3.4's inheritance,
 /// §13.1's *Inheritance*: egui's own `Style` for the base style, the base style for a role's
-/// `Normal` cell (with egui's `menu_style` applied for `Role::Menu`, §3.4), and the `Normal`
-/// cell for its `Selected` and `Disabled` cells. With `AccessibilityPreferences::default()`
-/// and no patch, the stored base style is the one the cells were derived from.
+/// `Normal` cell (with egui's `menu_style` applied for `Role::Menu`, §3.4), and for a role's
+/// other cells the cell each is built from (`mapping_tests::built_from`). With
+/// `AccessibilityPreferences::default()` and no patch, the stored base style is the one the
+/// cells were derived from.
 fn inherited_style(c: &Combination, sink: &Sink) -> Style {
     match (sink.scope.as_deref(), sink.variant.as_deref()) {
         (None, _) => c.scheme.default_style(), // egui/src/memory/theme.rs:24-29
@@ -319,7 +335,11 @@ fn inherited_style(c: &Combination, sink: &Sink) -> Style {
             }
             s
         }
-        (Some(scope), Some(_)) => Style::clone(c.cell(role_by_key(scope), RoleVariant::Normal)),
+        (Some(scope), Some(variant)) => {
+            let role = role_by_key(scope);
+            let from = built_from(role, variant_by_key(variant)).unwrap_or(RoleVariant::Normal);
+            Style::clone(c.cell(role, from))
+        }
     }
 }
 
@@ -366,7 +386,7 @@ enum Native {
 }
 
 /// The leaf's value in the resolved theme, by its §13.1 path over `serde_json::to_value`.
-/// A colour is its `Display` string (`native-theme/src/color.rs:138-150`), parsed back with
+/// A colour is its `Display` string (`native-theme/src/color.rs:189-201`), parsed back with
 /// `Rgba::from_str` (`:188`); a `FontSize` object stops the walk.
 fn native(c: &Combination, leaf: &str) -> Native {
     let mut cur = &c.json;
@@ -472,6 +492,12 @@ fn border_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedWidg
         ),
         padding: padding_of(c, widget),
     }
+}
+
+/// An overlay scrollbar whose stated track is fully transparent: egui paints no groove there.
+fn no_groove(c: &Combination) -> bool {
+    matches!(native(c, "scrollbar.overlay_mode"), Native::Bool(true))
+        && colour(c, "scrollbar.track_color").is_some_and(|x| x.a == 0)
 }
 
 /// The first stated colour of a §6.4 chain; the chain's last leaf is required.
@@ -601,6 +627,28 @@ fn expected(
                 "checkbox.background_color",
             ],
         )?),
+        // The disabled rule (docs/platform-facts.md §2.1.6): a checked box takes the stated
+        // disabled fill and its mark the disabled text colour; with no disabled fill stated it
+        // is its checked self, which `disabled_alpha` fades.
+        (Some("checkbox"), "selected_disabled", None, "visuals.widgets.inactive.bg_fill") => {
+            c32(chain(
+                c,
+                &[
+                    "checkbox.disabled_background",
+                    "checkbox.checked_background",
+                ],
+            )?)
+        }
+        (
+            Some("checkbox"),
+            "selected_disabled",
+            None,
+            "visuals.widgets.inactive.fg_stroke.color",
+        ) => c32(if colour(c, "checkbox.disabled_background").is_some() {
+            req("checkbox.disabled_text_color")?
+        } else {
+            req("checkbox.indicator_color")?
+        }),
         (Some("input"), "disabled", None, "visuals.text_edit_bg_color") => {
             Val::OptColor(Some(convert::to_color32(chain(
                 c,
@@ -707,6 +755,31 @@ fn expected(
                 (true, "spacing.scroll.bar_width") => Val::F32(g),
                 (true, "spacing.scroll.floating_allocated_width") => Val::F32(0.0),
                 _ => return Ok(None), // the other branch's fields: not written
+            }
+        }
+        // ---- the groove's slot: an overlay bar with a fully transparent track has no groove
+        // (`egui/src/containers/scroll_area.rs:1485-1511`), so its opacities are 0 and the slot
+        // holds the input background (`egui/src/style.rs:1513`) ----
+        (None, "normal", None, "visuals.extreme_bg_color") => c32(if no_groove(c) {
+            req("input.background_color")?
+        } else {
+            req("scrollbar.track_color")?
+        }),
+        (Some("scrollbar"), "normal", None, "visuals.extreme_bg_color") => {
+            c32(req("scrollbar.track_color")?)
+        }
+        (
+            None,
+            "normal",
+            None,
+            "spacing.scroll.dormant_background_opacity"
+            | "spacing.scroll.active_background_opacity"
+            | "spacing.scroll.interact_background_opacity",
+        ) => {
+            if no_groove(c) {
+                Val::F32(0.0)
+            } else {
+                return Ok(None);
             }
         }
         // ---- §6.6 D2: the slider's row and knob ----
@@ -835,6 +908,39 @@ fn expected(
             let cell = cell().ok_or("a scoped sink")?;
             Val::F32(convert::clamp_length(w - cell.spacing.icon_width))
         }
+        // ---- a stated row height drawn as the row's height at a text scale of 1 or less: the
+        // menu's or the expander's pair-rule padding, or the list's inherited one, narrowed
+        // until a one-line label (Body; the expander's title, Button) and its padding fit the
+        // row, floored, never widened (`style::roles::fit_row_padding`) ----
+        (Some(w @ ("menu" | "list" | "expander")), "normal", None, "spacing.button_padding.y") => {
+            let unfitted = if w == "list" {
+                inherited_style().spacing.button_padding.y
+            } else {
+                convert::to_button_padding(
+                    inherited_style().spacing.button_padding,
+                    &border_of(c, w),
+                )
+                .y
+            };
+            let (stated, slot) = match w {
+                "menu" => (t.menu.row_height, egui::TextStyle::Body),
+                "list" => (t.list.row_height, egui::TextStyle::Body),
+                _ => (Some(t.expander.header_height), egui::TextStyle::Button),
+            };
+            let cell = cell().ok_or("a scoped sink")?;
+            let label = cell
+                .text_styles
+                .get(&slot)
+                .and_then(|font| c.row_height_at(font.size))
+                .map(|row| row + cell.spacing.extra_text_line_spacing);
+            Val::F32(match (stated.filter(|h| h.is_finite()), label) {
+                (Some(h), Some(label)) if c.atlas.accessibility().text_scale_factor() <= 1.0 => {
+                    let fit = ((convert::clamp_length(h) - label) / 2.0).floor().max(0.0);
+                    fit.min(unfitted)
+                }
+                _ => unfitted,
+            })
+        }
         // ---- §5's pair rule (§7.2 `to_button_padding`): four sides and the line width. The
         // expander reads `.x` on its trailing side only, so its `.x` is that side alone (§7.4). ----
         (Some("expander"), "normal", None, "spacing.button_padding.x") => {
@@ -864,6 +970,11 @@ fn expected(
                 _ => 0.0,
             })
         }
+        // ---- the tooltip delay: the theme's milliseconds as egui's seconds ----
+        (None, _, None, "interaction.tooltip_delay") => match t.tooltip.show_delay {
+            Some(ms) => Val::F32(f32::from(ms) / 1000.0),
+            None => return Ok(None),
+        },
         // ---- §6.16: the layout gap, a Builder input; T10's atlases carry none ----
         (None, _, None, "spacing.item_spacing.x" | "spacing.item_spacing.y") => {
             match c.atlas.layout().widget_gap {
@@ -938,7 +1049,7 @@ fn expected(
 
 // ---- T10 --------------------------------------------------------------------------------------
 
-/// T10 (C6): every declared sink holds the value its location's formula gives, in all 32
+/// T10 (C6): every declared sink holds the value its location's formula gives, in all 34
 /// combinations; a `None` leaf leaves the value the location inherits; `exceptions` are the only
 /// relaxation.
 #[test]
@@ -1009,8 +1120,70 @@ fn t10_every_sink_holds_the_leafs_value() {
     );
 }
 
+/// T10's expander arm (`spacing.button_padding.y` in the expander cell, the fit of
+/// `style::roles::fit_row_padding`) on a case that needs the fit, which no bundled preset is:
+/// every one's header holds its title and padding, so the 34 combinations hold the arm only as
+/// the theme's padding. material-3 with its 48 px header lowered to 24, as
+/// `a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one` builds it: each sink the
+/// manifest declares there holds the arm's value, and that value is narrower than the pair-rule
+/// padding the theme states (10), so an arm that left the padding unfitted fails.
+#[test]
+fn t10_the_expander_arm_holds_a_fitted_header() {
+    let manifest = Manifest::load();
+    let mut low = resolved("material-3", ColorMode::Light);
+    assert_eq!(
+        low.expander.header_height, 48.0,
+        "material-3's stated header"
+    );
+    low.expander.header_height = 24.0;
+    let atlas = ThemeAtlas::builder("material-3", &low, &low).build();
+    let json = serde_json::to_value(&low).expect("ResolvedTheme serialises");
+    let c = Combination {
+        key: "material-3",
+        mode: ColorMode::Light,
+        scheme: Theme::Light,
+        json: with_layout(json, atlas.layout()),
+        atlas,
+        resolved: low,
+    };
+    let mut checked = Vec::new();
+    for (leaf, row) in &manifest.rows {
+        let sinks = row.sinks.iter().filter(|sink| {
+            sink.scope.as_deref() == Some("expander")
+                && sink.variant.as_deref().unwrap_or("normal") == "normal"
+                && sink.path == "spacing.button_padding.y"
+        });
+        for sink in sinks {
+            let (Some(got), Some(inherited)) = read_sink(&c, sink) else {
+                panic!("`{leaf}`: the reader lacks the expander cell's padding");
+            };
+            let want = expected(&c, &manifest.rows, sink, inherited)
+                .unwrap_or_else(|why| panic!("`{leaf}`: {why}"))
+                .unwrap_or(inherited);
+            assert_eq!(
+                got, want,
+                "`{leaf}` → the expander cell's spacing.button_padding.y"
+            );
+            let unfitted = convert::to_button_padding(
+                inherited_style(&c, sink).spacing.button_padding,
+                &border_of(&c, "expander"),
+            )
+            .y;
+            assert!(
+                matches!(want, Val::F32(fit) if fit < unfitted),
+                "`{leaf}`: {want:?} is not narrower than the theme's {unfitted}"
+            );
+            checked.push(leaf.as_str());
+        }
+    }
+    assert!(
+        checked.contains(&"expander.header_height"),
+        "the manifest declares the fit at expander.header_height: {checked:?}"
+    );
+}
+
 /// The §6.11 cases T10 names, on `adwaita`, the one bundled preset that states the checkbox
-/// padding (`native-theme/src/presets/adwaita.toml:133`, `:147-148`): 14 where egui draws 8;
+/// padding (`native-theme/src/presets/adwaita.toml:162`, `:176-177`): 14 where egui draws 8;
 /// pairs set apart, the mean of both; every side above half the box, `clamp_length`'s floor.
 #[test]
 fn t10_a_none_leaf_keeps_eguis_value() {
@@ -1144,8 +1317,9 @@ fn names(sinks: &[&Sink], path: &str) -> bool {
 /// T10c: every field of every location that no row declares there — the `[unwritten]` paths and
 /// every field no sink at that location names — holds the value the location inherits (§3.4;
 /// §13.1, *Inheritance*): egui's own `Style` for the base style, the base style for a role's
-/// `Normal` cell (with egui's `menu_style` for `Role::Menu`), the `Normal` cell for its
-/// `Selected` and `Disabled` cells, and egui's preset frame over the base style for a `Surface`.
+/// `Normal` cell (with egui's `menu_style` for `Role::Menu`), for a role's other cells the cell
+/// each is built from (`mapping_tests::built_from`), and egui's preset frame over the base
+/// style for a `Surface`.
 /// §6's no-row writes in a cell (`mapping_tests::no_row_write`) count as declared there.
 #[test]
 fn t10c_every_undeclared_field_holds_its_inherited_value() {
@@ -1193,9 +1367,9 @@ fn t10c_every_undeclared_field_holds_its_inherited_value() {
             }
             let normal = c.cell(*role, RoleVariant::Normal);
             for variant in RoleVariant::all() {
-                let (from, cell) = match variant {
-                    RoleVariant::Normal => (&inherited, normal),
-                    _ => (normal, c.cell(*role, *variant)),
+                let (from, cell) = match built_from(*role, *variant) {
+                    None => (&inherited, normal),
+                    Some(from) => (c.cell(*role, from), c.cell(*role, *variant)),
                 };
                 let moved: Vec<String> = style_diff(from, cell)
                     .into_iter()
@@ -1227,7 +1401,7 @@ fn t10c_every_undeclared_field_holds_its_inherited_value() {
     );
 }
 
-/// T10's `NaN` sweep over the 32 combinations: `Style` derives `PartialEq` (`egui/src/style.rs:241`)
+/// T10's `NaN` sweep over the 34 combinations: `Style` derives `PartialEq` (`egui/src/style.rs:241`)
 /// and one `NaN` anywhere makes a value unequal to itself; `number_formatter` compares by
 /// `Arc::ptr_eq` (`:57-62`) and always equals itself. `self_equal` spells `v == v` so
 /// that `clippy::eq_op`, deny-by-default, does not fire on it. One atlas per preset holds both
@@ -1278,29 +1452,14 @@ fn straight_native(c: Rgba) -> Straight {
     }
 }
 
-/// `top` over `bottom`, straight-alpha source-over — the siblings' `over`
-/// (`connectors/native-theme-iced/src/contract.rs:853-871`).
+/// `top` over `bottom`, straight-alpha source-over — the siblings' composite
+/// (`native_theme::color::composite_over`).
 fn over(top: Straight, bottom: Straight) -> Straight {
-    let under = bottom.a * (1.0 - top.a);
-    let alpha = top.a + under;
-    if alpha <= 0.0 {
-        return Straight {
-            r: 0.0,
-            g: 0.0,
-            b: 0.0,
-            a: 0.0,
-        };
-    }
-    if under <= 0.0 {
-        return top;
-    }
-    let blend = |t: f32, b: f32| (t * top.a + b * under) / alpha;
-    Straight {
-        r: blend(top.r, bottom.r),
-        g: blend(top.g, bottom.g),
-        b: blend(top.b, bottom.b),
-        a: alpha,
-    }
+    let [r, g, b, a] = native_theme::color::composite_over(
+        [top.r, top.g, top.b, top.a],
+        [bottom.r, bottom.g, bottom.b, bottom.a],
+    );
+    Straight { r, g, b, a }
 }
 
 /// WCAG 2.1 relative luminance and contrast ratio, as the iced connector's test-only
@@ -1454,14 +1613,7 @@ const PAIRS: &[Pair] = &[
             )
         },
         asserted: true,
-        // windows-11's button hover layer is translucent (§6.1): `composite_over` blends in
-        // premultiplied gamma space and rounds to `u8` (`ecolor/src/color32.rs:343-345`, §7.2),
-        // the native pair here in straight-alpha `f32`, so the two differ by rounding alone —
-        // 15.685 against 15.696, above the pair's rounding floor of 15.557.
-        exceptions: &[(
-            "windows-11/light",
-            "composite_over's premultiplied u8 rounding of a translucent layer (§7.2)",
-        )],
+        exceptions: &[],
     },
     Pair {
         what: "Label on a panel",

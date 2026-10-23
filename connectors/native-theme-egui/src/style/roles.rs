@@ -92,7 +92,9 @@ fn slot_size(
 /// stands as §2 *Unstated sizes* promises. A cell is a copy of the base style, whose
 /// `interact_size.y` is `button.min_height` (§5.9), and leaving that there would make a row
 /// the platform sizes to its content (`docs/platform-facts.md` §2.6, §2.13, §2.15) at least a
-/// push button tall. The toolbar's stated height is §6.10's, written after this.
+/// push button tall. The toolbar's stated height is §6.10's, written after this. A stated menu
+/// or list row height is a row's least height to egui, so the cell's vertical padding is fitted
+/// to it once the cell's font is written ([`fit_row_padding`]).
 fn row_height(
     s: &mut egui::Style,
     path: &'static str,
@@ -102,6 +104,52 @@ fn row_height(
 ) {
     let own = input.scheme.default_style().spacing.interact_size.y;
     s.spacing.interact_size.y = optional_length(path, v, own, notes).unwrap_or(own);
+}
+
+/// A stated row height (`menu.row_height`, `list.row_height`, `expander.header_height`) as the
+/// drawn height of a one-line row at a text scale of 1 or less, as gpui
+/// (`geometry::with_height_rule`'s fixed `h`, `geometry::accordion_title`'s) and iced
+/// (`Length::Fixed`) draw it. egui's `Button` takes `interact_size.y`, where [`row_height`]
+/// writes the stated height, as its least height and grows to its label and vertical padding
+/// (`egui/src/widgets/button.rs:306-309`, `src/atomics/atom_layout.rs:409`), and its
+/// `CollapsingHeader` its header the same way (`egui/src/containers/collapsing_header.rs:531-532`),
+/// so the cell's vertical `button_padding` is narrowed until a one-line label in the cell's
+/// `slot` font (Body for a menu or list row, Button for the header's title) — epaint's row at
+/// that size (`fonts::body_row_height`) and `extra_text_line_spacing`
+/// (`egui/src/widget_text.rs:775-776`) — fits the stated height with it: floored to whole
+/// points, as egui rounds the margin (`epaint/src/margin.rs:115-119`), and never widened. A
+/// stated height that is not finite fits nothing, as `interact_size.y` keeps egui's own there.
+/// A row that already fits is unchanged: egui centres the label in the room the height leaves
+/// (`atom_layout.rs:599`, `:619`; `collapsing_header.rs:536-539`). Where the label alone is
+/// taller than the stated height the padding goes to 0 and the row is the label's height. Above
+/// a text scale of 1 the theme's padding stands: the row grows past the stated height to hold
+/// its scaled text, as gpui's menu and list rows do (`min_h`), and keeps its padding round it.
+/// The same fit as the widgets crate's segmented control (`native-theme-egui-widgets`
+/// `segmented_control.rs`, `fit_height`).
+fn fit_row_padding(
+    s: &mut egui::Style,
+    stated: Option<f32>,
+    slot: TextStyle,
+    input: &BuildInput<'_>,
+) {
+    let (Some(_), Some(defs)) = (stated.filter(|h| h.is_finite()), input.defs) else {
+        return;
+    };
+    if input.prefs.text_scale_factor() > 1.0 {
+        return;
+    }
+    let Some(size) = s.text_styles.get(&slot).map(|font| font.size) else {
+        return;
+    };
+    let Some(row) = crate::fonts::body_row_height(defs, size) else {
+        return;
+    };
+    // `interact_size.y` holds the stated height as `row_height` wrote it, sanitised
+    let label = row + s.spacing.extra_text_line_spacing;
+    let fit = ((s.spacing.interact_size.y - label) / 2.0).floor().max(0.0);
+    if fit.is_finite() && fit < s.spacing.button_padding.y {
+        s.spacing.button_padding.y = fit;
+    }
 }
 
 /// An `Option<f32>` size (rationale §3.23, S2): `None` writes nothing and egui's value stands.
@@ -131,12 +179,12 @@ fn text_in_all(idle: Rgba) -> Option<TextSource> {
 fn panel_edge(
     s: &mut egui::Style,
     own: &egui::Style,
-    paths: [&'static str; 2],
+    width_path: &'static str,
     border: &ResolvedWidgetBorder,
     notes: &mut Vec<Note>,
 ) {
     s.visuals.widgets.noninteractive.bg_stroke = stroke(
-        paths,
+        width_path,
         own.visuals.widgets.noninteractive.bg_stroke,
         to_color32(border.color),
         border.line_width,
@@ -168,11 +216,7 @@ fn button(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes:
             }),
             border: Some(BorderSource {
                 border: &b.border,
-                paths: [
-                    "button.border.color",
-                    "button.border.corner_radius",
-                    "button.border.line_width",
-                ],
+                paths: ["button.border.corner_radius", "button.border.line_width"],
                 entries: BorderEntries::All, // the `{5}` rows
             }),
             open: OpenFrom::Inactive,
@@ -238,11 +282,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
             }),
             border: Some(BorderSource {
                 border: &m.border,
-                paths: [
-                    "menu.border.color",
-                    "menu.border.corner_radius",
-                    "menu.border.line_width",
-                ],
+                paths: ["menu.border.corner_radius", "menu.border.line_width"],
                 entries: BorderEntries::Interactive, // the item's outline; nothing into the frame's
             }),
             open: OpenFrom::Hovered, // the open item stays highlighted (`menu.rs:382-384`)
@@ -279,6 +319,7 @@ fn menu(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         input,
         notes,
     ); // items read Body (B3)
+    fit_row_padding(s, m.row_height, TextStyle::Body, input);
 }
 
 fn input_role(
@@ -296,11 +337,7 @@ fn input_role(
             text: text_in_all(i.font.color),
             border: Some(BorderSource {
                 border: &i.border,
-                paths: [
-                    "input.border.color",
-                    "input.border.corner_radius",
-                    "input.border.line_width",
-                ],
+                paths: ["input.border.corner_radius", "input.border.line_width"],
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -356,7 +393,6 @@ fn checkbox(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             border: Some(BorderSource {
                 border: &border,
                 paths: [
-                    "checkbox.unchecked_border_color",
                     "checkbox.border.corner_radius",
                     "checkbox.border.line_width",
                 ],
@@ -579,11 +615,7 @@ fn tab(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &m
             }),
             border: Some(BorderSource {
                 border: &tb.border,
-                paths: [
-                    "tab.border.color",
-                    "tab.border.corner_radius",
-                    "tab.border.line_width",
-                ],
+                paths: ["tab.border.corner_radius", "tab.border.line_width"],
                 entries: BorderEntries::All,
             }),
             open: OpenFrom::Inactive,
@@ -653,13 +685,7 @@ fn sidebar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["sidebar.border.color", "sidebar.border.line_width"],
-        &sb.border,
-        notes,
-    );
+    panel_edge(s, own, "sidebar.border.line_width", &sb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -698,13 +724,7 @@ fn toolbar(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["toolbar.border.color", "toolbar.border.line_width"],
-        &tb.border,
-        notes,
-    );
+    panel_edge(s, own, "toolbar.border.line_width", &tb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -735,13 +755,7 @@ fn status_bar(
         },
         notes,
     );
-    panel_edge(
-        s,
-        own,
-        ["status_bar.border.color", "status_bar.border.line_width"],
-        &sb.border,
-        notes,
-    );
+    panel_edge(s, own, "status_bar.border.line_width", &sb.border, notes);
     slot_size(
         s,
         TextStyle::Body,
@@ -801,6 +815,7 @@ fn list(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, notes: &
         input,
         notes,
     );
+    fit_row_padding(s, l.row_height, TextStyle::Body, input);
 }
 
 fn separator(
@@ -907,7 +922,6 @@ fn combo_box(
             border: Some(BorderSource {
                 border: &cb.border,
                 paths: [
-                    "combo_box.border.color",
                     "combo_box.border.corner_radius",
                     "combo_box.border.line_width",
                 ],
@@ -981,7 +995,6 @@ fn segmented_control(
             border: Some(BorderSource {
                 border: &sc.border,
                 paths: [
-                    "segmented_control.border.color",
                     "segmented_control.border.corner_radius",
                     "segmented_control.border.line_width",
                 ],
@@ -1047,7 +1060,6 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             border: Some(BorderSource {
                 border: &x.border,
                 paths: [
-                    "expander.border.color",
                     "expander.border.corner_radius",
                     "expander.border.line_width",
                 ],
@@ -1091,6 +1103,9 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             .map_or(own_padding.x, clamp_length),
         to_button_padding(own_padding, &x.border).y,
     );
+    // the header's title is laid out in the Button font
+    // (`egui/src/containers/collapsing_header.rs:518-523`)
+    fit_row_padding(s, Some(x.header_height), TextStyle::Button, input);
 }
 
 fn link(s: &mut egui::Style, _own: &egui::Style, input: &BuildInput<'_>, notes: &mut Vec<Note>) {
@@ -1141,6 +1156,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();
@@ -1162,7 +1178,7 @@ mod tests {
 
     /// §5.3, §6.1: egui's strong text is `widgets.active.text_color()` (`egui/src/style.rs:1147-1149`),
     /// so the base style writes the panel's text colour there; kde-breeze light's pressed-button
-    /// white `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:97`) stays in the Button cell.
+    /// white `#fcfcfc` (`native-theme/src/presets/kde-breeze.toml:123`) stays in the Button cell.
     #[test]
     fn strong_text_is_the_panel_text_and_the_button_cell_keeps_its_pressed_pair() {
         let (c, base, t, _) = cell("kde-breeze", ColorMode::Light, Role::Button);
@@ -1199,6 +1215,7 @@ mod tests {
             prefs: &prefs,
             layout: &layout,
             row_height: None,
+            defs: None,
             patch: None,
         };
         let mut notes = Vec::new();
@@ -1225,8 +1242,8 @@ mod tests {
         ("adwaita", ColorMode::Light),
         ("kde-breeze", ColorMode::Dark),
         ("windows-11", ColorMode::Light),
-        ("macos-sonoma", ColorMode::Dark),
-        ("material", ColorMode::Light),
+        ("macos-monterey", ColorMode::Dark),
+        ("material-3", ColorMode::Light),
         ("catppuccin-mocha", ColorMode::Dark),
     ];
 
@@ -1405,7 +1422,7 @@ mod tests {
     #[test]
     fn no_cell_changes_the_text_style_keys() {
         for role in Role::all() {
-            let (c, base, _, _) = cell("macos-sonoma", ColorMode::Dark, *role);
+            let (c, base, _, _) = cell("macos-monterey", ColorMode::Dark, *role);
             assert_eq!(c.text_styles.len(), base.text_styles.len(), "{role:?}");
             for (slot, font) in &c.text_styles {
                 assert_eq!(
@@ -1484,7 +1501,7 @@ mod tests {
             let (c, base, t, notes) = cell(preset, mode, Role::Checkbox);
             let k = &t.checkbox;
             let w = &c.visuals.widgets;
-            // The one note a preset may cause here: material's unchecked box has no
+            // The one note a preset may cause here: material-3's unchecked box has no
             // container (docs/platform-facts.md §2.5), a transparent fill written as given.
             let transparent_box = k.unchecked_background.is_some_and(|c| c.a == 0);
             assert!(

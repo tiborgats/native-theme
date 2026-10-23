@@ -30,11 +30,18 @@ const CRATE: &str = env!("CARGO_PKG_NAME");
 
 /// The upstream crates whose floor the README's Compatibility table states.
 ///
-/// `iced_widget` and `iced_aw` are optional, one on by default and one off,
-/// and a floor holds wherever the feature that pulls the crate in is enabled.
-/// `iced` is a dev-dependency: it is what the showcase builds against, and
-/// what an application depends on beside this connector.
-const REQUIRED: &[&str] = &["iced", "iced_aw", "iced_core", "iced_widget"];
+/// `iced_widget`, `iced_aw` and `iced_futures` are optional, the first on by
+/// default and the others off, and a floor holds wherever the feature that
+/// pulls the crate in is enabled. `iced` is a dev-dependency: it is what the
+/// showcase builds against, and what an application depends on beside this
+/// connector.
+const REQUIRED: &[&str] = &[
+    "iced",
+    "iced_aw",
+    "iced_core",
+    "iced_futures",
+    "iced_widget",
+];
 
 /// The row the table states for the toolchain, beside the crates.
 const RUST_VERSION: &str = "rust-version";

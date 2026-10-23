@@ -6,8 +6,10 @@
 # checked-out commit. This script records which sources they came from and
 # lets the release gates verify that claim without any git history:
 #
-#   update_provenance.sh write         write the stamp for HEAD (generate_assets_release.sh
-#                                calls it after the captures succeeded)
+#   update_provenance.sh write [DIR]   write the stamp for HEAD (generate_assets_release.sh
+#                                calls it after the captures succeeded); DIR holds
+#                                the CI captures' OS-version sidecars
+#                                (<toolkit>-macos.txt, <toolkit>-windows.txt)
 #   update_provenance.sh check         exit 0 if HEAD's sources match the stamp;
 #                                exit 1 with a message on stdout if the stamp
 #                                is missing or the sources differ
@@ -20,6 +22,14 @@
 # mapping.toml, the lockfile, the capture scripts and the screenshots
 # workflow. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check`
 # works on a depth-1 checkout.
+#
+# The stamp also records the OS versions of the CI runners that captured the
+# macOS and Windows screenshots (`macos_version`, `windows_version`), each
+# from the sidecars the screenshots workflow uploads with its captures:
+# `sw_vers -productVersion` on macOS, `[System.Environment]::OSVersion.Version`
+# on Windows. One job per toolkit captures each platform, so a field lists
+# every distinct version its jobs ran on; it is empty when no sidecar was
+# given. No gate compares them with a preset's range yet.
 set -euo pipefail
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -74,12 +84,41 @@ stamp_field() {
     sed -n "s/^$1 = \"\(.*\)\"/\1/p" "$STAMP" | head -1
 }
 
+# The distinct OS versions in DIR's sidecars for one platform, comma-separated;
+# nothing when DIR is empty or holds none. A line that is not a dotted version
+# is reported on stderr and left out.
+os_versions() {
+    local dir="$1" platform="$2" f line
+    local -a versions=()
+    [ -n "$dir" ] || return 0
+    for f in "$dir"/*-"$platform".txt; do
+        [ -f "$f" ] || continue
+        while IFS= read -r line || [ -n "$line" ]; do
+            line="${line%$'\r'}"
+            [ -n "$line" ] || continue
+            if [[ "$line" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+                versions+=("$line")
+            else
+                echo "update_provenance: $f: not an OS version: $line" >&2
+            fi
+        done < "$f"
+    done
+    [ "${#versions[@]}" -gt 0 ] || return 0
+    printf '%s\n' "${versions[@]}" | sort -uV | paste -sd ',' - | sed 's/,/, /g'
+}
+
 workspace_version() {
     grep -E '^version\s*=' "$ROOT/Cargo.toml" | head -1 | sed -E 's/.*"([^"]+)".*/\1/'
 }
 
 cmd_write() {
-    local hash version commit today
+    local sidecars="${1:-}" hash version commit today macos_version windows_version
+    if [ -n "$sidecars" ] && [ ! -d "$sidecars" ]; then
+        echo "update_provenance: $sidecars is not a directory" >&2
+        return 1
+    fi
+    macos_version=$(os_versions "$sidecars" macos)
+    windows_version=$(os_versions "$sidecars" windows)
     hash=$(sources_hash HEAD)
     version=$(workspace_version)
     commit=$(git -C "$ROOT" rev-parse HEAD)
@@ -89,7 +128,7 @@ cmd_write() {
 # Provenance of the visual assets (screenshots and GIFs under
 # native-theme/docs/assets and connectors/*/docs/assets).
 # Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
-# read by scripts/check_release.sh and the crates.io workflow's CI gate.
+# read by scripts/check_release.sh and the crates.io workflow's release gate.
 # Do not edit by hand.
 
 # Workspace version and commit the assets were captured from.
@@ -97,12 +136,18 @@ version = "$version"
 commit = "$commit"
 generated = "$today"
 
+# OS versions of the CI runners that captured the macOS and Windows
+# screenshots, from the screenshots workflow's sidecars; empty when the run
+# recorded none.
+macos_version = "$macos_version"
+windows_version = "$windows_version"
+
 # SHA-256 over the git object ids of every path that feeds the showcases
 # (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
 sources = "$hash"
 EOF
-    echo "wrote $STAMP_REL (version $version, commit ${commit:0:7}, sources ${hash:0:12})"
+    echo "wrote $STAMP_REL (version $version, commit ${commit:0:7}, sources ${hash:0:12}, macOS ${macos_version:-unrecorded}, Windows ${windows_version:-unrecorded})"
 }
 
 cmd_check() {
@@ -136,12 +181,12 @@ cmd_verify_clean() {
 }
 
 case "${1:-}" in
-    write)        cmd_write ;;
+    write)        cmd_write "${2:-}" ;;
     check)        cmd_check ;;
     verify-clean) cmd_verify_clean ;;
     hash)         sources_hash HEAD ;;
     *)
-        echo "usage: $0 {write|check|verify-clean|hash}" >&2
+        echo "usage: $0 {write [DIR]|check|verify-clean|hash}" >&2
         exit 2
         ;;
 esac

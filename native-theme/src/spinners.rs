@@ -20,14 +20,17 @@ const SPIN_FRAME_COUNT: u32 = 24;
 
 /// Duration of each frame in milliseconds (24 frames x 42ms = 1008ms ~ 1s cycle).
 ///
-/// Must be > 0; a zero duration would cause infinite-loop or division-by-zero in renderers.
-const SPIN_FRAME_DURATION_MS: u32 = 42;
+/// Non-zero by type; a zero duration would cause infinite-loop or division-by-zero in renderers.
+const SPIN_FRAME_DURATION: NonZeroU32 = NonZeroU32::MIN.saturating_add(41);
 
 /// Generate pre-rotated SVG frames from a single SVG icon.
 ///
 /// Parses the SVG to extract the viewBox center, then generates `SPIN_FRAME_COUNT`
 /// frames, each with the inner content wrapped in `<g transform="rotate(angle cx cy)">`.
 /// This is the same technique used by `scripts/generate_gifs_spinners.py` for the README animations.
+///
+/// The list is never empty. An SVG that cannot be spun (not UTF-8, no `>` or `</svg>`, a
+/// viewBox of zero or negative size) gives one frame, the SVG itself: a still image.
 fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     let svg_str = match std::str::from_utf8(svg_bytes) {
         Ok(s) => s,
@@ -60,8 +63,6 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     let Some(inner_content) = svg_str.get(inner_start..close_pos) else {
         return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     };
-
-    const { assert!(SPIN_FRAME_DURATION_MS > 0, "frame duration must be > 0") }
 
     // Extract viewBox to compute rotation center (handle both quote styles)
     let (cx, cy, valid_viewbox) = {
@@ -122,36 +123,21 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
         frames.push(IconData::Svg(Cow::Owned(rotated.into_bytes())));
     }
 
-    // Guard: if frame generation somehow produced nothing, return static frame
-    if frames.is_empty() {
-        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
-    }
-
     frames
 }
 
-/// Build an `AnimatedIcon` from pre-rotated frames, falling back to a
-/// transform-based spin if frame construction fails (e.g. empty vec,
-/// which should not happen with bundled SVGs but is handled gracefully).
+/// Build an `AnimatedIcon` from pre-rotated frames. `svg_to_spin_frames` never
+/// returns an empty list, so `AnimatedIcon::frames` cannot fail; the transform
+/// spin only satisfies its `Result`.
 fn frames_or_spin_fallback(svg_bytes: &'static [u8]) -> AnimatedIcon {
-    let frames = svg_to_spin_frames(svg_bytes);
-    // SPIN_FRAME_DURATION_MS is compile-time asserted > 0 above.
-    let Some(dur) = NonZeroU32::new(SPIN_FRAME_DURATION_MS) else {
-        // Fallback: transform spin (compile-time assert prevents this path)
-        return AnimatedIcon::transform(
+    AnimatedIcon::frames(svg_to_spin_frames(svg_bytes), SPIN_FRAME_DURATION).unwrap_or_else(|_| {
+        AnimatedIcon::transform(
             IconData::Svg(Cow::Borrowed(svg_bytes)),
             TransformAnimation::Spin {
-                duration_ms: NonZeroU32::MIN,
+                duration_ms: SPIN_FRAME_DURATION,
             },
-        );
-    };
-    match AnimatedIcon::frames(frames, dur) {
-        Ok(anim) => anim,
-        Err(_) => AnimatedIcon::transform(
-            IconData::Svg(Cow::Borrowed(svg_bytes)),
-            TransformAnimation::Spin { duration_ms: dur },
-        ),
-    }
+        )
+    })
 }
 
 /// Material Design progress_activity icon as pre-rotated frames.

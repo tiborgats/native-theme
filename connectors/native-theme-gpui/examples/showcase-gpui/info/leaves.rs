@@ -5,8 +5,8 @@
 //! its `widgets::` control, or the showcase helper that sets it -- or says
 //! "not reachable" with the upstream line that keeps it out. Where the
 //! showcase could apply a leaf and does not, the line says so and names what
-//! is drawn instead. Upstream citations are to gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! is drawn instead. Upstream citations are to gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 /// Each line as (element-id prefix, leaf, line). The first entry whose
 /// prefix the hovered element's id starts with and whose leaf matches wins;
@@ -94,7 +94,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.menu",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.page_tabs.menu",
@@ -145,7 +145,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar.toggle",
         "button.active_background",
-        "gpui: ghost_button's active, secondary_active; also its selected fill (button.rs:1295)",
+        "gpui: ghost_button's active, secondary_active; also its selected fill (gpui-component/button/button.rs:1318, active)",
     ),
     (
         "chrome.toolbar.",
@@ -180,17 +180,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.toolbar.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "basic.icons.",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.status_bar.toggle",
         "button.hover_text_color",
-        "not reachable: a Custom variant has no hover text colour (button.rs:102-141, 1150-1155)",
+        "not reachable: a Custom variant has no hover text colour (gpui-component/button/button.rs:102-142, ButtonCustomVariant; :1190, Custom; :1204-1209, text_color)",
     ),
     (
         "chrome.toolbar.",
@@ -281,12 +281,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.active_background",
-        "gpui: ThemeColor button_active, the fill blended with it (colors.rs); the pressed fill",
+        "gpui: ThemeColor button_active, laid over the fill source-over (colors.rs, over); the pressed fill",
     ),
     (
         "",
         "button.active_text_color",
-        "not reachable: a pressed Button keeps its variant's text colour (button.rs:1257-1261)",
+        "not reachable: a pressed Button keeps its variant's text colour (gpui-component/button/button.rs:1280-1284, text_color)",
     ),
     (
         "",
@@ -331,7 +331,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.border.shadow_enabled",
-        "not reachable: only a Custom variant takes a shadow (button.rs:1093-1098)",
+        "not reachable: only a Custom variant takes a shadow (gpui-component/button/button.rs:1116-1121, shadow)",
     ),
     (
         "",
@@ -351,7 +351,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.font",
-        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s size and weight (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (sizing.rs:337-343)",
+        "gpui: `geometry::button_label` gives the label, the Button's child, `button.font`'s family, size, weight and style (demo::labelled); a `.label()` would be upstream's `text_sm` at Medium (gpui-component/sizing.rs:337-343, button_text_size)",
     ),
     (
         "",
@@ -361,12 +361,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "button.hover_background",
-        "gpui: ThemeColor button_hover, the fill blended with it (colors.rs): the hover fill",
+        "gpui: ThemeColor button_hover, laid over the fill source-over (colors.rs, over): the hover fill",
     ),
     (
         "",
         "button.hover_text_color",
-        "not reachable: a hovered Button keeps its variant's text colour (button.rs:1181-1186)",
+        "not reachable: a hovered Button keeps its variant's text colour (gpui-component/button/button.rs:1204-1209, text_color)",
     ),
     (
         "",
@@ -388,7 +388,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "card.background_color",
-        "gpui: the GroupBox content's bg (demo::card)",
+        "gpui: geometry::group_box_content's bg",
     ),
     (
         "",
@@ -434,7 +434,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.background_color",
-        "gpui: widgets::Checkbox's unchecked fill and hover where theirs are unstated (CheckboxLook)",
+        "gpui: widgets::Checkbox's unchecked fill where unchecked_background is unstated (CheckboxLook)",
     ),
     (
         "",
@@ -499,7 +499,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.font",
-        "gpui: the label's size and weight (widgets::Checkbox); family: the window's",
+        "gpui: the label's family, size, weight and style (widgets::Checkbox, widgets::Radio)",
     ),
     (
         "",
@@ -509,7 +509,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "checkbox.hover_background",
-        "gpui: over the unchecked fill under the pointer (CheckboxLook)",
+        "gpui: over the unchecked fill under the pointer; unset, the fill at rest (CheckboxLook)",
     ),
     (
         "",
@@ -550,12 +550,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font",
-        "gpui: geometry::combobox's size and weight; family: the window's",
+        "gpui: geometry::combobox's family, size, weight and style",
     ),
     (
         "chrome.side_panel.settings.theme",
         "combo_box.font.color",
-        "not reachable: the Combobox's disabled colour lands before the caller's style (combobox.rs:998)",
+        "not reachable: the Combobox's disabled colour lands before the caller's style (gpui-component/combobox.rs:991-998, refine_style)",
     ),
     // --- combo_box: a Select, and the Combobox's metrics ------------------------
     (
@@ -566,12 +566,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.arrow_icon_size_px",
-        "not reachable: the caret is the trigger's own, sized inside it (select.rs:599-600)",
+        "not reachable: the caret is the trigger's own, sized inside it (gpui-component/select.rs:626-627, Caret)",
     ),
     (
         "",
         "combo_box.background_color",
-        "gpui: the fill under the trigger (demo::combo_surface)",
+        "gpui: geometry::combo_box_fill's fill, under the trigger (demo::combo_surface)",
     ),
     (
         "",
@@ -616,7 +616,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "combo_box.font",
-        "gpui: geometry::select's size and weight; family: the window's",
+        "gpui: geometry::select's family, size, weight and style",
     ),
     (
         "",
@@ -662,7 +662,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring (styled.rs:179-184, focus_ring_style, which hands it to focus_style, :250-298)",
+        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style)",
     ),
     (
         "",
@@ -672,7 +672,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_width_px",
-        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (styled.rs:11); a width > 0 turns it on",
+        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH); a width > 0 turns it on",
     ),
     (
         "basic.typography.body",
@@ -687,7 +687,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font",
-        "gpui: the window's font, Theme::font_family and font_size (config.rs; root.rs:436, 444)",
+        "gpui: the window's font, Theme::font_family and font_size (config.rs; gpui-component/root.rs:538, font_size; :546, font_family)",
     ),
     (
         "basic.typography",
@@ -702,7 +702,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.color",
-        "gpui: the Label paints `foreground`, defaults.text_color (label.rs:211)",
+        "gpui: the Label paints `foreground`, defaults.text_color (gpui-component/label.rs:211, foreground)",
     ),
     (
         "basic.typography",
@@ -712,17 +712,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.font.family",
-        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (root.rs:444)",
+        "gpui: the window's font, Theme::font_family (config.rs), set by gpui-component's WindowState root plugin (gpui-component/root.rs:546, font_family)",
     ),
     (
         "basic.icons.large",
         "defaults.icon_sizes.large_px",
         "gpui: geometry::icon_size_large sizes the icon (demo::sized_icon)",
-    ),
-    (
-        "",
-        "defaults.icon_sizes.large_px",
-        "gpui: geometry::icon_size_large sizes the icon",
     ),
     (
         "basic.icons",
@@ -767,7 +762,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.switches",
         "defaults.line_height",
-        "gpui: not applied — the label's line box is the track's height (switch.rs:292)",
+        "gpui: widgets::Switch's label, one line of its font's size by it",
     ),
     (
         "basic.text_inputs",
@@ -792,17 +787,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.settings.theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.mode_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.icon_theme_label",
         "defaults.line_height",
-        "gpui: not applied — the label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: the label's line box, sidebar.font's size by it (demo::text_in)",
     ),
     (
         "chrome.side_panel.settings.theme",
@@ -817,22 +812,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "chrome.page_tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "basic.tabs",
         "defaults.line_height",
-        "gpui: not applied — a tab's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: widgets::TabBar's label, tab.font's size by it",
     ),
     (
         "basic.segmented",
         "defaults.line_height",
-        "gpui: not applied — a segment's label keeps gpui's line height, phi (style.rs:494)",
+        "gpui: a segment's line box, segmented_control.font's size by it (demo::text_in)",
     ),
     (
         "basic.list",
@@ -857,7 +852,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.expander",
         "defaults.line_height",
-        "gpui: the body Label's (demo::body_label); the header keeps gpui's, phi (style.rs:494)",
+        "gpui: the title's line box, expander.font's size by it (demo::text_in), and the body Label's (demo::body_label)",
     ),
     (
         "basic.card",
@@ -867,7 +862,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.menu.theme.preferences.shortcut",
         "defaults.line_height",
-        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; kbd.rs:234-236)",
+        "gpui: the row's line height, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
     ),
     (
         "chrome.menu.",
@@ -882,17 +877,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "defaults.line_height",
-        "gpui: not applied — the bar's text keeps gpui's line height, phi (style.rs:494)",
+        "gpui: geometry::status_bar's line height, status_bar.font's size by it, which the bar's text takes (demo::status_bar)",
     ),
     (
         "chrome.info",
         "defaults.line_height",
         "gpui: the line box of every Widget Info line (inspector.rs)",
-    ),
-    (
-        "",
-        "defaults.line_height",
-        "gpui: the element's line height, as the connector's control-height rule sets it",
     ),
     (
         "",
@@ -973,7 +963,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "expander.font",
-        "gpui: the header's size and weight (demo::native_expander); family: the window's",
+        "gpui: the title's family, size, weight and style (demo::native_expander)",
     ),
     (
         "",
@@ -1002,11 +992,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the frame's fill (demo::number_input)",
     ),
     (
-        "basic.text_area",
-        "input.background_color",
-        "gpui: geometry::input_fill on the Textarea (demo::rows_textarea)",
-    ),
-    (
         "",
         "input.background_color",
         "gpui: the field's fill (demo::input_surface, geometry::input_fill)",
@@ -1019,7 +1004,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.border.color",
-        "gpui: the surface's edge (demo::input_surface); a disabled field's, ThemeColor input",
+        "gpui: the surface's edge (demo::input_surface); a disabled field's, the line of its faded surface (demo::faded_surface)",
     ),
     (
         "",
@@ -1034,22 +1019,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.number_input",
         "input.border.padding_top_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_right_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_bottom_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "basic.number_input",
         "input.border.padding_left_px",
-        "gpui: pads the value's Input between the step buttons (demo::number_input)",
+        "gpui: pads the value's Input left of the step buttons (demo::number_input)",
     ),
     (
         "",
@@ -1094,37 +1079,32 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.disabled_text_color",
-        "not reachable: gpui-base halves a disabled Input's text colour (input/base/element.rs:2541)",
+        "gpui: geometry::input_fill's text colour for a disabled field, which gpui-base draws at half its alpha (gpui-base/input/base/element.rs:2632, opacity)",
     ),
     (
         "",
         "input.focus_border_color",
-        "not reachable: a focused Input edges itself in `ring` after the caller's style (input/input.rs:748-751)",
+        "not reachable: a focused Input edges itself in `ring` after the caller's style (gpui-component/input/input.rs:771-774, ring)",
     ),
     (
         "basic.text_area",
         "input.font",
-        "gpui: geometry::text_area's size and weight; family: the window's",
+        "gpui: geometry::text_area's family, size, weight and style",
     ),
     (
         "",
         "input.font",
-        "gpui: geometry::input's size and weight; family: the window's",
+        "gpui: geometry::input's family, size, weight and style",
     ),
     (
         "",
         "input.font.color",
-        "gpui: not carried — the Input letters its text in `foreground` (input/input.rs:105)",
+        "gpui: geometry::input's text colour, over the window's `foreground` the field's text inherits (gpui-component/input/input.rs:720, input_style)",
     ),
     (
         "basic.number_input",
         "input.hover_border_color",
         "gpui: the frame's edge under the pointer (demo::number_input)",
-    ),
-    (
-        "basic.text_area",
-        "input.hover_border_color",
-        "gpui: not applied — the Textarea keeps its edge under the pointer",
     ),
     (
         "",
@@ -1139,7 +1119,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "input.placeholder_color",
-        "not reachable: the placeholder is muted_foreground (input/input.rs:559)",
+        "not reachable: the placeholder is muted_foreground (gpui-component/input/input.rs:564, muted_foreground)",
     ),
     // --- layout -------------------------------------------------------------------
     (
@@ -1150,22 +1130,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.side_panel.inspector_tabs",
         "layout.container_margin_px",
-        "gpui: the tab bar's side inset (demo::native_tab_bar)",
+        "gpui: the tab bar's side inset where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding insets it (demo::native_tab_bar)",
     ),
     (
         "chrome.page_tabs",
         "layout.container_margin_px",
-        "gpui: the tab bar's side inset (demo::native_tab_bar)",
+        "gpui: the tab bar's side inset (none where that is unstated) (demo::native_tab_bar)",
     ),
     (
         "chrome.side_panel.inspector",
         "layout.container_margin_px",
-        "gpui: pads the inspector's content (inspector.rs)",
+        "gpui: pads the inspector's content where sidebar.border.padding states no side (none where that is unstated); where it states any, the side panel's padding pads it (inspector.rs)",
     ),
     (
         "chrome.status_bar",
         "layout.container_margin_px",
-        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (status_bar.rs:89-90), the padding's",
+        "gpui: not applied — an unstated side keeps StatusBar's px_2 py_1 (gpui-component/status_bar.rs:89-90, px_2), the padding's",
     ),
     (
         "basic.card",
@@ -1175,7 +1155,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "layout.container_margin_px",
-        "gpui: pads the theme settings (demo::side_panel)",
+        "gpui: the margin (none where that is unstated) pads the theme settings where sidebar.border.padding states no side, and where it states any, a side of the side panel the padding leaves unstated (demo::side_panel)",
     ),
     (
         "chrome.info",
@@ -1210,7 +1190,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.status_bar",
         "layout.widget_gap_px",
-        "gpui: not applied — StatusBar's own gap_2 between its items (status_bar.rs:88)",
+        "gpui: the gap between the side-panel toggle and the environment text, one item of StatusBar's middle region (demo::status_bar)",
     ),
     (
         "",
@@ -1231,32 +1211,32 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "link.active_text_color",
-        "not reachable: a pressed Link is `link` at 0.6 opacity (link.rs:84-85)",
+        "not reachable: a pressed Link is `link` at 0.6 opacity (gpui-component/link.rs:84-85, active)",
     ),
     (
         "",
         "link.background_color",
-        "gpui: not applied — the Link paints no fill (link.rs:70-90)",
+        "gpui: geometry::link's fill, where the Link paints none (gpui-component/link.rs:70-90, render)",
     ),
     (
         "",
         "link.font",
-        "gpui: geometry::link's size and weight; family: the window's",
+        "gpui: geometry::link's family, size, weight and style",
     ),
     (
         "",
         "link.font.color",
-        "gpui: ThemeColor link (colors.rs): the Link's text (link.rs:76)",
+        "gpui: ThemeColor link (colors.rs): the Link's text (gpui-component/link.rs:76, link)",
     ),
     (
         "",
         "link.hover_background",
-        "not reachable: the Link's hover style is upstream's, no fill (link.rs:79-83)",
+        "not reachable: the Link's hover style is upstream's, no fill (gpui-component/link.rs:79-83, hover)",
     ),
     (
         "",
         "link.hover_text_color",
-        "not reachable: a hovered Link is `link` at 0.8 opacity (link.rs:79-80)",
+        "not reachable: a hovered Link is `link` at 0.8 opacity (gpui-component/link.rs:79-80, hover)",
     ),
     (
         "",
@@ -1264,6 +1244,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: geometry::link removes upstream's underline where false",
     ),
     // --- list: the Basic page's table, demo::files_table ------------------------
+    (
+        "basic.table",
+        "list.header_height_px",
+        "gpui: geometry::list_header_height, the header row's height where stated, else a row's (demo::files_table)",
+    ),
+    (
+        "basic.table.header",
+        "list.row_height_px",
+        "gpui: the header row's height where list.header_height is unstated and this is stated, else padding and line (demo::files_table)",
+    ),
     (
         "basic.table",
         "list.background_color",
@@ -1317,7 +1307,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table",
         "list.item_font",
-        "gpui: each row's size and weight (demo::files_table); family: the window's",
+        "gpui: each row's family, size, weight and style (demo::files_table)",
     ),
     (
         "basic.table",
@@ -1352,7 +1342,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.header_font",
-        "gpui: the header row's size and weight (demo::files_table); family: the window's",
+        "gpui: the header row's family, size, weight and style (demo::files_table)",
     ),
     (
         "",
@@ -1413,7 +1403,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.item_font",
-        "gpui: geometry::list_item's size and weight; family: the window's",
+        "gpui: geometry::list_item's family, size, weight and style",
     ),
     (
         "",
@@ -1433,13 +1423,13 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "list.selection_text_color",
-        "gpui: the selected row's text colour (demo::ListRow)",
+        "gpui: geometry::list_item_selected's text colour on the selected row (demo::ListRow)",
     ),
     // --- menu: the showcase's MenuBar (demo::MenuTitle, MenuBar::popup) ---------
     (
         "chrome.menu.theme.preferences.shortcut",
         "menu.font",
-        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; kbd.rs:234-236)",
+        "gpui: the row's font, which the plain Kbd text inherits (MenuLook; gpui-component/kbd.rs:234-236, appearance)",
     ),
     (
         "chrome.menu_bar.",
@@ -1479,27 +1469,27 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "menu.border.padding_top_px",
-        "gpui: pads the row by the stated side (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_right_px",
-        "gpui: pads the row by the stated side, else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_bottom_px",
-        "gpui: pads the row by the stated side (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item, MenuBar::popup)",
     ),
     (
         "",
         "menu.border.padding_left_px",
-        "gpui: pads the row by the stated side, else MENU_ROW_PADDING_X (MenuBar::popup)",
+        "gpui: pads the row by the stated side (geometry::menu_item), else MENU_ROW_PADDING_X (MenuBar::popup)",
     ),
     (
         "",
         "menu.font",
-        "gpui: family, size and weight from MenuLook (demo::MenuTitle, MenuBar::popup)",
+        "gpui: family, size, weight and style as geometry::menu_item sets them (demo::MenuTitle, MenuBar::popup)",
     ),
     (
         "",
@@ -1519,7 +1509,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "menu.row_height_px",
-        "gpui: the row's min_h where stated (MenuBar::popup)",
+        "gpui: the row's height by geometry::menu_item's control-height rule where stated: the height at a text scale of 1 or less, a minimum above (MenuBar::popup)",
     ),
     (
         "",
@@ -1698,7 +1688,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "segmented_control.font",
-        "gpui: each label's size and weight (demo::segmented); family: the window's",
+        "gpui: each label's family, size, weight and style (demo::segmented)",
     ),
     (
         "",
@@ -1724,12 +1714,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.rule",
         "separator.line_color",
-        "gpui: the tab strip's bottom border (demo::native_tab_strip)",
+        "gpui: the page row's rule, a box laid under the tab strip, its fill (demo::native_tab_bar)",
+    ),
+    (
+        "basic.table",
+        "separator.line_width_px",
+        "gpui: the width of the header's bottom line and the column line, both in list.grid_color (demo::files_table)",
     ),
     (
         "chrome.page_tabs.rule",
         "separator.line_width_px",
-        "gpui: the tab strip's bottom border (demo::native_tab_strip)",
+        "gpui: the page row's rule, a box laid under the tab strip, its height (demo::native_tab_bar)",
     ),
     (
         "chrome.menu.",
@@ -1755,22 +1750,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.border.padding_top_px",
-        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
+        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_right_px",
-        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
+        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_bottom_px",
-        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
+        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "",
         "sidebar.border.padding_left_px",
-        "gpui: pads the panel where stated; else layout.container_margin pads its content (demo::side_panel)",
+        "gpui: pads the side panel where any side is stated, a side it leaves unstated by layout.container_margin (none where that is unstated); where no side is stated, layout.container_margin pads the settings, the inspector's tab row and its content (none where that is unstated) (demo::side_panel)",
     ),
     (
         "chrome.info",
@@ -1780,7 +1775,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "sidebar.font",
-        "gpui: the label's size and weight (demo::sidebar_label); family: the window's",
+        "gpui: the label's family, size, weight and style (demo::sidebar_label)",
     ),
     (
         "chrome.info",
@@ -1811,7 +1806,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "slider.thumb_hover_color",
-        "gpui: over the thumb under the pointer (SliderLook)",
+        "gpui: over the thumb under the pointer (SliderLook); unset, the thumb at rest",
     ),
     (
         "",
@@ -1864,12 +1859,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.background_color",
-        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (status_bar.rs:93)",
+        "gpui: ThemeColor status_bar (colors.rs): the bar's fill (gpui-component/status_bar.rs:93, status_bar)",
     ),
     (
         "",
         "status_bar.border.color",
-        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (status_bar.rs:92)",
+        "gpui: ThemeColor status_bar_border (colors.rs): the top edge (gpui-component/status_bar.rs:92, status_bar_border)",
     ),
     (
         "",
@@ -1899,7 +1894,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "status_bar.font",
-        "gpui: geometry::status_bar's size and weight; family: the window's",
+        "gpui: geometry::status_bar's family, size, weight and style",
     ),
     (
         "",
@@ -1919,6 +1914,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "switch.checked_track_border_color",
+        "gpui: the on track's outline, track_border_line_width wide, where stated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.disabled_checked_track_border_color",
+        "gpui: a disabled on track's outline, where stated; unset, the enabled one (SwitchLook)",
+    ),
+    (
+        "",
         "switch.disabled_opacity",
         "gpui: fades the whole disabled switch (widgets::Switch)",
     ),
@@ -1930,12 +1935,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "switch.hover_checked_background",
-        "gpui: over the on track under the pointer (SwitchLook)",
+        "gpui: over the on track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
         "switch.hover_unchecked_background",
-        "gpui: over the off track under the pointer (SwitchLook)",
+        "gpui: over the off track under the pointer (SwitchLook); unset, the track at rest",
     ),
     (
         "",
@@ -1944,8 +1949,18 @@ pub const HOW: &[(&str, &str, &str)] = &[
     ),
     (
         "",
+        "switch.thumb_border_color",
+        "gpui: the thumb's outline, thumb_border_line_width wide, where stated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.thumb_border_line_width_px",
+        "gpui: the thumb outline's width, inside the thumb (SwitchLook)",
+    ),
+    (
+        "",
         "switch.thumb_diameter_px",
-        "gpui: the thumb's size, centred in the track (SwitchLook)",
+        "gpui: the thumb's size, centred on the track's axis; a thumb taller than its track flush with its ends (SwitchLook)",
     ),
     (
         "",
@@ -1956,6 +1971,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "switch.unchecked_thumb_diameter_px",
         "gpui: the off thumb's size, thumb_diameter where unstated (SwitchLook)",
+    ),
+    (
+        "",
+        "switch.track_border_line_width_px",
+        "gpui: the track outline's width, inside the track (SwitchLook)",
     ),
     (
         "",
@@ -1977,7 +1997,48 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "switch.unchecked_background",
         "gpui: the track's fill when off (SwitchLook)",
     ),
+    (
+        "",
+        "switch.unchecked_track_border_color",
+        "gpui: the off track's outline, track_border_line_width wide, where stated (SwitchLook)",
+    ),
     // --- tab: widgets::TabBar ----------------------------------------------------
+    // The selected tabs before their bars, whose ids are prefixes of theirs.
+    (
+        "basic.tabs.one",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.page_tabs.basic",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.side_panel.inspector_tabs.widget",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the selected tab's outward corners, painted after the tabs (TabLook::outward_radius)",
+    ),
+    (
+        "basic.tabs.bar",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.page_tabs",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "chrome.side_panel.inspector_tabs",
+        "tab.active_outward_corner_radius_px",
+        "gpui: the tabs' inset at the row's ends (TabLook::outward_radius)",
+    ),
+    (
+        "basic.page",
+        "tab.active_outward_corner_radius_px",
+        "gpui: room for both flares in the column rule (basic_column_count)",
+    ),
     (
         "",
         "tab.active_background",
@@ -2036,7 +2097,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tab.font",
-        "gpui: each label's size and weight (widgets::TabBar); family: the window's",
+        "gpui: each label's family, size, weight and style (widgets::TabBar)",
     ),
     (
         "",
@@ -2079,7 +2140,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "text_area.border.color",
-        "gpui: not applied — the Textarea's edge is the `input` token, input.border.color (input/input.rs:788)",
+        "gpui: the surface's edge (demo::input_surface)",
     ),
     (
         "",
@@ -2167,12 +2228,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "toolbar.border.color",
-        "gpui: the bar's bottom edge colour (demo::toolbar, border_color)",
+        "gpui: geometry::toolbar's bottom edge colour",
     ),
     (
         "",
         "toolbar.border.line_width_px",
-        "gpui: the bar's bottom edge, inside it (demo::toolbar, border_b)",
+        "gpui: geometry::toolbar's bottom edge, inside the bar",
     ),
     (
         "",
@@ -2193,11 +2254,6 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "toolbar.border.padding_left_px",
         "gpui: geometry::toolbar pads the stated side; container_margin the rest (demo::toolbar)",
-    ),
-    (
-        "",
-        "toolbar.font",
-        "gpui: geometry::toolbar's size and weight on the row; no text is drawn in it",
     ),
     (
         "",
@@ -2258,7 +2314,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "tooltip.font",
-        "gpui: geometry::tooltip's size and weight; family: the window's",
+        "gpui: geometry::tooltip's family, size, weight and style",
     ),
     (
         "",
@@ -2269,6 +2325,11 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "",
         "tooltip.max_width_px",
         "gpui: geometry::tooltip_content, less the bubble's padding and border",
+    ),
+    (
+        "",
+        "tooltip.show_delay_ms",
+        "gpui: tooltip_show_delay on the element of gpui's own tooltip where stated, else gpui's 500ms (demo::built_tooltip_button)",
     ),
     // --- window ---------------------------------------------------------------------------
     (

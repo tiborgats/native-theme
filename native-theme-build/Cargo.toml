@@ -17,4 +17,4 @@ serde = { version = "1.0.229", features = ["derive"] }
 heck = "0.5"
 
 [dev-dependencies]
-native-theme = { path = "../native-theme" }
+native-theme = { workspace = true }

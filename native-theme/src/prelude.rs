@@ -6,8 +6,8 @@
 //! use native_theme::prelude::*;
 //! ```
 //!
-//! This imports the eight most-used items:
-//! [`Theme`], [`ResolvedTheme`], [`SystemTheme`],
+//! This imports the ten most-used items:
+//! [`Theme`], [`ColorMode`], [`Resolved`], [`ResolvedTheme`], [`SystemTheme`],
 //! [`AccessibilityPreferences`], [`ResolutionContext`],
 //! [`Rgba`], [`Error`], and [`Result`].
 
@@ -17,4 +17,4 @@ pub use crate::Result;
 pub use crate::SystemTheme;
 pub use crate::color::Rgba;
 pub use crate::error::Error;
-pub use crate::theme::{ResolvedTheme, Theme};
+pub use crate::theme::{ColorMode, Resolved, ResolvedTheme, Theme};

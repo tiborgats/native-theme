@@ -116,7 +116,8 @@ fn every_style_type_is_destructured_exhaustively() {
         size: _,
     } = fade;
 
-    // `Interaction`, 8 fields (egui/src/style.rs:916-944).
+    // `Interaction`, 8 fields (egui/src/style.rs:916-944): `tooltip.show_delay` writes
+    // `tooltip_delay`.
     let Interaction {
         interact_radius: _,
         resize_grab_radius_side: _,
@@ -257,4 +258,63 @@ fn the_defaults_this_design_reasons_from_have_not_moved() {
     assert_eq!(Style::default().spacing.interact_size.x, 40.0);
     // egui/src/style.rs:1560 (the field at :1126)
     assert_eq!(Visuals::dark().disabled_alpha, 0.5);
+}
+
+/// What names a `§` citation's document, right before the `§`: `spec` (`Spec` at a sentence's
+/// start), the connector spec the crate docs name, or a document by its own name
+/// (`native_theme_test_fixtures::sources::every_section_is_named` takes the names).
+const CITATION_NAMES: &[&str] = &["spec", "Spec", ".md", "CSS Fonts", "CSS Fonts Level 4"];
+
+/// M7-06: every `///` or `//!` line holding a `§` in a file docs.rs renders names the
+/// document it cites (M6-38's ruling), so a docs.rs reader can look it up. The files are the
+/// crate's top-level modules but those `lib.rs` declares under `#[cfg(test)]`; `style/` is a
+/// private module docs.rs does not render, and a file's inline test module, at its end, is left
+/// out (`sources::rendered_lines`).
+#[test]
+fn every_section_citation_in_the_rendered_docs_names_its_document() {
+    use native_theme_test_fixtures::sources::{every_section_is_named, rendered_lines};
+
+    let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let lib = std::fs::read_to_string(src.join("lib.rs")).unwrap();
+    let lib_lines: Vec<&str> = lib.lines().collect();
+    let test_only: Vec<&str> = lib_lines
+        .windows(2)
+        .filter(|pair| pair[0].trim() == "#[cfg(test)]")
+        .filter_map(|pair| pair[1].trim().strip_prefix("mod ")?.strip_suffix(';'))
+        .collect();
+    assert!(
+        test_only.contains(&"tripwires"),
+        "lib.rs read wrong: {test_only:?}"
+    );
+
+    let mut scanned = Vec::new();
+    let mut bare = Vec::new();
+    for entry in std::fs::read_dir(&src).unwrap() {
+        let path = entry.unwrap().path();
+        let name = path.file_name().unwrap().to_string_lossy().into_owned();
+        let Some(stem) = name.strip_suffix(".rs") else {
+            continue;
+        };
+        if test_only.contains(&stem) {
+            continue;
+        }
+        let text = std::fs::read_to_string(&path).unwrap();
+        for (number, line) in rendered_lines(&text) {
+            let doc = line.trim_start();
+            let is_doc = doc.starts_with("///") || doc.starts_with("//!");
+            if is_doc && !every_section_is_named(doc, CITATION_NAMES) {
+                bare.push(format!("src/{name}:{number}: {doc}"));
+            }
+        }
+        scanned.push(name);
+    }
+    assert!(
+        scanned.iter().any(|n| n == "atlas.rs"),
+        "nothing scanned: {scanned:?}"
+    );
+    assert!(
+        bare.is_empty(),
+        "a `§` that names no document (write `spec §N`):\n{}",
+        bare.join("\n")
+    );
 }

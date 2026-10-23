@@ -1,5 +1,12 @@
 # GNOME Adwaita theme - sourced from libadwaita CSS variables
-# Alpha/opacity colors pre-computed to solid hex values
+# Colours: a cited colour libadwaita gives with alpha is stated with it or composited to solid hex, as its comment says
+# Style: libadwaita 1.10.0 (c9ab1186, GNOME 51), with GTK 4.24.1 and
+# gsettings-desktop-schemas 51.0.
+# Covers: libadwaita 1.10. libadwaita 1.9 differs at least in the popover
+# outline, a 1px CSS border of RGB(0 0 0 / 14%) (_popovers.scss at 1.9.3).
+# Verified on: libadwaita 1.10.0, GTK 4.24.1 and gsettings-desktop-schemas 51.0,
+# 2026-10-11 (code review M2e), for every value that cites docs/platform-facts.md;
+# an uncited value is unchecked, and a value marked ❓ has no source.
 name = "Adwaita"
 icon_set = "freedesktop"
 icon_theme = "Adwaita"
@@ -7,31 +14,51 @@ icon_theme = "Adwaita"
 # === Light variant ===
 
 [light.defaults]
+# platform-facts.md:1052 (§2.1.3): the portal accent; libadwaita's default, blue #3584e4 (libadwaita 1.10.0 adw-accent-color.c:16, :53-54)
 accent_color = "#3584e4"
+# platform-facts.md:1050 (§2.1.3): window_bg_color #fafafb (libadwaita 1.10.0 _colors.scss:32)
 background_color = "#fafafb"
+# ❓ platform-facts.md:1051 (§2.1.3): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 text_color = "#2e3436"
+# platform-facts.md:1054 (§2.1.3): view_bg_color #ffffff (libadwaita 1.10.0 _colors.scss:36)
 surface_color = "#ffffff"
+# ❓ platform-facts.md:1056 (§2.1.3): no source for #929292 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 muted_color = "#929292"
+# ❓ platform-facts.md:1057 (§2.1.3): no source for #00000018 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 shadow_color = "#00000018"
 
+# platform-facts.md:1084 (§2.1.4): destructive_bg_color @red_3 #e01b24 (libadwaita 1.10.0 _colors.scss:12, _palette.scss:23)
 danger_color = "#e01b24"
+# platform-facts.md:1085 (§2.1.4): destructive_fg_color white (libadwaita 1.10.0 _colors.scss:13)
 danger_text_color = "#ffffff"
+# platform-facts.md:1086 (§2.1.4): warning_bg_color @yellow_5 #e5a50a (libadwaita 1.10.0 _colors.scss:19, _palette.scss:15)
 warning_color = "#e5a50a"
+# ❓ platform-facts.md:1087 (§2.1.4): no source for #2e3436 at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 warning_text_color = "#2e3436"
+# platform-facts.md:1088 (§2.1.4): success_bg_color @green_4 #2ec27e (libadwaita 1.10.0 _colors.scss:16, _palette.scss:9)
 success_color = "#2ec27e"
+# platform-facts.md:1089 (§2.1.4): success_fg_color white (libadwaita 1.10.0 _colors.scss:17)
 success_text_color = "#ffffff"
+# platform-facts.md:1090 (§2.1.4): libadwaita 1.10.0 names no info colour; the deprecated GtkInfoBar draws its info type from --accent-bg-color (_deprecated.scss:174), the default accent #3584e4 (adw-accent-color.c:53-54)
 info_color = "#3584e4"
+# platform-facts.md:1091 (§2.1.4): accent_fg_color white, the text on the accent (libadwaita 1.10.0 adw-style-manager.c:161)
 info_text_color = "#ffffff"
 
+# platform-facts.md:1059 (§2.1.3): theme_selected_bg_color = accent_bg_color, #3584e4 (libadwaita 1.10.0 _compat-colors.scss:9)
 selection_background = "#3584e4"
+# platform-facts.md:1060 (§2.1.3): theme_selected_fg_color = accent_fg_color, white (libadwaita 1.10.0 _compat-colors.scss:10, adw-style-manager.c:161)
 selection_text_color = "#ffffff"
+# ❓ platform-facts.md:1058 (§2.1.3): no source for #1b6acb at libadwaita 1.10.0 (docs/todo.md, "Presets: colours with no reproducible source")
 link_color = "#1b6acb"
-focus_ring_color = "#3584e4"
-# platform-facts.md:1060 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
+# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #0461be at 50 % (libadwaita 1.10.0
+# _drawing.scss:20, _colors.scss:260, :307, :146; adw-accent-color.c:130-157)
+focus_ring_color = "#0461be80"
+# platform-facts.md:1064 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
 disabled_text_color = "#2e3436"
+# platform-facts.md:1053 (§2.1.3): accent_fg_color white (libadwaita 1.10.0 adw-style-manager.c:161)
 accent_text_color = "#ffffff"
 
-# platform-facts.md:1115 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
+# platform-facts.md:1119 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
 disabled_opacity = 0.5
 line_height = 1.21
 focus_ring_width_px = 2.0
@@ -39,7 +66,8 @@ focus_ring_offset_px = -2.0
 
 
 [light.defaults.border]
-color = "#d5d5d5"
+# platform-facts.md:1055 (§2.1.3): $border_color, window fg RGB(0 0 6 / 80%) at --border-opacity 15% over #fafafb (libadwaita 1.10.0 _colors.scss:32-33, :257, :263, :318)
+color = "#dcdcde"
 corner_radius_px = 9.0
 corner_radius_lg_px = 15.0
 line_width_px = 1.0
@@ -77,15 +105,18 @@ size_pt =20.0
 weight = 800
 
 [light.window]
-inactive_title_bar_background = "#ffffff"
-inactive_title_bar_text_color = "#2e3436"
+# platform-facts.md:1166 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #fafafb (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :32)
+inactive_title_bar_background = "#fafafb"
+# no inactive_title_bar_text_color: platform-facts.md:1167 (§2.2), (none), libadwaita's :backdrop state
 
 [light.window.title_bar_font]
 color = "#2e3436"
 weight = 700
 
 [light.button]
-background_color = "#e8e8e8"
+# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #e6e6e7
+# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
+background_color = "#e6e6e7"
 min_width_px = 64.0
 min_height_px = 34.0
 icon_text_gap_px = 8.0
@@ -93,67 +124,82 @@ hover_background = "#d5d5d5"
 hover_text_color = "#2e3436"
 active_background = "#c8c8c8"
 active_text_color = "#2e3436"
-# platform-facts.md:1181-1182 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
+# platform-facts.md:1194-1195 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
 checked_background = "#c8c8c8"
 checked_text_color = "#2e3436"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled button is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled button is its enabled self at disabled_opacity
 
 
 [light.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+# platform-facts.md:1184-1185 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
 padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 
 [light.button.font]
 color = "#2e3436"
 [light.input]
-background_color = "#ffffff"
+# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #e6e6e7
+# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
+background_color = "#e6e6e7"
 placeholder_color = "#929595"
 min_height_px = 34.0
-caret_color = "#3584e4"
-hover_border_color = "#3584e4"
-focus_border_color = "#3584e4"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
+# platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+caret_color = "#2e3436"
+# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
+# icons' opacity (_entries.scss:49)
+# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
+focus_border_color = "#0461be80"
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
 
 
 [light.input.border]
-# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
+# platform-facts.md:1213-1214 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
+line_width_px = 0.0
+# platform-facts.md §2.4 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [light.text_area.border]
-# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1714-1715 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
 [light.input.font]
 color = "#2e3436"
 [light.checkbox]
-# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
+# platform-facts.md:1233 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+# platform-facts.md:1241 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
-# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+# platform-facts.md:1242 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
 check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#d5d5d5"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled check is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled check is its enabled self at disabled_opacity
 unchecked_background = "#ffffff"
 unchecked_border_color = "#d5d5d5"
 
 
 [light.checkbox.border]
-# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+# platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
+# platform-facts.md §2.5 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [light.tooltip]
 background_color = "#2e3436"
 max_width_px = 360.0
+# platform-facts.md:1290 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+show_delay_ms = 500
 
 
 [light.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
+# platform-facts.md:1283-1284 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -162,7 +208,8 @@ color = "#ffffff"
 [light.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 8.0
-overlay_mode = false
+# platform-facts.md:1310 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
+overlay_mode = true
 min_thumb_length_px = 40.0
 thumb_hover_color = "#6e6e6e"
 thumb_active_color = "#4e4e4e"
@@ -171,34 +218,39 @@ thumb_active_color = "#4e4e4e"
 track_height_px = 10.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 4.0
+# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #ffffff (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :36)
+thumb_color = "#ffffff"
 thumb_hover_color = "#ebebeb"
-# no disabled_*_color: platform-facts.md:1115 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
+# no disabled_*_color: platform-facts.md:1119 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
 
 [light.progress_bar]
 track_height_px = 8.0
 min_width_px = 80.0
 
 [light.progress_bar.border]
-# platform-facts.md:1308 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
+# platform-facts.md:1340 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
+# platform-facts.md:1341-1342 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [light.tab]
 min_width_px = 64.0
 min_height_px = 30.0
-# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+# platform-facts.md:1360 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
 active_background = "#fafafb"
 active_text_color = "#2e3436"
 hover_background = "#e8e8e8"
 hover_text_color = "#2e3436"
-# platform-facts.md:1327-1329 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
+# platform-facts.md:1361-1363 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
 active_indicator_color = "#3584e4"
 active_indicator_width_px = 4.0
 active_indicator_side = "bottom"
 
 
 [light.tab.border]
-# platform-facts.md:1318-1319 (§2.11): Adwaita CSS 12; 3
+# platform-facts.md:1352-1353 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [light.menu]
@@ -206,39 +258,44 @@ row_height_px = 32.0
 icon_text_gap_px = 8.0
 hover_background = "#e8e8e8"
 hover_text_color = "#2e3436"
-# no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity
+# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
 
 
 [light.menu.border]
-# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
+# platform-facts.md:1261-1262 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [light.list]
 alternate_row_background = "#f5f5f5"
-# row_height not stated: platform-facts.md:1389 (§2.15), plain list context, no min-height
+# row_height not stated: platform-facts.md:1431 (§2.15), plain list context, no min-height
+# platform-facts.md:1432 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+header_height_px = 30.0
 hover_background = "#ebebed"
 hover_text_color = "#2e3436"
-# no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity
+# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
 
 
 [light.list.border]
-# platform-facts.md:1390-1391 (§2.15): Adwaita CSS plain list context, 2
+# platform-facts.md:1433-1434 (§2.15): Adwaita CSS plain list context, 2
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
 [light.toolbar]
-# bar_height not stated: platform-facts.md:1351 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1352 (§2.13): Adwaita CSS .toolbar border-spacing 6
+# bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
 
 
 [light.toolbar.border]
-# platform-facts.md:1353-1354 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+# platform-facts.md:1392-1393 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
+line_width_px = 0.0
+shadow_enabled = false
 
 
 [light.status_bar.border]
-# platform-facts.md:1372-1373 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+# platform-facts.md:1414-1415 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -249,6 +306,14 @@ hover_background = "#e0e0e2"
 
 [light.sidebar.font]
 color = "#2e3436"
+
+
+[light.sidebar.border]
+# platform-facts.md:1380 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
+padding_horizontal_px = 6.0
+# platform-facts.md:1381 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
+padding_top_px = 6.0
+padding_bottom_px = 4.0
 [light.popover]
 background_color = "#ffffff"
 
@@ -258,7 +323,11 @@ color = "#2e3436"
 
 
 [light.popover.border]
-# platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+# platform-facts.md:1457 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+color = "#0000000d"
+# platform-facts.md:1458 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+line_width_px = 1.0
+# platform-facts.md:1461-1462 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0
 [light.separator]
@@ -277,10 +346,12 @@ thumb_diameter_px = 20.0
 track_radius_px = 14.0
 hover_checked_background = "#2e78cc"
 hover_unchecked_background = "#c8c8c8"
-# no disabled_*: platform-facts.md:1115 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
+# no disabled_*: platform-facts.md:1119 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
 
 [light.dialog]
 button_order = "primary_right"
+# platform-facts.md:1569 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
 min_height_px = 140.0
@@ -290,25 +361,25 @@ icon_size_px =32.0
 
 
 [light.dialog.title_font]
-# platform-facts.md:1496-1497 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1561-1562 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [light.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1491-1492 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1556-1557 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [light.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1626 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1698 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#1b6acb"
 active_text_color = "#1b6acb"
-# platform-facts.md:1115 (§2.1.6): the enabled link colour, at disabled_opacity
+# platform-facts.md:1119 (§2.1.6): the enabled link colour, at disabled_opacity
 disabled_text_color = "#1b6acb"
 
 [light.spinner]
@@ -317,19 +388,29 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [light.combo_box]
+# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #e6e6e7
+# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
+background_color = "#e6e6e7"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1554 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1620 (§2.24), (none), inline icon
 hover_background = "#d5d5d5"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [light.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1618, :1623 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
+# platform-facts.md §2.24 border.shadow_enabled: no shadow
+shadow_enabled = false
 [light.segmented_control]
+# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
+# the window fg RGB(0 0 6 / 80%) so 8 % of #000006, laid over the window's #fafafb (libadwaita 1.10.0 _colors.scss:32-33)
+background_color = "#e6e6e7"
 segment_height_px = 28.0
 separator_width_px = 1.0
 active_background = "#3584e4"
@@ -338,9 +419,11 @@ hover_background = "#d5d5d5"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1640, :1645 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.25 border.shadow_enabled: none
+shadow_enabled = false
 
 [light.card]
 
@@ -350,7 +433,7 @@ corner_radius_px = 12.0
 [light.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1613-1616 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1683-1686 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -359,25 +442,36 @@ frame_enabled = true
 hover_background = "#ebebed"
 arrow_color = "#2e3436"
 
-# === Dark variant ===
-
 
 [light.expander.border]
-corner_radius_px = 6.0
-# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
+# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
+corner_radius_px = 12.0
+# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
+# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
+color = "#00000608"
+line_width_px = 1.0
+# platform-facts.md:1677-1678 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
+
+# === Dark variant ===
+
 [dark.defaults]
 accent_color = "#3584e4"
 background_color = "#222226"
 text_color = "#ffffff"
-surface_color = "#303034"
+# platform-facts.md:1054 (§2.1.3): view_bg_color #1d1d20 (libadwaita 1.10.0 _colors.scss:99)
+surface_color = "#1d1d20"
 muted_color = "#929292"
 shadow_color = "#00000040"
 
 danger_color = "#c01c28"
 danger_text_color = "#ffffff"
 warning_color = "#cd9309"
+# ❓ platform-facts.md:1087 (§2.1.4): no source for #ffffff at libadwaita 1.10.0, whose
+# warning_fg_color is RGB(0 0 0 / 80%) in both schemes (_colors.scss:20; the dark block, :82-143,
+# does not redefine it) (docs/todo.md, "Presets: colours with no reproducible source")
 warning_text_color = "#ffffff"
 success_color = "#26a269"
 success_text_color = "#ffffff"
@@ -387,12 +481,14 @@ info_text_color = "#ffffff"
 selection_background = "#3584e4"
 selection_text_color = "#ffffff"
 link_color = "#5b9bf8"
-focus_ring_color = "#3584e4"
-# platform-facts.md:1060 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
+# platform-facts.md §2.1.5 focus_ring_color: $focus_border_color, the standalone accent #81d0ff at 50 % (libadwaita 1.10.0
+# _drawing.scss:20, _colors.scss:260, :307, :151; adw-accent-color.c:130-157)
+focus_ring_color = "#81d0ff80"
+# platform-facts.md:1064 (§2.1.3): the normal text colour; libadwaita dims a disabled widget by opacity alone
 disabled_text_color = "#ffffff"
 accent_text_color = "#ffffff"
 
-# platform-facts.md:1115 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
+# platform-facts.md:1119 (§2.1.6): --disabled-opacity 50%, the only disabled mechanism
 disabled_opacity = 0.5
 line_height = 1.21
 focus_ring_width_px = 2.0
@@ -400,7 +496,8 @@ focus_ring_offset_px = -2.0
 
 
 [dark.defaults.border]
-color = "#4a4a4e"
+# platform-facts.md:1055 (§2.1.3): $border_color, white at --border-opacity 15% over #222226 (libadwaita 1.10.0 _colors.scss:95-96, :257, :263, :318)
+color = "#434347"
 corner_radius_px = 9.0
 corner_radius_lg_px = 15.0
 line_width_px = 1.0
@@ -438,15 +535,20 @@ size_pt =20.0
 weight = 800
 
 [dark.window]
-inactive_title_bar_background = "#303034"
-inactive_title_bar_text_color = "#ffffff"
+# platform-facts.md:1160 (§2.2): headerbar fills --headerbar-bg-color = headerbar_bg_color #2e2e32 (libadwaita 1.10.0 _header-bar.scss:3, _colors.scss:103)
+title_bar_background = "#2e2e32"
+# platform-facts.md:1166 (§2.2): headerbar:backdrop fills --headerbar-backdrop-color = @window_bg_color #222226 (libadwaita 1.10.0 _header-bar.scss:41-42, _colors.scss:43, :95)
+inactive_title_bar_background = "#222226"
+# no inactive_title_bar_text_color: platform-facts.md:1167 (§2.2), (none), libadwaita's :backdrop state
 
 [dark.window.title_bar_font]
 color = "#ffffff"
 weight = 700
 
 [dark.button]
-background_color = "#3a3a3e"
+# platform-facts.md §2.3 background_color: a raised button fills with $button_color, currentColor 10 %, over the window, #38383c
+# (libadwaita 1.10.0 _buttons.scss:1, :28-29, _colors.scss:32-33, :95-96)
+background_color = "#38383c"
 min_width_px = 64.0
 min_height_px = 34.0
 icon_text_gap_px = 8.0
@@ -454,67 +556,82 @@ hover_background = "#464649"
 hover_text_color = "#ffffff"
 active_background = "#2e2e32"
 active_text_color = "#ffffff"
-# platform-facts.md:1181-1182 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
+# platform-facts.md:1194-1195 (§2.3): $button_checked_color is the pressed fill's 30 % currentColor (_buttons.scss:3-6); no :checked rule sets a label colour
 checked_background = "#2e2e32"
 checked_text_color = "#ffffff"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled button is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled button is its enabled self at disabled_opacity
 
 
 [dark.button.border]
-# platform-facts.md:1171-1172 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
+# platform-facts.md:1184-1185 (§2.3): Adwaita CSS, a label-only button (.text-button, _buttons.scss:72-75) 17; 5
 padding_horizontal_px = 17.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.3 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
 
 [dark.button.font]
 color = "#ffffff"
 [dark.input]
-background_color = "#303034"
+# platform-facts.md §2.4 background_color: an entry fills with $button_color, currentColor 10 %, over the window, #38383c
+# (libadwaita 1.10.0 _entries.scss:9, _buttons.scss:1, _colors.scss:32-33, :95-96)
+background_color = "#38383c"
 placeholder_color = "#8b8b8b"
 min_height_px = 34.0
-caret_color = "#78aeed"
-hover_border_color = "#3584e4"
-focus_border_color = "#3584e4"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
+# platform-facts.md:1209 (§2.4): caret-color currentColor, the entry's text colour, input.font.color (libadwaita 1.10.0 _entries.scss:11)
+caret_color = "#ffffff"
+# hover_border_color not stated: platform-facts.md §2.4 hover_border_color, (none), the entry's only :hover rule is its
+# icons' opacity (_entries.scss:49)
+# platform-facts.md §2.4 focus_border_color: $focus_border_color, the focus ring's colour (_entries.scss:17, _colors.scss:307)
+focus_border_color = "#81d0ff80"
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled entry is its enabled self at disabled_opacity
 
 
 [dark.input.border]
-# platform-facts.md:1196-1197 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
+# platform-facts.md:1213-1214 (§2.4): Adwaita CSS 9; 0 (CSS sets no vertical padding)
 padding_horizontal_px = 9.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.4 border.line_width: 0 at rest, a $button_color fill with no border; the inset 1px line only under prefers-contrast: more (_entries.scss:9-15)
+line_width_px = 0.0
+# platform-facts.md §2.4 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [dark.text_area.border]
-# platform-facts.md:1639-1640 (§2.29): textview sets no padding, GtkTextView's margins default to 0
+# platform-facts.md:1714-1715 (§2.29): textview sets no padding, GtkTextView's margins default to 0
 padding_horizontal_px = 0.0
 padding_vertical_px = 0.0
 
 [dark.input.font]
 color = "#ffffff"
 [dark.checkbox]
-# platform-facts.md:1212 (§2.5): min-width 14 plus padding 3 on each side
+# platform-facts.md:1233 (§2.5): min-width 14 plus padding 3 on each side
 indicator_width_px = 20.0
-# platform-facts.md:1220 (§2.5): bullet.svg, a circle of radius 4
+# platform-facts.md:1241 (§2.5): bullet.svg, a circle of radius 4
 radio_dot_diameter_px = 8.0
-# platform-facts.md:1221 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
+# platform-facts.md:1242 (§2.5): check.svg (libadwaita 1.10.0), a stroke 2 wide
 check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 hover_background = "#464649"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled check is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled check is its enabled self at disabled_opacity
 unchecked_background = "#303034"
 unchecked_border_color = "#4a4a4e"
 
 
 [dark.checkbox.border]
-# platform-facts.md:1216-1217 (§2.5): Adwaita CSS check { padding: 3px }
+# platform-facts.md:1237-1238 (§2.5): Adwaita CSS check { padding: 3px }
 padding_horizontal_px = 3.0
 padding_vertical_px = 3.0
+# platform-facts.md §2.5 border.shadow_enabled: no shadow
+shadow_enabled = false
 
 [dark.tooltip]
 background_color = "#3a3a3e"
 max_width_px = 360.0
+# platform-facts.md:1290 (§2.7): GTK HOVER_TIMEOUT 500 (gtktooltip.c:71-73)
+show_delay_ms = 500
 
 
 [dark.tooltip.border]
-# platform-facts.md:1257-1258 (§2.7): Adwaita CSS 10; 6
+# platform-facts.md:1283-1284 (§2.7): Adwaita CSS 10; 6
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -523,7 +640,8 @@ color = "#ffffff"
 [dark.scrollbar]
 groove_width_px = 12.0
 thumb_width_px = 8.0
-overlay_mode = false
+# platform-facts.md:1310 (§2.8): gsettings overlay-scrolling, default true (gsettings-desktop-schemas 51.0 org.gnome.desktop.interface.gschema.xml.in:261-262)
+overlay_mode = true
 min_thumb_length_px = 40.0
 thumb_hover_color = "#a0a0a0"
 thumb_active_color = "#c0c0c0"
@@ -532,34 +650,39 @@ thumb_active_color = "#c0c0c0"
 track_height_px = 10.0
 thumb_diameter_px = 20.0
 tick_mark_length_px = 4.0
+# platform-facts.md §2.9 thumb_color: $slider_color, white 80 % over the view's #1d1d20 (libadwaita 1.10.0 _scale.scss:50, _colors.scss:288, :99)
+thumb_color = "#d2d2d2"
 thumb_hover_color = "#3a3a3e"
-# no disabled_*_color: platform-facts.md:1115 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
+# no disabled_*_color: platform-facts.md:1119 (§2.1.6), a disabled scale is its enabled self at disabled_opacity
 
 [dark.progress_bar]
 track_height_px = 8.0
 min_width_px = 80.0
 
 [dark.progress_bar.border]
-# platform-facts.md:1308 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
+# platform-facts.md:1340 (§2.10): no border (an inset 1px shadow only under prefers-contrast: more)
 line_width_px = 0.0
+# platform-facts.md:1341-1342 (§2.10): Adwaita CSS 0; 0, the progress fills the trough (_scale.scss:12-17, _progress-bar.scss:6, :27-31)
+padding_horizontal_px = 0.0
+padding_vertical_px = 0.0
 
 [dark.tab]
 min_width_px = 64.0
 min_height_px = 30.0
-# platform-facts.md:1326 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
+# platform-facts.md:1360 (§2.11): GtkNotebook places each tab at the previous one's end (gtknotebook.c:5294)
 item_gap_px = 0.0
 active_background = "#222226"
 active_text_color = "#ffffff"
 hover_background = "#3a3a3e"
 hover_text_color = "#ffffff"
-# platform-facts.md:1327-1329 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
+# platform-facts.md:1361-1363 (§2.11): a checked notebook tab is inset 0 -4px var(--accent-bg-color) (_notebook.scss:19)
 active_indicator_color = "#3584e4"
 active_indicator_width_px = 4.0
 active_indicator_side = "bottom"
 
 
 [dark.tab.border]
-# platform-facts.md:1318-1319 (§2.11): Adwaita CSS 12; 3
+# platform-facts.md:1352-1353 (§2.11): Adwaita CSS 12; 3
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [dark.menu]
@@ -567,39 +690,44 @@ row_height_px = 32.0
 icon_text_gap_px = 8.0
 hover_background = "#3a3a3e"
 hover_text_color = "#ffffff"
-# no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity
+# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
 
 
 [dark.menu.border]
-# platform-facts.md:1235-1236 (§2.6): Adwaita CSS 12 ($menu_padding); 0
+# platform-facts.md:1261-1262 (§2.6): Adwaita CSS 12 ($menu_padding); 0
 padding_horizontal_px = 12.0
 padding_vertical_px = 0.0
 [dark.list]
 alternate_row_background = "#2a2a2e"
-# row_height not stated: platform-facts.md:1389 (§2.15), plain list context, no min-height
+# row_height not stated: platform-facts.md:1431 (§2.15), plain list context, no min-height
+# platform-facts.md:1432 (§2.15): the column title button's min-height 24 + padding 3 + 3 (_column-view.scss:12-35; _buttons.scss:18-22)
+header_height_px = 30.0
 hover_background = "#303034"
 hover_text_color = "#ffffff"
-# no disabled_text_color: platform-facts.md:1115 (§2.1.6), the enabled text at disabled_opacity
+# no disabled_text_color: platform-facts.md:1119 (§2.1.6), the enabled text at disabled_opacity
 
 
 [dark.list.border]
-# platform-facts.md:1390-1391 (§2.15): Adwaita CSS plain list context, 2
+# platform-facts.md:1433-1434 (§2.15): Adwaita CSS plain list context, 2
 padding_horizontal_px = 2.0
 padding_vertical_px = 2.0
 [dark.toolbar]
-# bar_height not stated: platform-facts.md:1351 (§2.13), .toolbar sets no min-height
-# platform-facts.md:1352 (§2.13): Adwaita CSS .toolbar border-spacing 6
+# bar_height not stated: platform-facts.md:1390 (§2.13), .toolbar sets no min-height
+# platform-facts.md:1391 (§2.13): Adwaita CSS .toolbar border-spacing 6
 item_gap_px = 6.0
 
 
 [dark.toolbar.border]
-# platform-facts.md:1353-1354 (§2.13): Adwaita CSS .toolbar { padding: 6px }
+# platform-facts.md:1392-1393 (§2.13): Adwaita CSS .toolbar { padding: 6px }
 padding_horizontal_px = 6.0
 padding_vertical_px = 6.0
+# platform-facts.md §2.13 border.line_width, border.shadow_enabled: .toolbar sets no border and casts no shadow (_toolbars.scss:1-110)
+line_width_px = 0.0
+shadow_enabled = false
 
 
 [dark.status_bar.border]
-# platform-facts.md:1372-1373 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
+# platform-facts.md:1414-1415 (§2.14): Adwaita CSS statusbar { padding: 6px 10px }
 padding_horizontal_px = 10.0
 padding_vertical_px = 6.0
 
@@ -610,6 +738,14 @@ hover_background = "#36363a"
 
 [dark.sidebar.font]
 color = "#ffffff"
+
+
+[dark.sidebar.border]
+# platform-facts.md:1380 (§2.12): 6, `.navigation-sidebar > row { margin: 0 $menu_margin 2px }`, $menu_margin = 6; the list itself has no side padding (libadwaita 1.10.0 _sidebars.scss:189-193, _common.scss:11)
+padding_horizontal_px = 6.0
+# platform-facts.md:1381 (§2.12): 6 top / 4 bottom, `padding-top: $menu_margin; padding-bottom: $menu_margin - 2px`, the last row's 2px bottom margin making up the difference (_sidebars.scss:149-150, :193)
+padding_top_px = 6.0
+padding_bottom_px = 4.0
 [dark.popover]
 background_color = "#36363a"
 
@@ -619,7 +755,11 @@ color = "#ffffff"
 
 
 [dark.popover.border]
-# platform-facts.md:1412-1413 (§2.16): Adwaita CSS popover > contents { padding: 8px }
+# platform-facts.md:1457 (§2.16): the outline is the box shadow 0 0 0 1px RGB(0 0 0 / 5%), light and dark (libadwaita 1.10.0 _popovers.scss:19)
+color = "#0000000d"
+# platform-facts.md:1458 (§2.16): 1px; drawn as a border it puts the content 9px from the edge, as the 1px outline outside libadwaita's 8px padding does
+line_width_px = 1.0
+# platform-facts.md:1461-1462 (§2.16): Adwaita CSS popover > contents { padding: 8px }
 padding_horizontal_px = 8.0
 padding_vertical_px = 8.0
 [dark.separator]
@@ -632,7 +772,7 @@ hover_color = "#4a4a4e"
 [dark.switch]
 unchecked_background = "#4a4a4e"
 thumb_background = "#ffffff"
-# platform-facts.md:1476 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
+# platform-facts.md:1526 (§2.21): $slider_color, white 80% over view_bg_color #1d1d20; checked is white
 unchecked_thumb_background = "#d2d2d2"
 track_width_px = 46.0
 track_height_px = 26.0
@@ -640,10 +780,12 @@ thumb_diameter_px = 20.0
 track_radius_px = 14.0
 hover_checked_background = "#2e78cc"
 hover_unchecked_background = "#56565a"
-# no disabled_*: platform-facts.md:1115 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
+# no disabled_*: platform-facts.md:1119 (§2.1.6), a disabled switch is its enabled self at disabled_opacity
 
 [dark.dialog]
 button_order = "primary_right"
+# platform-facts.md:1569 (§2.22): the floating AdwDialog fades in while scaling 0.8 → 1 (adw-floating-sheet.c:22, :34-35, :220-226)
+entrance = "scale_fade"
 min_width_px = 300.0
 max_width_px = 372.0
 min_height_px = 140.0
@@ -653,25 +795,25 @@ icon_size_px =32.0
 
 
 [dark.dialog.title_font]
-# platform-facts.md:1496-1497 (§2.22): .title-2, ≈15pt ExtraBold
+# platform-facts.md:1561-1562 (§2.22): .title-2, ≈15pt ExtraBold
 size_pt =15.0
 weight = 800
 
 
 [dark.dialog.border]
 corner_radius_px = 18.0
-# platform-facts.md:1491-1492 (§2.22): 24; 32 top / 24 bottom
+# platform-facts.md:1556-1557 (§2.22): 24; 32 top / 24 bottom
 padding_horizontal_px = 24.0
 padding_top_px = 32.0
 padding_bottom_px = 24.0
 [dark.link]
 underline_enabled = true
 background_color = "#00000000"
-# platform-facts.md:1626 (§2.28): GNOME hover_background **(none)**, transparent as background_color
+# platform-facts.md:1698 (§2.28): GNOME hover_background **(none)**, transparent as background_color
 hover_background = "#00000000"
 hover_text_color = "#5b9bf8"
 active_text_color = "#5b9bf8"
-# platform-facts.md:1115 (§2.1.6): the enabled link colour, at disabled_opacity
+# platform-facts.md:1119 (§2.1.6): the enabled link colour, at disabled_opacity
 disabled_text_color = "#5b9bf8"
 
 [dark.spinner]
@@ -680,19 +822,29 @@ min_diameter_px = 16.0
 stroke_width_px = 2.0
 
 [dark.combo_box]
+# platform-facts.md §2.24 background_color: the trigger button's $button_color over the window, #38383c
+# (libadwaita 1.10.0 _buttons.scss:28-29; _dropdowns.scss:1-12 adds no fill)
+background_color = "#38383c"
 min_height_px = 34.0
 min_width_px = 120.0
 arrow_icon_size_px =16.0
-# arrow_area_width not stated: platform-facts.md:1554 (§2.24), (none), inline icon
+# arrow_area_width not stated: platform-facts.md:1620 (§2.24), (none), inline icon
 hover_background = "#464649"
-# no disabled_background / disabled_text_color: platform-facts.md:1115 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
+# no disabled_background / disabled_text_color: platform-facts.md:1119 (§2.1.6), a disabled drop-down is its enabled self at disabled_opacity
 
 
 [dark.combo_box.border]
-# platform-facts.md:1552, :1557 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
+# platform-facts.md:1618, :1623 (§2.24): Adwaita CSS base button rule, as the dropdown's button has a box child: 10; 5
 padding_horizontal_px = 10.0
 padding_vertical_px = 5.0
+# platform-facts.md §2.24 border.line_width: 0 at rest, the button's (§2.3); the inset 1px line only under prefers-contrast: more (_buttons.scss:28-33)
+line_width_px = 0.0
+# platform-facts.md §2.24 border.shadow_enabled: no shadow
+shadow_enabled = false
 [dark.segmented_control]
+# platform-facts.md §2.25 background_color: AdwToggleGroup's $button_color, currentColor 10 % (_toggle-group.scss:12, _buttons.scss:1),
+# the window fg white at 10 %, laid over the window's #222226 (libadwaita 1.10.0 _colors.scss:95-96)
+background_color = "#38383c"
 segment_height_px = 28.0
 separator_width_px = 1.0
 active_background = "#3584e4"
@@ -701,19 +853,22 @@ hover_background = "#464649"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1571, :1576 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
+# platform-facts.md:1640, :1645 (§2.25): AdwToggleGroup text toggle, Adwaita CSS 11 − 3 = 8; 0 (no rule pads a toggle vertically)
 padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
+# platform-facts.md §2.25 border.shadow_enabled: none
+shadow_enabled = false
 
 [dark.card]
-
+# platform-facts.md:1657 (§2.26): .card fills var(--card-bg-color) = card_bg_color RGB(255 255 255 / 8%), alpha 0x14 (libadwaita 1.10.0 _misc.scss:203, _colors.scss:123)
+background_color = "#ffffff14"
 
 [dark.card.border]
 corner_radius_px = 12.0
 [dark.expander]
 header_height_px = 50.0
 arrow_icon_size_px =16.0
-# platform-facts.md:1613-1616 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
+# platform-facts.md:1683-1686 (§2.27): AdwExpanderRow, the arrow at the row's end, 3 + 6 from
 # the content before it, the nested list unindented, the whole a boxed-list card
 arrow_side = "trailing"
 arrow_gap_px = 9.0
@@ -724,8 +879,14 @@ arrow_color = "#ffffff"
 
 
 [dark.expander.border]
-corner_radius_px = 6.0
-# platform-facts.md:1607-1608 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
+# platform-facts.md §2.27 border.corner_radius: $card_radius 12 at the boxed list's outer corners, 0 between rows
+# (_lists.scss:533-553, _common.scss:9); one radius carries a lone collapsed row, which is first and last
+corner_radius_px = 12.0
+# platform-facts.md §2.27 border.color, border.line_width: the boxed-list card's outline, 0 0 0 1px RGB(0 0 6 / 3%),
+# in both modes (libadwaita 1.10.0 _misc.scss:202-208); the shadow is the card's too (§2.27 border.shadow_enabled)
+color = "#00000608"
+line_width_px = 1.0
+# platform-facts.md:1677-1678 (§2.27): AdwExpanderRow header, Adwaita CSS row 2 + header margin 12 = 14; row 2 + title margin 6 = 8
 padding_horizontal_px = 14.0
 padding_vertical_px = 8.0
 

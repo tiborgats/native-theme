@@ -2,7 +2,8 @@
 
 use native_theme_egui::convert::{clamp_length, to_color32};
 use native_theme_egui::egui;
-use native_theme_egui::{Role, ThemeAtlas};
+use native_theme_egui::native_theme::color::Rgba;
+use native_theme_egui::{ResolvedTheme, Role, ThemeAtlas};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -17,16 +18,18 @@ const EGUI_DOT_DIVISOR: f32 = 3.0;
 ///
 /// **Tier W.** One `egui::RadioButton` in the checkbox role's scope — the `Selected` variant
 /// while it is checked, whose cell fills the circle with `checkbox.checked_background` and
-/// outlines it in `checkbox.border.color`; the `Disabled` variant and `Ui::disable` for
-/// `.enabled(false)` — with one per-instance change: egui paints the dot at a third of
-/// `Spacing::icon_width_inner` in radius (`egui/src/widgets/radio_button.rs:101`), a sink the
-/// checkbox's check mark shares (`egui/src/widgets/checkbox.rs:132-133`), so where the theme
+/// outlines it in `checkbox.border.color`; for `.enabled(false)` the `Disabled` variant, or
+/// `SelectedDisabled` while it is checked (the checked circle and dot where the theme states
+/// no disabled fill), faded as one over its backdrop — with one per-instance change: egui
+/// paints the dot at a third of `Spacing::icon_width_inner` in radius
+/// (`egui/src/widgets/radio_button.rs:101`), a sink the checkbox's check mark shares
+/// (`egui/src/widgets/checkbox.rs:132-133`), so where the theme
 /// states `checkbox.radio_dot_diameter` the scope's `icon_width_inner` becomes
 /// `EGUI_DOT_DIVISOR · 0.5 · radio_dot_diameter` for this radio alone, and the dot is that
 /// many pixels across, in the cell's `fg_stroke`, `checkbox.indicator_color`. Where the theme
-/// states none (macOS publishes none, `docs/platform-facts.md:1220`) or a size that is not
+/// states none (macOS publishes none, `docs/platform-facts.md:1241`) or a size that is not
 /// finite, the dot is egui's own. Where the theme sizes the radio apart from the check box
-/// (`checkbox.radio_indicator_width`, Material's 20 against its 18, `docs/platform-facts.md:1222`)
+/// (`checkbox.radio_indicator_width`, Material's 20 against its 18, `docs/platform-facts.md:1243`)
 /// the scope's `icon_width` becomes that width for this radio alone. And the circle's outline lies inside
 /// `checkbox.indicator_width`, as the check box's square's does: egui's circle is half the
 /// icon's width plus the state's `expansion` in radius and epaint strokes it outside that
@@ -105,6 +108,22 @@ fn radio_parts(
     parts
 }
 
+/// The colours a radio button reads of a theme, every colour read in one place, so the crate's
+/// colour-leaf coverage test sees the widget's reads.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
+}
+
+impl Look {
+    pub(crate) fn of(t: &ResolvedTheme) -> Self {
+        Self {
+            background: t.defaults.background_color,
+        }
+    }
+}
+
 impl egui::Widget for RadioButton {
     fn ui(self, ui: &mut egui::Ui) -> egui::Response {
         let RadioButton {
@@ -120,7 +139,7 @@ impl egui::Widget for RadioButton {
         let checkbox = &resolved.checkbox;
         let dot = checkbox.radio_dot_diameter.and_then(scope::length);
         let width = checkbox.radio_indicator_width.and_then(scope::length);
-        let ground = backdrop.unwrap_or_else(|| to_color32(resolved.defaults.background_color));
+        let ground = backdrop.unwrap_or_else(|| to_color32(Look::of(resolved).background));
         scope::open_faded(ui, Role::Checkbox, checked, enabled, Some(ground), |ui| {
             if let Some(width) = width {
                 ui.spacing_mut().icon_width = clamp_length(width);

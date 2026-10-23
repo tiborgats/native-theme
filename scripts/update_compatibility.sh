@@ -18,10 +18,11 @@
 #   update_compatibility.sh hash <connector>      print a connector's sources hash at HEAD
 #
 # The hash covers the git object ids of that connector's Cargo.toml, src,
-# examples and tests (egui: Cargo.toml, src, examples and mapping.toml, the manifest
-# its showcase embeds, and the egui widgets crate's Cargo.toml and src): a connector that has changed has not been verified, the
-# rule scripts/update_provenance.sh applies to the sources its screenshots came
-# from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
+# examples and tests (for egui also mapping.toml, the manifest its showcase
+# embeds, and the egui widgets crate's Cargo.toml and src, which its showcase
+# draws with and its gates test): a connector that has changed has not been
+# verified, the rule scripts/update_provenance.sh applies to the sources its
+# screenshots came from. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check` works
 # on a depth-1 checkout and needs no network.
 #
 # There is deliberately no `write` verb. A stamp written without the run it
@@ -55,8 +56,10 @@ crate_of() {
 # through another (gpui-kit-assets through gpui-kit, iced_core through iced).
 family_of() {
     case "$1" in
-        gpui) echo "gpui-base gpui-component gpui-kit gpui-kit-assets gpui-pre" ;;
-        iced) echo "iced iced_aw iced_core iced_test iced_widget" ;;
+        # The gpui-fast crates: GPUI Kit's GPUI Fast core and its platform
+        # layer, which the connector's `gpui-fast` feature builds on.
+        gpui) echo "gpui-base gpui-component gpui-fast gpui-fast-apple gpui-fast-linux gpui-fast-macos gpui-fast-macros gpui-fast-platform gpui-fast-web gpui-fast-wgpu gpui-fast-windows gpui-kit gpui-kit-assets gpui-pre" ;;
+        iced) echo "iced iced_aw iced_core iced_futures iced_test iced_widget" ;;
         egui) echo "ecolor eframe egui egui-wgpu egui-winit egui_extras egui_kittest emath epaint epaint_default_fonts kittest" ;;
         *) return 1 ;;
     esac
@@ -66,9 +69,10 @@ family_of() {
 source_paths() {
     local dir="connectors/$(crate_of "$1")"
     case "$1" in
-        # No `tests` directory; the showcase embeds `mapping.toml` and draws
-        # with the egui widgets crate, which depends on egui too.
-        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/mapping.toml" \
+        # The showcase embeds `mapping.toml` and draws with the egui widgets
+        # crate, which depends on egui too and which gates_egui tests.
+        egui) printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" \
+                  "$dir/mapping.toml" \
                   connectors/native-theme-egui-widgets/Cargo.toml \
                   connectors/native-theme-egui-widgets/src ;;
         *)    printf '%s\n' "$dir/Cargo.toml" "$dir/src" "$dir/examples" "$dir/tests" ;;
@@ -158,10 +162,10 @@ write_stamp() {
 # `src/compat.rs`, which requires the README's Verified line to be this file's.
 #
 # `sources` is a SHA-256 over the git object ids of that connector's
-# Cargo.toml, src, examples and tests (egui: Cargo.toml, src, examples and
-# mapping.toml, the manifest its showcase embeds, and the egui widgets crate's
-# Cargo.toml and src). A connector whose sources have changed
-# has not been verified, whatever this file says about the set.
+# Cargo.toml, src, examples and tests (for egui also mapping.toml, the manifest
+# its showcase embeds, and the egui widgets crate's Cargo.toml and src). A
+# connector whose sources have changed has not been verified, whatever this
+# file says about the set.
 # Do not edit by hand.
 EOF
         for block in "${blocks[@]}"; do
@@ -231,8 +235,11 @@ lock_version() {
 }
 
 gates_gpui() {
-    run_gate "tests" cargo test -p native-theme-gpui --locked
-    run_gate "clippy" cargo clippy -p native-theme-gpui --all-targets --locked -- -D warnings
+    run_gate "tests (native, watch)" cargo test -p native-theme-gpui --locked --features native,watch
+    run_gate "tests (gpui-fast, native, watch)" \
+        cargo test -p native-theme-gpui --locked --features gpui-fast,native,watch --all-targets
+    run_gate "clippy (native, watch)" \
+        cargo clippy -p native-theme-gpui --all-targets --locked --features native,watch -- -D warnings
     run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \
         cargo doc -p native-theme-gpui --no-deps --locked
     run_gate "widget coverage" python3 scripts/check_widget_coverage.py
@@ -242,7 +249,8 @@ gates_iced() {
     run_gate "tests" cargo test -p native-theme-iced --locked
     run_gate "tests (no default features)" \
         cargo test -p native-theme-iced --locked --no-default-features
-    run_gate "tests (iced_aw)" cargo test -p native-theme-iced --locked --features iced_aw
+    run_gate "tests (iced_aw, watch, native)" \
+        cargo test -p native-theme-iced --locked --features iced_aw,watch,native
     run_gate "clippy" \
         cargo clippy -p native-theme-iced --all-targets --all-features --locked -- -D warnings
     run_gate "documentation" env RUSTDOCFLAGS="-D warnings" \

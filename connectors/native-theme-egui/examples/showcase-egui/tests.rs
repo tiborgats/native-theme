@@ -11,10 +11,11 @@ use egui_kittest::Harness;
 use native_theme::icons::{IconSetChoice, default_icon_choice};
 use native_theme::{AccessibilityPreferences, theme::Theme};
 use native_theme_egui::from_preset;
+use native_theme_showcase_support::{Kind, capture};
 
 use crate::{
     CliArgs,
-    app::{App, ModeChoice, Page, Settings, ThemeChoice},
+    app::{App, ModeChoice, Page, Settings, ThemeChoice, effective_preferences},
     apply_cli_args,
 };
 
@@ -24,9 +25,16 @@ pub(crate) const TEST_PRESET: &str = "catppuccin-mocha";
 /// The showcase under a named preset, never the desktop's theme (§13 T11), in a window of the
 /// size `main` opens (the harness's own default is 800 × 600, `egui_kittest/src/builder.rs:34`).
 pub(crate) fn open(theme: egui::Theme, cli: CliArgs) -> Harness<'static, App> {
+    open_at(theme, cli, 1.0)
+}
+
+/// [`open`] at `pixels_per_point` physical pixels per point (the harness's own is 1,
+/// `egui_kittest/src/builder.rs:35`).
+fn open_at(theme: egui::Theme, cli: CliArgs, pixels_per_point: f32) -> Harness<'static, App> {
     Harness::builder()
         .with_theme(theme)
         .with_size(crate::WINDOW_SIZE)
+        .with_pixels_per_point(pixels_per_point)
         .build_eframe(move |cc| {
             App::new(cc, &cli).expect("the showcase starts under a bundled preset")
         })
@@ -140,7 +148,7 @@ fn every_page_renders() {
 
 /// T11 (c), first rule of §10.4: a flag value the pickers do not offer is
 /// reported and ignored (the iced showcase's `the_command_line_rejects_what_it_cannot_honour`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:14146`).
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:19316`).
 #[test]
 fn the_command_line_rejects_what_it_cannot_honour() {
     let mut settings = Settings::for_tests();
@@ -214,12 +222,43 @@ fn the_showcase_opens_on_the_basic_page() {
     assert_eq!(harness.state().settings.page, Page::Basic);
 }
 
+/// The pages are in the order of the counterpart table in `docs/showcase-elements.toml`'s
+/// header, under the labels its egui column gives them, and so are the View menu's page items;
+/// each page's `--tab` key is its label as the header says: lower case, each space a `-`.
+#[test]
+fn the_pages_follow_the_counterpart_table() {
+    let table = crate::elements::page_order(Kind::Egui).expect("the counterpart table reads");
+    let labels: Vec<&str> = Page::ALL.iter().map(|page| page.label()).collect();
+    assert_eq!(labels, table, "the page tabs against the counterpart table");
+    for page in Page::ALL {
+        assert_eq!(
+            page.key(),
+            page.label().to_lowercase().replace(' ', "-"),
+            "{page:?}'s --tab key"
+        );
+    }
+    let view: Vec<Page> = Action::MENUS
+        .iter()
+        .filter(|(menu, _)| *menu == "View")
+        .flat_map(|(_, items)| items.iter().flatten())
+        .filter_map(|action| match action {
+            Action::ShowPage(page) => Some(*page),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        view,
+        Page::ALL,
+        "the View menu's pages against the page tabs"
+    );
+}
+
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
 /// user picks one, and again after a pick of `default` (the iced showcase's
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:14089`). Following is
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:19259`). Following is
 /// `default_icon_choice` of what the atlas reports per scheme — `breeze`, then
-/// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:872`),
+/// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:1436-1455`),
 /// which then keeps following.
 #[test]
 fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
@@ -256,6 +295,44 @@ fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
     );
     settings.theme_installed(&breeze, egui::Theme::Light);
     assert_eq!(settings.icon, follows(egui::Theme::Light));
+}
+
+/// The Step 4 ruling on Reduce motion: Preferences' switch off is no request, so an OS request
+/// still stops the animations, as the gpui showcase's switch (native-theme-gpui
+/// `forward_reduce_motion`) and the iced showcase's `motion_reduced` read it; the scale and the
+/// two other flags are the user's where the user set them, and the OS's where not.
+#[test]
+fn reduce_motion_off_is_no_request() {
+    let prefs = |scale, reduce_motion, high_contrast, reduce_transparency| {
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = scale;
+        prefs.reduce_motion = reduce_motion;
+        prefs.high_contrast = high_contrast;
+        prefs.reduce_transparency = reduce_transparency;
+        prefs
+    };
+    let os_on = prefs(1.25, true, true, true);
+    let os_off = prefs(1.0, false, false, false);
+    let user_off = prefs(1.5, false, false, false);
+    let user_on = prefs(2.0, true, true, true);
+
+    assert_eq!(
+        effective_preferences(&os_on, Some(&user_off)),
+        prefs(1.5, true, false, false),
+        "the switch off keeps the OS's request; the rest is the user's"
+    );
+    assert_eq!(
+        effective_preferences(&os_off, Some(&user_on)),
+        prefs(2.0, true, true, true),
+        "the switch on is a request; the rest is the user's"
+    );
+    assert_eq!(
+        effective_preferences(&os_off, Some(&user_off)),
+        prefs(1.5, false, false, false),
+        "neither asks"
+    );
+    assert_eq!(effective_preferences(&os_on, None), os_on, "no override");
+    assert_eq!(effective_preferences(&os_off, None), os_off, "no override");
 }
 
 use egui::accesskit::Role;
@@ -331,7 +408,7 @@ fn interactive_controls_respond() {
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
         .click();
     harness.run_steps(SETTLE);
-    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:792-802`).
+    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:1353-1363`).
     // The list holds every installed freedesktop theme before the bundled sets, so the row may
     // lie below the popup's fold: scroll it into view first (`egui_kittest/src/node.rs:152`).
     harness.get_by_label("Material (bundled)").scroll_to_me();
@@ -368,7 +445,7 @@ fn a_capture_opens_at_the_default_size() {
         assert_eq!(options.persist_window, !capturing, "capturing: {capturing}");
         assert_eq!(
             options.viewport.app_id,
-            capturing.then(crate::capture_app_id),
+            capturing.then(|| capture::app_id(Kind::Egui)),
             "capturing: {capturing}"
         );
     }
@@ -382,60 +459,21 @@ fn a_capture_opens_at_the_default_size() {
     assert!(args(&["--screenshot", "out.png"]).capturing());
 }
 
-/// An OS capture of the window passes only when it is the window with its frame and title bar
-/// around a content of `WINDOW_SIZE` times the display's scale factor, as the gpui showcase's
-/// `a_frame_capture_of_another_size_fails` checks its own.
+/// The showcase follows the OS theme in an interactive run only: a capture (`--capture`,
+/// `--screenshot`) and a layout dump (`--dump-layout`) show the theme the run started with.
 #[test]
-fn a_frame_capture_of_another_size_fails() {
-    use crate::check_frame_capture;
-    // A frame 2px wider and 32px taller than the content, as the Windows runner's gpui
-    // captures measured (`showcase-gpui/tests.rs:2062-2064`), and a 28px title bar alone.
-    assert_eq!(
-        check_frame_capture((1282, 752), (1280, 720), Some(1.0)),
-        Ok(())
-    );
-    assert_eq!(
-        check_frame_capture((1600, 928), (1600, 900), Some(1.25)),
-        Ok(())
-    );
-    assert_eq!(
-        check_frame_capture((2560, 1496), (2560, 1440), Some(2.0)),
-        Ok(())
-    );
-    // A 1024px-wide display clamped the window.
-    let clamped = check_frame_capture((1024, 674), (1024, 642), Some(1.0));
+fn only_an_interactive_run_follows_the_os() {
+    let args = |argv: &[&str]| CliArgs::parse(argv.iter().map(|a| (*a).to_string()));
     assert!(
-        clamped
-            .as_ref()
-            .is_err_and(|e| e.contains("1024x674") && e.contains("1280x752")),
-        "{clamped:?}"
+        args(&[]).follows_os(),
+        "a run without flags does not follow the OS"
     );
-    assert!(check_frame_capture((1282, 752), (1280, 720), Some(2.0)).is_err());
-    assert!(check_frame_capture((1282, 752), (1280, 720), None).is_err());
-    // egui's own frame capture, the content alone: never passed as the window.
-    let frameless = check_frame_capture((1280, 720), (1280, 720), Some(1.0));
-    assert!(
-        frameless.as_ref().is_err_and(|e| e.contains("title bar")),
-        "{frameless:?}"
-    );
-    assert!(check_frame_capture((1278, 752), (1280, 720), Some(1.0)).is_err());
-}
-
-/// The Windows window finder's line, `x y width height`, and nothing else.
-#[test]
-fn the_window_finders_line_is_four_numbers() {
-    use crate::capture::{Frame, parse_frame};
-    assert_eq!(
-        parse_frame("-8 0 1282 752\n"),
-        Ok(Frame {
-            x: -8,
-            y: 0,
-            width: 1282,
-            height: 752
-        })
-    );
-    for bad in ["", "1 2 3", "1 2 3 4 5", "1 2 -3 4", "a 2 3 4"] {
-        assert!(parse_frame(bad).is_err(), "{bad:?} parsed");
+    for argv in [
+        &["--capture"][..],
+        &["--screenshot", "p"],
+        &["--dump-layout", "f"],
+    ] {
+        assert!(!args(argv).follows_os(), "{argv:?} follows the OS");
     }
 }
 
@@ -802,6 +840,106 @@ fn the_menus_run_their_actions() {
             app.quit_requested = false;
             harness.run_steps(2);
         }
+    }
+}
+
+/// M9-117: the macOS menu bar is Apple's HIG list (*The menu bar*), under the titles the shared
+/// crate gives the three showcases: the app menu, holding the showcase's own About and
+/// Settings… and AppKit's Services, Hide, Hide Others, Show All and Quit, with the HIG's
+/// separators; File, holding Close; View, holding the in-window View menu's rows; Theme,
+/// holding the in-window Theme menu's rows less Preferences…, which is the app menu's
+/// Settings…; Window, holding Minimize, Zoom and Bring All to Front; and no Help menu. The
+/// list is built on every host; the menu bar itself only on macOS.
+#[test]
+fn the_macos_menus_are_the_hig_list() {
+    use crate::chrome::system_menu::{APP_NAME, Row, SystemItem, menus};
+    use native_theme_showcase_support::menu::macos_menu_titles;
+
+    let own = |label: &str, action| Row::Own {
+        label: label.to_string(),
+        action,
+    };
+    let in_window = |title: &str| -> Vec<Row> {
+        Action::MENUS
+            .iter()
+            .filter(|(menu, _)| *menu == title)
+            .flat_map(|(_, items)| items.iter())
+            .map(|item| match item {
+                Some(action) => own(action.label(), *action),
+                None => Row::Separator,
+            })
+            .collect()
+    };
+    let built = menus();
+    let titles: Vec<&str> = built.iter().map(|(title, _)| title.as_str()).collect();
+    assert_eq!(titles, macos_menu_titles(APP_NAME), "the menu bar's titles");
+    let rows = |at: usize| &built[at].1;
+    assert_eq!(
+        rows(0),
+        &[
+            own(&format!("About {APP_NAME}"), Action::OpenAbout),
+            Row::Separator,
+            own("Settings…", Action::OpenPreferences),
+            Row::Separator,
+            Row::System(SystemItem::Services),
+            Row::Separator,
+            Row::System(SystemItem::Hide),
+            Row::System(SystemItem::HideOthers),
+            Row::System(SystemItem::ShowAll),
+            Row::Separator,
+            Row::System(SystemItem::Quit),
+        ],
+        "the app menu"
+    );
+    assert_eq!(rows(1), &[Row::System(SystemItem::Close)], "File");
+    assert_eq!(rows(2), &in_window("View"), "View");
+    let theme = in_window("Theme");
+    assert_eq!(
+        theme[theme.len().saturating_sub(2)..],
+        [Row::Separator, own("Preferences…", Action::OpenPreferences)],
+        "the in-window Theme menu no longer ends with Preferences…"
+    );
+    assert_eq!(rows(3), &theme[..theme.len() - 2], "Theme");
+    assert_eq!(
+        rows(4),
+        &[
+            Row::System(SystemItem::Minimize),
+            Row::System(SystemItem::Zoom),
+            Row::Separator,
+            Row::System(SystemItem::BringAllToFront),
+        ],
+        "Window"
+    );
+    assert_eq!(
+        Action::OpenPreferences.shortcut(),
+        Some(egui::KeyboardShortcut::new(
+            egui::Modifiers::COMMAND,
+            egui::Key::Comma
+        )),
+        "Settings… is not ⌘,"
+    );
+}
+
+/// The muda predefined items take the three showcases' one wording where muda's own differs:
+/// muda names Hide and Quit after the running application's `localizedName` and Close
+/// "Close Window"; the rest keep muda's.
+#[test]
+fn the_macos_system_items_take_the_showcases_wording() {
+    use crate::chrome::system_menu::{APP_NAME, SystemItem};
+
+    let wording = |item: SystemItem| item.wording();
+    assert_eq!(wording(SystemItem::Hide), Some(format!("Hide {APP_NAME}")));
+    assert_eq!(wording(SystemItem::Quit), Some(format!("Quit {APP_NAME}")));
+    assert_eq!(wording(SystemItem::Close), Some("Close".to_string()));
+    for item in [
+        SystemItem::Services,
+        SystemItem::HideOthers,
+        SystemItem::ShowAll,
+        SystemItem::Minimize,
+        SystemItem::Zoom,
+        SystemItem::BringAllToFront,
+    ] {
+        assert_eq!(wording(item), None, "{item:?}");
     }
 }
 
@@ -1176,8 +1314,10 @@ fn instances_are_distinct() {
     let (manifest, json) = manifest_and_json(&harness);
     let elements = crate::elements::showcase_elements().unwrap_or_default();
     assert!(!elements.is_empty(), "the element list parses");
-    let text =
-        |shown| crate::info::InfoView::of(shown, &elements, &manifest, (&json, TEST_PRESET)).text();
+    let scheme = (&harness.state().atlas, &harness.ctx);
+    let text = |shown| {
+        crate::info::InfoView::of(shown, &elements, &manifest, (&json, TEST_PRESET), scheme).text()
+    };
     let (a, b) = (text(&unchecked), text(&checked));
     assert_ne!(
         a, b,
@@ -1266,6 +1406,245 @@ fn a_base_widget_is_drawn_in_the_base_style() {
             "{page:?}: recorded as the base style, drawn in another: {off:?}"
         );
     }
+}
+
+/// A rebuild that fails keeps the installed atlas and its fonts as they were: installing it
+/// again does not register the semibold faces a second time beside the first ones.
+#[test]
+fn a_failed_rebuild_keeps_the_installed_fonts() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let faces = |h: &Harness<'_, App>| h.ctx.fonts(|f| f.definitions().font_data.len());
+    let before = faces(&harness);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().settings.theme = ThemeChoice::Preset("no-such-preset".to_string());
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().theme_error.is_some(),
+        "the rebuild must fail"
+    );
+    assert_eq!(faces(&harness), before);
+}
+
+/// A preset every platform offers other than [`TEST_PRESET`], and its atlas: the watcher's
+/// rebuilt atlas in the hand-off tests, told from the installed one by its name.
+#[cfg(feature = "watch")]
+const OTHER_PRESET: &str = "nord";
+
+#[cfg(feature = "watch")]
+fn preset_atlas(name: &str) -> native_theme_egui::ThemeAtlas {
+    from_preset(name, false, &AccessibilityPreferences::default())
+        .expect("a bundled preset builds")
+        .0
+}
+
+#[cfg(feature = "watch")]
+fn preset_name(name: &str) -> String {
+    Theme::preset(name)
+        .expect("a bundled preset")
+        .name
+        .to_string()
+}
+
+#[cfg(feature = "watch")]
+fn watch_failure() -> native_theme::error::Error {
+    native_theme::error::Error::WatchUnavailable {
+        reason: "the showcase's test",
+    }
+}
+
+/// M9-115: a rebuild the watcher started before the user picked a theme, and that returned after
+/// the pick's install, was built for the selection before it. Its hand-off installs the current
+/// selection rebuilt, by `install`'s own result, and not the stale atlas over the pick.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_built_for_an_earlier_selection_installs_the_current_one() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    app.settings.theme = ThemeChoice::Preset(OTHER_PRESET.to_string());
+    app.install(&ctx);
+    assert_ne!(
+        app.generation(),
+        read,
+        "the install published a new selection"
+    );
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(
+        app.theme_error, None,
+        "the current selection's install succeeded"
+    );
+}
+
+/// M9-115: a rebuild that returned before the user's install read the record is covered by that
+/// install: its hand-off installs nothing.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_an_install_has_covered_installs_nothing() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.settings.theme = ThemeChoice::Preset(OTHER_PRESET.to_string());
+    app.install(&ctx);
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.theme_error.as_deref(), Some("an earlier failure"));
+}
+
+/// M9-114, M9-115: the watcher's `rebuild` records the generation of the selection it read; a
+/// hand-off built for the current selection is installed and clears an earlier theme error.
+#[cfg(feature = "watch")]
+#[test]
+fn a_hand_off_built_for_the_current_selection_installs_it_and_clears_the_theme_error() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    App::rebuild_selected(&app.selection, &app.rebuilt).unwrap();
+    let recorded = app
+        .rebuilt
+        .lock()
+        .unwrap()
+        .built
+        .as_ref()
+        .map(|(number, generation, _)| (*number, *generation));
+    assert_eq!(recorded, Some((1, app.generation())));
+    let current = app.generation();
+    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.theme_error = Some("an earlier failure".to_string());
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
+    assert_eq!(app.theme_error, None);
+}
+
+/// M9-114: a failed watcher rebuild is shown in the banner as `theme watcher: …` until a later
+/// rebuild is installed, or an install covers it, though the error's text stays the same.
+#[cfg(feature = "watch")]
+#[test]
+fn the_watchers_rebuild_error_is_shown_until_a_later_install() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let line = format!("theme watcher: {}", watch_failure());
+    let shown = |h: &Harness<'_, App>| h.query_by_label(&line).is_some();
+    let fail = |h: &mut Harness<'_, App>| {
+        let app = h.state_mut();
+        let current = app.generation();
+        App::record_rebuild(&app.rebuilt, current, Err(watch_failure())).unwrap_err();
+        app.watcher_last_error = Some(watch_failure().to_string());
+        h.run_steps(SETTLE);
+    };
+    assert!(!shown(&harness));
+    fail(&mut harness);
+    assert!(shown(&harness), "a failed rebuild is shown");
+    let app = harness.state_mut();
+    let current = app.generation();
+    App::record_rebuild(&app.rebuilt, current, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(!shown(&harness), "the next rebuild was installed");
+    fail(&mut harness);
+    assert!(
+        shown(&harness),
+        "a repeat of the same failure is shown again"
+    );
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(!shown(&harness), "an install covers the failed rebuild");
+}
+
+/// M9-114: the watcher's start error is a note, not a theme error, and stays after an install,
+/// since the OS's changes are still not followed.
+#[cfg(feature = "watch")]
+#[test]
+fn the_watchers_start_error_is_a_note_an_install_keeps() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().watcher_started(Err(watch_failure()));
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert!(harness.state().theme_errors().is_empty());
+    let note = format!("OS theme changes are not followed: {}", watch_failure());
+    assert!(harness.query_by_label(&note).is_some(), "the note is shown");
+    let visuals = harness.ctx.global_style().visuals.clone();
+    let colours: Vec<egui::Color32> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text) if text.galley.job.text == note => {
+                text.galley.job.sections.first().map(|s| {
+                    if s.format.color == egui::Color32::PLACEHOLDER {
+                        text.fallback_color
+                    } else {
+                        s.format.color
+                    }
+                })
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        colours,
+        vec![visuals.text_color()],
+        "the note is drawn in the body text's colour, not as an error ({:?})",
+        visuals.error_fg_color
+    );
+}
+
+/// M9-114, M9-115: a failed pick is published, so the selection the watcher rebuilds is the one
+/// the Theme row names. A rebuild of the theme still drawn is then stale: it reinstalls the pick,
+/// which fails again, and the pick's error stays. A rebuild of the pick fails too and installs
+/// nothing.
+#[cfg(feature = "watch")]
+#[test]
+fn a_failed_picks_error_stays_through_the_watchers_rebuilds() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let drawn = app.atlas.name().to_string();
+    let read = app.generation();
+    app.settings.theme = ThemeChoice::Preset("no-such-preset".to_string());
+    app.install(&ctx);
+    let error = app.theme_error.clone();
+    assert!(error.is_some(), "the pick must fail");
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(TEST_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), drawn);
+    assert_eq!(app.theme_error, error, "a rebuild of the theme drawn");
+    App::rebuild_selected(&app.selection, &app.rebuilt).unwrap_err();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), drawn);
+    assert_eq!(app.theme_error, error, "a rebuild of the failed pick");
+}
+
+/// The watcher's rebuild reads no mode (`App::rebuild_atlas`), so a mode switch publishes nothing:
+/// a rebuild in flight across it is current and is installed, not dropped for a rebuild of the
+/// same selection.
+#[cfg(feature = "watch")]
+#[test]
+fn a_mode_switch_leaves_a_rebuild_in_flight_current() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    let read = app.generation();
+    app.set_mode(ModeChoice::Dark, &ctx);
+    App::record_rebuild(&app.rebuilt, read, Ok(preset_atlas(OTHER_PRESET))).unwrap();
+    app.take_rebuilt(&ctx);
+    assert_eq!(app.atlas.name(), preset_name(OTHER_PRESET));
 }
 
 /// Preferences' text-scaling field is the gpui showcase's: 1.0 to 2.25 in steps of 0.25; a drag
@@ -1386,6 +1765,36 @@ fn a_mode_switch_installs_nothing() {
         harness.state().atlas.name(),
         installed,
         "Theme > Light rebuilt the atlas"
+    );
+}
+
+/// M9-113: under a preset with Mode = System the atlas carries the OS's colour mode
+/// (`native_theme::detect::system_is_dark()`), so where the integration reports no scheme
+/// (Linux; the harness reports none either) egui draws the desktop's, not its
+/// `Options::fallback_theme`, once an install hands the choice back to `ThemePreference::System`.
+#[test]
+fn a_preset_under_the_system_mode_follows_the_os() {
+    let (os_mode, drawn) = if native_theme::detect::system_is_dark() {
+        (native_theme::theme::ColorMode::Dark, egui::Theme::Dark)
+    } else {
+        (native_theme::theme::ColorMode::Light, egui::Theme::Light)
+    };
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "catppuccin-mocha"), ("--variant", "system")]),
+    );
+    harness.run_steps(SETTLE);
+    assert_eq!(harness.state().settings.mode, ModeChoice::System);
+    assert_eq!(harness.state().atlas.os_mode(), Some(os_mode));
+
+    let ctx = harness.ctx.clone();
+    harness.state_mut().install(&ctx);
+    harness.run_steps(SETTLE);
+    assert_eq!(harness.state().atlas.os_mode(), Some(os_mode));
+    assert_eq!(
+        harness.ctx.theme(),
+        drawn,
+        "Mode = System drew another scheme than the OS's"
     );
 }
 
@@ -1562,6 +1971,412 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
     );
 }
 
+/// The element `id`'s place this pass.
+fn place_of(harness: &Harness<'_, App>, id: &str) -> egui::Rect {
+    harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .unwrap_or_else(|| panic!("no {id} placed"))
+}
+
+/// The *Not themeable* lines of every record this pass names the element `id`, as Widget Info
+/// shows them (`what: note`), one list per record; at least one record.
+fn element_notes(harness: &Harness<'_, App>, id: &str) -> Vec<Vec<String>> {
+    let notes: Vec<Vec<String>> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.element.as_deref() == Some(id))
+        .map(|r| {
+            r.info
+                .not_themeable
+                .iter()
+                .map(|(what, note)| format!("{what}: {note}"))
+                .collect()
+        })
+        .collect();
+    assert!(!notes.is_empty(), "no record is the element {id}");
+    notes
+}
+
+/// Whether every record of the element `id` notes a line holding each of `parts`.
+fn every_record_notes(harness: &Harness<'_, App>, id: &str, parts: &[&str]) -> bool {
+    element_notes(harness, id)
+        .iter()
+        .all(|lines| lines.iter().any(|l| parts.iter().all(|p| l.contains(p))))
+}
+
+/// F rows 3, 4, 6 and 7 (M9-134's egui half): under macos-tahoe, which states no toolbar or
+/// status-bar padding, no toolbar item gap and no `layout.container_margin`, the chrome bars are
+/// padded as the gpui showcase's are, and Widget Info says so: the toolbar's first button
+/// `TOOLBAR_PADDING` in from the bar's left and top, the menu bar's first title
+/// `MENU_BAR_PADDING` from its left, the status bar gpui-component's `py_1`/`px_2` at the
+/// scaled `defaults.font.size` (a quarter of it above and below, a half at the sides, each
+/// rounded to a whole point), where egui's own panel margin stood. macos-tahoe is a preset of
+/// another platform here, so it is installed directly. Under catppuccin-mocha, which states
+/// `container_margin` but no toolbar padding, the toolbar's unstated sides are noted as that
+/// margin (I m3, J m3 (a)); kde-breeze states every side of both bars and notes none.
+#[test]
+fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none() {
+    use crate::chrome::{MENU_BAR_PADDING, TOOLBAR_PADDING};
+    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+    let atlas = &harness.state().atlas;
+    let t = atlas.resolved_for(egui::Theme::Light).clone();
+    assert_eq!(atlas.layout().container_margin, None);
+    let unstated = |p: &native_theme::theme::ResolvedPadding| {
+        [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .all(Option::is_none)
+    };
+    assert!(unstated(&t.toolbar.border.padding) && unstated(&t.status_bar.border.padding));
+    assert_eq!(t.toolbar.item_gap, None);
+
+    let bar = place_of(&harness, "chrome.toolbar");
+    let first = place_of(&harness, "chrome.toolbar.command_palette");
+    assert!(
+        (first.left() - bar.left() - TOOLBAR_PADDING).abs() < 0.5
+            && (first.top() - bar.top() - TOOLBAR_PADDING).abs() < 0.5,
+        "the toolbar's first button is {} in from the bar's left and {} from its top",
+        first.left() - bar.left(),
+        first.top() - bar.top()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.toolbar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "TOOLBAR_PADDING"
+            ]
+        ),
+        "the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+
+    let menu = place_of(&harness, "chrome.menu_bar");
+    let file = place_of(&harness, "chrome.menu_bar.file");
+    assert!(
+        (file.left() - menu.left() - MENU_BAR_PADDING).abs() < 0.5,
+        "the menu bar's first title is {} from the bar's left",
+        file.left() - menu.left()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.menu_bar",
+            &["not stated by the theme on left, right", "MENU_BAR_PADDING"]
+        ),
+        "the menu bar's info: {:?}",
+        element_notes(&harness, "chrome.menu_bar")
+    );
+
+    let rem = atlas.accessibility().scaled(t.defaults.font.size);
+    let (vertical, horizontal) = ((rem / 4.0).round(), (rem / 2.0).round());
+    let status = place_of(&harness, "chrome.status_bar");
+    let toggle = place_of(&harness, "chrome.status_bar.toggle");
+    assert!(
+        (toggle.left() - status.left() - horizontal).abs() < 0.5,
+        "the status bar's toggle is {} from the bar's left, not {horizontal}",
+        toggle.left() - status.left()
+    );
+    let size = native_theme_egui::scaled_text_size(t.status_bar.font.size, atlas.accessibility());
+    let line = harness
+        .ctx
+        .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
+    // The panel keeps room for its line, rounded to a whole point, outside its frame
+    // (`egui/src/containers/panel.rs:961-965`): macos-tahoe's line is half a pixel.
+    let rule = t.status_bar.border.line_width.round();
+    let expected = rule + vertical + line.max(toggle.height()) + vertical;
+    assert!(
+        (status.height() - expected).abs() < 0.5,
+        "the status bar is {} tall, a {rule} line + {vertical} + its content + {vertical} is \
+         {expected}",
+        status.height()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.status_bar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "gpui-component's StatusBar padding"
+            ]
+        ),
+        "the status bar's info: {:?}",
+        element_notes(&harness, "chrome.status_bar")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.toolbar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "layout.container_margin"
+            ]
+        ),
+        "{TEST_PRESET}: the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    for id in ["chrome.toolbar", "chrome.status_bar", "chrome.menu_bar"] {
+        assert!(
+            element_notes(&harness, id)
+                .iter()
+                .flatten()
+                .all(|l| !l.contains("not stated by the theme on")),
+            "kde-breeze states every side of {id}: {:?}",
+            element_notes(&harness, id)
+        );
+    }
+}
+
+/// The macos-tahoe atlas, built as `from_preset` builds it, with its layout's `widget_gap`
+/// unstated, as no bundled preset leaves it: the case where the chrome's own constants for that
+/// role stand.
+fn tahoe_without_widget_gap() -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (preset, _) = from_preset("macos-tahoe", false, &prefs).expect("macos-tahoe loads");
+    let [light, dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+    let mut layout = preset.layout().clone();
+    layout.widget_gap = None;
+    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
+        .layout(&layout)
+        .accessibility(preset.accessibility())
+        .icon_set(preset.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = preset.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// F rows 4 and 5 (pass 6 m2): where the theme states no `layout.widget_gap` and no
+/// `toolbar.item_gap`, the theme settings' rows, and each label and its control, are
+/// `THEME_SETTINGS_GAP` apart and the toolbar's items `TOOLBAR_GAP` apart, the gpui showcase's
+/// constants, which the settings' and the toolbar's Widget Info name.
+#[test]
+fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gaps() {
+    use crate::chrome::{THEME_SETTINGS_GAP, TOOLBAR_GAP};
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, tahoe_without_widget_gap());
+    harness.run_steps(4);
+    assert_eq!(harness.state().atlas.layout().widget_gap, None);
+    let stack = [
+        "chrome.side_panel.settings.theme_label",
+        "chrome.side_panel.settings.theme",
+        "chrome.side_panel.settings.mode_label",
+        "chrome.side_panel.settings.mode",
+        "chrome.side_panel.settings.icon_theme_label",
+        "chrome.side_panel.settings.icon_theme",
+    ];
+    for pair in stack.windows(2) {
+        let (above, below) = (place_of(&harness, pair[0]), place_of(&harness, pair[1]));
+        assert!(
+            (below.top() - above.bottom() - THEME_SETTINGS_GAP).abs() < 0.5,
+            "{} is {} below {}",
+            pair[1],
+            below.top() - above.bottom(),
+            pair[0]
+        );
+    }
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.side_panel.settings",
+            &["not stated by the theme", "THEME_SETTINGS_GAP"]
+        ),
+        "the settings' info: {:?}",
+        element_notes(&harness, "chrome.side_panel.settings")
+    );
+    let first = place_of(&harness, "chrome.toolbar.command_palette");
+    let second = place_of(&harness, "chrome.toolbar.reload_theme");
+    assert!(
+        (second.left() - first.right() - TOOLBAR_GAP).abs() < 0.5,
+        "the toolbar's first two items are {} apart",
+        second.left() - first.right()
+    );
+    assert!(
+        every_record_notes(&harness, "chrome.toolbar", &["TOOLBAR_GAP"]),
+        "the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+}
+
+/// F row 5: where `sidebar.border.padding` states some sides, the side panel keeps them, and a
+/// side it leaves unstated takes `layout.container_margin`, as the gpui showcase's panel does,
+/// where egui's own panel margin stood: windows-11 states the horizontal sides alone, so the
+/// panel's top and bottom are the margin, and Widget Info says so (I m3, J m3 (a)); adwaita
+/// states all four, and the panel keeps them. windows-11 is a preset of another platform here,
+/// so it is installed directly.
+#[test]
+fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
+    let harness = open_scaled("windows-11", "basic", 1.0);
+    let atlas = &harness.state().atlas;
+    let padding = atlas
+        .resolved_for(egui::Theme::Light)
+        .sidebar
+        .border
+        .padding;
+    let Some(margin) = atlas.layout().container_margin else {
+        panic!("windows-11 states layout.container_margin");
+    };
+    let (Some(left), None, None) = (padding.left, padding.top, padding.bottom) else {
+        panic!("windows-11 states sidebar.border.padding across alone: {padding:?}");
+    };
+    let panel = place_of(&harness, "chrome.side_panel");
+    let settings = place_of(&harness, "chrome.side_panel.settings");
+    let inspector = place_of(&harness, "chrome.side_panel.inspector");
+    for (what, distance, expected) in [
+        ("top", settings.top() - panel.top(), margin),
+        ("bottom", panel.bottom() - inspector.bottom(), margin),
+        ("left", settings.left() - panel.left(), left),
+    ] {
+        assert!(
+            (distance - expected).abs() < 0.5,
+            "windows-11: the side panel's {what} padding is {distance}, not {expected}"
+        );
+    }
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.side_panel",
+            &[
+                "not stated by the theme on top, bottom",
+                "layout.container_margin"
+            ]
+        ),
+        "windows-11: the side panel's info: {:?}",
+        element_notes(&harness, "chrome.side_panel")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "adwaita"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let padding = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .sidebar
+        .border
+        .padding;
+    let (Some(top), Some(bottom), Some(left)) = (padding.top, padding.bottom, padding.left) else {
+        panic!("adwaita states every side of sidebar.border.padding: {padding:?}");
+    };
+    let panel = place_of(&harness, "chrome.side_panel");
+    let settings = place_of(&harness, "chrome.side_panel.settings");
+    let inspector = place_of(&harness, "chrome.side_panel.inspector");
+    for (what, distance, expected) in [
+        ("top", settings.top() - panel.top(), top),
+        ("bottom", panel.bottom() - inspector.bottom(), bottom),
+        ("left", settings.left() - panel.left(), left),
+    ] {
+        assert!(
+            (distance - expected).abs() < 0.5,
+            "adwaita: the side panel's {what} padding is {distance}, not {expected}"
+        );
+    }
+}
+
+/// G, H and I: each side of a dialog takes the stated `dialog.border.padding` side, else
+/// gpui-component's 16 px (`DIALOG_PADDING_PX`) inside the border line, as the gpui showcase's
+/// `Dialog` draws, where egui's popup margin stood: the Overlays page's modal under nord, which
+/// states no dialog padding, and under kde-breeze, which states every side. Under nord Widget
+/// Info names the padding on the modal's frame; under kde-breeze it does not.
+#[test]
+fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
+    use native_theme_showcase_support::DIALOG_PADDING_PX;
+    for preset in ["nord", "kde-breeze"] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "overlays")]),
+        );
+        harness.run_steps(4);
+        harness.get_by_label("Open modal").click();
+        harness.run_steps(SETTLE);
+        let border = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .dialog
+            .border
+            .clone();
+        let rect = |kind: &str| {
+            harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .unwrap_or_else(|| panic!("{preset}: no {kind} record"))
+        };
+        let (frame, body) = (rect("modal"), rect("modal body"));
+        let side = |stated: Option<f32>| stated.unwrap_or(DIALOG_PADDING_PX) + border.line_width;
+        let p = &border.padding;
+        for (what, distance, expected) in [
+            ("top", body.top() - frame.top(), side(p.top)),
+            ("right", frame.right() - body.right(), side(p.right)),
+            ("bottom", frame.bottom() - body.bottom(), side(p.bottom)),
+            ("left", body.left() - frame.left(), side(p.left)),
+        ] {
+            assert!(
+                (distance - expected).abs() < 0.5,
+                "{preset}: the modal's body is {distance} inside its frame at the {what}, not \
+                 {expected}"
+            );
+        }
+        hover_and_settle(&mut harness, frame.left_top() + egui::vec2(2.0, 2.0));
+        let shown = harness
+            .state()
+            .registry
+            .shown()
+            .cloned()
+            .unwrap_or_else(|| panic!("{preset}: nothing shown over the modal's frame"));
+        assert!(shown.info.seams.contains(&Seam::Surface(Surface::Dialog)));
+        let noted = shown
+            .info
+            .not_themeable
+            .iter()
+            .any(|(_, note)| note.contains("DIALOG_PADDING_PX"));
+        let unstated = [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .any(Option::is_none);
+        assert_eq!(
+            noted, unstated,
+            "{preset}: the modal's info: {:?}",
+            shown.info.not_themeable
+        );
+    }
+}
+
 /// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
 /// window too short for it, it never lies over the page tabs or the status bar. The window is
 /// short enough that the page can scroll its anchor, near the page's end, under the tabs.
@@ -1724,7 +2539,7 @@ fn the_icons_page_has_the_gpui_showcases_sections() {
         .count();
     assert_eq!(
         names,
-        native_theme::theme::IconRole::ALL.len(),
+        native_theme::icons::IconRole::ALL.len(),
         "a named cell per role"
     );
     let headings: Vec<egui::accesskit::NodeId> = records
@@ -1800,7 +2615,7 @@ enum GhostAt {
     Label(&'static str),
 }
 
-/// A Ghost button's global rect, and its record's notes where it is recorded.
+/// A Ghost button's global rect, and its record's `not_themeable` lines where it is recorded.
 fn ghost_at(
     harness: &Harness<'_, App>,
     at: GhostAt,
@@ -1817,7 +2632,7 @@ fn ghost_at(
                 .ctx
                 .layer_transform_to_global(record.layer)
                 .map_or(record.rect, |t| t.mul_rect(record.rect));
-            (rect, Some(record.info.notes.clone()))
+            (rect, Some(record.info.not_themeable.clone()))
         }
         GhostAt::Label(label) => {
             let node = harness
@@ -1825,11 +2640,11 @@ fn ghost_at(
                 .next()
                 .unwrap_or_else(|| panic!("no {label} button"));
             let id = node.accesskit_node().locate().0;
-            let notes = records
+            let not_themeable = records
                 .iter()
                 .find(|r| r.id.accesskit_id() == id)
-                .map(|r| r.info.notes.clone());
-            (node.rect(), notes)
+                .map(|r| r.info.not_themeable.clone());
+            (node.rect(), not_themeable)
         }
     }
 }
@@ -1885,7 +2700,7 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
             harness.run_steps(4);
             harness.remove_cursor();
             harness.run_steps(2);
-            let (rest, notes) = ghost_at(&harness, at);
+            let (rest, not_themeable) = ghost_at(&harness, at);
             harness.hover_at(rest.center());
             harness.run_steps(2);
             let (hovered, _) = ghost_at(&harness, at);
@@ -1897,10 +2712,12 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
                 (rest, rest),
                 "{what} under {theme:?}: hovered and pressed, not its resting rect"
             );
-            if let Some(notes) = notes {
+            if let Some(not_themeable) = not_themeable {
                 assert!(
-                    notes.iter().any(|(k, _)| *k == crate::demo::GHOST_NOTE.0),
-                    "{what} under {theme:?}: its record does not note it Ghost: {notes:?}"
+                    not_themeable
+                        .iter()
+                        .any(|(k, _)| *k == crate::demo::GHOST_NOTE.0),
+                    "{what} under {theme:?}: its record does not note it Ghost: {not_themeable:?}"
                 );
             }
         }
@@ -1910,10 +2727,10 @@ fn a_ghost_button_keeps_its_size_when_hovered_and_pressed() {
 /// The Basic page's check boxes and radio buttons, and the rows they sit in, are as tall as the
 /// indicator the theme states or their label, not a push button's `button.min_height`: the
 /// model states no row height for either (kde-breeze: a 20 indicator under a 32 button,
-/// material 18 under 40).
+/// material-3 18 under 40).
 #[test]
 fn basic_checkbox_and_radio_rows_fit_the_indicator() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -1984,10 +2801,10 @@ fn basic_checkbox_and_radio_rows_fit_the_indicator() {
 /// field is filled with `input.disabled_background` at `input.disabled_opacity`, its frame
 /// built in the disabled cell; and
 /// the link's text is underlined, at rest, exactly where `link.underline_enabled` says so
-/// (kde-breeze states it, material does not).
+/// (kde-breeze states it, material-3 does not).
 #[test]
 fn the_basic_page_applies_the_per_call_leaves() {
-    for preset in ["kde-breeze", "material"] {
+    for preset in ["kde-breeze", "material-3"] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2035,7 +2852,7 @@ fn the_basic_page_applies_the_per_call_leaves() {
             );
         }
         let disabled = rect_of("TextEdit (disabled)");
-        // kde-breeze states it; material's outlined field has no disabled container
+        // kde-breeze states it; material-3's outlined field has no disabled container
         // (docs/platform-facts.md §2.4), so it keeps its enabled fill (`None`, the enabled
         // background). egui fades the disabled field by `input.disabled_opacity` on top
         // (docs/platform-facts.md §2.1.6): 1.0 on both.
@@ -2077,6 +2894,751 @@ fn the_basic_page_applies_the_per_call_leaves() {
             "{preset}: the link's underline at rest is not link.underline_enabled"
         );
     }
+}
+
+/// M9-106 and M9-108: the per-call leaves the connector leaves to the application
+/// (`src/mapping.md`, `dialog.min_width` … `input.min_height`, DERIVED) reach the palette pages
+/// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
+/// page's modal is at least `dialog.min_width` × `dialog.min_height` and at most the max
+/// extents; every `Role::Button` kind of the Buttons and Overlays pages built with
+/// `Button::new` is at least `button.min_width` wide, there and under kde-breeze, whose minimum
+/// is wider than egui's buttons; and every `TextEdit (…)` of the Inputs page at least
+/// `input.min_height` tall, there and under adwaita and material-3, whose fields are taller than
+/// egui's. egui's own kinds and its small button keep egui's sizes, as the gpui showcase's small
+/// button keeps gpui-component's, each saying so under *Not themeable*.
+#[test]
+fn the_palette_pages_apply_the_per_call_leaves() {
+    fn rects(harness: &Harness<'_, App>, kind: &str) -> Vec<egui::Rect> {
+        let rects: Vec<egui::Rect> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .collect();
+        assert!(!rects.is_empty(), "no record of kind {kind}");
+        rects
+    }
+    fn assert_noted(harness: &Harness<'_, App>, kind: &str, leaf: &str) {
+        let notes: Vec<String> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .flat_map(|r| r.info.not_themeable.iter())
+            .map(|(what, note)| format!("{what}: {note}"))
+            .collect();
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.contains(leaf) && n.contains("not applied")),
+            "{kind}: no Not themeable line says {leaf} is not applied: {notes:?}"
+        );
+    }
+    let wide_enough = |harness: &Harness<'_, App>, kinds: &[&str]| {
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        for kind in kinds {
+            for rect in rects(harness, kind) {
+                assert!(
+                    rect.width() >= t.button.min_width - 0.01,
+                    "{kind} is {rect:?}, narrower than button.min_width {}",
+                    t.button.min_width
+                );
+            }
+        }
+    };
+
+    // windows-11's buttons are as wide as its 64 px already; kde-breeze's 80 px is wider.
+    for preset in ["windows-11", "kde-breeze"] {
+        let harness = open_scaled(preset, "buttons", 1.0);
+        wide_enough(
+            &harness,
+            &[
+                "button (enabled)",
+                "button (icon and text)",
+                "button (frameless)",
+                "button (shortcut text)",
+                "button (suggested action)",
+                "button (disabled)",
+            ],
+        );
+        for kind in [
+            "ui.button",
+            "ui.small_button",
+            "ui.toggle_value",
+            "button (small)",
+        ] {
+            assert_noted(&harness, kind, "button.min_width");
+        }
+        for kind in ["ui.small_button", "button (small)"] {
+            assert_noted(&harness, kind, "button.min_height");
+        }
+    }
+
+    let mut harness = open_scaled("windows-11", "overlays", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let d = &t.dialog;
+    wide_enough(
+        &harness,
+        &[
+            "open window button",
+            "open modal button",
+            "open popup button",
+            "tooltip button",
+        ],
+    );
+    harness.get_by_label("Open modal").click();
+    harness.run_steps(SETTLE);
+    wide_enough(&harness, &["modal button"]);
+    for modal in rects(&harness, "modal") {
+        assert!(
+            modal.width() >= d.min_width - 0.01
+                && modal.width() <= d.max_width + 0.01
+                && modal.height() >= d.min_height - 0.01
+                && modal.height() <= d.max_height + 0.01,
+            "the modal is {:?}, outside dialog.min_width..max_width {}..{} x \
+             min_height..max_height {}..{}",
+            modal.size(),
+            d.min_width,
+            d.max_width,
+            d.min_height,
+            d.max_height
+        );
+    }
+    harness.key_press(egui::Key::Escape);
+    harness.run_steps(SETTLE);
+    harness.get_by_label("Open popup").click();
+    harness.run_steps(SETTLE);
+    wide_enough(&harness, &["popup item"]);
+
+    // windows-11's fields are as tall as egui's one row and margin already; adwaita's, which
+    // states no vertical padding, and material-3's, the tallest stated, are taller than that.
+    for preset in ["windows-11", "adwaita", "material-3"] {
+        let harness = open_scaled(preset, "inputs", 1.0);
+        let min_height = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .input
+            .min_height;
+        for kind in [
+            "TextEdit (single line)",
+            "TextEdit (multiline)",
+            "TextEdit (password)",
+            "TextEdit (hint)",
+            "TextEdit (disabled)",
+        ] {
+            for rect in rects(&harness, kind) {
+                assert!(
+                    rect.height() >= min_height - 0.01,
+                    "{preset}: {kind} is {rect:?}, under input.min_height {min_height}"
+                );
+            }
+        }
+        for kind in [
+            "ui.text_edit_singleline",
+            "ui.text_edit_multiline",
+            "ui.code_editor",
+        ] {
+            assert_noted(&harness, kind, "input.min_height");
+        }
+    }
+}
+
+/// The showcase on `tab` with `preset`'s atlas installed in place of the one it opened with, as
+/// `from_preset` builds it under a text-scaling factor of `factor` and the app installs one, at
+/// rest: a preset of another platform, which `--theme` does not take here, at the scale an OS
+/// setting or the Preferences dialog's override installs.
+fn open_scaled(preset: &str, tab: &str, factor: f32) -> Harness<'static, App> {
+    open_scaled_in(egui::Theme::Light, preset, tab, factor)
+}
+
+/// [`open_scaled`] in `theme`.
+fn open_scaled_in(
+    theme: egui::Theme,
+    preset: &str,
+    tab: &str,
+    factor: f32,
+) -> Harness<'static, App> {
+    let mut harness = open(theme, cli(&[("--theme", TEST_PRESET), ("--tab", tab)]));
+    harness.run_steps(4);
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = factor;
+    let (atlas, _) =
+        from_preset(preset, false, &prefs).unwrap_or_else(|error| panic!("{preset}: {error}"));
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    harness
+}
+
+/// A stated row height under a text-scaling factor of `factor`, as the gpui connector's table,
+/// list and menu rows take one (`geometry::table_row_height`, `with_height_rule`): verbatim at a
+/// factor of 1 or less; above 1 at least the line box of `size` scaled, at `line_height`,
+/// rounded up, with `padding` (the row's top and bottom together) and `rule`.
+fn grown(stated: f32, factor: f32, size: f32, line_height: f32, padding: f32, rule: f32) -> f32 {
+    if factor <= 1.0 {
+        return stated;
+    }
+    stated.max((size * factor * line_height).ceil() + padding + rule)
+}
+
+/// Each of `weights` held under the family the showcase registers a face at that weight in
+/// (`demo::weight_family`), with egui's own proportional face added there, so that family is in
+/// the fonts on every host and in every feature set: the showcase registers the OS's face only
+/// where the OS has one (`demo::Semibold`), and where the fonts hold none `demo::weighted_family`
+/// asks for the proportional family, which is also what a text drawn at the body's weight is
+/// in. With the family held, a text at another weight is in it exactly when the page asks for
+/// its weight. Added after the last install, whose `set_fonts` would drop it, and in effect
+/// from the next pass.
+fn hold_weights(harness: &mut Harness<'_, App>, weights: &[u16]) {
+    let own = egui::FontDefinitions::default();
+    let face = own.families[&egui::FontFamily::Proportional][0].clone();
+    let data = own.font_data[&face].clone();
+    for weight in weights {
+        harness.ctx.add_font(egui::epaint::text::FontInsert::new(
+            &format!("test-weight-{weight}"),
+            egui::FontData::clone(&data),
+            vec![egui::epaint::text::InsertFontFamily {
+                family: crate::demo::weight_family(*weight),
+                priority: egui::epaint::text::FontPriority::Lowest,
+            }],
+        ));
+    }
+    harness.run_steps(2);
+}
+
+/// The family a text at `weight` over a `body`-weight body is asked in, with the face at that
+/// weight held ([`hold_weights`]): the proportional one at the body's weight, else the one the
+/// showcase registers at `weight` (`demo::weighted_family`).
+fn weighted(weight: u16, body: u16) -> egui::FontFamily {
+    if weight == body {
+        egui::FontFamily::Proportional
+    } else {
+        crate::demo::weight_family(weight)
+    }
+}
+
+/// The font of the painted galley of `text` whose top left lies in one of `within`.
+fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) -> egui::FontId {
+    let shapes = harness.output().shapes.clone();
+    let found = shapes.iter().find_map(|clipped| match &clipped.shape {
+        egui::Shape::Text(shape)
+            if shape.galley.job.text == text && within.iter().any(|r| r.contains(shape.pos)) =>
+        {
+            shape
+                .galley
+                .job
+                .sections
+                .first()
+                .map(|s| s.format.font_id.clone())
+        }
+        _ => None,
+    });
+    found.unwrap_or_else(|| panic!("no {text:?} galley was painted"))
+}
+
+/// M9-102, M9-103: a table's header is drawn in `list.header_font` at its weight and at the
+/// scaled size, on all three tables: under material-3 (`list.header_font.weight` 500 over a 400
+/// body) at a text-scaling factor of 1.5, the Basic table's "Name" is `list_header_font`'s size
+/// in the face registered at 500 (`demo::weighted_family`), and the Data and Theme Map tables'
+/// header labels are in that font. The face at 500 is held on every host ([`hold_weights`]),
+/// so a header drawn at the body's weight fails here whatever faces the OS has.
+#[test]
+fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
+    let preset = "material-3";
+    let mut basic = open_scaled(preset, "basic", 1.5);
+    let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let header_weight = t.list.header_font.weight;
+    hold_weights(&mut basic, &[header_weight]);
+    let prefs = basic.state().atlas.accessibility().clone();
+    assert_eq!(prefs.text_scaling_factor, 1.5, "the override is installed");
+    let want = egui::FontId::new(
+        native_theme_egui::list_header_font(&t, &prefs).size,
+        weighted(header_weight, t.defaults.font.weight),
+    );
+    assert_ne!(
+        t.list.header_font.weight, t.defaults.font.weight,
+        "{preset}: the header's weight is not the body's"
+    );
+    let cell = basic.state().registry.places()["basic.table.header.name"];
+    assert_eq!(
+        galley_font(&basic, "Name", &[cell]),
+        want,
+        "{preset}: the Basic table's header"
+    );
+    for (tab, kind, title) in [
+        ("data", "table header", "Theme"),
+        ("theme-map", "theme map header", "Leaf"),
+    ] {
+        let mut page = open_scaled(preset, tab, 1.5);
+        hold_weights(&mut page, &[header_weight]);
+        let cells: Vec<egui::Rect> = page
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .collect();
+        assert_eq!(
+            galley_font(&page, title, &cells),
+            want,
+            "{preset} {tab}: the header is not the Basic table's font"
+        );
+    }
+}
+
+/// M9-107: the Text page's text-role labels are drawn at the weight they name, as the Basic
+/// page's Typography lines are (`demo::role_text`): under windows-11 (`text_scale.display.weight`
+/// 600 over a 400 body) "Display, weight 600" is in the face registered at 600, and each role's
+/// label at its role's size and line height. The faces at the roles' weights are held on every
+/// host ([`hold_weights`]), so a label drawn at the body's weight fails here whatever faces the
+/// OS has.
+#[test]
+fn the_text_role_labels_are_drawn_at_their_weight() {
+    use native_theme_egui::TextRole;
+    const ROLES: [(TextRole, &str); 4] = [
+        (TextRole::Caption, "Caption"),
+        (TextRole::SectionHeading, "Section heading"),
+        (TextRole::DialogTitle, "Dialog title"),
+        (TextRole::Display, "Display"),
+    ];
+    let mut harness = open_scaled("windows-11", "text", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let weights: Vec<u16> = ROLES
+        .iter()
+        .map(|(role, _)| native_theme_egui::text_role_weight(&t, *role))
+        .collect();
+    hold_weights(&mut harness, &weights);
+    let prefs = harness.state().atlas.accessibility().clone();
+    assert_ne!(
+        t.text_scale.display.weight, t.defaults.font.weight,
+        "windows-11's display weight is not the body's"
+    );
+    let labels: Vec<egui::Rect> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "text role label")
+        .map(|r| r.rect)
+        .collect();
+    for (role, name) in ROLES {
+        let weight = native_theme_egui::text_role_weight(&t, role);
+        let text = format!("{name}, weight {weight}");
+        let want = egui::FontId::new(
+            native_theme_egui::text_role_font(&t, role, &prefs).size,
+            weighted(weight, t.defaults.font.weight),
+        );
+        assert_eq!(galley_font(&harness, &text, &labels), want, "{text}");
+    }
+}
+
+/// The tables' header rows are `list_header_height` tall where the theme states one
+/// (material-3, macos-monterey), else a row's height where the theme states one, else as tall
+/// as before (catppuccin-mocha): on the Basic page's painted table (its `basic.table.header`
+/// place) a row of the header font, `list.border.padding` above and below its line
+/// (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s a body
+/// row, egui's own `interact_size.y` where the theme states no `list.row_height`. There the
+/// header pushes the first body row down by its height, or its tallest cell where that is
+/// taller (egui_extras `layout.rs:165`), and the spacing after a row (`:181`). At a
+/// text-scaling factor of 1.5 a stated height grows to hold its label, as gpui's table rows
+/// grow ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
+/// A body row is no measure: it grows to a cell that wraps, as the Theme Map's leaf names do.
+#[test]
+fn the_tables_headers_take_the_themes_header_height() {
+    for (preset, factor) in [
+        ("material-3", 1.0),
+        (TEST_PRESET, 1.0),
+        ("material-3", 1.5),
+        (TEST_PRESET, 1.5),
+        ("macos-monterey", 1.5),
+    ] {
+        let basic = open_scaled(preset, "basic", factor);
+        let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+        let stated = native_theme_egui::list_header_height(&t);
+        assert_eq!(
+            stated.is_some(),
+            preset != TEST_PRESET,
+            "{preset}: the preset's header height"
+        );
+        let l = &t.list;
+        let line_height = t.defaults.line_height;
+        let padding = l.border.padding.top.unwrap_or(0.0) + l.border.padding.bottom.unwrap_or(0.0);
+        let size =
+            native_theme_egui::list_header_font(&t, basic.state().atlas.accessibility()).size;
+        let want = match stated.or(l.row_height) {
+            Some(h) => grown(
+                h,
+                factor,
+                l.header_font.size,
+                line_height,
+                padding,
+                t.separator.line_width,
+            ),
+            None => size * line_height + padding,
+        };
+        let placed = basic.state().registry.places()["basic.table.header"];
+        assert!(
+            (placed.height() - want).abs() <= 0.5,
+            "{preset} at {factor}: the Basic table's header is {} tall, want {want}",
+            placed.height()
+        );
+
+        // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
+        // scheme (src/style/roles.rs, `row_height`)
+        let own = egui::Theme::Light.default_style().spacing.interact_size.y;
+        let header = match stated.or(l.row_height) {
+            Some(h) => grown(h, factor, l.header_font.size, line_height, 0.0, 0.0),
+            None => own,
+        };
+        for (tab, header_kind, cell_kind) in [
+            ("data", "table header", "table cell"),
+            ("theme-map", "theme map header", "theme map cell"),
+        ] {
+            let page = open_scaled(preset, tab, factor);
+            let records = page.state().registry.records();
+            let of_kind = |kind: &'static str| records.iter().filter(move |r| r.info.kind == kind);
+            let top = |kind| {
+                of_kind(kind)
+                    .map(|r| r.rect.top())
+                    .fold(f32::INFINITY, f32::min)
+            };
+            // a row is as tall as its tallest cell where that is more than it is given
+            let content = of_kind(header_kind)
+                .map(|r| r.rect.height())
+                .fold(0.0, f32::max);
+            let header = header.max(content);
+            // the List scope keeps the base style's `item_spacing` (mapping.toml writes it in no
+            // List cell)
+            let gap = page.ctx.global_style().spacing.item_spacing.y;
+            let pushed = top(cell_kind) - top(header_kind);
+            assert!(
+                (pushed - (header + gap)).abs() <= 0.5,
+                "{preset} at {factor} {tab}: the header pushes the first row {pushed}, want \
+                 {header} and the {gap} gap"
+            );
+        }
+    }
+}
+
+/// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners. The
+/// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.border.corner_radius` and has no
+/// margin, so its content lies inside its `list.border.line_width` stroke, where the frame's
+/// inner radius is the radius less the width. Under adwaita, kde-breeze and macos-tahoe set
+/// directly, whose list frames are rounded: the table's header fill is rounded by the inner radius at the top
+/// and square at the bottom, the selected last row at the bottom and square at the top; the
+/// list's selected row at the corners where it meets the frame, the first row at the top, the
+/// last row shown at the bottom, and square in between. On the right only where the bar floats
+/// over the rows (adwaita, macos-tahoe), so a row is the list's width: kde-breeze's bar takes
+/// its groove beside them. macos-tahoe's 0.5 pt line puts the frame's inside on a half point,
+/// and the list's scroll area lays its rows out on whole pixels
+/// (`egui/src/containers/scroll_area.rs:797-803`), half a point off it: a row there still meets
+/// the frame. Each fill is the `Shape::Rect` at its element's place in its colour.
+#[test]
+fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
+    use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
+
+    fn corners_of(harness: &Harness<'_, App>, id: &str, fill: egui::Color32) -> egui::CornerRadius {
+        let place = harness.state().registry.places()[id];
+        let found: Vec<egui::CornerRadius> = harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, place) => {
+                    Some(r.corner_radius)
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(found.len(), 1, "{id}: the fills at {place:?}");
+        found[0]
+    }
+    let corners = |nw, ne, sw, se| egui::CornerRadius { nw, ne, sw, se };
+    let colour = native_theme_egui::convert::to_color32;
+    assert_eq!(
+        TABLE_SELECTED + 1,
+        TABLE_ROWS.len(),
+        "the table's last row is selected"
+    );
+    let last = LIST_VISIBLE - 1;
+    assert!(last > 1, "the list shows a row between its first and last");
+    let mut bars = Vec::new();
+    let mut off_grid = false;
+    for preset in ["adwaita", "kde-breeze", "macos-tahoe"] {
+        let mut harness = open_scaled(preset, "basic", 1.0);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let l = &t.list;
+        let inner = native_theme_egui::convert::to_corner_radius(
+            egui::CornerRadius::ZERO,
+            (l.border.corner_radius - l.border.line_width).max(0.0),
+        )
+        .nw;
+        assert!(
+            inner > 0,
+            "{preset}: the list's frame is rounded inside its line"
+        );
+        let floats = t.scrollbar.overlay_mode;
+        bars.push(floats);
+        off_grid |= l.border.line_width.fract() != 0.0;
+
+        assert_eq!(
+            corners_of(&harness, "basic.table.header", colour(l.header_background)),
+            corners(inner, inner, 0, 0),
+            "{preset}: the table's header"
+        );
+        let selected = format!("basic.table.row_{}", TABLE_SELECTED + 1);
+        assert_eq!(
+            corners_of(&harness, &selected, colour(l.selection_background)),
+            corners(0, 0, inner, inner),
+            "{preset}: the table's selected last row"
+        );
+
+        for row in 0..=last {
+            let left = |at: bool| if at { inner } else { 0 };
+            let right = |at: bool| if at && floats { inner } else { 0 };
+            let (top, bottom) = (row == 0, row == last);
+            let want = corners(left(top), right(top), left(bottom), right(bottom));
+            harness.state_mut().demo_state.basic_list = row;
+            harness.run_steps(4);
+            let id = format!("basic.list.row_{}", row + 1);
+            assert_eq!(
+                corners_of(&harness, &id, colour(l.selection_background)),
+                want,
+                "{preset}: the list's selected {id}"
+            );
+        }
+    }
+    assert!(
+        bars.contains(&true) && bars.contains(&false),
+        "a floating bar and one beside the rows: {bars:?}"
+    );
+    assert!(off_grid, "a list line off the whole-pixel grid");
+}
+
+/// M9-150's class in egui: a stated row height holds its text at every text scale, as gpui's
+/// list and menu rows do (`geometry::list_item`, `geometry::menu_item`: the stated height at a
+/// factor of 1 or less, a minimum around the drawn text and padding above it) and as the iced
+/// showcase's Basic list and window menu rows do. At 1 the Basic list's rows are
+/// `list.row_height` (macos-monterey, material-3) and the window's menu rows `menu.row_height`
+/// (adwaita, macos-monterey, material-3), macos-monterey's 22 px row too, whose 17.33 px menu
+/// font's line box and stated 3 + 3 padding overrun it: the connector narrows the padding to fit
+/// (`style::roles::fit_row_padding`), where egui's `Button`, which takes the stated height as
+/// its least (`interact_size.y`), drew the row 27 tall; at 1.5 and 1.75 each is the
+/// stated height or the line box of its font at its scaled size and `defaults.line_height`,
+/// rounded up, plus its padding (`list.border.padding`, the menu's button padding), whichever is
+/// more, computed from the theme at test time ([`grown`]): 1.75 puts macos-monterey's menu line
+/// box at 36.09, which egui's own growth would leave a pixel short of the rounded-up 37.
+#[test]
+fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
+    let mut faults = Vec::new();
+    let mut seen = (0, 0);
+    for (preset, factor) in ["adwaita", "macos-monterey", "material-3"]
+        .into_iter()
+        .flat_map(|preset| [(preset, 1.0), (preset, 1.5), (preset, 1.75)])
+    {
+        let mut harness = open_scaled(preset, "basic", factor);
+        harness.state_mut().open_menu = Some("theme".to_string());
+        harness.run_steps(4);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let line_height = t.defaults.line_height;
+        let places = harness.state().registry.places();
+        let mut check = |id: &str, want: f32| match places.get(id) {
+            Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
+            Some(rect) => faults.push(format!(
+                "{preset} at {factor}: {id} is {} tall, want {want}",
+                rect.height()
+            )),
+            None => faults.push(format!("{preset} at {factor}: {id} is not placed")),
+        };
+        let l = &t.list;
+        if let Some(h) = l.row_height {
+            seen.0 += 1;
+            // the list's rows take the List scope's button padding on a side the theme leaves
+            // unstated (`pages/basic.rs`, `row_metrics`), which the List role leaves the base
+            // style's
+            let own = harness.ctx.global_style().spacing.button_padding.y;
+            let padding =
+                l.border.padding.top.unwrap_or(own) + l.border.padding.bottom.unwrap_or(own);
+            check(
+                "basic.list.row_1",
+                egui::emath::GuiRounding::round_ui(grown(
+                    h,
+                    factor,
+                    l.item_font.size,
+                    line_height,
+                    padding,
+                    0.0,
+                )),
+            );
+        }
+        let m = &t.menu;
+        if let Some(h) = m.row_height {
+            seen.1 += 1;
+            // the menu scope's button padding above and below: a stated side and the border's
+            // width, egui's menu padding (0 vertically, `egui/src/containers/menu.rs:23`) on a
+            // side the theme leaves unstated (src/convert.rs, `to_button_padding`,
+            // `padding_with_border`)
+            let side = |stated: Option<f32>| stated.map_or(0.0, |v| v + m.border.line_width);
+            let padding = side(m.border.padding.top) + side(m.border.padding.bottom);
+            check(
+                "chrome.menu.theme.light",
+                grown(h, factor, m.font.size, line_height, padding, 0.0),
+            );
+        }
+    }
+    assert!(
+        seen.0 > 0 && seen.1 > 0,
+        "no preset states a row height: {seen:?}"
+    );
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// M9-150's class for the expander: a stated `expander.header_height` follows the one rule every
+/// stated row height takes, the stated height at a text scale of 1 or less and above 1 at least
+/// the line box of `expander.font` at its scaled size and `defaults.line_height`, rounded up,
+/// plus the header's own padding (controller's ruling, 2026-10-23, M9c T6b). The Basic page's
+/// expander (the companion crate's: painted under kde-breeze and adwaita, egui's own
+/// `CollapsingHeader` under material-3 and ios-13), whose title is one line box tall
+/// (`demo::lined`), is exactly the rule's height. The Containers page's two egui headers in the
+/// expander scope are the stated height at 1, and at 1.5 the taller of the rule and their plain
+/// title with its padding: ios-13's 34 px title, whose face's row (46) is taller than its 41 px
+/// line box, grows its header past the rule's 44. At 1.5 kde-breeze's 13.33 px title's line box
+/// is 27.2 at its 1.36 line height, 28 rounded up, so a header with its 7 + 7 padding is 42, past
+/// the stated 40, where egui grew it to its title's 27 and its padding, 41.
+#[test]
+fn the_expander_header_is_its_stated_height_by_the_row_rule() {
+    let mut faults = Vec::new();
+    for (preset, factor) in ["kde-breeze", "adwaita", "material-3", "ios-13"]
+        .into_iter()
+        .flat_map(|preset| [(preset, 1.0), (preset, 1.5)])
+    {
+        let mut harness = open_scaled(preset, "basic", factor);
+        harness.run_steps(2);
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let e = &t.expander;
+        let (stated, size, line_height) = (e.header_height, e.font.size, t.defaults.line_height);
+        // the expander scope's vertical button padding above 1: §5's pair rule over the base
+        // style's (src/convert.rs, `to_button_padding`, `padding_with_border`), a stated side
+        // and the border's width
+        let own = harness.ctx.global_style().spacing.button_padding.y;
+        let p = &e.border.padding;
+        let side = |stated: Option<f32>| stated.map_or(own, |v| v + e.border.line_width);
+        let scope = f32::midpoint(side(p.top), side(p.bottom));
+        // the painted header pads by each stated side, the scope's padding where unstated
+        // (native-theme-egui-widgets `expander.rs`, `header`); egui's own by the scope's twice
+        let painted = e.arrow_side.is_some()
+            || e.arrow_gap.is_some()
+            || e.content_indent.is_some()
+            || e.frame_enabled.is_some();
+        let padding = if painted {
+            p.top.unwrap_or(scope) + p.bottom.unwrap_or(scope)
+        } else {
+            scope + scope
+        };
+        let want = grown(stated, factor, size, line_height, padding, 0.0);
+        match harness
+            .state()
+            .registry
+            .places()
+            .get("basic.expander.details.header")
+        {
+            Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
+            Some(rect) => faults.push(format!(
+                "{preset} at {factor}: the Basic header is {} tall, want {want}",
+                rect.height()
+            )),
+            None => faults.push(format!(
+                "{preset} at {factor}: the Basic header is not placed"
+            )),
+        }
+        let mut harness = open_scaled(preset, "containers", factor);
+        harness.run_steps(2);
+        // egui's own header is the taller of its least height, `interact_size.y`, and its title
+        // and its padding above and below (`egui/src/containers/collapsing_header.rs:531-532`).
+        // Above 1 the least height is the rule (`demo::grow_rows`), and the title is one row of
+        // its face, which the connector never shortens to the theme's line box (§6.15), so a face
+        // whose row is taller than the line box grows the header past the rule. The title's row
+        // is read off its painted galley: the header is exactly the taller of the two, bounded
+        // below by the rule and above by its title and padding.
+        let rule = grown(stated, factor, size, line_height, scope + scope, 0.0);
+        for (kind, title) in [
+            (
+                "CollapsingHeader (expander_icon)",
+                "CollapsingHeader with expander_icon",
+            ),
+            ("ui.collapsing", "ui.collapsing, egui's own icon"),
+        ] {
+            // a record is the part of the header inside the page's clip (`demo.rs`, `record`)
+            harness.get_by_label(title).scroll_to_me();
+            harness.run_steps(4);
+            let painted = harness
+                .output()
+                .shapes
+                .iter()
+                .find_map(|clipped| match &clipped.shape {
+                    egui::Shape::Text(text) if text.galley.text() == title => {
+                        Some(text.galley.size().y)
+                    }
+                    _ => None,
+                });
+            let Some(row) = painted else {
+                faults.push(format!(
+                    "{preset} at {factor}: {kind}'s title is not painted"
+                ));
+                continue;
+            };
+            let want = if factor > 1.0 {
+                rule.max(row + scope + scope)
+            } else {
+                stated
+            };
+            match harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == kind)
+            {
+                Some(r) if (r.rect.height() - want).abs() <= 0.05 => {}
+                Some(r) => faults.push(format!(
+                    "{preset} at {factor}: {kind} is {} tall, want {want} (the rule {rule}, its \
+                     title {row} and padding {scope} + {scope})",
+                    r.rect.height()
+                )),
+                None => faults.push(format!("{preset} at {factor}: {kind} is not recorded")),
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
 }
 
 /// The kinds drawn with egui's own selectable button (`Button::selectable`, frameless at rest
@@ -2295,6 +3857,72 @@ fn groups_and_columns_are_a_section_gap_apart() {
     );
 }
 
+/// M9-105: under macos-tahoe, which states no `layout.section_gap`, the Basic page puts no gap
+/// between its columns and none between the groups of a column, as the gpui and iced Basic
+/// pages do (`with_gap(.., None)`, `spacing(0)`) and as `column_count` counts: adjacent
+/// columns' `Ui`s touch, and in each column the second group's heading starts at the first
+/// group's bottom, not `item_spacing` below it. macos-tahoe is a preset of another platform
+/// here, so it is installed directly.
+#[test]
+fn the_basic_columns_and_groups_touch_where_the_theme_states_no_section_gap() {
+    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+    let state = harness.state();
+    assert_eq!(
+        state.atlas.layout().section_gap,
+        None,
+        "macos-tahoe states no layout.section_gap"
+    );
+    let places = state.registry.places();
+    let columns: Vec<egui::Rect> = (1..)
+        .map_while(|n| places.get(&format!("basic.column_{n}")).copied())
+        .collect();
+    assert!(columns.len() >= 3, "the columns: {columns:?}");
+    // Each column's left edge is on a whole pixel and its width is the page's share, fraction
+    // and all: two touching columns are less than a pixel apart.
+    for pair in columns.windows(2) {
+        let gap = pair[1].left() - pair[0].right();
+        assert!(
+            gap.abs() < 1.0,
+            "two adjacent columns are {gap} apart: {columns:?}"
+        );
+    }
+    let records = state.registry.records();
+    let groups = &state.registry.basic_groups;
+    assert!(
+        !groups.is_empty(),
+        "the Basic page lays no group out in a Ui of its own"
+    );
+    for (n, column) in columns.iter().enumerate() {
+        // The next column starts at this one's right edge, rounded to a whole pixel.
+        let inside =
+            |r: &egui::Rect| r.left() >= column.left() - 0.5 && r.left() < column.right() - 1.0;
+        let mut stack: Vec<egui::Rect> = groups
+            .iter()
+            .map(|(_, rect)| *rect)
+            .filter(inside)
+            .collect();
+        stack.sort_by(|a, b| a.top().total_cmp(&b.top()));
+        let [first, second, ..] = stack[..] else {
+            panic!("column {n}: fewer than two groups");
+        };
+        let Some(heading) = records
+            .iter()
+            .filter(|r| r.info.kind == "heading" && second.contains_rect(r.rect))
+            .map(|r| r.rect.top())
+            .reduce(f32::min)
+        else {
+            panic!("column {n}: the second group has no heading");
+        };
+        assert!(
+            (heading - first.bottom()).abs() < 0.5 && (heading - second.top()).abs() < 0.5,
+            "column {n}: the second group's heading starts {} below the first group's bottom, \
+             {} below its own Ui's top",
+            heading - first.bottom(),
+            heading - second.top()
+        );
+    }
+}
+
 /// Kinds the Basic page records for each group's controls, and how many of each.
 const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
     (
@@ -2381,7 +4009,7 @@ fn the_basic_page_has_every_group_in_its_column() {
         named,
         "the controls are listed per group, in order"
     );
-    for (preset, expected) in [("kde-breeze", 5), ("material", 4), (TEST_PRESET, 5)] {
+    for (preset, expected) in [("kde-breeze", 5), ("material-3", 4), (TEST_PRESET, 5)] {
         let mut harness = open(
             egui::Theme::Light,
             cli(&[("--theme", preset), ("--tab", "basic")]),
@@ -2457,7 +4085,7 @@ fn the_basic_page_has_every_group_in_its_column() {
                 }
             }
         }
-        // The list's rows, which a page that scrolls may show only in part (material's).
+        // The list's rows, which a page that scrolls may show only in part (material-3's).
         if harness.state().page_scrolls {
             continue;
         }
@@ -2504,47 +4132,643 @@ fn the_basic_page_has_every_group_in_its_column() {
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
 /// both modes, under the four presets the captures compare: every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
-/// be taller than its area (material is): it then scrolls, and the test reports it.
+/// be taller than its area (material-3 is): it then scrolls, and the test reports it. The
+/// columns are as far apart as `column_count` counts them (M9-105), so the page fits at a
+/// content width just above a count boundary too, where the counted columns hold the widest
+/// control with nothing to spare: under macos-tahoe, which states no `layout.section_gap`,
+/// installed directly (a preset of another platform here), at the five- and four-column
+/// boundaries.
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
-    for preset in ["kde-breeze", "material", "catppuccin-mocha", "adwaita"] {
+    for preset in ["kde-breeze", "material-3", "catppuccin-mocha", "adwaita"] {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
+            fits_across(&harness, theme, preset);
+        }
+    }
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        for columns in [5, 4] {
+            let mut harness = open_scaled_in(theme, "macos-tahoe", "basic", 1.0);
             let state = harness.state();
-            let places = state.registry.places();
-            let Some(panel) = places.get("chrome.content").copied() else {
-                panic!("{preset} {theme:?}: no content panel placed");
-            };
-            assert!(
-                (panel.width() - state.demo_state.content_width).abs() < 0.5,
-                "{preset} {theme:?}: the panel is {} wide, the page counts from {}",
-                panel.width(),
-                state.demo_state.content_width
-            );
-            let columns = places
-                .keys()
-                .filter(|id| id.starts_with("basic.column_"))
-                .count();
-            let count = column_count(
+            let width = count_boundary(
                 state.atlas.resolved_for(theme),
                 state.atlas.layout(),
-                state.demo_state.content_width,
+                columns,
+            ) + 1.0;
+            set_content_width(&mut harness, width);
+            let state = harness.state();
+            assert!(
+                (state.demo_state.content_width - width).abs() < 0.5,
+                "macos-tahoe {theme:?}: the content is {} wide, not {width}",
+                state.demo_state.content_width
             );
-            assert_eq!(columns, count, "{preset} {theme:?}: the columns laid out");
-            for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
+            assert_eq!(
+                column_count(
+                    state.atlas.resolved_for(theme),
+                    state.atlas.layout(),
+                    state.demo_state.content_width,
+                ),
+                columns,
+                "macos-tahoe {theme:?}: {width} is just above the {columns}-column boundary"
+            );
+            fits_across(&harness, theme, &format!("macos-tahoe at {width}"));
+        }
+    }
+}
+
+/// [`the_basic_page_fits_the_window_across`]'s checks on `harness` as it is: the page counts
+/// its columns from the content panel's width, lays that many out, and places every element
+/// inside the panel.
+fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
+    use crate::pages::basic::column_count;
+    let state = harness.state();
+    let places = state.registry.places();
+    let Some(panel) = places.get("chrome.content").copied() else {
+        panic!("{what} {theme:?}: no content panel placed");
+    };
+    assert!(
+        (panel.width() - state.demo_state.content_width).abs() < 0.5,
+        "{what} {theme:?}: the panel is {} wide, the page counts from {}",
+        panel.width(),
+        state.demo_state.content_width
+    );
+    let columns = places
+        .keys()
+        .filter(|id| id.starts_with("basic.column_"))
+        .count();
+    let count = column_count(
+        state.atlas.resolved_for(theme),
+        state.atlas.layout(),
+        state.demo_state.content_width,
+    );
+    assert_eq!(columns, count, "{what} {theme:?}: the columns laid out");
+    for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
+        assert!(
+            rect.right() <= panel.right() + 0.5,
+            "{what} {theme:?}: {id} ends at {}, past the panel's {}",
+            rect.right(),
+            panel.right()
+        );
+    }
+    if state.page_scrolls {
+        println!("{what} {theme:?}: the Basic page scrolls");
+    }
+}
+
+/// The least content width at which `column_count` lays `columns` columns out under `t` and
+/// `layout`, to a hundredth of a point.
+fn count_boundary(
+    t: &native_theme_egui::ResolvedTheme,
+    layout: &native_theme::theme::LayoutTheme,
+    columns: usize,
+) -> f32 {
+    use crate::pages::basic::column_count;
+    let (mut fewer, mut enough) = (0.0_f32, 4.0 * crate::WINDOW_SIZE.x);
+    assert!(
+        column_count(t, layout, enough) >= columns,
+        "{columns} columns at no width"
+    );
+    while enough - fewer > 0.01 {
+        let mid = 0.5 * (fewer + enough);
+        if column_count(t, layout, mid) >= columns {
+            enough = mid;
+        } else {
+            fewer = mid;
+        }
+    }
+    enough
+}
+
+/// The window resized so the content panel is `width` wide: the side panel keeps its width, so
+/// the panel grows with the window.
+fn set_content_width(harness: &mut Harness<'_, App>, width: f32) {
+    let mut window = crate::WINDOW_SIZE;
+    for _ in 0..3 {
+        let now = harness.state().demo_state.content_width;
+        if (now - width).abs() < 0.01 {
+            return;
+        }
+        window.x += width - now;
+        harness.set_size(window);
+        harness.run_steps(4);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The selected tab's outward corners: tab.active_outward_corner_radius
+// ---------------------------------------------------------------------------
+
+/// windows-11's atlas, built as `from_preset` builds it, from its two resolved variants with
+/// `tab.active_outward_corner_radius` set on each to `radius` and `edit` applied: the preset
+/// states 4 (G3 T15), and the tests set the radius on the resolved themes, whose fields are
+/// public, to try it unstated and at other values too.
+fn windows_11_atlas(
+    radius: Option<f32>,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (preset, _) = from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+    let [mut light, mut dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+    for resolved in [&mut light, &mut dark] {
+        resolved.tab.active_outward_corner_radius = radius;
+        edit(resolved);
+    }
+    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
+        .layout(preset.layout())
+        .accessibility(preset.accessibility())
+        .icon_set(preset.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = preset.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// The showcase on its Basic page in `theme`, with [`windows_11_atlas`]'s atlas installed in
+/// place of the one it opened with, as the app installs one, at rest: windows-11 is a preset of
+/// another platform, which `--theme` does not take here.
+fn open_curving_out(
+    theme: egui::Theme,
+    radius: Option<f32>,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> Harness<'static, App> {
+    open_curving_out_at(theme, radius, 1.0, edit)
+}
+
+/// [`open_curving_out`] at `pixels_per_point` physical pixels per point.
+fn open_curving_out_at(
+    theme: egui::Theme,
+    radius: Option<f32>,
+    pixels_per_point: f32,
+    edit: impl Fn(&mut native_theme_egui::ResolvedTheme),
+) -> Harness<'static, App> {
+    let mut harness = open_at(
+        theme,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+        pixels_per_point,
+    );
+    harness.run_steps(4);
+    let ctx = harness.ctx.clone();
+    let app = harness.state_mut();
+    app.adopt(&ctx, windows_11_atlas(radius, edit));
+    harness.run_steps(4);
+    harness.remove_cursor();
+    harness.run_steps(2);
+    harness
+}
+
+/// The three tab bars `demo::tab_bar` draws: each bar's element, its first tab's, which is the
+/// selected one at start, and its second tab's.
+const TAB_BARS: [[&str; 3]; 3] = [
+    ["basic.tabs.bar", "basic.tabs.one", "basic.tabs.two"],
+    [
+        "chrome.page_tabs",
+        "chrome.page_tabs.basic",
+        "chrome.page_tabs.buttons",
+    ],
+    [
+        "chrome.side_panel.inspector_tabs",
+        "chrome.side_panel.inspector_tabs.widget",
+        "chrome.side_panel.inspector_tabs.theme",
+    ],
+];
+
+fn near(a: f32, b: f32) -> bool {
+    (a - b).abs() < 1e-3
+}
+
+fn near_rect(a: egui::Rect, b: egui::Rect) -> bool {
+    near(a.min.x, b.min.x)
+        && near(a.min.y, b.min.y)
+        && near(a.max.x, b.max.x)
+        && near(a.max.y, b.max.y)
+}
+
+/// The circles of the frame clipped to `square`, with their places in its paint order.
+fn circles_in(
+    shapes: &[egui::epaint::ClippedShape],
+    square: egui::Rect,
+) -> Vec<(usize, egui::epaint::CircleShape)> {
+    shapes
+        .iter()
+        .enumerate()
+        .filter_map(|(ix, clipped)| match &clipped.shape {
+            egui::Shape::Circle(circle) if near_rect(clipped.clip_rect, square) => {
+                Some((ix, *circle))
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// The nearest and the farthest of `centre` that epaint tessellates the shapes clipped to
+/// `square` at, the anti-aliasing fringe included.
+fn tessellated_extent(
+    harness: &Harness<'_, App>,
+    square: egui::Rect,
+    centre: egui::Pos2,
+) -> (f32, f32) {
+    let clipped: Vec<_> = harness
+        .output()
+        .shapes
+        .iter()
+        .filter(|s| near_rect(s.clip_rect, square))
+        .cloned()
+        .collect();
+    let ppp = harness.ctx.pixels_per_point();
+    let distances: Vec<f32> = harness
+        .ctx
+        .tessellate(clipped, ppp)
+        .into_iter()
+        .filter_map(|p| match p.primitive {
+            egui::epaint::Primitive::Mesh(mesh) => Some(mesh),
+            egui::epaint::Primitive::Callback(_) => None,
+        })
+        .flat_map(|mesh| mesh.vertices.into_iter().map(|v| v.pos.distance(centre)))
+        .collect();
+    assert!(!distances.is_empty(), "nothing tessellated in {square:?}");
+    (
+        distances.iter().copied().fold(f32::INFINITY, f32::min),
+        distances.iter().copied().fold(0.0, f32::max),
+    )
+}
+
+/// docs/platform-facts.md §2.11 `active_outward_corner_radius`: under windows-11 with a radius
+/// of 4 and its outline of 1, each of the three tab bars draws the selected tab's two flares
+/// with the numbers every connector's test shares (spec §12.2) -- the left about
+/// `(x0 - 3, y1 - 4)`, clipped to `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right about
+/// `(x1 + 3, y1 - 4)`, clipped to `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the fill an
+/// annulus from 3 to `4 * sqrt(2) + 1` in `tab.active_background`, then the outline one from 3
+/// to 4 in `tab.border.color`. epaint strokes a circle outside its radius
+/// (`epaint-0.36.2` `src/tessellator.rs:1531`), so each annulus is a circle of its inner radius
+/// stroked as wide as the annulus, and tessellated it reaches from 3 to `4 * sqrt(2) + 1`. Under
+/// them, after every tab, the strip `tab.active_background` lays over the selected tab's bottom
+/// edge, `[x0 + 1, x1 - 1] x [y1 - 1, y1]`. The first tab starts 4 further in than with the radius
+/// unstated, and the Basic bar, as wide as its tabs, ends 4 after its last.
+#[test]
+fn the_tab_bars_draw_the_selected_tabs_outward_corners() {
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let square_feet = open_curving_out(theme, None, |_| {});
+        let harness = open_curving_out(theme, Some(4.0), |_| {});
+        let state = harness.state();
+        let t = state.atlas.resolved_for(theme).clone();
+        assert_eq!(t.tab.border.line_width, 1.0, "windows-11's outline");
+        assert_eq!(t.tab.active_outward_corner_radius, Some(4.0));
+        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+        let outline = native_theme_egui::convert::to_color32(t.tab.border.color);
+        let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
+        let shapes = &harness.output().shapes;
+        let places = state.registry.places();
+        let place = |places: &std::collections::BTreeMap<String, egui::Rect>, id: &str| {
+            places
+                .get(id)
+                .copied()
+                .unwrap_or_else(|| panic!("{theme:?}: {id} is not placed"))
+        };
+        for [bar_id, one_id, two_id] in TAB_BARS {
+            let (bar, one, two) = (
+                place(places, bar_id),
+                place(places, one_id),
+                place(places, two_id),
+            );
+            let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+            // (the square's left edge, the centre's x)
+            let feet = [(x0 - 3.0, x0 - 3.0), (x1 - 1.0, x1 + 3.0)];
+            let mut flares = Vec::new();
+            for (left, cx) in feet {
+                let square = egui::Rect::from_min_max(
+                    egui::pos2(left, y1 - 4.0),
+                    egui::pos2(left + 4.0, y1),
+                );
+                let centre = egui::pos2(cx, y1 - 4.0);
+                let circles = circles_in(shapes, square);
+                let expected = [(far - 3.0, fill), (1.0, outline)];
+                assert_eq!(
+                    circles.len(),
+                    expected.len(),
+                    "{theme:?} {one_id}: the flare in {square:?} is {circles:?}"
+                );
+                for ((ix, circle), (width, colour)) in circles.into_iter().zip(expected) {
+                    assert!(
+                        circle.center.distance(centre) < 1e-3
+                            && near(circle.radius, 3.0)
+                            && near(circle.stroke.width, width)
+                            && circle.stroke.color == colour
+                            && circle.fill == egui::Color32::TRANSPARENT,
+                        "{theme:?} {one_id}: {circle:?} is not a ring from 3, {width} wide in \
+                         {colour:?}, about {centre:?}"
+                    );
+                    flares.push(ix);
+                }
+                let (nearest, farthest) = tessellated_extent(&harness, square, centre);
                 assert!(
-                    rect.right() <= panel.right() + 0.5,
-                    "{preset} {theme:?}: {id} ends at {}, past the panel's {}",
-                    rect.right(),
-                    panel.right()
+                    (2.0..=3.5).contains(&nearest) && (far - 0.5..=far + 1.0).contains(&farthest),
+                    "{theme:?} {one_id}: the flare is drawn from {nearest} to {farthest}, not \
+                     from 3 to {far}"
                 );
             }
-            if state.page_scrolls {
-                println!("{preset} {theme:?}: the Basic page scrolls");
+            let strip =
+                egui::Rect::from_min_max(egui::pos2(x0 + 1.0, y1 - 1.0), egui::pos2(x1 - 1.0, y1));
+            let strips: Vec<usize> = shapes
+                .iter()
+                .enumerate()
+                .filter_map(|(ix, clipped)| match &clipped.shape {
+                    egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip) => Some(ix),
+                    _ => None,
+                })
+                .collect();
+            let [strip_ix] = strips[..] else {
+                panic!("{theme:?} {one_id}: the strip over its bottom edge is {strips:?}");
+            };
+            // Everything drawn within a tab, the strip and the flares aside.
+            let in_tabs: Vec<usize> = shapes
+                .iter()
+                .enumerate()
+                .filter(|(ix, clipped)| {
+                    let at = clipped.shape.visual_bounding_rect();
+                    *ix != strip_ix
+                        && !flares.contains(ix)
+                        && at.is_positive()
+                        && [one, two]
+                            .iter()
+                            .any(|tab| tab.expand(0.5).contains_rect(at))
+                })
+                .map(|(ix, _)| ix)
+                .collect();
+            for tab in [one, two] {
+                assert!(
+                    shapes.iter().any(|c| {
+                        let at = c.shape.visual_bounding_rect();
+                        at.is_positive() && tab.expand(0.5).contains_rect(at)
+                    }),
+                    "{theme:?} {bar_id}: nothing drawn in the tab at {tab:?}"
+                );
             }
+            let first_flare = flares.iter().copied().min().unwrap_or_default();
+            assert!(
+                in_tabs.iter().all(|ix| *ix < strip_ix) && strip_ix < first_flare,
+                "{theme:?} {bar_id}: the tabs at {in_tabs:?}, the strip at {strip_ix}, the \
+                 flares at {flares:?}"
+            );
+            let before = square_feet.state().registry.places();
+            let (bar_before, one_before) = (place(before, bar_id), place(before, one_id));
+            assert!(
+                near(
+                    (one.min.x - bar.min.x) - (one_before.min.x - bar_before.min.x),
+                    4.0
+                ),
+                "{theme:?} {one_id}: the first tab starts {} in, {} with the radius unstated",
+                one.min.x - bar.min.x,
+                one_before.min.x - bar_before.min.x
+            );
         }
+        let (bar, two) = (
+            place(places, "basic.tabs.bar"),
+            place(places, "basic.tabs.two"),
+        );
+        assert!(
+            near(bar.max.x - two.max.x, 4.0),
+            "{theme:?}: the Basic bar ends {} after its last tab",
+            bar.max.x - two.max.x
+        );
+    }
+}
+
+/// At a fractional scale, 1.25 physical pixels per point, each flare is placed from the selected
+/// tab's rectangle rounded to physical pixels, the one epaint strokes the tab's frame on, so the
+/// curve meets the side edge it continues: in each of the three bars the two flares' circles lie
+/// about `(x0 - 3, y1 - 4)` and `(x1 + 3, y1 - 4)` of the rounded rectangle, clipped to their
+/// squares about it; and some selected tab lies off the pixel grid, so the rounding shows.
+#[test]
+fn at_a_fractional_scale_the_flares_sit_on_the_tabs_pixel_grid() {
+    use egui::emath::GuiRounding as _;
+    let ppp = 1.25;
+    let harness = open_curving_out_at(egui::Theme::Light, Some(4.0), ppp, |_| {});
+    assert!(near(harness.ctx.pixels_per_point(), ppp));
+    let shapes = &harness.output().shapes;
+    let places = harness.state().registry.places();
+    let mut off_grid = Vec::new();
+    for [_, one_id, _] in TAB_BARS {
+        let Some(one) = places.get(one_id).copied() else {
+            panic!("{one_id} is not placed");
+        };
+        let tab = one.round_to_pixels(ppp);
+        if !near_rect(tab, one) {
+            off_grid.push(one_id);
+        }
+        let (x0, x1, y1) = (tab.min.x, tab.max.x, tab.max.y);
+        // (the square's left edge, the centre's x)
+        for (left, cx) in [(x0 - 3.0, x0 - 3.0), (x1 - 1.0, x1 + 3.0)] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let centre = egui::pos2(cx, y1 - 4.0);
+            let circles = circles_in(shapes, square);
+            assert!(
+                circles.len() == 2
+                    && circles
+                        .iter()
+                        .all(|(_, circle)| circle.center.distance(centre) < 1e-3),
+                "{one_id} at {one:?}, {tab:?} rounded: the flare in {square:?} is {circles:?}, \
+                 not two rings about {centre:?}"
+            );
+        }
+    }
+    assert!(
+        !off_grid.is_empty(),
+        "no selected tab lies off the pixel grid at {ppp}, so the rounding is not seen"
+    );
+}
+
+/// Without an outline (`tab.border.line_width` 0), each flare is the fill alone, an annulus from
+/// the radius, 4, to `4 * sqrt(2) + 1`, in a square at the tab's outer edge, and no strip covers
+/// a bottom edge the tab does not have.
+#[test]
+fn without_an_outline_the_fill_begins_at_the_radius() {
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.tab.border.line_width = 0.0;
+    });
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+    let far = 4.0 * std::f32::consts::SQRT_2 + 1.0;
+    let shapes = &harness.output().shapes;
+    for [_, one_id, _] in TAB_BARS {
+        let one = harness.state().registry.places()[one_id];
+        let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+        for (left, cx) in [(x0 - 4.0, x0 - 4.0), (x1, x1 + 4.0)] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let centre = egui::pos2(cx, y1 - 4.0);
+            let circles = circles_in(shapes, square);
+            assert!(
+                matches!(circles[..], [(_, circle)] if circle.center.distance(centre) < 1e-3
+                    && near(circle.radius, 4.0)
+                    && near(circle.stroke.width, far - 4.0)
+                    && circle.stroke.color == fill),
+                "{one_id}: the flare in {square:?} is {circles:?}"
+            );
+        }
+        assert!(
+            !shapes.iter().any(|c| matches!(&c.shape,
+                egui::Shape::Rect(r) if r.fill == fill && near(r.rect.max.y, y1)
+                    && near(r.rect.height(), 0.0))),
+            "{one_id}: a strip over a bottom edge of no width"
+        );
+    }
+}
+
+/// With the radius unstated, or stated as one no tab bar draws (0, not finite), no circle is
+/// drawn and no strip: the selected tab keeps its bottom edge.
+#[test]
+fn without_the_radius_the_tab_bars_draw_no_flares() {
+    for radius in [None, Some(0.0), Some(f32::NAN)] {
+        let harness = open_curving_out(egui::Theme::Light, radius, |_| {});
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+        let shapes = &harness.output().shapes;
+        let circles: Vec<_> = shapes
+            .iter()
+            .filter(|c| match &c.shape {
+                egui::Shape::Circle(circle) => TAB_BARS.iter().any(|[bar, ..]| {
+                    harness
+                        .state()
+                        .registry
+                        .places()
+                        .get(*bar)
+                        .is_some_and(|b| b.expand(8.0).contains(circle.center))
+                }),
+                _ => false,
+            })
+            .collect();
+        assert!(circles.is_empty(), "{radius:?}: circles drawn: {circles:?}");
+        for [_, one_id, _] in TAB_BARS {
+            let one = harness.state().registry.places()[one_id];
+            let strip = egui::Rect::from_min_max(
+                egui::pos2(one.min.x + 1.0, one.max.y - 1.0),
+                egui::pos2(one.max.x - 1.0, one.max.y),
+            );
+            assert!(
+                !shapes.iter().any(|c| matches!(&c.shape,
+                    egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip))),
+                "{radius:?} {one_id}: a strip over the bottom edge"
+            );
+        }
+    }
+}
+
+/// With a bottom indicator and the radius both stated, no strip is painted, since the line
+/// covers the bottom edge, and the flares are painted over the line as without it.
+#[test]
+fn a_bottom_indicator_lies_under_the_flares() {
+    let harness = open_curving_out(egui::Theme::Light, Some(4.0), |r| {
+        r.tab.active_indicator_color = Some(r.defaults.accent_color);
+        r.tab.active_indicator_width = Some(2.0);
+        r.tab.active_indicator_side = Some(native_theme::theme::TabIndicatorSide::Bottom);
+    });
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let fill = native_theme_egui::convert::to_color32(t.tab.active_background);
+    let accent = native_theme_egui::convert::to_color32(t.defaults.accent_color);
+    let shapes = &harness.output().shapes;
+    for [_, one_id, _] in TAB_BARS {
+        let one = harness.state().registry.places()[one_id];
+        let (x0, x1, y1) = (one.min.x, one.max.x, one.max.y);
+        let strip =
+            egui::Rect::from_min_max(egui::pos2(x0 + 1.0, y1 - 1.0), egui::pos2(x1 - 1.0, y1));
+        assert!(
+            !shapes.iter().any(|c| matches!(&c.shape,
+                egui::Shape::Rect(r) if r.fill == fill && near_rect(r.rect, strip))),
+            "{one_id}: a strip under the bottom line"
+        );
+        let line = egui::Rect::from_min_max(egui::pos2(x0, y1 - 2.0), one.max);
+        let lines: Vec<usize> = shapes
+            .iter()
+            .enumerate()
+            .filter_map(|(ix, c)| match &c.shape {
+                egui::Shape::Rect(r) if r.fill == accent && near_rect(r.rect, line) => Some(ix),
+                _ => None,
+            })
+            .collect();
+        let [line_ix] = lines[..] else {
+            panic!("{one_id}: the bottom line is {lines:?}");
+        };
+        for left in [x0 - 3.0, x1 - 1.0] {
+            let square =
+                egui::Rect::from_min_max(egui::pos2(left, y1 - 4.0), egui::pos2(left + 4.0, y1));
+            let circles = circles_in(shapes, square);
+            assert_eq!(
+                circles.len(),
+                2,
+                "{one_id}: the flare in {square:?} is {circles:?}"
+            );
+            assert!(
+                circles.iter().all(|(ix, _)| line_ix < *ix),
+                "{one_id}: the line at {line_ix} over the flares at {circles:?}"
+            );
+        }
+    }
+}
+
+/// The Basic page's column rule makes room for both of the selected tab's flares, as the gpui
+/// page's does: under windows-11, whose widest fixed-width control is the two tabs, a page
+/// whose fifth holds the two tabs and 4px more lays out five columns, and four once the theme
+/// states an outward corner radius of 4, whose two flares need 8; five again for a radius
+/// `demo::tab_bar` draws no flares for, 0, negative or not finite.
+#[test]
+fn the_basic_page_makes_room_for_both_flares() {
+    use crate::pages::basic::column_count;
+    let atlas = windows_11_atlas(Some(4.0), |_| {});
+    let stated = atlas.resolved_for(egui::Theme::Light).clone();
+    let layout = atlas.layout();
+    let mut unstated = stated.clone();
+    unstated.tab.active_outward_corner_radius = None;
+    let margin = layout.window_margin.unwrap_or_default();
+    let gap = layout.section_gap.unwrap_or_default();
+    let bar = &stated.scrollbar;
+    let gutter = if bar.overlay_mode {
+        0.0
+    } else {
+        bar.groove_width
+    };
+    let t = &stated.tab;
+    let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
+    let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
+    assert_eq!(
+        column_count(&unstated, layout, content),
+        5,
+        "without outward corners the two tabs fit a fifth"
+    );
+    assert_eq!(
+        column_count(&stated, layout, content),
+        4,
+        "the two tabs and both flares do not fit a fifth"
+    );
+    for radius in [0.0, -1.0, f32::NAN] {
+        let mut undrawn = stated.clone();
+        undrawn.tab.active_outward_corner_radius = Some(radius);
+        assert_eq!(
+            column_count(&undrawn, layout, content),
+            5,
+            "a radius of {radius} keeps room for flares the bar does not draw"
+        );
     }
 }
 
@@ -2787,6 +5011,37 @@ fn a_capture_is_drawn_at_rest_under_the_pointer() {
     }
 }
 
+/// Reduce motion switched off after the user switched it on is installed: the atlas's
+/// `reduce_motion` was the user's request, so it goes back to the OS's reading. Where the OS
+/// requests reduced motion itself, the atlas keeps it on and the test cannot tell the two apart.
+#[test]
+fn a_switch_off_of_the_users_reduce_motion_request_installs() {
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+    let ctx = harness.ctx.clone();
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    harness.state_mut().settings.prefs = Some(prefs);
+    harness.state_mut().install(&ctx);
+    harness
+        .state_mut()
+        .run_action(Action::OpenPreferences, &ctx);
+    harness.run_steps(SETTLE);
+    assert!(
+        harness.state().atlas.accessibility().reduce_motion,
+        "the user's request was not installed"
+    );
+    harness
+        .get_by_role_and_label(Role::Switch, "Reduce motion")
+        .click();
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness.state().atlas.accessibility().reduce_motion,
+        native_theme::detect::accessibility_preferences().reduce_motion,
+        "the switch off kept the user's earlier request in the atlas"
+    );
+}
+
 /// Preferences' flags are switches, as the gpui showcase's Settings rows are (parity item 20):
 /// the companion crate's, in `Role::Switch`, so a set flag is a toggled switch named by its
 /// row's title, and a click flips it; each sits right of its title.
@@ -2795,10 +5050,9 @@ fn a_set_preference_is_a_selected_switch() {
     let mut harness = open_default();
     harness.run_steps(SETTLE);
     let ctx = harness.ctx.clone();
-    harness.state_mut().settings.prefs = Some(AccessibilityPreferences {
-        reduce_motion: true,
-        ..AccessibilityPreferences::default()
-    });
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.reduce_motion = true;
+    harness.state_mut().settings.prefs = Some(prefs);
     harness.state_mut().install(&ctx);
     harness
         .state_mut()
@@ -2844,6 +5098,47 @@ fn a_set_preference_is_a_selected_switch() {
             .as_ref()
             .is_some_and(|p| p.high_contrast),
         "the switch did not set the flag"
+    );
+
+    // The OS's request, as the installed atlas's effective preferences carry it, with none of
+    // the user's: the switch shows the user's request, so it is off, and a change of another
+    // switch stores no request for Reduce motion.
+    let mut os = AccessibilityPreferences::default();
+    os.reduce_motion = true;
+    let (atlas, _) = from_preset(TEST_PRESET, false, &os).expect("a bundled preset");
+    harness.state_mut().settings.prefs = None;
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness
+            .get_by_role_and_label(Role::Switch, "Reduce motion")
+            .accesskit_node()
+            .toggled(),
+        Some(egui::accesskit::Toggled::False),
+        "an OS request shows as the user's"
+    );
+    assert!(
+        harness
+            .query_by_label(
+                "reduce_motion: every style's animation time is zero and its scroll animation \
+                 is off; off is no request: an OS request still stops the animations"
+            )
+            .is_some(),
+        "the Reduce motion row does not say that off is no request"
+    );
+    harness
+        .get_by_role_and_label(Role::Switch, "High contrast")
+        .click();
+    harness.run_steps(SETTLE);
+    assert_eq!(
+        harness
+            .state()
+            .settings
+            .prefs
+            .as_ref()
+            .map(|p| (p.reduce_motion, p.high_contrast)),
+        Some((false, true)),
+        "the OS's request was stored as the user's"
     );
 }
 
@@ -3113,8 +5408,12 @@ fn the_info_is_the_manifest() {
                 egui::Theme::Light
             };
             let json = crate::info::theme_json(&atlas, theme).expect("serialises");
-            // The values the info must print, read here and not through the info module.
+            // The values the info must print, read here and not through the info module; a
+            // family as the theme states it (`every_font_label_names_the_drawn_family` reads
+            // the drawn one).
             let expected = resolved_json(&atlas, theme);
+            let stated =
+                |_: &str, font: &native_theme::theme::ResolvedFontSpec| font.family.to_string();
             for seam in &seams {
                 let rows = manifest.rows_for(seam);
                 let listed: BTreeSet<String> = rows.iter().map(|r| r.leaf.clone()).collect();
@@ -3126,11 +5425,9 @@ fn the_info_is_the_manifest() {
                 );
                 assert!(!rows.is_empty(), "{seam:?} lists no row");
                 for row in rows {
-                    let printed = crate::info::InfoView::row_lines(&crate::info::manifest_row(
-                        row,
-                        &json,
-                        std::slice::from_ref(seam),
-                    ));
+                    let printed =
+                        crate::info::manifest_row(row, &json, &stated, std::slice::from_ref(seam))
+                            .lines();
                     let lines = printed.join("\n");
                     // The first line, whole: a substring would let `12` pass for `1`.
                     if let Some(value) = leaf_value(&expected, &row.leaf) {
@@ -3194,7 +5491,9 @@ fn the_info_is_the_manifest() {
         .clone()
         .unwrap_or_default();
     let elements = crate::elements::showcase_elements().unwrap_or_default();
-    let text = crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other)).text();
+    let scheme = (&app.atlas, &harness.ctx);
+    let text =
+        crate::info::InfoView::of(&shown, &elements, &manifest, (&json, other), scheme).text();
     let expected = resolved_json(&harness.state().atlas, harness.ctx.theme());
     let line = leaf_value(&expected, "button.background_color")
         .map(|value| value_line("button.background_color", &value));
@@ -3496,7 +5795,7 @@ fn every_seam_is_recorded() {
         ".native_scope(",
         ".native_set_style(",
         ".native_frame(",
-        ".role_modifier(",
+        "role_modifier(",
         ".surface_frame(",
     ];
     let mut in_demo = 0;
@@ -3571,18 +5870,20 @@ fn every_role_and_surface_is_demonstrated() {
         harness.run_steps(2);
         collect(&harness);
     }
-    // The variants a role carries: `Normal` always; `selected` or `disabled` where the
-    // manifest declares a sink in that cell (§13.1's `variant`).
+    // The variants a role carries: `Normal` always; every other variant where the manifest
+    // declares a sink in that cell (§13.1's `variant`).
     let mut missing = Vec::new();
     for role in native_theme_egui::Role::all() {
         let key = role.key();
         let mut variants = vec!["normal"];
-        for v in ["selected", "disabled"] {
-            if manifest.rows.iter().any(|r| {
-                r.sinks
-                    .iter()
-                    .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
-            }) {
+        for v in RoleVariant::all().iter().map(|v| v.key()) {
+            if v != "normal"
+                && manifest.rows.iter().any(|r| {
+                    r.sinks
+                        .iter()
+                        .any(|s| s.scope.as_deref() == Some(key) && s.variant.as_deref() == Some(v))
+                })
+            {
                 variants.push(v);
             }
         }
@@ -3724,6 +6025,15 @@ const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (
         "icons_indicator",
         "the 0.5 of Vec2::splat(0.5) is the centre Image::rotate turns about (§4.10)",
+    ),
+    (
+        "button_min_size",
+        "the 0.0 is no least height: a Button raises its own to interact_size.y, \
+         button.min_height in the button scope (egui 0.36.2 src/widgets/button.rs:306-309)",
+    ),
+    (
+        "input_min_size",
+        "the 0.0 is no least width: a TextEdit is its desired_width wide",
     ),
 ];
 /// The three named constants of §10.4, and the gpui-component literals the parity decisions
@@ -3872,6 +6182,31 @@ fn style_literals(source: &str) -> Vec<String> {
     out
 }
 
+/// A `_ms` leaf of the list reads as a `_px` one does: `tooltip.show_delay_ms` shows the
+/// resolved theme's `tooltip.show_delay` with " ms" and finds its `mapping.toml` row,
+/// `tooltip.show_delay`.
+#[test]
+fn a_ms_leaf_reads_its_value() {
+    let prefs = AccessibilityPreferences::default();
+    let (atlas, _) = from_preset("kde-breeze", false, &prefs).expect("a bundled preset builds");
+    let delay = atlas.resolved_for(egui::Theme::Light).tooltip.show_delay;
+    assert!(delay.is_some(), "kde-breeze states a tooltip delay");
+    let json = crate::info::theme_json(&atlas, egui::Theme::Light).expect("serialises");
+    let shown = native_theme_showcase_support::values::leaf_value(
+        "tooltip.show_delay_ms",
+        &json,
+        atlas.layout(),
+        Some(atlas.icon_set()),
+        atlas.icon_theme(egui::Theme::Light),
+        &|_, font| font.family.to_string(),
+    );
+    assert_eq!(Some(shown.text), delay.map(|ms| format!("{ms} ms")));
+    assert_eq!(
+        crate::info::mapping_key("tooltip.show_delay_ms"),
+        "tooltip.show_delay"
+    );
+}
+
 /// `docs/showcase-elements.toml`, as the showcase reads it.
 fn listed_elements() -> Vec<crate::elements::ShowcaseElement> {
     let elements = crate::elements::showcase_elements();
@@ -3999,7 +6334,9 @@ fn widget_info_shows_the_listed_elements_rows() {
     let listed = elements.iter().find(|e| e.id == "basic.buttons.default");
     let (manifest, json) = manifest_and_json(&harness);
     if let (Some(shown), Some(listed)) = (shown, listed) {
-        let view = crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET));
+        let scheme = (&harness.state().atlas, &harness.ctx);
+        let view =
+            crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET), scheme);
         assert_eq!(view.title, "Button · Normal");
         let leaves: Vec<&str> = view.rows.iter().map(|r| r.leaf.as_str()).collect();
         let want: Vec<&str> = listed.leaves.iter().map(String::as_str).collect();
@@ -4041,6 +6378,403 @@ fn widget_info_shows_the_listed_elements_rows() {
     }
 }
 
+/// The family drawn in a family's place is the substitute the atlas's note for that family
+/// names: none for a family with no note, or whose note names no substitute (`demo::drawn_family`
+/// over the `(family, substitute)` pairs `demo::unavailable_families` takes from the notes).
+#[test]
+fn the_drawn_family_is_the_notes_substitute() {
+    use crate::demo::drawn_family;
+    let unavailable = [("Segoe UI", Some("Adwaita Sans")), ("Cascadia Mono", None)];
+    assert_eq!(drawn_family(&unavailable, "Segoe UI"), Some("Adwaita Sans"));
+    assert_eq!(drawn_family(&unavailable, "Noto Sans"), None);
+    assert_eq!(drawn_family(&unavailable, "Cascadia Mono"), None);
+    assert_eq!(drawn_family(&[], "Segoe UI"), None);
+}
+
+/// A family the font plan loads is drawn as its notes say (`demo::planned_drawing`, over
+/// literal notes): as stated with none; in the substitute a `FontFamilyUnavailable` note names;
+/// in egui's own face where that note names none, where the substitute's face failed epaint's
+/// parse (a `FontDataInvalid` note under the theme's family, which the substitute's face is
+/// registered under), and, as "in no face egui can draw", where the family's own face did.
+#[test]
+fn a_planned_family_is_drawn_as_its_notes_say() {
+    use crate::demo::planned_drawing;
+    use native_theme_showcase_support::status::DrawnFamily;
+    let own = ("proportional", Some("Ubuntu-Light"));
+    let generic = |held_weights| DrawnFamily::Generic {
+        toolkit: "egui",
+        kind: "proportional",
+        family: Some("Ubuntu-Light"),
+        held_weights,
+    };
+    let substituted = [("Segoe UI", Some("Adwaita Sans"))];
+    let unsubstituted = [("Segoe UI", None)];
+    assert_eq!(
+        planned_drawing(&[], &[], "Noto Sans", own),
+        DrawnFamily::Stated
+    );
+    assert_eq!(
+        planned_drawing(&substituted, &[], "Segoe UI", own),
+        DrawnFamily::Named("Adwaita Sans")
+    );
+    assert_eq!(
+        planned_drawing(&unsubstituted, &[], "Segoe UI", own),
+        generic(None)
+    );
+    assert_eq!(
+        planned_drawing(&substituted, &["Segoe UI"], "Segoe UI", own),
+        generic(None)
+    );
+    assert_eq!(
+        planned_drawing(&[], &["Noto Sans"], "Noto Sans", own),
+        generic(Some(&[]))
+    );
+    assert_eq!(
+        planned_drawing(&[], &["Hack"], "Noto Sans", own),
+        DrawnFamily::Stated
+    );
+}
+
+/// A face the showcase adds at another weight than the body's that fails epaint's parse is
+/// skipped and noted, where epaint panicked at the next pass loading it ("Error parsing ...
+/// TTF/OTF font file", `epaint/src/text/fonts.rs:990`, in release too): 64 zero bytes added
+/// at weight 650 leave the pass running, that weight's family unbound, so text at it is
+/// drawn in the body's face (`demo::weighted_family`), and the Theme tab's Notes list it.
+#[cfg(feature = "system-fonts")]
+#[test]
+fn a_weight_face_epaint_cannot_parse_is_skipped_and_noted() {
+    let mut harness = open_page(Page::Basic, egui::Theme::Light);
+    let ctx = harness.ctx.clone();
+    let family = crate::demo::weight_family(650);
+    harness.state_mut().semibold.add_face(
+        &ctx,
+        ("Broken Sans", 650),
+        family.clone(),
+        vec![0; 64],
+        0,
+    );
+    let ran = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| harness.run_steps(2)));
+    assert!(
+        ran.is_ok(),
+        "the pass after adding an unparsable face panicked"
+    );
+    assert!(
+        !ctx.fonts(|f| f.definitions().families.contains_key(&family)),
+        "the unparsable face's family is bound"
+    );
+    assert_eq!(
+        harness.state().semibold.invalid(),
+        [("Broken Sans".to_string(), 650)]
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let noted = harness
+        .query_all(By::new().predicate(|n| {
+            n.value().is_some_and(|v| {
+                v.starts_with("FontDataInvalid\n") && v.contains("Broken Sans") && v.contains("650")
+            })
+        }))
+        .count();
+    assert_eq!(
+        noted, 1,
+        "the Theme tab's Notes do not list the skipped face"
+    );
+}
+
+/// The label of the theme's `stated` family the showcase must show, read from what the
+/// harness has installed: the stated name alone where the atlas holds no
+/// `Note::FontFamilyUnavailable` or `Note::FontDataInvalid` for it; the platform's substitute
+/// where its note names one (`status::family_label`); egui's generic family in egui's own first
+/// face of it, as the fonts the pass draws with hold it, where its note names none, where a
+/// face registered under it failed epaint's parse, or wherever the build loads no system font
+/// (feature `system-fonts` off), `monospace` for the monospace font, else `proportional`.
+fn drawn_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
+    use native_theme_showcase_support::status::{DrawnFamily, family_label};
+    let (kind, chain) = if mono {
+        ("monospace", egui::FontFamily::Monospace)
+    } else {
+        ("proportional", egui::FontFamily::Proportional)
+    };
+    let own = harness.ctx.fonts(|f| {
+        f.definitions()
+            .families
+            .get(&chain)
+            .and_then(|faces| faces.first().cloned())
+    });
+    if !cfg!(feature = "system-fonts") {
+        return DrawnFamily::Unloaded {
+            toolkit: "egui",
+            kind,
+            family: own.as_deref(),
+        }
+        .label(stated);
+    }
+    let notes = harness.state().atlas.notes();
+    let noted = notes.iter().find_map(|note| match note {
+        native_theme_egui::Note::FontFamilyUnavailable {
+            family, substitute, ..
+        } if &**family == stated => Some(substitute.clone()),
+        _ => None,
+    });
+    let dropped = notes.iter().any(|note| {
+        matches!(note, native_theme_egui::Note::FontDataInvalid { family, .. }
+            if &**family == stated)
+    });
+    let generic = |held_weights| {
+        DrawnFamily::Generic {
+            toolkit: "egui",
+            kind,
+            family: own.as_deref(),
+            held_weights,
+        }
+        .label(stated)
+    };
+    match noted {
+        Some(Some(substitute)) if !dropped => family_label(stated, Some(&substitute)),
+        Some(_) => generic(None),
+        None if dropped => generic(Some(&[])),
+        None => stated.to_string(),
+    }
+}
+
+/// The value of Widget Info's row for `leaf`, the text after the leaf on its first line: a
+/// row is a `Label`, whose text is its AccessKit value (`egui/src/response.rs:962-964`).
+fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
+    let prefix = format!("{leaf} ");
+    harness
+        .query_all(By::new().predicate(|n| n.value().is_some_and(|v| v.starts_with(&prefix))))
+        .filter_map(|n| n.accesskit_node().value())
+        .find_map(|value| {
+            value
+                .lines()
+                .next()
+                .and_then(|line| line.strip_prefix(&prefix))
+                .map(str::to_string)
+        })
+        .unwrap_or_else(|| panic!("Widget Info shows no {leaf} row"))
+}
+
+/// Every font label names the family egui draws, as the atlas records it: the status bar's
+/// font item, the Theme tab's `font_family` and `mono_font_family` rows, Widget Info's
+/// `defaults.font.family` row (hover a Basic group heading), its `defaults.font` row (the
+/// Basic "Off" switch), its `defaults.mono_font` row (the Basic "Monospace" line) and its
+/// `button.font` row (the Basic "Button"), under windows-11, set directly as `--theme` does not
+/// take it here. Conditioned on the host: where the system lacks "Segoe UI", the
+/// atlas notes it and the labels name the substitute drawn in its place (fontconfig's match on
+/// Linux); where it has it, the stated name alone; and without feature `system-fonts`,
+/// egui's own face. The expected texts are read from the installed atlas ([`drawn_label`]).
+#[test]
+fn every_font_label_names_the_drawn_family() {
+    let mut harness = open_scaled("windows-11", "basic", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let body = drawn_label(&harness, &t.defaults.font.family, false);
+    println!(
+        "windows-11's {:?} is shown as {body:?}",
+        t.defaults.font.family
+    );
+    let mono = drawn_label(&harness, &t.defaults.mono_font.family, true);
+    println!(
+        "windows-11's {:?} is shown as {mono:?}",
+        t.defaults.mono_font.family
+    );
+    let button = drawn_label(&harness, &t.button.font.family, false);
+    // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
+    let values = |harness: &Harness<'_, App>| -> Vec<String> {
+        harness
+            .query_all(By::new().predicate(|n| n.value().is_some()))
+            .filter_map(|n| n.accesskit_node().value())
+            .collect()
+    };
+    let font_item = format!(
+        "{body} {}",
+        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+    );
+    let environment = values(&harness)
+        .into_iter()
+        // The preset item names the selection, which `open_scaled` leaves at `TEST_PRESET`.
+        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
+        .expect("one environment line");
+    assert!(
+        environment.split(" · ").any(|item| item == font_item),
+        "the status bar does not name the drawn family as {font_item:?}: {environment}"
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let shown = values(&harness);
+    for (key, label) in [("font_family", &body), ("mono_font_family", &mono)] {
+        let row = format!("{key}\n{label}");
+        assert!(
+            shown.contains(&row),
+            "the Theme tab shows no {row:?}: {:?}",
+            shown
+                .iter()
+                .filter(|v| v.starts_with(key))
+                .collect::<Vec<_>>()
+        );
+    }
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Widget;
+    harness.run_steps(2);
+    let mut row = |kind: &str, leaf: &str| {
+        let pos = centre_of(&harness, kind);
+        hover_and_settle(&mut harness, pos);
+        info_row_value(&harness, leaf)
+    };
+    assert_eq!(row("heading", "defaults.font.family"), body);
+    for (kind, leaf, label) in [
+        ("switch (off)", "defaults.font", &body),
+        ("Label (monospace)", "defaults.mono_font", &mono),
+        ("button (enabled)", "button.font", &button),
+    ] {
+        let font = row(kind, leaf);
+        assert!(
+            font.starts_with(&format!("{label} ")),
+            "the {leaf} row does not name the drawn family {label:?}: {font}"
+        );
+    }
+}
+
+/// `preset`'s atlas, built as `from_preset` builds it, from its two resolved variants with
+/// `edit` applied to each (handed its scheme): the resolved themes' fields are public, so a
+/// test can give a font a family no bundled preset states.
+fn edited_atlas(
+    preset: &str,
+    edit: impl Fn(egui::Theme, &mut native_theme_egui::ResolvedTheme),
+) -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (built, _) = from_preset(preset, false, &prefs).expect("a bundled preset builds");
+    let [mut light, mut dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| built.resolved_for(theme).clone());
+    edit(egui::Theme::Light, &mut light);
+    edit(egui::Theme::Dark, &mut dark);
+    let mut builder = native_theme_egui::ThemeAtlas::builder(built.name(), &light, &dark)
+        .layout(built.layout())
+        .accessibility(built.accessibility())
+        .icon_set(built.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = built.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// What egui draws a font whose stated family is not the one the font plan loaded for its kind
+/// in, as the showcase must name it: the face of the light variant's `defaults.font` (or
+/// `defaults.mono_font` for the monospace font), that family labelled by [`drawn_label`]
+/// (connector `fonts.rs`: the plan registers the light variant's two default families, and
+/// every `FontId` the connector hands out names `Proportional` or `Monospace`).
+fn other_font_label(harness: &Harness<'_, App>, stated: &str, mono: bool) -> String {
+    let light = harness.state().atlas.resolved_for(egui::Theme::Light);
+    let (font, planned) = if mono {
+        (
+            "the light variant's defaults.mono_font",
+            &light.defaults.mono_font.family,
+        )
+    } else {
+        (
+            "the light variant's defaults.font",
+            &light.defaults.font.family,
+        )
+    };
+    let planned = planned.to_string();
+    let family = drawn_label(harness, &planned, mono);
+    native_theme_showcase_support::status::DrawnFamily::OtherFont {
+        toolkit: "egui",
+        font,
+        family: &family,
+    }
+    .label(stated)
+}
+
+/// A widget font whose stated family is not the body's is named by the face egui draws it in,
+/// the body's, which is where egui draws every font but the monospace one (the connector's
+/// never-`Name` invariant, spec §8.1, §5.8 item 7): `button.font.family` set to "Noto Serif"
+/// on kde-breeze, as a reader's own widget font would state it (KDE's `menuFont`, Windows'
+/// menu font), hover the Basic "Button".
+#[test]
+fn a_widget_font_of_another_family_is_named_by_the_face_egui_draws() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let atlas = edited_atlas("kde-breeze", |_, t| {
+        t.button.font.family = "Noto Serif".into();
+    });
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    let label = other_font_label(&harness, "Noto Serif", false);
+    let pos = centre_of(&harness, "button (enabled)");
+    hover_and_settle(&mut harness, pos);
+    let font = info_row_value(&harness, "button.font");
+    assert!(
+        font.starts_with(&format!("{label} ")),
+        "the button.font row does not name the face egui draws, {label:?}: {font}"
+    );
+}
+
+/// Under a dark variant whose `defaults.font.family` is not the light one's, the status bar and
+/// the Theme tab name the face egui draws, the light variant's: the connector's font plan
+/// reads the light variant alone (`FontPlan::from_system(&light)`). No bundled preset or OS
+/// reader gives the two variants other families; the test sets one.
+#[test]
+fn a_dark_family_of_its_own_is_named_by_the_face_egui_draws() {
+    let mut harness = open(
+        egui::Theme::Dark,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let atlas = edited_atlas("kde-breeze", |theme, t| {
+        if theme == egui::Theme::Dark {
+            t.defaults.font.family = "Noto Serif".into();
+        }
+    });
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, atlas);
+    harness.run_steps(4);
+    assert_eq!(harness.ctx.theme(), egui::Theme::Dark);
+    let label = other_font_label(&harness, "Noto Serif", false);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Dark)
+        .clone();
+    let values = |harness: &Harness<'_, App>| -> Vec<String> {
+        harness
+            .query_all(By::new().predicate(|n| n.value().is_some()))
+            .filter_map(|n| n.accesskit_node().value())
+            .collect()
+    };
+    let font_item = format!(
+        "{label} {}",
+        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+    );
+    let environment = values(&harness)
+        .into_iter()
+        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
+        .expect("one environment line");
+    assert!(
+        environment.split(" · ").any(|item| item == font_item),
+        "the status bar does not name the face egui draws as {font_item:?}: {environment}"
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let row = format!("font_family\n{label}");
+    assert!(
+        values(&harness).contains(&row),
+        "the Theme tab shows no {row:?}"
+    );
+}
+
 /// The dump is the object `docs/showcase-elements.toml` describes: the kind, the preset, the
 /// variant, the scale and a rectangle per placed element.
 #[test]
@@ -4060,4 +6794,297 @@ fn the_layout_dump_is_the_lists_object() {
     assert_eq!(window["x"], 0.0);
     assert_eq!(window["w"], f64::from(crate::WINDOW_SIZE.x));
     assert_eq!(window["h"], f64::from(crate::WINDOW_SIZE.y));
+}
+
+/// M8-44: a layout dump (`--dump-layout`) records the chrome at rest wherever the real pointer
+/// is. The window's pointer moved over the tooltip button, in the input `raw_input_hook` is
+/// handed, leaves the dump byte for byte the one written with no pointer: Widget Info holds its
+/// hint (`chrome.info.hint`) and no hovered widget's rows, and the status bar names no hovered
+/// widget (`chrome.status_bar.shown`). The same pointer does change the layout of a window that
+/// is not dumped, which is what makes the first half mean something.
+#[test]
+fn a_layout_dump_is_the_same_under_the_pointer() {
+    let args = || cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]);
+    let at = {
+        let mut harness = open(egui::Theme::Light, args());
+        harness.run_steps(4);
+        let Some(rect) = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .find(|r| r.info.kind == "tooltip button")
+            .map(|r| r.rect)
+        else {
+            panic!("no tooltip button record");
+        };
+        rect.center()
+    };
+    // The pointer is over the window before the dump's layout has had the time to settle, as
+    // the desktop's is when the window opens under it: the harness's first passes, which
+    // `build_eframe` runs, take no time (`with_step_dt`), so the steps below set the clock.
+    let run = |dump: Option<&std::path::Path>, pointer: bool| {
+        let mut args = args();
+        args.dump_layout = dump.map(|path| path.display().to_string());
+        let mut harness = Harness::builder()
+            .with_theme(egui::Theme::Light)
+            .with_size(crate::WINDOW_SIZE)
+            .with_step_dt(0.0)
+            .build_eframe(move |cc| {
+                App::new(cc, &args).expect("the showcase starts under a bundled preset")
+            });
+        for step in 0..16u32 {
+            let ctx = harness.ctx.clone();
+            let mut input = std::mem::take(harness.input_mut());
+            input.time = Some(f64::from(step) * 0.5);
+            if pointer && step == 0 {
+                input.events.push(egui::Event::PointerMoved(at));
+            }
+            eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+            *harness.input_mut() = input;
+            harness.step();
+        }
+        let app = harness.state();
+        crate::app::layout_json(
+            app.registry.places(),
+            app.preset_key(),
+            harness.ctx.theme(),
+            harness.ctx.pixels_per_point(),
+        )
+    };
+    let dumps: Vec<String> = [false, true]
+        .into_iter()
+        .map(|pointer| {
+            let path = std::env::temp_dir().join(format!(
+                "showcase-egui-dump-{}-{pointer}.json",
+                std::process::id()
+            ));
+            let last = run(Some(&path), pointer);
+            let text = std::fs::read_to_string(&path).expect("the layout dump was written");
+            std::fs::remove_file(&path).expect("the layout dump is removed");
+            // The dump is the layout the run ended in, as the control below measures it (`{:#}`
+            // is `serde_json::to_string_pretty`, which the dump is written with): one written
+            // before the pointer reached the page would make the equality vacuous.
+            assert!(
+                text == format!("{last:#}"),
+                "pointer {pointer}: the dump is not the layout the run settled in:\n{text}\n---\n{last:#}"
+            );
+            text
+        })
+        .collect();
+    assert!(
+        dumps[0] == dumps[1],
+        "the pointer changed the layout dump:\n{}\n---\n{}",
+        dumps[0],
+        dumps[1]
+    );
+    let dump: serde_json::Value = serde_json::from_str(&dumps[0]).expect("the layout dump is JSON");
+    let elements = &dump["elements"];
+    assert!(
+        elements.get("chrome.info.hint").is_some(),
+        "the dump holds no Widget Info hint"
+    );
+    for id in ["chrome.info.title", "chrome.status_bar.shown"] {
+        assert!(elements.get(id).is_none(), "the dump at rest holds {id}");
+    }
+    assert_ne!(
+        run(None, false),
+        run(None, true),
+        "the pointer does not change the layout of a window that is not dumped either, so \
+         the dump half of this test proves nothing"
+    );
+}
+
+/// Keys typed while a capture runs reach the window the desktop gives the focus, and changed
+/// what a capture recorded (the Basic page's focused field read "Focusedones?"): under
+/// `--capture`, `--screenshot` and `--dump-layout` the window takes no keyboard input
+/// (`App::raw_input_hook`, `CliArgs::shields_keyboard`). Text typed into the focused field and
+/// the side-panel toggle's shortcut, handed to the hook as eframe hands them, change nothing;
+/// the same keys in a run that neither captures nor dumps type into the field and hide the
+/// panel, which is what makes the first half mean something. A `--screenshot` run shields the
+/// keyboard as a `--capture` one does; it is not opened here, since off macOS and Windows it
+/// ends the run when it captures.
+#[test]
+fn a_captured_or_dumped_window_takes_no_keyboard_input() {
+    let dump = std::env::temp_dir().join(format!(
+        "showcase-egui-keyboard-{}.json",
+        std::process::id()
+    ));
+    let shot = CliArgs::parse(["--screenshot".to_string(), "p.png".to_string()]);
+    assert!(shot.shields_keyboard(), "--screenshot takes keyboard input");
+    let runs = [
+        ("--capture", true),
+        ("--dump-layout", true),
+        ("no flag", false),
+    ];
+    for (flag, shielded) in runs {
+        let mut args = cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]);
+        match flag {
+            "--capture" => args.capture = true,
+            "--dump-layout" => args.dump_layout = Some(dump.display().to_string()),
+            _ => {}
+        }
+        assert_eq!(args.shields_keyboard(), shielded, "{flag}");
+        let mut harness = open(egui::Theme::Light, args);
+        harness.run_steps(SETTLE);
+        let before = harness.state().demo_state.basic_focused.clone();
+        let ctx = harness.ctx.clone();
+        let mut input = std::mem::take(harness.input_mut());
+        input.events.push(egui::Event::Text("ones?".to_string()));
+        input.events.push(egui::Event::Key {
+            key: egui::Key::B,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::COMMAND,
+        });
+        eframe::App::raw_input_hook(harness.state_mut(), &ctx, &mut input);
+        *harness.input_mut() = input;
+        harness.run_steps(SETTLE);
+        let app = harness.state();
+        let typed = app.demo_state.basic_focused != before;
+        assert_eq!(
+            typed, !shielded,
+            "{flag}: the focused field holds {:?}, from {before:?}",
+            app.demo_state.basic_focused
+        );
+        assert_eq!(
+            app.side_panel_visible, shielded,
+            "{flag}: the side-panel toggle's shortcut"
+        );
+    }
+    let _ = std::fs::remove_file(&dump);
+}
+
+/// A `--dump-layout` run whose layout never settles gives up at the shared crate's
+/// `CAPTURE_WAIT` after its first pass, with the dump's flag and path, as the gpui and iced
+/// showcases give up theirs (the showcases' one exit rule): not before, still after a
+/// `--screenshot` alone is written, and never once the dump is written or where the run asked
+/// for none.
+#[test]
+fn a_dump_that_is_never_written_fails_after_its_bound() {
+    use native_theme_showcase_support::CAPTURE_WAIT;
+    use native_theme_showcase_support::cli::{Output, Outputs};
+
+    let both =
+        CliArgs::parse(["--dump-layout", "f.json", "--screenshot", "p.png"].map(str::to_string));
+    let mut outputs = Outputs::new(&both);
+    let bound = CAPTURE_WAIT.as_secs_f64();
+    let given_up =
+        |outputs: &Outputs, waited: f64| crate::app::dump_given_up(outputs, "f.json", waited);
+    assert_eq!(given_up(&outputs, bound - 0.5), None, "gave up early");
+    let failure = given_up(&outputs, bound);
+    assert!(
+        failure.as_deref().is_some_and(|f| f.starts_with(&format!(
+            "--dump-layout f.json: no layout was written within {} s",
+            CAPTURE_WAIT.as_secs()
+        ))),
+        "{failure:?}"
+    );
+    let _ = outputs.written(Output::Screenshot);
+    assert!(
+        given_up(&outputs, bound).is_some(),
+        "a written screenshot ended the wait for the dump"
+    );
+    let _ = outputs.written(Output::Dump);
+    assert_eq!(given_up(&outputs, bound), None, "a written dump failed");
+    let none = Outputs::new(&CliArgs::default());
+    assert_eq!(given_up(&none, bound), None, "a run with no dump failed");
+}
+
+/// `--screenshot`'s frame check needs the display's scale factor, which egui may not know:
+/// `content_px` refuses then, before the shared crate's `check_frame_capture` is called, and
+/// otherwise gives the content in physical pixels at that scale.
+#[test]
+fn a_capture_without_the_scale_factor_is_refused() {
+    let ctx = egui::Context::default();
+    let content = |pixels_per_point: Option<f32>| {
+        let mut input = egui::RawInput::default();
+        let info = input.viewports.entry(egui::ViewportId::ROOT).or_default();
+        info.inner_rect = Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            crate::WINDOW_SIZE,
+        ));
+        info.native_pixels_per_point = pixels_per_point;
+        // The pass's font atlas upload is nobody's to apply here.
+        ctx.run_ui(input, |_| {}).textures_delta.clear();
+        crate::app::content_px(&ctx)
+    };
+    assert_eq!(
+        content(None),
+        Err("the display's scale factor is unknown".to_string())
+    );
+    assert_eq!(content(Some(1.25)), Ok(((1600, 900), 1.25)));
+}
+
+// --- The chrome's icons from a fixture icon theme --------------------------------------------
+
+/// M7-15: the side-panel toggle's freedesktop icon loads from the icon theme the chrome chose
+/// under whichever name that theme has, on any desktop: Adwaita's `sidebar-show-symbolic`
+/// (`gtk-names`) and Breeze's `sidebar-expand-left` (`breeze-names`), on Sway and on GNOME. The
+/// themes are fixtures in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<()> {
+    const NAME: &str = "tests::the_panel_icon_loads_from_a_theme_of_either_convention";
+    if native_theme_test_fixtures::in_child() {
+        let ctx = egui::Context::default();
+        let mut loaded = Vec::new();
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            for theme in ["gtk-names", "breeze-names"] {
+                let image = crate::demo::named_image(
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some(theme),
+                    16.0,
+                );
+                loaded.push((theme, image.is_some()));
+            }
+        });
+        // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
+        out.textures_delta.clear();
+        assert_eq!(
+            loaded,
+            [("gtk-names", true), ("breeze-names", true)],
+            "on {:?}",
+            std::env::var("XDG_CURRENT_DESKTOP")
+        );
+        // Its alt text names the icon, whichever name each theme holds it under.
+        let harness = Harness::new_ui(|ui| {
+            for theme in ["gtk-names", "breeze-names"] {
+                if let Some(image) = crate::demo::named_image(
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some(theme),
+                    16.0,
+                ) {
+                    ui.add(image);
+                }
+            }
+        });
+        assert_eq!(harness.get_all_by_label("panel-left").count(), 2);
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    for desktop in ["sway", "GNOME"] {
+        let child = native_theme_test_fixtures::Child {
+            desktop,
+            icon_theme: None,
+        };
+        native_theme_test_fixtures::run(NAME, child, |icons| {
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "gtk-names",
+                &[("sidebar-show-symbolic", SVG)],
+            )?;
+            native_theme_test_fixtures::write_scalable_theme(
+                icons,
+                "breeze-names",
+                &[("sidebar-expand-left", SVG)],
+            )
+        })?;
+    }
+    Ok(())
 }

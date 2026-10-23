@@ -15,7 +15,7 @@ use crate::{
 use native_theme::theme::Theme;
 
 /// A bundled preset resolved for one mode, by the route the iced connector's `from_preset`
-/// takes (`connectors/native-theme-iced/src/lib.rs:297-311`).
+/// takes (`connectors/native-theme-iced/src/lib.rs:371-390`).
 pub(crate) fn resolved(name: &str, mode: ColorMode) -> ResolvedTheme {
     Theme::preset(name)
         .unwrap()
@@ -46,10 +46,8 @@ fn the_atlas_reports_what_the_builder_was_given() {
         widget_gap: Some(6.0),
         ..LayoutTheme::default()
     };
-    let prefs = AccessibilityPreferences {
-        text_scaling_factor: 1.5,
-        ..AccessibilityPreferences::default()
-    };
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
     let atlas = ThemeAtlas::builder("Mixed", &light, &dark)
         .layout(&layout)
         .accessibility(&prefs)
@@ -77,7 +75,7 @@ fn the_builder_defaults_are_the_documented_ones() {
     assert_eq!(atlas.accessibility(), &AccessibilityPreferences::default());
     assert_eq!(atlas.layout(), &LayoutTheme::default());
     assert_eq!(atlas.os_mode(), None);
-    assert_eq!(atlas.icon_set(), native_theme::theme::system_icon_set());
+    assert_eq!(atlas.icon_set(), native_theme::detect::system_icon_set());
     assert_eq!(atlas.icon_theme(egui::Theme::Light), None);
     assert_eq!(atlas.icon_theme(egui::Theme::Dark), None);
     // No conversion runs on kde-breeze that emits a note; a later task that makes one emit
@@ -137,6 +135,49 @@ fn role_modifier_replaces_the_style_and_carries_the_applications_name_keys() {
         .role_modifier(egui::Theme::Light, Role::Button, RoleVariant::Normal)
         .apply(&mut plain);
     assert_eq!(plain.text_styles.len(), 5);
+}
+
+/// docs/archive/todo_closed.md, *Closed items from M7 close (2026-10-16): items carried to M8,
+/// M9a and the presets*, 'For M8's API batch: a `Ui` form of `role_modifier`' (M7-28): the free
+/// `role_modifier` is the installed atlas's `ThemeAtlas::role_modifier` in the scheme the `Ui`'s
+/// `Context` reports, and `None` with no atlas installed and after `clear`, so that an acceptor
+/// keeps egui's own style (a menu's `menu_style`, `egui/src/containers/menu.rs:83`).
+#[test]
+fn the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one() {
+    let ctx = bare_context();
+    let free = |ctx: &egui::Context| {
+        let mut out = None;
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            out = Some(
+                crate::role_modifier(ui, Role::Menu, RoleVariant::Normal).map(|modifier| {
+                    let mut style = egui::Style::default();
+                    modifier.apply(&mut style);
+                    style
+                }),
+            );
+        });
+        out.expect("the pass ran")
+    };
+    assert_eq!(free(&ctx), None, "nothing installed");
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let mut styles = Vec::new();
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        ctx.set_theme(theme);
+        let got = free(&ctx);
+        let mut want = egui::Style::default();
+        atlas
+            .role_modifier(theme, Role::Menu, RoleVariant::Normal)
+            .apply(&mut want);
+        assert_eq!(got.as_ref(), Some(&want), "{theme:?}");
+        styles.push(want);
+    }
+    assert_ne!(
+        styles[0], styles[1],
+        "the two schemes differ, or the test proves nothing"
+    );
+    ThemeAtlas::clear(&ctx);
+    assert_eq!(free(&ctx), None, "after clear");
 }
 
 /// §4.5, §7.5: `carry_name_keys` hands the cell's `Arc` over unchanged when the style it
@@ -250,15 +291,117 @@ fn install_requests_a_repaint() {
         settled,
         "a pass that shows nothing must stop asking for repaints"
     );
-    atlas.install(&ctx);
+    preset_atlas("adwaita").install(&ctx);
     assert!(
         ctx.has_requested_repaint(),
         "install ends with a repaint request (§10.3 step 6)"
     );
 }
 
+/// M7-01: an `install` of the atlas already installed requests no repaint, frees no texture
+/// and leaves the fonts the application set since alone, so an application that installs in
+/// every pass still lets egui idle and keeps its own fonts. The atlas carries a font plan, so
+/// a full install would set its fonts back (§10.3 step 1). Repaints are counted by egui's callback (`egui/src/context.rs:1961`), which fires
+/// only when a request lowers the pending delay (`:157-168`), so the passes between the two
+/// installs serve the first one's request (`:110-123`); frees are the texture delta's `free`
+/// list (`epaint/src/textures.rs:72-80`, taken at `:102`).
+#[test]
+fn a_second_install_of_the_installed_atlas_repaints_and_frees_nothing() {
+    use crate::icons::{IconKey, texture_id, to_image_source, uri};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let ctx = bare_context();
+    let repaints = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&repaints);
+    ctx.set_request_repaint_callback(move |_| {
+        counter.fetch_add(1, Ordering::Relaxed);
+    });
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
+    let key = IconKey::name("raster", IconSet::Freedesktop);
+    let handle_id = texture_id(&uri(&icon));
+    let atlas = ThemeAtlas::builder(
+        "kde-breeze",
+        &resolved("kde-breeze", ColorMode::Light),
+        &resolved("kde-breeze", ColorMode::Dark),
+    )
+    .fonts(crate::fonts::FontPlan::new().with_base(egui::FontDefinitions::empty()))
+    .build();
+    // The application's own fonts, set after the first install: a family and no face, so no
+    // face is parsed (`bare_context`'s shape).
+    let mut own = egui::FontDefinitions::empty();
+    own.families
+        .insert(egui::FontFamily::Name("app-own".into()), Vec::new());
+    assert!(atlas.fonts().is_some_and(|defs| *defs != own));
+    // The delta's frees, and the delta cleared unapplied as `pass` does.
+    let take_frees = |ctx: &egui::Context| {
+        let mut delta = ctx.tex_manager().write().take_delta();
+        let frees = delta.free.len();
+        delta.clear();
+        frees
+    };
+    let (mut requested, mut freed) = (0, 0);
+    for n in 0..2 {
+        let _ = to_image_source(&ctx, &key, &icon).unwrap();
+        let _ = take_frees(&ctx);
+        let before = repaints.load(Ordering::Relaxed);
+        atlas.install(&ctx);
+        requested += repaints.load(Ordering::Relaxed) - before;
+        freed += take_frees(&ctx);
+        for _ in 0..10 {
+            let _ = pass(&ctx, egui::RawInput::default(), |_ui| {});
+            if !ctx.has_requested_repaint() {
+                break;
+            }
+        }
+        assert!(
+            !ctx.has_requested_repaint(),
+            "install {n}: the passes after it must stop asking for repaints"
+        );
+        for theme in [egui::Theme::Dark, egui::Theme::Light] {
+            assert!(Arc::ptr_eq(&ctx.style_of(theme), &atlas.scheme(theme).base));
+        }
+        if n == 0 {
+            ctx.set_fonts(own.clone());
+            let _ = pass(&ctx, egui::RawInput::default(), |_ui| {});
+        }
+    }
+    assert!(
+        ctx.fonts(|f| f.definitions() == &own),
+        "the second install must leave the application's fonts as it set them"
+    );
+    assert_eq!(
+        (requested, freed),
+        (1, 1),
+        "(repaint requests, texture frees): only the first install makes either"
+    );
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+}
+
+/// M7-01: the same-atlas install still restores both base styles (§10.3 step 2), so a style
+/// the application reset between two installs is the atlas's again, its `Name` keys kept.
+#[test]
+fn a_second_install_of_the_installed_atlas_restores_a_reset_style() {
+    let ctx = bare_context();
+    let atlas = preset_atlas("kde-breeze");
+    atlas.install(&ctx);
+    let key = egui::TextStyle::Name("app-caption".into());
+    let font = egui::FontId::proportional(11.0);
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        let mut style = theme.default_style(); // egui/src/memory/theme.rs:24-29
+        style.text_styles.insert(key.clone(), font.clone());
+        ctx.set_style_of(theme, style);
+    }
+    atlas.install(&ctx);
+    for theme in [egui::Theme::Dark, egui::Theme::Light] {
+        let style = ctx.style_of(theme);
+        assert_eq!(style.visuals, atlas.scheme(theme).base.visuals, "{theme:?}");
+        assert_eq!(style.text_styles.get(&key), Some(&font), "{theme:?}");
+    }
+}
+
 /// With no atlas, and again after `clear`, every seam is egui's own and nothing
-/// panics (§4.5). `role_modifier` needs an atlas to be called on, so it has no no-atlas path.
+/// panics (§4.5). `ThemeAtlas::role_modifier` needs an atlas to be called on; the free
+/// `role_modifier`'s `None` without one is
+/// `the_free_role_modifier_is_the_installed_atlas_s_and_none_without_one`'s.
 #[test]
 fn without_an_atlas_every_seam_is_egui_s_own() {
     let ctx = bare_context();
@@ -541,6 +684,46 @@ fn role_with_radius_other_than(
             (radius != not).then_some((role, radius))
         })
         .expect("a role whose active corner radius differs")
+}
+
+/// adwaita's text field has no line at rest (`input.border.line_width` 0,
+/// `docs/platform-facts.md` §2.4), so the stroke its focused frame takes in
+/// `input.focus_border_color` is 0 wide; the focus edge is the theme's inset ring
+/// (2 px at offset -2, §2.1.5), which the plugin paints round a field a click focuses.
+#[test]
+fn a_clicked_borderless_text_field_shows_the_focus_ring() {
+    let (ctx, atlas, probe) = ring_harness("adwaita");
+    let theme = ctx.theme();
+    let t = atlas.resolved_for(theme);
+    assert_eq!(
+        t.input.border.line_width, 0.0,
+        "adwaita's field has no rest line"
+    );
+    let ring = atlas
+        .focus_ring(theme)
+        .expect("adwaita states a focus ring");
+    let mut text = String::new();
+    let mut show = |ui: &mut egui::Ui| in_window(ui, |ui| ui.text_edit_singleline(&mut text));
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let layer = field.layer_id;
+    watch(&probe, &[layer]);
+    let field = pass_ui(&ctx, egui::RawInput::default(), &mut show);
+    let centre = field.rect.center();
+    let _ = pass_ui(&ctx, primary(centre, true), &mut show);
+    let field = pass_ui(&ctx, primary(centre, false), &mut show);
+    assert!(field.has_focus(), "the click focuses the field");
+    let rings = rings_on(&seen(&probe), layer, ring.stroke);
+    assert_eq!(
+        rings.len(),
+        1,
+        "a focused borderless field has no visible focus edge"
+    );
+    let painted = rings.first().expect("the one ring");
+    assert_eq!(
+        painted.rect,
+        field.rect.expand(ring.offset),
+        "the ring lies inside the edge"
+    );
 }
 
 /// T14 (b), first half: rest, a click, `Tab`, the OS focus lost and regained.
@@ -882,6 +1065,71 @@ fn the_os_mode_fills_a_missing_system_theme_and_the_title_bar_follows() {
             );
         }
     }
+}
+
+/// M7-02: once an atlas with an OS mode has told the title bar its scheme, an atlas with none
+/// (a builder atlas without `Builder::os_mode`) or `ThemeAtlas::clear` hands the window back to
+/// egui's own `SystemDefault`, once, so the title bar follows the scheme egui draws in.
+#[test]
+fn an_atlas_without_an_os_mode_restores_egui_s_window_theme() {
+    use egui::{SystemTheme, Theme};
+
+    type Leave = fn(&egui::Context);
+    let leave: [(&str, Leave); 2] = [
+        ("a preset atlas", |ctx| {
+            preset_atlas("kde-breeze").install(ctx)
+        }),
+        ("clear", ThemeAtlas::clear),
+    ];
+    for (name, leave) in leave {
+        let ctx = bare_context();
+        preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Light, vec![SystemTheme::Light]),
+            "{name}: the OS mode told the title bar"
+        );
+        leave(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Dark, vec![SystemTheme::SystemDefault]),
+            "{name}: egui's fallback theme, and the window back on egui's own command"
+        );
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Dark, vec![]),
+            "{name}: sent once"
+        );
+        preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+        assert_eq!(
+            pass_theme(&ctx, with_system_theme(None)),
+            (Theme::Light, vec![SystemTheme::Light]),
+            "{name}: an atlas with an OS mode again tells the title bar again"
+        );
+    }
+
+    // A pinned preference: egui's own command reached the window, and the plugin sends none.
+    let ctx = bare_context();
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    let _ = pass_theme(&ctx, with_system_theme(None));
+    ctx.set_theme(Theme::Dark);
+    preset_atlas("kde-breeze").install(&ctx);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::Dark]),
+        "pinned: egui's command alone"
+    );
+    // Back to `System`: egui sends `SystemDefault` itself, and the plugin adds no second one.
+    ctx.set_theme(egui::ThemePreference::System);
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![SystemTheme::SystemDefault]),
+        "System again: egui's own command, once"
+    );
+    assert_eq!(
+        pass_theme(&ctx, with_system_theme(None)),
+        (Theme::Dark, vec![])
+    );
 }
 
 /// After `ThemeAtlas::clear` the install plugin is inert: it fills no colour scheme, rewrites
@@ -1672,10 +1920,8 @@ mod t18_accessors {
     fn t18_e_the_text_accessors_return_their_leaves_scaled() {
         let t = resolved("windows-11", ColorMode::Dark);
         for factor in [1.0_f32, 2.0] {
-            let prefs = AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..AccessibilityPreferences::default()
-            };
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = factor;
             let s = |size: f32| scaled_text_size(size, &prefs);
             let roles = [
                 (TextRole::Caption, &t.text_scale.caption),
@@ -1729,6 +1975,28 @@ mod t18_accessors {
         ];
         for (context, leaf) in contexts {
             assert_eq!(crate::icons::icon_size(&t, context), leaf, "{context:?}");
+        }
+    }
+
+    /// T18 (e): `tooltip_show_delay` is `tooltip.show_delay` as a `Duration` and
+    /// `list_header_height` is `list.header_height`, each `None` where the theme states none.
+    #[test]
+    fn t18_e_the_delay_and_header_height_accessors_return_their_leaves() {
+        for (preset, delay, header) in [
+            ("kde-breeze", Some(700_u64), None),
+            ("adwaita", Some(500), Some(30.0_f32)),
+            ("material-3", Some(0), Some(56.0)),
+            ("macos-monterey", None, Some(28.0)),
+        ] {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let t = resolved(preset, mode);
+                assert_eq!(
+                    crate::tooltip_show_delay(&t),
+                    delay.map(std::time::Duration::from_millis),
+                    "{preset} {mode:?}"
+                );
+                assert_eq!(crate::list_header_height(&t), header, "{preset} {mode:?}");
+            }
         }
     }
 
@@ -2041,12 +2309,30 @@ mod t18_constructors {
         true
     }
 
+    /// The OS theme, for a test that reads it. On Linux it is never an error: a desktop with
+    /// no reader falls back to the platform preset (native-theme `pipeline.rs`,
+    /// `linux_fallback`), so an error there fails the test rather than skip it. Off Linux a
+    /// build without a reader feature has no OS theme.
+    fn system_theme() -> native_theme::Result<SystemTheme> {
+        let sys = SystemTheme::from_system();
+        if cfg!(target_os = "linux") {
+            return Ok(sys.expect("Linux falls back to the platform preset"));
+        }
+        sys
+    }
+
     /// T18 (a), `from_preset` clause: its `name()` is the preset's
     /// `Theme::name` (`native-theme/src/model/mod.rs:267`), and the atlas carries both variants, each
-    /// variant's icon theme, and the requested variant as the returned `ResolvedTheme`.
+    /// variant's icon theme, the requested variant as the returned `ResolvedTheme`, and the OS's
+    /// colour mode as `native_theme::detect::system_is_dark()` reads it (M9-113).
     #[test]
     fn t18_a_from_preset_carries_the_presets_name_and_both_variants() {
         let prefs = AccessibilityPreferences::default();
+        let os_mode = if native_theme::detect::system_is_dark() {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        };
         for preset in Theme::list_presets() {
             let spec = Theme::preset(preset.key).unwrap();
             let light = spec.resolve(ColorMode::Light).unwrap();
@@ -2089,7 +2375,7 @@ mod t18_constructors {
                     preset.key
                 );
                 assert_eq!(atlas.icon_set(), light.icon_set, "{}", preset.key);
-                assert_eq!(atlas.os_mode(), None, "{}", preset.key);
+                assert_eq!(atlas.os_mode(), Some(os_mode), "{}", preset.key);
                 assert_eq!(atlas.accessibility(), &prefs, "{}", preset.key);
                 assert_eq!(atlas.layout(), &spec.layout, "{}", preset.key);
             }
@@ -2124,9 +2410,8 @@ mod t18_constructors {
     /// that over `SystemTheme::from_system()`, or an error exactly when that is one.
     #[test]
     fn t18_g_to_egui_atlas_reports_what_it_was_given() {
-        // On a runner with no desktop there is nothing to compare; native-theme's own test
-        // accepts the same (`native-theme/src/watch/mod.rs:320`).
-        let Ok(mut sys) = SystemTheme::from_system() else {
+        // Off Linux, without a reader, there is nothing to compare.
+        let Ok(mut sys) = system_theme() else {
             assert!(
                 from_system().is_err(),
                 "from_system must fail exactly when SystemTheme::from_system does"
@@ -2150,11 +2435,8 @@ mod t18_constructors {
         } else {
             ColorMode::Dark
         };
-        sys.accessibility = AccessibilityPreferences {
-            text_scaling_factor: factor,
-            reduce_motion: !sys.accessibility.reduce_motion,
-            ..sys.accessibility.clone()
-        };
+        sys.accessibility.text_scaling_factor = factor;
+        sys.accessibility.reduce_motion = !sys.accessibility.reduce_motion;
         sys.layout.widget_gap = Some(gap);
         sys.icon_set = match sys.icon_set {
             native_theme::theme::IconSet::Lucide => native_theme::theme::IconSet::Material,
@@ -2208,15 +2490,75 @@ mod t18_constructors {
             }
         }
 
-        let (again, chosen, is_dark) = from_system().unwrap();
+        let loaded = from_system().unwrap();
         let fresh = SystemTheme::from_system().unwrap();
+        let again = &loaded.atlas;
         assert_eq!(again.name(), fresh.name);
         assert_eq!(again.os_mode(), Some(fresh.mode));
-        assert_eq!(is_dark, fresh.mode.is_dark());
+        assert_eq!(loaded.mode, fresh.mode);
         assert_eq!(again.resolved_for(egui::Theme::Light), &fresh.light);
         assert_eq!(again.resolved_for(egui::Theme::Dark), &fresh.dark);
-        assert_eq!(&chosen, if is_dark { &fresh.dark } else { &fresh.light });
-        assert!(same_styles(&again, &fresh.to_egui_atlas()));
+        assert_eq!(&loaded.resolved, fresh.pick(fresh.mode));
+        assert_eq!(loaded.accessibility, fresh.accessibility);
+        assert_eq!(loaded.icon_set, fresh.icon_set);
+        assert_eq!(
+            loaded.icon_theme.as_deref(),
+            fresh.icon_theme_for(fresh.mode)
+        );
+        assert!(same_styles(again, &fresh.to_egui_atlas()));
+    }
+
+    /// M7-29: `to_egui_builder` is the builder `to_egui_atlas` builds, so its `build()` is
+    /// `to_egui_atlas`, style for style and input for input, and a style patch and a font plan
+    /// of the application's own go on top of it with every OS input kept.
+    #[test]
+    fn t18_g_to_egui_builder_is_to_egui_atlas_before_build() {
+        // As in `t18_g_to_egui_atlas_reports_what_it_was_given`: off Linux, without a reader,
+        // nothing to build.
+        let Ok(sys) = system_theme() else {
+            return;
+        };
+        let plain = sys.to_egui_atlas();
+        let built = sys.to_egui_builder().build();
+        assert!(same_styles(&built, &plain));
+        assert_eq!(built.fonts(), plain.fonts());
+
+        let base = plain
+            .scheme(egui::Theme::Light)
+            .base
+            .visuals
+            .hyperlink_color;
+        let marker = if base == egui::Color32::RED {
+            egui::Color32::BLUE
+        } else {
+            egui::Color32::RED
+        };
+        let family = egui::FontFamily::Name("application".into());
+        let mut defs = egui::FontDefinitions::default();
+        defs.families.insert(family.clone(), Vec::new());
+        let own = sys
+            .to_egui_builder()
+            .style_patch(move |s| s.visuals.hyperlink_color = marker)
+            .fonts(crate::fonts::FontPlan::new().with_base(defs))
+            .build();
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(own.scheme(theme).base.visuals.hyperlink_color, marker);
+        }
+        assert!(own.fonts().unwrap().families.contains_key(&family));
+        assert!(
+            plain
+                .fonts()
+                .is_none_or(|defs| !defs.families.contains_key(&family))
+        );
+        assert_eq!(own.name(), plain.name());
+        assert_eq!(own.os_mode(), plain.os_mode());
+        assert_eq!(own.accessibility(), plain.accessibility());
+        assert_eq!(own.layout(), plain.layout());
+        assert_eq!(own.icon_set(), plain.icon_set());
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            assert_eq!(own.resolved_for(theme), plain.resolved_for(theme));
+            assert_eq!(own.icon_theme(theme), plain.icon_theme(theme));
+        }
     }
 }
 
@@ -2229,17 +2571,36 @@ fn install_leaves_no_stored_icon_texture_handle() {
     let (atlas, _) =
         crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
     atlas.install(&ctx);
-    let icon = crate::icons::IconData::Rgba {
-        width: 4,
-        height: 4,
-        data: vec![0; 64],
-    };
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
     let key = IconKey::name("raster", IconSet::Freedesktop);
     let before = ctx.tex_manager().read().num_allocated();
     let _ = to_image_source(&ctx, &key, &icon).unwrap();
     let handle_id = texture_id(&uri(&icon));
     assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+    let (other, _) =
+        crate::from_preset("kde-breeze", false, &AccessibilityPreferences::default()).unwrap();
+    other.install(&ctx);
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_none()));
+    assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
+    assert_eq!(ctx.tex_manager().read().num_allocated(), before);
+}
+
+/// M7-14: `clear` forgets the icons this crate cached with the atlas, so a raster icon's
+/// stored `TextureHandle` goes and its texture is freed.
+#[test]
+fn clear_leaves_no_stored_icon_texture_handle() {
+    use crate::icons::{IconKey, IconRegistry, handles_key, texture_id, to_image_source, uri};
+    let ctx = egui::Context::default();
+    let (atlas, _) =
+        crate::from_preset("adwaita", false, &AccessibilityPreferences::default()).unwrap();
     atlas.install(&ctx);
+    let icon = crate::icons::IconData::rgba(4, 4, vec![0; 64]).unwrap();
+    let key = IconKey::name("raster", IconSet::Freedesktop);
+    let before = ctx.tex_manager().read().num_allocated();
+    let _ = to_image_source(&ctx, &key, &icon).unwrap();
+    let handle_id = texture_id(&uri(&icon));
+    assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_some()));
+    ThemeAtlas::clear(&ctx);
     assert!(ctx.data(|d| d.get_temp::<egui::TextureHandle>(handle_id).is_none()));
     assert!(ctx.data(|d| d.get_temp::<IconRegistry>(handles_key()).is_none()));
     assert_eq!(ctx.tex_manager().read().num_allocated(), before);
@@ -2328,7 +2689,7 @@ fn t8a_named_text_styles_survive_every_seam() {
 
 /// T8 (b) — §14 item 2b: the handle a `Window` paints is the outer `Ui`'s, so a
 /// `Role::Scrollbar` scope as the first statement inside the closure does not reach it. On
-/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:178`),
+/// `kde-breeze` the scrollbar is no overlay (`native-theme/src/presets/kde-breeze.toml:204`),
 /// so egui paints the bar at full opacity (`egui/src/containers/scroll_area.rs:1483-1485`,
 /// `:1495-1497`), and only the corner radius can tell the base style from the cell (§6.8).
 #[test]
@@ -2423,7 +2784,7 @@ mod t13_accessibility {
         AccessibilityPreferences, ResolvedTheme, Role, RoleVariant, ThemeAtlas, scaled_text_size,
     };
 
-    /// Every bundled preset (`native-theme/src/model/mod.rs:663`), both variants resolved.
+    /// Every bundled preset (`native-theme/src/model/mod.rs:689`), both variants resolved.
     fn presets() -> Vec<(&'static str, ResolvedTheme, ResolvedTheme)> {
         NativeTheme::list_presets()
             .iter()
@@ -2444,11 +2805,10 @@ mod t13_accessibility {
     }
 
     fn scaled_prefs() -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: 2.0,
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 2.0;
+        prefs.reduce_motion = true;
+        prefs
     }
 
     /// T13 (a): every text size the atlas writes is `scaled_text_size` of the theme's size — the
@@ -2506,9 +2866,11 @@ mod t13_accessibility {
     /// T13 (b): `style_diff` between the two atlases reports the text sizes, `animation_time`,
     /// `scroll_animation` and — where their values move — the two values that follow the Body row
     /// height, `spacing.extra_text_line_spacing` (§6.15) and the `Role::Slider` cells' `expansion`
-    /// (§6.6), and nothing else — in the base styles, the 75 cells and the 11 surface frames
-    /// (`atlas_diff`), none of whose fields may move: scaling never turns into a zoom of every
-    /// length.
+    /// (§6.6), and the `Role::Menu`, `Role::List` and `Role::Expander` cells' vertical
+    /// `button_padding`, which a stated row or header height narrows at a text scale of 1 or
+    /// less and leaves the theme's above it (`style::roles::fit_row_padding`), and nothing
+    /// else — in the base styles, the 75 cells and the 11 surface frames (`atlas_diff`), none of
+    /// whose fields may move: scaling never turns into a zoom of every length.
     #[test]
     fn t13b_scaling_moves_only_text_sizes_and_what_follows_them() {
         let prefs = scaled_prefs();
@@ -2519,6 +2881,10 @@ mod t13_accessibility {
                 .build();
             for Change { location, path } in atlas_diff(&plain, &scaled) {
                 let is_slider = matches!(location, Location::Cell(_, Role::Slider, _));
+                let is_row = matches!(
+                    location,
+                    Location::Cell(_, Role::Menu | Role::List | Role::Expander, _)
+                );
                 let is_frame = matches!(location, Location::Frame(..));
                 let allowed = !is_frame
                     && ((path.starts_with("text_styles[") && path.ends_with(".size"))
@@ -2528,7 +2894,8 @@ mod t13_accessibility {
                         || path == "spacing.extra_text_line_spacing"
                         || (is_slider
                             && path.starts_with("visuals.widgets.")
-                            && path.ends_with(".expansion")));
+                            && path.ends_with(".expansion"))
+                        || (is_row && path == "spacing.button_padding.y"));
                 assert!(allowed, "{key} {location:?}: scaling moved `{path}`");
             }
         }
@@ -2540,10 +2907,8 @@ mod t13_accessibility {
     /// keep egui's defaults (`egui/src/style.rs:1440`; `ScrollAnimation::default`).
     #[test]
     fn t13c_reduced_motion_stops_every_animation() {
-        let reduced = AccessibilityPreferences {
-            reduce_motion: true,
-            ..AccessibilityPreferences::default()
-        };
+        let mut reduced = AccessibilityPreferences::default();
+        reduced.reduce_motion = true;
         for (key, light, dark) in presets() {
             let plain = ThemeAtlas::builder(key, &light, &dark).build();
             let still = ThemeAtlas::builder(key, &light, &dark)
@@ -2568,22 +2933,53 @@ mod t13_accessibility {
         }
     }
 
-    /// T13 (d): the three connectors' `scaled_text_size` are one function in three places (§4.7);
-    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:1861-1874`).
+    /// T13 (d): the three connectors' `scaled_text_size` agree on a degenerate factor (§4.7);
+    /// the iced connector pins its own the same way (`connectors/native-theme-iced/src/lib.rs:2781-2787`).
     #[test]
     fn t13d_a_degenerate_factor_leaves_the_size() {
         for factor in [0.0, -1.5, f32::NAN, f32::INFINITY] {
-            let prefs = AccessibilityPreferences {
-                text_scaling_factor: factor,
-                ..AccessibilityPreferences::default()
-            };
+            let mut prefs = AccessibilityPreferences::default();
+            prefs.text_scaling_factor = factor;
             assert_eq!(scaled_text_size(13.0, &prefs), 13.0, "factor {factor}");
         }
-        let prefs = AccessibilityPreferences {
-            text_scaling_factor: 1.5,
-            ..AccessibilityPreferences::default()
-        };
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 1.5;
         assert_eq!(scaled_text_size(12.0, &prefs), 18.0);
+    }
+
+    /// T13 (d), the other end: a finite factor whose product overflows `f32` is §8.6's product,
+    /// so §8.5's rule gives the slot egui's own size and reports the leaf.
+    #[test]
+    fn t13d_an_overflowing_factor_gives_egui_its_own_size_with_a_note() {
+        let t = resolved("kde-breeze", ColorMode::Light);
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = f32::MAX;
+        assert!((t.defaults.font.size * f32::MAX).is_infinite());
+        let atlas = ThemeAtlas::builder("t13d", &t, &t)
+            .accessibility(&prefs)
+            .build();
+        assert!(
+            atlas.notes().contains(&crate::Note::ValueSanitised {
+                path: "defaults.font.size"
+            }),
+            "{:?}",
+            atlas.notes()
+        );
+        let stock = egui::Style::default()
+            .text_styles
+            .get(&TextStyle::Body)
+            .map(|f| f.size);
+        for theme in [egui::Theme::Light, egui::Theme::Dark] {
+            let body = atlas
+                .scheme(theme)
+                .base
+                .text_styles
+                .get(&TextStyle::Body)
+                .map(|f| f.size);
+            assert_eq!(body, stock, "{theme:?}");
+        }
+        assert_eq!(Some(crate::font_size(&t, &prefs)), stock);
+        assert!(scaled_text_size(t.defaults.font.size, &prefs).is_infinite());
     }
 
     /// T16: the patch is applied last, to every style (§4.3). The first half proves "every" with a
@@ -2624,10 +3020,8 @@ mod t13_accessibility {
     /// (`epaint/src/text/fonts.rs:865-875`) on a `Context` given the definitions the atlas installs.
     #[test]
     fn t5_line_spacing_and_slider_expansion_at_factor_two() {
-        let prefs = AccessibilityPreferences {
-            text_scaling_factor: 2.0,
-            ..AccessibilityPreferences::default()
-        };
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = 2.0;
         let hack = match &egui::FontDefinitions::default()
             .font_data
             .get("Hack")
@@ -2706,4 +3100,672 @@ mod t13_accessibility {
             }
         }
     }
+}
+
+/// M7-04: kde-breeze under a theme file stating `defaults.font.size` 30000 px in both
+/// variants, which core accepts (`native-theme/src/resolve/validate_helpers.rs:491` rejects
+/// only a size that is not finite and positive).
+fn huge_text_theme() -> ResolvedTheme {
+    let mut theme = Theme::preset("kde-breeze").unwrap();
+    let overlay = Theme::from_toml(
+        "name = \"huge\"\n\
+         [light.defaults.font]\nsize_px = 30000.0\n\
+         [dark.defaults.font]\nsize_px = 30000.0\n",
+    )
+    .unwrap();
+    theme.merge(&overlay);
+    theme
+        .into_variant(ColorMode::Light)
+        .unwrap()
+        .resolve_system()
+        .unwrap()
+}
+
+/// M7-04's gate: a pass drawing `"W"` at a stated 30000 px completes. epaint rasterises a
+/// glyph at its full size and asserts it fits the font atlas's width
+/// (`epaint/src/texture_atlas.rs:226-231`), which a 30000 px `W` never does; the install
+/// plugin lowers the Body size to the cap before the pass.
+#[test]
+fn a_huge_stated_text_size_draws() {
+    let t = huge_text_theme();
+    assert_eq!(t.defaults.font.size, 30000.0);
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let mut harness = egui_kittest::Harness::new_ui(|ui| {
+        ui.label("W");
+    });
+    atlas.install(&harness.ctx);
+    harness.step();
+    let cap = atlas.text_size_cap().expect("derived in the pass");
+    assert!(cap < 30000.0, "{cap}");
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let style = harness.ctx.style_of(theme);
+        let body = style.text_styles.get(&egui::TextStyle::Body).unwrap();
+        assert_eq!(body.size, cap, "{theme:?}");
+    }
+}
+
+/// M7-04: the role styles handed over by `native_scope`, `native_set_style` and
+/// `role_modifier` are capped too — kde-breeze's button font states no size, so it inherits
+/// the 30000 px (`override_font_id`, B3), as do the cell's `text_styles`.
+#[test]
+fn a_huge_stated_text_size_draws_in_a_role_scope() {
+    use crate::NativeThemeUiExt as _;
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let cell = atlas
+        .scheme(egui::Theme::Light)
+        .cell(Role::Button, RoleVariant::Normal);
+    assert_eq!(
+        cell.override_font_id.as_ref().map(|f| f.size),
+        Some(30000.0)
+    );
+    let mut harness = egui_kittest::Harness::new_ui(|ui| {
+        ui.native_scope(Role::Button, RoleVariant::Normal, |ui| {
+            let _ = ui.button("W");
+            ui.label("W");
+        });
+        ui.native_set_style(Role::Button, RoleVariant::Normal);
+        let _ = ui.button("W");
+    });
+    atlas.install(&harness.ctx);
+    harness.step();
+    let cap = atlas.text_size_cap().expect("derived in the pass");
+    let mut style = egui::Style::default();
+    atlas
+        .role_modifier(egui::Theme::Light, Role::Button, RoleVariant::Normal)
+        .apply(&mut style);
+    assert_eq!(style.override_font_id.map(|f| f.size), Some(cap));
+    assert!(style.text_styles.values().all(|f| f.size <= cap));
+}
+
+/// The pass's `pixels_per_point` as `RawInput` states it.
+fn input_at(native_pixels_per_point: f32) -> egui::RawInput {
+    let mut input = egui::RawInput::default();
+    if let Some(viewport) = input.viewports.get_mut(&egui::ViewportId::ROOT) {
+        viewport.native_pixels_per_point = Some(native_pixels_per_point);
+    }
+    input
+}
+
+/// M7-04: a pass whose `native_pixels_per_point` doubles re-derives the cap, which halves (to
+/// within the floor), and lowers the base styles to the new one.
+#[test]
+fn a_doubled_pixels_per_point_halves_the_cap() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let one = atlas.text_size_cap().expect("derived at 1.0");
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        ui.label("W");
+    });
+    let two = atlas.text_size_cap().expect("derived at 2.0");
+    assert!(two <= one / 2.0 && two > one / 2.0 - 1.0, "{one} -> {two}");
+    let body = |c: &egui::Context| {
+        c.style_of(egui::Theme::Light)
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .unwrap()
+            .size
+    };
+    assert_eq!(body(&ctx), two);
+}
+
+/// M7-04: a zoom set in one pass takes effect inside the next pass's `begin_pass`
+/// (`egui/src/context.rs:438-441`), after `input_hook`; the plugin's `on_begin_pass` derives
+/// the cap again from the pass's own `pixels_per_point`, and that pass draws.
+#[test]
+fn a_zoom_change_is_capped_in_its_own_pass() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let one = atlas.text_size_cap().expect("derived at zoom 1");
+    // At 8× the zoom-1 cap, a `W` (measured: 0.849 em in egui's Ubuntu-Light, whose `head`
+    // box is 3.678 em wide) is wider than the 2048 px atlas egui's default `max_texture_side`
+    // gives (`egui/src/input_state/mod.rs:349`).
+    ctx.set_zoom_factor(8.0);
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    let eight = atlas.text_size_cap().expect("derived at zoom 8");
+    assert!(eight <= one / 8.0, "{one} -> {eight}");
+}
+
+/// M7-04: an `install` inside a pass writes the new atlas's uncapped base styles; a `Window`
+/// opened later in that pass builds its `Ui` from the `Context`'s style
+/// (`egui/src/ui.rs:136`), so `install` lowers the sizes itself, from the pass's input.
+#[test]
+fn an_install_inside_a_pass_is_capped_in_that_pass() {
+    let t = huge_text_theme();
+    let body = |c: &egui::Context| {
+        c.style_of(egui::Theme::Light)
+            .text_styles
+            .get(&egui::TextStyle::Body)
+            .unwrap()
+            .size
+    };
+    // The first install inside a pass, the plugin not yet registered: from the last pass's
+    // input.
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    let _ = pass(&ctx, input_at(1.0), |_| {});
+    let mut capped = None;
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        atlas.install(ui.ctx());
+        capped = Some(body(ui.ctx()));
+        egui::Window::new("w").show(ui.ctx(), |ui| {
+            ui.label("W");
+        });
+    });
+    assert_eq!(capped, atlas.text_size_cap());
+    let first = atlas.text_size_cap().expect("derived at install");
+    // A re-install inside a pass the plugin saw begin: from that pass's own input, here twice
+    // the last pass's pixels per point.
+    let other = ThemeAtlas::builder("huge too", &t, &t).build();
+    let mut capped = None;
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        other.install(ui.ctx());
+        capped = Some(body(ui.ctx()));
+        egui::Window::new("w").show(ui.ctx(), |ui| {
+            ui.label("W");
+        });
+    });
+    assert_eq!(capped, other.text_size_cap());
+    assert!(other.text_size_cap().expect("derived at install") < first);
+}
+
+/// M7-04: an install before the first pass — eframe's creation closure — lowers nothing: the
+/// input holds only egui's defaults then (`egui/src/input_state/mod.rs:348-349`), and a cap
+/// from them would hold the sizes down on a wider GPU. The first pass's `input_hook` lowers
+/// them, from the pass's own input.
+#[test]
+fn an_install_before_the_first_pass_leaves_the_sizes_alone() {
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    assert_eq!(atlas.text_size_cap(), None);
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        let style = ctx.style_of(theme);
+        let body = style.text_styles.get(&egui::TextStyle::Body).unwrap();
+        assert_eq!(body.size, 30000.0, "{theme:?}");
+    }
+    let mut input = input_at(1.0);
+    input.max_texture_side = Some(8192);
+    let _ = pass(&ctx, input, |ui| {
+        ui.label("W");
+    });
+    let cap = atlas.text_size_cap().expect("derived in the first pass");
+    let style = ctx.style_of(egui::Theme::Light);
+    assert_eq!(
+        style.text_styles.get(&egui::TextStyle::Body).unwrap().size,
+        cap
+    );
+}
+
+/// M7-04: an immediate viewport runs its whole pass inside its parent's
+/// (`egui/src/context.rs:4116-4160`); on a monitor of fewer pixels per point it derives a
+/// larger cap, and the parent's role scopes after it in the same pass must use the parent's:
+/// at 8× the parent's density a `W` (0.849 em in egui's Ubuntu-Light, measured) drawn at the
+/// child's cap is wider than the 2048 px atlas.
+#[test]
+fn an_immediate_viewport_leaves_its_parent_the_parents_cap() {
+    use crate::NativeThemeUiExt as _;
+    let t = huge_text_theme();
+    let atlas = ThemeAtlas::builder("huge", &t, &t).build();
+    let ctx = egui::Context::default();
+    ctx.set_embed_viewports(false);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                native_pixels_per_point: Some(0.25),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(2.0), |_| {});
+    let parent = atlas.text_size_cap().expect("derived at 2.0");
+    let mut child = None;
+    let mut after = None;
+    let _ = pass(&ctx, input_at(2.0), |ui| {
+        ui.ctx().show_viewport_immediate(
+            egui::ViewportId::from_hash_of("child"),
+            egui::ViewportBuilder::default(),
+            |ui, _| {
+                child = atlas.text_size_cap();
+                ui.label("W");
+            },
+        );
+        after = atlas.text_size_cap();
+        ui.native_scope(Role::Button, RoleVariant::Normal, |ui| {
+            let _ = ui.button("W");
+        });
+    });
+    let child = child.expect("derived at 0.25");
+    assert!(child > parent, "{child} > {parent}");
+    assert_eq!(after, Some(parent));
+}
+
+/// docs/archive/todo_closed.md, *Closed items from M7 close (2026-10-16): items carried to M8,
+/// M9a and the presets*, 'For M7's follow-up in M8: the egui plugin's per-viewport focus entry':
+/// the focus entry of an immediate viewport egui has closed is let go with it, as egui drops its
+/// own state of a closed viewport (`egui/src/context.rs:2756-2790`, `:2829-2835`); the root's
+/// stays.
+#[test]
+fn a_closed_viewport_s_focus_entry_is_let_go() {
+    use crate::NativeThemeUiExt as _;
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas("kde-breeze").install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("closed child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                    },
+                );
+            }
+        });
+    };
+    let entries = |ctx: &egui::Context| ctx.data(|d| d.count::<crate::plugin::FocusEntry>());
+    root(&ctx, true);
+    assert_eq!(entries(&ctx), 2, "the root's and the child's");
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert_eq!(entries(&ctx), 1, "the root's");
+}
+
+/// M8 T6 review: an immediate viewport that opens its own immediate child in its very first
+/// pass keeps its focus entry: egui counts it as having completed no pass while its child's
+/// input arrives, and only its pass in progress tells it from a closed one.
+#[test]
+fn a_parent_in_its_first_pass_keeps_its_focus_entry() {
+    use crate::NativeThemeUiExt as _;
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas("kde-breeze").install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let parent = egui::ViewportId::from_hash_of("first-pass parent");
+    let child = egui::ViewportId::from_hash_of("first-pass child");
+    let mut parent_passes = None;
+    let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+        ui.ctx()
+            .show_viewport_immediate(parent, egui::ViewportBuilder::default(), |ui, _| {
+                ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        parent_passes = Some(ui.ctx().cumulative_pass_nr_for(parent));
+                        ui.native_scope(Role::Button, RoleVariant::Normal, |_| ());
+                    },
+                );
+            });
+    });
+    assert_eq!(
+        parent_passes,
+        Some(0),
+        "the parent had completed no pass while its child ran, or the test proves nothing"
+    );
+    assert_eq!(
+        ctx.data(|d| d.count::<crate::plugin::FocusEntry>()),
+        3,
+        "the root's, the parent's and the child's"
+    );
+}
+
+/// M8 T6 review: a focus entry `register_focus_shape` wrote before any install, so before the
+/// plugin saw its viewport's input, is let go too once egui has closed the viewport.
+#[test]
+fn a_focus_entry_written_before_the_install_is_let_go() {
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = egui::RawInput {
+            viewport_id: viewport.ids.this,
+            ..egui::RawInput::default()
+        };
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("uninstalled child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, egui::RawInput::default(), |ui| {
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |ui, _| {
+                        let rect =
+                            egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(8.0, 8.0));
+                        crate::register_focus_shape(
+                            ui.ctx(),
+                            egui::Id::new("shape"),
+                            rect,
+                            egui::CornerRadius::ZERO,
+                        );
+                    },
+                );
+            }
+        });
+    };
+    let entries = |ctx: &egui::Context| ctx.data(|d| d.count::<crate::plugin::FocusEntry>());
+    root(&ctx, true);
+    assert_eq!(entries(&ctx), 1, "the child's, written with no plugin");
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    preset_atlas("kde-breeze").install(&ctx);
+    root(&ctx, false);
+    assert_eq!(entries(&ctx), 0);
+}
+
+/// M8 T6 review: the window theme the plugin last told a closed immediate viewport is let go
+/// with its focus entry.
+#[test]
+fn a_closed_viewport_s_last_sent_theme_is_let_go() {
+    let ctx = bare_context();
+    ctx.set_embed_viewports(false);
+    preset_atlas_with_os_mode("kde-breeze", ColorMode::Light).install(&ctx);
+    egui::Context::set_immediate_viewport_renderer(|ctx, viewport| {
+        let mut input = with_system_theme(None);
+        input.viewport_id = viewport.ids.this;
+        input.viewports.insert(
+            viewport.ids.this,
+            egui::ViewportInfo {
+                parent: Some(viewport.ids.parent),
+                ..egui::ViewportInfo::default()
+            },
+        );
+        let mut show = viewport.viewport_ui_cb;
+        let _ = pass(ctx, input, |ui| show(ui));
+    });
+    let child = egui::ViewportId::from_hash_of("told child");
+    let root = |ctx: &egui::Context, open: bool| {
+        let _ = pass(ctx, with_system_theme(None), |ui| {
+            if open {
+                ui.ctx().show_viewport_immediate(
+                    child,
+                    egui::ViewportBuilder::default(),
+                    |_, _| (),
+                );
+            }
+        });
+    };
+    root(&ctx, true);
+    assert!(
+        crate::plugin::last_sent_viewports(&ctx).contains(&child),
+        "the plugin told the child its theme, or the test proves nothing"
+    );
+    root(&ctx, false);
+    root(&ctx, false);
+    assert_eq!(
+        ctx.cumulative_pass_nr_for(child),
+        0,
+        "egui closed the child"
+    );
+    assert!(!crate::plugin::last_sent_viewports(&ctx).contains(&child));
+}
+
+/// M7-04: a pass whose sizes all lie under the cap writes no style: both base styles are the
+/// same `Arc` before and after it.
+#[test]
+fn a_pass_under_the_cap_writes_no_style() {
+    let t = resolved("kde-breeze", ColorMode::Light);
+    let atlas = ThemeAtlas::builder("breeze", &t, &t).build();
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    let _ = pass(&ctx, input_at(1.0), |_| {});
+    let cap = atlas.text_size_cap().expect("derived");
+    let before = [egui::Theme::Light, egui::Theme::Dark].map(|t| ctx.style_of(t));
+    for style in &before {
+        assert!(style.text_styles.values().all(|f| f.size <= cap));
+    }
+    let _ = pass(&ctx, input_at(1.0), |ui| {
+        ui.label("W");
+    });
+    for (theme, before) in [egui::Theme::Light, egui::Theme::Dark]
+        .into_iter()
+        .zip(&before)
+    {
+        assert!(
+            std::sync::Arc::ptr_eq(&ctx.style_of(theme), before),
+            "{theme:?}"
+        );
+    }
+}
+
+/// The height a one-line `Button` is drawn at in `role`'s scope (`native_scope`), under
+/// `atlas` installed on a fresh context in `scheme`, after the passes that load its fonts, and
+/// the height of its label as egui lays it out there (`egui/src/widget_text.rs:775-776`).
+fn drawn_row_height(atlas: &ThemeAtlas, role: Role, scheme: egui::Theme) -> (f32, f32) {
+    use crate::NativeThemeUiExt as _;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(scheme);
+    let (mut height, mut label) = (0.0, 0.0);
+    for _ in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(role, RoleVariant::Normal, |ui| {
+                height = ui.button("Row").rect.height();
+                let font = egui::TextStyle::Body.resolve(ui.style());
+                label =
+                    ui.fonts_mut(|f| f.row_height(&font)) + ui.spacing().extra_text_line_spacing;
+            });
+        });
+    }
+    (height, label)
+}
+
+/// A stated `menu.row_height` and `list.row_height` are the drawn height of a `Button` row in
+/// their scope at a text scale of 1 or less, as gpui (`geometry::with_height_rule`'s fixed
+/// `h`) and iced (`Length::Fixed`) draw them: egui takes `interact_size.y` as a row's least
+/// height and grows the row to its label and vertical padding, so the cell's vertical padding
+/// is narrowed to fit (`style::roles::fit_row_padding`). Under macos-monterey the 17.33 px
+/// menu font's line box is 20.63 of the 22 px row, which egui drew taller with the stated
+/// 3 + 3 padding. Every bundled preset in both modes that states either height is checked.
+/// Where egui's label alone is taller than the stated height (the system face's own row past
+/// the theme's line box, which the connector never shortens, §6.15) the padding has nothing
+/// left to give: the row is the label's height, and the case is printed, since it depends on
+/// the faces the host has. Above 1 the theme's padding stands, for the application's own
+/// growth of the row.
+#[test]
+fn a_stated_row_height_is_the_drawn_row_at_a_text_scale_of_one() {
+    let mut faults = Vec::new();
+    let mut checked = 0;
+    for name in Theme::list_presets() {
+        for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
+            let prefs = AccessibilityPreferences::default();
+            let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
+            let t = atlas.resolved_for(scheme).clone();
+            for (role, stated) in [
+                (Role::Menu, t.menu.row_height),
+                (Role::List, t.list.row_height),
+            ] {
+                let Some(stated) = stated else { continue };
+                checked += 1;
+                let (drawn, label) = drawn_row_height(&atlas, role, scheme);
+                if label > stated {
+                    eprintln!(
+                        "{} {scheme:?} {role:?}: the label alone is {label} of the stated \
+                         {stated}; drawn {drawn}",
+                        name.key
+                    );
+                    if (drawn - label.round()).abs() > 0.01 {
+                        faults.push(format!(
+                            "{} {scheme:?} {role:?}: drawn {drawn}, its label {label}",
+                            name.key
+                        ));
+                    }
+                } else if (drawn - stated).abs() > 0.01 {
+                    faults.push(format!(
+                        "{} {scheme:?} {role:?}: drawn {drawn}, stated {stated}",
+                        name.key
+                    ));
+                }
+            }
+        }
+    }
+    assert!(checked > 0, "no bundled preset states a row height");
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// Above a text scale of 1 the menu cell's vertical padding is the theme's, unfitted
+/// (`to_button_padding` over egui's `menu_style` padding), so a row grown to hold its scaled
+/// text keeps the stated padding round it: macos-monterey's 3.
+#[test]
+fn above_a_text_scale_of_one_the_row_padding_is_the_themes() {
+    let mut prefs = AccessibilityPreferences::default();
+    prefs.text_scaling_factor = 1.5;
+    let (atlas, _) = crate::from_preset("macos-monterey", false, &prefs).unwrap();
+    let t = atlas.resolved_for(egui::Theme::Light);
+    let mut own = egui::Style::default();
+    egui::containers::menu::menu_style(&mut own);
+    let want = crate::convert::to_button_padding(own.spacing.button_padding, &t.menu.border).y;
+    assert_eq!(want, 3.0, "macos-monterey's stated menu padding");
+    let cell = atlas
+        .scheme(egui::Theme::Light)
+        .cell(Role::Menu, RoleVariant::Normal);
+    assert_eq!(cell.spacing.button_padding.y, want);
+}
+
+/// The height egui's own `CollapsingHeader` is drawn at in the `Role::Expander` scope
+/// (`native_scope`), under `atlas` installed on a fresh context in `scheme`, after the passes
+/// that load its fonts, and the height of its title as egui lays it out there, in the Button
+/// font (`egui/src/containers/collapsing_header.rs:518-523`, `egui/src/widget_text.rs:775-776`).
+fn drawn_header_height(atlas: &ThemeAtlas, scheme: egui::Theme) -> (f32, f32) {
+    use crate::NativeThemeUiExt as _;
+    let ctx = egui::Context::default();
+    atlas.install(&ctx);
+    ctx.set_theme(scheme);
+    let (mut height, mut title) = (0.0, 0.0);
+    for _ in 0..3 {
+        let _ = pass(&ctx, egui::RawInput::default(), |ui| {
+            ui.native_scope(Role::Expander, RoleVariant::Normal, |ui| {
+                height = egui::CollapsingHeader::new("Header")
+                    .show(ui, |_| ())
+                    .header_response
+                    .rect
+                    .height();
+                let font = egui::TextStyle::Button.resolve(ui.style());
+                title =
+                    ui.fonts_mut(|f| f.row_height(&font)) + ui.spacing().extra_text_line_spacing;
+            });
+        });
+    }
+    (height, title)
+}
+
+/// A stated `expander.header_height` is the drawn height of egui's own `CollapsingHeader` in
+/// the expander's scope at a text scale of 1 or less, by the rule every stated row height
+/// takes (M9-150), as gpui draws its accordion header (`geometry::accordion_title`'s fixed
+/// `h`): egui takes `interact_size.y` as the header's least height and grows it to its title
+/// and vertical padding (`egui/src/containers/collapsing_header.rs:531-532`), so the cell's
+/// vertical padding is narrowed to fit (`style::roles::fit_row_padding`). Every bundled preset
+/// in both modes, and material-3 with its 48 px header lowered to 24, under its 10 px padding
+/// above and below its title. Where the title alone is taller than the stated height the
+/// padding has nothing left to give, and the header is the title's height.
+#[test]
+fn a_stated_header_height_is_the_drawn_header_at_a_text_scale_of_one() {
+    let prefs = AccessibilityPreferences::default();
+    let mut atlases = Vec::new();
+    for name in Theme::list_presets() {
+        for (scheme, is_dark) in [(egui::Theme::Light, false), (egui::Theme::Dark, true)] {
+            let (atlas, _) = crate::from_preset(name.key, is_dark, &prefs).unwrap();
+            atlases.push((name.key.to_string(), scheme, atlas));
+        }
+    }
+    let mut low = resolved("material-3", ColorMode::Light);
+    assert_eq!(
+        low.expander.header_height, 48.0,
+        "material-3's stated header"
+    );
+    low.expander.header_height = 24.0;
+    let atlas = ThemeAtlas::builder("low", &low, &low)
+        .accessibility(&prefs)
+        .build();
+    atlases.push(("material-3 at 24".to_string(), egui::Theme::Light, atlas));
+    let mut faults = Vec::new();
+    for (name, scheme, atlas) in &atlases {
+        let stated = atlas.resolved_for(*scheme).expander.header_height;
+        let (drawn, title) = drawn_header_height(atlas, *scheme);
+        let want = if title > stated {
+            title.round()
+        } else {
+            stated
+        };
+        if (drawn - want).abs() > 0.01 {
+            faults.push(format!(
+                "{name} {scheme:?}: drawn {drawn}, stated {stated}, its title {title}"
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
 }

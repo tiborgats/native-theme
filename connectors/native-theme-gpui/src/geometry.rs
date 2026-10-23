@@ -1,4 +1,6 @@
-//! Per-widget geometry for gpui-component 0.7.1 widgets (spec §9).
+//! Per-widget geometry for gpui-component 0.8.0 widgets
+//! (`docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §9, "the spec"
+//! below).
 //!
 //! Every builder is a pure function of a [`Native`] view (the four layout
 //! accessors, of a `LayoutTheme`) and returns a
@@ -6,10 +8,10 @@
 //! `gpui_component::StyledExt::refine_style`:
 //!
 //! ```ignore
-//! use gpui_component::StyledExt;
+//! use gpui_kit::component::StyledExt;
 //! use native_theme_gpui::{ActiveNativeTheme, geometry};
 //!
-//! let n = cx.native_theme().and_then(|t| t.native(cx));
+//! let n = cx.native();
 //! let button = Button::new("save").label("Save");
 //! let button = match n { Some(n) => button.refine_style(&geometry::button(n)), None => button };
 //! ```
@@ -17,7 +19,9 @@
 //! Each widget applies the caller's refinement after its own geometry at the
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
-//! do not (spec §3.4). Every value is a `ResolvedTheme` field or the one
+//! do not (spec §3.4). Every builder that sets a text size also sets the
+//! platform's `defaults.line_height` and the font's family, weight and style.
+//! Every value is a `ResolvedTheme` field or the one
 //! derivation in spec §9.4 (`scaled_text_size`), with two conversions the
 //! receiving widget forces: [`tooltip_content`] turns the platform's outer
 //! tooltip width into the inner box its text wraps in, and
@@ -42,22 +46,29 @@
 //! 1, 1.1 and 2. Where the theme states no height (`menu.row_height` and
 //! `list.row_height` are optional, and KDE states neither), the builder sets
 //! the line height alone and the row keeps the toolkit's own height. The rule
-//! is for single-line controls.
+//! is for single-line controls. A `DataTable` row and header follow it through
+//! [`data_table_size`] and [`list_header_height`], which compute the growth
+//! themselves, a `Size` being a fixed height.
 //!
-//! Geometry, with one exception that is not geometry: seven builders also
+//! Geometry, with one exception that is not geometry: twelve builders also
 //! carry the platform's text colour. A builder carries it only where the
 //! carried colour actually reaches the text and upstream's state colours
 //! (disabled, muted) still win — either because upstream labels the very
 //! element the refinement lands on with a token of its own one refinement
 //! earlier and applies its state colours after the refinement or on a child,
 //! or because upstream sets no colour on that element at all, so there is
-//! nothing to displace. Three of the seven displace a visibly different colour
+//! nothing to displace. Five of the twelve displace a visibly different colour
 //! today — [`status_bar`] and [`dialog_description`] displace
-//! `muted_foreground`, [`tooltip`] displaces `popover_foreground` — three
-//! displace `foreground`: [`list_item`], [`radio`] and [`select`], and
-//! [`title_bar`] displaces nothing (`title_bar.rs:328-343` paints the fill and
-//! the border, then refines). Those four change no pixel over the bundled
-//! presets, because a widget that states no `font.color` inherits the window's
+//! `muted_foreground`, [`tooltip`] displaces `popover_foreground`, and
+//! [`input`] and [`text_area`] the window's `foreground`, which the field's
+//! text inherits and the macOS presets' `input.font.color` differs from —
+//! four displace `foreground`: [`list_item`], [`radio`], [`select`] and
+//! [`accordion_title`], and [`title_bar`], [`dialog_title`] and [`toolbar`]
+//! displace nothing (`title_bar.rs:331-346` paints the fill and the border,
+//! then refines; `dialog/title.rs:39-46` and `toolbar.rs:243-257` set no
+//! colour). Those seven change no pixel over the bundled presets but one --
+//! ios-13's [`select`], whose `combo_box.font.color` is the accent -- because
+//! a widget that states no `font.color` inherits the window's
 //! (`docs/inheritance-rules.toml`) and `foreground` is fed from the same
 //! field; they carry it so a source that does state one is honoured rather
 //! than silently overridden — the KDE reader states
@@ -68,33 +79,36 @@
 //! that still take no colour, because the second half of the rule fails for
 //! them: a `Checkbox::label` is re-coloured by its own wrapper and both apply
 //! their disabled colour before the refinement, so a carried colour would
-//! either never arrive or displace the disabled one (`checkbox.rs:331-336` and
-//! `:252-256`, `input/input.rs:99-103` through `combobox.rs:998`).
+//! either never arrive or displace the disabled one (`checkbox.rs:341-346` and
+//! `:262-266`, `input/input.rs:99-103` through `combobox.rs:998`).
 //!
 //! `tests/seams.rs` lays real gpui-component widgets out headlessly, with and
 //! without a builder's refinement, and checks what arrives: the heights of
 //! [`button`], [`input`], [`select`], [`combobox`], [`list_item`] and
 //! [`progress`]; [`tooltip`] and [`tooltip_content`] keeping a tooltip's text
-//! inside its bubble; and, under every native preset at its own DPI, the
-//! drawn left padding of an [`input`], a [`select`] and a [`combobox`], an
-//! [`input`]'s right padding, a Textarea refined by [`input`] with its padding
-//! cleared, and six single-line controls -- a Button, an Input, a Select, a
-//! Combobox, a ListItem and an application-drawn row under [`menu_item`] --
-//! at their stated height with their text inside them at text scales 1, 1.1
-//! and 2. It also checks that [`select`] and [`combobox`]
+//! inside its bubble, its wrapped lines at the platform's line height; and,
+//! under every native preset at its own DPI, the drawn left padding of an
+//! [`input`], a [`select`] and a [`combobox`], an [`input`]'s right padding,
+//! a Textarea refined by [`input`] with its padding cleared, six single-line
+//! controls -- a Button, an Input, a Select, a Combobox, a ListItem and an
+//! application-drawn row under [`menu_item`] -- at their stated height with
+//! their text inside them at text scales 1, 1.1 and 2, and a `DataTable` row
+//! under [`data_table_size`] holding its cell's text at the same scales. It
+//! also checks that [`select`] and [`combobox`]
 //! keep upstream's right padding beside a stated arrow column and apply a
 //! stated one without it. The other builders rest on the source citations in
 //! their doc comments.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.7.1,
-//! gpui-base 0.7.1 and gpui-pre 0.3.8.
+//! Upstream citations in this module are verified against gpui-component 0.8.0,
+//! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::{BoxShadow, FontWeight, Pixels, StyleRefinement, Styled, px, relative};
 use gpui_component::Size;
-use native_theme::theme::{LayoutTheme, ResolvedFontSpec, ResolvedPadding};
+use gpui_component::dialog::DialogEntrance;
+use native_theme::theme::{DialogEntranceStyle, LayoutTheme, ResolvedFontSpec, ResolvedPadding};
 
+use crate::Native;
 use crate::colors::rgba_to_hsla;
-use crate::{Native, text_scale_factor};
 
 /// `font.size × s` in pixels (spec §9.4).
 fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
@@ -106,13 +120,37 @@ fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
     FontWeight(f32::from(font.weight))
 }
 
-/// Text size and weight from a font spec.
+/// Family, text size, weight and style from a font spec, at the platform's
+/// `defaults.line_height`.
+///
+/// The family goes through [`crate::font_family`], the path the installed
+/// theme's own `font_family` takes, so a widget whose font is the window's
+/// gets the very family the window cascades; a family of its own (the KDE
+/// reader states one for `menu.font`, `toolbar.font` and
+/// `window.title_bar_font`) arrives in its place.
+///
+/// The line height goes wherever a text size does: gpui's own default is the
+/// golden ratio (gpui-pre `src/style.rs:494`), which upstream leaves in place
+/// on most text it sets (`src/tooltip.rs:114-137`, `src/status_bar.rs:86-96`)
+/// and replaces with `relative(1.25)` on a dialog title before the caller's
+/// refinement (`src/dialog/title.rs:44` → `:45`), so wrapped text would
+/// otherwise be spaced by a metric of gpui's or upstream's own.
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
-    r.text_size(scaled_text_size(font, n))
-        .font_weight(weight_of(font))
+    let mut r = with_line_height(r.text_size(scaled_text_size(font, n)), n)
+        .font_family(crate::font_family(&font.family))
+        .font_weight(weight_of(font));
+    r.text_style().font_style = Some(crate::font_style(font.style));
+    r
 }
 
-/// Text size, weight and colour from a font spec.
+/// The platform's `defaults.line_height` alone: [`with_text`]'s, for the two
+/// builders that set a control's line height and no text size, [`button`]
+/// and [`input_height`].
+fn with_line_height(r: StyleRefinement, n: Native<'_>) -> StyleRefinement {
+    r.line_height(relative(n.resolved.defaults.line_height))
+}
+
+/// Family, text size, weight, style and colour from a font spec.
 ///
 /// For the widgets upstream labels with a token of its own *before* applying
 /// the caller's refinement, on the very element the refinement lands on, and
@@ -153,41 +191,45 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
 
 /// The control-height rule (module doc, rationale §5 point 3).
 ///
-/// The platform's `defaults.line_height` becomes the control's line height:
-/// each receiving widget takes the refinement after its own line height
-/// (`button/button.rs:732` → `:733`, `input/input.rs:773` → `:793`) or sets
-/// none (`list/list_item.rs:198-209`, `select.rs:542-553`,
+/// The platform's `defaults.line_height` is the control's line height, which
+/// [`with_text`] sets, or [`with_line_height`] where no text size is: each
+/// receiving widget takes the refinement after its own line height
+/// (`button/button.rs:749` → `:750`, `input/input.rs:796` → `:816`) or sets
+/// none (`list/list_item.rs:198-209`, `select.rs:569-580`,
 /// `combobox.rs:981-998`), so the platform's wins. `stated` is the control's
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
 /// and the height is automatic, so layout grows the control around its drawn
-/// text and padding. Without a stated height, the line height alone: the
-/// control keeps the toolkit's own height.
+/// text and padding. Without a stated height the control keeps the toolkit's
+/// own height.
 fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> StyleRefinement {
-    let r = r.line_height(relative(n.resolved.defaults.line_height));
     let Some(stated) = stated else {
         return r;
     };
-    if text_scale_factor(n.accessibility) <= 1.0 {
+    if n.accessibility.text_scale_factor() <= 1.0 {
         r.h(px(stated))
     } else {
         r.min_h(px(stated)).h_auto()
     }
 }
 
-/// `Button` (gpui-component `src/button/button.rs:669-706` → refined at `:733`).
-/// The label's text size is set on an inner element (`:741-749`), Tier U.
+/// `Button` (gpui-component `src/button/button.rs:680-717` → refined at `:750`).
+/// The label's text size is set on an inner element (`:758-766`), Tier U.
 ///
 /// Height by the control-height rule (module doc), through `h`.
 #[must_use]
 pub fn button(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.button;
-    let r = with_height_rule(StyleRefinement::default(), Some(b.min_height), n);
+    let r = with_height_rule(
+        with_line_height(StyleRefinement::default(), n),
+        Some(b.min_height),
+        n,
+    );
     with_padding(r.min_w(px(b.min_width)), &b.border.padding)
-        .rounded(px(b.border.corner_radius.max(0.0)))
+        .rounded(px(b.border.corner_radius))
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
         // The weight, and deliberately not the size. This refinement lands on
-        // the button's outer element (`button/button.rs:733`), and GPUI
+        // the button's outer element (`button/button.rs:750`), and GPUI
         // cascades text style to descendants: the label is a child that sets
         // its own size from the `Size` enum (`button_text_size`, which maps
         // to `text_xs`/`text_sm`/`text_base`) and so would overrule a size
@@ -202,21 +244,21 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 }
 
 /// The text of a `Button`'s label, passed as the button's child: `button.font`'s
-/// size and weight, and the platform's line height.
+/// family, size, weight and style, and the platform's line height.
 ///
 /// gpui-component sets the label's size from the `Size` enum on the content
 /// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
-/// `src/button/button.rs:749`) after the button's own refinement (`:733`), so
+/// `src/button/button.rs:766`) after the button's own refinement (`:750`), so
 /// a size given to [`button`] would be shadowed; since 0.7.1 that size is
 /// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
-/// element's children are the one public route under it (`:772`): a label
-/// passed as a child, built like upstream's own label element (`:763-771`)
+/// element's children are the one public route under it (`:789`): a label
+/// passed as a child, built like upstream's own label element (`:780-788`)
 /// and refined with this. The name upstream derives from `.label()`
-/// (`:737-740`) is then given explicitly:
+/// (`:754-757`) is then given explicitly:
 ///
 /// ```ignore
-/// use gpui::{ParentElement, Styled, div};
-/// use gpui_component::{StyledExt, button::Button};
+/// use gpui_kit::component::{StyledExt, button::Button};
+/// use gpui_kit::{ParentElement, Styled, div};
 /// use native_theme_gpui::geometry;
 ///
 /// Button::new("save")
@@ -236,12 +278,12 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// Buttons that gpui-component's own widgets build are out of reach.
 #[must_use]
 pub fn button_label(n: Native<'_>) -> StyleRefinement {
-    let line = StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height));
-    with_text(line, &n.resolved.button.font, n)
+    with_text(StyleRefinement::default(), &n.resolved.button.font, n)
 }
 
-/// `Toggle` (`src/button/toggle.rs:174-179` → `:214`): [`button_label`]'s
-/// text — `button.font`'s size and weight and the platform's line height.
+/// `Toggle` (`src/button/toggle.rs:182-187` → `:222`): [`button_label`]'s
+/// text — `button.font`'s family, size, weight and style and the platform's
+/// line height.
 ///
 /// gpui-component sets `text_sm` on a `Size::Medium` Toggle's root before
 /// the caller's refinement (0.875 of the platform font since 0.7.1), so this
@@ -254,60 +296,69 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
     button_label(n)
 }
 
-/// `Input` root (`src/input/input.rs:778-788` → `:793`).
+/// `Input` root (`src/input/input.rs:801-811` → `:816`).
 ///
 /// Height by the control-height rule (module doc), through `h`. The rule is
 /// for a single-line field: a multi-line `Input` sets its own height before
-/// this refinement (`input/input.rs:780-783`), which the rule's `h` would
+/// this refinement (`input/input.rs:803-806`), which the rule's `h` would
 /// replace, so a caller that wants a multi-line height sets it after this
 /// builder, fully qualified as `Styled::h(input, height)`. Method syntax
 /// reaches `Input::h` instead (`input/input.rs:292-296`, "Multi-line only"),
 /// which shadows `Styled::h` and only records the height that upstream
-/// applies at `:782`, before the caller's refinement at `:793`, so the
+/// applies at `:805`, before the caller's refinement at `:816`, so the
 /// rule's `h` would still replace it. The padding is a single-line field's too:
-/// upstream pads only a single-line root (`input/input.rs:774-776`), so a
+/// upstream pads only a single-line root (`input/input.rs:797-799`), so a
 /// caller that refines a multi-line `Input` or a `Textarea` uses
 /// [`text_area`] instead, or clears this refinement's padding as well.
 ///
 /// The stated padding sides reach the root: upstream pads a single-line
-/// field (`input_px`/`input_py`, `input/input.rs:775`) before the refinement
-/// at `:793`, so the refinement wins, and the field's text element has no
+/// field (`input_px`/`input_py`, `input/input.rs:798`) before the refinement
+/// at `:816`, so the refinement wins, and the field's text element has no
 /// padding of its own to double it. One exception: an `Input` with a suffix
 /// takes its right padding from upstream *after* the refinement
-/// (`input/input.rs:810`, `this.pr(self.size.input_px())`), so there the
+/// (`input/input.rs:833`, `this.pr(self.size.input_px())`), so there the
 /// platform's right side does not arrive.
 ///
 /// When refining an `InputGroup` or `NumberInput` frame, clear the padding
-/// sides: the inner Input already pads (`input/group.rs:265-286` and
-/// `input/number_input.rs:158-165` each render an `Input`, which pads itself
-/// at `input/input.rs:774-776`).
+/// sides: the inner Input already pads (`input/group.rs:272-293` and
+/// `input/number_input.rs:173-180` each render an `Input`, which pads itself
+/// at `input/input.rs:797-799`).
+///
+/// The text is `input.font.color`. The root sets no text colour of its own
+/// (`input/input.rs:720-816`; `input_style`'s foreground is dropped at
+/// `:720`), and gpui-base paints the field's text in the colour the root
+/// inherits (gpui-base `input/base/element.rs:2630-2633`), so without the
+/// refinement it is the window's `foreground`. gpui-base halves that
+/// colour's alpha in a disabled field (`:2632-2633`): [`input_fill`] for a
+/// disabled field gives it `input.disabled_text_color` to halve.
 #[must_use]
 pub fn input(n: Native<'_>) -> StyleRefinement {
     let i = &n.resolved.input;
     let r = with_height_rule(StyleRefinement::default(), Some(i.min_height), n);
-    with_text(
+    with_coloured_text(
         with_padding(r, &i.border.padding)
-            .rounded(px(i.border.corner_radius.max(0.0)))
+            .rounded(px(i.border.corner_radius))
             .border(px(i.border.line_width)),
         &i.font,
         n,
     )
 }
 
-/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:778-788`
-/// → `:793`).
+/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:801-811`
+/// → `:816`).
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
 /// padding, corner radius and line width in place of the input's (the
 /// frame's inherit the input's, docs/platform-facts.md §2.29), the input's
-/// font at `defaults.line_height`, and no height -- the rows the field's
+/// font at `defaults.line_height`, its colour included as in [`input`], and no
+/// height -- the rows the field's
 /// state holds size it (gpui-base `input/base/state.rs`,
 /// `InputBaseState::auto_grow`).
 ///
 /// **Padding.** Upstream pads a multi-line field's editor, inside the root,
 /// by its `Size`'s `input_px` and `input_py`, from render, where no caller
-/// reaches it (`input/input.rs:591-605`), and pads no multi-line root
-/// (`:774-776`). A `Textarea` renders its `Input` at its own `Size`
+/// reaches it (`input/input.rs:596-610`), and pads no multi-line root
+/// (`:797-799`). A `Textarea` renders its `Input` at its own `Size`
 /// (`input/textarea.rs:172-177, 205`), `Size::Medium` unless the caller sizes
 /// it (`:74`), whose editor padding is 10 across and 8 down
 /// (`sizing.rs:147-166`); this refinement assumes that default, so a
@@ -332,13 +383,10 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
         bottom: rest(p.bottom, down),
         left: rest(p.left, across),
     };
-    with_text(
-        with_padding(
-            StyleRefinement::default().line_height(relative(n.resolved.defaults.line_height)),
-            &root,
-        )
-        .rounded(px(a.border.corner_radius.max(0.0)))
-        .border(px(a.border.line_width)),
+    with_coloured_text(
+        with_padding(StyleRefinement::default(), &root)
+            .rounded(px(a.border.corner_radius))
+            .border(px(a.border.line_width)),
         &n.resolved.input.font,
         n,
     )
@@ -382,7 +430,7 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(with_padding(r, &l.border.padding), &l.item_font, n)
 }
 
-/// Application-built `Tooltip` (`src/tooltip.rs:120-125` → `:126`).
+/// Application-built `Tooltip` (`src/tooltip.rs:125-130` → `:131`).
 ///
 /// No width: `tooltip.max_width` is the bubble's outer width, and a bubble that
 /// states it clamps itself without clamping its text, which then runs out of
@@ -392,16 +440,17 @@ pub fn list_item(n: Native<'_>) -> StyleRefinement {
 /// its text.
 ///
 /// The colours are carried because upstream paints a tooltip as a popover:
-/// its text `popover_foreground` (`:115`) and its fill `tokens.popover`
-/// (`:114`, `:116`), which this connector fills from `popover.font.color` and
-/// `popover.background_color`, and its border `border` (`:118`), from
-/// `defaults.border.color` -- all before this refinement. 16 of the 32
+/// its text `popover_foreground` (`:120`) and its fill `tokens.popover`
+/// (`:119`, `:121`), which this connector fills from `popover.font.color` and
+/// `popover.background_color`, and its border `border` (`:123`), from
+/// `defaults.border.color` -- all before this refinement. 18 of the 34
 /// bundled preset/mode combinations state a different text colour for a
 /// tooltip than for a popover, and more a different fill: kde-breeze's
-/// tooltip is `#f7f7f7` on a white popover, adwaita's dark on a light one.
+/// tooltip is `#f7f7f7` on an `#eff0f1` popover, adwaita's dark on a light
+/// one.
 ///
 /// The edge is `tooltip.border.line_width` wide, over upstream's `border_1`
-/// (`:117`). The drop shadow is upstream's `shadow_md` (`:119`) where
+/// (`:122`). The drop shadow is upstream's `shadow_md` (`:124`) where
 /// `tooltip.border.shadow_enabled` holds -- its two layers
 /// (`TOOLTIP_SHADOW`), the model stating no shadow geometry -- in
 /// `defaults.shadow_color`, and none where it does not.
@@ -423,9 +472,9 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
     };
     let mut r = with_coloured_text(
         with_padding(StyleRefinement::default(), &t.border.padding)
-            .rounded(px(t.border.corner_radius.max(0.0)))
+            .rounded(px(t.border.corner_radius))
             .bg(rgba_to_hsla(t.background_color))
-            .border(px(t.border.line_width.max(0.0)))
+            .border(px(t.border.line_width))
             .border_color(rgba_to_hsla(t.border.color)),
         &t.font,
         n,
@@ -435,12 +484,12 @@ pub fn tooltip(n: Native<'_>) -> StyleRefinement {
 }
 
 /// The layers of gpui's `shadow_md`, which upstream gives a tooltip
-/// (`src/tooltip.rs:119`), as (y offset, blur radius, spread radius) in
-/// pixels (gpui-pre-macros 0.3.8 `src/styles.rs:445-448`).
+/// (`src/tooltip.rs:124`), as (y offset, blur radius, spread radius) in
+/// pixels (gpui-pre-macros 0.3.9 `src/styles.rs:445-448`).
 const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 
 /// The element an application passes to `Tooltip::element`
-/// (`src/tooltip.rs:128-131`): `tooltip.max_width` less the bubble's own
+/// (`src/tooltip.rs:133-136`): `tooltip.max_width` less the bubble's own
 /// horizontal paddings and its edge, `tooltip.border.line_width` on each
 /// side ([`tooltip`]), which is the inner box the text wraps in.
 ///
@@ -456,12 +505,12 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 /// grows to exactly `tooltip.max_width` around it.
 ///
 /// A side the platform does not state is upstream's own `px_2`
-/// (`src/tooltip.rs:123`), which is 0.5 rem (gpui-pre-macros
+/// (`src/tooltip.rs:128`), which is 0.5 rem (gpui-pre-macros
 /// `src/styles.rs:949-950`), converted at the font size this connector
-/// installs as the rem: `defaults.font.size` × the text-scaling factor
-/// (`theme.font_size` in [`crate::to_theme`], which gpui-component's
-/// `WindowState` root plugin sets as the window's rem size,
-/// `src/root.rs:436`).
+/// installs as the rem: `defaults.font.size` scaled by
+/// [`crate::scaled_text_size`] (`theme.font_size` in [`crate::to_theme`],
+/// which gpui-component's `WindowState` root plugin sets as the window's rem
+/// size, `src/root.rs:538`).
 ///
 /// Never negative: a platform that states a width narrower than its own
 /// paddings leaves nothing for the text rather than a width gpui would reject.
@@ -471,26 +520,37 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 pub fn tooltip_content(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.tooltip;
     let upstream_side = TOOLTIP_UPSTREAM_PX_REM
-        * n.resolved.defaults.font.size
-        * text_scale_factor(n.accessibility);
+        * crate::scaled_text_size(n.resolved.defaults.font.size, n.accessibility);
     let left = t.border.padding.left.unwrap_or(upstream_side);
     let right = t.border.padding.right.unwrap_or(upstream_side);
-    let inner = t.max_width - left - right - 2.0 * t.border.line_width.max(0.0);
+    let inner = t.max_width - left - right - 2.0 * t.border.line_width;
     StyleRefinement::default().max_w(px(inner.max(0.0)))
 }
 
-/// Upstream's horizontal tooltip padding, `px_2` (`src/tooltip.rs:123`), in
+/// Upstream's horizontal tooltip padding, `px_2` (`src/tooltip.rs:128`), in
 /// rem: gpui's spacing suffix `2` is `rems(0.5)` (gpui-pre-macros
 /// `src/styles.rs:949-950`).
 const TOOLTIP_UPSTREAM_PX_REM: f32 = 0.5;
 
 /// `Popover` (`src/popover.rs:308` → `:360`). An unstated side keeps
 /// upstream's `p_3` (`:308`).
+///
+/// The edge is `popover.border.color` at `popover.border.line_width`, the
+/// popover's as the theme states it. Upstream draws no border on a popover:
+/// its edge is a 1px ring of `foreground` at low alpha in the shadow
+/// (`styled.rs:36-38`, `:186-194`), outside the surface (`:63-67`), and it
+/// stays, so the border lies inside it. With `Popover::arrow(true)` the
+/// border opens at the arrow's base: upstream paints the background over
+/// 1 px on either side of the surface edge there (`popover.rs:384-387`,
+/// `arrow_join_bounds` `:473-487`), and strokes the arrow's two slopes in
+/// the ring's colour, not `popover.border.color` (`:388-395`).
 #[must_use]
 pub fn popover(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.popover;
     with_padding(StyleRefinement::default(), &p.border.padding)
-        .rounded(px(p.border.corner_radius.max(0.0)))
+        .rounded(px(p.border.corner_radius))
+        .border(px(p.border.line_width))
+        .border_color(rgba_to_hsla(p.border.color))
 }
 
 /// `StatusBar` (`src/status_bar.rs:88-90` → `:96`).
@@ -509,25 +569,29 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:587-597, 672-673` → `:677`); width through
+/// `Dialog` (`src/dialog/dialog.rs:633-643, 722-726` → `:730`); width through
 /// [`dialog_max_width`] and `Dialog::max_w`. The radius is the dialog's own
 /// (`dialog.border.corner_radius`), which upstream would otherwise take from
-/// `radius_lg` (`:672`); the two differ on Adwaita.
+/// `radius_lg` (`:725`); the two differ on Adwaita. The fill and the edge are
+/// the dialog's own too, `dialog.background_color` and `dialog.border.color`,
+/// over the window's `background` and `border` tokens upstream paints the
+/// dialog with before the refinement (`:722`, `:724`).
 ///
 /// `max_h` no longer reaches upstream's `Dialog`: since 0.6.4 it clamps the
 /// dialog to what is left of the viewport *after* applying this style -- in
-/// 0.7.1 the view's height less twice the `lg` spacing token and the layer's
-/// offset (`:576-584`), set by `max_h` at `:682`, after the refinement at
-/// `:677`.
+/// 0.8.0 the view's height less twice the `lg` spacing token and the layer's
+/// offset (`:616-630`), set by `max_h` at `:735`, after the refinement at
+/// `:730`.
 /// `min_h` and the paddings still arrive, because `min_h_24()` runs before the
 /// refinement. Kept here for an application-drawn dialog and for the day
-/// upstream takes a `max_h` prop (spec v0.5.9 §4, E18).
+/// upstream takes a `max_h` prop
+/// (`docs/archive/todo_v0.5.9_gpui-kit-0.6.4-spec.md` §4).
 ///
 /// Upstream reads the four padding sides back out of this style
-/// (`dialog/dialog.rs:589-601`), starting from 16px on each side, so
+/// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so
 /// an unstated side keeps that 16px. It also reuses them as gaps: the gap
-/// between the dialog's sections is `max(top, 8px)` (`:676`), and a
-/// `DialogContent`'s gap is the bottom padding (`:707`). A platform that
+/// between the dialog's sections is `max(top, 8px)` (`:729`), and a
+/// `DialogContent`'s gap is the bottom padding (`:760`). A platform that
 /// states 32 top and 24 bottom, as GNOME does (docs/platform-facts.md §2.22),
 /// therefore also spaces the sections by 32 and the content by 24.
 #[must_use]
@@ -536,22 +600,48 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
     with_padding(StyleRefinement::default(), &d.border.padding)
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
-        .rounded(px(d.border.corner_radius.max(0.0)))
+        .rounded(px(d.border.corner_radius))
+        .bg(rgba_to_hsla(d.background_color))
+        .border_color(rgba_to_hsla(d.border.color))
 }
 
-/// `InputGroupButton` (`src/input/group.rs:590-593` → `:596`): the platform's
+/// For `Dialog::entrance` and `AlertDialog::entrance`
+/// (`src/dialog/dialog.rs:526`, `src/dialog/alert_dialog.rs:277`): the
+/// entrance closest to `dialog.entrance` that gpui-component draws, or `None`
+/// where the theme states none, so the dialog keeps upstream's default,
+/// `DialogEntrance::SlideDown`.
+///
+/// Both styles are approximations, and both become `DialogEntrance::Fade`, a
+/// fade in place over the motion tokens' `duration_normal`
+/// (`src/dialog/dialog.rs:653-668, 866-869`):
+///
+/// - `ScaleFade` (Windows, GNOME, Material) loses its scale: gpui-component
+///   has no scaling entrance (`src/dialog/entrance.rs:12-25`).
+/// - `FadeRise` (KDE) loses its rise: gpui-component has no rising entrance,
+///   and its `FadeSlide` settles from just above the final position, the
+///   opposite direction.
+///
+/// Reduced motion skips every entrance upstream (`:621-623`).
+#[must_use]
+pub fn dialog_entrance(n: Native<'_>) -> Option<DialogEntrance> {
+    n.resolved.dialog.entrance.map(|style| match style {
+        DialogEntranceStyle::ScaleFade | DialogEntranceStyle::FadeRise => DialogEntrance::Fade,
+    })
+}
+
+/// `InputGroupButton` (`src/input/group.rs:602-605` → `:608`): the platform's
 /// button radius, and nothing else.
 ///
 /// gpui-component scales a control's radius with its size — an in-group
 /// button is `XSmall` and gets `radius / 2`, `Button` does the same for its
-/// small and large roundings (`src/button/button.rs:636-638`) — where
+/// small and large roundings (`src/button/button.rs:647-649`) — where
 /// native-theme records one radius per widget, whatever its size. [`button`]
 /// already restores it for a `Button`; this does the same for the button
 /// nested in a field, whose height, width and padding the group sets so that
 /// it fits, and which [`button`]'s own height would push out of the field.
 #[must_use]
 pub fn input_group_button(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius.max(0.0)))
+    StyleRefinement::default().rounded(px(n.resolved.button.border.corner_radius))
 }
 
 /// `DialogFooter` (`src/dialog/footer.rs:52` → `:56`).
@@ -560,10 +650,17 @@ pub fn dialog_footer(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.dialog.button_gap))
 }
 
-/// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`).
+/// `DialogTitle` (`src/dialog/title.rs:42-43` → `:45`): the platform's line
+/// height in place of upstream's `relative(1.25)` (`:44`).
+///
+/// The colour is carried because upstream sets none on the title
+/// (`:39-46`), so it takes the dialog's text colour and the platform's
+/// `dialog.title_font.color` displaces nothing. Today every preset's title
+/// colour is the window's text colour, so this changes no pixel; it is what
+/// honours a source that states a title colour of its own.
 #[must_use]
 pub fn dialog_title(n: Native<'_>) -> StyleRefinement {
-    with_text(StyleRefinement::default(), &n.resolved.dialog.title_font, n)
+    with_coloured_text(StyleRefinement::default(), &n.resolved.dialog.title_font, n)
 }
 
 /// `DialogDescription` (`src/dialog/description.rs:49` → `:51`).
@@ -583,7 +680,7 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
 /// refines a plain `div()` and leaves the frame to the application, where
 /// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
-/// `bordered` (`src/table/data_table.rs:167-171`). Apply this to a `List` or a
+/// `bordered` (`src/table/data_table.rs:221-225`). Apply this to a `List` or a
 /// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
 /// or to the box an application draws around one, and the three agree. There
 /// is no tree theme in the model: a tree is a list view, and reads
@@ -597,7 +694,7 @@ pub fn list(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default()
         .border(px(b.line_width))
         .border_color(rgba_to_hsla(b.color))
-        .rounded(px(b.corner_radius.max(0.0)))
+        .rounded(px(b.corner_radius))
         .overflow_hidden()
 }
 
@@ -614,26 +711,72 @@ pub fn progress(n: Native<'_>) -> StyleRefinement {
     let p = &n.resolved.progress_bar;
     StyleRefinement::default()
         .h(px(p.track_height))
-        .rounded(px(p.border.corner_radius.max(0.0)))
+        .rounded(px(p.border.corner_radius))
         .min_w(px(p.min_width))
 }
 
 /// For `GroupBox::content_style` (`src/group_box.rs:107`), applied to the
-/// content surface (`:172-177`), which 0.7.1 nests in a column that also
+/// content surface (`:172-177`), which 0.8.0 nests in a column that also
 /// holds the optional footer (`:167-168`).
+///
+/// The fill is `card.background_color` on every variant: the refinement
+/// comes last (`:177`), over the Fill variant's `group_box` token (`:145`),
+/// and on a Normal or Outline box, which paints none of its own (`:144`,
+/// `:146`).
 #[must_use]
 pub fn group_box_content(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.card;
     with_padding(StyleRefinement::default(), &c.border.padding)
-        .rounded(px(c.border.corner_radius.max(0.0)))
+        .rounded(px(c.border.corner_radius))
         .border(px(c.border.line_width))
         .border_color(rgba_to_hsla(c.border.color))
+        .bg(rgba_to_hsla(c.background_color))
 }
 
 /// For `AccordionItem::title_style` (`src/accordion.rs:220`, applied `:301-307`).
+///
+/// The title's colour is carried because upstream sets `foreground` on an
+/// open item's title row one line before the refinement (`:306` → `:307`)
+/// and none on a closed one's, and draws no disabled colour of its own:
+/// `expander.font.color` displaces `foreground` there and nothing here. Today
+/// every preset's expander text is the window's text colour, so this changes
+/// no pixel; it is what honours a source that states a colour of its own.
 #[must_use]
 pub fn accordion_title(n: Native<'_>) -> StyleRefinement {
-    StyleRefinement::default().h(px(n.resolved.expander.header_height))
+    let e = &n.resolved.expander;
+    StyleRefinement::default()
+        .h(px(e.header_height))
+        .text_color(rgba_to_hsla(e.font.color))
+}
+
+/// The edge of an `Accordion` and of each of its `AccordionItem`s:
+/// `expander.border.color`, which each takes through `Styled`.
+///
+/// A bordered `Accordion` (upstream's default, `src/accordion.rs:37`) draws
+/// one rounded card around its items, and each item but the last a line
+/// under it, both in the `border` token and before the caller's refinement
+/// (`:108-113` → `:114` on the Accordion, `:380-382` → `:384` on the item),
+/// so the platform's colour wins on both. Only the colour: where no edge is
+/// drawn -- an unbordered Accordion, the last item -- it colours nothing.
+/// Today every preset's expander edge is the window's border colour, so this
+/// changes no pixel; it is what honours a source that states one of its own.
+#[must_use]
+pub fn accordion(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().border_color(rgba_to_hsla(n.resolved.expander.border.color))
+}
+
+/// For `AccordionItem::hover` (`src/accordion.rs:230-233`): the title row's
+/// fill under the pointer, `expander.hover_background`, which the item lays
+/// over the row there (`:322-324`), or nothing where the theme states none,
+/// so the row stays as it is at rest. gpui-component draws no hover of its
+/// own (`:227-229`), and none on a disabled item (`:322`). Pass it as
+/// `item.hover(|_| geometry::accordion_hover(n))`.
+#[must_use]
+pub fn accordion_hover(n: Native<'_>) -> StyleRefinement {
+    match n.resolved.expander.hover_background {
+        Some(fill) => StyleRefinement::default().bg(rgba_to_hsla(fill)),
+        None => StyleRefinement::default(),
+    }
 }
 
 /// The metrics `Checkbox` and `Radio` share; platform-facts §2.5 defines radio
@@ -645,30 +788,37 @@ fn checkbox_metrics(n: Native<'_>) -> StyleRefinement {
     StyleRefinement::default().gap(px(n.resolved.checkbox.label_gap))
 }
 
-/// `Checkbox` (`src/checkbox.rs:270-282` → `:283`); the indicator is inner,
-/// Tier U. The text size replaces upstream's `input_text_size` (`:275-278`:
+/// `Checkbox` (`src/checkbox.rs:280-292` → `:293`); the indicator is inner,
+/// Tier U. The text size replaces upstream's `input_text_size` (`:285-288`:
 /// XSmall `text_xs`, Small and Medium `text_sm`, Large `text_base`).
 ///
-/// No colour, although upstream does label the row with `foreground` (`:274`)
+/// No colour, although upstream does label the row with `foreground` (`:284`)
 /// before this refinement: a `Checkbox::label` is wrapped in a div that sets
-/// `foreground` itself (`:331-336`), so a carried colour would never reach it,
+/// `foreground` itself (`:341-346`), so a carried colour would never reach it,
 /// and the disabled hook applies `muted_foreground` and only *then* the
-/// refinement (`:252-256`), so a carried colour would displace the disabled
+/// refinement (`:262-266`), so a carried colour would displace the disabled
 /// colour of custom children. [`radio`], whose label child sets no colour of
 /// its own, carries it.
+///
+/// The platform's line height lands on the row, over upstream's
+/// `relative(1.)` (`:283`); the label column sets its own `relative(1.25)`
+/// (`:336`), which stands, and on which upstream centres the indicator
+/// (`:300-301`).
 #[must_use]
 pub fn checkbox(n: Native<'_>) -> StyleRefinement {
     with_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
 }
 
-/// `Radio` (`src/radio.rs:210-222` → `:223`): [`checkbox`]'s metrics, and the
+/// `Radio` (`src/radio.rs:218-230` → `:231`): [`checkbox`]'s metrics, and the
 /// colour [`checkbox`] cannot take. The text size replaces upstream's
-/// `input_text_size` (`:219-222`), the same ladder as [`checkbox`]'s.
+/// `input_text_size` (`:227-230`), the same ladder as [`checkbox`]'s.
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
-/// the row with `foreground` (`:212`) before applying this refinement, and its
-/// disabled muting is on the label child (`:253-254`), which wins over
-/// whatever the row carries.
+/// the row with `foreground` (`:220`) before applying this refinement, and its
+/// disabled muting is on the label child (`:261-262`), which wins over
+/// whatever the row carries. The line height, as for [`checkbox`], lands on
+/// the row (over `:222`), and the label column keeps its own `relative(1.25)`
+/// (`:255`).
 #[must_use]
 pub fn radio(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(checkbox_metrics(n), &n.resolved.checkbox.font, n)
@@ -680,22 +830,26 @@ pub fn radio(n: Native<'_>) -> StyleRefinement {
 /// Height by the control-height rule (module doc): the stated height at a
 /// text-scaling factor of 1 or less replaces upstream's own `h_8` for
 /// `Size::Medium` (`input_size`, `sizing.rs:256-257`, `:281-284`), which the
-/// trigger sets before the refinement (`select.rs:551` → `:553`,
+/// trigger sets before the refinement (`select.rs:578` → `:580`,
 /// `combobox.rs:996` → `:998`).
 ///
 /// The stated padding sides reach the trigger: upstream pads it
-/// (`input_size`, `select.rs:551`, `combobox.rs:996`) before the refinement
-/// (`select.rs:553`, `combobox.rs:998`), so the refinement wins, and no inner
+/// (`input_size`, `select.rs:578`, `combobox.rs:996`) before the refinement
+/// (`select.rs:580`, `combobox.rs:998`), so the refinement wins, and no inner
 /// element pads again. The right side is the exception where the theme
 /// states `combo_box.arrow_area_width`: the platform then measures its right
 /// side to a separate arrow column (WinUI's 38px column, Breeze's 20px one;
 /// docs/platform-facts.md §2.24), and gpui's trigger has none — its caret
-/// sits inside the padded row (`select.rs:599-600` in the row at
-/// `:564-606`, `combobox.rs:655-656` in the row at `:1009-1028`). A right
+/// sits inside the padded row (`select.rs:626-627` in the row at
+/// `:591-633`, `combobox.rs:655-656` in the row at `:1009-1028`). A right
 /// side measured to a column the trigger does not have is not applied, and
-/// upstream's own right padding (`input_px`, `select.rs:551`,
+/// upstream's own right padding (`input_px`, `select.rs:578`,
 /// `combobox.rs:996`) stands. Without an arrow column the stated right side
 /// is measured to the text, and is applied like the others.
+///
+/// The edge is `combo_box.border.line_width` wide, over upstream's `border_1`
+/// (`select.rs:569`, `combobox.rs:987`): a platform whose trigger has no line
+/// at rest (adwaita's 0, `docs/platform-facts.md` §2.24) draws none.
 fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     let c = &n.resolved.combo_box;
     let r = with_height_rule(StyleRefinement::default(), Some(c.min_height), n);
@@ -708,29 +862,30 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
     };
     with_padding(r, &padding)
         .min_w(px(c.min_width))
-        .rounded(px(c.border.corner_radius.max(0.0)))
+        .rounded(px(c.border.corner_radius))
+        .border(px(c.border.line_width))
 }
 
-/// `Select` (`src/select.rs:542-552` → `:553`); the arrow is inner, Tier U.
+/// `Select` (`src/select.rs:569-579` → `:580`); the arrow is inner, Tier U.
 /// Height by the control-height rule (module doc), through `h`, in place of
 /// upstream's `h_8` at a text-scaling factor of 1 or less.
 ///
 /// The stated padding sides reach the trigger: upstream pads it
-/// (`input_size`, `select.rs:551`) before the refinement (`:553`), so the
+/// (`input_size`, `select.rs:578`) before the refinement (`:580`), so the
 /// refinement wins, and no inner element pads again. Where the theme states
 /// `combo_box.arrow_area_width`, the right side is not applied and
 /// upstream's own stands: the platform measures it to an arrow column, and
-/// the caret sits inside the padded trigger (`select.rs:599-600`, in the row
-/// at `:564-606`), which has none (see the shared metrics, and
+/// the caret sits inside the padded trigger (`select.rs:626-627`, in the row
+/// at `:591-633`), which has none (see the shared metrics, and
 /// docs/platform-facts.md §2.24).
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`
-/// (`src/input/input.rs:105`, applied at `select.rs:546`) before applying this
+/// (`src/input/input.rs:105`, applied at `select.rs:573`) before applying this
 /// refinement. It is safe here although the same helper's disabled branch
 /// returns `muted_foreground` before the refinement too
 /// (`src/input/input.rs:99-103`), because `Select` re-mutes its title *child*
-/// when disabled (`select.rs:484-486`) and a child wins over the trigger.
+/// when disabled (`select.rs:511-513`) and a child wins over the trigger.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
@@ -749,15 +904,16 @@ pub fn select(n: Native<'_>) -> StyleRefinement {
 /// `muted_foreground` through that same call, before the refinement at `:998`,
 /// and the selected-title child (`:585-591`) sets no colour to re-mute with —
 /// so a carried colour would beat the disabled colour instead of yielding to
-/// it.
+/// it. A disabled trigger takes the platform's disabled text colour from
+/// [`combo_box_fill`] instead.
 #[must_use]
 pub fn combobox(n: Native<'_>) -> StyleRefinement {
     with_text(combo_box_metrics(n), &n.resolved.combo_box.font, n)
 }
 
-/// `TitleBar` (`src/title_bar.rs:335` → `:343`); the height has no theme field.
+/// `TitleBar` (`src/title_bar.rs:338` → `:346`); the height has no theme field.
 ///
-/// Upstream sets no text colour on the bar (`:328-343` paints the fill and the
+/// Upstream sets no text colour on the bar (`:331-346` paints the fill and the
 /// border, then refines), so the route is open and the carried colour displaces
 /// nothing. It is worth carrying: the KDE reader states
 /// `window.title_bar_font.color` from `[WM] activeForeground`, which a colour
@@ -771,23 +927,95 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// A `TitleBar` of a window that is not the active one: the fill
+/// `window.inactive_title_bar_background` and the text
+/// `window.inactive_title_bar_text_color`. Apply it after [`title_bar`] while
+/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:2973`);
+/// gpui redraws the window when that changes (`:1999-2013`).
+///
+/// Colour, carried because neither `TitleBar` nor `ThemeColor` knows of a
+/// window's activation: upstream paints every bar the same, a gradient from
+/// `title_bar` mixed with `background` down to `title_bar`
+/// (`src/title_bar.rs:22-37`, painted at `:342-345` and refined at `:346`).
+/// The refinement's fill is that gradient drawn from the inactive fill in
+/// place of `title_bar` -- `background` is `window.background_color`, as the
+/// connector installs it -- so an inactive bar has the active one's shape,
+/// and a theme whose inactive pair is the active one draws the same bar in
+/// both states; its text colour replaces [`title_bar`]'s. A separate
+/// builder, not a parameter of [`title_bar`], as [`button_disabled`] and
+/// [`button_checked`] are for a Button's states: [`title_bar`]'s signature
+/// stays, and an active bar takes nothing more.
+#[must_use]
+pub fn title_bar_inactive(n: Native<'_>) -> StyleRefinement {
+    let w = &n.resolved.window;
+    StyleRefinement::default()
+        .bg(title_bar_gradient(
+            rgba_to_hsla(w.inactive_title_bar_background),
+            rgba_to_hsla(w.background_color),
+        ))
+        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color))
+}
+
+/// The weight of the bar's own colour in the colour its gradient starts
+/// from, the window background's being the rest: upstream's
+/// `default_title_bar_background` (`src/title_bar.rs:25-30`), which is
+/// private.
+const TITLE_BAR_GRADIENT_OWN: f32 = 0.55;
+
+/// Upstream's title-bar fill (`src/title_bar.rs:22-37`) from `bar` and
+/// `background`: a top-to-bottom gradient from `bar` mixed with
+/// `background` in gamma-encoded RGB, [`TITLE_BAR_GRADIENT_OWN`] to the
+/// rest, down to `bar` itself.
+fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Background {
+    let (b, w) = (bar.to_rgb(), background.to_rgb());
+    let own = TITLE_BAR_GRADIENT_OWN;
+    let rest = 1. - own;
+    let start = gpui::Hsla::from(gpui::Rgba {
+        r: b.r * own + w.r * rest,
+        g: b.g * own + w.g * rest,
+        b: b.b * own + w.b * rest,
+        a: b.a * own + w.a * rest,
+    });
+    gpui::linear_gradient(
+        180.,
+        gpui::linear_color_stop(start, 0.),
+        gpui::linear_color_stop(bar, 1.),
+    )
+}
+
 /// A toolbar row (docs/platform-facts.md §2.13), the application's own or
 /// gpui-component's `Toolbar`: its height the content's, at least
 /// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
-/// toolbars size to their content and state none (platform-facts.md:1351),
+/// toolbars size to their content and state none (platform-facts.md:1390),
 /// and a fixed height would be an invention there, so the refinement sets
 /// the height to `auto`, which also replaces the `h_8` gpui-component's
 /// `Toolbar` sets at its Small size (toolbar.rs:252-256); an application that
 /// wants a fixed height sets one after the refinement --,
 /// `toolbar.item_gap` between items where the theme states one, the
 /// `toolbar.border` padding sides the platform states,
-/// `toolbar.background_color`, and `toolbar.font` size and weight. An
-/// unstated side or gap is left to the application. No edge: §2.13 states
-/// none; an application that wants a rule draws a Separator.
+/// `toolbar.background_color`, and `toolbar.font`. An unstated side or gap
+/// is left to the application.
+///
+/// The edge is the bar's bottom rule, `toolbar.border.color` at
+/// `toolbar.border.line_width`, inside the bar, between it and the content
+/// under it, as the theme states it: a width of 0 draws none. Neither
+/// gpui-component's `Toolbar` nor gpui-base's draws an edge of its own
+/// (`toolbar.rs:243-257`). Bottom only, not a frame, for parity:
+/// docs/platform-facts.md §2.13 has no border row, and the other two
+/// connectors draw the toolbar's border as one line under the bar -- egui's
+/// toolbar role strokes it as the top panel's separator
+/// (native-theme-egui `src/style/roles.rs:128-141`), and the iced showcase
+/// draws a `toolbar.border.line_width` line under its toolbar
+/// (`examples/showcase-iced.rs:4550`).
+///
+/// The text colour displaces nothing: neither gpui-component's `Toolbar`
+/// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today
+/// every preset's toolbar text is the window's text colour, so this changes
+/// no pixel; it is what honours a source that states one of its own.
 #[must_use]
 pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let t = &n.resolved.toolbar;
-    let r = with_text(StyleRefinement::default(), &t.font, n).h_auto();
+    let r = with_coloured_text(StyleRefinement::default(), &t.font, n).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
         None => r,
@@ -796,7 +1024,10 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
         Some(g) => r.gap(px(g)),
         None => r,
     };
-    with_padding(r, &t.border.padding).bg(rgba_to_hsla(t.background_color))
+    with_padding(r, &t.border.padding)
+        .bg(rgba_to_hsla(t.background_color))
+        .border_b(px(t.border.line_width))
+        .border_color(rgba_to_hsla(t.border.color))
 }
 
 // --- Size helpers (spec §9.3) -------------------------------------------------
@@ -809,7 +1040,14 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 }
 
 /// `DataTable::with_size`: `list.row_height` as `Size::Size`, or upstream's own
-/// Medium row height where the theme states none.
+/// Medium row height where the theme states none. Above a text-scaling factor
+/// of 1 the row is at least the scaled `list.item_font`'s line box at
+/// `defaults.line_height`, rounded up, upstream's own top and bottom cell
+/// padding (`Size::table_cell_padding`, `src/sizing.rs:89-94`) and the row's
+/// 1 px bottom border (`border_b_1`, `src/table/state.rs:2198`): the
+/// control-height rule (module doc), computed here because upstream gives
+/// every row this height (`src/table/state.rs:2182`, `:2196`), its border
+/// inside it, and clips each cell to it (`:1520-1526`).
 ///
 /// Under `Size::Size` gpui-component sets the row height verbatim
 /// (`src/sizing.rs:57-64`) and the cells no text size (`:323-333`), so they
@@ -819,12 +1057,50 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 /// font.
 #[must_use]
 pub fn data_table_size(n: Native<'_>) -> Size {
-    Size::Size(
-        n.resolved
-            .list
-            .row_height
-            .map_or_else(|| Size::Medium.table_row_height(), px),
-    )
+    let l = &n.resolved.list;
+    let stated = l
+        .row_height
+        .map_or_else(|| Size::Medium.table_row_height(), px);
+    Size::Size(table_row_height(stated, &l.item_font, n))
+}
+
+/// For `DataTable::header_row_height` (`src/table/data_table.rs:144`):
+/// `list.header_height`, grown above a text-scaling factor of 1 as
+/// [`data_table_size`] grows a row, or `None` where the theme states none, so
+/// the header keeps the body rows' height, which upstream gives an unset
+/// header (`src/table/state.rs:800-804`) and [`data_table_size`] sets.
+///
+/// It grows with `list.item_font`, the font the header's text is drawn in: a
+/// `Size::Size` header cell sets no text size (`src/table/state.rs:1827`
+/// through `render_cell`, `src/sizing.rs:323-333`), so it inherits the
+/// container's, which [`table`] sets; `list.header_font` reaches only the
+/// header's text colour (`ThemeColor::table_head_foreground`).
+#[must_use]
+pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
+    let l = &n.resolved.list;
+    l.header_height
+        .map(|h| table_row_height(px(h), &l.item_font, n))
+}
+
+/// The bottom border upstream draws under a `DataTable` row and under its
+/// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2198`,
+/// the header's `:2094-2095`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
+const TABLE_ROW_BORDER: f32 = 1.0;
+
+/// A `DataTable` row's height by the control-height rule (module doc): at a
+/// text-scaling factor of 1 or less `stated`, verbatim; above 1 at least the
+/// line box of `font`'s scaled size at `defaults.line_height`, rounded up,
+/// upstream's own top and bottom cell padding for `Size::Size` and the row's
+/// bottom border ([`TABLE_ROW_BORDER`]). A `Size` is a number, so the growth
+/// the single-line controls get from an automatic height is computed here.
+fn table_row_height(stated: Pixels, font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
+    if n.accessibility.text_scale_factor() <= 1.0 {
+        return stated;
+    }
+    let padding = Size::Size(stated).table_cell_padding();
+    let line = (f32::from(scaled_text_size(font, n)) * n.resolved.defaults.line_height).ceil();
+    let fit = line + f32::from(padding.top) + f32::from(padding.bottom) + TABLE_ROW_BORDER;
+    px(f32::from(stated).max(fit))
 }
 
 /// `Icon::with_size` for toolbar icons: `toolbar.icon_size`, which inherits
@@ -869,7 +1145,7 @@ pub fn icon_size_panel(n: Native<'_>) -> Size {
 /// area and overlays scrollbars" (`src/scroll/scrollable.rs`) — and gpui-base
 /// draws the vertical track flush with that area's right edge, at the track
 /// width this connector installed for it (gpui-base
-/// `src/scrollbar.rs:1408-1432`). Where `scrollbar.overlay_mode` is false —
+/// `src/scrollbar.rs:1422-1446`). Where `scrollbar.overlay_mode` is false —
 /// KDE and Windows — [`crate::apply`] also asks for an always-visible bar, so
 /// a content element that fills the scroll area runs underneath it. The width
 /// is read back from [`crate::base_layer::scrollbar_geometry`], the one that
@@ -890,7 +1166,7 @@ pub fn scrollbar_gutter(n: Native<'_>) -> StyleRefinement {
 
 // --- Builder helpers (spec §9.3) ----------------------------------------------
 
-/// For `Dialog::max_w` (`src/dialog/dialog.rs:466`).
+/// For `Dialog::max_w` (`src/dialog/dialog.rs:497`).
 #[must_use]
 pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
@@ -901,30 +1177,31 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 ///
 /// A single-line `Input` takes it through `StyledExt::refine_style`, the
 /// caller's style, which `Input` refines its root with last
-/// (`src/input/input.rs:793`). Above a text-scaling factor of 1 the rule's
+/// (`src/input/input.rs:816`). Above a text-scaling factor of 1 the rule's
 /// height is automatic, so the field then grows around its own drawn text
 /// and padding -- upstream's, unless the caller also gives it the
 /// platform's.
 #[must_use]
 pub fn input_height(n: Native<'_>) -> StyleRefinement {
     with_height_rule(
-        StyleRefinement::default(),
+        with_line_height(StyleRefinement::default(), n),
         Some(n.resolved.input.min_height),
         n,
     )
 }
 
-/// The fill of an `Input` root (`src/input/input.rs:706-717`, painted at
-/// `:785`, refined at `:793`), for a field built with `disabled`: the
+/// The fill of an `Input` root (`src/input/input.rs:720-731`, painted at
+/// `:808`, refined at `:816`), for a field built with `disabled`: the
 /// platform's `input.background_color`, or disabled its
-/// `input.disabled_background`. Apply it after [`input`].
+/// `input.disabled_background` and its text in `input.disabled_text_color`.
+/// Apply it after [`input`].
 ///
 /// Colour, not geometry, and carried for the reason the builders that carry a
 /// text colour carry it (module doc): no `ThemeColor` field maps to it. Upstream fills an enabled
 /// field with `Theme::input_background`, which is the window's `background`
 /// in a light theme and `input` mixed with transparent in a dark one
 /// (`theme/mod.rs:485-491`), and a disabled one with `input` mixed with
-/// transparent at half opacity (`input/input.rs:98-101`, `:713-717`); the
+/// transparent at half opacity (`input/input.rs:98-101`, `:727-731`); the
 /// `input` token is the field's border (`contract.rs`'s `input` row), so
 /// neither fill can be the platform's. The fill is painted before the
 /// caller's refinement, so the refinement's wins -- in either state, which is
@@ -934,6 +1211,13 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// colours or by that opacity, and its data makes the other an identity
 /// (docs/platform-facts.md §2.1.6), so a platform that states no disabled
 /// fill (`input.disabled_background` is `None`) gets the enabled fill, faded.
+///
+/// The disabled text colour replaces [`input`]'s `input.font.color` on the
+/// root, whose colour gpui-base paints the field's text in; it feeds
+/// gpui-base's dim rather than replacing it, since the editor halves the
+/// alpha of a disabled field's text whatever its colour (gpui-base
+/// `input/base/element.rs:2632-2633`), and the field's
+/// `input.disabled_opacity` fades it with the rest of the field.
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
     let i = &n.resolved.input;
@@ -942,9 +1226,50 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
             .bg(rgba_to_hsla(
                 i.disabled_background.unwrap_or(i.background_color),
             ))
+            .text_color(rgba_to_hsla(i.disabled_text_color))
             .opacity(unit(i.disabled_opacity))
     } else {
         StyleRefinement::default().bg(rgba_to_hsla(i.background_color))
+    }
+}
+
+/// The fill of a `Select` or `Combobox` trigger (`src/select.rs:572`,
+/// `src/combobox.rs:990`, refined at `select.rs:580` and `combobox.rs:998`),
+/// for a trigger built with `disabled`: `combo_box.background_color`, or
+/// disabled `combo_box.disabled_background` (the enabled fill where the theme
+/// states none) and the text in `combo_box.disabled_text_color`, faded by
+/// `combo_box.disabled_opacity`. Apply it after [`select`] or [`combobox`].
+///
+/// Colour, carried for the reason [`input_fill`] is: upstream fills an
+/// enabled trigger with `Theme::input_background` and a disabled one with the
+/// `input` token mixed toward transparent (`input_style`,
+/// `src/input/input.rs:97-107`), and no `ThemeColor` field maps to the
+/// platform's combo box fill. Disabled, the fade replaces upstream's
+/// `opacity(0.5)` on the trigger (`select.rs:574`, `combobox.rs:992`), both
+/// set before the refinement: a platform dims by its disabled colours or by
+/// that opacity, and its data makes the other an identity
+/// (docs/platform-facts.md §2.1.6).
+///
+/// The disabled text colour reaches a `Combobox`'s selected text: its
+/// trigger takes `muted_foreground` from `input_style` before the refinement
+/// (`input/input.rs:99-103` → `combobox.rs:991` → `:998`), and the title
+/// elements set none (`combobox.rs:570-591`). It does not reach a `Select`'s
+/// title, which re-mutes itself when disabled (`select.rs:511-512`), nor the
+/// placeholder or the caret of either, which are `muted_foreground` on
+/// elements of their own (`select.rs:479`, `:624-627`; `combobox.rs:557`,
+/// `:652-656`).
+#[must_use]
+pub fn combo_box_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
+    let c = &n.resolved.combo_box;
+    if disabled {
+        StyleRefinement::default()
+            .bg(rgba_to_hsla(
+                c.disabled_background.unwrap_or(c.background_color),
+            ))
+            .text_color(rgba_to_hsla(c.disabled_text_color))
+            .opacity(unit(c.disabled_opacity))
+    } else {
+        StyleRefinement::default().bg(rgba_to_hsla(c.background_color))
     }
 }
 
@@ -968,10 +1293,10 @@ fn unit(opacity: f32) -> f32 {
 /// Colour, not geometry, carried because no `ThemeColor` field reaches it:
 /// upstream paints a disabled Default button with `input_background()` at
 /// half opacity and its label with `muted_foreground` at half opacity
-/// (`src/button/button.rs:1316-1362`, the label at `:1327`), literals of its
+/// (`src/button/button.rs:1339-1385`, the label at `:1350`), literals of its
 /// own. Its disabled
-/// style replays the caller's refinement over its own (`:797-803`), so the
-/// refinement's colours win there -- and at rest too (`:733`), which is why
+/// style replays the caller's refinement over its own (`:814-820`), so the
+/// refinement's colours win there -- and at rest too (`:750`), which is why
 /// an enabled Button must not take it.
 #[must_use]
 pub fn button_disabled(n: Native<'_>) -> StyleRefinement {
@@ -1010,8 +1335,34 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
     }
 }
 
+/// The text colour of a selected `ListItem` (`ListItem::selected(true)`):
+/// `list.selection_text_color`. Apply it after [`list_item`], to a selected
+/// row only.
+///
+/// Colour, not geometry, carried because no `ThemeColor` field reaches it:
+/// upstream marks a selected row by its fill alone, `list_active` (or
+/// `accent`), painted after the refinement (`src/list/list_item.rs:257-264`),
+/// which the `list_active` row gives `list.selection_background`, and leaves
+/// its text the `foreground` it set before the refinement (`:205` → `:209`)
+/// -- or [`list_item`]'s `list.item_font.color` -- which a platform that
+/// letters its selected rows in a colour of their own (Breeze's white on its
+/// accent) does not. A row that is not selectable is muted after the
+/// refinement (`:235-237`), so its colour still wins.
+///
+/// The fill is `list_active` only while gpui-component's
+/// `Theme::list.active_highlight` is true (`list_item.rs:258`), its default
+/// (gpui-base `list_settings.rs:14`), which this connector leaves alone; an
+/// application that turns it off gets `accent`, the menu
+/// hover fill (`menu.hover_background`, the `accent` row), under this text
+/// colour, which is still `list.selection_text_color` and was chosen for the
+/// selection fill, not for that one.
+#[must_use]
+pub fn list_item_selected(n: Native<'_>) -> StyleRefinement {
+    StyleRefinement::default().text_color(rgba_to_hsla(n.resolved.list.selection_text_color))
+}
+
 /// `Link` (`src/link.rs:70-90`): `link.underline_enabled`, and the link's
-/// text size and weight.
+/// font: its family, size, weight and style.
 ///
 /// Upstream underlines a link at rest (`text_decoration_1`, `link.rs:77-78`)
 /// before the caller's refinement (`:90`). Where the platform draws its links
@@ -1020,11 +1371,13 @@ pub fn button_checked(n: Native<'_>) -> StyleRefinement {
 /// them, upstream's underline stands. The underline's colour, and the one
 /// upstream adds on hover and press (`:79-88`), are upstream's: the model
 /// states neither. The text colour is `ThemeColor::link`, the
-/// `link.font.color` row.
+/// `link.font.color` row. The fill is `link.background_color`: upstream paints
+/// none (`link.rs:73-90`), so it displaces nothing, and every preset states a
+/// transparent one, as inline links have none (`docs/inheritance-rules.toml:405`).
 #[must_use]
 pub fn link(n: Native<'_>) -> StyleRefinement {
     let l = &n.resolved.link;
-    let r = with_text(StyleRefinement::default(), &l.font, n);
+    let r = with_text(StyleRefinement::default(), &l.font, n).bg(rgba_to_hsla(l.background_color));
     if l.underline_enabled {
         r
     } else {
@@ -1037,7 +1390,7 @@ pub fn link(n: Native<'_>) -> StyleRefinement {
 // the system path. There is no receiver to map these into: gpui-component's
 // `Theme::spacing_tokens()` returns `SpacingTokens::default()` with no field
 // behind it (`theme/mod.rs:588-590`), so its one reader, a `Dialog`'s viewport
-// margin (`dialog/dialog.rs:576`), gets that default whatever a theme says.
+// margin (`dialog/dialog.rs:616`), gets that default whatever a theme says.
 // `None` means the platform specifies nothing (platform-facts §2.20).
 
 /// Space between adjacent widgets.
@@ -1082,10 +1435,9 @@ mod tests {
             .expect("resolves")
     }
     fn scaled(factor: f32) -> AccessibilityPreferences {
-        AccessibilityPreferences {
-            text_scaling_factor: factor,
-            ..AccessibilityPreferences::default()
-        }
+        let mut prefs = AccessibilityPreferences::default();
+        prefs.text_scaling_factor = factor;
+        prefs
     }
     fn len(v: f32) -> Option<Length> {
         Some(px(v).into())
@@ -1186,14 +1538,15 @@ mod tests {
     }
 
     /// The catppuccin pair states no padding, `row_height` or `item_gap`;
-    /// windows-11 and kde-breeze state padding sides, and windows-11 both row
-    /// heights, so each builder is compared with stated values as well as
-    /// with unstated ones.
+    /// windows-11 and kde-breeze state padding sides, windows-11 the list's
+    /// row height and adwaita the menu's, so each builder is compared with
+    /// stated values as well as with unstated ones.
     const CASES: &[(&str, ColorMode)] = &[
         ("catppuccin-mocha", ColorMode::Dark),
         ("catppuccin-latte", ColorMode::Light),
         ("windows-11", ColorMode::Light),
         ("kde-breeze", ColorMode::Dark),
+        ("adwaita", ColorMode::Light),
     ];
     const FACTORS: &[f32] = &[1.0, 1.5, 0.8];
 
@@ -1215,12 +1568,17 @@ mod tests {
         }
     }
 
-    fn assert_text(out: &StyleRefinement, font: &ResolvedFontSpec, s: f32) {
+    /// A family, text size, weight, style and the platform's line height,
+    /// which every builder that sets a text size carries.
+    fn assert_text(out: &StyleRefinement, r: &ResolvedTheme, font: &ResolvedFontSpec, s: f32) {
+        assert_eq!(out.text.font_family, Some(crate::font_family(&font.family)));
         assert_eq!(out.text.font_size, abs(font.size * s));
+        assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
         assert_eq!(
             out.text.font_weight,
             Some(FontWeight(f32::from(font.weight)))
         );
+        assert_eq!(out.text.font_style, Some(crate::font_style(font.style)));
     }
 
     #[test]
@@ -1259,7 +1617,7 @@ mod tests {
     fn button_label_carries_the_button_font() {
         for_each_case(|r, s, n| {
             let out = button_label(n);
-            assert_text(&out, &r.button.font, s);
+            assert_text(&out, r, &r.button.font, s);
             assert_eq!(out.text.line_height, Some(relative(r.defaults.line_height)));
             assert_eq!(
                 out.text.color, None,
@@ -1288,12 +1646,16 @@ mod tests {
         });
     }
 
+    /// The row the theme states, or upstream's Medium one, grown by
+    /// [`table_row_height`], whose formula `tests/seams.rs` checks against the
+    /// drawn row (`a_data_table_row_holds_its_text_at_every_scale`).
     #[test]
     fn data_table_size_falls_back_to_upstream_medium() {
         let mut stated = 0;
         let mut unstated = 0;
+        let mut grown = 0;
         for_each_case(|r, _, n| {
-            let expected = match r.list.row_height {
+            let base = match r.list.row_height {
                 Some(h) => {
                     stated += 1;
                     px(h)
@@ -1303,11 +1665,116 @@ mod tests {
                     Size::Medium.table_row_height()
                 }
             };
+            let expected = table_row_height(base, &r.list.item_font, n);
+            if expected != base {
+                grown += 1;
+            }
             assert!(matches!(data_table_size(n), Size::Size(h) if h == expected));
         });
         assert!(
-            stated > 0 && unstated > 0,
-            "both branches must be exercised"
+            stated > 0 && unstated > 0 && grown > 0,
+            "both branches, and a row grown with its text, must be exercised"
+        );
+    }
+
+    #[test]
+    fn list_header_height_is_the_stated_height_or_none() {
+        let adwaita = resolved("adwaita", ColorMode::Light);
+        assert_eq!(adwaita.list.header_height, Some(30.0), "precondition");
+        assert_eq!(
+            list_header_height(Native::unscaled(&adwaita)),
+            Some(px(30.0))
+        );
+        // KDE states none: the DataTable keeps its header at the row height.
+        let breeze = resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(breeze.list.header_height, None, "precondition");
+        assert_eq!(list_header_height(Native::unscaled(&breeze)), None);
+        // The stated height at a text scale of 1, grown with the font the
+        // header draws in above it, and nothing where the theme states none.
+        let mut grown = false;
+        for factor in [1.0, 1.5] {
+            let prefs = scaled(factor);
+            for (preset, stated) in [
+                ("adwaita", Some(30.0)),
+                ("material-3", Some(56.0)),
+                ("windows-11", None),
+                ("catppuccin-mocha", None),
+            ] {
+                for mode in [ColorMode::Light, ColorMode::Dark] {
+                    let r = resolved(preset, mode);
+                    let n = Native {
+                        resolved: &r,
+                        accessibility: &prefs,
+                    };
+                    let expected = stated.map(|h| table_row_height(px(h), &r.list.item_font, n));
+                    grown |= expected != stated.map(px);
+                    assert_eq!(list_header_height(n), expected, "{preset} {mode:?}");
+                }
+            }
+        }
+        assert!(grown, "no case grows a header with its text");
+    }
+
+    /// The header text is drawn in the table container's font, which
+    /// [`table`] gives `list.item_font`; `list.header_font` reaches only the
+    /// header's colour (`colors.rs`, `list_header_fg`). A header font smaller
+    /// than the item font must not leave the stated header too short for it.
+    #[test]
+    fn a_header_grows_with_the_font_it_draws_in() {
+        let mut r = resolved("adwaita", ColorMode::Light);
+        let stated = r
+            .list
+            .header_height
+            .expect("adwaita states a header height");
+        r.list.item_font.size = stated;
+        r.list.header_font.size = 1.0;
+        let factor = 2.0;
+        let prefs = scaled(factor);
+        let n = Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        let expected = table_row_height(px(stated), &r.list.item_font, n);
+        assert_ne!(
+            expected,
+            px(stated),
+            "precondition: the item font needs growth"
+        );
+        assert_eq!(list_header_height(n), Some(expected));
+    }
+
+    #[test]
+    fn dialog_entrance_maps_each_style_to_a_fade() {
+        use gpui_component::dialog::DialogEntrance;
+        use native_theme::theme::DialogEntranceStyle;
+        let mut r = resolved("adwaita", ColorMode::Light);
+        for (style, expected) in [
+            (
+                Some(DialogEntranceStyle::ScaleFade),
+                Some(DialogEntrance::Fade),
+            ),
+            (
+                Some(DialogEntranceStyle::FadeRise),
+                Some(DialogEntrance::Fade),
+            ),
+            (None, None),
+        ] {
+            r.dialog.entrance = style;
+            assert_eq!(dialog_entrance(Native::unscaled(&r)), expected, "{style:?}");
+        }
+        // A preset without the field keeps upstream's entrance.
+        let mocha = resolved("catppuccin-mocha", ColorMode::Dark);
+        assert_eq!(mocha.dialog.entrance, None, "precondition");
+        assert_eq!(dialog_entrance(Native::unscaled(&mocha)), None);
+        let breeze = resolved("kde-breeze", ColorMode::Light);
+        assert_eq!(
+            breeze.dialog.entrance,
+            Some(DialogEntranceStyle::FadeRise),
+            "precondition"
+        );
+        assert_eq!(
+            dialog_entrance(Native::unscaled(&breeze)),
+            Some(DialogEntrance::Fade)
         );
     }
 
@@ -1324,14 +1791,44 @@ mod tests {
                 abs(i.border.corner_radius.max(0.0))
             );
             assert_eq!(out.border_widths.top, abs(i.border.line_width));
-            assert_text(&out, &i.font, s);
+            assert_text(&out, r, &i.font, s);
         });
         stated.assert_each_compared();
     }
 
+    /// `input` and `text_area` letter the field in `input.font.color`: the
+    /// Input root sets no text colour (`input/input.rs:720-816`) and gpui-base
+    /// paints the field's text in the window's (gpui-base
+    /// `input/base/element.rs:2630-2633`), which is `foreground`, fed from
+    /// `defaults.text_color`. macos-monterey and macos-tahoe state another, in
+    /// both modes.
+    #[test]
+    fn a_field_draws_its_text_in_the_platforms_input_colour() {
+        let mut differs = Vec::new();
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let ink = Some(rgba_to_hsla(r.input.font.color));
+                assert_eq!(input(n).text.color, ink, "{at}: input text");
+                assert_eq!(text_area(n).text.color, ink, "{at}: text area text");
+                if r.input.font.color != r.defaults.text_color {
+                    differs.push(at);
+                }
+            }
+        }
+        assert!(
+            !differs.is_empty(),
+            "no preset states an input text colour other than the window's \
+             any more, so this test proves nothing"
+        );
+    }
+
     /// `input_fill` is `input.background_color`, or for a disabled field
     /// `input.disabled_background` (the enabled fill where none is stated)
-    /// faded by `input.disabled_opacity`; it carries nothing else.
+    /// and `input.disabled_text_color`, faded by `input.disabled_opacity`; it
+    /// carries nothing else.
     #[test]
     fn input_fill_is_the_platforms_in_either_state() {
         let mut stated_disabled = 0usize;
@@ -1347,6 +1844,7 @@ mod tests {
                     "{at}: enabled fill"
                 );
                 assert_eq!(enabled.opacity, None, "{at}: enabled, no fade");
+                assert_eq!(enabled.text.color, None, "{at}: enabled, input's text");
                 let disabled = input_fill(n, true);
                 assert_eq!(
                     disabled.background,
@@ -1365,20 +1863,188 @@ mod tests {
                     Some(r.input.disabled_opacity),
                     "{at}: disabled fade"
                 );
+                assert_eq!(
+                    disabled.text.color,
+                    Some(rgba_to_hsla(r.input.disabled_text_color)),
+                    "{at}: disabled text"
+                );
                 stated_disabled += usize::from(r.input.disabled_background.is_some());
                 let bare = StyleRefinement {
                     background: None,
                     opacity: None,
+                    text: Default::default(),
                     ..disabled
                 };
                 assert_eq!(
                     bare,
                     StyleRefinement::default(),
-                    "{at}: only the fill and the fade"
+                    "{at}: only the fill, the text colour and the fade"
                 );
             }
         }
         assert!(stated_disabled > 0, "no preset states a disabled fill");
+    }
+
+    /// `accordion_hover` is `expander.hover_background` where the theme
+    /// states one, and nothing where it does not: an unset soft hover is the
+    /// row at rest.
+    #[test]
+    fn accordion_hover_is_the_stated_hover_or_nothing() {
+        let (mut stated, mut unstated) = (0usize, 0usize);
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let out = accordion_hover(Native::unscaled(&r));
+                match r.expander.hover_background {
+                    Some(fill) => {
+                        stated += 1;
+                        assert_eq!(
+                            out,
+                            StyleRefinement::default().bg(rgba_to_hsla(fill)),
+                            "{at}"
+                        );
+                    }
+                    None => {
+                        unstated += 1;
+                        assert_eq!(out, StyleRefinement::default(), "{at}");
+                    }
+                }
+            }
+        }
+        assert!(
+            stated > 0 && unstated > 0,
+            "both arms must be exercised ({stated} stated, {unstated} unstated)"
+        );
+    }
+
+    /// What upstream's `TitleBar` paints for `title_bar` and `background`
+    /// (`title_bar.rs:22-37`, at `:342-345`), written out again from the
+    /// tokens it reads.
+    fn upstream_bar(title_bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Background {
+        let (t, b) = (title_bar.to_rgb(), background.to_rgb());
+        let mixed = gpui::Hsla::from(gpui::Rgba {
+            r: t.r * 0.55 + b.r * 0.45,
+            g: t.g * 0.55 + b.g * 0.45,
+            b: t.b * 0.55 + b.b * 0.45,
+            a: t.a * 0.55 + b.a * 0.45,
+        });
+        gpui::linear_gradient(
+            180.,
+            gpui::linear_color_stop(mixed, 0.),
+            gpui::linear_color_stop(title_bar, 1.),
+        )
+    }
+
+    /// Where the inactive pair is the active one, the inactive form draws
+    /// what upstream draws for the active bar -- its gradient from the
+    /// installed `title_bar` and `background` tokens -- under the active
+    /// text colour, so the bar does not change on a focus change.
+    #[test]
+    fn an_inactive_bar_with_the_active_pair_is_the_active_bar() {
+        use gpui::Refineable as _;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let mut r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                r.window.inactive_title_bar_background = r.window.title_bar_background;
+                r.window.inactive_title_bar_text_color = r.window.title_bar_font.color;
+                let n = Native::unscaled(&r);
+                let tc = crate::colors::to_theme_color(&r, mode == ColorMode::Dark, false);
+                let active = title_bar(n).bg(upstream_bar(tc.title_bar, tc.background));
+                let mut inactive = title_bar(n);
+                inactive.refine(&title_bar_inactive(n));
+                assert_eq!(inactive, active, "{at}");
+            }
+        }
+    }
+
+    /// `title_bar_inactive` is the window's inactive title-bar pair, the fill
+    /// as upstream's gradient, and nothing else; the pair differs from the
+    /// active one in some preset, or the builder would change nothing.
+    #[test]
+    fn title_bar_inactive_is_the_platforms_inactive_pair() {
+        let mut differs = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let w = &r.window;
+                assert_eq!(
+                    title_bar_inactive(Native::unscaled(&r)),
+                    StyleRefinement::default()
+                        .bg(upstream_bar(
+                            rgba_to_hsla(w.inactive_title_bar_background),
+                            rgba_to_hsla(w.background_color)
+                        ))
+                        .text_color(rgba_to_hsla(w.inactive_title_bar_text_color)),
+                    "{at}"
+                );
+                differs += usize::from(
+                    w.inactive_title_bar_background != w.title_bar_background
+                        || w.inactive_title_bar_text_color != w.title_bar_font.color,
+                );
+            }
+        }
+        assert!(
+            differs > 0,
+            "no preset's inactive title bar differs from its active one"
+        );
+    }
+
+    /// `combo_box_fill` is `combo_box.background_color`, or for a disabled
+    /// trigger `combo_box.disabled_background` (the enabled fill where none
+    /// is stated) and `combo_box.disabled_text_color`, faded by
+    /// `combo_box.disabled_opacity`; it carries nothing else.
+    #[test]
+    fn combo_box_fill_is_the_platforms_in_either_state() {
+        let mut stated_disabled = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let n = Native::unscaled(&r);
+                let at = format!("{}/{mode:?}", info.key);
+                let c = &r.combo_box;
+                let enabled = combo_box_fill(n, false);
+                assert_eq!(
+                    enabled,
+                    StyleRefinement::default().bg(rgba_to_hsla(c.background_color)),
+                    "{at}: enabled, the fill alone"
+                );
+                let disabled = combo_box_fill(n, true);
+                assert_eq!(
+                    disabled.background,
+                    Some(rgba_to_hsla(c.disabled_background.unwrap_or(c.background_color)).into()),
+                    "{at}: disabled fill"
+                );
+                assert_eq!(
+                    disabled.text.color,
+                    Some(rgba_to_hsla(c.disabled_text_color)),
+                    "{at}: disabled text"
+                );
+                assert_eq!(
+                    disabled.opacity,
+                    Some(c.disabled_opacity),
+                    "{at}: disabled fade"
+                );
+                stated_disabled += usize::from(c.disabled_background.is_some());
+                let bare = StyleRefinement {
+                    background: None,
+                    opacity: None,
+                    text: Default::default(),
+                    ..disabled
+                };
+                assert_eq!(
+                    bare,
+                    StyleRefinement::default(),
+                    "{at}: only the fill, the text colour and the fade"
+                );
+            }
+        }
+        assert!(
+            stated_disabled > 0,
+            "no preset states a disabled combo box fill"
+        );
     }
 
     /// `button_disabled` is `button.disabled_background` (or
@@ -1460,9 +2126,43 @@ mod tests {
         assert!(stated > 0, "no preset states a checked button fill");
     }
 
-    /// `link` carries the link's text size and weight, and removes upstream's
+    /// `list_item_selected` letters a selected row in
+    /// `list.selection_text_color` and carries nothing else: upstream changes
+    /// only a selected row's fill (`list/list_item.rs:257-264`), so its text
+    /// stays the `foreground` set before the refinement (`:205` → `:209`), or
+    /// [`list_item`]'s `list.item_font.color`, which the platforms' selected
+    /// text differs from.
+    #[test]
+    fn a_selected_list_row_is_lettered_in_the_platforms_selection_colour() {
+        let mut differs = 0usize;
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let at = format!("{}/{mode:?}", info.key);
+                let out = list_item_selected(Native::unscaled(&r));
+                assert_eq!(
+                    out.text.color,
+                    Some(rgba_to_hsla(r.list.selection_text_color)),
+                    "{at}: selected row text"
+                );
+                let bare = StyleRefinement {
+                    text: Default::default(),
+                    ..out
+                };
+                assert_eq!(bare, StyleRefinement::default(), "{at}: only the text");
+                differs += usize::from(r.list.selection_text_color != r.list.item_font.color);
+            }
+        }
+        assert!(
+            differs > 0,
+            "no preset's selected row text differs from its row text any more, \
+             so this test proves nothing"
+        );
+    }
+
+    /// `link` carries the link's font, and removes upstream's
     /// resting underline exactly where `link.underline_enabled` is false
-    /// (material states it false, the others true).
+    /// (material-3 states it false, the others true).
     #[test]
     fn a_link_is_underlined_exactly_where_the_platform_underlines_it() {
         let mut seen = [false, false];
@@ -1472,7 +2172,12 @@ mod tests {
                 let n = Native::unscaled(&r);
                 let at = format!("{}/{mode:?}", info.key);
                 let out = link(n);
-                assert_text(&out, &r.link.font, 1.0);
+                assert_text(&out, &r, &r.link.font, 1.0);
+                assert_eq!(
+                    out.background,
+                    Some(rgba_to_hsla(r.link.background_color).into()),
+                    "{at}: fill"
+                );
                 let thickness = out.text.underline.as_ref().map(|u| u.thickness);
                 if r.link.underline_enabled {
                     assert_eq!(thickness, None, "{at}: upstream's underline stands");
@@ -1513,13 +2218,13 @@ mod tests {
             stated.padding(&out, &m.border.padding, "menu_item");
             assert_eq!(out.gap.width, def(m.icon_text_gap));
             assert_eq!(out.gap.height, None, "gap_x sets the column gap only");
-            assert_text(&out, &m.font, s);
+            assert_text(&out, r, &m.font, s);
 
             let l = &r.list;
             let out = list_item(n);
             stated.height(&out, r, l.row_height, s, "list_item");
             stated.padding(&out, &l.border.padding, "list_item");
-            assert_text(&out, &l.item_font, s);
+            assert_text(&out, r, &l.item_font, s);
         });
         stated.assert_each_compared();
     }
@@ -1547,7 +2252,7 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(t.border.corner_radius.max(0.0))
             );
-            assert_text(&out, &t.font, s);
+            assert_text(&out, r, &t.font, s);
             assert_eq!(
                 out.background,
                 Some(rgba_to_hsla(t.background_color).into()),
@@ -1579,11 +2284,13 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(p.border.corner_radius.max(0.0))
             );
+            assert_eq!(out.border_widths.top, abs(p.border.line_width));
+            assert_eq!(out.border_color, Some(rgba_to_hsla(p.border.color)));
 
             let sb = &r.status_bar;
             let out = status_bar(n);
             stated.padding(&out, &sb.border.padding, "status_bar");
-            assert_text(&out, &sb.font, s);
+            assert_text(&out, r, &sb.font, s);
         });
         stated.assert_each_compared();
     }
@@ -1633,24 +2340,30 @@ mod tests {
     /// reaches the text *and* upstream's state colours still win afterwards:
     /// upstream either sets a token of its own on the very element the
     /// refinement lands on and re-applies its state colours after it, or sets
-    /// no colour on that element at all. Seven do, over every preset in both
-    /// modes, not just the `CASES` names.
+    /// no colour on that element at all. Ten are checked here, over every
+    /// preset in both modes, not just the `CASES` names; [`input`] and
+    /// [`text_area`] in `a_field_draws_its_text_in_the_platforms_input_colour`.
     ///
     /// The `assert_ne!`s below are the reason the first three exist: each of
     /// those native colours differs from the token upstream would otherwise
     /// paint, so leaving the colour out left the widget labelled with a colour
     /// the platform did not state.
     ///
-    /// The other four -- `list_item`, `radio`, `select`, `title_bar` -- get no
+    /// The other seven -- `list_item`, `radio`, `select`, `title_bar`,
+    /// `dialog_title`, `accordion_title`, `toolbar` -- get no
     /// such `assert_ne!`, and deliberately: their native font colour equals
-    /// `defaults.text_color` in all 32 combinations today, because a preset
-    /// that states no `font.color` for a widget inherits the window's
-    /// (docs/inheritance-rules.toml:115-136), and `foreground` is fed from
+    /// `defaults.text_color` in 32 of the 34 combinations today (ios-13's
+    /// select is the exception, its `combo_box.font.color` the accent), because
+    /// a preset that states no `font.color` for a widget inherits the window's
+    /// (docs/inheritance-rules.toml:121-142), and `foreground` is fed from
     /// `defaults.text_color`. The colour is carried anyway because nothing
     /// stands in its way -- upstream labels the first three with `foreground`
     /// one refinement earlier and mutes the disabled state on a child
-    /// afterwards, and it labels the title bar with nothing at all
-    /// (`title_bar.rs:328-343`) -- so the day a source states
+    /// afterwards, an open accordion title with `foreground` and no disabled
+    /// colour at all, and it labels the title bar, a dialog's title and a
+    /// toolbar with nothing at all (`title_bar.rs:331-346`,
+    /// `dialog/title.rs:39-46`, `toolbar.rs:243-257`) -- so
+    /// the day a source states
     /// `list.item_font.color`, or `window.title_bar_font.color` as the KDE
     /// reader does from `[WM] activeForeground`, the element is painted with it
     /// instead of silently keeping the window's.
@@ -1699,10 +2412,10 @@ mod tests {
 
                 // The same mechanism, upstream's `foreground` one refinement
                 // earlier and its disabled colour on a child afterwards:
-                // `list/list_item.rs:205` -> `:209`, `radio.rs:212` -> `:223`
-                // (child muted at `:253-254`) and `select.rs:546` -> `:553`
+                // `list/list_item.rs:205` -> `:209`, `radio.rs:220` -> `:231`
+                // (child muted at `:261-262`) and `select.rs:573` -> `:580`
                 // (through `input_style`, `input/input.rs:105`; the title child
-                // re-mutes at `:484-486`).
+                // re-mutes at `select.rs:511-513`).
                 assert_eq!(
                     list_item(n).text.color,
                     Some(rgba_to_hsla(r.list.item_font.color)),
@@ -1719,13 +2432,28 @@ mod tests {
                     "{at}: select text"
                 );
                 // Upstream sets no colour on the bar at all
-                // (`title_bar.rs:328-343`), so the route is open and nothing
+                // (`title_bar.rs:331-346`), so the route is open and nothing
                 // is displaced -- and the KDE reader does state the field,
                 // from `[WM] activeForeground` (`native-theme/src/kde/colors.rs`).
                 assert_eq!(
                     title_bar(n).text.color,
                     Some(rgba_to_hsla(r.window.title_bar_font.color)),
                     "{at}: title bar text"
+                );
+                assert_eq!(
+                    dialog_title(n).text.color,
+                    Some(rgba_to_hsla(r.dialog.title_font.color)),
+                    "{at}: dialog title text"
+                );
+                assert_eq!(
+                    accordion_title(n).text.color,
+                    Some(rgba_to_hsla(r.expander.font.color)),
+                    "{at}: accordion title text"
+                );
+                assert_eq!(
+                    toolbar(n).text.color,
+                    Some(rgba_to_hsla(r.toolbar.font.color)),
+                    "{at}: toolbar text"
                 );
 
                 // The two the route is blocked for; the guard below says why.
@@ -1743,7 +2471,7 @@ mod tests {
                 // What upstream paints without the refinement: muted_foreground
                 // on the status bar (`status_bar.rs:95`) and on a dialog's
                 // description (`dialog/description.rs:50`), popover_foreground
-                // on a tooltip (`tooltip.rs:115`).
+                // on a tooltip (`tooltip.rs:120`).
                 assert_ne!(
                     r.status_bar.font.color, r.defaults.muted_color,
                     "{at}: status bar colour no longer differs from upstream's \
@@ -1772,12 +2500,17 @@ mod tests {
         );
     }
 
+    /// The combinations whose preset states a combo box text colour of its own,
+    /// which gpui-component 0.8.0 gives no route for (Tier U): an iOS select's
+    /// text is systemBlue (WebKit html.css@31adf9d1:1099).
+    const STATED_COMBO_TEXT: [&str; 2] = ["ios-13/light", "ios-13/dark"];
+
     /// `geometry::checkbox` and `geometry::combobox` carry no colour although
     /// upstream paints both from `foreground`: the route is blocked past the
     /// element the refinement lands on. A `Checkbox::label` sits in a wrapper
-    /// that sets `foreground` itself (`checkbox.rs:331-336`), so a carried
+    /// that sets `foreground` itself (`checkbox.rs:341-346`), so a carried
     /// colour never reaches it; and both widgets apply their disabled colour
-    /// *before* the refinement (`checkbox.rs:252-256`, and
+    /// *before* the refinement (`checkbox.rs:262-266`, and
     /// `input_style(disabled, ..)` at `input/input.rs:99-103` feeding
     /// `combobox.rs:991` -> `:998`, whose selected-title branch `:585-591` sets
     /// no colour to re-mute with), so a carried colour would displace it.
@@ -1785,7 +2518,7 @@ mod tests {
     /// The run therefore also guards the preconditions: every preset states
     /// for both widgets exactly the colour upstream already paints there
     /// (`defaults.text_color` -> `foreground`), so the two builders lose
-    /// nothing today.
+    /// nothing today, except the combinations in [`STATED_COMBO_TEXT`].
     #[test]
     fn checkbox_and_combobox_carry_no_colour_because_upstream_leaves_no_route() {
         for info in Theme::list_presets() {
@@ -1810,8 +2543,8 @@ mod tests {
                     None,
                     "{at}: geometry::checkbox set a text colour; upstream's \
                      label wrapper paints `foreground` itself \
-                     (checkbox.rs:331-336) so it cannot arrive, and the \
-                     disabled hook (checkbox.rs:252-256) would take it instead \
+                     (checkbox.rs:341-346) so it cannot arrive, and the \
+                     disabled hook (checkbox.rs:262-266) would take it instead \
                      of `muted_foreground`"
                 );
                 assert_eq!(
@@ -1825,19 +2558,28 @@ mod tests {
                 assert_eq!(
                     r.checkbox.font.color, r.defaults.text_color,
                     "{at}: this preset states a checkbox label text colour \
-                     that gpui-component 0.7.1 gives no route for \
-                     (checkbox.rs:331-336) -- record it as a Tier U candidate; \
+                     that gpui-component 0.8.0 gives no route for \
+                     (checkbox.rs:341-346) -- record it as a Tier U candidate; \
                      do NOT carry it in the builder, it would displace the \
-                     disabled colour (checkbox.rs:252-256)"
+                     disabled colour (checkbox.rs:262-266)"
                 );
-                assert_eq!(
-                    r.combo_box.font.color, r.defaults.text_color,
-                    "{at}: this preset states a combo box text colour that \
-                     gpui-component 0.7.1 gives no route for \
-                     (combobox.rs:991 -> :998) -- record it as a Tier U \
-                     candidate; do NOT carry it in the builder, it would \
-                     displace the disabled colour (input/input.rs:99-103)"
-                );
+                if STATED_COMBO_TEXT.contains(&at.as_str()) {
+                    assert_ne!(
+                        r.combo_box.font.color, r.defaults.text_color,
+                        "{at}: declared in STATED_COMBO_TEXT but no longer \
+                         states a combo box text colour of its own -- remove \
+                         it from the list"
+                    );
+                } else {
+                    assert_eq!(
+                        r.combo_box.font.color, r.defaults.text_color,
+                        "{at}: this preset states a combo box text colour that \
+                         gpui-component 0.8.0 gives no route for \
+                         (combobox.rs:991 -> :998) -- record it as a Tier U \
+                         candidate; do NOT carry it in the builder, it would \
+                         displace the disabled colour (input/input.rs:99-103)"
+                    );
+                }
             }
         }
     }
@@ -1855,13 +2597,22 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(d.border.corner_radius.max(0.0))
             );
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(d.background_color).into())
+            );
+            assert_eq!(out.border_color, Some(rgba_to_hsla(d.border.color)));
+            assert_eq!(
+                dialog_title(n).text.color,
+                Some(rgba_to_hsla(d.title_font.color))
+            );
             assert_eq!(dialog_footer(n).gap.width, def(d.button_gap));
             assert_eq!(dialog_footer(n).gap.height, def(d.button_gap));
-            assert_text(&dialog_title(n), &d.title_font, s);
-            assert_text(&dialog_description(n), &d.body_font, s);
+            assert_text(&dialog_title(n), r, &d.title_font, s);
+            assert_text(&dialog_description(n), r, &d.body_font, s);
             assert_eq!(dialog_max_width(n), px(d.max_width));
-            assert_text(&table(n), &r.list.item_font, s);
-            assert_text(&title_bar(n), &r.window.title_bar_font, s);
+            assert_text(&table(n), r, &r.list.item_font, s);
+            assert_text(&title_bar(n), r, &r.window.title_bar_font, s);
         });
         stated.assert_each_compared();
     }
@@ -1924,10 +2675,22 @@ mod tests {
             );
             assert_eq!(out.border_widths.top, abs(c.border.line_width));
             assert_eq!(out.border_color, Some(rgba_to_hsla(c.border.color)));
+            assert_eq!(
+                out.background,
+                Some(rgba_to_hsla(c.background_color).into())
+            );
 
             assert_eq!(
                 accordion_title(n).size.height,
                 len(r.expander.header_height)
+            );
+            assert_eq!(
+                accordion_title(n).text.color,
+                Some(rgba_to_hsla(r.expander.font.color))
+            );
+            assert_eq!(
+                accordion(n),
+                StyleRefinement::default().border_color(rgba_to_hsla(r.expander.border.color))
             );
         });
         stated.assert_each_compared();
@@ -1940,10 +2703,10 @@ mod tests {
             let c = &r.checkbox;
             let out = checkbox(n);
             assert_eq!(out.gap.width, def(c.label_gap));
-            assert_text(&out, &c.font, s);
+            assert_text(&out, r, &c.font, s);
             // platform-facts §2.5: radio metrics are the checkbox's.
             assert_eq!(radio(n).gap.width, def(c.label_gap));
-            assert_text(&radio(n), &c.font, s);
+            assert_text(&radio(n), r, &c.font, s);
 
             let cb = &r.combo_box;
             // Beside a stated arrow column the right side is upstream's (D2,
@@ -1963,7 +2726,11 @@ mod tests {
                 out.corner_radii.top_left,
                 abs(cb.border.corner_radius.max(0.0))
             );
-            assert_text(&out, &cb.font, s);
+            assert_text(&out, r, &cb.font, s);
+            // The trigger's edge is `combo_box.border.line_width`, over
+            // upstream's `border_1` (`select.rs:569`, `combobox.rs:987`).
+            assert_eq!(out.border_widths.top, abs(cb.border.line_width));
+            assert_eq!(combobox(n).border_widths.top, abs(cb.border.line_width));
             assert_eq!(combobox(n).min_size.width, len(cb.min_width));
             assert_height_rule(&combobox(n), r, Some(cb.min_height), s, "combobox");
             stated.padding(&combobox(n), &p, "combobox");
@@ -2032,7 +2799,7 @@ mod tests {
     /// Over every preset in both modes: the row is the model's `toolbar`, with
     /// the bar height as a floor rather than a fixed height, and only where it
     /// is stated (KDE's toolbar sizes to its content, platform-facts §2.13),
-    /// and no edge.
+    /// and its bottom edge the model's `toolbar.border`, on no other side.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
         let mut stated = 0usize;
@@ -2064,14 +2831,19 @@ mod tests {
                     Some(rgba_to_hsla(t.background_color).into()),
                     "{at}: background"
                 );
-                assert_text(&out, &t.font, 1.0);
-                assert_eq!(out.text.color, None, "{at}: no text colour");
+                assert_text(&out, &r, &t.font, 1.0);
                 assert_eq!(
-                    out.border_widths,
-                    StyleRefinement::default().border_widths,
-                    "{at}: §2.13 states no edge"
+                    out.text.color,
+                    Some(rgba_to_hsla(t.font.color)),
+                    "{at}: text colour"
                 );
-                assert_eq!(out.border_color, None, "{at}: §2.13 states no edge");
+                let edge = StyleRefinement::default().border_b(px(t.border.line_width));
+                assert_eq!(out.border_widths, edge.border_widths, "{at}: bottom edge");
+                assert_eq!(
+                    out.border_color,
+                    Some(rgba_to_hsla(t.border.color)),
+                    "{at}: edge colour"
+                );
             }
         }
         assert!(
@@ -2260,6 +3032,29 @@ mod tests {
         }
     }
 
+    /// A factor that overflows the rem leaves the unstated sides at upstream's
+    /// 0.5 rem of the unscaled font size, so the text keeps its width.
+    #[test]
+    fn tooltip_content_takes_the_unscaled_rem_where_the_factor_overflows_it() {
+        let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
+        r.tooltip.border.padding = ResolvedPadding {
+            top: None,
+            right: None,
+            bottom: None,
+            left: None,
+        };
+        assert!((r.defaults.font.size * f32::MAX).is_infinite());
+        let prefs = scaled(f32::MAX);
+        let n = Native {
+            resolved: &r,
+            accessibility: &prefs,
+        };
+        let rem = r.defaults.font.size;
+        let expected = r.tooltip.max_width - 2.0 * 0.5 * rem - 2.0 * r.tooltip.border.line_width;
+        assert!(expected > 0.0);
+        assert_eq!(tooltip_content(n).max_size.width, len(expected));
+    }
+
     /// At s <= 1 the stated height is exact; above 1 it is a floor and the
     /// height is laid out. The boundary is exactly 1.
     #[test]
@@ -2277,6 +3072,42 @@ mod tests {
                 laid_out,
                 "at s = {s}: {:?}",
                 out.size.height
+            );
+        }
+    }
+
+    /// The KDE reader states a family and a style for `menu.font`,
+    /// `toolbar.font` and `window.title_bar_font` (native-theme
+    /// `src/kde/fonts.rs`), whose only receivers are [`menu_item`],
+    /// [`toolbar`] and [`title_bar`]: each carries both, the family through
+    /// the path the installed theme's own takes.
+    #[test]
+    fn the_builders_carry_a_stated_family_and_style() {
+        let family: std::sync::Arc<str> = std::sync::Arc::from("Noto Serif");
+        let mut r = resolved("kde-breeze", ColorMode::Light);
+        for font in [
+            &mut r.menu.font,
+            &mut r.toolbar.font,
+            &mut r.window.title_bar_font,
+        ] {
+            font.family = family.clone();
+            font.style = native_theme::theme::FontStyle::Italic;
+        }
+        let n = Native::unscaled(&r);
+        for (what, out) in [
+            ("menu_item", menu_item(n)),
+            ("toolbar", toolbar(n)),
+            ("title_bar", title_bar(n)),
+        ] {
+            assert_eq!(
+                out.text.font_family,
+                Some(crate::font_family(&family)),
+                "{what}: family"
+            );
+            assert_eq!(
+                out.text.font_style,
+                Some(gpui::FontStyle::Italic),
+                "{what}: style"
             );
         }
     }

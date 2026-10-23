@@ -7,6 +7,7 @@ use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
 use crate::demo::{self, BubbleKind, DemoAttachment, DemoPagination};
+use crate::pages::page_root;
 use crate::support::{ChatMessage, PAGE_COUNT, next_attachment_status, with_gap};
 use crate::{
     DATA_PAGINATION, DATA_PAGINATION_COMPACT, PROBE_ATTACHMENT, PROBE_CHAT_SEND, PROBE_PAGINATION,
@@ -48,9 +49,7 @@ impl Showcase {
             cx.notify();
         });
 
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -137,8 +136,8 @@ impl Showcase {
                         "data-pagination-rows",
                         SharedString::from(format!(
                             "Rows {}–{} of {}",
-                            (self.page - 1) * 10 + 1,
-                            self.page * 10,
+                            self.page.saturating_sub(1).saturating_mul(10).saturating_add(1),
+                            self.page.saturating_mul(10),
                             PAGE_COUNT * 10
                         )),
                     ))
@@ -194,12 +193,10 @@ impl Showcase {
                 "Avatar & AvatarGroup",
             ))
             .child(
-                h_flex()
-                    .gap_6()
+                with_gap(h_flex(), widget_gap)
                     .items_center()
                     .child(
-                        h_flex()
-                            .gap_2()
+                        with_gap(h_flex(), widget_gap)
                             .child(demo::avatar(ui, "data-avatar-alice", "Alice"))
                             .child(demo::avatar(ui, "data-avatar-bob", "Bob"))
                             .child(demo::avatar(ui, "data-avatar-carol", "Carol")),

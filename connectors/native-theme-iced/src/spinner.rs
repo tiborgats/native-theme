@@ -1,15 +1,18 @@
 //! [`Spinner`]: the icon set's loading indicator, or an arc at the theme's stroke.
 
 use std::f32::consts::TAU;
+use std::num::NonZeroU32;
 use std::time::Duration;
 
 use iced_core::{Color, Element, Length, Radians, Rectangle, Rotation, Theme, mouse};
 use iced_widget::canvas::{self, Path, Stroke};
 use iced_widget::graphics::geometry;
-use native_theme::icons::{FreedesktopLoader, load_icon_indicator};
-use native_theme::theme::{AnimatedIcon, IconData, IconSet, ResolvedTheme, TransformAnimation};
+use native_theme::icons::{AnimatedIcon, IconData, TransformAnimation, load_icon_indicator};
+use native_theme::theme::{IconSet, ResolvedTheme};
 
-use crate::icons::{spin_rotation_radians, to_image_handle, to_svg_handle};
+use crate::icons::{
+    animated_frames_to_svg_handles_for, set_svg_handle, spin_rotation_radians, to_image_handle,
+};
 use crate::palette::to_color;
 
 /// The painted arc's sweep, in degrees: the widest egui's `Spinner` draws
@@ -22,17 +25,24 @@ const SWEEP_DEGREES: f32 = 240.0;
 /// A loading indicator `spinner.diameter` across.
 ///
 /// **The icon set's indicator first.** Where the icon set has an animated
-/// indicator -- `native_theme::icons::load_icon_indicator`, and for a
-/// freedesktop set `FreedesktopLoader::load_indicator` of the icon theme
-/// given (the system's where `None`) -- that indicator is drawn at
-/// `spinner.diameter`, recoloured `spinner.fill_color` for the monochrome
-/// bundled sets (Material, Lucide) and in its own colours otherwise, one
-/// frame per `frame_duration_ms` or turned once per `TransformAnimation::Spin`
-/// period, and still on its first frame under reduced motion.
+/// indicator -- `native_theme::icons::load_icon_indicator`, for a freedesktop
+/// set of the icon theme given (the system's where `None`) -- that indicator
+/// is drawn at `spinner.diameter`, recoloured `spinner.fill_color` for the
+/// monochrome bundled sets (Material, Lucide). A freedesktop indicator keeps
+/// its own colours, except that its `currentColor` is filled in with
+/// `defaults.text_color` where the document sets no `color` of its own
+/// (`native_theme::icons::fill_current_color`): a symbolic
+/// `process-working-symbolic`, GNOME's spinner, is drawn in the text colour,
+/// and Breeze's, whose stylesheet states its colour, as Breeze colours it.
+/// It is shown one frame per `frame_duration_ms` or turned once per
+/// `TransformAnimation::Spin` period, and still on its first frame under
+/// reduced motion.
 ///
-/// **An arc otherwise.** Where the set has none (`SfSymbols`, `SegoeIcons`,
-/// or its icon feature is off), or a frame is neither SVG nor RGBA, it draws
-/// an arc on a canvas: `spinner.diameter` across its outer edge, in
+/// **An arc otherwise.** Where the set has none (`SfSymbols`, `SegoeFluent`,
+/// or its icon feature is off), where no frame of a frame sequence is SVG (its
+/// frames go through `icons::animated_frames_to_svg_handles_for`, which
+/// leaves RGBA frames out), or where a turned image is neither SVG nor RGBA,
+/// it draws an arc on a canvas: `spinner.diameter` across its outer edge, in
 /// `spinner.fill_color` at `spinner.stroke_width`, the stroke centred on a
 /// circle of radius `0.5 · (diameter − stroke_width)`. It sweeps 240° and
 /// turns a turn a second, egui's `Spinner`'s widest sweep and speed (egui
@@ -68,9 +78,12 @@ pub struct Spinner {
 #[derive(Debug, Clone)]
 enum Drawn {
     /// The indicator's frames, each `frame_ms` long.
-    Frames { frames: Vec<Frame>, frame_ms: u32 },
+    Frames {
+        frames: Vec<Frame>,
+        frame_ms: NonZeroU32,
+    },
     /// One image turned once every `period_ms`.
-    Spin { frame: Frame, period_ms: u32 },
+    Spin { frame: Frame, period_ms: NonZeroU32 },
     /// No indicator: the arc.
     Arc,
 }
@@ -83,12 +96,41 @@ enum Frame {
 }
 
 impl Frame {
-    /// `data` as a handle, recoloured `tint` where it is an SVG and `tint` is
-    /// given; `None` where it is neither SVG nor RGBA.
-    fn of(data: &IconData, tint: Option<Color>) -> Option<Self> {
-        to_svg_handle(data, tint)
+    /// `data`, an icon of `set`, as a handle, its SVG coloured in `color` as
+    /// `set` colours it; `None` where it is neither SVG nor RGBA.
+    fn of(data: &IconData, set: IconSet, color: Option<Color>) -> Option<Self> {
+        set_svg_handle(set, data, color)
             .map(Self::Svg)
             .or_else(|| to_image_handle(data).map(Self::Image))
+    }
+}
+
+/// What a [`Spinner`] reads of a theme, every read in one place, so the
+/// contract's colour-leaf coverage test sees the widget's reads as it sees a
+/// style's.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct Look {
+    /// `spinner.diameter`: the spinner's size.
+    pub(crate) diameter: f32,
+    /// `spinner.stroke_width`: the arc's stroke.
+    pub(crate) stroke_width: f32,
+    /// `spinner.fill_color`: the arc, and a Material or Lucide indicator's
+    /// tint.
+    pub(crate) color: Color,
+    /// `defaults.text_color`: a freedesktop indicator's `currentColor`.
+    pub(crate) current_color: Color,
+}
+
+impl Look {
+    /// The look of a spinner under `resolved`.
+    pub(crate) fn of(resolved: &ResolvedTheme) -> Self {
+        let s = &resolved.spinner;
+        Self {
+            diameter: s.diameter,
+            stroke_width: s.stroke_width,
+            color: to_color(s.fill_color),
+            current_color: to_color(resolved.defaults.text_color),
+        }
     }
 }
 
@@ -98,20 +140,19 @@ impl Spinner {
     /// icon theme where `None`), never another theme's.
     #[must_use]
     pub fn new(resolved: &ResolvedTheme, icon_set: IconSet, icon_theme: Option<&str>) -> Self {
-        let s = &resolved.spinner;
-        let color = to_color(s.fill_color);
-        let indicator = match icon_set {
-            IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
-            other => load_icon_indicator(other),
+        let look = Look::of(resolved);
+        let color = match icon_set {
+            IconSet::Material | IconSet::Lucide => Some(look.color),
+            IconSet::Freedesktop => Some(look.current_color),
+            _ => None,
         };
-        let tint = matches!(icon_set, IconSet::Material | IconSet::Lucide).then_some(color);
         Self {
-            drawn: indicator
-                .and_then(|anim| drawn(&anim, tint))
+            drawn: load_icon_indicator(icon_set, icon_theme)
+                .and_then(|anim| drawn(&anim, icon_set, color))
                 .unwrap_or(Drawn::Arc),
-            diameter: s.diameter,
-            stroke_width: s.stroke_width,
-            color,
+            diameter: look.diameter,
+            stroke_width: look.stroke_width,
+            color: look.color,
         }
     }
 
@@ -175,7 +216,7 @@ impl Spinner {
                 start: if reduce_motion {
                     0.0
                 } else {
-                    elapsed.as_secs_f32().fract() * TAU
+                    arc_start(elapsed)
                 },
             })
             .width(size)
@@ -185,24 +226,21 @@ impl Spinner {
     }
 }
 
-/// What draws `anim`, its SVG frames recoloured `tint` where given; `None`
-/// where a frame cannot be drawn or the animation is of a kind this crate
-/// does not know.
-fn drawn(anim: &AnimatedIcon, tint: Option<Color>) -> Option<Drawn> {
-    if let (Some(list), Some(frame_ms)) = (anim.frame_list(), anim.frame_duration_ms()) {
-        let frames = list
-            .iter()
-            .map(|data| Frame::of(data, tint))
-            .collect::<Option<Vec<_>>>()?;
+/// What draws `anim`, an indicator of `set`, its SVG frames coloured in
+/// `color` as `set` colours them; `None` where no frame can be drawn or the
+/// animation is of a kind this crate does not know.
+fn drawn(anim: &AnimatedIcon, set: IconSet, color: Option<Color>) -> Option<Drawn> {
+    if anim.frame_list().is_some() {
+        let frames = animated_frames_to_svg_handles_for(set, anim, color)?;
         return Some(Drawn::Frames {
-            frames,
-            frame_ms: frame_ms.get(),
+            frames: frames.handles.into_iter().map(Frame::Svg).collect(),
+            frame_ms: frames.frame_duration_ms,
         });
     }
     match (anim.icon(), anim.animation()) {
-        (Some(icon), Some(TransformAnimation::Spin { duration_ms })) => Some(Drawn::Spin {
-            frame: Frame::of(icon, tint)?,
-            period_ms: duration_ms.get(),
+        (Some(icon), Some(&TransformAnimation::Spin { duration_ms })) => Some(Drawn::Spin {
+            frame: Frame::of(icon, set, color)?,
+            period_ms: duration_ms,
         }),
         _ => None,
     }
@@ -210,17 +248,25 @@ fn drawn(anim: &AnimatedIcon, tint: Option<Color>) -> Option<Drawn> {
 
 /// The frame shown `elapsed` into an animation of `count` frames, each
 /// `frame_ms` long, looping.
-fn frame_index(elapsed: Duration, frame_ms: u32, count: usize) -> usize {
+fn frame_index(elapsed: Duration, frame_ms: NonZeroU32, count: usize) -> usize {
     let Ok(count) = u128::try_from(count) else {
         return 0;
     };
-    let cycle = u128::from(frame_ms).saturating_mul(count);
+    let frame_ms = u128::from(frame_ms.get());
+    let cycle = frame_ms.saturating_mul(count);
     elapsed
         .as_millis()
         .checked_rem(cycle)
-        .and_then(|position| position.checked_div(u128::from(frame_ms)))
+        .and_then(|position| position.checked_div(frame_ms))
         .and_then(|index| usize::try_from(index).ok())
         .unwrap_or(0)
+}
+
+/// The arc's start angle `elapsed` into its animation, in radians clockwise
+/// from the right: a turn a second (see [`Spinner`]), from the sub-second
+/// part alone, which an f32 of the whole seconds loses as they grow.
+fn arc_start(elapsed: Duration) -> f32 {
+    elapsed.subsec_nanos() as f32 / 1e9 * TAU
 }
 
 /// The arc a [`Spinner`] draws where the icon set has no indicator: `color`
@@ -275,23 +321,39 @@ where
 )]
 mod tests {
     use super::*;
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    use crate::icon_fixture::Child;
+    #[cfg(feature = "material-icons")]
+    use crate::icons::to_svg_handle;
 
     #[test]
     fn frames_loop_one_per_frame_duration() {
-        let at = |ms| frame_index(Duration::from_millis(ms), 42, 24);
+        let frame_ms = NonZeroU32::new(42).unwrap();
+        let at = |ms| frame_index(Duration::from_millis(ms), frame_ms, 24);
         assert_eq!(at(0), 0);
         assert_eq!(at(41), 0);
         assert_eq!(at(42), 1);
         assert_eq!(at(42 * 24 - 1), 23);
         assert_eq!(at(42 * 24), 0);
-        assert_eq!(frame_index(Duration::from_millis(5), 0, 24), 0);
-        assert_eq!(frame_index(Duration::from_millis(5), 42, 0), 0);
+        assert_eq!(frame_index(Duration::from_millis(5), frame_ms, 0), 0);
+    }
+
+    /// Fourteen days and 50 ms in, the arc is a twentieth of a turn round:
+    /// the phase comes from the sub-second nanoseconds, not an f32 of the
+    /// seconds, whose step at 1.2e6 s is 0.125 s.
+    #[test]
+    fn the_arc_turns_exactly_two_weeks_in() {
+        let start = arc_start(Duration::from_millis(1_209_600_050));
+        assert!(
+            (start - 0.05 * TAU).abs() < 1e-4,
+            "expected 0.05·TAU, got {start}"
+        );
     }
 
     #[test]
     fn a_set_without_an_indicator_draws_the_arc() -> native_theme::Result<()> {
         let (_, resolved) = crate::from_preset("kde-breeze", false)?;
-        for set in [IconSet::SfSymbols, IconSet::SegoeIcons] {
+        for set in [IconSet::SfSymbols, IconSet::SegoeFluent] {
             assert!(
                 !Spinner::new(&resolved, set, None).is_indicator(),
                 "{set:?}"
@@ -305,12 +367,62 @@ mod tests {
         Ok(())
     }
 
+    /// A theme whose spinner is only `process-working-symbolic`, as GNOME's
+    /// (platform-facts.md §2.23), draws it in `defaults.text_color`, not the
+    /// black usvg gives an unset `currentColor`. The theme is a fixture in a
+    /// child process ([`crate::icon_fixture`]).
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    #[test]
+    fn a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour()
+    -> Result<(), Box<dyn std::error::Error>> {
+        const NAME: &str =
+            "spinner::tests::a_symbolic_freedesktop_indicator_is_drawn_in_the_text_colour";
+        if crate::icon_fixture::in_child() {
+            let (_, resolved) = crate::from_preset("adwaita", true)?;
+            let spinner = Spinner::new(&resolved, IconSet::Freedesktop, Some("symbolic-only"));
+            let Drawn::Spin {
+                frame: Frame::Svg(handle),
+                ..
+            } = &spinner.drawn
+            else {
+                panic!(
+                    "the symbolic indicator is not a turned SVG: {:?}",
+                    spinner.drawn
+                );
+            };
+            let iced_core::svg::Data::Bytes(bytes) = handle.data() else {
+                panic!("the frame is not in memory");
+            };
+            let svg = std::str::from_utf8(bytes)?;
+            let c = resolved.defaults.text_color;
+            let hex = format!("#{:02x}{:02x}{:02x}", c.r, c.g, c.b);
+            assert!(
+                !svg.contains("currentColor") && svg.contains(&hex),
+                "{hex}: {svg}"
+            );
+            return Ok(());
+        }
+        // The system's icon theme is one that does not exist, so only the
+        // theme the test names holds the indicator.
+        crate::icon_fixture::run(NAME, Child::kde("no-such-icon-theme"), |icons| {
+            crate::icon_fixture::write_scalable_theme(
+                icons,
+                "symbolic-only",
+                &[(
+                    "process-working-symbolic",
+                    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#2e3436" d="M0 0h16v16H0z"/></svg>"##,
+                )],
+            )
+        })?;
+        Ok(())
+    }
+
     #[cfg(feature = "material-icons")]
     #[test]
     fn material_draws_its_frames_in_the_spinner_colour() -> native_theme::Result<()> {
-        let (_, resolved) = crate::from_preset("material", true)?;
+        let (_, resolved) = crate::from_preset("material-3", true)?;
         let spinner = Spinner::new(&resolved, IconSet::Material, None);
-        let Some(anim) = load_icon_indicator(IconSet::Material) else {
+        let Some(anim) = load_icon_indicator(IconSet::Material, None) else {
             panic!("material-icons is on, yet Material has no indicator");
         };
         let tint = to_color(resolved.spinner.fill_color);
@@ -318,7 +430,7 @@ mod tests {
         match &spinner.drawn {
             Drawn::Frames { frames, frame_ms } => {
                 assert_eq!(frames.len(), anim.frame_list().map_or(0, |l| l.len()));
-                assert_eq!(Some(*frame_ms), anim.frame_duration_ms().map(|d| d.get()));
+                assert_eq!(Some(*frame_ms), anim.frame_duration_ms());
                 match (frames.first(), expected) {
                     (Some(Frame::Svg(first)), Some(expected)) => assert_eq!(first, &expected),
                     other => panic!("the first frame is not the recoloured SVG: {other:?}"),

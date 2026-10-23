@@ -84,16 +84,25 @@ pub enum RoleVariant {
     #[default]
     Normal,
     /// The checked appearance of a `Checkbox` or `RadioButton`, which takes no selected flag
-    /// of its own: `checkbox.checked_background` and `checkbox.border.color` (§6.2). A
+    /// of its own: `checkbox.checked_background` and `checkbox.border.color` (spec §6.2). A
     /// button's suggested action, the active tab and segment and the switched-on switch are
     /// carried by their `Normal` cells, which the `Button`'s own `.selected(..)` flag picks
-    /// from; their `Selected` cell is the `Normal` one.
+    /// from; their `Selected` cell is the `Normal` one. A checked control that is disabled
+    /// takes [`SelectedDisabled`](Self::SelectedDisabled).
     Selected,
     /// The platform's disabled appearance, written into the `inactive` entry, with the role's
     /// `disabled_opacity` as `Visuals::disabled_alpha`, which `Ui::disable` fades the widget by
     /// on top of those colours. A platform dims by one of the two, and its data makes the other
-    /// an identity (docs/platform-facts.md §2.1.6). See §6.3.
+    /// an identity (docs/platform-facts.md §2.1.6). See spec §6.3.
     Disabled,
+    /// The disabled appearance of a checked `Checkbox` or `RadioButton`, beside `Selected`: the
+    /// checked box, its outline `checkbox.border.color`, and the label in
+    /// `checkbox.disabled_text_color`. Where the theme states no `checkbox.disabled_background`
+    /// the platform dims by opacity alone, and the box keeps its checked fill and its
+    /// `indicator_color` mark, which `disabled_alpha` fades; where it states one, the box takes
+    /// that fill and the mark `disabled_text_color`, as the `Disabled` cell's box does
+    /// (docs/platform-facts.md §2.1.6). Every other role's is its `Disabled` cell.
+    SelectedDisabled,
 }
 
 /// A container surface: the *chrome* (fill, stroke, corner radius, margins, shadow) of one
@@ -101,7 +110,7 @@ pub enum RoleVariant {
 ///
 /// A surface's frame is egui's own default frame for that container, built from the base
 /// style of the same colour scheme, with the fields the theme states for that surface set on
-/// it; every field the theme does not state keeps the preset's value (§3.4). The preset for
+/// it; every field the theme does not state keeps the preset's value (spec §3.4). The preset for
 /// each surface is the one [`NativeThemeUiExt::native_frame`](crate::NativeThemeUiExt::native_frame) names.
 ///
 /// The rule: **exactly one variant per container chrome in egui 0.36.2 to which an
@@ -124,13 +133,13 @@ pub enum RoleVariant {
 /// `Popup::show` applies the modifier and then builds `Frame::popup(ui.style())`
 /// (`egui/src/containers/popup.rs:602-603`); a submenu's frame is `Frame::menu(ui.style())` of
 /// the parent menu's already-modified `Ui` (`egui/src/containers/menu.rs:432`), handed to
-/// `Popup::frame` (`:509`). Both presets read the same five `Style` fields (§3.2), and the
+/// `Popup::frame` (`:509`). Both presets read the same five `Style` fields (spec §3.2), and the
 /// base style carries all five for every menu, which the `Role::Menu` cell inherits:
 /// `window_fill` from `menu.background_color`, `window_stroke`, `menu_corner_radius` and
-/// the `popup_shadow` gate from `defaults.border`, and egui's own `menu_margin` (§5.9).
+/// the `popup_shadow` gate from `defaults.border`, and egui's own `menu_margin` (spec §5.9).
 /// What [`ThemeAtlas::role_modifier`](crate::ThemeAtlas::role_modifier) for `Role::Menu`, fed to `MenuConfig::style`
 /// (`:107`), adds is the items' look: `menu.border`'s item border, radius and padding over
-/// `menu_style`'s (§5.2, §6.1).
+/// `menu_style`'s (spec §5.2, §6.1).
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum Surface {
@@ -161,7 +170,7 @@ pub enum Surface {
     /// hovered long enough (`should_show_tooltip`, `:57`) — never `for_widget` (`:39`), which
     /// is "Always open (as long as this function is called)" (`:38`) and would pin the tooltip
     /// on screen. `for_disabled` (`:62`) is the same for a disabled widget.
-    /// `Response::on_hover_text` does **not** take a frame — see §14 item 3.
+    /// `Response::on_hover_text` does **not** take a frame — see spec §14 item 3.
     Tooltip,
     /// `Frame::show` (`egui/src/containers/frame.rs:404`) — the frame-taking spelling of
     /// `Ui::group`, which builds `Frame::group(self.style())` itself and takes no frame
@@ -172,7 +181,7 @@ pub enum Surface {
     /// `CentralPanel::frame` (`egui/src/containers/panel.rs:1206`): `defaults` chrome with
     /// `layout.window_margin` ([`Builder::layout`](crate::Builder::layout)) as its inner margin on all four sides —
     /// the gap between the window's edge and its content, which is what the application's
-    /// `CentralPanel` is. Where `window_margin` is `None` (§2, *Unstated sizes*) the inner
+    /// `CentralPanel` is. Where `window_margin` is `None` (spec §2, *Unstated sizes*) the inner
     /// margin stays `Frame::central_panel`'s own `8` (`egui/src/containers/frame.rs:192`).
     CentralPanel,
 }
@@ -282,10 +291,11 @@ impl Role {
 }
 
 /// Every `RoleVariant`, in declaration order.
-pub(crate) const VARIANTS: [RoleVariant; 3] = [
+pub(crate) const VARIANTS: [RoleVariant; 4] = [
     RoleVariant::Normal,
     RoleVariant::Selected,
     RoleVariant::Disabled,
+    RoleVariant::SelectedDisabled,
 ];
 
 impl RoleVariant {
@@ -306,14 +316,15 @@ impl RoleVariant {
         &VARIANTS
     }
 
-    /// The stable identifier a `mapping.toml` sink's `variant` names (§13.1): `"normal"`,
-    /// `"selected"`, `"disabled"`.
+    /// The stable identifier a `mapping.toml` sink's `variant` names (spec §13.1): `"normal"`,
+    /// `"selected"`, `"disabled"`, `"selected_disabled"`.
     #[must_use]
     pub fn key(self) -> &'static str {
         match self {
             Self::Normal => "normal",
             Self::Selected => "selected",
             Self::Disabled => "disabled",
+            Self::SelectedDisabled => "selected_disabled",
         }
     }
 
@@ -345,7 +356,7 @@ impl Surface {
         &SURFACES
     }
 
-    /// The stable identifier a `mapping.toml` sink's `surface` names (§13.1), one per entry
+    /// The stable identifier a `mapping.toml` sink's `surface` names (spec §13.1), one per entry
     /// of [`Surface::all`]: `"window"`, `"window_title_bar"`, `"dialog"`, `"popover"`,
     /// `"tooltip"`, `"card"`, `"panel_left"`, `"panel_right"`, `"panel_top"`,
     /// `"panel_bottom"`, `"central_panel"`.
@@ -436,12 +447,14 @@ mod tests {
             &[
                 RoleVariant::Normal,
                 RoleVariant::Selected,
-                RoleVariant::Disabled
+                RoleVariant::Disabled,
+                RoleVariant::SelectedDisabled
             ]
         );
         assert_eq!(RoleVariant::Normal.key(), "normal");
         assert_eq!(RoleVariant::Selected.key(), "selected");
         assert_eq!(RoleVariant::Disabled.key(), "disabled");
+        assert_eq!(RoleVariant::SelectedDisabled.key(), "selected_disabled");
         assert_eq!(RoleVariant::from_selected(true), RoleVariant::Selected);
         assert_eq!(RoleVariant::from_selected(false), RoleVariant::Normal);
         assert_eq!(RoleVariant::default(), RoleVariant::Normal);

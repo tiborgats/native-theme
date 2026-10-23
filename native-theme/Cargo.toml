@@ -21,8 +21,8 @@ targets = [
 
 [features]
 kde = ["dep:configparser"]
-portal = ["dep:ashpd", "ashpd/async-io", "dep:zbus"]
-windows = ["dep:windows"]
+portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
+windows = ["dep:windows", "dep:windows-version"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
 linux-kde = ["kde"]
 linux-portal = ["portal"]
@@ -51,6 +51,7 @@ async-trait = "0.1.92"
 fontdb = { version = "0.23", optional = true, default-features = false, features = ["fs", "fontconfig", "memmap"] }
 inventory = "0.3.24"
 native-theme-derive = { version = "0.6.1", path = "../native-theme-derive" }
+pollster = "1.0"
 resvg = { version = "0.48.1", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
@@ -67,6 +68,7 @@ objc2-foundation = { version = "0.3.2", optional = true, features = [
     "NSRunLoop",
     "NSOperation",
     "block2",
+    "NSProcessInfo",
 ] }
 objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "NSColor",
@@ -107,11 +109,11 @@ objc2-core-graphics = { version = "0.3.2", optional = true, features = [
 ashpd = { version = "0.13.13", optional = true, default-features = false, features = [
     "settings",
 ] }
+async-io = { version = "2.6.0", optional = true }
 configparser = { version = "3.2.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
 notify = { version = "8.2", optional = true, default-features = false }
 png = { version = "0.18.1", optional = true, default-features = false }
-pollster = "1.0"
 zbus = { version = "5.19.0", optional = true, default-features = false }
 
 [target.'cfg(target_os = "windows")'.dependencies]
@@ -127,8 +129,13 @@ windows = { version = "0.62.2", optional = true, default-features = false, featu
     "Win32_System_Com",
     "Win32_System_Threading",
 ] }
+windows-version = { version = "0.1.7", optional = true }
 
 [dev-dependencies]
+# The freedesktop icon-theme fixture the tests run in a child process
+# (tools/test-fixtures, never published). A path with no version: `cargo
+# package` strips it.
+native-theme-test-fixtures = { path = "../tools/test-fixtures" }
 pollster = "1.0"
 proptest = "1.11"
 serde_json = "1.0.151"

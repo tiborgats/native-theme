@@ -4,25 +4,32 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::indexing_slicing)]
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gpui::{
-    AnyElement, AppContext as _, Bounds, Context, Entity, InteractiveElement as _, IntoElement,
-    Modifiers, ParentElement as _, Pixels, Render, Styled as _, TestAppContext, VisualTestContext,
-    Window, div, point, px,
+    AnyElement, AppContext as _, Bounds, Context, Element as _, Entity, InteractiveElement as _,
+    IntoElement, Modifiers, ParentElement as _, Pixels, Render, Styled as _, TestAppContext,
+    VisualTestContext, Window, accesskit, div, point, px,
 };
 use gpui_base::slider::SliderState;
-use native_theme::theme::{ColorMode, ResolvedTheme, TabIndicatorSide, Theme};
+use native_theme::theme::{ColorMode, FontStyle, ResolvedTheme, TabIndicatorSide, Theme};
 use native_theme::{AccessibilityPreferences, ResolutionContext};
 
 use super::*;
+
+/// The painted scene, read as the showcase's tests read it. These read no
+/// underline.
+#[allow(dead_code)]
+#[path = "scene_read.rs"]
+mod scene_read;
+use scene_read::scene_quads;
 
 /// The two presets the tests draw under: a light desktop theme and a dark
 /// one whose sizes all differ from it.
 const PRESETS: [(&str, ColorMode); 2] = [
     ("kde-breeze", ColorMode::Light),
-    ("material", ColorMode::Dark),
+    ("material-3", ColorMode::Dark),
 ];
 
 fn resolved(preset: &str, mode: ColorMode) -> ResolvedTheme {
@@ -64,7 +71,10 @@ fn a_checkbox_paints_checkbox_theme() {
         );
         assert_eq!(
             idle.hover_fill,
-            Some(unchecked.blend(c(k.hover_background.unwrap_or(k.background_color)))),
+            Some(
+                k.hover_background
+                    .map_or(unchecked, |hover| over(unchecked, c(hover)))
+            ),
             "{preset}"
         );
         assert_eq!(idle.mark, c(k.indicator_color), "{preset}");
@@ -99,6 +109,25 @@ fn a_checkbox_paints_checkbox_theme() {
     }
 }
 
+/// M6-22, the twin of M5-07: a theme that states `unchecked_background` and
+/// no `hover_background` leaves the hovered box at rest, where the
+/// `background_color` it would otherwise lay over it is another colour.
+#[test]
+fn an_unset_checkbox_hover_is_the_box_at_rest() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    let fill = native_theme::color::Rgba::new(0x12, 0x34, 0x56, 0x80);
+    assert_ne!(fill, r.checkbox.background_color);
+    r.checkbox.unchecked_background = Some(fill);
+    r.checkbox.hover_background = None;
+    for look in [
+        CheckboxLook::of(&r, false, false).expect("finite"),
+        CheckboxLook::radio(&r, false, false).expect("finite"),
+    ] {
+        assert_eq!(look.fill, c(fill));
+        assert_eq!(look.hover_fill, Some(look.fill));
+    }
+}
+
 /// The platforms each dim by one mechanism (docs/platform-facts.md §2.1.6):
 /// kde-breeze by its disabled colours at an opacity of 1, adwaita by an
 /// opacity of 0.5 over its enabled colours.
@@ -124,21 +153,21 @@ fn the_checkbox_look_is_the_presets_values() {
     assert_eq!(
         kbl.mark_stroke,
         Some(px(2.)),
-        "Breeze's check pen (docs/platform-facts.md:1221)"
+        "Breeze's check pen (docs/platform-facts.md:1242)"
     );
-    let md = CheckboxLook::of(&resolved("material", ColorMode::Dark), false, false).unwrap();
+    let md = CheckboxLook::of(&resolved("material-3", ColorMode::Dark), false, false).unwrap();
     assert_eq!(md.indicator, px(18.));
     // The radio is `checkbox.radio_indicator_width` across where stated
-    // (material's 20, docs/platform-facts.md:1222), the checkbox's elsewhere.
+    // (material-3's 20, docs/platform-facts.md:1243), the checkbox's elsewhere.
     let radio = |preset: &str| {
         CheckboxLook::radio(&resolved(preset, ColorMode::Dark), false, false).map(|l| l.indicator)
     };
-    assert_eq!(radio("material"), Some(px(20.)));
+    assert_eq!(radio("material-3"), Some(px(20.)));
     assert_eq!(radio("kde-breeze"), Some(kbl.indicator));
     assert_eq!(
         md.mark_stroke,
         Some(px(2.)),
-        "material-web's $_mark-stroke (docs/platform-facts.md:1221)"
+        "material-web's $_mark-stroke (docs/platform-facts.md:1242)"
     );
 }
 
@@ -191,7 +220,10 @@ fn a_disabled_switch_fades_as_one_over_its_backdrop() {
             .unwrap_or(r.switch.checked_background);
         assert_eq!(
             look.map(|l| l.track),
-            Some(ground.blend(ground.blend(c(track)).opacity(r.switch.disabled_opacity))),
+            Some(over(
+                ground,
+                over(ground, c(track)).opacity(r.switch.disabled_opacity)
+            )),
             "{mode:?}: the track over the window"
         );
     }
@@ -201,6 +233,31 @@ fn a_disabled_switch_fades_as_one_over_its_backdrop() {
     let ground = c(r.defaults.background_color);
     let look = SwitchLook::of(&r, true, true);
     assert_eq!(look.map(|l| l.faded_over(ground)), look);
+}
+
+/// A disabled switch faded as one fades its track's outline over the track
+/// it is drawn inside, not over the window: a translucent outline (windows-11's
+/// `#00000037`, material-3's `#1d1b201f`) shows the track through it. On
+/// adwaita, which fades by 0.5, with an outline no bundled preset states there.
+#[test]
+fn a_faded_switch_fades_its_outline_over_its_track() {
+    let mut r = resolved("adwaita", ColorMode::Light);
+    let edge = native_theme::color::Rgba::new(0, 0, 0, 0x37);
+    r.switch.unchecked_track_border_color = Some(edge);
+    r.switch.track_border_line_width = Some(1.);
+    let a = r.switch.disabled_opacity;
+    assert!(a < 1., "adwaita no longer fades a disabled switch");
+    let ground = c(r.defaults.background_color);
+    let track = c(r
+        .switch
+        .disabled_unchecked_background
+        .unwrap_or(r.switch.unchecked_background));
+    let look = SwitchLook::of(&r, false, true).map(|l| l.faded_over(ground));
+    assert_eq!(
+        look.and_then(|l| l.track_border),
+        Some(over(ground, over(over(ground, track), c(edge)).opacity(a))),
+        "the outline over the track, the pair faded over the window"
+    );
 }
 
 /// The same rule for a checkbox: its mark on its fill, the pair faded over
@@ -213,17 +270,70 @@ fn a_disabled_checkbox_fades_as_one_over_its_backdrop() {
     assert!(a < 1., "adwaita dims a disabled checkbox by opacity");
     let look = CheckboxLook::of(&r, true, true);
     let faded = look.map(|l| l.faded_over(ground));
-    let fill = look.map(|l| ground.blend(l.fill));
+    let fill = look.map(|l| over(ground, l.fill));
     assert_eq!(faded.map(|l| l.opacity), Some(1.));
     assert_eq!(
         faded.map(|l| l.mark),
         look.zip(fill)
-            .map(|(l, fill)| ground.blend(fill.blend(l.mark).opacity(a)))
+            .map(|(l, fill)| over(ground, over(fill, l.mark).opacity(a)))
     );
     assert_eq!(
         faded.map(|l| l.fill),
-        fill.map(|fill| ground.blend(fill.opacity(a)))
+        fill.map(|fill| over(ground, fill.opacity(a)))
     );
+}
+
+/// M6-19: the slider by the same rule, the rail over the window, the fill
+/// over the rail, the outline and the thumb over the fill, each faded over
+/// the window: the fill comes out opaque, and the opacity is then 1.
+#[test]
+fn a_disabled_slider_fades_as_one_over_its_backdrop() {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let r = resolved("adwaita", mode);
+        let s = &r.slider;
+        let a = s.disabled_opacity;
+        assert!(
+            a < 1.,
+            "{mode:?}: adwaita dims a disabled slider by opacity"
+        );
+        let ground = c(r.defaults.background_color);
+        let track = c(s.disabled_track_color.unwrap_or(s.track_color));
+        let fill = c(s.disabled_fill_color.unwrap_or(s.fill_color));
+        let thumb = c(s.disabled_thumb_color.unwrap_or(s.thumb_color));
+        let rail = over(ground, track);
+        let filled = over(rail, fill);
+        let look = SliderLook::of(&r, true).map(|l| l.faded_over(ground));
+        assert_eq!(look.map(|l| l.opacity), Some(1.), "{mode:?}");
+        assert_eq!(
+            look.map(|l| l.fill),
+            Some(faded(ground, rail, fill, a)),
+            "{mode:?}: the fill over the rail"
+        );
+        assert_eq!(look.map(|l| l.fill.a), Some(1.), "{mode:?}: opaque");
+        assert_eq!(
+            look.map(|l| l.track),
+            Some(faded(ground, ground, track, a)),
+            "{mode:?}: the rail over the window"
+        );
+        assert_eq!(
+            look.map(|l| l.thumb_color),
+            Some(faded(ground, filled, thumb, a)),
+            "{mode:?}: the thumb over the fill"
+        );
+        assert_eq!(
+            look.map(|l| l.outline),
+            SliderLook::of(&r, true).map(|l| faded(ground, filled, l.outline, a)),
+            "{mode:?}: the outline over the fill"
+        );
+    }
+    // An enabled slider, or one the platform dims by colour alone, is as it
+    // was.
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let ground = c(r.defaults.background_color);
+    let look = SliderLook::of(&r, true);
+    assert_eq!(look.map(|l| l.faded_over(ground)), look);
+    let enabled = SliderLook::of(&resolved("adwaita", ColorMode::Light), false);
+    assert_eq!(enabled.map(|l| l.faded_over(ground)), enabled);
 }
 
 #[test]
@@ -244,19 +354,23 @@ fn a_switch_paints_switch_theme() {
         assert_eq!(on.track, c(s.checked_background), "{preset}");
         assert_eq!(
             on.hover_track,
-            Some(c(s.checked_background).blend(c(
-                s.hover_checked_background.unwrap_or(s.checked_background)
-            ))),
+            Some(
+                s.hover_checked_background
+                    .map_or(c(s.checked_background), |h| {
+                        over(c(s.checked_background), c(h))
+                    })
+            ),
             "{preset}"
         );
         assert_eq!(on.thumb_color, c(s.thumb_background), "{preset}");
         assert_eq!(on.label, c(r.defaults.text_color), "{preset}");
+        assert_eq!(on.end_inset, on.inset.max(px(0.)), "{preset}");
         assert_eq!(
             on.thumb_left(true),
-            on.track_width - on.inset - on.thumb,
+            on.track_width - on.end_inset - on.thumb,
             "{preset}"
         );
-        assert_eq!(on.thumb_left(false), on.inset, "{preset}");
+        assert_eq!(on.thumb_left(false), on.end_inset, "{preset}");
 
         let off = SwitchLook::of(&r, false, false).expect("finite");
         assert_eq!(off.track, c(s.unchecked_background), "{preset}");
@@ -308,6 +422,38 @@ fn a_switch_paints_switch_theme() {
     }
 }
 
+/// An unset hover is the part at rest, also where the part is translucent:
+/// a translucent colour laid over itself covers more than it does alone, so
+/// copying the colour it covers would show a hover no source gives.
+/// macos-tahoe states neither an off-track hover nor a thumb hover, over a
+/// translucent off track (both variants) and a translucent thumb (dark).
+#[test]
+fn an_unset_hover_leaves_a_translucent_part_at_rest() {
+    for mode in [ColorMode::Light, ColorMode::Dark] {
+        let r = resolved("macos-tahoe", mode);
+        let s = &r.switch;
+        assert!(
+            s.hover_unchecked_background.is_none() && c(s.unchecked_background).a < 1.,
+            "macos-tahoe {mode:?} no longer discriminates: its off-track hover is \
+             {:?} over {:?}",
+            s.hover_unchecked_background,
+            s.unchecked_background
+        );
+        let off = SwitchLook::of(&r, false, false).expect("finite");
+        assert_eq!(off.hover_track, Some(off.track), "{mode:?}: the off track");
+    }
+    let r = resolved("macos-tahoe", ColorMode::Dark);
+    let s = &r.slider;
+    assert!(
+        s.thumb_hover_color.is_none() && c(s.thumb_color).a < 1.,
+        "macos-tahoe dark no longer discriminates: its thumb hover is {:?} over {:?}",
+        s.thumb_hover_color,
+        s.thumb_color
+    );
+    let look = SliderLook::of(&r, false).expect("finite");
+    assert_eq!(look.hover_thumb, Some(look.thumb_color), "the thumb");
+}
+
 #[test]
 fn a_slider_paints_slider_theme() {
     for (preset, mode) in PRESETS {
@@ -326,7 +472,10 @@ fn a_slider_paints_slider_theme() {
         assert_eq!(look.thumb_color, c(s.thumb_color), "{preset}");
         assert_eq!(
             look.hover_thumb,
-            Some(c(s.thumb_color).blend(c(s.thumb_hover_color.unwrap_or(s.thumb_color)))),
+            Some(
+                s.thumb_hover_color
+                    .map_or(c(s.thumb_color), |h| over(c(s.thumb_color), c(h)))
+            ),
             "{preset}"
         );
         let disabled = SliderLook::of(&r, true).expect("finite");
@@ -443,7 +592,7 @@ fn a_tab_bar_paints_tab_theme() {
             assert_eq!(look.gap, px(gap), "{preset}: tab.item_gap");
         }
         let hover = t.hover_background.expect("both presets state a tab hover");
-        assert_eq!(look.hover, c(t.bar_background).blend(c(hover)), "{preset}");
+        assert_eq!(look.hover, over(c(t.bar_background), c(hover)), "{preset}");
     }
     // Breeze: the unselected tab is darker than the bar, and the hover
     // replaces that fill (docs/platform-facts.md §2.11).
@@ -482,7 +631,7 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     let painted = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
         cx.update(|window, _| {
             let b = b.scale(window.scale_factor());
-            let quads = window.painted_quads();
+            let quads = scene_quads(window);
             let fill = quads
                 .iter()
                 .find(|q| q.bounds == b && !q.background.is_transparent())
@@ -520,7 +669,7 @@ fn the_tab_bar_outlines_only_the_selected_tab(cx: &mut TestAppContext) {
     );
 }
 
-/// docs/platform-facts.md:1327-1329: the selected tab's line, as thick as
+/// docs/platform-facts.md:1361-1363: the selected tab's line, as thick as
 /// stated, across the tab's outer edge on the stated side -- Breeze's on top,
 /// Material's at the bottom.
 #[gpui::test]
@@ -591,11 +740,578 @@ fn selected_tab_carries_the_stated_indicator(
     }
 }
 
+// ---------------------------------------------------------------------------
+// The selected tab's outward corners: tab.active_outward_corner_radius
+// ---------------------------------------------------------------------------
+
+/// The light `windows-11` theme, resolved, with
+/// `tab.active_outward_corner_radius` set on it to `radius` and `edit`
+/// applied: the preset states 4 (G3 T15), and the tests set the radius on
+/// the resolved theme, whose fields are public, to try it unstated and at
+/// other values too.
+fn windows_11(radius: Option<f32>, edit: impl FnOnce(&mut ResolvedTheme)) -> ResolvedTheme {
+    let prefs = AccessibilityPreferences::default();
+    let (_, mut r) = crate::from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+    r.tab.active_outward_corner_radius = radius;
+    edit(&mut r);
+    r
+}
+
+/// Each part's bounds, as a bar hands them to its observer, in order.
+type Reported = Rc<RefCell<Vec<(Part, Bounds<Pixels>)>>>;
+
+/// A window drawing three tabs, `two` selected, in a 320px bar under
+/// [`windows_11`]'s theme, installed as `crate::apply` installs one; the bar
+/// hands `parts` each tab's bounds.
+fn folder_window(
+    cx: &mut TestAppContext,
+    radius: Option<f32>,
+    edit: impl FnOnce(&mut ResolvedTheme),
+    parts: Reported,
+) -> (&mut VisualTestContext, ResolvedTheme) {
+    folder_window_counted(cx, radius, edit, parts, Rc::new(Cell::new(0)))
+}
+
+/// [`folder_window`], counting in `renders` each time the window's view
+/// renders the bar.
+fn folder_window_counted(
+    cx: &mut TestAppContext,
+    radius: Option<f32>,
+    edit: impl FnOnce(&mut ResolvedTheme),
+    parts: Reported,
+    renders: Rc<Cell<usize>>,
+) -> (&mut VisualTestContext, ResolvedTheme) {
+    let r = windows_11(radius, edit);
+    cx.update(|cx| {
+        gpui_component::init(cx);
+        let prefs = AccessibilityPreferences::default();
+        let (theme, _) = crate::from_preset("windows-11", false, &prefs).expect("windows-11 loads");
+        crate::apply(theme, &r, &prefs, cx);
+    });
+    let build: Build = Box::new(move |_, _| {
+        renders.set(renders.get() + 1);
+        let parts = parts.clone();
+        TabBar::new("t")
+            .w(px(320.))
+            .child(Tab::new("One").debug_selector(|| "one".into()))
+            .child(Tab::new("Two").debug_selector(|| "two".into()))
+            .child(Tab::new("Three").debug_selector(|| "three".into()))
+            .selected_index(1)
+            .on_part_bounds(Rc::new(move |part, b, _, _| {
+                parts.borrow_mut().push((part, b))
+            }))
+            .into_any_element()
+    });
+    let (_, cx) = cx.add_window_view(|_, _| Harness { build });
+    cx.update(|window, cx| window.draw(cx).clear(cx));
+    (cx, r)
+}
+
+fn near(a: f32, b: f32) -> bool {
+    (a - b).abs() < 1e-4
+}
+
+/// docs/platform-facts.md §2.11 `active_outward_corner_radius`: windows-11
+/// with a radius of 4 and its outline of 1 gives the numbers every
+/// connector's test shares -- the left curve about `(x0 - 3, y1 - 4)` in the
+/// square `[x0 - 3, x0 + 1] x [y1 - 4, y1]`, the right one about
+/// `(x1 + 3, y1 - 4)` in `[x1 - 1, x1 + 3] x [y1 - 4, y1]`; in each, the
+/// fill an annulus from 3 to `4 * sqrt(2) + 1` in `tab.active_background`
+/// and the outline one from 3 to 4 in `tab.border.color`, painted over the
+/// fill's inner band -- with the top corners at 8. Without an outline the
+/// fill begins at 4.
+#[test]
+fn the_flares_are_the_shapes_geometry() {
+    let r = windows_11(Some(4.), |_| {});
+    assert_eq!(r.tab.border.line_width, 1., "windows-11's outline");
+    let look = TabLook::of(&r).expect("finite");
+    assert_eq!(look.outward_radius, Some(px(4.)));
+    assert_eq!(look.radius, px(8.), "the top corners");
+    assert_eq!(look.active, c(r.tab.active_background));
+    assert_eq!(look.border, c(r.tab.border.color));
+    let (x0, x1, y1) = (20., 120., 42.);
+    let tab = Bounds::new(point(px(x0), px(10.)), gpui::size(px(x1 - x0), px(32.)));
+    let far = 4. * std::f32::consts::SQRT_2 + 1.;
+    // (square's left edge, centre's x, outer radius, width, colour)
+    let expected = [
+        (x0 - 3., x0 - 3., far, far - 3., look.active),
+        (x1 - 1., x1 + 3., far, far - 3., look.active),
+        (x0 - 3., x0 - 3., 4., 1., look.border),
+        (x1 - 1., x1 + 3., 4., 1., look.border),
+    ];
+    let quads = tab_bar::flare_quads(tab, &look);
+    assert_eq!(quads.len(), expected.len(), "{quads:?}");
+    for (q, (left, centre, outer, width, colour)) in quads.iter().zip(expected) {
+        let at = |b: Bounds<Pixels>| {
+            [
+                f32::from(b.left()),
+                f32::from(b.top()),
+                f32::from(b.right()),
+                f32::from(b.bottom()),
+            ]
+        };
+        let square = [left, y1 - 4., left + 4., y1];
+        let ring = [
+            centre - outer,
+            y1 - 4. - outer,
+            centre + outer,
+            y1 - 4. + outer,
+        ];
+        assert!(
+            at(q.clip).iter().zip(square).all(|(a, b)| near(*a, b)),
+            "{q:?}: the square {square:?}"
+        );
+        assert!(
+            at(q.bounds).iter().zip(ring).all(|(a, b)| near(*a, b)),
+            "{q:?}: the ring {ring:?}"
+        );
+        assert!(near(f32::from(q.radius), outer), "{q:?}");
+        assert!(near(f32::from(q.width), width), "{q:?}");
+        assert_eq!(q.color, colour, "{q:?}");
+    }
+    // No outline: the fills alone.
+    let thin =
+        TabLook::of(&windows_11(Some(4.), |r| r.tab.border.line_width = 0.)).expect("finite");
+    let quads = tab_bar::flare_quads(tab, &thin);
+    assert_eq!(quads.len(), 2, "{quads:?}");
+    assert!(quads.iter().all(|q| q.color == thin.active));
+    assert!(
+        quads.iter().all(|q| near(f32::from(q.width), far - 4.)),
+        "without an outline the fill begins at the radius: {quads:?}"
+    );
+    // Unstated or 0: today's shape, no flare.
+    for radius in [None, Some(0.)] {
+        let look = TabLook::of(&windows_11(radius, |_| {})).expect("finite");
+        assert_eq!(look.outward_radius, None, "{radius:?}");
+        assert!(tab_bar::flare_quads(tab, &look).is_empty(), "{radius:?}");
+    }
+    // Not finite: no look, so the bar is gpui-component's.
+    for radius in [f32::NAN, f32::INFINITY, -1.] {
+        assert!(
+            TabLook::of(&windows_11(Some(radius), |_| {})).is_none(),
+            "{radius}"
+        );
+    }
+}
+
+/// The quads the last frame painted in `flare`'s colour clipped to its
+/// square, which only the flare's own two quads are clipped to.
+fn painted_in(cx: &mut VisualTestContext, flare: &tab_bar::FlareQuad) -> Vec<gpui::Quad> {
+    cx.update(|window, _| {
+        let clip = flare.clip.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.content_mask.bounds == clip && q.border_color == flare.color)
+            .collect()
+    })
+}
+
+/// Each of `flares` painted once, as `flare_quads` gives it: an annulus
+/// drawn as a transparent quad's border in its colour, about its centre,
+/// clipped to its square.
+fn assert_flares_painted(cx: &mut VisualTestContext, flares: &[tab_bar::FlareQuad], when: &str) {
+    assert_eq!(
+        flares.len(),
+        4,
+        "{when}: two flares, each a fill and an outline"
+    );
+    let s = cx.update(|window, _| window.scale_factor());
+    for flare in flares {
+        let painted = painted_in(cx, flare);
+        assert_eq!(painted.len(), 1, "{when}: {flare:?} painted as {painted:?}");
+        for q in painted {
+            let centre = |b: Bounds<gpui::ScaledPixels>| {
+                (
+                    b.origin.x.0 + b.size.width.0 / 2.,
+                    b.origin.y.0 + b.size.height.0 / 2.,
+                )
+            };
+            let (want, got) = (centre(flare.bounds.scale(s)), centre(q.bounds));
+            assert!(
+                (want.0 - got.0).abs() <= 0.5 && (want.1 - got.1).abs() <= 0.5,
+                "{when}: {flare:?} centred at {got:?}, not {want:?}"
+            );
+            assert!(q.background.is_transparent(), "{when}: {q:?}");
+            assert_eq!(q.border_color, flare.color, "{when}: {q:?}");
+            assert_eq!(
+                q.corner_radii.top_left.0,
+                f32::from(flare.radius) * s,
+                "{when}"
+            );
+            let e = q.border_widths;
+            let width = f32::from(flare.width) * s;
+            assert!(
+                [e.top.0, e.right.0, e.bottom.0, e.left.0]
+                    .iter()
+                    .all(|b| (b - width).abs() <= 0.5),
+                "{when}: {q:?} is not {width} wide"
+            );
+        }
+    }
+}
+
+/// The selected tab's outline quads, found by its bounds and colour: its
+/// border widths, top, right, bottom and left, in scaled pixels.
+fn selected_outline(
+    cx: &mut VisualTestContext,
+    tab: Bounds<Pixels>,
+    look: &TabLook,
+) -> Vec<[f32; 4]> {
+    cx.update(|window, _| {
+        let b = tab.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.bounds == b && q.border_color == look.border)
+            .map(|q| {
+                let e = q.border_widths;
+                [e.top.0, e.right.0, e.bottom.0, e.left.0]
+            })
+            .collect()
+    })
+}
+
+/// Under windows-11 with a radius of 4: the selected tab's two flares are
+/// painted, each clipped to its square inside the row; the selected tab's
+/// outline has no bottom edge and its other sides are `w`; the first tab
+/// starts `r` inside the row, and the bar reports the selected tab's bounds
+/// to its bottom edge, which has no border.
+#[gpui::test]
+fn the_selected_tab_curves_out_at_its_feet(cx: &mut TestAppContext) {
+    let parts = Rc::new(RefCell::new(Vec::new()));
+    let (cx, r) = folder_window(cx, Some(4.), |_| {}, parts.clone());
+    let look = TabLook::of(&r).expect("finite");
+    let (bar, one, two) = (
+        bounds(cx, "native-tab-bar"),
+        bounds(cx, "one"),
+        bounds(cx, "two"),
+    );
+    assert_eq!(
+        one.left() - bar.left(),
+        px(4.),
+        "the room at the row's start"
+    );
+    let flares = tab_bar::flare_quads(two, &look);
+    assert_eq!(flares.len(), 4);
+    assert!(
+        flares.iter().all(|f| bar.contains(&f.clip.origin)
+            && bar.contains(&point(f.clip.right() - px(0.5), f.clip.bottom() - px(0.5)))),
+        "the squares lie inside the row"
+    );
+    assert_flares_painted(cx, &flares, "the first frame");
+    let s = cx.update(|window, _| window.scale_factor());
+    let w = f32::from(look.border_width) * s;
+    let outline = selected_outline(cx, two, &look);
+    assert!(!outline.is_empty(), "the selected tab's outline is painted");
+    assert!(
+        outline.iter().all(|e| *e == [w, w, 0., w]),
+        "the outline has no bottom edge: {outline:?}"
+    );
+    assert_eq!(
+        parts
+            .borrow()
+            .iter()
+            .rev()
+            .find(|(part, _)| *part == Part::Tab(1))
+            .map(|(_, b)| *b),
+        Some(two),
+        "Part::Tab reaches the selected tab's bottom, which has no border"
+    );
+}
+
+/// On gpui-pre, whose `painted_quads()` is the scene in paint order: every
+/// quad of a tab, its indicator's included, comes before the flares' first.
+#[cfg(not(feature = "gpui-fast"))]
+#[gpui::test]
+fn the_flares_are_painted_after_every_tab(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(
+        cx,
+        Some(4.),
+        |r| {
+            r.tab.active_indicator_color = Some(r.defaults.accent_color);
+            r.tab.active_indicator_width = Some(2.);
+            r.tab.active_indicator_side = Some(TabIndicatorSide::Bottom);
+        },
+        Rc::new(RefCell::new(Vec::new())),
+    );
+    let look = TabLook::of(&r).expect("finite");
+    let tabs = ["one", "two", "three", "native-tab-indicator"].map(|name| bounds(cx, name));
+    let flares = tab_bar::flare_quads(tabs[1], &look);
+    let order = cx.update(|window, _| {
+        let s = window.scale_factor();
+        let quads = window.painted_quads();
+        let tabs = tabs.map(|b| b.scale(s));
+        let clips: Vec<_> = flares.iter().map(|f| f.clip.scale(s)).collect();
+        (
+            quads.iter().rposition(|q| tabs.contains(&q.bounds)),
+            quads
+                .iter()
+                .position(|q| clips.contains(&q.content_mask.bounds)),
+        )
+    });
+    match order {
+        (Some(last_tab), Some(first_flare)) => assert!(
+            last_tab < first_flare,
+            "a tab's quad at {last_tab} after a flare's at {first_flare}"
+        ),
+        _ => panic!("tabs and flares are not both painted: {order:?}"),
+    }
+}
+
+/// A frame drawn after the first with nothing changed, without
+/// `window.refresh()`, still paints the flares: GPUI Fast's reuse of an
+/// unchanged view keeps them. On GPUI Fast the view does not render again
+/// for that frame, so the frame is the reuse.
+#[gpui::test]
+fn the_flares_outlast_a_frame_with_nothing_changed(cx: &mut TestAppContext) {
+    let renders = Rc::new(Cell::new(0));
+    let (cx, r) = folder_window_counted(
+        cx,
+        Some(4.),
+        |_| {},
+        Rc::new(RefCell::new(Vec::new())),
+        renders.clone(),
+    );
+    let look = TabLook::of(&r).expect("finite");
+    let flares = tab_bar::flare_quads(bounds(cx, "two"), &look);
+    assert_flares_painted(cx, &flares, "the first frame");
+    let before = renders.get();
+    assert!(before > 0, "the view rendered the bar");
+    cx.update(|w, cx| w.draw(cx).clear(cx));
+    #[cfg(feature = "gpui-fast")]
+    assert_eq!(
+        renders.get(),
+        before,
+        "the second frame rendered the view again, so it was no reuse"
+    );
+    assert_flares_painted(cx, &flares, "a second frame with nothing changed");
+}
+
+/// The selected tab's label does not move when the tab curves out: with
+/// `tab.min_height` 0, so the label's line box and padding set the tab's
+/// height, the selected tab is as tall with the radius stated as without,
+/// its missing bottom edge made up in its bottom padding.
+#[gpui::test]
+fn a_tab_that_curves_out_keeps_its_labels_place(cx: &mut TestAppContext) {
+    let height = |cx: &mut TestAppContext, radius| {
+        let (cx, _) = folder_window(
+            cx,
+            radius,
+            |r| r.tab.min_height = 0.,
+            Rc::new(RefCell::new(Vec::new())),
+        );
+        bounds(cx, "two").size.height
+    };
+    let square = height(cx, None);
+    let curved = height(cx, Some(4.));
+    assert_eq!(curved, square, "the selected tab's height moved");
+}
+
+/// The quads the last frame painted in `flare`'s colour about its centre,
+/// with its radius, found without its mask, which gpui widens to whole
+/// device pixels at a fractional scale.
+fn painted_about(cx: &mut VisualTestContext, flare: &tab_bar::FlareQuad) -> Vec<gpui::Quad> {
+    cx.update(|window, _| {
+        let s = window.scale_factor();
+        let b = flare.bounds.scale(s);
+        let want = (
+            b.origin.x.0 + b.size.width.0 / 2.,
+            b.origin.y.0 + b.size.height.0 / 2.,
+        );
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                let got = (
+                    q.bounds.origin.x.0 + q.bounds.size.width.0 / 2.,
+                    q.bounds.origin.y.0 + q.bounds.size.height.0 / 2.,
+                );
+                q.border_color == flare.color
+                    && q.background.is_transparent()
+                    && (q.corner_radii.top_left.0 - f32::from(flare.radius) * s).abs() < 1e-3
+                    && (got.0 - want.0).abs() <= 1.
+                    && (got.1 - want.1).abs() <= 1.
+            })
+            .collect()
+    })
+}
+
+/// The signed distance of the device point `p` from the border of `q`, a
+/// quad of one corner radius and one border width all round, as gpui's quad
+/// shader computes it (gpui-pre-wgpu 0.3.9 `src/shaders.wgsl`, `fs_quad`,
+/// `quad_sdf_impl`): negative inside the border, so a pixel whose centre
+/// lies at or below 0 is at least half painted in the border's colour.
+fn border_sdf(q: &gpui::Quad, p: (f32, f32)) -> f32 {
+    let half = (q.bounds.size.width.0 / 2., q.bounds.size.height.0 / 2.);
+    let centre_to_point = (
+        p.0 - q.bounds.origin.x.0 - half.0,
+        p.1 - q.bounds.origin.y.0 - half.1,
+    );
+    let radius = q.corner_radii.top_left.0;
+    let border = q.border_widths.top.0;
+    let corner_to_point = (
+        centre_to_point.0.abs() - half.0,
+        centre_to_point.1.abs() - half.1,
+    );
+    let corner_centre_to_point = (corner_to_point.0 + radius, corner_to_point.1 + radius);
+    let outer = if radius == 0. {
+        corner_centre_to_point.0.max(corner_centre_to_point.1)
+    } else {
+        corner_centre_to_point
+            .0
+            .max(0.)
+            .hypot(corner_centre_to_point.1.max(0.))
+            + corner_centre_to_point
+                .0
+                .max(corner_centre_to_point.1)
+                .min(0.)
+            - radius
+    };
+    let inner = if corner_centre_to_point.0 <= 0. || corner_centre_to_point.1 <= 0. {
+        -(corner_to_point.0 + border).max(corner_to_point.1 + border)
+    } else if corner_to_point.0 + border > 0. || corner_to_point.1 + border > 0. {
+        -1.
+    } else {
+        -(outer + border)
+    };
+    inner.max(outer)
+}
+
+/// At fractional scales, where gpui snaps each quad's bounds and border width
+/// to device pixels but not its corner radius, every device pixel of a
+/// flare's square outside the curve, from a pixel beyond the outline's outer
+/// edge at `r - w` on, is painted by the fill or the outline: no seam opens
+/// between them. Read from the painted quads through the shader's distance.
+#[gpui::test]
+fn at_a_fractional_scale_no_seam_opens_between_fill_and_outline(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(cx, Some(4.), |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let look = TabLook::of(&r).expect("finite");
+    let (rr, w) = (4., f32::from(look.border_width));
+    for scale in [1.25, 1.5, 1.75] {
+        cx.simulate_scale_factor_change(scale);
+        cx.update(|window, cx| window.draw(cx).clear(cx));
+        let s = cx.update(|window, _| window.scale_factor());
+        assert_eq!(s, scale, "the window took the scale");
+        let flares = tab_bar::flare_quads(bounds(cx, "two"), &look);
+        assert_eq!(flares.len(), 4, "{scale}");
+        let (fills, outlines) = flares.split_at(2);
+        for (fill, outline) in fills.iter().zip(outlines) {
+            let painted: Vec<gpui::Quad> = [fill, outline]
+                .into_iter()
+                .flat_map(|f| {
+                    let quads = painted_about(cx, f);
+                    assert_eq!(quads.len(), 1, "{scale}: {f:?} painted as {quads:?}");
+                    quads
+                })
+                .collect();
+            for q in &painted {
+                let e = q.border_widths;
+                assert!(
+                    e.top == e.right && e.top == e.bottom && e.top == e.left,
+                    "{scale}: {q:?}"
+                );
+            }
+            let square = fill.clip.scale(s);
+            let b = fill.bounds.scale(s);
+            let centre = (
+                b.origin.x.0 + b.size.width.0 / 2.,
+                b.origin.y.0 + b.size.height.0 / 2.,
+            );
+            let mut bare = Vec::new();
+            let (x0, y0) = (square.origin.x.0.floor(), square.origin.y.0.floor());
+            let (x1, y1) = (
+                (square.origin.x.0 + square.size.width.0).ceil(),
+                (square.origin.y.0 + square.size.height.0).ceil(),
+            );
+            let mut y = y0 + 0.5;
+            while y < y1 {
+                let mut x = x0 + 0.5;
+                while x < x1 {
+                    let inside = x > square.origin.x.0
+                        && x < square.origin.x.0 + square.size.width.0
+                        && y > square.origin.y.0
+                        && y < square.origin.y.0 + square.size.height.0;
+                    let d = (x - centre.0).hypot(y - centre.1);
+                    if inside && d >= (rr - w) * s + 1. {
+                        let painted_here = painted.iter().any(|q| {
+                            q.content_mask
+                                .bounds
+                                .contains(&point(gpui::ScaledPixels(x), gpui::ScaledPixels(y)))
+                                && border_sdf(q, (x, y)) <= 0.
+                        });
+                        if !painted_here {
+                            bare.push((x, y, d / s));
+                        }
+                    }
+                    x += 1.;
+                }
+                y += 1.;
+            }
+            assert!(
+                bare.is_empty(),
+                "{scale}: pixels of {fill:?} painted by neither ring (x, y, distance): {bare:?}"
+            );
+        }
+    }
+}
+
+/// With a bottom indicator and the radius both stated: the line spans the
+/// tab's outer width at its bottom, which has no border to inset it by, and
+/// the flares are painted over its ends as without it.
+#[gpui::test]
+fn a_bottom_indicator_reaches_the_bottom_of_a_tab_that_curves_out(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(
+        cx,
+        Some(4.),
+        |r| {
+            r.tab.active_indicator_color = Some(r.defaults.accent_color);
+            r.tab.active_indicator_width = Some(2.);
+            r.tab.active_indicator_side = Some(TabIndicatorSide::Bottom);
+        },
+        Rc::new(RefCell::new(Vec::new())),
+    );
+    let look = TabLook::of(&r).expect("finite");
+    let (two, line) = (bounds(cx, "two"), bounds(cx, "native-tab-indicator"));
+    assert_eq!(line.bottom(), two.bottom(), "along the tab's bottom edge");
+    assert_eq!(
+        (line.left(), line.right()),
+        (two.left(), two.right()),
+        "across the tab"
+    );
+    assert_flares_painted(cx, &tab_bar::flare_quads(two, &look), "with a bottom line");
+}
+
+/// With the radius unstated: no flare, the selected tab's outline has its
+/// bottom edge `w` wide, and the first tab starts at the row's start.
+#[gpui::test]
+fn without_the_radius_the_selected_tab_keeps_its_bottom_edge(cx: &mut TestAppContext) {
+    let (cx, r) = folder_window(cx, None, |_| {}, Rc::new(RefCell::new(Vec::new())));
+    let look = TabLook::of(&r).expect("finite");
+    let (bar, one, two) = (
+        bounds(cx, "native-tab-bar"),
+        bounds(cx, "one"),
+        bounds(cx, "two"),
+    );
+    assert_eq!(one.left(), bar.left(), "no room at the row's start");
+    let mut stated = look;
+    stated.outward_radius = Some(px(4.));
+    for flare in tab_bar::flare_quads(two, &stated) {
+        let painted = painted_in(cx, &flare);
+        assert!(painted.is_empty(), "a flare painted: {painted:?}");
+    }
+    let s = cx.update(|window, _| window.scale_factor());
+    let w = f32::from(look.border_width) * s;
+    let outline = selected_outline(cx, two, &look);
+    assert!(!outline.is_empty(), "the selected tab's outline is painted");
+    assert!(
+        outline.iter().all(|e| *e == [w, w, w, w]),
+        "the outline keeps its bottom edge: {outline:?}"
+    );
+}
+
 #[gpui::test]
 fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| {
             div()
                 .w(px(200.))
@@ -603,12 +1319,202 @@ fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
                 .into_any_element()
         }),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     let line = bounds(cx, "native-separator");
     assert_eq!(line.size.height, px(r.separator.line_width));
     assert_eq!(line.size.width, px(200.));
     let look = SeparatorLook::of(&r).expect("finite");
     assert_eq!(look.color, c(r.separator.line_color));
+}
+
+/// M6-21: a checkbox's or a radio's label is drawn in `checkbox.font`'s
+/// family and style, as in its size and weight, where the theme states
+/// them; a style is gpui's of the same name.
+#[test]
+fn the_checkbox_label_takes_the_stated_family_and_style() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.checkbox.font.family = "Noto Serif".into();
+    for (style, drawn) in [
+        (FontStyle::Normal, gpui::FontStyle::Normal),
+        (FontStyle::Italic, gpui::FontStyle::Italic),
+        (FontStyle::Oblique, gpui::FontStyle::Oblique),
+    ] {
+        r.checkbox.font.style = style;
+        let mut label = font_text(&r.checkbox.font, crate::Native::unscaled(&r));
+        let text = label.text_style();
+        assert_eq!(
+            text.font_family,
+            Some(crate::font_family(&r.checkbox.font.family)),
+            "{style:?}"
+        );
+        assert_eq!(text.font_style, Some(drawn), "{style:?}");
+        assert_eq!(text.font_size, Some(px(r.checkbox.font.size).into()));
+        assert_eq!(
+            text.font_weight,
+            Some(gpui::FontWeight(f32::from(r.checkbox.font.weight)))
+        );
+        assert_eq!(
+            text.line_height,
+            Some(gpui::relative(r.defaults.line_height))
+        );
+    }
+}
+
+/// M6-21: a tab's label is drawn in `tab.font`'s family and style, as in its
+/// size and weight, where the theme states them.
+#[test]
+fn the_tab_label_takes_the_stated_family_and_style() {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.tab.font.family = "Noto Serif".into();
+    for (style, drawn) in [
+        (FontStyle::Normal, gpui::FontStyle::Normal),
+        (FontStyle::Italic, gpui::FontStyle::Italic),
+        (FontStyle::Oblique, gpui::FontStyle::Oblique),
+    ] {
+        r.tab.font.style = style;
+        let mut label = font_text(&r.tab.font, crate::Native::unscaled(&r));
+        let text = label.text_style();
+        assert_eq!(
+            text.font_family,
+            Some(crate::font_family(&r.tab.font.family)),
+            "{style:?}"
+        );
+        assert_eq!(text.font_style, Some(drawn), "{style:?}");
+        assert_eq!(text.font_size, Some(px(r.tab.font.size).into()));
+        assert_eq!(
+            text.font_weight,
+            Some(gpui::FontWeight(f32::from(r.tab.font.weight)))
+        );
+        assert_eq!(
+            text.line_height,
+            Some(gpui::relative(r.defaults.line_height))
+        );
+    }
+}
+
+/// The tabs of `tab_window`'s bar, each its own debug selector.
+const TAB_NAMES: [&str; 8] = [
+    "tab0", "tab1", "tab2", "tab3", "tab4", "tab5", "tab6", "tab7",
+];
+
+/// A window drawing a kde-breeze tab bar of [`TAB_NAMES`]' eight tabs,
+/// across the harness's 200px column, `selected` selected and its scroll
+/// tracked by `handle` where one is given; a click hands `on_click` the
+/// tab's index.
+fn tab_window(
+    cx: &mut TestAppContext,
+    selected: Rc<Cell<usize>>,
+    on_click: Rc<dyn Fn(usize)>,
+    handle: Option<gpui::ScrollHandle>,
+) -> &mut VisualTestContext {
+    window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            use gpui::prelude::FluentBuilder as _;
+            let on_click = on_click.clone();
+            TabBar::new("t")
+                .w_full()
+                .children(TAB_NAMES.map(|name| Tab::new(name).debug_selector(|| name.into())))
+                .selected_index(selected.get())
+                .on_click(move |ix, _, _| on_click(*ix))
+                .when_some(handle.clone(), |bar, handle| bar.track_scroll(&handle))
+                .into_any_element()
+        }),
+    )
+}
+
+/// The first tab, of `tab_window`'s, that the bar's right edge cuts.
+fn half_hidden_tab(cx: &mut VisualTestContext) -> (usize, &'static str) {
+    let bar = bounds(cx, "native-tab-bar");
+    TAB_NAMES
+        .into_iter()
+        .enumerate()
+        .find(|(_, name)| {
+            let tab = bounds(cx, name);
+            tab.left() < bar.right() && tab.right() > bar.right()
+        })
+        .expect("the bar's right edge cuts a tab")
+}
+
+/// M6-26: a click on a tab the bar's edge half hides scrolls it into view
+/// on the next frame, with the bar's own handle where the caller tracks
+/// none.
+#[gpui::test]
+fn a_clicked_half_hidden_tab_scrolls_into_view(cx: &mut TestAppContext) {
+    let clicked = Rc::new(Cell::new(None));
+    let c = clicked.clone();
+    let cx = tab_window(
+        cx,
+        Rc::new(Cell::new(0)),
+        Rc::new(move |ix| c.set(Some(ix))),
+        None,
+    );
+    let bar = bounds(cx, "native-tab-bar");
+    let (ix, name) = half_hidden_tab(cx);
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(clicked.get(), Some(ix), "the caller's handler ran");
+    let shown = bounds(cx, name);
+    assert_eq!(shown.right(), bar.right(), "scrolled just into view");
+    assert!(shown.left() >= bar.left());
+}
+
+/// M6-26: a tracked handle is the one the bar scrolls; a change of the
+/// selection scrolls nothing, as gpui-component's `TabBar::track_scroll`
+/// says (tab/tab_bar.rs:138-142).
+#[gpui::test]
+fn a_tracked_tab_bar_scrolls_its_handle_on_a_click_only(cx: &mut TestAppContext) {
+    let handle = gpui::ScrollHandle::new();
+    let selected = Rc::new(Cell::new(0));
+    let cx = tab_window(cx, selected.clone(), Rc::new(|_| {}), Some(handle.clone()));
+    let (ix, name) = half_hidden_tab(cx);
+    selected.set(ix);
+    redraw(cx);
+    assert_eq!(
+        handle.offset().x,
+        px(0.),
+        "a selection change reveals nothing"
+    );
+    let bar = bounds(cx, "native-tab-bar");
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(
+        handle.offset().x,
+        bar.right() - tab.right(),
+        "the tracked handle scrolled the tab just into view"
+    );
+}
+
+/// M6-26: the bar asks for the clicked tab before the caller's handler runs,
+/// and the scroll lands on the next frame: the handler still sees the old
+/// offset, and a reveal it asks for itself replaces the bar's.
+#[gpui::test]
+fn a_click_asks_for_the_reveal_before_the_handler(cx: &mut TestAppContext) {
+    let handle = gpui::ScrollHandle::new();
+    let seen = Rc::new(Cell::new(None));
+    let (h, s) = (handle.clone(), seen.clone());
+    let cx = tab_window(
+        cx,
+        Rc::new(Cell::new(0)),
+        Rc::new(move |_| {
+            s.set(Some(h.offset().x));
+            h.scroll_to_item(0);
+        }),
+        Some(handle.clone()),
+    );
+    let bar = bounds(cx, "native-tab-bar");
+    let (_, name) = half_hidden_tab(cx);
+    let tab = bounds(cx, name);
+    let visible = point((tab.left() + bar.right()) / 2., tab.center().y);
+    cx.simulate_click(visible, Modifiers::default());
+    redraw(cx);
+    assert_eq!(seen.get(), Some(px(0.)), "the handler saw the old offset");
+    assert_eq!(handle.offset().x, px(0.), "the handler's reveal won");
 }
 
 #[test]
@@ -738,17 +1644,17 @@ fn the_indicator_is_the_stated_size(cx: &mut TestAppContext) {
 fn the_radio_indicator_is_the_stated_size(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| Radio::new("r").label("A").into_any_element()),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     assert_eq!(r.checkbox.radio_indicator_width, Some(20.));
     let b = bounds(cx, "native-checkbox-indicator");
     assert_eq!(b.size.width, px(20.));
     assert_eq!(b.size.height, px(20.));
 }
 
-/// docs/platform-facts.md:1220: Breeze's dot is 6px across, centred in the
+/// docs/platform-facts.md:1241: Breeze's dot is 6px across, centred in the
 /// 20px circle.
 #[gpui::test]
 fn a_selected_radio_draws_the_stated_dot(cx: &mut TestAppContext) {
@@ -770,7 +1676,7 @@ fn a_selected_radio_draws_the_stated_dot(cx: &mut TestAppContext) {
 fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
     let cx = window_with(
         cx,
-        Some(("material", ColorMode::Dark)),
+        Some(("material-3", ColorMode::Dark)),
         Box::new(|_, _| {
             Switch::new("s")
                 .label("On")
@@ -778,7 +1684,7 @@ fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
                 .into_any_element()
         }),
     );
-    let r = resolved("material", ColorMode::Dark);
+    let r = resolved("material-3", ColorMode::Dark);
     let s = &r.switch;
     let track = bounds(cx, "native-switch-track");
     assert_eq!(track.size.width, px(s.track_width));
@@ -796,6 +1702,183 @@ fn the_switch_track_and_thumb_are_the_stated_sizes(cx: &mut TestAppContext) {
         track.origin.x + track.size.width - (thumb.origin.x + thumb.size.width),
         inset,
         "on: inset from the right end"
+    );
+}
+
+/// docs/platform-facts.md §2.21: qqc2-desktop-style's handle is the 18 of the
+/// indicator on a 12-tall track, so it overhangs the track by 3 above and
+/// below and sits flush with the track's ends (`SwitchIndicator.qml:41-48`,
+/// `:65-76`, `:68`).
+#[gpui::test]
+fn a_thumb_taller_than_its_track_sits_flush_with_its_ends(cx: &mut TestAppContext) {
+    for checked in [false, true] {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |_, _| Switch::new("s").checked(checked).into_any_element()),
+        );
+        let r = resolved("kde-breeze", ColorMode::Light);
+        let s = &r.switch;
+        assert!(
+            s.thumb_diameter > s.track_height,
+            "kde-breeze's thumb no longer overhangs its track"
+        );
+        let track = bounds(cx, "native-switch-track");
+        let thumb = bounds(cx, "native-switch-thumb");
+        assert_eq!(track.size.height, px(s.track_height));
+        assert_eq!(
+            thumb.origin.y - track.origin.y,
+            (px(s.track_height) - px(s.thumb_diameter)) / 2.,
+            "checked {checked}: overhangs above and below alike"
+        );
+        if checked {
+            assert_eq!(
+                thumb.origin.x + thumb.size.width,
+                track.origin.x + track.size.width,
+                "on: flush with the right end"
+            );
+        } else {
+            assert_eq!(
+                thumb.origin.x, track.origin.x,
+                "off: flush with the left end"
+            );
+        }
+    }
+}
+
+/// docs/platform-facts.md §2.21: the track is outlined in the colour the
+/// theme states for its state, `track_border_line_width` wide, and the thumb
+/// in `thumb_border_color`, `thumb_border_line_width` wide; a part whose
+/// colour or width is unset has no outline. Under kde-breeze (both tracks
+/// and the thumb outlined), windows-11 and material-3 (the off track only).
+#[gpui::test]
+fn the_switch_draws_the_stated_outlines(cx: &mut TestAppContext) {
+    for preset in ["kde-breeze", "windows-11", "material-3"] {
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            for (checked, disabled) in [(false, false), (true, false), (false, true), (true, true)]
+            {
+                switch_draws_the_stated_outlines(cx, preset, mode, checked, disabled);
+            }
+        }
+    }
+}
+
+fn switch_draws_the_stated_outlines(
+    cx: &mut TestAppContext,
+    preset: &'static str,
+    mode: ColorMode,
+    checked: bool,
+    disabled: bool,
+) {
+    let cx = window_with(
+        cx,
+        Some((preset, mode)),
+        Box::new(move |_, _| {
+            Switch::new("s")
+                .checked(checked)
+                .disabled(disabled)
+                .into_any_element()
+        }),
+    );
+    let r = resolved(preset, mode);
+    let s = &r.switch;
+    let state = format!("{preset} {mode:?} checked {checked} disabled {disabled}");
+    assert_eq!(s.disabled_opacity, 1., "{state}: drawn unfaded");
+    assert!(
+        s.unchecked_track_border_color.is_some() && s.track_border_line_width.is_some(),
+        "{state}: {preset} no longer states the off track's outline (docs/platform-facts.md §2.21)"
+    );
+    let track_colour = match (checked, disabled) {
+        (true, false) => s.checked_track_border_color,
+        (false, false) => s.unchecked_track_border_color,
+        (true, true) => s
+            .disabled_checked_track_border_color
+            .or(s.checked_track_border_color),
+        (false, true) => s
+            .disabled_unchecked_track_border_color
+            .or(s.unchecked_track_border_color),
+    };
+    let stated = |colour: Option<native_theme::color::Rgba>, width: Option<f32>| {
+        colour
+            .zip(width)
+            .map(|(colour, width)| (px(width), c(colour)))
+    };
+    let edge = |cx: &mut VisualTestContext, b: Bounds<Pixels>| {
+        cx.update(|window, _| {
+            let b = b.scale(window.scale_factor());
+            scene_quads(window)
+                .iter()
+                .find(|q| q.bounds == b && q.border_widths.top.0 > 0.)
+                .map(|q| {
+                    (
+                        px(q.border_widths.top.0 / window.scale_factor()),
+                        q.border_color,
+                    )
+                })
+        })
+    };
+    let track = bounds(cx, "native-switch-track");
+    assert_eq!(
+        edge(cx, track),
+        stated(track_colour, s.track_border_line_width),
+        "{state}: the track"
+    );
+    let thumb = bounds(cx, "native-switch-thumb");
+    let diameter = if checked {
+        s.thumb_diameter
+    } else {
+        s.unchecked_thumb_diameter.unwrap_or(s.thumb_diameter)
+    };
+    assert_eq!(thumb.size.width, px(diameter), "{state}: the thumb's box");
+    // The thumb lies over the track's outline, as qqc2-desktop-style's
+    // handle lies over its track (SwitchIndicator.qml:38-79): gpui paints a
+    // box's border after its children, so an outline on the track itself
+    // would cross the thumb. Read from `painted_quads()`, which is in paint
+    // order where `scene_quads` is not.
+    let order = cx.update(|window, _| {
+        let quads = window.painted_quads();
+        let at = |b: Bounds<Pixels>, edge: bool| {
+            let b = b.scale(window.scale_factor());
+            quads
+                .iter()
+                .position(|q| q.bounds == b && (q.border_widths.top.0 > 0.) == edge)
+        };
+        (at(track, true), at(thumb, false))
+    });
+    if stated(track_colour, s.track_border_line_width).is_some() {
+        let (Some(edge), Some(fill)) = order else {
+            panic!("{state}: the track's outline and the thumb are not both painted: {order:?}");
+        };
+        assert!(
+            edge < fill,
+            "{state}: the track's outline is painted over the thumb"
+        );
+    }
+    // Placed as without an outline.
+    let inset = (px(s.track_height) - px(diameter)) / 2.;
+    assert_eq!(
+        thumb.origin.y - track.origin.y,
+        inset,
+        "{state}: on the axis"
+    );
+    let end = inset.max(px(0.));
+    if checked {
+        assert_eq!(
+            track.origin.x + track.size.width - (thumb.origin.x + thumb.size.width),
+            end,
+            "{state}: at the right end"
+        );
+    } else {
+        assert_eq!(
+            thumb.origin.x - track.origin.x,
+            end,
+            "{state}: at the left end"
+        );
+    }
+    assert_eq!(
+        edge(cx, thumb),
+        stated(s.thumb_border_color, s.thumb_border_line_width),
+        "{state}: the thumb"
     );
 }
 
@@ -850,6 +1933,74 @@ fn the_progress_bar_and_spinner_are_the_stated_sizes(cx: &mut TestAppContext) {
     let spinner = bounds(cx, "native-spinner");
     assert_eq!(spinner.size.width, px(r.spinner.diameter));
     assert_eq!(spinner.size.height, px(r.spinner.diameter));
+}
+
+/// A loading bar in a 200 px column, under kde-breeze, and its look.
+fn loading_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, ProgressBarLook) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| ProgressBar::new("p").loading(true).into_any_element()),
+    );
+    let look = ProgressBarLook::of(&resolved("kde-breeze", ColorMode::Light)).expect("finite");
+    (cx, look)
+}
+
+/// The fill's bounds after `ms` milliseconds more, on a frame drawn then.
+/// Each draw that lays the running animation out asks for its next frame
+/// (`Window::request_animation_frame`, which queues a notify of its view),
+/// and `simulate_next_frame` delivers that notify, which tests have no
+/// frame loop to deliver: a call delivers the request the draw before it
+/// queued, the first call `window_with`'s.
+fn fill_after(cx: &mut VisualTestContext, ms: u64) -> Bounds<Pixels> {
+    std::thread::sleep(std::time::Duration::from_millis(ms));
+    cx.update(|window, cx| window.simulate_next_frame(cx));
+    redraw(cx);
+    bounds(cx, "native-progress-fill")
+}
+
+/// M6-28: a loading bar sweeps its fill across the track on
+/// gpui-component's motion (progress/progress.rs:149-160), over the theme's
+/// track. The fill's colour is checked still, under reduced motion: while it
+/// sweeps, it is under a pixel wide for part of each turn, and gpui drops a
+/// quad that empty.
+#[gpui::test]
+fn a_loading_progress_bar_sweeps_its_fill_in_the_theme(cx: &mut TestAppContext) {
+    let (cx, look) = loading_window(cx);
+    let bar = bounds(cx, "native-progress");
+    assert_eq!(bar.size.height, look.height);
+    assert_eq!(painted_fill(cx, bar), Some(look.track), "the theme's track");
+    let first = fill_after(cx, 0);
+    assert_eq!(first.size.height, bar.size.height, "the track's height");
+    // Frames a little apart until one lays the fill out elsewhere: the sweep
+    // takes a second (progress/progress.rs:152), so 2 s of frames cover two
+    // turns however slowly the runner draws.
+    let start = std::time::Instant::now();
+    let moved = loop {
+        if fill_after(cx, 20) != first {
+            break true;
+        }
+        if start.elapsed() > std::time::Duration::from_secs(2) {
+            break false;
+        }
+    };
+    assert!(moved, "the fill moves");
+}
+
+/// M6-28: under reduced motion the loading fill stands still in the middle,
+/// gpui-component's `left(relative(0.325)).right(relative(0.325))`
+/// (progress/progress.rs:161-164).
+#[gpui::test]
+fn a_loading_progress_bar_stands_still_under_reduced_motion(cx: &mut TestAppContext) {
+    let (cx, look) = loading_window(cx);
+    cx.update(|_, cx| cx.set_reduce_motion(true));
+    let bar = bounds(cx, "native-progress");
+    let first = fill_after(cx, 0);
+    let inset = bar.size.width * 0.325;
+    assert_eq!(first.origin.x, bar.origin.x + inset);
+    assert_eq!(first.size.width, bar.size.width - inset * 2.);
+    assert_eq!(painted_fill(cx, first), Some(look.fill), "the theme's fill");
+    assert_eq!(fill_after(cx, 150), first, "still");
 }
 
 /// The spinner draws the icon set's indicator where the set has one, filling
@@ -931,7 +2082,7 @@ fn without_a_native_theme_the_widgets_are_gpui_components(cx: &mut TestAppContex
 }
 
 /// A checkbox (or switch) wired as gpui-component's: controlled, the
-/// requested value written back.
+/// requested value written back and the view notified.
 fn toggler(
     cx: &mut TestAppContext,
     disabled: bool,
@@ -943,11 +2094,12 @@ fn toggler(
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
-        Box::new(move |_, _| {
-            let (v2, n2) = (v.clone(), n.clone());
-            let on_change = move |checked: &bool, _: &mut Window, _: &mut gpui::App| {
+        Box::new(move |_, cx| {
+            let (v2, n2, harness) = (v.clone(), n.clone(), cx.entity_id());
+            let on_change = move |checked: &bool, _: &mut Window, cx: &mut gpui::App| {
                 v2.set(*checked);
                 n2.set(n2.get() + 1);
+                cx.notify(harness);
             };
             if switch {
                 Switch::new("t")
@@ -1060,6 +2212,440 @@ fn a_radio_group_reports_the_radio_clicked(cx: &mut TestAppContext) {
     assert_eq!(picked.get(), Some(1));
 }
 
+/// M6-23: the caller's style is the group's own, so a layout style such as
+/// `w_full()` reaches the element its parent lays out.
+#[gpui::test]
+fn a_radio_groups_style_reaches_its_root(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .flex()
+                .flex_row()
+                .w(px(200.))
+                .child(
+                    RadioGroup::new("g")
+                        .w_full()
+                        .children([Radio::new("r").label("R")]),
+                )
+                .into_any_element()
+        }),
+    );
+    assert_eq!(bounds(cx, "native-radio-group").size.width, px(200.));
+}
+
+/// What gpui writes into the accessibility node of each control `probe`
+/// builds while a frame is laid out under kde-breeze, as gpui-base's own
+/// tests read a control's node (checkbox.rs,
+/// `accessibility_exposes_role_label_and_all_toggle_states`): the name each
+/// announces.
+fn announced(
+    cx: &mut TestAppContext,
+    probe: fn(&mut Window, &mut gpui::App) -> Vec<accesskit::Node>,
+) -> Vec<Option<String>> {
+    let captured = Rc::new(RefCell::new(Vec::new()));
+    let c = captured.clone();
+    window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let c = c.clone();
+            gpui::canvas(
+                move |_, window, cx| *c.borrow_mut() = probe(window, cx),
+                |_, (), _, _| {},
+            )
+            .size_full()
+            .into_any_element()
+        }),
+    );
+    captured
+        .take()
+        .iter()
+        .map(|node| node.label().map(str::to_owned))
+        .collect()
+}
+
+/// The node `base`, a control's headless primitive, writes; an empty one
+/// where the control is not theme-drawn (`None`).
+fn a11y_node(
+    role: accesskit::Role,
+    base: Option<impl gpui::RenderOnce>,
+    window: &mut Window,
+    cx: &mut gpui::App,
+) -> accesskit::Node {
+    let mut node = accesskit::Node::new(role);
+    if let Some(base) = base {
+        base.render(window, cx)
+            .into_element()
+            .write_a11y_info(&mut node);
+    }
+    node
+}
+
+/// The names a probe's three controls announce: the first labelled and
+/// named apart, the second labelled only, the third named only.
+fn three_names() -> Vec<Option<String>> {
+    vec![
+        Some("Announced".to_owned()),
+        Some("Shown".to_owned()),
+        Some("Only announced".to_owned()),
+    ]
+}
+
+/// M6-27: a checkbox announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_checkbox_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Checkbox::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Checkbox::new("b").label("Shown"),
+            Checkbox::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|checkbox| {
+            let base = checkbox.row(window, cx).ok();
+            a11y_node(accesskit::Role::CheckBox, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(announced, three_names());
+}
+
+/// M6-27: a radio announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_radio_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Radio::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Radio::new("b").label("Shown"),
+            Radio::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|radio| {
+            let base = radio.row(window, cx).ok();
+            a11y_node(accesskit::Role::RadioButton, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(announced, three_names());
+}
+
+/// M6-27: a switch announces its `accessibility_label`, or else its label.
+#[gpui::test]
+fn a_switch_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let announced = announced(cx, |window, cx| {
+        [
+            Switch::new("a")
+                .label("Shown")
+                .accessibility_label("Announced"),
+            Switch::new("b").label("Shown"),
+            Switch::new("c").accessibility_label("Only announced"),
+        ]
+        .map(|switch| {
+            let base = switch.row(window, cx).ok();
+            a11y_node(accesskit::Role::Switch, base, window, cx)
+        })
+        .to_vec()
+    });
+    assert_eq!(announced, three_names());
+}
+
+/// What gpui-kit's test API finds of sliders drawn one under another, each
+/// over a state of its own and built by its `build`, under `theme` (with no
+/// native theme where `None`): each looked up by gpui-base's slider id,
+/// `("slider", entity_id)` (gpui-base slider.rs:509-511).
+fn slider_snapshots(
+    cx: &mut TestAppContext,
+    theme: Option<(&str, ColorMode)>,
+    builds: &[fn(Slider) -> Slider],
+) -> Vec<Option<gpui_kit::test::ElementSnapshot>> {
+    let builds = builds.to_vec();
+    let states: Vec<Entity<SliderState>> = builds
+        .iter()
+        .map(|_| cx.new(|_| SliderState::new()))
+        .collect();
+    let drawn = states.clone();
+    let cx = window_with(
+        cx,
+        theme,
+        Box::new(move |_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .children(
+                    drawn
+                        .iter()
+                        .zip(&builds)
+                        .map(|(state, build)| build(Slider::new(state).w(px(100.)))),
+                )
+                .into_any_element()
+        }),
+    );
+    // A query by id alone would find gpui-component's slider just as well.
+    assert_eq!(
+        cx.debug_bounds("native-slider").is_some(),
+        theme.is_some(),
+        "the connector draws its slider exactly under a native theme"
+    );
+    cx.update(|window, _| {
+        states
+            .iter()
+            .map(|state| {
+                gpui_kit::test::TestWindowExt::try_find(window, ("slider", state.entity_id()))
+            })
+            .collect()
+    })
+}
+
+/// G3 T7 fix round 1: a themed slider registers for gpui-kit's test API
+/// under gpui-base's slider id, as gpui-component's slider does, so a test
+/// finds it by id, role and label under a native theme too; an enabled one's
+/// focus binding is observed (`focused()` does not panic).
+#[gpui::test]
+fn a_themed_slider_registers_for_gpui_kits_test_api(cx: &mut TestAppContext) {
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[|slider| slider.accessibility_label("Volume")],
+    );
+    let slider = found
+        .into_iter()
+        .next()
+        .flatten()
+        .expect("the themed slider is registered");
+    assert_eq!(slider.role(), Some(accesskit::Role::Slider));
+    assert_eq!(slider.label(), Some("Volume"));
+    assert_eq!(slider.focused(), Some(false));
+}
+
+/// G3 T7: a themed slider announces its `accessibility_label`, as
+/// gpui-component's does (slider.rs:126-130, :269-273), and no name without
+/// one.
+#[gpui::test]
+fn a_slider_announces_its_accessibility_label(cx: &mut TestAppContext) {
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[
+            |slider| slider.accessibility_label("Announced"),
+            |slider| slider,
+        ],
+    );
+    let labels: Vec<Option<String>> = found
+        .iter()
+        .map(|slider| {
+            let slider = slider.as_ref().expect("the themed slider is registered");
+            slider.label().map(str::to_owned)
+        })
+        .collect();
+    assert_eq!(labels, vec![Some("Announced".to_owned()), None]);
+}
+
+/// G3 T7: a disabled themed slider's node is disabled, as gpui-base marks
+/// its own slider's (a11y_disabled.rs:130-135, slider.rs:558); an enabled
+/// one's is not.
+#[gpui::test]
+fn a_disabled_slider_reports_itself_disabled(cx: &mut TestAppContext) {
+    let found = slider_snapshots(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        &[|slider| slider.disabled(true), |slider| slider],
+    );
+    let disabled: Vec<Option<bool>> = found
+        .iter()
+        .map(|slider| {
+            slider
+                .as_ref()
+                .expect("the themed slider is registered")
+                .disabled()
+        })
+        .collect();
+    assert_eq!(disabled, [Some(true), None]);
+}
+
+/// G3 T7: without a native theme the slider passes its label and its
+/// disabled state on to gpui-component's, whose gpui-base slider registers
+/// them for gpui-kit's test API (gpui-base slider.rs:509-511,
+/// test_support.rs:330-340).
+#[gpui::test]
+fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &mut TestAppContext) {
+    let found = slider_snapshots(
+        cx,
+        None,
+        &[
+            |slider| slider.accessibility_label("Enabled"),
+            |slider| slider.disabled(true).accessibility_label("Disabled"),
+        ],
+    );
+    let found: Vec<(Option<String>, Option<bool>)> = found
+        .iter()
+        .map(|slider| {
+            let slider = slider.as_ref().expect("gpui-base's slider is registered");
+            (slider.label().map(str::to_owned), slider.disabled())
+        })
+        .collect();
+    assert_eq!(
+        found,
+        [
+            (Some("Enabled".to_owned()), None),
+            (Some("Disabled".to_owned()), Some(true)),
+        ]
+    );
+}
+
+/// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
+/// ring: with the theme's focus ring on, gpui-component's
+/// `focus_ring_style` tints the track's border in `ThemeColor::ring`
+/// (styled.rs:257-262), and the track sets no border colour of its own (its
+/// outline is a box of its own, under the thumb).
+#[gpui::test]
+fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| div().into_any_element()),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let look = SwitchLook::of(&r, false, false).expect("finite");
+    let border = |cx: &mut VisualTestContext, focus_ring: bool| {
+        cx.update(|window, cx| {
+            let switch = Switch::new("s").focus_ring(focus_ring);
+            let mut track = switch.track(&look, true, look.thumb_left(false), window, cx);
+            track.style().border_color
+        })
+    };
+    let ring = cx.update(|_, cx| {
+        use gpui_component::ActiveTheme as _;
+        assert!(cx.theme().focus_ring, "the theme draws focus rings");
+        cx.theme().ring
+    });
+    assert_eq!(border(cx, true), Some(ring));
+    assert_eq!(border(cx, false), None);
+}
+
+#[derive(Clone, Copy)]
+enum Control {
+    Checkbox,
+    Radio,
+    Switch,
+}
+
+/// The controls activated, in order, by three rounds of Tab and Space over
+/// a column of three `control`s: "late" at Tab index 2, "early" at 1, and
+/// "skipped", which is no tab stop.
+fn activated_in_tab_order(cx: &mut TestAppContext, control: Control) -> Vec<&'static str> {
+    let fired = Rc::new(RefCell::new(Vec::new()));
+    let f = fired.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            let one = |id: &'static str, index: isize, stop: bool| {
+                let f = f.clone();
+                let on_change =
+                    move |_: &bool, _: &mut Window, _: &mut gpui::App| f.borrow_mut().push(id);
+                match control {
+                    Control::Checkbox => Checkbox::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                    Control::Radio => Radio::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                    Control::Switch => Switch::new(id)
+                        .label(id)
+                        .tab_index(index)
+                        .tab_stop(stop)
+                        .on_change(on_change)
+                        .into_any_element(),
+                }
+            };
+            div()
+                .flex()
+                .flex_col()
+                .child(one("late", 2, true))
+                .child(one("early", 1, true))
+                .child(one("skipped", 0, false))
+                .into_any_element()
+        }),
+    );
+    for _ in 0..3 {
+        focus_next(cx);
+        activate_key(cx, "space");
+        redraw(cx);
+    }
+    fired.take()
+}
+
+/// M6-27: `tab_index` orders a control in its tab group, and
+/// `tab_stop(false)` takes it out of the Tab order.
+#[gpui::test]
+fn a_checkbox_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Checkbox),
+        ["early", "late", "early"]
+    );
+}
+
+#[gpui::test]
+fn a_radio_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Radio),
+        ["early", "late", "early"]
+    );
+}
+
+#[gpui::test]
+fn a_switch_keeps_its_tab_order(cx: &mut TestAppContext) {
+    assert_eq!(
+        activated_in_tab_order(cx, Control::Switch),
+        ["early", "late", "early"]
+    );
+}
+
+/// M6-27: the caller's style refines the row after the widget's own, so
+/// `w_full()` reaches it and a gap of the caller's replaces `label_gap`.
+#[gpui::test]
+fn the_callers_style_reaches_the_row(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .flex()
+                .flex_col()
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .w(px(200.))
+                        .child(Checkbox::new("c").label("C").w_full().gap(px(37.))),
+                )
+                .child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .w(px(200.))
+                        .child(Switch::new("s").label("S").w_full()),
+                )
+                .into_any_element()
+        }),
+    );
+    assert_eq!(bounds(cx, "native-checkbox-row").size.width, px(200.));
+    assert_eq!(bounds(cx, "native-switch-row").size.width, px(200.));
+    let indicator = bounds(cx, "native-checkbox-indicator");
+    let label = bounds(cx, "native-checkbox-label");
+    assert_eq!(label.origin.x - indicator.right(), px(37.));
+}
+
 fn slider_window(
     cx: &mut TestAppContext,
     disabled: bool,
@@ -1123,6 +2709,224 @@ fn a_slider_follows_the_pointer_over_its_travel(cx: &mut TestAppContext) {
         Modifiers::default(),
     );
     assert_eq!(slider_value(cx, &state), 100.);
+}
+
+fn range_window(cx: &mut TestAppContext) -> (&mut VisualTestContext, Entity<SliderState>) {
+    let state = cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(20.0..80.0)
+    });
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| Slider::new(&s).w(px(140.)).into_any_element()),
+    );
+    (cx, state)
+}
+
+/// M6-20: a range state draws a thumb at each end, the fill between them,
+/// as gpui-component's slider draws one (slider.rs:157-164, :316-319).
+#[gpui::test]
+fn a_range_slider_draws_a_thumb_at_each_end(cx: &mut TestAppContext) {
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    // The travel the thumbs' centres cover: the width less a radius at each
+    // end.
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.origin.x + radius + travel * fraction;
+    let start = bounds(cx, "native-slider-start-thumb");
+    let end = bounds(cx, "native-slider-thumb");
+    assert_eq!(centre(start).x, at(0.2), "the start thumb at 20");
+    assert_eq!(centre(end).x, at(0.8), "the end thumb at 80");
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(fill.origin.x, at(0.2), "the fill from the start thumb");
+    assert_eq!(fill.origin.x + fill.size.width, at(0.8), "to the end thumb");
+    drop(state);
+}
+
+/// M6-20: the start of a range moves by pointer: a press on the rail nearer
+/// the start moves the start, as gpui-base picks the nearer thumb
+/// (slider.rs:691-703), and the start thumb follows; dragging that thumb
+/// moves the start, not the end.
+#[gpui::test]
+fn a_range_slider_moves_its_start_by_pointer(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    let (cx, state) = range_window(cx);
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let radius = px(r.slider.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    let travel = root.size.width - radius * 2.;
+    let at = |fraction: f32| root.origin.x + radius + travel * fraction;
+    let y = centre(root).y;
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_click(point(at(0.05), y), Modifiers::default());
+    assert_eq!(value(cx), SliderValue::Range(5., 80.), "the start moved");
+    redraw(cx);
+    let start = bounds(cx, "native-slider-start-thumb");
+    assert_eq!(centre(start).x, at(0.05), "the start thumb follows");
+    cx.simulate_mouse_down(centre(start), gpui::MouseButton::Left, Modifiers::default());
+    // The first move starts the drag past gpui's threshold, the next moves
+    // the dragged thumb.
+    for x in [at(0.2), at(0.4)] {
+        cx.simulate_mouse_move(
+            point(x, y),
+            Some(gpui::MouseButton::Left),
+            Modifiers::default(),
+        );
+    }
+    cx.simulate_mouse_up(
+        point(at(0.4), y),
+        gpui::MouseButton::Left,
+        Modifiers::default(),
+    );
+    assert_eq!(
+        value(cx),
+        SliderValue::Range(40., 80.),
+        "dragged, the start"
+    );
+}
+
+/// M6-20: the keys move a range's end and keep its start, where a key turned
+/// `Range(20, 80)` into `Single(81)`; the end never passes the start, as a
+/// pointer keeps it (gpui-base slider.rs:378-382).
+#[gpui::test]
+fn a_range_slider_keeps_its_range_on_the_keys(cx: &mut TestAppContext) {
+    use gpui_base::slider::SliderValue;
+    let (cx, state) = range_window(cx);
+    focus_next(cx);
+    let value = |cx: &mut VisualTestContext| cx.update(|_, cx| state.read(cx).value());
+    cx.simulate_keystrokes("right");
+    assert_eq!(value(cx), SliderValue::Range(20., 81.));
+    cx.simulate_keystrokes("left left");
+    assert_eq!(value(cx), SliderValue::Range(20., 79.));
+    cx.simulate_keystrokes("end");
+    assert_eq!(value(cx), SliderValue::Range(20., 100.));
+    cx.simulate_keystrokes("home");
+    assert_eq!(value(cx), SliderValue::Range(20., 20.), "down to the start");
+}
+
+/// M6-20: along the vertical axis the rail stands up the widget, its minimum
+/// at the bottom, as gpui-base maps the pointer (slider.rs:367-371), and the
+/// thumb travels it.
+#[gpui::test]
+fn a_vertical_slider_lays_its_rail_out_vertically(cx: &mut TestAppContext) {
+    let state = cx.new(|_| {
+        SliderState::new()
+            .min(0.)
+            .max(100.)
+            .step(1.)
+            .default_value(25.)
+    });
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("kde-breeze", ColorMode::Light)),
+        Box::new(move |_, _| {
+            Slider::new(&s)
+                .axis(gpui::Axis::Vertical)
+                .h(px(140.))
+                .into_any_element()
+        }),
+    );
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let sl = &r.slider;
+    let radius = px(sl.thumb_diameter) / 2.;
+    let root = bounds(cx, "native-slider");
+    assert_eq!(root.size.height, px(140.));
+    assert_eq!(root.size.width, px(sl.thumb_diameter.max(sl.track_height)));
+    let rail = bounds(cx, "native-slider-rail");
+    assert_eq!(rail.size.width, px(sl.track_height), "the rail's thickness");
+    assert_eq!(
+        rail.size.height, root.size.height,
+        "the rail spans the widget"
+    );
+    let thumb = bounds(cx, "native-slider-thumb");
+    assert_eq!(thumb.size.width, px(sl.thumb_diameter));
+    assert_eq!(centre(thumb).x, centre(rail).x, "centred on the rail");
+    let travel = root.size.height - radius * 2.;
+    assert_eq!(
+        centre(thumb).y,
+        root.origin.y + root.size.height - radius - travel * 0.25,
+        "at 25 a quarter up from the bottom"
+    );
+    let fill = bounds(cx, "native-slider-fill");
+    assert_eq!(
+        fill.origin.y + fill.size.height,
+        root.origin.y + root.size.height
+    );
+    assert_eq!(fill.origin.y, centre(thumb).y, "filled up to the thumb");
+    // A press at the top of the travel is the maximum.
+    cx.simulate_click(
+        point(centre(root).x, root.origin.y + radius),
+        Modifiers::default(),
+    );
+    assert_eq!(slider_value(cx, &state), 100.);
+    focus_next(cx);
+    cx.simulate_keystrokes("down");
+    assert_eq!(slider_value(cx, &state), 99.);
+}
+
+/// The solid fill of the quad painted at `b`, given in window pixels.
+fn painted_fill(cx: &mut VisualTestContext, b: Bounds<Pixels>) -> Option<gpui::Hsla> {
+    cx.update(|window, _| {
+        let b = b.scale(window.scale_factor());
+        scene_quads(window)
+            .iter()
+            .find(|q| q.bounds == b && !q.background.is_transparent())
+            .and_then(|q| q.background.as_solid())
+    })
+}
+
+/// M6-19: a disabled adwaita slider is drawn faded as one widget over the
+/// window, as libadwaita's whole-widget `filter: Opacity(..)` fades it
+/// (docs/platform-facts.md §2.1.6): its fill is the fill over the rail over
+/// the window, faded by `disabled_opacity` over the window, and opaque, where
+/// fading each quad on its own let the rail show through the fill.
+#[gpui::test]
+fn a_disabled_slider_is_painted_faded_as_one(cx: &mut TestAppContext) {
+    let state = cx.new(|_| SliderState::new().min(0.).max(100.).default_value(50.));
+    let s = state.clone();
+    let cx = window_with(
+        cx,
+        Some(("adwaita", ColorMode::Light)),
+        Box::new(move |_, _| {
+            Slider::new(&s)
+                .disabled(true)
+                .w(px(140.))
+                .into_any_element()
+        }),
+    );
+    let r = resolved("adwaita", ColorMode::Light);
+    let sl = &r.slider;
+    let a = sl.disabled_opacity;
+    assert!(a < 1., "adwaita dims a disabled slider by opacity");
+    let ground = c(r.defaults.background_color);
+    let track = c(sl.disabled_track_color.unwrap_or(sl.track_color));
+    let fill = c(sl.disabled_fill_color.unwrap_or(sl.fill_color));
+    let rail = over(ground, track);
+    let want_fill = faded(ground, rail, fill, a);
+    assert_eq!(want_fill.a, 1., "the fill is opaque over an opaque window");
+    let (fill_at, rail_at) = (
+        bounds(cx, "native-slider-fill"),
+        bounds(cx, "native-slider-rail"),
+    );
+    assert_eq!(
+        painted_fill(cx, fill_at),
+        Some(want_fill),
+        "the fill over the rail, faded over the window"
+    );
+    assert_eq!(
+        painted_fill(cx, rail_at),
+        Some(faded(ground, ground, track, a)),
+        "the rail faded over the window"
+    );
+    drop(state);
 }
 
 #[gpui::test]

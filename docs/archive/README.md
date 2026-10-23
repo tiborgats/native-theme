@@ -42,7 +42,13 @@ actually happened when they were implemented.
 | v0.5.7 | `v0.5.7_native-theme-api.md`, `v0.5.7_native-theme-api-2.md`, `v0.5.7_gaps.md`, `v0.5.7_icon-theme.md`, `v0.5.7_docs-overhaul-design.md`, `v0.5.7_docs-overhaul-plan.md` |
 | v0.5.8 | `todo_v0.5.8_gpui-component-0.6-rationale.md`, `todo_v0.5.8_gpui-component-0.6-spec.md`, `todo_v0.5.8_gpui-component-0.6-plan.md` |
 | v0.5.9 | `todo_v0.5.9_gpui-kit-0.6.4-{rationale,spec,plan}.md`, `todo_v0.5.9_theme-contracts-{rationale,spec,plan}.md`, `todo_v0.5.9_showcase-app-{rationale,spec,plan}.md`, `todo_v0.5.9_showcase-layout.md`, `todo_v0.5.9_widget-info-{rationale,spec,plan}.md`, `todo_v0.5.9_unstated-sizes-and-chrome-ux-{rationale,spec,plan}.md`, `todo_v0.5.9_pre-merge-fixes.md`, `todo_v0.5.9_second-review-fixes.md` |
+| v0.6.0-rc1 | `todo_v0.6.0-rc1_gpui-kit-0.7-{rationale,spec,plan}.md` |
 | v0.6.0 | `todo_v0.6.0_egui-connector-rationale.md`, `todo_v0.6.0_egui-connector-spec.md`, `todo_v0.6.0_egui-connector-plan.md` |
+| v0.6.0 (egui widgets) | `todo_egui-widgets-{rationale,spec}.md` |
+| v0.6.0 (gpui widgets) | `todo_gpui-widgets-spec.md` |
+| v0.6.1 | `todo_v0.6.1_gpui-kit-0.7.1-{rationale,spec,plan}.md` |
+| v0.7.0 | `todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md` |
+| backlog, no version | `todo_closed.md`: the closed items of `docs/todo.md`, which move there as they close (the first batch on 2026-10-11) |
 
 The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to
 "inputs only": the plan carries an implementation record mapping each of its 16

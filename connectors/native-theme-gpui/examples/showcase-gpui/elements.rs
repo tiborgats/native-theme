@@ -1,116 +1,24 @@
 //! The elements the three showcases share, read from
-//! `docs/showcase-elements.toml`, and the layout dump that reports where
-//! this showcase drew each of them (`--dump-layout`).
+//! `docs/showcase-elements.toml` through the crate they share
+//! (`native_theme_showcase_support::elements`, the list's one reader), and
+//! where this showcase drew each of them, which the layout dump reports
+//! (`--dump-layout`, `layout_dump` in main.rs).
 //!
 //! The list is the one place those elements are named: Widget Info shows an
 //! element's name, state and leaves from it, and
 //! `scripts/check_showcase_parity.py` compares the gpui, iced and egui dumps
 //! and captures element by element against it.
 
-use std::collections::BTreeMap;
-use std::sync::OnceLock;
-
-use gpui::{
-    App, Bounds, Div, Entity, IntoElement, ParentElement as _, Pixels, Styled as _, Window, canvas,
-    div,
-};
+use gpui::{App, Div, Entity, IntoElement, ParentElement as _, Styled as _, Window, canvas, div};
 
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{Part, PartBounds};
 
-use crate::info::InfoRegistry;
+#[cfg(test)]
+pub use native_theme_showcase_support::elements::elements;
+pub use native_theme_showcase_support::elements::{ShowcaseElement, element};
 
-/// One element of `docs/showcase-elements.toml`, as the list's header
-/// gives the three showcases to read it: every field of the schema, though
-/// the running showcase reads only some (`parent` is the comparator's, `when`
-/// the tests').
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct ShowcaseElement {
-    pub id: String,
-    pub name: String,
-    pub parent: String,
-    pub leaves: Vec<String>,
-    pub states: Vec<String>,
-    pub part: bool,
-    pub when: Option<String>,
-}
-
-impl ShowcaseElement {
-    /// The Widget Info title: the name, then the state or variant shown.
-    pub fn title(&self) -> String {
-        match self.states.first() {
-            Some(state) => format!("{} · {state}", self.name),
-            None => self.name.clone(),
-        }
-    }
-}
-
-const SHOWCASE_ELEMENTS: &str = include_str!("../../../../docs/showcase-elements.toml");
-
-pub fn showcase_elements() -> Result<Vec<ShowcaseElement>, String> {
-    let table: toml::Table = toml::from_str(SHOWCASE_ELEMENTS).map_err(|e| e.to_string())?;
-    let rows = table
-        .get("element")
-        .and_then(toml::Value::as_array)
-        .ok_or("docs/showcase-elements.toml: no [[element]] entries")?;
-    rows.iter()
-        .map(|row| {
-            let text = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned)
-                    .ok_or_else(|| format!("an element has no `{key}`"))
-            };
-            let list = |key: &str| {
-                row.get(key)
-                    .and_then(toml::Value::as_array)
-                    .ok_or_else(|| format!("an element has no `{key}`"))?
-                    .iter()
-                    .map(|v| {
-                        v.as_str()
-                            .map(str::to_owned)
-                            .ok_or_else(|| format!("`{key}` holds a value that is not a string"))
-                    })
-                    .collect::<Result<Vec<_>, _>>()
-            };
-            Ok(ShowcaseElement {
-                id: text("id")?,
-                name: text("name")?,
-                parent: text("parent")?,
-                leaves: list("leaves")?,
-                states: list("states")?,
-                part: row
-                    .get("part")
-                    .and_then(toml::Value::as_bool)
-                    .unwrap_or(false),
-                when: row
-                    .get("when")
-                    .and_then(toml::Value::as_str)
-                    .map(str::to_owned),
-            })
-        })
-        .collect()
-}
-
-/// The list, parsed once. A list that does not parse is reported once on
-/// stderr and taken as empty: Widget Info then falls back to each widget's
-/// own info, and the dump holds nothing, which the comparator reports.
-/// `the_element_list_parses` holds the committed list to parsing.
-pub fn elements() -> &'static [ShowcaseElement] {
-    static LIST: OnceLock<Vec<ShowcaseElement>> = OnceLock::new();
-    LIST.get_or_init(|| {
-        showcase_elements().unwrap_or_else(|error| {
-            eprintln!("docs/showcase-elements.toml: {error}");
-            Vec::new()
-        })
-    })
-}
-
-/// The element of the list with `id`.
-pub fn element(id: &str) -> Option<&'static ShowcaseElement> {
-    elements().iter().find(|e| e.id == id)
-}
+use crate::info::{InfoRegistry, begin_record, painted};
 
 /// The elements of the list that a widget reporting itself under an info id
 /// (`InfoExt::info`) is, as (info id, element id): the widget's info is then
@@ -346,11 +254,14 @@ const PARTS: &[ControlParts] = &[
 pub fn part_observer(ui: &Entity<InfoRegistry>, info_id: &str) -> Option<PartBounds> {
     let &(_, parts) = PARTS.iter().find(|(id, _)| *id == info_id)?;
     let ui = ui.clone();
-    Some(std::rc::Rc::new(move |part, bounds, cx: &mut App| {
-        if let Some(&(_, id)) = parts.iter().find(|(p, _)| *p == part) {
-            ui.update(cx, |r, _| r.record_layout(id, bounds));
-        }
-    }))
+    Some(std::rc::Rc::new(
+        move |part, bounds, window: &mut Window, cx: &mut App| {
+            if let Some(&(_, id)) = parts.iter().find(|(p, _)| *p == part) {
+                let presence = begin_record(&ui, id.into(), window, cx);
+                ui.update(cx, |r, _| r.record_layout(id, bounds, presence));
+            }
+        },
+    ))
 }
 
 /// The Buttons whose labels are elements of the list, as (Button id,
@@ -426,17 +337,45 @@ pub fn listed_for(info_id: &str) -> Option<&'static str> {
 /// parent's padding box. For a part inside a box the showcase builds itself,
 /// with no border of its own.
 pub fn record(ui: &Entity<InfoRegistry>, id: &'static str) -> impl IntoElement {
-    let ui = ui.clone();
+    let (ui, on_paint) = (ui.clone(), ui.clone());
     canvas(
-        move |bounds, _window: &mut Window, cx: &mut App| {
-            ui.update(cx, |r, _| r.record_layout(id, bounds));
+        move |bounds, window: &mut Window, cx: &mut App| {
+            #[cfg(test)]
+            let colour = window.text_style().color;
+            let presence = begin_record(&ui, id.into(), window, cx);
+            ui.update(cx, |r, _| {
+                r.record_layout(id, bounds, presence);
+                #[cfg(test)]
+                r.text_colours.insert(id, colour);
+            });
         },
-        |_, _, _, _| {},
+        move |_, _, _, cx: &mut App| painted(&on_paint, cx),
     )
     .absolute()
     .top_0()
     .left_0()
     .size_full()
+}
+
+/// Records, as the row `id`'s, the text colour in force where it is
+/// prepainted inside a label, for the tests: the colour the label's text was
+/// laid out in. A text takes its colour from the text style it is laid out
+/// under, which no quad of the scene carries, and the label computes that
+/// style alike in layout and in prepaint, both before paint makes its row
+/// group's hitbox.
+#[cfg(test)]
+pub fn label_probe(ui: &Entity<InfoRegistry>, id: String) -> impl IntoElement {
+    let ui = ui.clone();
+    canvas(
+        move |_bounds, window: &mut Window, cx: &mut App| {
+            let colour = window.text_style().color;
+            ui.update(cx, |r, _| {
+                r.label_colours.insert(id, colour);
+            });
+        },
+        |_, _, _, _| {},
+    )
+    .absolute()
 }
 
 /// The segments of the Basic page's segmented control, by index, and the
@@ -488,9 +427,10 @@ pub trait ListedExt: IntoElement + Sized {
     fn listed(self, ui: &Entity<InfoRegistry>, id: &'static str) -> Div {
         let ui = ui.clone();
         div()
-            .on_children_prepainted(move |bounds, _window, cx| {
+            .on_children_prepainted(move |bounds, window, cx| {
                 if let Some(bounds) = bounds.first() {
-                    ui.update(cx, |r, _| r.record_layout(id, *bounds));
+                    let presence = begin_record(&ui, id.into(), window, cx);
+                    ui.update(cx, |r, _| r.record_layout(id, *bounds, presence));
                 }
             })
             .child(self)
@@ -498,36 +438,3 @@ pub trait ListedExt: IntoElement + Sized {
 }
 
 impl<E: IntoElement> ListedExt for E {}
-
-/// The layout dump (`--dump-layout`): the showcase kind, the theme, the
-/// scale and one rectangle per element of the list drawn in the last frame,
-/// in logical pixels of the window's content (docs/showcase-elements.toml,
-/// "The layout dump").
-pub fn dump_json(
-    preset: &str,
-    variant: &str,
-    scale: f32,
-    drawn: &BTreeMap<&'static str, Bounds<Pixels>>,
-) -> serde_json::Value {
-    let rects: serde_json::Map<String, serde_json::Value> = drawn
-        .iter()
-        .map(|(id, b)| {
-            (
-                (*id).to_string(),
-                serde_json::json!({
-                    "x": b.origin.x.as_f32(),
-                    "y": b.origin.y.as_f32(),
-                    "w": b.size.width.as_f32(),
-                    "h": b.size.height.as_f32(),
-                }),
-            )
-        })
-        .collect();
-    serde_json::json!({
-        "kind": "gpui",
-        "preset": preset,
-        "variant": variant,
-        "scale": scale,
-        "elements": rects,
-    })
-}

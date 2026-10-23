@@ -29,11 +29,12 @@
 //! Upstream citations in this module are read at iced_aw 0.14.1, with
 //! iced_widget 0.14.2 and iced_core 0.14.0 beneath it.
 
+use super::border_of;
 use crate::palette::to_color;
 use iced_aw::style::Status;
 use iced_core::border::Radius;
 use iced_core::theme::Theme;
-use iced_core::{Background, Border};
+use iced_core::{Background, Color};
 use iced_widget::container;
 use native_theme::theme::ResolvedTheme;
 
@@ -48,9 +49,17 @@ use native_theme::theme::ResolvedTheme;
 /// `colors::PRIMARY` and labels it white, neither of which is a platform
 /// value.
 ///
-/// The card is one surface: `card.background_color` fills it and its head,
-/// body and foot alike, because `CardTheme` states a single fill, and
-/// `card.border.*` outlines it. The three section labels are
+/// The card is one surface: `card.background_color` fills it, because
+/// `CardTheme` states a single fill, and `card.border.*` outlines it, all
+/// round. `iced_aw` 0.14.1 paints that fill and the border first, as one
+/// quad over the card's bounds, and then fills the head, the body and the
+/// foot each across the card's whole width (`widget/card.rs:604-633`,
+/// `draw_head` `:883-920`, `draw_body` `:974-988`, `draw_foot`
+/// `:1024-1038`), so a section fill hides the border at the card's sides and
+/// leaves it showing only where two sections' edges leave a pixel between
+/// them. The three section fills are therefore transparent: the one fill,
+/// painted once under the border, shows through them, and the border shows
+/// where the theme states it. The three section labels are
 /// `defaults.text_color` -- `CardTheme` carries no font, so the text on a
 /// card is the platform's own, which is what `styles::container_card` leaves
 /// inherited for the same reason.
@@ -83,16 +92,19 @@ pub fn card(
     let border_width = c.border.line_width;
     let border_radius = c.border.corner_radius;
 
+    // The sections show the card's own fill through them, under its border.
+    let section = Background::Color(Color::TRANSPARENT);
+
     move |_theme, _status| Style {
         background: Background::Color(panel),
         border_radius,
         border_width,
         border_color,
-        head_background: Background::Color(panel),
+        head_background: section,
         head_text_color: label,
-        body_background: Background::Color(panel),
+        body_background: section,
         body_text_color: label,
-        foot_background: Background::Color(panel),
+        foot_background: section,
         foot_text_color: label,
         close_color: label,
     }
@@ -132,11 +144,7 @@ pub fn menu(
     let panel = to_color(m.background_color);
     let highlight = to_color(m.hover_background);
 
-    let border = Border {
-        color: to_color(m.border.color),
-        width: m.border.line_width,
-        radius: Radius::new(m.border.corner_radius),
-    };
+    let border = border_of(&m.border);
 
     move |theme, status| {
         let iced = iced_aw::style::menu_bar::primary(theme, status);
@@ -195,6 +203,13 @@ pub fn menu(
 /// and the close icon's `icon_background` and `icon_border_radius`. So do the
 /// label colors in `Pressed`, `Focused` and `Selected`, three statuses a
 /// `TabBar` never asks for and the model describes no tab in.
+///
+/// Where the theme states `tab.active_outward_corner_radius`, the selected
+/// tab curves out into the bar at its feet: wrap the bar, or the `Tabs`, in
+/// [`crate::tab_flares()`], which draws the flares and covers the selected
+/// tab's bottom edge after the bar, with the room for them in a container's
+/// padding outside it. The selected tab under the pointer is `Hovered` here,
+/// so it loses its outline and its top corners while the flares stay.
 ///
 /// `tab.min_width` and `.min_height` have no receiver in the `Style`, and no
 /// faithful one anywhere: they are **minima**, and every `iced_aw` receiver
@@ -436,7 +451,7 @@ pub fn selection_list(
 }
 
 /// The platform's own spinner, for the container a `Spinner` is wrapped in:
-/// `container(Spinner::new()).style(styles::aw::spinner(&resolved))`.
+/// `container(iced_aw::Spinner::new()).style(styles::aw::spinner(&resolved))`.
 ///
 /// It styles a container because `iced_aw` 0.14.1 gives `Spinner` no `Style`,
 /// no `Catalog` and no style setter at all (`spinner.rs:16-66`): it paints its
@@ -474,5 +489,58 @@ pub fn spinner(resolved: &ResolvedTheme) -> impl Fn(&Theme) -> container::Style 
             shadow: iced.shadow,
             snap: iced.snap,
         }
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+    use native_theme::theme::ColorMode;
+
+    /// The card's border is not overdrawn by a section fill: `iced_aw`
+    /// 0.14.1 paints the head, the body and the foot after the card's fill
+    /// and border, each across the card's whole width (`widget/card.rs`,
+    /// `draw`, `draw_head`, `draw_body`, `draw_foot`), so under every
+    /// bundled preset in both modes the three section fills paint nothing,
+    /// while the card's own fill is `card.background_color` and its border
+    /// `card.border.color` at `card.border.line_width`.
+    #[test]
+    fn no_section_fill_overdraws_the_cards_border() {
+        let mut checked = 0;
+        for info in native_theme::theme::Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = native_theme::theme::Theme::preset(info.key)
+                    .unwrap()
+                    .resolve(mode)
+                    .unwrap()
+                    .variant;
+                let style = card(&r)(&Theme::Light, Status::Active);
+                for (section, fill) in [
+                    ("head", style.head_background),
+                    ("body", style.body_background),
+                    ("foot", style.foot_background),
+                ] {
+                    let Background::Color(color) = fill else {
+                        panic!("{} {mode:?}: the {section} fill is not a colour", info.key);
+                    };
+                    assert!(
+                        color.a == 0.0,
+                        "{} {mode:?}: the {section} fill {color:?} overdraws the border",
+                        info.key
+                    );
+                }
+                assert_eq!(
+                    style.background,
+                    Background::Color(to_color(r.card.background_color)),
+                    "{} {mode:?}: the card's fill",
+                    info.key
+                );
+                assert_eq!(style.border_color, to_color(r.card.border.color));
+                assert_eq!(style.border_width, r.card.border.line_width);
+                checked += 1;
+            }
+        }
+        assert!(checked > 0, "no preset was checked");
     }
 }

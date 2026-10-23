@@ -1,6 +1,7 @@
 //! What the inspector shows for one widget instance (spec §3).
 
-use gpui::{App, Hsla, StyleRefinement, Styled};
+use gpui::{App, Hsla, Rems, StyleRefinement, Styled};
+use gpui_component::theme::Theme;
 use native_theme_gpui::Native;
 
 use crate::support::{native_geometry, refined};
@@ -19,7 +20,6 @@ pub mod registry;
 pub mod text;
 pub mod theme_map;
 pub mod typography;
-pub mod values;
 pub use chrome::*;
 pub use registry::*;
 
@@ -47,6 +47,52 @@ pub fn claim(
         value,
         cited_at,
     }
+}
+
+/// A colour a claim shows: one of the theme's, which gpui paints as
+/// [`stated`] converts it, or one gpui already holds -- a field of a
+/// connector Look (`native_theme_gpui::widgets`), the colour a theme-drawn
+/// widget paints.
+pub trait Swatch {
+    fn hsla(self) -> Hsla;
+}
+
+impl Swatch for native_theme::color::Rgba {
+    fn hsla(self) -> Hsla {
+        stated(self)
+    }
+}
+
+impl Swatch for Hsla {
+    fn hsla(self) -> Hsla {
+        self
+    }
+}
+
+/// The claim of a colour the theme may leave unstated, `None` where it does.
+pub fn stated_claim(
+    role: &'static str,
+    field: &'static str,
+    colour: Option<impl Swatch>,
+    cited_at: &'static str,
+) -> Option<ColorClaim> {
+    colour.map(|colour| claim(role, field, colour.hsla(), cited_at))
+}
+
+/// The claim of a line in `colour` drawn `width` wide, `None` where either
+/// is unstated or the width is 0: no line is drawn. `width` is the drawing's
+/// (a text area's hovered edge is `input.hover_border_color` at
+/// `text_area.border.line_width`); the caller's config line names it, or
+/// says `none: <table>.border.line_width is 0`.
+pub fn edge_claim(
+    role: &'static str,
+    field: &'static str,
+    colour: Option<impl Swatch>,
+    width: Option<f32>,
+    cited_at: &'static str,
+) -> Option<ColorClaim> {
+    let drawn = width.is_some_and(|width| width > 0.0);
+    stated_claim(role, field, colour.filter(|_| drawn), cited_at)
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -140,7 +186,7 @@ impl WidgetInfo {
                     "  {}: {} {} ({})\n",
                     c.role,
                     c.field,
-                    hsla_to_hex(c.value),
+                    as_rgba(c.value),
                     c.cited_at
                 ));
             }
@@ -172,19 +218,19 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "button_label",
-        "button.font's size and weight, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
+        "button.font's family, size, weight and style, and defaults.line_height as the line height, on a label passed as the Button's child: upstream sizes a .label() from the Size enum on the content element -- text_sm at Size::Medium -- which a style on the Button does not reach and a child's own size overrules (sizing.rs, button_text_size; button/button.rs, Button::render); no colour, so the label takes the Button's state colours",
     ),
     (
         "toggle",
-        "button.font's size and weight, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
+        "button.font's family, size, weight and style, and defaults.line_height as the line height, on the Toggle: upstream sets text_sm on a Size::Medium Toggle before the caller's refinement, so this size wins (button/toggle.rs, Toggle::render); the text alone -- a Toggle is Ghost by default, a flat button, and the model states no flat-button frame, so upstream's own stands",
     ),
     (
         "input",
-        "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font",
+        "input.min_height by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the border.padding sides the theme states -- which reach the field, because upstream pads it before the refinement (input/input.rs, Input::render: input_px then refine_style) --, border.corner_radius, line_width, input.font including its colour -- the root sets none of its own and the editor paints the field's text in the root's, the window's foreground without it (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)",
     ),
     (
         "text_area",
-        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font at defaults.line_height; no height: the rows its state holds size it",
+        "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font including its colour at defaults.line_height; no height: the rows its state holds size it",
     ),
     (
         "menu_item",
@@ -196,23 +242,27 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "tooltip",
-        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border (tooltip.rs, Tooltip::render: bg, text_color and border_color, then refine_style)",
+        "the tooltip.border.padding sides the theme states, corner_radius, tooltip.font — including its colour, which upstream would otherwise paint with popover_foreground —, defaults.line_height as the line height (upstream sets none, so wrapped text was spaced by gpui's phi), tooltip.background_color and tooltip.border.color, which upstream would otherwise paint with the popover's fill and the window's border, the edge tooltip.border.line_width wide in place of upstream's border_1, and shadow_md's two layers in defaults.shadow_color where tooltip.border.shadow_enabled holds, no shadow where it does not, in place of upstream's shadow_md (gpui-component/tooltip.rs, Tooltip::render: bg, text_color, border_1, border_color and shadow_md, then refine_style)",
     ),
     (
         "tooltip_content",
-        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (tooltip.rs, Tooltip::render) -- and its 1px border (tooltip.rs, Tooltip::render: border_1), as the max width of the element passed to Tooltip::element, which the text wraps at",
+        "tooltip.max_width less the bubble's left and right padding -- the theme's where stated, upstream's px_2 (0.5 rem at the installed font size) where not (gpui-component/tooltip.rs, Tooltip::render) -- and its edge, tooltip.border.line_width on each side, which geometry::tooltip draws in place of upstream's border_1 (gpui-component/tooltip.rs, Tooltip::render), as the max width of the element passed to Tooltip::element, which the text wraps at",
     ),
     (
         "popover",
-        "the popover.border.padding sides the theme states, and corner_radius; an unstated side keeps upstream's p_3 (popover.rs, Popover::render)",
+        "the popover.border.padding sides the theme states, corner_radius, and the edge, popover.border.color at line_width, inside the shadow ring popover_style draws; an unstated side keeps upstream's p_3 (gpui-component/popover.rs, Popover::render)",
     ),
     (
         "status_bar",
-        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style)",
+        "the status_bar.border.padding sides the theme states, status_bar.font — including its colour, which upstream would otherwise paint with muted_foreground (status_bar.rs, StatusBar::render: text_color then refine_style) — and defaults.line_height as the line height",
     ),
     (
         "dialog",
-        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_height, max_height and border.corner_radius; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
+        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
+    ),
+    (
+        "dialog_entrance",
+        "dialog.entrance as the nearest entrance gpui-component draws, through Dialog::entrance and AlertDialog::entrance: DialogEntrance::Fade, a fade in place, for both styles the model has. scale_fade loses its scale, since gpui-component has no scaling entrance, and fade_rise its rise, since FadeSlide settles from just above the dialog's place instead (dialog/entrance.rs, DialogEntrance; dialog/dialog.rs, Dialog::entrance)",
     ),
     (
         "input_group_button",
@@ -222,10 +272,13 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "dialog_footer",
         "dialog.button_gap between the buttons (dialog/footer.rs, DialogFooter::render)",
     ),
-    ("dialog_title", "dialog.title_font"),
+    (
+        "dialog_title",
+        "dialog.title_font including its colour, which displaces nothing, upstream setting none on the title, and defaults.line_height as the line height, which replaces upstream's relative(1.25) (dialog/title.rs, RenderOnce for DialogTitle: line_height then refine_style)",
+    ),
     (
         "dialog_description",
-        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render)",
+        "dialog.body_font including its colour, which upstream would otherwise paint with muted_foreground (dialog/description.rs, DialogDescription::render), and defaults.line_height as the line height",
     ),
     (
         "list",
@@ -233,7 +286,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "table",
-        "list.item_font on the table root (table/table.rs, Table::render: text_sm then refine_style)",
+        "list.item_font and defaults.line_height as the line height on the table root (table/table.rs, Table::render: text_sm then refine_style)",
     ),
     (
         "progress",
@@ -241,13 +294,27 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "group_box_content",
-        "the card.border.padding sides the theme states, corner_radius, line_width, color -- refined last, so the radius and the edge drawn are the card's, not upstream's radius (group_box.rs, GroupBox)",
+        "the card.border.padding sides the theme states, corner_radius, line_width, color, and card.background_color -- refined last, so the radius, the edge and the fill drawn are the card's, not upstream's radius or the Fill variant's group_box token (group_box.rs, GroupBox)",
     ),
-    ("accordion_title", "expander.header_height"),
-    ("checkbox", "checkbox.label_gap, checkbox.font"),
+    (
+        "accordion_title",
+        "expander.header_height, and expander.font.color over the foreground upstream sets on an open item's title row first; a closed one's sets none (gpui-component/accordion.rs, AccordionItem::render)",
+    ),
+    (
+        "accordion",
+        "expander.border.color on the Accordion's card and on each item's line under it, over the border token upstream draws both in first (gpui-component/accordion.rs, RenderOnce for Accordion and AccordionItem::render); where neither is drawn, nothing",
+    ),
+    (
+        "accordion_hover",
+        "expander.hover_background as an item's title row fill under the pointer, through AccordionItem::hover, where the theme states one; nothing where it does not, so the row stays at rest (gpui-component/accordion.rs, AccordionItem::hover)",
+    ),
+    (
+        "checkbox",
+        "checkbox.label_gap, checkbox.font, and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/checkbox.rs, RenderOnce for Checkbox)",
+    ),
     (
         "radio",
-        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's)",
+        "checkbox.label_gap, and checkbox.font including its colour, which the label takes because upstream sets foreground on the row and mutes the label child instead (platform-facts §2.5: radio metrics are the checkbox's), and defaults.line_height as the line height on the row, over upstream's relative(1.); the label column sets its own relative(1.25) (gpui-component/radio.rs, RenderOnce for Radio)",
     ),
     (
         "select",
@@ -259,16 +326,24 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "title_bar",
-        "window.title_bar_font size, weight and colour -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
+        "window.title_bar_font's family, size, weight and style, and its colour, and defaults.line_height as the line height -- upstream sets no text colour on the bar, so the colour displaces nothing (title_bar.rs, RenderOnce for TitleBar). The window controls set foreground on their own elements, out of its reach (title_bar.rs, RenderOnce for ControlIcon)",
+    ),
+    (
+        "title_bar_inactive",
+        "window.inactive_title_bar_background, drawn as upstream's gradient is from title_bar, and window.inactive_title_bar_text_color over geometry::title_bar's text, for a TitleBar while Window::is_window_active is false: TitleBar reads no window activation, painting every bar alike (title_bar.rs, default_title_bar_background and RenderOnce for TitleBar)",
     ),
     (
         "toolbar",
-        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, font size and weight",
+        "toolbar.bar_height as the minimum height where the theme states one, item_gap where it states one, the border.padding sides the theme states, background_color, the bottom edge, border.color at border.line_width, toolbar.font's family, size, weight and style, and its colour -- upstream's Toolbar sets no colour (gpui-component/toolbar.rs, RenderOnce for Toolbar) --, and defaults.line_height as the line height",
     ),
     ("spinner_size", "spinner.diameter"),
     (
         "data_table_size",
-        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size)",
+        "list.row_height as Size::Size, which table_row_height returns verbatim, or upstream's Medium 32px where the theme states none (sizing.rs, table_row_height); a Size::Size cell sets no text size and inherits the container's, which geometry::table gives list.item_font, where a Medium cell is text_sm (sizing.rs, table_cell_size); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding (sizing.rs, table_cell_padding) and the row's 1px bottom border, which upstream draws inside the row (table/state.rs, border_b_1), so the row holds its text",
+    ),
+    (
+        "list_header_height",
+        "list.header_height, the height of a table's header row, which DataTable::header_row_height takes (table/data_table.rs, DataTable::header_row_height); where the theme states none, nothing is set and the header keeps the body rows' height (table/state.rs, header_row_height); above a text scale of 1 at least list.item_font's scaled line box at defaults.line_height, upstream's own cell padding and the header row's 1px bottom border (table/state.rs, border_b_1): a Size::Size header cell sets no text size and inherits the container's, which geometry::table gives list.item_font (sizing.rs, table_cell_size)",
     ),
     (
         "icon_size_toolbar",
@@ -292,7 +367,11 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "input_fill",
-        "input.background_color, or for a disabled field input.disabled_background (the enabled fill where the theme states none) faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+        "input.background_color, or for a disabled field input.disabled_background (the enabled fill where the theme states none) and input.disabled_text_color, which the editor halves the alpha of as it does any disabled field's text (gpui-base/input/base/element.rs, prepaint), faded by input.disabled_opacity, over upstream's fill -- Theme::input_background, the window's background in a light theme, and input mixed with transparent when disabled (input/input.rs, input_style and Input::render: bg then refine_style) -- which no ThemeColor field can make the platform's",
+    ),
+    (
+        "combo_box_fill",
+        "combo_box.background_color, or for a disabled trigger combo_box.disabled_background (the enabled fill where the theme states none) and combo_box.disabled_text_color, faded by combo_box.disabled_opacity in place of upstream's own half fade, over upstream's fill -- Theme::input_background, and input mixed with transparent when disabled (input/input.rs, input_style; gpui-component/select.rs, Select::render; gpui-component/combobox.rs, Combobox::render) -- which no ThemeColor field can make the platform's. The disabled text reaches a Combobox's selected text and not a Select's title, which mutes itself (select.rs, SelectState::display_title)",
     ),
     (
         "button_disabled",
@@ -303,8 +382,12 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "button.checked_background and button.checked_text_color on a selected Button, the pressed pair (button.active_background, button.active_text_color) where none is stated, over upstream's selected style -- its button_active token and button_foreground -- which the Button replays the refinement over (button/button.rs, ButtonVariant::selected and RenderOnce for Button)",
     ),
     (
+        "list_item_selected",
+        "list.selection_text_color on a selected ListItem's text, over the foreground upstream sets on every row before the refinement -- or geometry::list_item's list.item_font colour: upstream marks a selected row by its fill alone, painted after the refinement, and mutes a row that is not selectable after it too (list/list_item.rs, ListItem::render)",
+    ),
+    (
         "link",
-        "link.font size and weight, and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
+        "link.font's family, size, weight and style, defaults.line_height as the line height, link.background_color as the fill, which upstream paints none of (gpui-component/link.rs, RenderOnce for Link), and no underline where link.underline_enabled is false: upstream underlines a link at rest before the refinement (gpui-component/link.rs, RenderOnce for Link: text_decoration_1 then refine_style), and a zero thickness paints none",
     ),
     (
         "widget_gap",
@@ -343,18 +426,20 @@ pub fn native_info<W: Styled>(
     refined(w, style.as_ref())
 }
 
-/// What a Widget Info says of the icons gpui-component draws inside a
-/// widget on its own, `icons` naming them and where upstream draws them.
-/// They stay gpui-component's whichever icon theme is chosen: upstream
-/// loads them by asset path (icon.rs, `Icon::into_svg`), and gpui draws a
-/// path at a size once and keeps the result in the window's sprite atlas,
-/// which it never asks the asset source about again and which nothing
-/// outside gpui can clear (gpui-pre window.rs, `Window::paint_svg`; the
-/// atlas field is private), so an asset source answering those paths from
-/// the chosen theme could not show a switch. `docs/todo.md` records it.
+/// What a Widget Info says of the icons gpui-component builds and draws
+/// inside a widget on its own, `icons` naming them and where upstream draws
+/// them. An icon the showcase builds itself is the chosen icon theme's
+/// (`SampleIcon`), so this is for upstream's alone. They stay
+/// gpui-component's whichever icon theme is chosen: upstream loads them by
+/// asset path (icon.rs, `Icon::into_svg`), and gpui draws a path at a size
+/// once and keeps the result in the window's sprite atlas, which it never
+/// asks the asset source about again and which nothing outside gpui can
+/// clear (gpui-pre/window.rs, `Window::paint_svg`; the atlas field is
+/// private), so an asset source answering those paths from the chosen
+/// theme could not show a switch. `docs/todo.md` records it.
 pub fn own_icons(icons: &str) -> String {
     format!(
-        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream loads them by asset path (icon.rs, Icon::into_svg), and gpui draws a path at a size once and keeps it for the window, never asking the application's asset source again, with no call to drop it (gpui-pre/window.rs, Window::paint_svg), so the showcase cannot hand them the chosen theme's icons and have a theme switch show"
+        "{icons}: gpui-component's own icons whichever icon theme is chosen, so under any other they are not that theme's. Upstream builds them inside the widget and loads them by asset path (icon.rs, Icon::into_svg), and gpui draws a path at a size once and keeps it for the window, never asking the application's asset source again, with no call to drop it (gpui-pre/window.rs, Window::paint_svg), so the showcase cannot hand an icon upstream builds the chosen theme's and have a theme switch show"
     )
 }
 
@@ -374,23 +459,50 @@ pub fn px_text(v: f32) -> String {
     s.trim_end_matches('0').trim_end_matches('.').to_string()
 }
 
+/// `font` as `demo::text_in`, the connector's `with_text` (geometry.rs) and
+/// its widgets' labels (widgets/mod.rs, `font_text`) draw text in it, for a
+/// font line of the showcase's own Widget Info: the family as `status::family_label` names what gpui is asked for
+/// (`native_theme_gpui::font_family`), the stated size the text-scaling
+/// factor scales, the weight, the style where it is not normal, and the line
+/// box.
+pub fn drawn_font(font: &native_theme::theme::ResolvedFontSpec) -> String {
+    let drawn = native_theme_gpui::font_family(&font.family);
+    let style = match font.style {
+        native_theme::theme::FontStyle::Normal => "",
+        native_theme::theme::FontStyle::Italic => ", italic",
+        native_theme::theme::FontStyle::Oblique => ", oblique",
+    };
+    format!(
+        "{}, {}px scaled by the text-scaling factor, weight {}{style}, at defaults.line_height",
+        native_theme_showcase_support::status::family_label(&font.family, Some(&drawn)),
+        px_text(font.size),
+        font.weight
+    )
+}
+
+/// A rem multiple of the showcase's own as the window lays it out: its size
+/// in logical pixels at gpui-component's rem, which is `Theme::font_size`
+/// (gpui-component 0.8.0 `root.rs:538`), then the multiple itself.
+pub fn rems_text(r: Rems, t: &Theme) -> String {
+    format!(
+        "{}px ({} rem of the {}px font_size)",
+        px_text(r.0 * t.font_size.as_f32()),
+        px_text(r.0),
+        px_text(t.font_size.as_f32())
+    )
+}
+
 /// An opacity as a percentage, the way `px_text` prints a size: the prose
 /// derived from the value, so it cannot say another.
 pub fn percent_text(opacity: f32) -> String {
     format!("{}%", px_text(opacity * 100.))
 }
 
-/// `c` as `#rrggbb`, or as `#rrggbbaa` where it is not opaque: a colour
-/// painted at 80% printed without its alpha would claim a fill the widget
-/// never paints.
-pub fn hsla_to_hex(c: Hsla) -> String {
-    // Convert HSL to RGB through gpui's Rgba
-    let rgba: gpui::Rgba = c.into();
-    let byte = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let (r, g, b) = (byte(rgba.r), byte(rgba.g), byte(rgba.b));
-    if rgba.a < 1.0 {
-        format!("#{r:02x}{g:02x}{b:02x}{:02x}", byte(rgba.a))
-    } else {
-        format!("#{r:02x}{g:02x}{b:02x}")
-    }
+/// `c` as native-theme's `Rgba`, whose `Display` is the colour text the
+/// showcase prints, as a theme colour prints: `#rrggbb`, or `#rrggbbaa` where
+/// the alpha's byte is not 255 -- a colour painted at 80% printed without
+/// its alpha would claim a fill the widget never paints.
+pub fn as_rgba(c: Hsla) -> native_theme::color::Rgba {
+    let c = gpui::Rgba::from(c);
+    native_theme::color::Rgba::from_f32(c.r, c.g, c.b, c.a)
 }

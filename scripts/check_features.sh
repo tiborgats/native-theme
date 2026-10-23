@@ -11,10 +11,14 @@
 # combination and exits non-zero when any fails, naming every failure at the
 # end.
 #
+# A feature that changes a crate's dependencies rather than adding to them is
+# left out of that crate's all-features run (it is still checked alone):
+# native-theme-gpui's `gpui-fast` moves the connector to another GPUI core.
+#
 #   scripts/check_features.sh
 #
-# Requires jq. scripts/check_release.sh, ci.yml, publish.yml and
-# dependency-canary.yml run it.
+# Requires jq. scripts/check_release.sh, ci.yml (and through it publish.yml's
+# CI run) and dependency-canary.yml run it.
 set -euo pipefail
 
 if ! command -v jq &>/dev/null; then
@@ -38,6 +42,14 @@ CRATES=$(printf "%s" "$METADATA" | jq -r '
     .packages[]
     | select(any(.targets[]; any(.kind[]; . == "lib" or . == "proc-macro")))
     | .name')
+
+# The features of a crate its all-features run leaves out (see the header).
+backend_switches() {
+    case "$1" in
+        native-theme-gpui) echo "gpui-fast" ;;
+        *) echo "" ;;
+    esac
+}
 
 FAILURES=()
 TOTAL=0
@@ -74,7 +86,13 @@ for crate in $CRATES; do
     for feature in $features; do
         check "$crate" "feature $feature alone" --no-default-features --features "$feature"
     done
-    check "$crate" "all features" --all-features
+    switches=$(backend_switches "$crate")
+    if [ -z "$switches" ]; then
+        check "$crate" "all features" --all-features
+    else
+        all=$(printf "%s\n" $features | grep -vxF -f <(printf "%s\n" $switches) | paste -sd, -)
+        check "$crate" "all features but $switches" --no-default-features --features "$all"
+    fi
 done
 
 echo

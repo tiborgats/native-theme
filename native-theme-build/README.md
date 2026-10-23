@@ -6,7 +6,7 @@ custom icon roles.
 ## What it does
 
 Reads a TOML file describing your app's custom icon roles at build time and
-generates a Rust enum that implements `native_theme::theme::IconProvider`. The
+generates a Rust enum that implements `native_theme::icons::IconProvider`. The
 generated enum maps each role to its platform-specific identifier (SF Symbols,
 Segoe Fluent, freedesktop, Material, Lucide) and optionally embeds bundled SVG
 data via `include_bytes!`.
@@ -23,11 +23,14 @@ it to `[build-dependencies]` and call it from `build.rs`.
 
 ## Quick start
 
-Add the build dependency:
+Add the build dependency, and native-theme, which the generated code names:
 
 ```toml
 [build-dependencies]
 native-theme-build = "0.6"
+
+[dependencies]
+native-theme = "0.6"
 ```
 
 Describe your icons in TOML:
@@ -42,7 +45,7 @@ system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
 
 Generate the enum in `build.rs`:
 
-```rust,ignore
+```rust,no_run
 use native_theme_build::UnwrapOrExit;
 
 fn main() {
@@ -53,22 +56,43 @@ fn main() {
 }
 ```
 
-Include and use it in your app:
+Include it in your app:
 
+<!-- `ignore`: `OUT_DIR` exists only in a crate with a build script, and a
+doctest has none, so this line cannot compile on its own. -->
 ```rust,ignore
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
+```
 
+and use it:
+
+```rust,no_run
 use native_theme::icons::MaterialLoader;
+# use std::borrow::Cow;
+# use native_theme::icons::IconProvider;
+# use native_theme::theme::IconSet;
+# #[derive(Debug)]
+# enum AppIcon { PlayPause }
+# impl IconProvider for AppIcon {
+#     fn icon_name(&self, _: IconSet) -> Option<&str> { None }
+#     fn icon_svg(&self, _: IconSet) -> Option<Cow<'static, [u8]>> { None }
+# }
 
 let icon = MaterialLoader::new(&AppIcon::PlayPause).load();
 ```
+
+An application that depends on a connector alone generates the enum with the
+connector's re-export of native-theme as its crate path,
+`IconGenerator::new().crate_path("native_theme_iced::native_theme")` (or
+`native_theme_gpui::native_theme`, `native_theme_egui::native_theme`), and
+names the loaders through it.
 
 ## Core concepts
 
 - **Role** — a semantic name (`PlayPause`). Declared in `roles = [...]`; becomes a PascalCase enum variant.
 - **Bundled theme** — SVG assets that ship inside your binary via `include_bytes!`. Declared in `bundled-themes`.
 - **System theme** — identifier-only mapping. The actual icon is looked up at runtime by the OS (SF Symbols on macOS, Segoe Fluent on Windows, freedesktop on Linux). Declared in `system-themes`.
-- **Generated enum** — produced at build time into `$OUT_DIR`. Implements `native_theme::theme::IconProvider`, so it plugs into every per-set loader (`MaterialLoader::new(&icon)`, `FreedesktopLoader::new(&icon)`, …).
+- **Generated enum** — produced at build time into `$OUT_DIR`. Implements `native_theme::icons::IconProvider`, so it plugs into every per-set loader (`MaterialLoader::new(&icon)`, `FreedesktopLoader::new(&icon)`, …).
 
 ## Common recipes
 
@@ -112,7 +136,7 @@ A `default` key is required for every DE-aware entry.
 
 For projects with several TOML files or a custom enum name:
 
-```rust,ignore
+```rust,no_run
 use native_theme_build::UnwrapOrExit;
 
 fn main() {

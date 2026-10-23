@@ -3,7 +3,7 @@
 
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas, input_frame, text_area_frame};
 
-use super::{DemoState, caption};
+use super::{DemoState, caption, input_min_size};
 use crate::demo::{self, Registry};
 
 pub(crate) fn show(
@@ -14,6 +14,10 @@ pub(crate) fn show(
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
+    // Each `TextEdit` the page builds at least `input.min_height` tall, a single line's row
+    // centred in the height the minimum adds, as the platform centres a field's text and the
+    // Basic page's fields are.
+    let min = input_min_size(t);
 
     caption(reg, ui, "TextEdit with input_frame (Role::Input)");
     let id = ui.make_persistent_id("inputs/single-line");
@@ -27,6 +31,8 @@ pub(crate) fn show(
         |ui| {
             ui.add(
                 egui::TextEdit::singleline(&mut state.text)
+                    .min_size(min)
+                    .vertical_align(egui::Align::Center)
                     .id(id)
                     .frame(frame),
             )
@@ -37,6 +43,7 @@ pub(crate) fn show(
     demo::scoped(reg, ui, Role::Input, normal, "TextEdit (multiline)", |ui| {
         ui.add(
             egui::TextEdit::multiline(&mut state.multiline)
+                .min_size(min)
                 .id(id)
                 .frame(frame),
         )
@@ -47,6 +54,8 @@ pub(crate) fn show(
         ui.add(
             egui::TextEdit::singleline(&mut state.password)
                 .password(true)
+                .min_size(min)
+                .vertical_align(egui::Align::Center)
                 .id(id)
                 .frame(frame),
         )
@@ -57,11 +66,12 @@ pub(crate) fn show(
         ui.add(
             egui::TextEdit::singleline(&mut state.hint)
                 .hint_text("A hint")
+                .min_size(min)
+                .vertical_align(egui::Align::Center)
                 .id(id)
                 .frame(frame),
         )
     });
-    reg.amend_last(|i| i.notes.push(("hint text", "\"A hint\"".to_string())));
     let id = ui.make_persistent_id("inputs/disabled");
     let frame = input_frame(ui, id, t);
     let mut disabled = "Disabled".to_string();
@@ -75,6 +85,8 @@ pub(crate) fn show(
             ui.add_enabled(
                 false,
                 egui::TextEdit::singleline(&mut disabled)
+                    .min_size(min)
+                    .vertical_align(egui::Align::Center)
                     .id(id)
                     .frame(frame),
             )
@@ -86,6 +98,9 @@ pub(crate) fn show(
         ui,
         "The Ui's own text edits, with egui's focused stroke (Role::Input)",
     );
+    // egui's own kinds, at egui's own size: `Ui::text_edit_singleline`, `text_edit_multiline` and
+    // `code_editor` take no `min_size` (egui 0.36.2 src/ui.rs:1802-1807, :1812-1817, :1824-1826;
+    // a multiline `TextEdit` at least four rows tall, src/widgets/text_edit/builder.rs:140, :521).
     demo::scoped(
         reg,
         ui,
@@ -93,6 +108,10 @@ pub(crate) fn show(
         normal,
         "ui.text_edit_singleline",
         |ui| ui.text_edit_singleline(&mut state.text),
+    );
+    reg.note_last(
+        "ui.text_edit_singleline",
+        "egui's own height, one row and its margin; input.min_height is not applied",
     );
     demo::scoped(
         reg,
@@ -102,9 +121,17 @@ pub(crate) fn show(
         "ui.text_edit_multiline",
         |ui| ui.text_edit_multiline(&mut state.multiline),
     );
+    reg.note_last(
+        "ui.text_edit_multiline",
+        "egui's own height, at least four rows and its margin; input.min_height is not applied",
+    );
     demo::scoped(reg, ui, Role::Input, normal, "ui.code_editor", |ui| {
         ui.code_editor(&mut state.code)
     });
+    reg.note_last(
+        "ui.code_editor",
+        "egui's own height, at least four rows and its margin; input.min_height is not applied",
+    );
 
     caption(reg, ui, "DragValue (Role::Input)");
     ui.horizontal_wrapped(|ui| {

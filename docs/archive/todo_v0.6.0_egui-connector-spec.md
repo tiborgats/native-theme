@@ -8211,3 +8211,22 @@ section now says so:
 - The scripts are named by task group, and the release check is
   `scripts/check_release.sh` (`83aff77c`); its packaging check verifies in
   `target/package-verify` (`47a5e6cc`, `72ce91e7`).
+- **§10.4, Widget Info** (`b19bfe55`; M9c T1b): the paragraph's "Under the rows
+  come the §4.7 accessors and `ResolvedTheme` leaves the helper read, with their
+  values, then *This instance*" describes a section the build no longer has.
+  Widget Info is in R11's format, the one the three showcases share: a title, a
+  **Theme** row per leaf of `docs/showcase-elements.toml`'s list (or of the
+  manifest's rows for an unlisted instance), and **Not themeable** for what egui
+  draws there unthemed. An instance records only those
+  lines (`InstanceInfo::not_themeable`); the leaves-read list
+  (`InstanceInfo::read`) and the notes the panel did not show are deleted with
+  their writers.
+- **§4.2, §4.3, §4.6, §10.3** (M9c T2; M9-113, amendment I3): `from_preset`
+  gives the atlas the OS colour mode, `native_theme::detect::system_is_dark()`'s
+  cached reading, so under `ThemePreference::System` a preset follows the
+  desktop on Linux as `from_system`'s atlas does, where egui drew its
+  `Options::fallback_theme`. "A preset-built atlas has no OS mode and fills
+  nothing" (§10.3), and the docs of `from_preset`, `ThemeAtlas::os_mode` and
+  `Builder::os_mode` that say so (§4.6, §4.2, §4.3), are true only of an atlas
+  built through `ThemeAtlas::builder` without `Builder::os_mode` and of
+  `to_theme`'s, and the docs say that now.

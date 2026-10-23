@@ -1,5 +1,19 @@
 # Iced Connector: Full Theme Geometry Support
 
+Status: partly implemented (2026-10-17). v0.5.9 shipped Option A as
+`native_theme_iced::styles`: per-widget style functions built from the
+`ResolvedTheme` (the `ThemeVariant` this document names is now `ThemeMode`),
+which read the theme's corner radii and line widths. The padding helpers are
+functions at the crate root (`native_theme_iced::button_padding`,
+`input_padding`, `padding_or`, ...). The code review's M5
+(2026-10-14) added `styles::pane_grid`, `styles::button_toggle` and
+`styles::expander_frame`, and made `styles::text_editor` frame the field in
+`text_area.border`. What remains is ROADMAP.md's *v0.7.1 — Full theme geometry
+in the iced connector*, *What remains*, less its `pane_grid::default`, which
+`styles::pane_grid` replaces. The Problem section describes the connector
+before v0.5.9; the text below is kept as written, with a note at its end on
+the v0.5.9 sizing model.
+
 ## Problem
 
 The iced connector (`native-theme-iced`) currently maps only **colors** from
@@ -80,7 +94,7 @@ that implements all `Catalog` traits. Users get fully transparent theming —
 ### Option C: Keep Helpers Only (rejected)
 
 Leave the current architecture. Applications manually apply geometry via
-`border_radius()`, `scrollbar_width()`, etc.
+`border_corner_radius()`, `scrollbar_groove_width()`, etc.
 
 **Rejected because:**
 - Every application using the connector must duplicate the same boilerplate
@@ -421,8 +435,8 @@ pub fn apply_fonts(settings: &mut iced::Settings, variant: &ThemeVariant) {
 
 ### Widget Metrics Helpers (already partially exist)
 
-Keep existing: `button_padding()`, `input_padding()`, `scrollbar_width()`,
-`border_radius()`, `border_radius_lg()`, `font_family()`, `font_size()`,
+Keep existing: `button_padding()`, `input_padding()`, `scrollbar_groove_width()`,
+`border_corner_radius()`, `border_corner_radius_lg()`, `font_family()`, `font_size()`,
 `mono_font_family()`, `mono_font_size()`.
 
 Add: `checkbox_size()`, `checkbox_spacing()`, `slider_track_height()`,

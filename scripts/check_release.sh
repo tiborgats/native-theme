@@ -6,16 +6,67 @@
 # Output design (glance-first):
 #   * Each check renders a single-line status when done:
 #         ✅ description    (2.3s)       — pass
-#         ⚠  description    (9.2s) soft  — soft-failure (warning, non-blocking)
+#         ⚠  description    (9.2s) soft  — soft failure (a warning; only the
+#                                          semver checks are soft)
 #         ❌ description    (0.5s)       — hard failure (exits)
-#   * During the check, the command's own stdout/stderr streams normally so
-#     long-running work still shows progress.
+#   * Each command's stdout/stderr is captured, not streamed, and printed in
+#     full only when its check fails: streamed output would interleave with
+#     the status lines and bury the summary.
 #   * Sections are separated by `── Section ──` dividers.
 #   * A final summary banner reports total / pass / warn / fail / elapsed,
-#     and reprints every warning so nothing is buried above.
+#     and reprints every warning and every failure that did not exit, so
+#     nothing is buried above.
+#
+# Requires jq: the crate list, the panic scan's directories and the per-crate
+# sections are read from `cargo metadata`. The script installs nothing: a
+# missing cargo-audit, cargo-outdated or cargo-semver-checks fails the full run
+# with its install command, and a cross-target check whose target or linker is missing is
+# skipped with a warning the summary repeats.
+#
+# Modes:
+#   (no argument)  the full run: every section below. Required on the last
+#                  commit of every fix phase and before the release commit.
+#   --commit       the per-commit subset: skips the release-only checks
+#                  (the release-tag check, the gpui connector's tests on GPUI
+#                  Fast, native-theme's ignored stem-index test, docs.rs
+#                  emulation, packaging, semver checks, security audit,
+#                  outdated dependencies, and the visual-asset and
+#                  compatibility stamp checks), each printing "skipped
+#                  (--commit mode)", and names them in the final summary.
+#
+# Formatting: `cargo fmt --all` formats the tree in place rather than checking
+# it, by design: the per-commit gate formats what is about to be committed,
+# and CI's `cargo fmt --all --check` refuses what was committed unformatted.
 
 set -e  # Exit immediately if a command exits with a non-zero status
 set -u  # Exit if an undefined variable is used
+
+usage() {
+    cat <<'EOF'
+Usage: scripts/check_release.sh [--commit]
+
+  (no argument)  the full pre-release check; required on the last commit of
+                 every fix phase and before the release commit
+  --commit       the per-commit subset: every lint, check, test, docs,
+                 widget-coverage, showcase-parity and archive-index gate; skips
+                 the release-tag check, the gpui connector's tests on GPUI
+                 Fast, native-theme's ignored stem-index test, docs.rs
+                 emulation, packaging, semver checks, the security audit,
+                 outdated dependencies, and the visual-asset and
+                 compatibility stamp checks
+  -h, --help     print this help and exit
+EOF
+}
+
+COMMIT_MODE=""
+for arg in "$@"; do
+    case "$arg" in
+        --commit) COMMIT_MODE=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) printf "Unknown argument: %s\n\n" "$arg" >&2; usage >&2; exit 2 ;;
+    esac
+done
+
 cd "$(dirname "$0")/.."  # every path below is relative to the repository root
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -37,12 +88,14 @@ ICON_ROCKET='🚀'
 ICON_PARTY='🎉'
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Counters + warning log (re-printed in the final summary)
+# Counters + warning and failure logs (re-printed in the final summary)
 # ─────────────────────────────────────────────────────────────────────────────
 PASS_COUNT=0
 WARN_COUNT=0
 FAIL_COUNT=0
 WARNINGS=()
+FAILURES=()
+SKIPPED=()
 SCRIPT_START=$SECONDS
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -83,11 +136,18 @@ print_fail() {
     else
         printf "${RED}${ICON_FAIL}${NC} %s\n" "$1"
     fi
+    FAILURES+=("$1")
     FAIL_COUNT=$((FAIL_COUNT + 1))
 }
 
 print_info() {
     printf "${BLUE}${ICON_INFO}${NC} %s\n" "$1"
+}
+
+print_skipped() {
+    # $1 = section name, re-printed in the final summary
+    printf "${DIM}   skipped (--commit mode)${NC}\n"
+    SKIPPED+=("$1")
 }
 
 # Human-friendly elapsed time: "1m 23s" or "5s".
@@ -104,8 +164,12 @@ format_elapsed() {
 # Check runners
 #
 # run_check       — hard fail (exits on command failure)
-# run_check_soft  — soft fail (logs a warning, continues)
-# run_tests[_soft] — variants that filter noise from `cargo test` output
+# run_check_soft  — soft fail (logs a warning, continues); the semver checks
+#                   only, whose reported break asks for a version decision
+# run_tests       — run_check for `cargo test`: filters the noise from its
+#                   output and fails when the run passes no test (a filter or
+#                   a cfg that matches nothing exits 0 with "0 passed")
+# run_tests_min N — run_tests with N as the minimum of passed tests
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Filter pattern for cargo test: drop individual "test NAME ... ok" lines while
@@ -154,9 +218,9 @@ run_check()      { _run_check_impl "$1" "hard" "${@:2}"; }
 run_check_soft() { _run_check_impl "$1" "soft" "${@:2}"; }
 
 _run_tests_impl() {
-    # $1 = description, $2 = "hard"|"soft", $3... = command
+    # $1 = description, $2 = minimum passed, $3... = command
     local description="$1"
-    local mode="$2"
+    local min_passed="$2"
     shift 2
     local start=$SECONDS
     local output
@@ -168,12 +232,16 @@ _run_tests_impl() {
     local elapsed
     elapsed=$(format_elapsed "$((SECONDS - start))")
 
+    local total_passed=0
     if [ "$status" -eq 0 ]; then
-        # Successful run: print compact summary (sum passed across binaries).
-        local total_passed total_ignored
         total_passed=$(printf "%s\n" "$output" \
             | grep -oE 'test result: ok\. [0-9]+ passed' \
             | awk '{sum += $4} END {print sum+0}')
+    fi
+
+    if [ "$status" -eq 0 ] && [ "$total_passed" -ge "$min_passed" ]; then
+        # Successful run: print compact summary (sum passed across binaries).
+        local total_ignored
         total_ignored=$(printf "%s\n" "$output" \
             | grep -oE '[0-9]+ ignored' \
             | awk '{sum += $1} END {print sum+0}')
@@ -196,43 +264,33 @@ _run_tests_impl() {
     else
         # Failure: dump filtered output so the user sees what broke.
         printf "%s\n" "$output" | grep -v -E "$TEST_NOISE_FILTER" >&2 || true
-        if [ "$mode" = "soft" ]; then
-            print_warn "$description" "$elapsed" "soft"
-        else
-            print_fail "$description" "$elapsed"
-            printf "${RED}   Failed command:${NC} %s\n" "$*" >&2
-            exit 1
+        if [ "$status" -eq 0 ]; then
+            printf "${RED}   %s passed, fewer than the minimum of %s:${NC} a filter or cfg that matches nothing still exits 0\n" \
+                "$total_passed" "$min_passed" >&2
         fi
+        print_fail "$description" "$elapsed"
+        printf "${RED}   Failed command:${NC} %s\n" "$*" >&2
+        exit 1
     fi
 }
 
-run_tests()      { _run_tests_impl "$1" "hard" "${@:2}"; }
-run_tests_soft() { _run_tests_impl "$1" "soft" "${@:2}"; }
+run_tests()      { _run_tests_impl "$1" 1 "${@:2}"; }
+run_tests_min()  { _run_tests_impl "$2" "$1" "${@:3}"; }
 
-# Optional-tool installer: prompts user if a cargo subcommand is missing.
-check_and_install_tool() {
+# A cargo subcommand the full run needs. A missing one fails with its install
+# command and its section does not run; it is never installed (a check
+# installs nothing, and a prompt would end a run that has no terminal).
+# $1 = tool, $2 = the section that needs it. Returns 1 when it is missing.
+check_tool() {
     local tool_name="$1"
-    local package_name="$2"
-    local description="$3"
     local subcommand="${tool_name#cargo-}"
 
     if cargo "$subcommand" --help >/dev/null 2>&1; then
         print_ok "$tool_name installed"
         return 0
     fi
-    printf "${YELLOW}${ICON_WARN}${NC} %s is not installed — %s\n" "$tool_name" "$description"
-    printf "${BLUE}    Install now? [Y/n]: ${NC}"
-    read -r response
-    if [[ -z "$response" || "$response" =~ ^[Yy]$ ]]; then
-        if cargo install "$package_name" >/dev/null 2>&1; then
-            print_ok "$package_name installed"
-        else
-            print_fail "$package_name install failed"
-            exit 1
-        fi
-    else
-        print_warn "$package_name skipped (optional)"
-    fi
+    print_fail "$tool_name not installed: $2 not run (cargo install $tool_name)"
+    return 1
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -243,34 +301,67 @@ if [ ! -f "Cargo.toml" ]; then
     exit 1
 fi
 
+if ! command -v jq &>/dev/null; then
+    print_fail "jq not found: the crate list is read from cargo metadata with jq; install jq and rerun"
+    exit 1
+fi
+
+# The workspace members, read once: the panic scan's directories, the
+# per-crate loops, the examples and the semver checks come from it. An empty
+# list would skip every per-crate loop and still end green.
+if ! WORKSPACE_METADATA=$(cargo metadata --no-deps --format-version 1); then
+    print_fail "cargo metadata failed (its error is above)"
+    exit 1
+fi
+WORKSPACE_CRATES=$(jq -r '.packages[].name' <<<"$WORKSPACE_METADATA")
+if [ -z "$WORKSPACE_CRATES" ]; then
+    print_fail "cargo metadata lists no workspace crate"
+    exit 1
+fi
+
 CURRENT_VERSION=$(grep -E '^version\s*=' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
 
-printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · per-commit checks (--commit)${NC}\n" "$CURRENT_VERSION"
+else
+    printf "\n${BOLD}${ICON_ROCKET} native-theme v%s · pre-release checks${NC}\n" "$CURRENT_VERSION"
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: environment
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Environment"
 
-if [ ! -d ".git" ]; then
-    print_warn "Not in a git repository (some checks skipped)"
+# `git rev-parse`, not a `.git` directory: in a worktree `.git` is a file.
+# `git status --porcelain` counts staged and untracked files too.
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    print_warn "Not in a git work tree (the clean-tree and release-tag checks skipped)"
 else
-    if ! git diff --quiet; then
-        local_count=$(git status --porcelain | wc -l)
-        print_info "Uncommitted changes present ($local_count files)"
+    if ! GIT_STATUS=$(git status --porcelain); then
+        print_fail "git status failed (its error is above)"
+    elif [ -n "$GIT_STATUS" ]; then
+        print_info "Uncommitted changes present ($(printf "%s\n" "$GIT_STATUS" | wc -l) files)"
     else
         print_ok "Working tree clean"
     fi
 
-    if git tag --list | grep -q "^v${CURRENT_VERSION}$"; then
+    if [[ $COMMIT_MODE ]]; then
+        print_skipped "Release tag check"
+    elif git tag --list | grep -q "^v${CURRENT_VERSION}$"; then
         print_warn "Tag v${CURRENT_VERSION} already exists in git"
     else
         print_ok "Tag v${CURRENT_VERSION} not yet created"
     fi
 fi
 
-check_and_install_tool "cargo-audit" "cargo-audit" "Security vulnerability scanner"
-check_and_install_tool "cargo-outdated" "cargo-outdated" "Outdated-dependency checker"
+HAVE_AUDIT=""
+HAVE_OUTDATED=""
+HAVE_SEMVER_CHECKS=""
+if [[ ! $COMMIT_MODE ]]; then
+    check_tool cargo-audit "security audit" && HAVE_AUDIT=1
+    check_tool cargo-outdated "outdated-dependency check" && HAVE_OUTDATED=1
+    check_tool cargo-semver-checks "semver checks" && HAVE_SEMVER_CHECKS=1
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: source hygiene
@@ -292,131 +383,45 @@ fi
 
 # Panic-pattern scan (BLOCKING — runtime panics are forbidden in production)
 #
-# Detected patterns (outside #[cfg(test)] blocks):
-#   .unwrap() · .expect(...) · panic!(...) · todo!(...) · unimplemented!(...)
-#   unreachable!(...) · Instant::now() + / - (use checked_add/checked_sub)
-#
-# Regex-based tripwire only. The authoritative panic check is the
+# scripts/check_panic_patterns.py, over every workspace member's src/ (from
+# `cargo metadata`, so a member added to the workspace is scanned without
+# naming it here). It reads the code with comments and literals blanked, so a
+# brace in a test's fixture string cannot hide the code after the test module,
+# and it fails on a directory or file it cannot read; its docstring lists the
+# patterns. A regex tripwire only: the authoritative panic check is the
 # "Strict panic lints" section below, which runs clippy with the full
-# panic-prone lint set using type-aware analysis.
-PANIC_FOUND=0
-PANIC_HITS_ALL=""
-for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src connectors/native-theme-egui/src connectors/native-theme-egui-widgets/src; do
-    if [ -d "$src_dir" ]; then
-        HITS=$(python3 -c "
-import sys, re, glob, os
-
-def scan_file(path):
-    issues = []
-    try:
-        with open(path) as f:
-            lines = f.readlines()
-    except:
-        return issues
-    in_test = 0
-    brace_depth = 0
-    test_active = False
-    for i, line in enumerate(lines, 1):
-        s = line.strip()
-        if re.search(r'#\[cfg\((all\()?test[,\)]', s):
-            test_active = True
-            continue
-        opens = line.count('{')
-        closes = line.count('}')
-        if test_active and opens > 0:
-            in_test = brace_depth + 1
-            test_active = False
-        brace_depth += opens - closes
-        if in_test > 0 and brace_depth < in_test:
-            in_test = 0
-        if in_test > 0:
-            continue
-        if s.startswith('//'):
-            continue
-        if '.unwrap()' in line:
-            issues.append(f'{path}:{i}: [.unwrap()] {s}')
-        elif re.search(r'\.expect\s*\(', line):
-            issues.append(f'{path}:{i}: [.expect()] {s}')
-        elif re.search(r'\bpanic!\s*\(', line):
-            issues.append(f'{path}:{i}: [panic!] {s}')
-        elif re.search(r'\btodo!\s*\(', line):
-            issues.append(f'{path}:{i}: [todo!] {s}')
-        elif re.search(r'\bunimplemented!\s*\(', line):
-            issues.append(f'{path}:{i}: [unimplemented!] {s}')
-        elif re.search(r'\bunreachable!\s*\(', line):
-            issues.append(f'{path}:{i}: [unreachable!] {s}')
-        elif re.search(r'Instant::now\(\)\s*[-+]', line):
-            issues.append(f'{path}:{i}: [Instant::now() arithmetic; use checked_add/checked_sub] {s}')
-    return issues
-
-# A file whose module its parent declares under #[cfg(test)] (mod name;) is a
-# #[cfg(test)] block kept in a file of its own: compiled for tests only, so it is
-# skipped as the in-file blocks are.
-def test_only_files(files):
-    skip = set()
-    for f in files:
-        base, name = os.path.split(f)
-        child_dir = base if name in ('lib.rs', 'main.rs', 'mod.rs') else os.path.join(base, name[:-3])
-        with open(f) as fh:
-            lines = fh.read().split('\n')
-        for i, line in enumerate(lines):
-            if not re.match(r'\s*#\[cfg\(test\)\]\s*$', line):
-                continue
-            nxt = next((x for x in lines[i + 1:] if x.strip()), '')
-            m = re.match(r'\s*(pub(\(crate\))?\s+)?mod\s+(\w+)\s*;', nxt)
-            if m:
-                skip.add(os.path.join(child_dir, m.group(3) + '.rs'))
-                skip.add(os.path.join(child_dir, m.group(3), 'mod.rs'))
-    return skip
-
-issues = []
-files = glob.glob('${src_dir}/**/*.rs', recursive=True)
-skip = test_only_files(files)
-for f in files:
-    if f.endswith('/tests.rs') or f in skip:
-        continue
-    issues.extend(scan_file(f))
-for issue in issues:
-    print(issue)
-sys.exit(0 if not issues else 1)
-" 2>&1) || true
-        if [ -n "$HITS" ]; then
-            PANIC_HITS_ALL+="$HITS"$'\n'
-            PANIC_FOUND=1
-        fi
-    fi
-done
-
-if [ "$PANIC_FOUND" -eq 1 ]; then
-    print_fail "Panic-inducing pattern(s) in production code"
-    printf "${DIM}%s${NC}" "$PANIC_HITS_ALL"
+# panic-prone lint set using type-aware analysis. Its self-test runs the
+# lexing and the test-module rules on a synthetic tree.
+PANIC_SCAN_DIRS=$(jq -r '.workspace_root as $root | .packages[].manifest_path
+    | ltrimstr($root + "/") | rtrimstr("Cargo.toml") + "src"' <<<"$WORKSPACE_METADATA")
+if PANIC_HITS=$(python3 scripts/check_panic_patterns.py $PANIC_SCAN_DIRS 2>&1); then
+    print_ok "No panic-inducing patterns"
+else
+    print_fail "Panic-inducing pattern(s) in production code, or an unreadable input"
+    printf "${DIM}%s${NC}\n" "$PANIC_HITS"
     printf "${RED}   Runtime panics are FORBIDDEN. Replace with Result/Option or checked_* arithmetic.${NC}\n" >&2
     exit 1
-else
-    print_ok "No panic-inducing patterns"
 fi
+run_check "panic-pattern scan: self-test" python3 scripts/check_panic_patterns.py --self-test
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Per-crate discovery
-# ─────────────────────────────────────────────────────────────────────────────
-if command -v jq &>/dev/null; then
-    WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-        | jq -r '.packages[].name')
-else
-    WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-        | grep -oP '"workspace_members":\[[^\]]*\]' | grep -oP '[^/]+(?=#)')
-fi
+# native-theme's Linux feature set: every feature with code on Linux
+# (`macos` and `windows` add none there; `linux` is `kde` + `portal`).
+# native-theme has no default features, so on Linux the tests of its
+# feature-gated modules (kde, gnome, freedesktop, rasterize, spinners, fonts,
+# the watchers) are run only by the test legs below that name this set. The
+# clippy leg below that names it is the only lint of the Linux-only ones (kde,
+# gnome, freedesktop, the KDE and GNOME watchers); the cross-target
+# `--all-features` clippy runs also lint the tests that are not Linux-only
+# (the rasterizer's and the spinners', for two). The strict panic lints name
+# the set for the library.
+NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: cargo check
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "cargo check"
 for crate in $WORKSPACE_CRATES; do
-    if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "check ($crate)" cargo check -p "$crate" --all-targets
-    else
-        run_check "check ($crate)" cargo check -p "$crate" --all-targets
-    fi
+    run_check "check ($crate)" cargo check -p "$crate" --all-targets
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -444,7 +449,9 @@ run_check "feature combinations (every crate)" bash scripts/check_features.sh
 # dead code or an unchecked result in them is invisible to a Linux build. A
 # cross-target `cargo check` needs the target's standard library (and, for
 # windows-gnu, the MinGW linker toolchain); where one is missing the check is
-# skipped and says why. CI's Windows and macOS test legs run the same checks.
+# skipped with a warning that says why, and the summary repeats it. CI runs
+# the same checks: its Windows and macOS test legs the first two, on the
+# platform itself, and its clippy job the egui connector's macOS check.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "system-icons (cross-target)"
 if command -v rustup &>/dev/null; then
@@ -454,11 +461,11 @@ else
 fi
 for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
-        print_info "skipped system-icons ($target): target not installed (rustup target add $target)"
+        print_warn "skipped system-icons ($target): target not installed (rustup target add $target)"
         continue
     fi
     if [ "$target" = "x86_64-pc-windows-gnu" ] && ! command -v x86_64-w64-mingw32-gcc &>/dev/null; then
-        print_info "skipped system-icons ($target): x86_64-w64-mingw32-gcc not found"
+        print_warn "skipped system-icons ($target): x86_64-w64-mingw32-gcc not found"
         continue
     fi
     run_check "system-icons ($target)" \
@@ -471,6 +478,36 @@ for target in x86_64-pc-windows-gnu x86_64-apple-darwin; do
     fi
 done
 
+# clippy on the platform code: a Linux clippy run never sees the macOS and
+# Windows branches, so lints in them (8 on macOS, 11 on Windows, found
+# 2026-10-11) went unnoticed. Clippy builds no binary, so windows-msvc needs
+# only its standard library, no linker. CI's clippy job runs the same five
+# for both targets, the iced showcase's in its iced leg.
+for target in x86_64-pc-windows-msvc x86_64-apple-darwin; do
+    if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
+        print_warn "skipped clippy ($target): target not installed (rustup target add $target)"
+        continue
+    fi
+    run_check "clippy, all features ($target)" \
+        cargo clippy --target "$target" -p native-theme --all-targets --all-features -- -D warnings
+    run_check "clippy, no default features ($target)" \
+        cargo clippy --target "$target" -p native-theme --all-targets --no-default-features -- -D warnings
+    # The OS probe (tools/os-probe, never published) is all platform code;
+    # its crate root denies the strict panic lints, so this run holds them.
+    run_check "clippy, os-probe ($target)" \
+        cargo clippy --target "$target" -p native-theme-os-probe --all-targets -- -D warnings
+    # The showcases' shared crate (tools/showcase-support, never published):
+    # its window capture and the Retina nudge are macOS and Windows code,
+    # which no showcase's own cross-target build can lint from Linux.
+    run_check "clippy, showcase-support ($target)" \
+        cargo clippy --target "$target" -p native-theme-showcase-support --all-targets -- -D warnings
+    # The iced showcase's own macOS and Windows code (its capture through the
+    # shared crate, the system icon sets), with iced_aw as the screenshot
+    # workflow builds it.
+    run_check "clippy, iced showcase ($target)" \
+        cargo clippy --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw -- -D warnings
+done
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: formatting
 # ─────────────────────────────────────────────────────────────────────────────
@@ -481,116 +518,221 @@ run_check "cargo fmt (all crates)" cargo fmt --all
 # Section: clippy
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "clippy (-D warnings)"
+# The gpui connector with `native` and `watch` on top of its defaults, so
+# `watch.rs` and the showcase's `watch` code are linted too; each is additive,
+# and `cargo check` above builds the defaults alone.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
+        run_check "clippy ($crate, native, watch)" \
+            cargo clippy -p "$crate" --all-targets --features native,watch -- -D warnings
     else
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
+    # The Linux features too, so the reader, icon and watcher code and their
+    # tests are linted; the run above keeps the no-feature cfg branches.
+    if [ "$crate" = "native-theme" ]; then
+        run_check "clippy ($crate, Linux features)" \
+            cargo clippy -p "$crate" --all-targets --features "$NT_FEATURES" -- -D warnings
+    fi
 done
+# The gpui connector on GPUI Fast (its `gpui-fast` feature), which the loop's
+# features leave off, with `native` and `watch` as in the loop.
+run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
+    cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Section: strict panic lints (library code only)
+# Section: strict panic lints (library code and the three showcases)
 #
-# Runs clippy with type-aware panic-prone lints promoted to errors. Covers
-# every category of runtime panic the compiler/clippy can detect statically:
+# scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
+# lints promoted to errors; the lint list and what each lint catches are
+# there, and CI's clippy job runs the same script.
 #
-#   Explicit panics:    panic, todo, unimplemented, unreachable, manual_assert
-#   Fallible unwrap:    unwrap_used, expect_used, unwrap_in_result
-#   Slice/arr bounds:   indexing_slicing, string_slice
-#   Integer overflow:   arithmetic_side_effects
-#   Integer div/mod:    integer_division, modulo_arithmetic
-#   Process exit:       exit
-#   Result fn panics:   panic_in_result_fn
-#
-# Scope: library targets only (--lib). Tests and examples are exempt because
-# they legitimately use .unwrap() / asserts for failure clarity and demo brevity.
+# Scope: library targets (--lib), and the gpui, iced and egui showcase
+# examples, applications the repo ships, which the no-panic rule covers as it
+# covers the libraries. Tests and the other examples are exempt because they
+# legitimately use .unwrap() / asserts for failure clarity and demo brevity.
 # Bin targets (if any in the future) should be added to this list.
 #
-# `native-theme` is run with the full Linux feature set so feature-gated
-# modules (kde, portal, system-icons, freedesktop, spinners, watch) are
-# checked; plain `--lib` misses them.
+# `native-theme` is run with the full Linux feature set ($NT_FEATURES) so
+# feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
+# watch) are checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-STRICT_PANIC_LINTS=(
-    -D clippy::unwrap_used
-    -D clippy::expect_used
-    -D clippy::unwrap_in_result
-    -D clippy::panic
-    -D clippy::panic_in_result_fn
-    -D clippy::todo
-    -D clippy::unimplemented
-    -D clippy::unreachable
-    -D clippy::manual_assert
-    -D clippy::indexing_slicing
-    -D clippy::string_slice
-    -D clippy::arithmetic_side_effects
-    -D clippy::integer_division
-    -D clippy::modulo_arithmetic
-    -D clippy::exit
-)
-NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
-
-print_section "Strict panic lints (library code)"
+print_section "Strict panic lints (library code and the three showcases)"
 run_check "strict-panic (native-theme, Linux features)" \
-    cargo clippy -p native-theme --lib --features "$NT_FEATURES" -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
-    cargo clippy -p native-theme --lib --no-default-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
+# The macOS and Windows code, with each platform's features, the showcases'
+# shared crate's capture code and the iced and egui showcases' own; CI's
+# clippy job runs the first six, its iced job the iced showcase's two, its
+# egui job the egui showcase's two. The targets are the cross-target clippy
+# section's.
+NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
+for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+    if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
+        print_warn "skipped strict-panic ($target): target not installed (rustup target add $target)"
+        continue
+    fi
+    if [ "$target" = "x86_64-apple-darwin" ]; then
+        platform_feature=macos
+    else
+        platform_feature=windows
+    fi
+    run_check "strict-panic (native-theme, $platform_feature features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --features "$platform_feature,$NT_PLATFORM_FEATURES"
+    run_check "strict-panic (native-theme, no features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme --lib --no-default-features
+    run_check "strict-panic (native-theme-showcase-support, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-showcase-support --lib
+    # The iced showcase's macOS and Windows code (its capture through the
+    # shared crate, the system icon sets, and on macOS the system menu bar),
+    # with iced_aw as the screenshot workflow builds it.
+    run_check "strict-panic (showcase-iced, iced_aw, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw
+    # The egui showcase's: on macOS its menus in the system menu bar, which no
+    # Linux run compiles, and on Windows its build there, as the iced
+    # showcase's; with every feature, as the screenshot script builds it.
+    run_check "strict-panic (showcase-egui, all features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-egui --example showcase-egui --all-features
+done
 run_check "strict-panic (native-theme-derive)" \
-    cargo clippy -p native-theme-derive --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-derive --lib
 run_check "strict-panic (native-theme-build)" \
-    cargo clippy -p native-theme-build --lib -- "${STRICT_PANIC_LINTS[@]}"
-run_check "strict-panic (native-theme-iced)" \
-    cargo clippy -p native-theme-iced --lib -- "${STRICT_PANIC_LINTS[@]}"
-run_check_soft "strict-panic (native-theme-gpui)" \
-    cargo clippy -p native-theme-gpui --lib -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-build --lib
+# With the optional features on top of the defaults, so `styles::aw` and
+# `watch.rs` are linted too; nothing in the library is compiled only without one.
+run_check "strict-panic (native-theme-iced, iced_aw, watch, native)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --lib --features iced_aw,watch,native
+# Its showcase, with the connector's features, and in its default build,
+# whose code without iced_aw the first run never compiles.
+run_check "strict-panic (showcase-iced, iced_aw, watch, native)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced --features iced_aw,watch,native
+run_check "strict-panic (showcase-iced, default features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-iced --example showcase-iced
+# The gpui connector with `native` and `watch` too, so `watch.rs` is linted.
+run_check "strict-panic (native-theme-gpui, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features native,watch
+run_check "strict-panic (native-theme-gpui, gpui-fast, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --lib --features gpui-fast,native,watch
+# Its showcase, with the connector's features, on each core.
+run_check "strict-panic (showcase-gpui, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features native,watch
+run_check "strict-panic (showcase-gpui, gpui-fast, native, watch)" \
+    bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
 run_check "strict-panic (native-theme-egui)" \
-    cargo clippy -p native-theme-egui --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
+# Its showcase, with every feature, and without features, whose code without
+# system-fonts the first run never compiles.
+run_check "strict-panic (showcase-egui, all features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --all-features
+run_check "strict-panic (showcase-egui, no features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --no-default-features
 run_check "strict-panic (native-theme-egui-widgets)" \
-    cargo clippy -p native-theme-egui-widgets --lib --all-features -- "${STRICT_PANIC_LINTS[@]}"
+    bash scripts/check_strict_panic.sh -p native-theme-egui-widgets --lib --all-features
+# The OS probe is a binary; on Linux it is the stub, and its macOS and
+# Windows code is held by the cross-target clippy runs above.
+run_check "strict-panic (native-theme-os-probe)" \
+    bash scripts/check_strict_panic.sh -p native-theme-os-probe --bins
+# The test fixtures (tools/test-fixtures, never published) return each
+# failure as an error, so a test fails on its own `?`.
+run_check "strict-panic (native-theme-test-fixtures)" \
+    bash scripts/check_strict_panic.sh -p native-theme-test-fixtures --lib
+# The showcases' shared crate (tools/showcase-support, never published) is
+# held to the library rule too: a showcase reports each error it returns.
+run_check "strict-panic (native-theme-showcase-support)" \
+    bash scripts/check_strict_panic.sh -p native-theme-showcase-support --lib
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Tests"
+# The gpui connector with `native` and `watch` on top of its defaults:
+# `on_theme_change`'s tests (they start no OS watcher) and the showcase's
+# `watch` code. Each is additive, so the one leg covers the defaults too.
+# The OS probe is a stub on Linux with no tests: it may pass none only while
+# its test list is empty.
 for crate in $WORKSPACE_CRATES; do
     if [ "$crate" = "native-theme-gpui" ]; then
-        run_tests_soft "test ($crate)" cargo test -p "$crate"
+        run_tests "test ($crate, native, watch)" cargo test -p "$crate" --features native,watch
+    elif [ "$crate" = "native-theme-os-probe" ]; then
+        probe_min=1
+        if ! cargo test -p "$crate" -- --list 2>/dev/null | grep -q ': test$'; then
+            probe_min=0
+        fi
+        run_tests_min "$probe_min" "test ($crate)" cargo test -p "$crate"
     else
         run_tests "test ($crate)" cargo test -p "$crate"
     fi
 done
+# native-theme with its Linux features ($NT_FEATURES): the loop above runs it
+# with none, which compiles out the KDE and GNOME readers, the freedesktop
+# icon loader, the rasterizer, the spinners, the font lookup and the watchers,
+# and tests/reader_kde.rs. On a host with Breeze and Adwaita installed the
+# tests that need them run too; elsewhere they skip themselves.
+run_tests "test (native-theme, Linux features)" \
+    cargo test -p native-theme --features "$NT_FEATURES"
+# The freedesktop stem index against freedesktop-icons' unfiltered lookup over
+# the host's installed Breeze and Adwaita themes: `#[ignore]`d for its run time
+# (~30-50 s), so the per-commit subset leaves it to the full run. On a host
+# with none of breeze, breeze-dark and Adwaita installed it checks nothing and
+# passes (it prints "skipped" to its captured output). The freedesktop module
+# exists on Linux only, where elsewhere the filter would match no test.
+if [[ $COMMIT_MODE ]]; then
+    printf "${DIM}test (native-theme, Linux features, stem index)${NC}\n"
+    print_skipped "test (native-theme, Linux features, stem index)"
+elif [ "$(uname -s)" != "Linux" ]; then
+    print_info "skipped test (native-theme, Linux features, stem index): the freedesktop module is Linux-only"
+else
+    run_tests "test (native-theme, Linux features, stem index)" \
+        cargo test -p native-theme --features "$NT_FEATURES" --lib -- --ignored \
+        freedesktop::tests::indexed_lookup_matches_the_unfiltered_lookup_on_installed_themes
+fi
 # The loop above runs the gpui connector with its default features, which
 # include `svg-rasterize`; its tests for the SVG path without rasterization only
-# compile without it. Same soft class as the connector's default test.
-run_tests_soft "test (native-theme-gpui, no features)" \
+# compile without it.
+run_tests "test (native-theme-gpui, no features)" \
     cargo test -p native-theme-gpui --lib --no-default-features
-# The GNOME watcher's shutdown (native-theme/src/watch/gnome.rs) is tested
-# only under `portal` + `watch`, which the default features leave off; the
-# test discriminates on a desktop whose session bus runs xdg-desktop-portal.
-run_tests "test (native-theme, portal+watch: the watch module)" \
-    cargo test -p native-theme --features portal,watch --lib watch::
-# native-theme has no default features, so the loop above compiles its
-# fontdb-backed font lookup (native-theme/src/fonts.rs, `system-fonts`) out.
-run_tests "test (native-theme, system-fonts: the fonts module)" \
-    cargo test -p native-theme --features system-fonts --lib fonts::
+# The gpui connector on GPUI Fast, with `native` and `watch` as above: a
+# second GPUI core and platform layer to build, so the per-commit subset
+# leaves it to the full run and CI. Doctests excluded: each is a crate of its
+# own that names gpui-pre as `gpui`.
+if [[ $COMMIT_MODE ]]; then
+    printf "${DIM}test (native-theme-gpui, gpui-fast, native, watch)${NC}\n"
+    print_skipped "test (native-theme-gpui, gpui-fast, native, watch)"
+else
+    run_tests "test (native-theme-gpui, gpui-fast, native, watch)" \
+        cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: iced connector configurations
 #
 # The per-crate loops above run the connector with its default features only.
-# Its other two supported configurations are gated here: `--no-default-features`
-# (no icon or system-font support) and `--features iced_aw`, the optional widget set the
-# showcase's `iced_aw` tab renders. Same hard class as the connector's default
-# test and clippy checks. .github/workflows/ci.yml runs the same two commands,
-# so no configuration reaches a release that CI never saw.
+# Its other three supported configurations are gated here:
+# `--no-default-features` (no icon or system-font support);
+# `--features iced_aw,watch,native`; and the showcase's required features
+# alone, linted (below). The second is the optional widget set the showcase's
+# `iced_aw` tab renders, `theme_changes()` with its tests and the showcase's
+# `watch` code, and the OS readers. Each is additive, so the one leg covers
+# `iced_aw` alone too. The `watch` tests start no OS watcher, and on Linux the
+# tests read the OS theme with or without `native` (the dev-dependencies turn
+# on native-theme's `linux`), a read that cannot fail there: with no reader it
+# is the platform preset. Same hard class as the connector's default test and
+# clippy checks. .github/workflows/ci.yml runs the same four commands, so no
+# configuration reaches a release that CI never saw.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "iced connector configurations"
 run_tests "test (native-theme-iced, no features)" \
     cargo test -p native-theme-iced --no-default-features
-run_tests "test (native-theme-iced, iced_aw)" \
-    cargo test -p native-theme-iced --features iced_aw
-run_check "clippy (native-theme-iced, iced_aw)" \
-    cargo clippy -p native-theme-iced --all-targets --features iced_aw -- -D warnings
+run_tests "test (native-theme-iced, iced_aw, watch, native)" \
+    cargo test -p native-theme-iced --features iced_aw,watch,native
+run_check "clippy (native-theme-iced, iced_aw, watch, native)" \
+    cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native -- -D warnings
+# The `Spinner` without the bundled icon sets: the showcase's required
+# features alone, which leave the `material-icons`-gated tests out, so an
+# import only they use warns where no other run sees it.
+run_check "clippy (native-theme-iced, the showcase's required features)" \
+    cargo clippy -p native-theme-iced --all-targets --no-default-features --features widgets,spinner,system-fonts,advanced-shaping -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: egui connector configurations
@@ -625,21 +767,16 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
 # ─────────────────────────────────────────────────────────────────────────────
 EXAMPLES_PRINTED=0
 for crate in $WORKSPACE_CRATES; do
-    crate_dir=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-        | jq -r --arg name "$crate" '.packages[] | select(.name == $name) | .manifest_path' \
-        | xargs dirname)
-    if [ ! -d "$crate_dir/examples" ]; then
+    manifest=$(jq -r --arg name "$crate" '.packages[] | select(.name == $name) | .manifest_path' \
+        <<<"$WORKSPACE_METADATA")
+    if [ ! -d "$(dirname "$manifest")/examples" ]; then
         continue
     fi
     if [ "$EXAMPLES_PRINTED" -eq 0 ]; then
         print_section "Examples"
         EXAMPLES_PRINTED=1
     fi
-    if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "examples ($crate)" cargo build -p "$crate" --examples
-    else
-        run_check "examples ($crate)" cargo build -p "$crate" --examples
-    fi
+    run_check "examples ($crate)" cargo build -p "$crate" --examples
 done
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -653,19 +790,99 @@ done
 # floor at Python 3.11: a missing or older interpreter fails the check rather
 # than skipping it, since a gate nobody runs is not a gate. CI and the nightly
 # dependency canary run the same script.
+#
+# scripts/check_connector_parity.py, under the same floor, reads the three
+# connectors' crate-root functions and those of the public modules they
+# share, and fails on an accessor named unlike the `ResolvedTheme` leaf it
+# reads, or a function of any class present in one connector and absent from
+# a sibling or present there under another signature, unless
+# scripts/connector_parity_exceptions.toml lists it with its reason, or on a
+# stale exception. Its self-test plants each violation in a synthetic tree.
+#
+# scripts/check_readme_versions.py, under the same floor, fails on a
+# `native-theme` or `native-theme-*` dependency a README states in a `toml`
+# block that does not name the workspace version's `major.minor`; the release
+# bump moves every README at once, and the check holds them there. It also
+# fails on a crate a README's Rust code names that none of its `toml` blocks
+# depends on: the doctests see the crate's own dependencies, a reader only
+# those the README states. The same holds for the doc examples under each
+# crate's src/, which may name only what its README states and the crate.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Widget coverage"
 if ! command -v python3 &>/dev/null; then
-    print_fail "python3 not found — scripts/check_widget_coverage.py needs Python 3.11+"
+    print_fail "python3 not found — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need Python 3.11+"
     exit 1
 fi
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)'; then
     PYTHON_VERSION=$(python3 -c 'import sys; print("%d.%d" % sys.version_info[:2])')
-    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py needs 3.11+ (tomllib)"
+    print_fail "python3 is $PYTHON_VERSION — scripts/check_widget_coverage.py, scripts/check_connector_parity.py, scripts/check_readme_versions.py and scripts/check_wrong_safety_nets.py need 3.11+ (tomllib)"
     exit 1
 fi
 run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui · egui_extras)" \
     python3 scripts/check_widget_coverage.py
+run_check "widget coverage: self-test" \
+    python3 scripts/check_widget_coverage.py --self-test
+run_check "connector parity: names and signatures (iced · gpui · egui)" \
+    python3 scripts/check_connector_parity.py
+run_check "connector parity: self-test" \
+    python3 scripts/check_connector_parity.py --self-test
+run_check "README versions and crates: native-theme* dependencies name the workspace's minor, the code names only stated crates" \
+    python3 scripts/check_readme_versions.py
+run_check "README versions: self-test" \
+    python3 scripts/check_readme_versions.py --self-test
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: showcase parity (static modes)
+#
+# scripts/check_showcase_parity.py compares the three showcases' layout dumps
+# and captures, which are taken on a display, so that comparison is not part
+# of this script. Its two static modes need neither and run here: `--check-list`
+# validates docs/showcase-elements.toml against docs/property-registry.toml
+# and the `[parity]` exceptions against the list and the presets (an unknown
+# element, property, preset or run, an overlapping scope, a group without a
+# reason), and `--self-test` runs the comparator's own scenarios on synthetic
+# dumps and captures, which needs Pillow. CI runs the same two.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Showcase parity (static)"
+run_check "showcase parity: element list and exceptions" \
+    python3 scripts/check_showcase_parity.py --check-list
+run_check "showcase parity: comparator self-test" \
+    python3 scripts/check_showcase_parity.py --self-test
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: data documents
+#
+# The four checks of the data documents, under the Python floor above
+# (check_wrong_safety_nets.py and check_todo_citations.py import `tomllib`),
+# each with its self-test:
+# scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
+# field with no docs/platform-facts.md row; scripts/check_wrong_safety_nets.py
+# on a `# see wrong_safety_nets` mark in docs/inheritance-rules.toml without
+# its [wrong_safety_nets] entry, an entry its [uniform] rule does not mark, or
+# an entry no rule inherits; scripts/check_section_refs.py on a § reference in
+# the registry, the inheritance rules, docs/showcase-elements.toml or
+# docs/new-os-version-guide.md that names no platform-facts section;
+# scripts/check_todo_citations.py on a preset key path in docs/todo.md that
+# names no key of its preset, or a preset line citation no commit dates. CI
+# runs the same eight.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Data documents"
+run_check "data documents: every registry field has a platform-facts row" \
+    python3 scripts/check_platform_facts_rows.py
+run_check "data documents: platform-facts rows self-test" \
+    python3 scripts/check_platform_facts_rows.py --self-test
+run_check "data documents: [wrong_safety_nets] and its [uniform] marks" \
+    python3 scripts/check_wrong_safety_nets.py
+run_check "data documents: wrong safety nets self-test" \
+    python3 scripts/check_wrong_safety_nets.py --self-test
+run_check "data documents: § references name platform-facts sections" \
+    python3 scripts/check_section_refs.py
+run_check "data documents: § references self-test" \
+    python3 scripts/check_section_refs.py --self-test
+run_check "data documents: docs/todo.md cites preset values by key path" \
+    python3 scripts/check_todo_citations.py
+run_check "data documents: todo citations self-test" \
+    python3 scripts/check_todo_citations.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
@@ -673,14 +890,25 @@ run_check "widget coverage (gpui · iced_widget · iced_aw · egui · egui_ui ·
 print_section "Docs"
 # CI, the nightly canary and the publish gate all document with
 # RUSTDOCFLAGS=-Dwarnings, so this gate does too: without it a broken
-# intra-doc link is green here and red at tag time.
+# intra-doc link is green here and red at tag time. Each crate is documented
+# with its private items too (`--document-private-items`), so a broken link or
+# a rustdoc warning in a private item's docs fails as well; a public item's
+# link to a private one still fails, as `rustdoc::private_intra_doc_links`
+# fires in both modes. One run per crate covers both: two configurations of
+# one crate re-document each other on every run, as they share
+# `target/doc/<crate>`. native-theme keeps two: its public API with no
+# features (its default build), and its private items with its Linux
+# features, as its test leg.
 for crate in $WORKSPACE_CRATES; do
-    if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "docs ($crate)" \
-            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
-    else
+    if [ "$crate" = "native-theme" ]; then
         run_check "docs ($crate)" \
             env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps
+        run_check "docs, private items ($crate, Linux features)" \
+            env RUSTDOCFLAGS="-D warnings" \
+            cargo doc -p "$crate" --no-deps --document-private-items --features "$NT_FEATURES"
+    else
+        run_check "docs, private items ($crate)" \
+            env RUSTDOCFLAGS="-D warnings" cargo doc -p "$crate" --no-deps --document-private-items
     fi
 done
 # docs.rs builds native-theme-iced with every feature, and a doc item behind a
@@ -695,6 +923,43 @@ run_check "docs (native-theme-egui-widgets, all features)" \
     env RUSTDOCFLAGS="-D warnings" cargo doc -p native-theme-egui-widgets --no-deps --all-features
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: archive index
+#
+# An implemented plan moves to docs/archive/ with its rationale and spec, and
+# the plan's last task adds them to the index table in docs/archive/README.md
+# (CONTRIBUTING.md, "Where decisions live"). This lists every docs/archive/*.md
+# the index does not name. The index writes a set as `name-{rationale,spec,plan}.md`,
+# so its brace sets are expanded first.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Archive index"
+run_check "archive index (docs/archive/README.md)" python3 -c '
+import glob, os, re, sys
+
+with open("docs/archive/README.md") as f:
+    index = f.read()
+named = set()
+for token in re.findall(r"[\w.{},-]+\.md", index):
+    names = [token]
+    while any("{" in n for n in names):
+        expanded = []
+        for n in names:
+            m = re.search(r"\{([^{}]*)\}", n)
+            if m:
+                expanded.extend(n[:m.start()] + alt + n[m.end():] for alt in m.group(1).split(","))
+            else:
+                expanded.append(n)
+        names = expanded
+    named.update(names)
+missing = sorted(
+    name for name in (os.path.basename(p) for p in glob.glob("docs/archive/*.md"))
+    if name != "README.md" and name not in named
+)
+for name in missing:
+    print(f"docs/archive/{name} is not named in docs/archive/README.md")
+sys.exit(1 if missing else 0)
+'
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: docs.rs emulation
 #
 # docs.rs documents a crate only after it is published, so a docs.rs failure
@@ -705,16 +970,16 @@ run_check "docs (native-theme-egui-widgets, all features)" \
 # `-D warnings`. The section above documents with the stable toolchain and the
 # workspace's own features, which is not that configuration. A missing nightly
 # toolchain or target fails the check rather than skipping it: a gate nobody
-# runs is not a gate. The gpui connector is soft, as in every section above.
+# runs is not a gate.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "docs.rs emulation"
-for crate in $WORKSPACE_CRATES; do
-    if [ "$crate" = "native-theme-gpui" ]; then
-        run_check_soft "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
-    else
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "docs.rs emulation"
+else
+    for crate in $WORKSPACE_CRATES; do
         run_check "docs.rs ($crate)" python3 -I scripts/check_docsrs.py "$crate"
-    fi
-done
+    done
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: packaging
@@ -729,69 +994,126 @@ done
 # between crates, is done by .github/workflows/publish.yml on a `v*` tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Packaging"
-# cargo unpacks each packaged workspace crate into a local-registry source
-# cache (a `-<hash>` directory under $CARGO_HOME/registry/src, beside crates.io's
-# `index.crates.io-…`) and reuses that copy while the version is unchanged, so a
-# connector would be compiled against the native-theme of an earlier run and a
-# stale API would pass or fail for the wrong reason. Those copies of this
-# version's workspace crates are removed first; cargo unpacks the current
-# tarballs again. crates.io's own cache is not touched.
-WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
-find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
-    -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
-# The packages are verified in a target directory of their own, where only the
-# workspace crates are cleaned before each run: cargo reuses a registry-sourced
-# build of the same name and version without looking at its source, and the
-# dependencies stay built between runs. The workspace's own target/ is untouched.
-PKG_TARGET="target/package-verify"
-cargo clean --target-dir "$PKG_TARGET" \
-    -p native-theme-derive -p native-theme -p native-theme-build \
-    -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets >/dev/null 2>&1 || true
-run_check "package (core: derive · native-theme · build)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-iced)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-gpui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-egui)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
-run_check_soft "package (native-theme-egui-widgets)" \
-    cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Packaging"
+else
+    # cargo unpacks each packaged workspace crate into a local-registry source
+    # cache (a `-<hash>` directory under $CARGO_HOME/registry/src, beside crates.io's
+    # `index.crates.io-…`) and reuses that copy while the version is unchanged, so a
+    # connector would be compiled against the native-theme of an earlier run and a
+    # stale API would pass or fail for the wrong reason. Those copies of this
+    # version's workspace crates are removed first; cargo unpacks the current
+    # tarballs again. crates.io's own cache is not touched.
+    WS_VERSION=$(cargo pkgid -p native-theme | sed 's/.*[@#]//')
+    find "${CARGO_HOME:-$HOME/.cargo}/registry/src" -mindepth 2 -maxdepth 2 -type d \
+        -path "*/registry/src/-*/native-theme*-$WS_VERSION" -exec rm -rf {} +
+    # The packages are verified in a target directory of their own, where only the
+    # workspace crates are cleaned before each run: cargo reuses a registry-sourced
+    # build of the same name and version without looking at its source, and the
+    # dependencies stay built between runs. The workspace's own target/ is untouched.
+    PKG_TARGET="target/package-verify"
+    cargo clean --target-dir "$PKG_TARGET" \
+        -p native-theme-derive -p native-theme -p native-theme-build \
+        -p native-theme-iced -p native-theme-gpui -p native-theme-egui -p native-theme-egui-widgets >/dev/null 2>&1 || true
+    run_check "package (core: derive · native-theme · build)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty --target-dir "$PKG_TARGET"
+    run_check "package (native-theme-iced)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty --target-dir "$PKG_TARGET"
+    run_check "package (native-theme-gpui)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty --target-dir "$PKG_TARGET"
+    run_check "package (native-theme-egui)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-egui --allow-dirty --target-dir "$PKG_TARGET"
+    run_check "package (native-theme-egui-widgets)" \
+        cargo package -p native-theme-derive -p native-theme -p native-theme-egui -p native-theme-egui-widgets --allow-dirty --target-dir "$PKG_TARGET"
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: semver checks
+#
+# cargo-semver-checks compares each published library crate's public API with
+# its newest release on crates.io and reports every change the version in
+# Cargo.toml does not allow: a removed or renamed item, a new required trait
+# method, a changed signature. It is the mechanical half of choosing the next
+# version number. It downloads the baseline from crates.io and builds rustdoc
+# JSON for it and for the working tree, under target/semver-checks; its first
+# run on this workspace took 4m 18s for the six crates (2026-10-11), so it runs
+# with the release-only sections. The only soft check: before a release the
+# approved breaks are expected (the next version is the bump that allows
+# them), and a reported break asks for a version decision (the bump, or the
+# change undone), not a code fix. A missing tool is not soft: the checks did
+# not run, so it fails in the Environment section with its install command.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Semver checks"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Semver checks"
+elif [[ ! $HAVE_SEMVER_CHECKS ]]; then
+    printf "${DIM}   not run: cargo-semver-checks is not installed (failed above)${NC}\n"
+else
+    # A proc-macro crate (native-theme-derive) has no library API to compare.
+    SEMVER_CRATES=$(jq -r '.packages[] | select(.publish != []) | select(any(.targets[]; any(.kind[]; . == "lib"))) | .name' \
+        <<<"$WORKSPACE_METADATA")
+    for crate in $SEMVER_CRATES; do
+        # The tool's own feature choice would turn on the gpui connector's
+        # `gpui-fast`, which changes the GPUI core its API is written in; the
+        # published API is the default features'. (`${a[@]+"${a[@]}"}`: an
+        # empty array is unset to `set -u` before bash 4.4.)
+        semver_features=()
+        if [ "$crate" = "native-theme-gpui" ]; then
+            semver_features=(--default-features)
+        fi
+        run_check_soft "semver-checks ($crate)" cargo semver-checks check-release -p "$crate" ${semver_features[@]+"${semver_features[@]}"}
+    done
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
+#
+# cargo audit checks Cargo.lock against the RustSec advisory database. Hard: a
+# known advisory must not sit in the lock, and an audit that cannot run (the
+# database fetch, a lockfile it cannot parse) checked nothing. .cargo/audit.toml
+# denies the informational advisories too (unmaintained, unsound, yanked), and
+# lets one pass only through an ignore entry that gives its reason.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Security audit"
-set +e
-AUDIT_OUT=$(cargo audit 2>&1)
-AUDIT_STATUS=$?
-set -e
-if [ "$AUDIT_STATUS" -eq 0 ]; then
-    print_ok "cargo audit — no advisories"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Security audit"
+elif [[ ! $HAVE_AUDIT ]]; then
+    printf "${DIM}   not run: cargo-audit is not installed (failed above)${NC}\n"
 else
-    # Extract "Warning:" or "Error:" lines for compact warning surfacing.
-    AUDIT_SUMMARY=$(printf "%s\n" "$AUDIT_OUT" | grep -E '^\s*(Crate|Title|ID):\s' | head -12 || true)
-    print_warn "cargo audit reported findings"
-    if [ -n "$AUDIT_SUMMARY" ]; then
-        printf "${DIM}%s${NC}\n" "$AUDIT_SUMMARY"
-    fi
+    run_check "cargo audit (RustSec advisories, .cargo/audit.toml)" cargo audit
 fi
 
 print_section "Outdated dependencies"
-set +e
-# --depth 1 restricts to direct workspace dependencies; without it, cargo
-# outdated walks transitive deps and reports confusing duplicate-version
-# artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
-# subgraphs.
-OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
-set -e
-OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
-    | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $3 ~ /^[0-9]/ && $2 != $3 {c++} END {print c+0}')
-if [ "$OUTDATED_COUNT" -eq 0 ]; then
-    print_ok "All dependencies current"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Outdated dependencies"
+elif [[ ! $HAVE_OUTDATED ]]; then
+    printf "${DIM}   not run: cargo-outdated is not installed (failed above)${NC}\n"
 else
-    print_warn "$OUTDATED_COUNT outdated dependency/dependencies"
-    printf "${DIM}%s${NC}\n" "$OUTDATED_OUT" | head -20
+    set +e
+    # --depth 1 restricts to direct workspace dependencies; without it, cargo
+    # outdated walks transitive deps and reports confusing duplicate-version
+    # artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
+    # subgraphs.
+    OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
+    OUTDATED_STATUS=$?
+    set -e
+    # A row is outdated when Latest ($4) is a version other than Project ($2).
+    # Compat ($3) is `---` when every newer release is semver-incompatible, as
+    # each 0.x minor bump is, so it is not the column to read. `--workspace`
+    # lists a dependency under every member that has it, so each name and
+    # version is counted once.
+    OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
+        | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $4 ~ /^[0-9]/ && $2 != $4 && !seen[$1 " " $2]++ {c++} END {print c+0}')
+    if [ "$OUTDATED_STATUS" -ne 0 ]; then
+        # A failed run lists no rows, so its count says nothing.
+        print_warn "cargo outdated failed (exit $OUTDATED_STATUS): dependencies not checked"
+        printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$OUTDATED_OUT" | grep -v '^[[:space:]]*$' | tail -5)"
+    elif [ "$OUTDATED_COUNT" -eq 0 ]; then
+        print_ok "All dependencies current"
+    else
+        print_warn "$OUTDATED_COUNT outdated dependency/dependencies"
+        printf "${DIM}%s${NC}\n" "$OUTDATED_OUT" | head -20
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -802,26 +1124,30 @@ fi
 # (scripts/update_provenance.sh). A mismatch at HEAD is a warning while the
 # CHANGELOG entry for this version still says "Unreleased" and a hard failure
 # once it carries a date: the release commit exists, so this tree is about to
-# be tagged. The crates.io workflow's CI gate runs the same check on the tag.
+# be tagged. The crates.io workflow's release gate runs the same check on the tag.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Visual assets"
-set +e
-STAMP_MSG=$(bash scripts/update_provenance.sh check 2>&1)
-STAMP_STATUS=$?
-CLEAN_MSG=$(bash scripts/update_provenance.sh verify-clean 2>&1)
-CLEAN_STATUS=$?
-set -e
-if [ "$STAMP_STATUS" -eq 0 ]; then
-    print_ok "$STAMP_MSG"
-elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-    print_fail "$STAMP_MSG"
-    printf "${DIM}    CHANGELOG.md dates %s: release tree, regenerate the assets before tagging${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Visual assets"
 else
-    print_warn "$STAMP_MSG"
-fi
-if [ "$CLEAN_STATUS" -ne 0 ]; then
-    print_warn "asset sources have uncommitted changes; the stamp check compared HEAD"
-    printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$CLEAN_MSG" | tail -n +2 | head -5)"
+    set +e
+    STAMP_MSG=$(bash scripts/update_provenance.sh check 2>&1)
+    STAMP_STATUS=$?
+    CLEAN_MSG=$(bash scripts/update_provenance.sh verify-clean 2>&1)
+    CLEAN_STATUS=$?
+    set -e
+    if [ "$STAMP_STATUS" -eq 0 ]; then
+        print_ok "$STAMP_MSG"
+    elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+        print_fail "$STAMP_MSG"
+        printf "${DIM}    CHANGELOG.md dates %s: release tree, regenerate the assets before tagging${NC}\n" "$CURRENT_VERSION"
+    else
+        print_warn "$STAMP_MSG"
+    fi
+    if [ "$CLEAN_STATUS" -ne 0 ]; then
+        print_warn "asset sources have uncommitted changes; the stamp check compared HEAD"
+        printf "${DIM}%s${NC}\n" "$(printf '%s\n' "$CLEAN_MSG" | tail -n +2 | head -5)"
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -838,17 +1164,21 @@ fi
 # and the stamp, never the registry.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Compatibility claims"
-set +e
-COMPAT_MSG=$(bash scripts/update_compatibility.sh check 2>&1)
-COMPAT_STATUS=$?
-set -e
-if [ "$COMPAT_STATUS" -eq 0 ]; then
-    print_ok "$COMPAT_MSG"
-elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
-    print_fail "$COMPAT_MSG"
-    printf "${DIM}    CHANGELOG.md dates %s: release tree, re-verify before tagging${NC}\n" "$CURRENT_VERSION"
+if [[ $COMMIT_MODE ]]; then
+    print_skipped "Compatibility claims"
 else
-    print_warn "$COMPAT_MSG"
+    set +e
+    COMPAT_MSG=$(bash scripts/update_compatibility.sh check 2>&1)
+    COMPAT_STATUS=$?
+    set -e
+    if [ "$COMPAT_STATUS" -eq 0 ]; then
+        print_ok "$COMPAT_MSG"
+    elif grep -qE "^## \[${CURRENT_VERSION//./\\.}\] - [0-9]{4}-[0-9]{2}-[0-9]{2}" CHANGELOG.md; then
+        print_fail "$COMPAT_MSG"
+        printf "${DIM}    CHANGELOG.md dates %s: release tree, re-verify before tagging${NC}\n" "$CURRENT_VERSION"
+    else
+        print_warn "$COMPAT_MSG"
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -859,7 +1189,15 @@ ELAPSED_TOTAL=$(format_elapsed "$((SECONDS - SCRIPT_START))")
 
 printf "\n${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [ "$FAIL_COUNT" -eq 0 ]; then
+if [[ $COMMIT_MODE ]]; then
+    if [ "$FAIL_COUNT" -ne 0 ]; then
+        printf "${BOLD}${RED}${ICON_FAIL} FAILED${NC} · native-theme v%s per-commit subset\n" "$CURRENT_VERSION"
+    elif [ "$WARN_COUNT" -eq 0 ]; then
+        printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s per-commit subset (not a release check)\n" "$CURRENT_VERSION"
+    else
+        printf "${BOLD}${GREEN}${ICON_PARTY} PASS WITH WARNINGS${NC} · native-theme v%s per-commit subset (not a release check)\n" "$CURRENT_VERSION"
+    fi
+elif [ "$FAIL_COUNT" -eq 0 ]; then
     if [ "$WARN_COUNT" -eq 0 ]; then
         printf "${BOLD}${GREEN}${ICON_PARTY} ALL PASS${NC} · native-theme v%s ready for release\n" "$CURRENT_VERSION"
     else
@@ -874,14 +1212,35 @@ printf "   ${DIM}%d checks · ${GREEN}%d %s${NC}${DIM} · ${YELLOW}%d %s${NC}${D
 
 if [ "$WARN_COUNT" -gt 0 ]; then
     printf "\n${BOLD}${YELLOW}Warnings (re-summarised):${NC}\n"
-    for w in "${WARNINGS[@]}"; do
+    for w in ${WARNINGS[@]+"${WARNINGS[@]}"}; do
         printf "   ${YELLOW}${ICON_WARN}${NC} %s\n" "$w"
+    done
+fi
+
+if [ "$FAIL_COUNT" -gt 0 ]; then
+    printf "\n${BOLD}${RED}Failures (re-summarised):${NC}\n"
+    for f in ${FAILURES[@]+"${FAILURES[@]}"}; do
+        printf "   ${RED}${ICON_FAIL}${NC} %s\n" "$f"
+    done
+fi
+
+if [[ $COMMIT_MODE ]]; then
+    printf "\n${BOLD}Skipped (--commit mode):${NC}\n"
+    for s in ${SKIPPED[@]+"${SKIPPED[@]}"}; do
+        printf "   ${DIM}%s${NC}\n" "$s"
     done
 fi
 
 printf "${BOLD}═══════════════════════════════════════════════════════════════════${NC}\n"
 
-if [ "$FAIL_COUNT" -eq 0 ]; then
+if [[ $COMMIT_MODE ]]; then
+    if [ "$FAIL_COUNT" -eq 0 ]; then
+        printf "\n   The full run (${DIM}./scripts/check_release.sh${NC}) is required on the last commit of\n"
+        printf "   every fix phase and before the release commit.\n\n"
+        exit 0
+    fi
+    exit 1
+elif [ "$FAIL_COUNT" -eq 0 ]; then
     printf "\n${BOLD}${BLUE}Next steps:${NC}\n"
     printf "   1. Review the changes once more\n"
     printf "   2. Visual assets and compatibility: if either check above warned, push, run\n"
@@ -892,12 +1251,13 @@ if [ "$FAIL_COUNT" -eq 0 ]; then
     printf "   5. Fast-forward main to it and push; CI runs on the exact commit\n"
     printf "   6. Tag: ${DIM}git tag v%s${NC}\n" "$CURRENT_VERSION"
     printf "   7. Push: ${DIM}git push origin v%s${NC}\n" "$CURRENT_VERSION"
-    printf "   8. The pushed tag triggers .github/workflows/publish.yml: its CI gate re-checks the\n"
-    printf "      stamp and the tag name, then publishes in dependency order with index waits\n"
-    printf "      between crates. Manual fallback, same order:\n"
+    printf "   8. The pushed tag triggers .github/workflows/publish.yml: its release gate re-checks\n"
+    printf "      the tag name and both stamps, then CI runs on the tag's commit, every crate is\n"
+    printf "      packaged and documented as docs.rs will, and only then are they published in\n"
+    printf "      dependency order with index waits between crates. Manual fallback, same order:\n"
     printf "      ${DIM}cargo publish -p native-theme-derive${NC}\n"
-    printf "      ${DIM}cargo publish -p native-theme-build${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme${NC}\n"
+    printf "      ${DIM}cargo publish -p native-theme-build${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-iced${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-gpui${NC}\n"
     printf "      ${DIM}cargo publish -p native-theme-egui${NC}\n"

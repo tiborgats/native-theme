@@ -122,7 +122,7 @@ fn weight_rank(face: u16, wanted: u16) -> (u8, u16) {
 
 /// Whether `family` names the macOS system UI font: caselessly equal to
 /// "SF Pro", the name the platform documents for it
-/// (`docs/platform-facts.md:59-67`) and `macos-sonoma` states. A pure
+/// (`docs/platform-facts.md:63-71`) and `macos-monterey` states. A pure
 /// predicate, on every platform, with no font database: `system_face`'s
 /// macOS branch asks it beside its Core Text family comparison, and the
 /// gpui connector asks it alone to map the family to gpui's own alias.
@@ -277,10 +277,12 @@ fn face_in_file(path: &std::path::Path, weight: u16, style: FontStyle) -> Option
 /// `%{family[0]}` is that match's first family name (`FcPatternFormat(3)`).
 /// The pattern is `family` with the characters fontconfig's name syntax
 /// reserves in a family — `\`, `-`, `:` and `,` — each preceded by a `\`
-/// (fontconfig user's guide, "Font Names"). `None` when `fc-match` cannot be run or fails,
-/// prints nothing, or prints a family caselessly equal to `family`: the
-/// system has that family, and [`system_face`] finds it by name. Each call
-/// starts a process, so call it when a theme changes, not per frame.
+/// (fontconfig user's guide, "Font Names"). `None` when `fc-match` cannot be
+/// run, fails, does not finish within 2 s, prints nothing, or prints a family
+/// caselessly equal to `family`: the system has that family, and
+/// [`system_face`] finds it by name. Each call starts a process, so call it
+/// when a theme changes, not per frame; [`substitute_family_cached`] asks
+/// once per family and keeps the answer for the process.
 ///
 /// macOS, Windows and every other platform: `None`. Their own fallback for a
 /// missing family is not implemented: no code path of this crate reads it.
@@ -288,6 +290,61 @@ fn face_in_file(path: &std::path::Path, weight: u16, style: FontStyle) -> Option
 #[must_use]
 pub fn substitute_family(family: &str) -> Option<String> {
     platform_substitute(family)
+}
+
+/// [`substitute_family`]'s answer for `family`, asked of the platform once
+/// per family and kept for the process, so a caller may ask every frame.
+///
+/// The first call for a family runs [`substitute_family`] on the calling
+/// thread: on Linux and the other fontconfig platforms one `fc-match`
+/// process, about 12.5 ms measured on one Linux machine, with a 2 s timeout.
+/// A thread asking for another family, or for one already answered, does not
+/// wait for it. Two first callers for one family may both ask; the answer is
+/// the same, and the last one is kept. A family installed after its first
+/// ask keeps the answer that ask gave for the rest of the process.
+#[cfg(feature = "system-fonts")]
+#[must_use]
+pub fn substitute_family_cached(family: &str) -> Option<String> {
+    static ASKED: std::sync::OnceLock<AskedFamilies> = std::sync::OnceLock::new();
+    asked_once(
+        ASKED.get_or_init(AskedFamilies::default),
+        family,
+        substitute_family,
+    )
+}
+
+/// Each family asked, with the platform's answer.
+#[cfg(feature = "system-fonts")]
+type AskedFamilies = std::sync::Mutex<std::collections::HashMap<String, Option<String>>>;
+
+/// `ask`'s answer for `family`, kept in `asked`. The lock is held for the
+/// look-up and the insert only, not across `ask`: the platform's ask starts
+/// a process ([`substitute_family`]: `fc-match` on Linux and the other
+/// fontconfig platforms, bounded by `SUBPROCESS_TIMEOUT`, 2 s,
+/// `src/detect.rs:20`), and a thread building any other theme must not wait
+/// for it. The 12.5 ms per ask the public docs state was measured by M6-03's
+/// verifier with a logging `fc-match` shim first on `PATH` over the gpui
+/// connector's release `timings` binary: two asks of about 12.5 ms in each
+/// preset's first call that brings two new families
+/// (docs/todo_code-review-findings.md, M6-03).
+#[cfg(feature = "system-fonts")]
+fn asked_once(
+    asked: &AskedFamilies,
+    family: &str,
+    ask: impl FnOnce(&str) -> Option<String>,
+) -> Option<String> {
+    let lock = || {
+        asked
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    };
+    let kept = lock().get(family).cloned();
+    if let Some(answer) = kept {
+        return answer;
+    }
+    let answer = ask(family);
+    lock().insert(family.to_owned(), answer.clone());
+    answer
 }
 
 #[cfg(all(
@@ -298,15 +355,11 @@ pub fn substitute_family(family: &str) -> Option<String> {
     not(target_os = "android")
 ))]
 fn platform_substitute(family: &str) -> Option<String> {
-    let output = std::process::Command::new("fc-match")
-        .arg("--format=%{family[0]}")
-        .arg(fontconfig_family(family))
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let printed = String::from_utf8(output.stdout).ok()?;
+    let printed = crate::detect::stdout_with_timeout(
+        "fc-match",
+        &["--format=%{family[0]}", &fontconfig_family(family)],
+        crate::detect::SUBPROCESS_TIMEOUT,
+    )?;
     let matched = printed.trim();
     if matched.is_empty() || unicase::UniCase::new(matched) == unicase::UniCase::new(family) {
         return None;
@@ -484,7 +537,7 @@ mod tests {
     }
 
     /// The macOS system UI font's documented name, caselessly, and nothing
-    /// else (`docs/platform-facts.md:59-67`).
+    /// else (`docs/platform-facts.md:63-71`).
     #[test]
     fn the_macos_system_ui_family_is_sf_pro_caselessly() {
         assert!(is_macos_system_ui_family("SF Pro"));
@@ -514,6 +567,71 @@ mod tests {
         assert_eq!(
             fontconfig_family("Noto Sans CJK 日本"),
             "Noto Sans CJK 日本"
+        );
+    }
+
+    /// M6-03: the platform's ask runs a subprocess (`fc-match` on Linux,
+    /// with a 2 s timeout), so a look-up of a cached family, and the ask for
+    /// another one, must not wait for an ask in flight. The first asker
+    /// blocks until the test releases it; the other two must finish first.
+    #[cfg(feature = "system-fonts")]
+    #[test]
+    fn a_family_ask_in_flight_blocks_no_other_look_up() {
+        use std::sync::mpsc;
+        use std::time::Duration;
+        const GENEROUS: Duration = Duration::from_secs(10);
+
+        let asked = std::sync::Arc::new(AskedFamilies::default());
+        asked
+            .lock()
+            .unwrap()
+            .insert("Cached".to_owned(), Some("Cached substitute".to_owned()));
+
+        let (started_tx, started) = mpsc::channel();
+        let (release, release_rx) = mpsc::channel::<()>();
+        let first = std::thread::spawn({
+            let asked = asked.clone();
+            move || {
+                asked_once(&asked, "First", |_| {
+                    let _ = started_tx.send(());
+                    let _ = release_rx.recv();
+                    Some("First substitute".to_owned())
+                })
+            }
+        });
+        started
+            .recv_timeout(GENEROUS)
+            .expect("the first ask never started");
+
+        let (done_tx, done) = mpsc::channel();
+        let others = std::thread::spawn({
+            let asked = asked.clone();
+            move || {
+                let cached = asked_once(&asked, "Cached", |_| Some("asked again".to_owned()));
+                let _ = done_tx.send(("Cached", cached));
+                let second = asked_once(&asked, "Second", |_| Some("Second substitute".to_owned()));
+                let _ = done_tx.send(("Second", second));
+            }
+        });
+        let while_in_flight: Vec<_> = (0..2)
+            .map_while(|_| done.recv_timeout(GENEROUS).ok())
+            .collect();
+
+        release.send(()).unwrap();
+        assert_eq!(first.join().unwrap().as_deref(), Some("First substitute"));
+        others.join().unwrap();
+        assert_eq!(
+            while_in_flight,
+            [
+                ("Cached", Some("Cached substitute".to_owned())),
+                ("Second", Some("Second substitute".to_owned())),
+            ],
+            "a look-up waited for another family's ask"
+        );
+        assert_eq!(
+            asked_once(&asked, "First", |_| None).as_deref(),
+            Some("First substitute"),
+            "the first ask's answer is kept"
         );
     }
 

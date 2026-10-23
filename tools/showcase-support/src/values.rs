@@ -1,0 +1,462 @@
+//! The value Widget Info shows for a leaf of `docs/showcase-elements.toml`,
+//! as the resolved theme holds it, in the text the three showcases agreed
+//! (the list's header, "The Widget Info format"): a colour as native-theme's
+//! `Rgba` prints it; a `_px` length as its number and ` px`; a `_ms`
+//! duration as its number and ` ms`; a font as its family, its size in the
+//! unit its source stated, and its weight, with its style where that is not
+//! normal; a text-scale entry as its size in pixels and its weight; any
+//! other number as itself; a boolean, a name or an enum as it prints;
+//! [`NOT_STATED`] for what the theme leaves unstated. A font's family, of a
+//! whole font or a `*.family` leaf, is the label the showcase's lookup gives
+//! it, which says what the toolkit draws
+//! ([`crate::status::DrawnFamily::label`]).
+
+use std::str::FromStr as _;
+
+use native_theme::color::Rgba;
+use native_theme::theme::{IconSet, LayoutTheme, ResolvedFontSpec, ResolvedTheme};
+
+/// What Widget Info shows for a value the theme leaves unstated.
+pub const NOT_STATED: &str = "not stated";
+
+/// A leaf's value: its text, and its colour where it is one, which the
+/// showcase draws as the row's swatch in its own colour type.
+#[derive(Clone, Debug, PartialEq)]
+pub struct LeafValue {
+    pub text: String,
+    pub colour: Option<Rgba>,
+}
+
+impl LeafValue {
+    fn text(text: String) -> Self {
+        Self { text, colour: None }
+    }
+}
+
+/// The resolved theme as [`leaf_value`] walks it: `serde_json::to_value`.
+pub fn theme_json(resolved: &ResolvedTheme) -> Result<serde_json::Value, String> {
+    serde_json::to_value(resolved).map_err(|e| format!("the resolved theme's JSON: {e}"))
+}
+
+/// The value of `leaf`, a path of `docs/property-registry.toml`, from
+/// `resolved`, the resolved theme's JSON ([`theme_json`]), as [`value_at`]
+/// reads it, a font's family as `family` labels it, but for the leaves the
+/// resolved theme does not hold: a `layout.*` leaf from `layout`,
+/// `theme_variant.icon_set` from `icon_set`, the set the theme states, and
+/// `defaults.icon_theme` from `icon_theme`, the icon theme the showcase
+/// resolved for the mode it shows (the variant's, else the theme's, else the
+/// system's; native-theme's `Resolved::icon_theme`).
+pub fn leaf_value(
+    leaf: &str,
+    resolved: &serde_json::Value,
+    layout: &LayoutTheme,
+    icon_set: Option<IconSet>,
+    icon_theme: Option<&str>,
+    family: &dyn Fn(&str, &ResolvedFontSpec) -> String,
+) -> LeafValue {
+    let stated =
+        |value: Option<String>| LeafValue::text(value.unwrap_or_else(|| NOT_STATED.to_string()));
+    if let Some(field) = leaf.strip_prefix("layout.") {
+        let value = match field {
+            "widget_gap_px" => layout.widget_gap,
+            "container_margin_px" => layout.container_margin,
+            "window_margin_px" => layout.window_margin,
+            "section_gap_px" => layout.section_gap,
+            _ => None,
+        };
+        return stated(value.map(|v| format!("{v} px")));
+    }
+    match leaf {
+        "theme_variant.icon_set" => return stated(icon_set.map(|set| set.to_string())),
+        "defaults.icon_theme" => return stated(icon_theme.map(str::to_string)),
+        _ => {}
+    }
+    value_at(leaf, resolved, family)
+}
+
+/// The value of `leaf`, a registry path, in `resolved`, the resolved theme's
+/// JSON, as Widget Info shows it ([`leaf_value`]'s text), or [`NOT_STATED`]
+/// where the JSON holds none. A font's family, the family part of a whole
+/// font (`button.font`) or a `*.family` leaf (`defaults.font.family`), is
+/// `family`'s label of it: `family` is called with the font's registry path
+/// (`button.font`, `defaults.mono_font`) and the font, and gives the label
+/// that says what the toolkit draws the family in
+/// ([`crate::status::DrawnFamily::label`]); a font the JSON holds in another
+/// shape than a resolved font's keeps its stated family. For a showcase that
+/// walks the theme's JSON to leaves of its own (the egui showcase's
+/// `mapping.toml` rows, whose keys carry no unit), so its rows read as the
+/// listed ones do.
+pub fn value_at(
+    leaf: &str,
+    resolved: &serde_json::Value,
+    family: &dyn Fn(&str, &ResolvedFontSpec) -> String,
+) -> LeafValue {
+    let Some(value) = walk(resolved, leaf) else {
+        return LeafValue::text(NOT_STATED.to_string());
+    };
+    if value.is_string()
+        && let Some(path) = leaf.strip_suffix(".family")
+        && let Some(label) = walk(resolved, path).and_then(|font| family_of(path, font, family))
+    {
+        return LeafValue::text(label);
+    }
+    value_of(leaf, value, family)
+}
+
+/// The value at `leaf`, a registry path, in the JSON `at`, one [`step`] per
+/// segment.
+fn walk<'a>(at: &'a serde_json::Value, leaf: &str) -> Option<&'a serde_json::Value> {
+    leaf.split('.')
+        .try_fold(at, |at, segment| step(at, segment))
+}
+
+/// `family`'s label of the family of `font`, the JSON of the font at the
+/// registry path `path`; `None` where `font` is not a resolved font.
+fn family_of(
+    path: &str,
+    font: &serde_json::Value,
+    family: &dyn Fn(&str, &ResolvedFontSpec) -> String,
+) -> Option<String> {
+    let font: ResolvedFontSpec = serde_json::from_value(font.clone()).ok()?;
+    Some(family(path, &font))
+}
+
+/// One step down a registry path in the resolved theme's JSON: a field by
+/// its own name, or by the name without its `_px` or `_ms` unit, a border
+/// side (`padding_top_px`) under `padding`.
+fn step<'a>(at: &'a serde_json::Value, segment: &str) -> Option<&'a serde_json::Value> {
+    if let Some(found) = at.get(segment) {
+        return Some(found);
+    }
+    let bare = segment
+        .strip_suffix("_px")
+        .or_else(|| segment.strip_suffix("_ms"))
+        .unwrap_or(segment);
+    if let Some(side) = bare.strip_prefix("padding_") {
+        return at.get("padding").and_then(|padding| padding.get(side));
+    }
+    at.get(bare)
+}
+
+/// `value`, the value of `leaf` in the resolved theme's JSON, as Widget Info
+/// shows it: the text [`value_at`] gives a leaf it found, a whole font's
+/// family as `family` labels it.
+fn value_of(
+    leaf: &str,
+    value: &serde_json::Value,
+    family: &dyn Fn(&str, &ResolvedFontSpec) -> String,
+) -> LeafValue {
+    match value {
+        serde_json::Value::Null => LeafValue::text(NOT_STATED.to_string()),
+        serde_json::Value::Bool(b) => LeafValue::text(b.to_string()),
+        serde_json::Value::Number(_) => {
+            let v = number(Some(value));
+            match unit(leaf) {
+                Some(unit) => LeafValue::text(format!("{v} {unit}")),
+                None => LeafValue::text(v),
+            }
+        }
+        serde_json::Value::String(s) => match Rgba::from_str(s) {
+            Ok(colour) if s.starts_with('#') => LeafValue {
+                text: colour.to_string(),
+                colour: Some(colour),
+            },
+            _ => LeafValue::text(s.clone()),
+        },
+        serde_json::Value::Object(o) if o.contains_key("family") => {
+            LeafValue::text(font_text(o, family_of(leaf, value, family)))
+        }
+        serde_json::Value::Object(o) if o.contains_key("line_height") => {
+            let size = number(o.get("size"));
+            let weight = number(o.get("weight"));
+            LeafValue::text(format!("{size} px {weight}"))
+        }
+        other => LeafValue::text(other.to_string()),
+    }
+}
+
+/// The unit a leaf's number is shown in: `px` for a `_px` leaf, `ms` for a
+/// `_ms` one.
+fn unit(leaf: &str) -> Option<&'static str> {
+    if leaf.ends_with("_px") {
+        Some("px")
+    } else if leaf.ends_with("_ms") {
+        Some("ms")
+    } else {
+        None
+    }
+}
+
+/// A number of the theme's JSON as the f32 the theme holds, printed.
+fn number(value: Option<&serde_json::Value>) -> String {
+    value
+        .and_then(serde_json::Value::as_f64)
+        .map_or_else(|| NOT_STATED.to_string(), |v| format!("{}", v as f32))
+}
+
+/// A resolved font: its family, as `label` names it where it is given, else
+/// as stated, its size as the source stated it (`defined_size`, in points or
+/// pixels; the resolved pixels where the source stated none), its weight,
+/// and its style where it is not normal.
+fn font_text(font: &serde_json::Map<String, serde_json::Value>, label: Option<String>) -> String {
+    let family = label.unwrap_or_else(|| {
+        font.get("family")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or(NOT_STATED)
+            .to_string()
+    });
+    let defined = font.get("defined_size").and_then(|size| {
+        [("Pt", "pt"), ("Px", "px")]
+            .into_iter()
+            .find_map(|(key, unit)| size.get(key).map(|v| (v, unit)))
+    });
+    let size = match defined {
+        Some((v, unit)) => format!("{} {unit}", number(Some(v))),
+        None => format!("{} px", number(font.get("size"))),
+    };
+    let weight = number(font.get("weight"));
+    match font.get("style").and_then(serde_json::Value::as_str) {
+        Some(style) if style != "normal" => format!("{family} {size} {weight} {style}"),
+        _ => format!("{family} {size} {weight}"),
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    use native_theme::ResolutionContext;
+    use native_theme::theme::{ColorMode, FontSize, Theme};
+
+    /// A lookup that names every family as stated.
+    fn as_stated(_: &str, font: &ResolvedFontSpec) -> String {
+        font.family.to_string()
+    }
+
+    /// kde-breeze light, resolved for tests: the theme, its resolution and
+    /// its JSON.
+    fn kde_breeze_light() -> (Theme, native_theme::Resolved, serde_json::Value) {
+        let theme = Theme::preset("kde-breeze").expect("the preset loads");
+        let resolved = theme
+            .resolve_with(ColorMode::Light, &ResolutionContext::for_tests())
+            .expect("the preset resolves");
+        let json = theme_json(&resolved.variant).expect("the resolved theme serialises");
+        (theme, resolved, json)
+    }
+
+    /// A leaf's value reads as the three showcases agreed: a colour as
+    /// `Rgba` prints it, a length with ` px`, a font as family, stated size
+    /// and weight, a text-scale entry as size and weight, a number as
+    /// itself, the icon set and icon theme as the showcase hands them in.
+    #[test]
+    fn a_leaf_value_reads_as_the_showcases_agreed() {
+        let (theme, all, json) = kde_breeze_light();
+        let layout = &theme.layout;
+        let resolved = &all.variant;
+        let icon_theme = all.icon_theme.as_deref();
+        let value = |leaf: &str| leaf_value(leaf, &json, layout, None, icon_theme, &as_stated).text;
+        let font = &resolved.button.font;
+        let stated = match font.defined_size {
+            Some(FontSize::Pt(v)) => format!("{v} pt"),
+            Some(FontSize::Px(v)) => format!("{v} px"),
+            None => format!("{} px", font.size),
+        };
+        assert_eq!(
+            value("button.font"),
+            format!("{} {stated} {}", font.family, font.weight)
+        );
+        assert_eq!(
+            value("button.font.color"),
+            resolved.button.font.color.to_string()
+        );
+        assert_eq!(
+            value("defaults.line_height"),
+            format!("{}", resolved.defaults.line_height)
+        );
+        assert_eq!(
+            value("button.border.corner_radius_px"),
+            format!("{} px", resolved.button.border.corner_radius)
+        );
+        assert_eq!(
+            value("defaults.icon_sizes.small_px"),
+            format!("{} px", resolved.defaults.icon_sizes.small)
+        );
+        assert_eq!(
+            value("text_scale.section_heading"),
+            format!(
+                "{} px {}",
+                resolved.text_scale.section_heading.size,
+                resolved.text_scale.section_heading.weight
+            )
+        );
+        assert_eq!(value("theme_variant.icon_set"), NOT_STATED);
+        assert_eq!(
+            leaf_value(
+                "theme_variant.icon_set",
+                &json,
+                layout,
+                Some(all.icon_set),
+                None,
+                &as_stated
+            )
+            .text,
+            all.icon_set.to_string()
+        );
+        // The variant's own icon theme, as the preset states it.
+        let breeze = theme
+            .light
+            .as_ref()
+            .and_then(|light| light.defaults.icon_theme.as_deref())
+            .expect("kde-breeze's light variant states an icon theme");
+        assert_eq!(icon_theme, Some(breeze));
+        assert_eq!(value("defaults.icon_theme"), breeze);
+        assert_eq!(
+            leaf_value("defaults.icon_theme", &json, layout, None, None, &as_stated).text,
+            NOT_STATED
+        );
+        match layout.widget_gap {
+            Some(gap) => assert_eq!(value("layout.widget_gap_px"), format!("{gap} px")),
+            None => assert_eq!(value("layout.widget_gap_px"), NOT_STATED),
+        }
+        match resolved.button.border.padding.top {
+            Some(top) => assert_eq!(value("button.border.padding_top_px"), format!("{top} px")),
+            None => assert_eq!(value("button.border.padding_top_px"), NOT_STATED),
+        }
+        assert_eq!(
+            leaf_value(
+                "button.background_color",
+                &json,
+                layout,
+                None,
+                None,
+                &as_stated
+            )
+            .colour,
+            Some(resolved.button.background_color),
+            "a colour leaf has no swatch, or not its colour"
+        );
+        for e in crate::elements::elements() {
+            for leaf in &e.leaves {
+                let shown = value(leaf);
+                assert!(
+                    !shown.starts_with('{') && !shown.starts_with('['),
+                    "{} {leaf} shows raw JSON: {shown}",
+                    e.id
+                );
+            }
+        }
+    }
+
+    /// A `_ms` leaf reads as a `_px` one does: `tooltip.show_delay_ms` is the
+    /// resolved theme's `tooltip.show_delay`, with ` ms`.
+    #[test]
+    fn a_ms_leaf_reads_its_value() {
+        let (theme, all, json) = kde_breeze_light();
+        let delay = all
+            .variant
+            .tooltip
+            .show_delay
+            .expect("kde-breeze states a tooltip delay");
+        assert_eq!(
+            leaf_value(
+                "tooltip.show_delay_ms",
+                &json,
+                &theme.layout,
+                None,
+                None,
+                &as_stated
+            )
+            .text,
+            format!("{delay} ms")
+        );
+    }
+
+    /// A leaf of another walk, with no unit in its keys, reads as a listed
+    /// one: a colour as `Rgba` prints it, with its swatch; a number under a
+    /// key with no unit as itself, under a `_px` one with ` px`; a null or a
+    /// missing leaf [`NOT_STATED`].
+    #[test]
+    fn a_value_reached_elsewhere_reads_as_a_leafs() {
+        let json = serde_json::json!({
+            "button": {
+                "background_color": "#336699",
+                "border": {"corner_radius": 4.0, "padding": {"top": null}},
+            },
+        });
+        let value = |leaf: &str| value_at(leaf, &json, &as_stated);
+        let colour = value("button.background_color");
+        assert_eq!(colour.text, "#336699");
+        assert_eq!(colour.colour, Rgba::from_str("#336699").ok());
+        assert_eq!(value("button.border.corner_radius").text, "4");
+        assert_eq!(value("button.border.corner_radius_px").text, "4 px");
+        assert_eq!(value("button.border.padding.top").text, NOT_STATED);
+        assert_eq!(value("button.border.padding_top_px").text, NOT_STATED);
+        assert_eq!(value("button.no_such_leaf").text, NOT_STATED);
+    }
+
+    /// A font's family, of a whole font or a `*.family` leaf, is the
+    /// lookup's label, the lookup handed the font's path and the font; the
+    /// font's other fields and leaves read as stated; a font the JSON holds
+    /// in another shape keeps its stated family.
+    #[test]
+    fn a_font_family_is_the_lookups_label() {
+        let (theme, all, json) = kde_breeze_light();
+        let layout = &theme.layout;
+        let resolved = &all.variant;
+        let asked = std::cell::RefCell::new(Vec::new());
+        let label = |path: &str, font: &ResolvedFontSpec| {
+            asked.borrow_mut().push((path.to_string(), font.clone()));
+            format!("{} (drawn in Theme Sans)", font.family)
+        };
+        let value = |leaf: &str| leaf_value(leaf, &json, layout, None, None, &label).text;
+        let (body, mono) = (&resolved.defaults.font, &resolved.defaults.mono_font);
+        assert_eq!(
+            value("defaults.font.family"),
+            format!("{} (drawn in Theme Sans)", body.family)
+        );
+        let stated_text =
+            leaf_value("defaults.mono_font", &json, layout, None, None, &as_stated).text;
+        assert_eq!(
+            value("defaults.mono_font"),
+            stated_text.replacen(
+                &*mono.family,
+                &format!("{} (drawn in Theme Sans)", mono.family),
+                1
+            )
+        );
+        assert_eq!(value("defaults.font.color"), body.color.to_string());
+        assert_eq!(
+            *asked.borrow(),
+            [
+                ("defaults.font".to_string(), body.clone()),
+                ("defaults.mono_font".to_string(), mono.clone()),
+            ]
+        );
+        let shapeless = serde_json::json!({"label": {"font": {"family": "Noto Sans"}}});
+        assert_eq!(
+            value_at("label.font.family", &shapeless, &label).text,
+            "Noto Sans"
+        );
+    }
+
+    /// A font's style is named where it is not normal; a leaf the theme
+    /// leaves unstated, or no leaf of the theme, reads [`NOT_STATED`].
+    #[test]
+    fn a_font_names_its_style_and_a_missing_leaf_is_not_stated() {
+        let font = serde_json::json!({
+            "family": "Noto Sans",
+            "size": 13.333_333,
+            "defined_size": {"Pt": 10.0},
+            "weight": 400,
+            "style": "italic",
+        });
+        let json = serde_json::json!({"label": {"font": font, "gap": null}});
+        let layout = LayoutTheme::default();
+        let value = |leaf: &str| leaf_value(leaf, &json, &layout, None, None, &as_stated).text;
+        assert_eq!(value("label.font"), "Noto Sans 10 pt 400 italic");
+        assert_eq!(value("label.gap_px"), NOT_STATED);
+        assert_eq!(value("label.no_such_leaf"), NOT_STATED);
+        assert_eq!(value("layout.section_gap_px"), NOT_STATED);
+    }
+}

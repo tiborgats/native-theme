@@ -7,14 +7,18 @@
 
 use egui::Button;
 use egui::widget_style::{Classes, WidgetState};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::AccessibilityPreferences;
+use native_theme::icons::IconRole;
+use native_theme::theme::IconSet;
 use native_theme_egui::convert::{to_color32, to_corner_radius, to_margin, to_stroke};
 use native_theme_egui::{
-    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, text_area_frame,
+    Role, RoleVariant, Surface, TextRole, ThemeAtlas, input_frame, list_header_font,
+    list_header_height, text_area_frame,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::expander::Expander;
 use native_theme_egui_widgets::fade::fade_as_one;
+use native_theme_egui_widgets::links;
 use native_theme_egui_widgets::parts::Parts;
 use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::radio_button::RadioButton;
@@ -22,7 +26,7 @@ use native_theme_egui_widgets::segmented_control::SegmentedControl;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 use native_theme_egui_widgets::switch::Switch;
-use native_theme_egui_widgets::wrap;
+use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
 use crate::demo::{self, Registry};
@@ -52,7 +56,7 @@ const SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
 
 /// The list's rows, and how many of them it shows: data of the page.
 const LIST_ROWS: usize = 8;
-const LIST_VISIBLE: usize = 3;
+pub(crate) const LIST_VISIBLE: usize = 3;
 
 /// The text area's text, three lines.
 pub(crate) const AREA_TEXT: &str = "Line one\nLine two\nLine three";
@@ -64,8 +68,8 @@ const NUMBER_STEP: f64 = 1.0;
 
 /// The table's header and rows, and the row shown selected (the second): data of the page.
 const TABLE_HEADER: [&str; 2] = ["Name", "Size"];
-const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
-const TABLE_SELECTED: usize = 1;
+pub(crate) const TABLE_ROWS: [[&str; 2]; 2] = [["a.txt", "1 KB"], ["b.png", "20 KB"]];
+pub(crate) const TABLE_SELECTED: usize = 1;
 
 /// The page's groups in reading order (Basic page v6): the five columns' groups, left to right,
 /// each column top to bottom, which the tests check the page against.
@@ -128,10 +132,11 @@ pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// iced pages count them: the most, of five, four and three, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
 /// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
-/// apart, `BASIC_WIDE` and `BASIC_WIDTH` — where `page` is `content_width` less
-/// `layout.window_margin` on both sides and, where `scrollbar.overlay_mode` is false, the
-/// `scrollbar.groove_width` a scrolling page keeps free. Three where not even three do: the
-/// page is then wider than its area.
+/// apart with room for both of the selected tab's flares, `2 * tab.active_outward_corner_radius`
+/// where `demo::tab_bar` draws them (`demo::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` —
+/// where `page` is `content_width` less `layout.window_margin` on both sides and, where
+/// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a scrolling page keeps free.
+/// Three where not even three do: the page is then wider than its area.
 pub(crate) fn column_count(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
@@ -146,7 +151,9 @@ pub(crate) fn column_count(
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let tabs = t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default();
+    let flare = demo::outward_radius(t).unwrap_or_default();
+    let tabs =
+        t.tab.min_width + t.tab.min_width + t.tab.item_gap.unwrap_or_default() + flare + flare;
     let widest = t
         .combo_box
         .min_width
@@ -189,7 +196,7 @@ fn group(
         11 => card(reg, atlas, ui),
         12 => typography(reg, atlas, ui),
         13 => separator(reg, ui),
-        14 => progress_bar(reg, atlas, ui),
+        14 => progress_bar(reg, ui),
         15 => list_group(reg, state, atlas, ui),
         16 => icons_group(reg, atlas, ui, chosen),
         17 => tabs(reg, state, t, ui),
@@ -199,10 +206,13 @@ fn group(
 }
 
 /// Columns of equal width, as many as [`column_count`] counts from the content panel's width,
-/// `layout.section_gap` apart (the page's gap where the theme states none: egui's
-/// `item_spacing`), each a stack of groups top-aligned: each column is laid out in a `Ui` of its
-/// own at its place, so a group wider than its column shows as the overflow it is, and the next
-/// column does not move.
+/// `layout.section_gap` apart, the gap the count takes, and none where the theme states none,
+/// as the gpui and iced pages lay theirs out (`with_gap(.., section_gap)`, `spacing(0)` where
+/// unstated); each a stack of groups top-aligned, `layout.section_gap` apart and none where
+/// unstated too, each group in a top-down `Ui` of its own with its rows the connector's
+/// `item_spacing` apart (`layout.widget_gap`): each column is laid out in a `Ui` of its own at
+/// its place, so a group wider than its column shows as the overflow it is, and the next column
+/// does not move.
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -210,10 +220,7 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let gap = atlas
-        .layout()
-        .section_gap
-        .unwrap_or(ui.spacing().item_spacing.x);
+    let gap = atlas.layout().section_gap.unwrap_or_default();
     let origin = ui.cursor().min;
     let count = column_count(
         atlas.resolved_for(ui.ctx().theme()),
@@ -241,13 +248,31 @@ pub(crate) fn show(
                 .max_rect(rect)
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
-        for &ix in *members {
-            group(ix, reg, state, atlas, &mut child, chosen);
+        // The groups follow one another `gap` apart and no more: the column adds no
+        // `item_spacing` between them, each group's own `Ui` puts it between its rows, and a
+        // group's heading, first in its `Ui`, adds nothing (`caption`).
+        let rows = child.spacing().item_spacing;
+        child.spacing_mut().item_spacing.y = 0.0;
+        for (place, &ix) in members.iter().enumerate() {
+            if place > 0 {
+                child.add_space(gap);
+            }
+            let _laid = child.scope_builder(
+                egui::UiBuilder::new()
+                    .id_salt(("basic group", ix))
+                    .layout(egui::Layout::top_down(egui::Align::Min)),
+                |ui| {
+                    ui.spacing_mut().item_spacing = rows;
+                    group(ix, reg, state, atlas, ui, chosen);
+                },
+            );
+            #[cfg(test)]
+            reg.basic_groups.push((ix, _laid.response.rect));
         }
         let content = child.min_rect();
         reg.place(
             ui,
-            &format!("basic.column_{}", column + 1),
+            &format!("basic.column_{}", column.saturating_add(1)),
             egui::Rect::from_min_size(rect.min, egui::vec2(rect.width(), content.height())),
         );
         used = used.union(content);
@@ -280,6 +305,15 @@ fn text_size(
         .size()
 }
 
+/// `rect` less `margin` on each side, spelled in `f32` as egui's `Rect - MarginF32` computes it
+/// (`epaint/src/margin_f32.rs:269-279`).
+fn inside(rect: egui::Rect, margin: egui::epaint::MarginF32) -> egui::Rect {
+    egui::Rect::from_min_max(
+        egui::pos2(rect.min.x + margin.left, rect.min.y + margin.top),
+        egui::pos2(rect.max.x - margin.right, rect.max.y - margin.bottom),
+    )
+}
+
 /// Where a text-only `Button` of `ui` laid its label out: the text in the button style's font,
 /// placed in the button less its frame's margin by the layout's alignment
 /// (`egui/src/widgets/button.rs:325-367`, `egui/src/widget_style.rs:146-171`,
@@ -297,7 +331,7 @@ fn button_label(
         text,
         egui::FontSelection::FontId(style.text_style.font_id),
     );
-    let inner = button.rect - style.frame.total_margin();
+    let inner = inside(button.rect, style.frame.total_margin());
     let layout = ui.layout();
     egui::Align2([layout.horizontal_align(), layout.vertical_align()])
         .align_size_within_rect(size, inner)
@@ -316,7 +350,7 @@ fn checkbox_parts(
     let style = ui
         .style()
         .checkbox_style(&Classes::default(), WidgetState::Inactive);
-    let inner = control.rect - style.frame.total_margin();
+    let inner = inside(control.rect, style.frame.total_margin());
     let atom = egui::Rect::from_x_y_ranges(
         inner.left()..=inner.left() + style.checkbox_size,
         inner.y_range(),
@@ -385,10 +419,6 @@ fn text_button(
         let r = ui.add_enabled(enabled, make(text.clone()).min_size(min));
         label = Some(button_label(ui, &r, text));
         r
-    });
-    reg.amend_last(|i| {
-        i.read.push(("button.min_width", min.x.to_string()));
-        i.read.push(("button.min_height", min.y.to_string()));
     });
     reg.tag(id, &response);
     remember_width(ui, id, response.rect);
@@ -518,16 +548,10 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     // Each control shows one state and is held in it: a click changes a copy made for the pass.
     // One per row, each in its own checkbox scope, whose `interact_size.y` is the indicator.
-    // The disabled box is checked. Where the theme states a disabled fill it is the `Disabled`
-    // cell's; where it states none the platform dims by opacity alone
-    // (docs/platform-facts.md §2.1.6), so the box is the checked (`Selected`) cell's, faded by
-    // its `disabled_alpha`, `checkbox.disabled_opacity`: egui's cells are one variant each.
+    // The disabled box is checked: the `SelectedDisabled` cell, the checked box with the
+    // theme's disabled fill where it states one, faded as one by its `disabled_alpha`,
+    // `checkbox.disabled_opacity` (docs/platform-facts.md §2.1.6).
     heading(reg, ui, "basic.checkboxes.heading", "Checkboxes");
-    let disabled_variant = if t.checkbox.disabled_background.is_some() {
-        RoleVariant::Disabled
-    } else {
-        RoleVariant::Selected
-    };
     for (label, checked, variant, enabled, kind, id) in [
         (
             "Unchecked",
@@ -548,7 +572,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         (
             "Disabled",
             true,
-            disabled_variant,
+            RoleVariant::SelectedDisabled,
             false,
             "checkbox (disabled)",
             "basic.checkboxes.disabled",
@@ -557,17 +581,8 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         let mut value = checked;
         let mut parts = Vec::new();
         let response = demo::scoped(reg, ui, Role::Checkbox, variant, kind, |ui| {
-            // A checked box is bordered in `checkbox.border.color`, disabled too: egui's
-            // `Disabled` cell serves a checked and an unchecked box alike and carries the
-            // unchecked border, so the disabled checked box takes the checked one per call.
-            if checked && !enabled && variant == RoleVariant::Disabled {
-                let border = to_color32(t.checkbox.border.color);
-                let widgets = &mut ui.visuals_mut().widgets;
-                widgets.noninteractive.bg_stroke.color = border;
-                widgets.inactive.bg_stroke.color = border;
-            }
             let text = demo::lined(ui, label, egui::TextStyle::Body);
-            let r = if !enabled && variant == RoleVariant::Selected {
+            let r = if !enabled {
                 let ground = to_color32(t.defaults.background_color);
                 ui.scope(|ui| {
                     // The check box faded as one over the page (the companion crate's rule,
@@ -577,7 +592,7 @@ fn checkboxes(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
                 })
                 .inner
             } else {
-                ui.add_enabled(enabled, egui::Checkbox::new(&mut value, text.clone()))
+                ui.add(egui::Checkbox::new(&mut value, text.clone()))
             };
             parts = checkbox_parts(ui, &r, text, checked);
             r
@@ -704,7 +719,7 @@ fn field_text(
     text: &str,
     centred: bool,
 ) -> egui::Rect {
-    let inner = field.rect - frame.total_margin();
+    let inner = inside(field.rect, frame.total_margin());
     let size = text_size(
         ui,
         demo::lined(ui, text, egui::TextStyle::Body),
@@ -742,10 +757,6 @@ fn text_field(
         ));
         r
     });
-    reg.amend_last(|i| {
-        i.read
-            .push(("input.min_height", t.input.min_height.to_string()));
-    });
     reg.tag(id, &response);
     if let Some(text) = text {
         reg.place(ui, &format!("{id}.text"), text);
@@ -765,7 +776,6 @@ fn text_inputs(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui
         let hint = demo::lined(ui, "Placeholder", egui::TextStyle::Body);
         ui.add(field(&mut state.basic_hint, id, ui, t).hint_text(hint))
     });
-    reg.amend_last(|i| i.notes.push(("hint text", "\"Placeholder\"".to_string())));
     let kind = ("basic.text_inputs.filled", "TextEdit (single line)", normal);
     let shown = state.basic_text.clone();
     text_field(reg, ui, kind, t, &shown, |ui, id| {
@@ -831,7 +841,6 @@ fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         })
         .inner
     });
-    reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
     reg.tag("basic.slider.control", &slider);
     let names = [("track", "track"), ("fill", "fill"), ("thumb", "thumb")];
     place_parts(reg, ui, "basic.slider.control", &slider, &names);
@@ -840,26 +849,11 @@ fn slider(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
 /// The Progress bar group: the companion crate's progress bar
 /// (docs/archive/todo_egui-widgets-spec.md §4.9), egui's, rounded `progress_bar.border.corner_radius`
 /// and outlined as `progress_bar.border` states, which egui's `ProgressBar` does not draw.
-fn progress_bar(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
+fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.progress_bar.heading", "Progress bar");
     let bar = demo::scoped(reg, ui, Role::ProgressBar, normal, "ProgressBar", |ui| {
         ui.add(ProgressBar::new(PROGRESS).desired_width(BASIC_WIDTH))
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "progress_bar.border.corner_radius",
-            t.progress_bar.border.corner_radius.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.line_width",
-            t.progress_bar.border.line_width.to_string(),
-        ));
-        i.read.push((
-            "progress_bar.border.color",
-            format!("{:?}", t.progress_bar.border.color),
-        ));
     });
     reg.tag("basic.progress_bar.bar", &bar);
     place_parts(reg, ui, "basic.progress_bar.bar", &bar, &[("fill", "fill")]);
@@ -946,7 +940,6 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
         text = Some(button_label(ui, &r, &shown));
         r
     });
-    reg.amend_last(|i| i.notes.push(("step", format!("{NUMBER_STEP}"))));
     reg.tag("basic.number_input.field", &number);
     if let Some(text) = text {
         reg.place(ui, "basic.number_input.field.text", text);
@@ -1073,16 +1066,8 @@ fn typography(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     // underlined at rest where `link.underline_enabled` says so, which egui's `Link` never
     // reads: it underlines only on hover or focus (`egui/src/widgets/hyperlink.rs:50-54`).
     let link = demo::widget(reg, ui, Role::Link, normal, "Link", |ui| {
-        let link = wrap::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
+        let link = links::link(ui, demo::lined(ui, "Link", egui::TextStyle::Body));
         ui.add(link)
-    });
-    reg.amend_last(|i| {
-        i.read.push((
-            "link.underline_enabled",
-            t.link.underline_enabled.to_string(),
-        ));
-        i.read
-            .push(("link.font.color", format!("{:?}", t.link.font.color)));
     });
     reg.tag("basic.typography.link", &link);
     for (role, text, id) in [
@@ -1141,9 +1126,8 @@ fn separator(reg: &mut Registry, ui: &mut egui::Ui) {
 
 /// The List group.
 fn list_group(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.list.heading", "List");
-    list(reg, state, t, ui);
+    list(reg, state, atlas, ui);
 }
 
 /// The Icons group's first row: three icon-only tool buttons, as the toolbar's
@@ -1243,7 +1227,6 @@ fn icons(
                 };
                 wrap_before(ui, id);
                 let icon = demo::base(reg, ui, "Image · icon", |ui| ui.add(image));
-                reg.amend_last(|i| i.read.push(("size", format!("{size}"))));
                 reg.tag(id, &icon);
                 remember_width(ui, id, icon.rect);
             }
@@ -1271,7 +1254,8 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
     // `expander.arrow_color` at `expander.arrow_icon_size` on `expander.arrow_side`,
     // `arrow_gap` from the title, the body `content_indent` in, framed as `frame_enabled`
     // states; the header `expander.header_height` tall (the expander scope's
-    // `interact_size.y`).
+    // `interact_size.y`) at a text scale of 1 or less, its title one line, and above 1 grown to
+    // hold its scaled line box and padding, the one rule every stated row height takes (M9-150).
     heading(reg, ui, "basic.expander.heading", "Expander");
     ui.scope(|ui| {
         ui.set_max_width(BASIC_WIDE);
@@ -1333,9 +1317,8 @@ fn expander(reg: &mut Registry, ui: &mut egui::Ui) {
 
 /// The Table group.
 fn table_group(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
-    let t = atlas.resolved_for(ui.ctx().theme());
     heading(reg, ui, "basic.table.heading", "Table");
-    table(reg, t, ui);
+    table(reg, atlas, ui);
 }
 
 /// The Card group: the card surface's frame (`card.background_color`, `card.border.*`),
@@ -1399,26 +1382,57 @@ fn list_frame(l: &native_theme::theme::ResolvedListTheme) -> egui::Frame {
         ))
 }
 
-/// A list row's height and its text's inset: `list.row_height` where the theme states it, else
-/// as tall as its content — one line of the item font, `defaults.line_height` of its size, and
-/// `list.border.padding` above and below it, the platform's "sizes to content"
-/// (docs/platform-facts.md §2.15) — its text `list.border.padding.left` in. A side the theme
-/// leaves unstated is `own`'s: for the list what egui gives a selectable row there, the scope's
-/// `button_padding` (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three
-/// showcases lay their tables out.
+/// The radius of `list_frame`'s inside, `list.border.corner_radius` less `list.border.line_width`
+/// (egui lays a frame's content inside its stroke, and the frame has no margin), on the corners
+/// `[nw, ne, sw, se]` marks, square on the others: a fill where a row meets the frame keeps
+/// inside the frame's arcs.
+fn inner_corners(
+    l: &native_theme::theme::ResolvedListTheme,
+    [nw, ne, sw, se]: [bool; 4],
+) -> egui::CornerRadius {
+    let radius = to_corner_radius(
+        egui::CornerRadius::ZERO,
+        (l.border.corner_radius - l.border.line_width).max(0.0),
+    );
+    let at = |rounded: bool, r: u8| if rounded { r } else { 0 };
+    egui::CornerRadius {
+        nw: at(nw, radius.nw),
+        ne: at(ne, radius.ne),
+        sw: at(sw, radius.sw),
+        se: at(se, radius.se),
+    }
+}
+
+/// A list or table row's height and its text's inset: `stated` where the theme states the
+/// row's height (`list.row_height`, `list.header_height`), grown above a text scale of 1 to
+/// hold the row's line, its padding and `rule`, the width of a line drawn inside it, as gpui's
+/// table and list rows grow and the iced showcase's (`rows::scaled_height`, over `size`, the
+/// font's stated size, and `prefs`); else as tall as its content — one line of `font`, the
+/// font as drawn, `defaults.line_height` of its size, and `list.border.padding` above and below
+/// it, the platform's "sizes to content" (docs/platform-facts.md §2.15) — its text
+/// `list.border.padding.left` in. A side the theme leaves unstated is `own`'s: for the list what
+/// egui gives a selectable row there, the scope's `button_padding`
+/// (`egui/src/widgets/button.rs:333-337`); for the table nothing, as the three showcases lay
+/// their tables out.
 fn row_metrics(
     t: &native_theme_egui::ResolvedTheme,
+    prefs: &AccessibilityPreferences,
+    (stated, size): (Option<f32>, f32),
     font: &egui::FontId,
     own: egui::Vec2,
+    rule: f32,
 ) -> (f32, f32, f32) {
-    let l = &t.list;
-    let padding = &l.border.padding;
-    let line = font.size * t.defaults.line_height;
-    let content = line + padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
+    let padding = &t.list.border.padding;
+    let line_height = t.defaults.line_height;
+    let line = font.size * line_height;
+    let padding_y = padding.top.unwrap_or(own.y) + padding.bottom.unwrap_or(own.y);
+    let height = stated.map_or(line + padding_y, |h| {
+        rows::scaled_height(h, prefs, size, line_height, padding_y, rule)
+    });
     // On egui's layout grid (`emath::GUI_ROUNDING`), as `allocate_exact_size` lays each row out,
     // so `n` rows are `n` row heights tall.
     (
-        egui::emath::GuiRounding::round_ui(l.row_height.unwrap_or(content)),
+        egui::emath::GuiRounding::round_ui(height),
         padding.left.unwrap_or(own.x),
         line,
     )
@@ -1429,13 +1443,10 @@ fn row_metrics(
 /// list widget, and the leaves egui never reads from the style are per call (connector spec
 /// §5.4, T18(a)): each row is painted here, `row_metrics` tall and inset, filled with
 /// `list.selection_background` in `list.selection_text_color` while selected and with
-/// `list.hover_background` in `list.hover_text_color` while hovered.
-fn list(
-    reg: &mut Registry,
-    state: &mut DemoState,
-    t: &native_theme_egui::ResolvedTheme,
-    ui: &mut egui::Ui,
-) {
+/// `list.hover_background` in `list.hover_text_color` while hovered, the fill rounded where it
+/// meets the frame (`inner_corners`).
+fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
     let mut rows_drawn: Vec<egui::Response> = Vec::new();
     let mut bar = None;
@@ -1447,7 +1458,14 @@ fn list(
         "List",
         |ui, rows, reg| {
             let font = egui::TextStyle::Body.resolve(ui.style());
-            let (row_height, inset, line) = row_metrics(t, &font, ui.spacing().button_padding);
+            let (row_height, inset, line) = row_metrics(
+                t,
+                atlas.accessibility(),
+                (l.row_height, l.item_font.size),
+                &font,
+                ui.spacing().button_padding,
+                0.0,
+            );
             let frame = list_frame(l);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             let visible = row_height * LIST_VISIBLE as f32;
@@ -1461,6 +1479,8 @@ fn list(
                     // `list.item_font.color`; the theme states no such effect.
                     ui.spacing_mut().scroll.fade.strength = 0.0;
                     let room = ui.max_rect();
+                    // The frame's inside: the scroll area fills it, `visible` tall.
+                    let edges = egui::Rect::from_min_size(room.min, egui::vec2(inner, visible));
                     let area = egui::ScrollArea::vertical()
                         .id_salt("basic/list")
                         .auto_shrink([false, false])
@@ -1469,12 +1489,13 @@ fn list(
                         .show(ui, |ui| {
                             ui.spacing_mut().item_spacing.y = 0.0;
                             for i in 0..LIST_ROWS {
-                                let text = format!("Item {}", i + 1);
+                                let text = format!("Item {}", i.saturating_add(1));
                                 let selected = state.basic_list == i;
                                 let r = rows.add(reg, ui, "List row", |ui| {
                                     list_row(
                                         ui,
                                         l,
+                                        edges,
                                         &text,
                                         selected,
                                         (row_height, inset, line),
@@ -1496,15 +1517,13 @@ fn list(
         reg.place(ui, "basic.list.scrollbar", groove);
         reg.place(ui, "basic.list.scrollbar.thumb", thumb);
     }
-    reg.amend_last(|i| {
-        i.read
-            .push(("list.row_height", format!("{:?}", l.row_height)));
-        i.read
-            .push(("list.border.padding", format!("{:?}", l.border.padding)));
-    });
     reg.tag("basic.list.frame", &frame_response);
     for (i, row) in rows_drawn.iter().take(LIST_VISIBLE).enumerate() {
-        reg.place(ui, &format!("basic.list.row_{}", i + 1), row.rect);
+        reg.place(
+            ui,
+            &format!("basic.list.row_{}", i.saturating_add(1)),
+            row.rect,
+        );
     }
 }
 
@@ -1546,10 +1565,12 @@ fn scroll_bar(
 }
 
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
-/// centred vertically.
+/// centred vertically. Its fill covers what the list's view shows of it, rounded at a corner
+/// where that meets a corner of `edges`, the frame's inside.
 fn list_row(
     ui: &mut egui::Ui,
     l: &native_theme::theme::ResolvedListTheme,
+    edges: egui::Rect,
     text: &str,
     selected: bool,
     (height, inset, line): (f32, f32, f32),
@@ -1568,8 +1589,32 @@ fn list_row(
         (None, l.item_font.color)
     };
     if let Some(fill) = fill {
-        ui.painter()
-            .rect_filled(rect, egui::CornerRadius::ZERO, to_color32(fill));
+        let view = ui.clip_rect();
+        let shown = egui::Rect::from_x_y_ranges(
+            rect.x_range(),
+            rect.top().max(view.top())..=rect.bottom().min(view.bottom()),
+        );
+        if shown.is_positive() {
+            // The scroll area lays the rows out on whole pixels and then on egui's layout grid
+            // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`),
+            // which moves each edge by at most half a pixel and half a grid step from the frame's
+            // inside: half a point under a 0.5 pt line at one pixel per point. A row is far
+            // taller, and a solid bar's groove far wider, than that.
+            let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
+            let meets = |a: f32, b: f32| (a - b).abs() <= off;
+            let top = meets(shown.top(), edges.top());
+            let bottom = meets(shown.bottom(), edges.bottom());
+            let left = meets(shown.left(), edges.left());
+            let right = meets(shown.right(), edges.right());
+            ui.painter().rect_filled(
+                shown,
+                inner_corners(
+                    l,
+                    [top && left, top && right, bottom && left, bottom && right],
+                ),
+                to_color32(fill),
+            );
+        }
     }
     paint_cell_text(ui, text, font, to_color32(colour), (rect, inset, line));
     response
@@ -1599,12 +1644,17 @@ fn paint_cell_text(
 /// frame (`list_frame`), the two columns half the width inside it each, in one `Role::List`
 /// scope. egui has no table the theme reaches (egui_extras' `TableBuilder` paints only its
 /// stripes), so it is painted here as the list's rows are: the header in
-/// `list.header_background` and `list.header_font`, the rows `row_metrics` tall in
+/// `list.header_background` and `list.header_font` at its weight and scaled size
+/// (`list_header_font`), `list_header_height` tall where the theme states it, else a row
+/// (`row_metrics`, of the header font), the rows `row_metrics` tall in
 /// `list.item_font`, the selected one in `list.selection_background` and
-/// `list.selection_text_color`; a vertical
+/// `list.selection_text_color`, the header's fill rounded at the top and the last row's at the
+/// bottom, where they meet the frame (`inner_corners`); a vertical
 /// `list.grid_color` line between the columns through the header and the rows and a horizontal
 /// one under the header, each `separator.line_width` wide, inside the cell it closes.
-fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui::Ui) {
+fn table(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
+    let prefs = atlas.accessibility();
     let l = &t.list;
     let mut places: Vec<(String, egui::Rect)> = Vec::new();
     let frame_response = demo::scoped_container(
@@ -1616,13 +1666,29 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
         |ui, _rows, _reg| {
             let item_font = egui::TextStyle::Body.resolve(ui.style());
             let header_font = egui::FontId::new(
-                l.header_font.size,
+                list_header_font(t, prefs).size,
                 demo::weighted_family(ui, l.header_font.weight, t.defaults.font.weight),
             );
-            let (row_height, inset, line) = row_metrics(t, &item_font, egui::Vec2::ZERO);
-            let (header_height, _, header_line) = row_metrics(t, &header_font, egui::Vec2::ZERO);
             let grid = to_color32(l.grid_color);
             let grid_width = t.separator.line_width;
+            let (row_height, inset, line) = row_metrics(
+                t,
+                prefs,
+                (l.row_height, l.item_font.size),
+                &item_font,
+                egui::Vec2::ZERO,
+                0.0,
+            );
+            // `list.header_height` where the theme states it, else the header is a row; the
+            // grid's line under it lies inside it
+            let (header_height, _, header_line) = row_metrics(
+                t,
+                prefs,
+                (list_header_height(t).or(l.row_height), l.header_font.size),
+                &header_font,
+                egui::Vec2::ZERO,
+                grid_width,
+            );
             let frame = list_frame(l);
             let inner = (BASIC_WIDE - frame.total_margin().sum().x).max(0.0);
             frame
@@ -1638,7 +1704,7 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                         egui::Rect::from_min_size(rect.min, egui::vec2(inner, header_height));
                     painter.rect_filled(
                         header,
-                        egui::CornerRadius::ZERO,
+                        inner_corners(l, [true, true, false, false]),
                         to_color32(l.header_background),
                     );
                     places.push(("basic.table.header".to_string(), header));
@@ -1673,7 +1739,12 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                             (None, l.item_font.color)
                         };
                         if let Some(fill) = fill {
-                            painter.rect_filled(row, egui::CornerRadius::ZERO, to_color32(fill));
+                            let last = i.saturating_add(1) == TABLE_ROWS.len();
+                            painter.rect_filled(
+                                row,
+                                inner_corners(l, [false, false, last, last]),
+                                to_color32(fill),
+                            );
                         }
                         for (j, text) in cells.iter().enumerate() {
                             let cell = if j == 0 {
@@ -1689,7 +1760,7 @@ fn table(reg: &mut Registry, t: &native_theme_egui::ResolvedTheme, ui: &mut egui
                                 (cell, inset, line),
                             );
                         }
-                        places.push((format!("basic.table.row_{}", i + 1), row));
+                        places.push((format!("basic.table.row_{}", i.saturating_add(1)), row));
                     }
                     // The grid: under the header, and between the columns from top to bottom,
                     // each inside the cell it closes.

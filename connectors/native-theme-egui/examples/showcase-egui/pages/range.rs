@@ -1,7 +1,8 @@
 //! Range (spec §10.4's palette table): `Role::Slider`, `Role::ProgressBar`, `Role::Spinner`,
-//! egui's own widgets and the companion crate's slider and spinner.
+//! egui's own widgets and the companion crate's slider, progress bar and spinner.
 
 use native_theme_egui::{Role, RoleVariant, ThemeAtlas};
+use native_theme_egui_widgets::progress_bar::ProgressBar;
 use native_theme_egui_widgets::slider::Slider;
 use native_theme_egui_widgets::spinner::Spinner;
 
@@ -23,7 +24,6 @@ pub(crate) fn show(
             demo::scoped(reg, ui, Role::Slider, normal, "Slider (horizontal)", |ui| {
                 ui.add(egui::Slider::new(&mut state.slider, range.clone()).show_value(false))
             });
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             demo::scoped(
                 reg,
                 ui,
@@ -32,7 +32,6 @@ pub(crate) fn show(
                 "Slider (with its value)",
                 |ui| ui.add(egui::Slider::new(&mut state.slider, range.clone()).text("value")),
             );
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             demo::scoped(
                 reg,
                 ui,
@@ -62,7 +61,6 @@ pub(crate) fn show(
                 "Slider (native-theme-egui-widgets)",
                 |ui| ui.add(Slider::new(&mut state.slider, range.clone())),
             );
-            reg.amend_last(|i| i.notes.push(("range", "0 to 100".to_string())));
             let mut disabled = state.slider;
             demo::widget(
                 reg,
@@ -110,6 +108,16 @@ pub(crate) fn show(
         normal,
         "ProgressBar (animated)",
         |ui| ui.add(egui::ProgressBar::new(state.progress).animate(true)),
+    );
+    // The companion crate's bar (docs/archive/todo_egui-widgets-spec.md §4.9), animated: egui's
+    // busy animation under the stated corner radius, still under reduced motion.
+    demo::widget(
+        reg,
+        ui,
+        Role::ProgressBar,
+        normal,
+        "ProgressBar (native-theme-egui-widgets, animated)",
+        |ui| ui.add(ProgressBar::new(state.progress).animate(true)),
     );
 
     caption(reg, ui, "Spinner (Role::Spinner)");

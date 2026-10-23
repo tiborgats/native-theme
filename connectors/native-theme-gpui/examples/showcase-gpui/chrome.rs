@@ -2,18 +2,20 @@
 
 use gpui::{
     Action, AnyElement, App, Decorations, InteractiveElement as _, IntoElement, Menu, MenuItem,
-    Pixels, SharedString, Window, px,
+    Pixels, SharedString, StyledText, Window, px,
 };
-use gpui_component::{IconName, WindowExt as _};
+use gpui_component::{ActiveTheme as _, IconName, WindowExt as _};
 use native_theme_gpui::{ActiveNativeTheme as _, geometry};
+use native_theme_showcase_support::status;
 
 use crate::Page;
 use crate::app::{
-    AppColorMode, OpenAbout, OpenCommandPalette, OpenPreferences, Quit, ReloadTheme, SetColorMode,
-    SetPreset, ShowPage, Showcase, ToggleSidePanel,
+    AppColorMode, CloseWindow, Hide, HideOthers, Minimize, OpenAbout, OpenCommandPalette,
+    OpenPreferences, Quit, ReloadTheme, SetColorMode, SetPreset, ShowAll, ShowPage, Showcase,
+    ToggleSidePanel, Zoom,
 };
 use crate::demo::{SeparatorKind, TabBarKind};
-use crate::support::{defined_size, preset_items};
+use crate::support::preset_items;
 use crate::{
     CHROME_LABEL_ICON_THEME, CHROME_LABEL_MODE, CHROME_LABEL_THEME, CHROME_MENU_BAR,
     CHROME_PAGE_TABS, CHROME_SIDE_PANEL, CHROME_SIDE_PANEL_SEPARATOR, CHROME_SIDE_PANEL_TOGGLE,
@@ -38,26 +40,112 @@ pub(crate) fn menus() -> Vec<Menu> {
                     MenuItem::action("Command Palette", OpenCommandPalette),
                 ]),
         ),
-        Menu::new("Theme").items([
-            MenuItem::action("Reload System Theme", ReloadTheme),
-            MenuItem::separator(),
-            MenuItem::action("System", SetColorMode(AppColorMode::System)),
-            MenuItem::action("Light", SetColorMode(AppColorMode::Light)),
-            MenuItem::action("Dark", SetColorMode(AppColorMode::Dark)),
-            MenuItem::separator(),
-            MenuItem::action("Preferences…", OpenPreferences),
-        ]),
+        Menu::new("Theme").items(
+            [
+                MenuItem::action("Reload System Theme", ReloadTheme),
+                MenuItem::separator(),
+            ]
+            .into_iter()
+            .chain(
+                AppColorMode::ALL
+                    .map(|mode| MenuItem::action(mode.short_label(), SetColorMode(mode))),
+            )
+            .chain([
+                MenuItem::separator(),
+                MenuItem::action("Preferences…", OpenPreferences),
+            ]),
+        ),
         Menu::new("Help").items([MenuItem::action("About", OpenAbout)]),
+    ]
+}
+
+/// The application's name, as the macOS app menu takes it: its title, and
+/// the name its About, Hide and Quit rows give.
+pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
+
+/// The showcase's menus in the macOS system menu bar, as the iced and egui
+/// showcases put theirs there: Apple's HIG list (*The menu bar*), under the
+/// titles the shared crate gives the three showcases
+/// (`menu::macos_menu_titles`):
+///
+/// - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the
+///   Preferences sheet, the in-window Theme menu's Preferences…), the OS's
+///   Services menu (gpui-pre 0.3.9 `MenuItem::os_submenu`,
+///   `src/platform/app_menu.rs:118`, which the macOS platform makes AppKit's
+///   `servicesMenu`, gpui-pre-macos 0.3.9 `src/platform.rs:491-493`),
+///   Hide ⌘H, Hide Others ⌥⌘H, Show All, and Quit ⌘Q, with the HIG's
+///   separators;
+/// - File: Close ⌘W;
+/// - View: the in-window View menu's rows;
+/// - Theme: the in-window Theme menu's rows, less Preferences…;
+/// - Window: Minimize ⌘M and Zoom. gpui's macOS platform makes the menu
+///   titled `Window` AppKit's windows menu (gpui-pre-macos 0.3.9
+///   `src/platform.rs:313-316`, in `create_menu_bar`), to which AppKit adds
+///   its window-switching items. Bring All to Front, which the HIG and the
+///   iced and egui showcases' Window menus hold, is left out: gpui offers
+///   neither a call for it nor an `OsAction` (gpui-pre 0.3.9
+///   `src/platform/app_menu.rs:311-329`, `OsAction`: cut, copy, paste, select
+///   all, undo and redo only).
+///
+/// The keys beside the rows are the bindings of their actions
+/// (`app::init`, `app::macos_bindings`). The rows the in-window menus also
+/// hold take the in-window rows' actions, so a list built from
+/// [`menus`] cannot drift from them.
+pub(crate) fn macos_menus() -> Vec<Menu> {
+    let [app, file, view, theme, window] =
+        native_theme_showcase_support::menu::macos_menu_titles(APP_NAME);
+    let in_window = |title: &str| -> Vec<MenuItem> {
+        menus()
+            .into_iter()
+            .filter(|menu| menu.name.as_ref() == title)
+            .flat_map(|menu| menu.items)
+            .collect()
+    };
+    let view_items = in_window(&view);
+    let mut theme_items = in_window(&theme);
+    theme_items.retain(|item| {
+        !matches!(item, MenuItem::Action { action, .. } if action.partial_eq(&OpenPreferences))
+    });
+    while matches!(theme_items.last(), Some(MenuItem::Separator)) {
+        theme_items.pop();
+    }
+    vec![
+        Menu::new(app).items([
+            MenuItem::action(format!("About {APP_NAME}"), OpenAbout),
+            MenuItem::separator(),
+            MenuItem::action("Settings…", OpenPreferences),
+            MenuItem::separator(),
+            MenuItem::os_submenu("Services", gpui::SystemMenuType::Services),
+            MenuItem::separator(),
+            MenuItem::action(format!("Hide {APP_NAME}"), Hide),
+            MenuItem::action("Hide Others", HideOthers),
+            MenuItem::action("Show All", ShowAll),
+            MenuItem::separator(),
+            MenuItem::action(format!("Quit {APP_NAME}"), Quit),
+        ]),
+        Menu::new(file).items([MenuItem::action("Close", CloseWindow)]),
+        Menu::new(view).items(view_items),
+        Menu::new(theme).items(theme_items),
+        Menu::new(window).items([
+            MenuItem::action("Minimize", Minimize),
+            MenuItem::action("Zoom", Zoom),
+        ]),
     ]
 }
 
 /// The top of the window, by the decorations it was granted, `frame` (spec
 /// S8). Where the window manager draws the frame, the menu-bar row -- none on
 /// macOS, whose menus are in the system's menu bar. Where it leaves the
-/// frame to the application, the window's TitleBar.
-pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option<AnyElement> {
+/// frame to the application, the window's TitleBar, drawn as inactive while
+/// the window is not `active`.
+pub(crate) fn window_top(
+    app: &Showcase,
+    frame: Decorations,
+    active: bool,
+    cx: &App,
+) -> Option<AnyElement> {
     match frame {
-        Decorations::Client { .. } => Some(title_bar(app, cx).into_any_element()),
+        Decorations::Client { .. } => Some(title_bar(app, active, cx).into_any_element()),
         Decorations::Server if cfg!(target_os = "macos") => None,
         Decorations::Server => Some(menu_bar(app, cx).into_any_element()),
     }
@@ -66,8 +154,8 @@ pub(crate) fn window_top(app: &Showcase, frame: Decorations, cx: &App) -> Option
 /// The window's title bar under client-side decorations (spec §2.1, §3.4,
 /// S8): this crate's name and version, the window's title, and the
 /// application's menus where the platform has no menu bar of its own.
-fn title_bar(app: &Showcase, cx: &App) -> impl IntoElement {
-    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, &app.menus)
+fn title_bar(app: &Showcase, active: bool, cx: &App) -> impl IntoElement {
+    demo::title_bar(&app.info_ui, cx, WINDOW_TITLE, &app.menus, active)
         .debug_selector(|| CHROME_TITLE_BAR.into())
 }
 
@@ -230,12 +318,15 @@ pub(crate) fn page_tabs(app: &Showcase, cx: &App) -> impl IntoElement {
 }
 
 /// The window's status bar (spec §2.7, §3.2, S4), below the body: at its
-/// left end the side-panel toggle, then the environment; at its right end
+/// left end the side-panel toggle, then `environment_text` drawing
+/// `environment`, the text of `status_environment`; at its right end
 /// `shown`, the title of what the inspector shows. The toggle sits at the
 /// edge of the panel it controls, and is selected while that panel is shown.
 pub(crate) fn status_bar(
     app: &Showcase,
     cx: &App,
+    environment: &str,
+    environment_text: StyledText,
     shown: Option<SharedString>,
 ) -> impl IntoElement {
     let ui = &app.info_ui;
@@ -265,59 +356,42 @@ pub(crate) fn status_bar(
         ui,
         cx,
         toggle,
-        status_environment(app, cx).join(" · "),
+        environment,
+        environment_text,
         shown,
         geometry::widget_gap(&app.layout),
     )
     .debug_selector(|| CHROME_STATUS_BAR.into())
 }
 
-/// The status bar's environment text (spec §2.7), one item each: the desktop, the
-/// preset and colour mode, the installed theme's `defaults.font` in the unit
-/// its source stated (`Showcase::original_font`, a placeholder where no
-/// theme could be read), and, once a native theme is installed, its
-/// text-scale factor and each of its accessibility preferences that is set,
-/// by its field name. Before that no preferences are installed, and none are
-/// named.
+/// The status bar's environment text (spec §2.7), the shared crate's items
+/// (`status::environment_drawn`): the desktop, the preset and colour mode, the
+/// installed theme's `defaults.font` (`Showcase::original_font`, a
+/// placeholder where no theme could be read) by the family gpui draws and
+/// the size in the unit its source stated, and, once a native theme is
+/// installed, its text-scale factor and each of its accessibility
+/// preferences that is set, by its field name. The drawn family is
+/// `inspector::DrawnFamilies::drawn` of the stated one and
+/// `Theme::font_family`, the connector's `font_family` of it, once a native
+/// theme is installed; before that no preferences are installed, and the
+/// placeholder is named alone.
 pub(crate) fn status_environment(app: &Showcase, cx: &App) -> Vec<String> {
     let (preset, mode) = preset_and_mode(app);
-    let font = &app.original_font;
-    let mut items = vec![
-        desktop(),
-        format!("{preset} {mode}"),
-        format!("{} {}", font.family, defined_size(font)),
-    ];
-    if let Some(prefs) = cx.native_theme().map(|nt| nt.accessibility()) {
-        items.push(format!("text ×{}", prefs.text_scaling_factor));
-        let flags = [
-            ("reduce_motion", prefs.reduce_motion),
-            ("high_contrast", prefs.high_contrast),
-            ("reduce_transparency", prefs.reduce_transparency),
-        ];
-        items.extend(
-            flags
-                .into_iter()
-                .filter(|(_, set)| *set)
-                .map(|(name, _)| name.to_string()),
-        );
-    }
-    items
-}
-
-/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, or
-/// `Unknown` where it recognises none. `SystemTheme::from_system` then asks
-/// the portal, then `kdeglobals` (native-theme pipeline.rs, `select_reader`),
-/// and the preset names what it settled on.
-#[cfg(target_os = "linux")]
-fn desktop() -> String {
-    format!("{:?}", native_theme::detect::detect_linux_desktop())
-}
-
-/// The operating system: `native_theme::detect` names a desktop on Linux
-/// only.
-#[cfg(not(target_os = "linux"))]
-fn desktop() -> String {
-    std::env::consts::OS.to_string()
+    let native = cx.native_theme();
+    let families = crate::inspector::DrawnFamilies::installed(app, cx);
+    let asked = &cx.theme().font_family;
+    let drawn = families
+        .as_deref()
+        .map_or(status::DrawnFamily::Stated, |families| {
+            families.drawn(&app.original_font.family, asked)
+        });
+    status::environment_drawn(
+        &preset,
+        mode,
+        &app.original_font,
+        drawn,
+        native.map(|nt| nt.accessibility()),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -375,7 +449,7 @@ fn palette_entry(
 /// page, every preset the preset switch offers, and the three colour modes,
 /// each running the action its menu item or theme setting runs, their icons
 /// of `app`'s chosen icon theme.
-fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
+pub(crate) fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
     let pages = Page::ALL
         .map(|page| {
             palette_entry(
@@ -400,27 +474,23 @@ fn palette_groups(app: &Showcase) -> Vec<(&'static str, Vec<PaletteEntry>)> {
             )
         })
         .collect();
-    let modes = [
-        AppColorMode::System,
-        AppColorMode::Light,
-        AppColorMode::Dark,
-    ]
-    .map(|mode| {
-        let icon = match mode {
-            AppColorMode::System => IconName::Settings,
-            AppColorMode::Light => IconName::Sun,
-            AppColorMode::Dark => IconName::Moon,
-        };
-        palette_entry(
-            app,
-            mode.label(),
-            Vec::new(),
-            icon,
-            Box::new(SetColorMode(mode)),
-        )
-    })
-    .into_iter()
-    .collect();
+    let modes = AppColorMode::ALL
+        .map(|mode| {
+            let icon = match mode {
+                AppColorMode::System => IconName::Settings,
+                AppColorMode::Light => IconName::Sun,
+                AppColorMode::Dark => IconName::Moon,
+            };
+            palette_entry(
+                app,
+                mode.label(),
+                Vec::new(),
+                icon,
+                Box::new(SetColorMode(mode)),
+            )
+        })
+        .into_iter()
+        .collect();
     vec![
         ("Pages", pages),
         ("Presets", presets),

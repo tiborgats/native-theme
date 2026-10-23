@@ -1,12 +1,15 @@
 //! The Inputs page.
 
-use gpui::{Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px};
+use gpui::{
+    Axis, Context, IntoElement, ParentElement, SharedString, Styled, Window, prelude::*, px,
+};
 use gpui_component::{IconName, h_flex, v_flex};
 
 use native_theme_gpui::geometry;
 
 use crate::app::Showcase;
-use crate::demo::{self, InputField, InputGroupStates};
+use crate::demo::{self, InputField, InputGroupStates, StepIcons};
+use crate::pages::page_root;
 use crate::support::with_gap;
 use crate::{
     INPUTS_CHECKBOX_AUTOSAVE, INPUTS_CHECKBOX_NOTIFICATIONS, INPUTS_FIELD,
@@ -24,17 +27,21 @@ impl Showcase {
     ) -> impl IntoElement + InteractiveElement {
         let ui = &self.info_ui;
         let widget_gap = geometry::widget_gap(&self.layout);
-        let on_checkbox_a = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_checkbox_a = cx.listener(|this, val: &bool, _w, cx| {
             this.checkbox_a = *val;
+            cx.notify();
         });
-        let on_checkbox_b = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_checkbox_b = cx.listener(|this, val: &bool, _w, cx| {
             this.checkbox_b = *val;
+            cx.notify();
         });
-        let on_radio = cx.listener(|this, ix: &usize, _w, _cx| {
+        let on_radio = cx.listener(|this, ix: &usize, _w, cx| {
             this.radio_index = Some(*ix);
+            cx.notify();
         });
-        let on_switch = cx.listener(|this, val: &bool, _w, _cx| {
+        let on_switch = cx.listener(|this, val: &bool, _w, cx| {
             this.switch_on = *val;
+            cx.notify();
         });
         let on_rating = cx.listener(|this, value: &usize, _w, cx| {
             this.rating_value = *value;
@@ -47,9 +54,7 @@ impl Showcase {
         };
         let speech_state = self.speech_state.clone();
 
-        v_flex()
-            .gap_5()
-            .p_4()
+        page_root(&self.layout)
             .flex_1()
             .child(demo::heading(
                 ui,
@@ -122,6 +127,7 @@ impl Showcase {
                         copy_icon: self.sample_icon(IconName::Copy),
                     },
                     px(360.0),
+                    widget_gap,
                 )
                 .self_start(),
             )
@@ -137,8 +143,13 @@ impl Showcase {
                     cx,
                     window,
                     "inputs-number-input",
+                    "Sample number",
                     &self.number_input_state,
                     px(200.0),
+                    &StepIcons {
+                        up: self.sample_icon(IconName::ChevronUp),
+                        down: self.sample_icon(IconName::ChevronDown),
+                    },
                 )
                 .self_start(),
             )
@@ -149,8 +160,7 @@ impl Showcase {
                 "Checkboxes",
             ))
             .child(
-                v_flex()
-                    .gap_3()
+                with_gap(v_flex(), widget_gap)
                     .child(
                         demo::checkbox(
                             ui,
@@ -196,8 +206,7 @@ impl Showcase {
             ))
             .child(demo::heading(ui, cx, "inputs-heading-switch", "Switch"))
             .child(
-                h_flex()
-                    .gap_6()
+                with_gap(h_flex(), widget_gap)
                     .child(demo::switch(
                         ui,
                         cx,
@@ -222,7 +231,39 @@ impl Showcase {
                 format!("Slider (value: {:.0})", self.slider_value),
             ))
             .child(
-                demo::slider(ui, cx, "inputs-slider", &self.slider_state, px(360.0)).self_start(),
+                demo::slider(
+                    ui,
+                    cx,
+                    "inputs-slider",
+                    "Sample value",
+                    &self.slider_state,
+                    Axis::Horizontal,
+                    px(360.0),
+                )
+                .self_start(),
+            )
+            // A range state's two thumbs, and the vertical axis.
+            .child(
+                with_gap(h_flex(), widget_gap)
+                    .items_center()
+                    .child(demo::slider(
+                        ui,
+                        cx,
+                        "inputs-slider-range",
+                        "Sample range",
+                        &self.range_slider_state,
+                        Axis::Horizontal,
+                        px(360.0),
+                    ))
+                    .child(demo::slider(
+                        ui,
+                        cx,
+                        "inputs-slider-vertical",
+                        "Vertical sample value",
+                        &self.vertical_slider_state,
+                        Axis::Vertical,
+                        px(120.0),
+                    )),
             )
             .child(demo::heading(
                 ui,

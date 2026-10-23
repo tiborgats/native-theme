@@ -498,6 +498,51 @@ fn resolve_phase3_font_entire_inheritance() {
     assert_eq!(button_font.weight, Some(400));
 }
 
+#[test]
+fn resolve_phase3_link_font_color_explicit_preserved() {
+    let mut v = ThemeMode::default();
+    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
+    v.link.font = Some(FontSpec {
+        color: Some(Rgba::rgb(255, 0, 0)),
+        ..Default::default()
+    });
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(255, 0, 0)),
+        "stated link.font.color preserved"
+    );
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(255, 0, 0)),
+        "a second resolve keeps it"
+    );
+}
+
+#[test]
+fn resolve_phase3_link_font_color_from_link_color() {
+    let mut v = ThemeMode::default();
+    v.defaults.font.color = Some(Rgba::rgb(0, 0, 0));
+    v.defaults.link_color = Some(Rgba::rgb(0, 0, 255));
+    v.link.font = Some(FontSpec {
+        size: Some(FontSize::Px(12.0)),
+        ..Default::default()
+    });
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(0, 0, 255)),
+        "None link.font.color from defaults.link_color, not defaults.font.color"
+    );
+    v.resolve();
+    assert_eq!(
+        v.link.font.as_ref().and_then(|f| f.color),
+        Some(Rgba::rgb(0, 0, 255)),
+        "a second resolve keeps it"
+    );
+}
+
 // ===== Phase 3: Text scale inheritance (RESOLVE-05) =====
 
 #[test]
@@ -1272,10 +1317,9 @@ fn validate_missing_2_fields_returns_all_paths() {
     v.defaults.link_color = None;
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        // validate() always returns ResolutionIncomplete for missing fields
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert_eq!(
         missing.len(),
@@ -1294,9 +1338,9 @@ fn validate_error_message_includes_count_and_paths() {
     v.button.min_height = None;
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // ResolutionIncomplete Display includes count and paths
     let err = crate::Error::ResolutionIncomplete {
@@ -1305,7 +1349,7 @@ fn validate_error_message_includes_count_and_paths() {
     let msg = err.to_string();
     assert!(msg.contains("2 missing field(s)"), "got: {msg}");
     assert!(msg.contains("defaults.muted_color"), "got: {msg}");
-    assert!(msg.contains("button.min_height"), "got: {msg}");
+    assert!(msg.contains("button.min_height_px"), "got: {msg}");
 }
 
 #[test]
@@ -1313,9 +1357,9 @@ fn validate_checks_all_defaults_fields() {
     // Default variant has ALL fields None, so validate should report many missing
     let v = ThemeMode::default();
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // Should include defaults fields
     assert!(
@@ -1326,17 +1370,18 @@ fn validate_checks_all_defaults_fields() {
     assert!(missing.contains(&"defaults.font.family".to_string()));
     assert!(missing.contains(&"defaults.background_color".to_string()));
     assert!(missing.contains(&"defaults.accent_color".to_string()));
-    assert!(missing.contains(&"defaults.border.corner_radius".to_string()));
+    assert!(missing.contains(&"defaults.border.corner_radius_px".to_string()));
     assert!(missing.contains(&"defaults.text_selection_background".to_string()));
-    assert!(missing.contains(&"defaults.icon_sizes.toolbar".to_string()));
+    assert!(missing.contains(&"defaults.icon_sizes.toolbar_px".to_string()));
 }
 
 #[test]
 fn validate_checks_all_widget_structs() {
     let v = ThemeMode::default();
     let result = v.validate();
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     // Every widget should have at least one field reported
     for prefix in [
@@ -1382,8 +1427,9 @@ fn validate_checks_all_widget_structs() {
 fn validate_checks_text_scale_entries() {
     let v = ThemeMode::default();
     let result = v.validate();
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert!(missing.contains(&"text_scale.caption".to_string()));
     assert!(missing.contains(&"text_scale.section_heading".to_string()));
@@ -1555,10 +1601,11 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
 #[test]
 fn test_gnome_resolve_validate() {
     // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
-    // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
-    // (gsettings calls return None). Both icon_set and icon_theme are Theme-level
-    // (shared) after the G4 migration; KDE remains the one exception with
-    // per-variant icon_theme overrides.
+    // The GNOME reader's variant is sparse (build_gnome_variant_pure): it sets
+    // only what the portal and gsettings answer, and the adwaita preset under
+    // it states the rest, dialog.button_order included. Both icon_set and
+    // icon_theme are Theme-level (shared) after the G4 migration; KDE remains
+    // the one exception with per-variant icon_theme overrides.
     let adwaita = crate::Theme::preset("adwaita").unwrap();
 
     // Pick dark variant from adwaita (matches GNOME PreferDark path).
@@ -1567,7 +1614,7 @@ fn test_gnome_resolve_validate() {
         .clone()
         .expect("adwaita should have dark variant");
 
-    // Apply what build_gnome_variant() would set.
+    // The adwaita preset's dialog.button_order, which the reader leaves to it.
     variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
 
     // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
@@ -1611,14 +1658,14 @@ fn validate_catches_negative_radius() {
     v.defaults.border.corner_radius = Some(-5.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
+            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
         "should report negative defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1630,14 +1677,12 @@ fn validate_catches_zero_font_size() {
     v.defaults.font.size = Some(FontSize::Px(0.0));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report zero defaults.font.size, got: {:?}",
         errors
     );
@@ -1651,9 +1696,9 @@ fn validate_catches_opacity_out_of_range() {
     v.button.disabled_opacity = Some(3.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1685,9 +1730,9 @@ fn validate_catches_invalid_font_weight() {
     v.defaults.mono_font.weight = Some(1000); // above 900
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1716,9 +1761,9 @@ fn validate_reports_multiple_range_errors_together() {
     v.defaults.font.weight = Some(50);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     // All 4 range errors should be reported in one batch
     assert!(
@@ -1756,14 +1801,12 @@ fn validate_catches_negative_font_size() {
     v.defaults.font.size = Some(FontSize::Px(-1.0));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report negative font.size, got: {:?}",
         errors
     );
@@ -1775,9 +1818,9 @@ fn validate_catches_disabled_opacity_above_one() {
     v.defaults.disabled_opacity = Some(2.0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1794,9 +1837,9 @@ fn validate_catches_font_weight_zero() {
     v.defaults.font.weight = Some(0);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -1813,14 +1856,14 @@ fn validate_catches_nan_values() {
     v.defaults.border.corner_radius = Some(f32::NAN);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
+            .any(|rv| rv.path == "defaults.border.corner_radius_px"),
         "should report NaN defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1832,14 +1875,12 @@ fn validate_catches_infinity() {
     v.defaults.font.size = Some(FontSize::Px(f32::INFINITY));
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
-        errors
-            .iter()
-            .any(|rv| rv.path.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path == "defaults.font.size_px"),
         "should report infinite font.size, got: {:?}",
         errors
     );
@@ -1852,14 +1893,14 @@ fn validate_catches_negative_infinity() {
     v.defaults.border.line_width = Some(f32::NEG_INFINITY);
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
             .iter()
-            .any(|rv| rv.path.contains("defaults.border.line_width")),
+            .any(|rv| rv.path == "defaults.border.line_width_px"),
         "should report -inf border.line_width, got: {:?}",
         errors
     );
@@ -1877,9 +1918,9 @@ fn validate_missing_field_short_circuits_before_range_checks() {
     v.defaults.font.weight = Some(0); // out of range (100..=900)
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
+    let missing = match result {
+        Err(crate::Error::ResolutionIncomplete { missing }) => missing,
+        other => panic!("expected ResolutionIncomplete, got {other:?}"),
     };
     assert!(
         missing.contains(&"defaults.accent_color".to_string()),
@@ -1895,9 +1936,9 @@ fn validate_range_only_errors_produce_resolution_invalid() {
     v.defaults.font.weight = Some(0); // out of range (100..=900)
 
     let result = v.validate();
-    assert!(result.is_err());
-    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
-        return;
+    let errors = match result {
+        Err(crate::Error::ResolutionInvalid { errors }) => errors,
+        other => panic!("expected ResolutionInvalid, got {other:?}"),
     };
     assert!(
         errors
@@ -2291,8 +2332,8 @@ fn resolve_completeness_minimal_variant() {
 /// then verifies resolve() can reconstruct them.
 #[test]
 fn resolve_completeness_from_preset() {
-    let spec = crate::Theme::preset("material").unwrap();
-    let mut v = spec.dark.expect("material should have dark variant");
+    let spec = crate::Theme::preset("material-3").unwrap();
+    let mut v = spec.dark.expect("material-3 should have dark variant");
 
     clear_derived_fields(&mut v);
 
@@ -2307,9 +2348,9 @@ fn resolve_completeness_from_preset() {
 
 #[test]
 fn validate_all_presets_pass_range_checks() {
-    // Verify no false positives: all 16 presets pass validation including range checks
+    // Verify no false positives: all 17 presets pass validation including range checks
     let presets = crate::Theme::list_presets();
-    assert!(presets.len() >= 16, "expected at least 16 presets");
+    assert!(presets.len() >= 17, "expected at least 17 presets");
 
     for info in presets {
         let name = info.key;
@@ -2343,6 +2384,7 @@ fn check_ranges_happy_path_zero_errors() {
     // errors, no format! calls execute and zero path strings are allocated.
     let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
     let light = theme.light.expect("adwaita should have light variant");
+    let stated_scale = light.text_scale.clone();
     let resolved = light
         .into_resolved(&crate::resolve::ResolutionContext::for_tests())
         .expect("adwaita should validate");
@@ -2353,6 +2395,7 @@ fn check_ranges_happy_path_zero_errors() {
     super::validate_helpers::check_defaults_ranges(
         &resolved.defaults,
         &resolved.text_scale,
+        &stated_scale,
         &mut errors,
     );
 
@@ -2360,6 +2403,7 @@ fn check_ranges_happy_path_zero_errors() {
     resolved.window.check_ranges("window", &mut errors);
     resolved.button.check_ranges("button", &mut errors);
     resolved.input.check_ranges("input", &mut errors);
+    resolved.text_area.check_ranges("text_area", &mut errors);
     resolved.checkbox.check_ranges("checkbox", &mut errors);
     resolved.menu.check_ranges("menu", &mut errors);
     resolved.tooltip.check_ranges("tooltip", &mut errors);
@@ -2383,6 +2427,7 @@ fn check_ranges_happy_path_zero_errors() {
     resolved
         .segmented_control
         .check_ranges("segmented_control", &mut errors);
+    resolved.card.check_ranges("card", &mut errors);
     resolved.expander.check_ranges("expander", &mut errors);
     resolved.link.check_ranges("link", &mut errors);
 
@@ -2632,4 +2677,375 @@ fn for_tests_values_match_gaps_doc_spec() {
         ctx.icon_theme.is_none(),
         "gaps doc §G7 specifies icon_theme = None for for_tests()"
     );
+}
+
+// ===== Validation paths name the TOML keys (M3-20) =====
+
+/// The paths of the range violations `v.validate()` reports.
+fn range_violation_paths(v: &ThemeMode) -> Vec<String> {
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid, got {:?}", v.validate().err());
+    };
+    errors.into_iter().map(|rv| rv.path).collect()
+}
+
+/// The paths `v.validate()` reports missing.
+fn missing_paths(v: &ThemeMode) -> Vec<String> {
+    let Err(crate::Error::ResolutionIncomplete { missing }) = v.validate() else {
+        panic!(
+            "expected ResolutionIncomplete, got {:?}",
+            v.validate().err()
+        );
+    };
+    missing
+}
+
+#[test]
+fn validate_paths_name_a_widget_scalars_px_key() {
+    let mut v = fully_populated_variant();
+    v.button.min_height = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["button.min_height_px"]);
+
+    let mut v = fully_populated_variant();
+    v.button.min_height = None;
+    assert_eq!(missing_paths(&v), ["button.min_height_px"]);
+}
+
+#[test]
+fn validate_paths_name_a_padding_sides_key() {
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().padding_left = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["button.border.padding_left_px"]);
+}
+
+#[test]
+fn validate_checks_the_card_border_padding() {
+    let mut v = fully_populated_variant();
+    v.card.border.get_or_insert_default().padding_left = Some(-8.0);
+    assert_eq!(range_violation_paths(&v), ["card.border.padding_left_px"]);
+}
+
+#[test]
+fn validate_checks_a_widget_borders_geometry() {
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().corner_radius = Some(-4.0);
+    assert_eq!(
+        range_violation_paths(&v),
+        ["button.border.corner_radius_px"]
+    );
+
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().line_width = Some(f32::NAN);
+    assert_eq!(range_violation_paths(&v), ["button.border.line_width_px"]);
+}
+
+/// A negative focus ring offset is an inset ring and stays legal; a
+/// non-finite one is a range violation.
+#[test]
+fn validate_checks_the_focus_ring_offset_is_finite() {
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(f32::NAN);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
+
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(f32::INFINITY);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_offset_px"]);
+
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_offset = Some(-2.0);
+    assert!(v.validate().is_ok(), "{:?}", v.validate().err());
+}
+
+#[test]
+fn validate_paths_name_a_border_geometry_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.border.line_width = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["defaults.border.line_width_px"]);
+
+    let mut v = fully_populated_variant();
+    v.button.border.get_or_insert_default().corner_radius = None;
+    v.defaults.border.line_width = None;
+    assert_eq!(
+        missing_paths(&v),
+        [
+            "defaults.border.line_width_px",
+            "button.border.corner_radius_px"
+        ]
+    );
+}
+
+#[test]
+fn validate_paths_name_a_defaults_icon_size_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.icon_sizes.toolbar = Some(-1.0);
+    assert_eq!(
+        range_violation_paths(&v),
+        ["defaults.icon_sizes.toolbar_px"]
+    );
+
+    let mut v = fully_populated_variant();
+    v.defaults.icon_sizes.toolbar = None;
+    assert_eq!(missing_paths(&v), ["defaults.icon_sizes.toolbar_px"]);
+}
+
+#[test]
+fn validate_paths_name_a_defaults_px_key() {
+    let mut v = fully_populated_variant();
+    v.defaults.focus_ring_width = Some(-1.0);
+    assert_eq!(range_violation_paths(&v), ["defaults.focus_ring_width_px"]);
+}
+
+#[test]
+fn validate_paths_name_the_font_size_key_the_theme_states() {
+    let mut v = fully_populated_variant();
+    v.defaults.font.size = Some(FontSize::Px(0.0));
+    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-1.0));
+    let paths = range_violation_paths(&v);
+    assert!(
+        paths.contains(&"defaults.font.size_px".to_string()),
+        "{paths:?}"
+    );
+    assert!(
+        paths.contains(&"button.font.size_pt".to_string()),
+        "{paths:?}"
+    );
+
+    // A missing size states no unit: the path names the field.
+    let mut v = fully_populated_variant();
+    v.defaults.font.size = None;
+    assert_eq!(missing_paths(&v), ["defaults.font.size"]);
+}
+
+#[test]
+fn validate_reports_a_stated_size_pt_in_points() {
+    let mut v = fully_populated_variant();
+    v.button.font.get_or_insert_default().size = Some(FontSize::Pt(-3.0));
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid");
+    };
+    let violation = errors
+        .iter()
+        .find(|rv| rv.path == "button.font.size_pt")
+        .expect("button.font.size_pt is reported");
+    assert_eq!(violation.value, -3.0);
+    assert!(violation.to_string().contains("got -3"), "{violation}");
+}
+
+#[test]
+fn validate_paths_name_the_text_scale_key_the_theme_states() {
+    let mut v = fully_populated_variant();
+    v.text_scale.caption = Some(TextScaleEntry {
+        size: Some(FontSize::Pt(-1.0)),
+        weight: Some(400),
+        line_height: Some(FontSize::Pt(-1.0)),
+    });
+    assert_eq!(
+        range_violation_paths(&v),
+        [
+            "text_scale.caption.size_pt",
+            "text_scale.caption.line_height_pt"
+        ]
+    );
+}
+
+#[test]
+fn validate_reports_a_stated_text_scale_size_in_its_unit() {
+    let mut v = fully_populated_variant();
+    v.text_scale.caption = Some(TextScaleEntry {
+        size: Some(FontSize::Pt(-3.0)),
+        weight: Some(400),
+        line_height: Some(FontSize::Pt(-5.0)),
+    });
+    let Err(crate::Error::ResolutionInvalid { errors }) = v.validate() else {
+        panic!("expected ResolutionInvalid");
+    };
+    let value_of = |path: &str| errors.iter().find(|rv| rv.path == path).map(|rv| rv.value);
+    assert_eq!(value_of("text_scale.caption.size_pt"), Some(-3.0));
+    assert_eq!(value_of("text_scale.caption.line_height_pt"), Some(-5.0));
+}
+
+/// A ThemeMode TOML value with every leaf value removed: each table stays,
+/// empty, so validation names every field inside it as missing.
+fn strip_leaves(value: &mut toml::Value) {
+    if let toml::Value::Table(t) = value {
+        t.retain(|_, v| v.is_table());
+        for (_, v) in t.iter_mut() {
+            strip_leaves(v);
+        }
+    }
+}
+
+/// A ThemeMode TOML value with every number out of range: every float NaN,
+/// every integer 0.
+fn break_numbers(value: &mut toml::Value) {
+    match value {
+        toml::Value::Table(t) => t.iter_mut().for_each(|(_, v)| break_numbers(v)),
+        toml::Value::Float(f) => *f = f64::NAN,
+        toml::Value::Integer(i) => *i = 0,
+        _ => {}
+    }
+}
+
+/// Every path a validation error names is a key `Theme::lint_toml` accepts
+/// in a variant. A missing font size or text-scale line height states no
+/// unit, so its path names the field, which stands for its two keys.
+#[test]
+fn validate_paths_are_toml_keys() {
+    let mut v = crate::Theme::preset("kde-breeze").unwrap().light.unwrap();
+    v.resolve_all_with_context(&ResolutionContext::for_tests());
+    // kde-breeze states no card padding: give the card a side to break.
+    v.card.border.get_or_insert_default().padding_left = Some(0.0);
+    let table = toml::Value::try_from(&v).unwrap();
+
+    let mut empty = table.clone();
+    strip_leaves(&mut empty);
+    let missing = missing_paths(&empty.try_into().unwrap());
+
+    let mut broken = table;
+    break_numbers(&mut broken);
+    let ranged = range_violation_paths(&broken.try_into().unwrap());
+    for key in [
+        "button.border.padding_left_px",
+        "button.border.corner_radius_px",
+        "button.border.line_width_px",
+        "card.border.padding_left_px",
+        "defaults.focus_ring_offset_px",
+    ] {
+        assert!(ranged.iter().any(|p| p == key), "{key}: {ranged:?}");
+    }
+
+    let lint = |key: &str| crate::Theme::lint_toml(&format!("light.{key} = 0")).unwrap();
+    for path in &missing {
+        let keys = match path.rsplit_once('.') {
+            Some((head, "size")) => vec![format!("{head}.size_pt"), format!("{head}.size_px")],
+            Some((head, "line_height")) if head.starts_with("text_scale.") => vec![
+                format!("{head}.line_height_pt"),
+                format!("{head}.line_height_px"),
+            ],
+            _ => vec![path.clone()],
+        };
+        for key in keys {
+            assert_eq!(lint(&key), Vec::<String>::new(), "missing path {path}");
+        }
+    }
+    for path in &ranged {
+        assert_eq!(lint(path), Vec::<String>::new(), "range path {path}");
+    }
+}
+
+/// `Theme::resolve_with` range-checks the theme's layout. Layout is shared by
+/// both variants, so each path is a top-level key, with no variant table.
+#[test]
+fn theme_resolve_checks_the_layout() {
+    let ctx = ResolutionContext::for_tests();
+    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
+    theme.layout.widget_gap = Some(-8.0);
+    theme.layout.container_margin = Some(f32::NAN);
+    theme.layout.window_margin = Some(f32::INFINITY);
+    theme.layout.section_gap = Some(0.0);
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(
+        paths,
+        [
+            "layout.widget_gap_px",
+            "layout.container_margin_px",
+            "layout.window_margin_px"
+        ]
+    );
+    for path in paths {
+        assert_eq!(
+            crate::Theme::lint_toml(&format!("{path} = 0")).unwrap(),
+            Vec::<String>::new(),
+            "range path {path}"
+        );
+    }
+}
+
+/// `Theme::resolve_with` prefixes each path with the table of the variant it
+/// resolved: the requested one, or the other where the theme has only that.
+#[test]
+fn theme_resolve_paths_name_the_variant() {
+    let ctx = ResolutionContext::for_tests();
+    let mut theme = crate::Theme::preset("kde-breeze").unwrap();
+    theme.dark.as_mut().unwrap().button.min_height = Some(-1.0);
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Dark, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(paths, ["dark.button.min_height_px"]);
+
+    theme.light = None;
+    let Err(crate::Error::ResolutionInvalid { errors }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionInvalid");
+    };
+    let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+    assert_eq!(paths, ["dark.button.min_height_px"]);
+
+    theme.light = Some(ThemeMode::default());
+    let Err(crate::Error::ResolutionIncomplete { missing }) =
+        theme.resolve_with(crate::ColorMode::Light, &ctx)
+    else {
+        panic!("expected ResolutionIncomplete");
+    };
+    assert!(
+        missing.contains(&"light.defaults.icon_sizes.toolbar_px".to_string()),
+        "{missing:?}"
+    );
+    assert!(
+        missing.iter().all(|p| p.starts_with("light.")),
+        "{missing:?}"
+    );
+}
+
+/// A context whose font DPI is not finite and positive is one violation, on
+/// `context.font_dpi`, found before any point size is converted, so no font
+/// the DPI would spoil is reported. It is the context's, not a variant's:
+/// the path has no variant table.
+#[test]
+fn a_bad_font_dpi_is_one_context_violation() {
+    let theme = crate::Theme::preset("kde-breeze").unwrap();
+    let variant = theme.light.clone().unwrap();
+    let mut resolved = variant.clone();
+    resolved.resolve();
+    for font_dpi in [0.0, -96.0, f32::NAN, f32::INFINITY] {
+        let ctx = ResolutionContext {
+            font_dpi,
+            ..ResolutionContext::for_tests()
+        };
+        let results = [
+            (
+                "into_resolved",
+                variant.clone().into_resolved(&ctx).map(|_| ()),
+            ),
+            (
+                "validate_with_dpi",
+                resolved.validate_with_dpi(font_dpi).map(|_| ()),
+            ),
+            (
+                "resolve_with",
+                theme.resolve_with(crate::ColorMode::Dark, &ctx).map(|_| ()),
+            ),
+        ];
+        for (call, result) in results {
+            let Err(crate::Error::ResolutionInvalid { errors }) = result else {
+                panic!("{call} at {font_dpi}: expected ResolutionInvalid, got {result:?}");
+            };
+            let paths: Vec<&str> = errors.iter().map(|rv| rv.path.as_str()).collect();
+            assert_eq!(paths, ["context.font_dpi"], "{call} at {font_dpi}");
+            let value = errors[0].value;
+            assert!(
+                value == f64::from(font_dpi) || (value.is_nan() && font_dpi.is_nan()),
+                "{call} at {font_dpi}: value {value}"
+            );
+        }
+    }
 }

@@ -1,18 +1,20 @@
 //! The chrome: menu bar, toolbar, status bar, side panel, page tabs, overlays (spec §10.4).
 
-use native_theme::icons::{IconSetChoice, default_icon_choice};
-use native_theme::theme::{IconRole, IconSet};
+use native_theme::icons::{IconRole, IconSetChoice};
+use native_theme::theme::IconSet;
 use native_theme_egui::{
     DialogButtonOrder, PanelSide, Role, RoleVariant, Surface, dialog_button_order,
     window_title_bar_font, window_title_bar_text_color,
 };
 use native_theme_egui_widgets::combo_box::ComboBox;
 use native_theme_egui_widgets::switch::Switch;
+use native_theme_showcase_support::{rows, status};
 
 use crate::{
     LEFT_PANEL_WIDTH,
     app::{App, ModeChoice, Page, ThemeChoice},
     demo::{self, PanelSeams, Registry},
+    pages::inner_extent,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -29,7 +31,7 @@ pub(crate) enum Action {
 
 impl Action {
     /// The menus, in order; `None` is a separator (the gpui showcase's menus,
-    /// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:28-52`).
+    /// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:29-59`).
     pub(crate) const MENUS: &[(&str, &[Option<Action>])] = &[
         ("File", &[Some(Action::Quit)]),
         (
@@ -37,14 +39,14 @@ impl Action {
             &[
                 Some(Action::ShowPage(Page::Basic)),
                 Some(Action::ShowPage(Page::Buttons)),
-                Some(Action::ShowPage(Page::Selection)),
                 Some(Action::ShowPage(Page::Inputs)),
+                Some(Action::ShowPage(Page::Selection)),
                 Some(Action::ShowPage(Page::Range)),
-                Some(Action::ShowPage(Page::Text)),
-                Some(Action::ShowPage(Page::Colour)),
-                Some(Action::ShowPage(Page::Containers)),
                 Some(Action::ShowPage(Page::Data)),
+                Some(Action::ShowPage(Page::Text)),
+                Some(Action::ShowPage(Page::Containers)),
                 Some(Action::ShowPage(Page::Overlays)),
+                Some(Action::ShowPage(Page::Colour)),
                 Some(Action::ShowPage(Page::Icons)),
                 Some(Action::ShowPage(Page::ThemeMap)),
                 None,
@@ -73,9 +75,7 @@ impl Action {
             Action::ToggleSidePanel => "Toggle Side Panel",
             Action::OpenCommandPalette => "Command Palette",
             Action::ReloadTheme => "Reload System Theme",
-            Action::SetMode(ModeChoice::System) => "System",
-            Action::SetMode(ModeChoice::Light) => "Light",
-            Action::SetMode(ModeChoice::Dark) => "Dark",
+            Action::SetMode(mode) => mode.short_label(),
             Action::OpenPreferences => "Preferences…",
             Action::OpenAbout => "About",
             Action::Quit => "Quit",
@@ -100,6 +100,30 @@ impl Action {
 /// shorter titles (Adwaita's) above their height. Not a style value.
 #[cfg(not(all(target_os = "macos", not(test))))]
 const NO_MINIMUM: f32 = 0.0;
+
+/// The menu bar's side padding where the theme states no `layout.container_margin` (spec
+/// §3.1): the gpui showcase's `MENU_BAR_PADDING` (`showcase-gpui/demo.rs`), so the shared
+/// chrome looks as gpui's does. The model states no menu bar, and the row is the application's
+/// own element, with no toolkit default to keep: the showcases' own choice, not a platform's
+/// value, which the menu bar's Widget Info names.
+#[cfg(not(all(target_os = "macos", not(test))))]
+pub(crate) const MENU_BAR_PADDING: f32 = 8.0;
+
+/// The toolbar's padding on a side the theme leaves unstated twice over, neither
+/// `toolbar.border.padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
+/// showcase's `TOOLBAR_PADDING` (`showcase-gpui/demo.rs`), the showcases' own choice, which the
+/// toolbar's Widget Info names.
+pub(crate) const TOOLBAR_PADDING: f32 = 8.0;
+
+/// The gap between the toolbar's items where the theme leaves it unstated twice over, neither
+/// `toolbar.item_gap` nor `layout.widget_gap` stating it: the gpui showcase's `TOOLBAR_GAP`
+/// (`showcase-gpui/demo.rs`), the showcases' own choice, which the toolbar's Widget Info names.
+pub(crate) const TOOLBAR_GAP: f32 = 4.0;
+
+/// The gap between the theme settings' rows, and between each row's label and its control,
+/// where `layout.widget_gap` is unstated (spec §3.1): the gpui showcase's `THEME_SETTINGS_GAP`
+/// (`showcase-gpui/demo.rs`), the showcases' own choice, which the settings' Widget Info names.
+pub(crate) const THEME_SETTINGS_GAP: f32 = 8.0;
 
 /// The Theme menu's rows in `docs/showcase-elements.toml`, in `Action::MENUS`'s order.
 #[cfg(not(all(target_os = "macos", not(test))))]
@@ -139,25 +163,20 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
     );
     // A side of `toolbar.border.padding` the theme leaves unstated is `layout.container_margin`,
-    // as the other two showcases pad their toolbars, where the panel frame would keep egui's own.
+    // and `TOOLBAR_PADDING` where that is unstated too, as the other two showcases pad their
+    // toolbars, where the panel frame would keep egui's own (8 across, 2 down).
     let own_margin = seams.frame.inner_margin;
-    if let Some(margin) = app.atlas.layout().container_margin {
-        let stated = &app
-            .atlas
-            .resolved_for(ui.ctx().theme())
-            .toolbar
-            .border
-            .padding;
-        let side = |side: Option<f32>| side.is_none().then_some(margin);
-        let unstated = native_theme::theme::ResolvedPadding {
-            top: side(stated.top),
-            right: side(stated.right),
-            bottom: side(stated.bottom),
-            left: side(stated.left),
-        };
-        seams.frame.inner_margin =
-            native_theme_egui::convert::to_margin(seams.frame.inner_margin, &unstated);
-    }
+    let margin = app.atlas.layout().container_margin;
+    let stated = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .toolbar
+        .border
+        .padding;
+    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+        seams.frame.inner_margin,
+        &demo::unstated_as(&stated, margin.unwrap_or(TOOLBAR_PADDING)),
+    );
     // Where the theme states `toolbar.bar_height`, the bar stays that tall: the toolbar scope's
     // row (`interact_size.y`) is the stated height less the frame egui's own panel preset would
     // pad it by, so the room the margin above grew by comes off the row, as the other two
@@ -188,6 +207,32 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Toolbar");
     app.registry.tag("chrome.toolbar", &out.response);
+    if let Some(sides) = demo::unstated_sides(&stated) {
+        let note = match margin {
+            Some(margin) => format!(
+                "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
+                 the gpui showcase's toolbar takes it"
+            ),
+            None => format!(
+                "not stated by the theme on {sides}, nor layout.container_margin: \
+                 TOOLBAR_PADDING, {TOOLBAR_PADDING}px, the gpui showcase's own constant (spec \
+                 §3.1)"
+            ),
+        };
+        app.registry
+            .note_element("chrome.toolbar", "padding", &note);
+    }
+    let t = app.atlas.resolved_for(ui.ctx().theme());
+    if t.toolbar.item_gap.is_none() && app.atlas.layout().widget_gap.is_none() {
+        app.registry.note_element(
+            "chrome.toolbar",
+            "the gap between items",
+            &format!(
+                "not stated by the theme (toolbar.item_gap, layout.widget_gap): TOOLBAR_GAP, \
+                 {TOOLBAR_GAP}px, the gpui showcase's own constant"
+            ),
+        );
+    }
 }
 
 /// A toolbar row `shrink` less tall than its scope's `interact_size.y` makes it.
@@ -199,14 +244,16 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 /// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
 /// window's background (`window.background_color`, the menu bar's in
 /// `docs/showcase-elements.toml`), its menus `layout.container_margin` in from the window's
-/// sides where the theme states that margin, no line under it.
+/// sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the gpui
+/// showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
     let margin = app.atlas.layout().container_margin;
+    let side = Some(margin.unwrap_or(MENU_BAR_PADDING));
     let sides = native_theme::theme::ResolvedPadding {
-        left: margin,
-        right: margin,
+        left: side,
+        right: side,
         top: None,
         bottom: None,
     };
@@ -229,6 +276,17 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
         });
     app.registry.name("chrome.menu_bar", &out.inner);
     app.registry.place(ui, "chrome.menu_bar", out.response.rect);
+    if margin.is_none() {
+        app.registry.note_element(
+            "chrome.menu_bar",
+            "padding",
+            &format!(
+                "not stated by the theme on left, right (layout.container_margin): \
+                 MENU_BAR_PADDING, {MENU_BAR_PADDING}px, the gpui showcase's own constant (spec \
+                 §3.1)"
+            ),
+        );
+    }
 }
 
 /// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
@@ -343,8 +401,18 @@ fn menu_bar(app: &mut App, ui: &mut egui::Ui) -> egui::Response {
                             }
                         }
                         if key == "theme" {
-                            // The popup's frame around its rows: its margin and its stroke.
-                            let rect = (ui.min_rect() + margin).expand(stroke);
+                            // The popup's frame around its rows: its margin and its stroke,
+                            // spelled in `f32` as egui's `Rect + Margin` computes it
+                            // (`epaint/src/margin.rs:241-251`).
+                            let rows = ui.min_rect();
+                            let rect = egui::Rect::from_min_max(
+                                egui::pos2(rows.min.x - margin.leftf(), rows.min.y - margin.topf()),
+                                egui::pos2(
+                                    rows.max.x + margin.rightf(),
+                                    rows.max.y + margin.bottomf(),
+                                ),
+                            )
+                            .expand(stroke);
                             registry.place(ui, "chrome.menu.theme", rect);
                         }
                     });
@@ -402,7 +470,7 @@ fn chrome_button_image(
 /// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
 /// `active` colour (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the
 /// selected button's accent. Its icon where the set has one, else its tooltip's text as its
-/// label, as gpui's (`showcase-gpui/demo.rs:1150-1153`).
+/// label, as gpui's (`showcase-gpui/demo.rs:1185-1188`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -421,7 +489,7 @@ fn ghost_button(
 }
 
 /// The kind a Ghost button records, as the gpui showcase names its toolbar and status-bar
-/// buttons (`showcase-gpui/info/chrome.rs:438-443`, `:929-933`).
+/// buttons (`showcase-gpui/info/chrome.rs:491-496`, `:1026-1030`).
 fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
     match (drawn, selected) {
         (true, true) => "Button · Ghost, icon, selected",
@@ -431,7 +499,7 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
     }
 }
 
-/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:103-160`): three tool buttons in its
+/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:116-173`): three tool buttons in its
 /// order — the command palette, a theme reload, Preferences — each with a tooltip naming it
 /// and its shortcut. Each is a toolbar item, drawn in the toolbar's own scope: its icon at
 /// `toolbar.icon_size` (a required size, `f32` on the resolved theme), a missing icon's label in
@@ -460,6 +528,11 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
         fit_row(ui, shrink);
         ui.horizontal(|ui| {
             demo::toolbar_gap(ui, t, layout);
+            // `TOOLBAR_GAP` where the theme states neither gap, at the chrome's toolbar alone:
+            // the Basic page's icon row keeps `toolbar_gap`, as gpui's has no constant.
+            if t.toolbar.item_gap.is_none() && layout.widget_gap.is_none() {
+                ui.spacing_mut().item_spacing.x = TOOLBAR_GAP;
+            }
             for (icon, label, action, id) in [
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
@@ -496,7 +569,6 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     })
                     .inner;
                 registry.ghost_last();
-                registry.amend_last(|i| i.read.push(("toolbar.icon_size", format!("{icon_size}"))));
                 registry.tag(id, &response);
                 if drawn {
                     place_icon(registry, ui, id, &response, icon_size);
@@ -507,7 +579,10 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                 }
             }
             // The bar spans the window, as a toolbar does: the rest of the row is its own surface.
-            ui.allocate_space(egui::Vec2::X * ui.available_width());
+            ui.allocate_space(egui::Vec2 {
+                x: ui.available_width(),
+                ..egui::Vec2::ZERO
+            });
         })
         .response
     };
@@ -585,17 +660,37 @@ fn tooltip(
     );
 }
 
-/// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:236-273`,
-/// `showcase-gpui/demo.rs:958-1023`, `:1348-1394`): the side-panel toggle, a small Ghost button
+/// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:250-290`,
+/// `showcase-gpui/demo.rs:969-1048`, `:1370-1423`): the side-panel toggle, a small Ghost button
 /// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
 /// then the environment as one line joined by " · "; the shown Widget Info's title flush right.
+/// A side `status_bar.border.padding` leaves unstated is padded as gpui-component pads its
+/// `StatusBar`, which the gpui showcase's keeps ([`status_bar_padding`]), where the panel frame
+/// would keep egui's own (8 across, 2 down).
 pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     let status_role = Some((Role::StatusBar, RoleVariant::Normal));
-    let seams = PanelSeams::apply(
+    let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Bottom),
         status_role,
         status_role,
+    );
+    let stated = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .status_bar
+        .border
+        .padding;
+    let (vertical, horizontal) = status_bar_padding(&app.atlas, ui.ctx().theme());
+    let unstated = |side: Option<f32>, fill: f32| side.is_none().then_some(fill);
+    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+        seams.frame.inner_margin,
+        &native_theme::theme::ResolvedPadding {
+            top: unstated(stated.top, vertical),
+            right: unstated(stated.right, horizontal),
+            bottom: unstated(stated.bottom, vertical),
+            left: unstated(stated.left, horizontal),
+        },
     );
     let chosen = app.chosen_icons();
     let out = egui::Panel::bottom("status-bar")
@@ -647,15 +742,6 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                     },
                 );
                 registry.ghost_last();
-                registry.amend_last(|i| {
-                    i.read
-                        .push(("defaults.icon_sizes.small", format!("{icon_size}")));
-                    i.notes.push((
-                        "fill while the panel shows",
-                        "the button role's pressed fill, visuals.widgets.active.weak_bg_fill"
-                            .to_string(),
-                    ));
-                });
                 registry.tag("chrome.status_bar.toggle", &toggle);
                 if drawn {
                     place_icon(registry, ui, "chrome.status_bar.toggle", &toggle, icon_size);
@@ -690,74 +776,74 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Status bar");
     app.registry.tag("chrome.status_bar", &out.response);
+    if let Some(sides) = demo::unstated_sides(&stated) {
+        app.registry.note_element(
+            "chrome.status_bar",
+            "padding",
+            &format!(
+                "not stated by the theme on {sides}: gpui-component's StatusBar padding, which \
+                 the gpui showcase's status bar keeps (py_1 / px_2: a quarter of the scaled \
+                 defaults.font.size above and below, {vertical}px, and a half at the sides, \
+                 {horizontal}px, each rounded to a whole point)"
+            ),
+        );
+    }
 }
 
-/// Desktop, preset and mode, the font in its defined unit (§8.7), the
-/// text-scaling factor, the flags that are set (the gpui status bar,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:282-305`).
+/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component 0.8.0
+/// `src/status_bar.rs:89-90`, `StatusBar`'s `render`): `rems(0.25)` above and below and
+/// `rems(0.5)` at the sides, at the rem gpui-component sets to the theme's font size
+/// (`src/root.rs:538`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
+/// fills with the scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding
+/// the gpui showcase's status bar keeps where the theme states none, as `(vertical, horizontal)`
+/// in logical pixels. egui's frame margin is whole points, so each side is rounded as
+/// `convert::to_margin` rounds it.
+fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
+    let rem = atlas
+        .accessibility()
+        .scaled(atlas.resolved_for(theme).defaults.font.size);
+    ((rem / 4.0).round(), (rem / 2.0).round())
+}
+
+/// The status bar's environment items (`status::environment_drawn`, the three showcases'
+/// text): the desktop, the preset by its key (`default` by the preset it builds on) and the
+/// mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
+/// the text-scaling factor and the flags that are set.
 fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
     let t = app.atlas.resolved_for(theme);
-    let prefs = app.atlas.accessibility();
     let mode = if theme == egui::Theme::Dark {
         "dark"
     } else {
         "light"
     };
-    let font = &t.defaults.font;
-    let size = match font.defined_size {
-        Some(native_theme::theme::FontSize::Pt(v)) => format!("{v}pt"),
-        Some(native_theme::theme::FontSize::Px(v)) => format!("{v}px"),
-        // Validation records a missing size rather than inventing one (§8.7).
-        None => "(size not stated)".to_string(),
-    };
-    // The preset by its key, `default` by the preset it builds on, as the gpui showcase's
-    // (`showcase-gpui/chrome.rs:90-97`).
     let preset = match &app.settings.theme {
-        ThemeChoice::Default => format!("default ({})", app.default_preset),
+        ThemeChoice::Default => rows::default_label(&app.default_preset),
         ThemeChoice::Preset(key) => key.clone(),
     };
-    let mut items = vec![
-        desktop(),
-        format!("{preset} {mode}"),
-        format!("{} {size}", font.family),
-        format!("text ×{}", prefs.text_scaling_factor),
-    ];
-    let flags = [
-        ("reduce_motion", prefs.reduce_motion),
-        ("high_contrast", prefs.high_contrast),
-        ("reduce_transparency", prefs.reduce_transparency),
-    ];
-    items.extend(
-        flags
-            .into_iter()
-            .filter(|(_, set)| *set)
-            .map(|(name, _)| name.to_string()),
-    );
-    items
-}
-
-/// The desktop `native_theme::detect` recognises in `XDG_CURRENT_DESKTOP`, as the gpui
-/// showcase names it (`connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:307-321`).
-#[cfg(target_os = "linux")]
-fn desktop() -> String {
-    format!("{:?}", native_theme::detect::detect_linux_desktop())
-}
-
-/// The operating system: `native_theme::detect` names a desktop on Linux only.
-#[cfg(not(target_os = "linux"))]
-fn desktop() -> String {
-    std::env::consts::OS.to_string()
+    let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
+    status::environment_drawn(
+        &preset,
+        mode,
+        &t.defaults.font,
+        families.drawn_at(&t.defaults.font.family, false),
+        Some(app.atlas.accessibility()),
+    )
 }
 
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
-/// showcase's (`showcase-gpui/demo.rs:1470-1509`): the settings padded by `container_margin`,
+/// showcase's (`showcase-gpui/demo.rs:1504-1538`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
 /// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
-/// panel surface's inner margin), the panel keeps it and its content adds none.
+/// panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
+/// leaves unstated takes `container_margin` (none where that is unstated too), as the gpui
+/// showcase's panel, where the panel frame would keep egui's own (8 across, 2 down), and its
+/// content adds none. The settings' rows, and each label and its control, are
+/// `layout.widget_gap` apart (the panel's `item_spacing`), or [`THEME_SETTINGS_GAP`] where the
+/// theme states none.
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
-    let padding = &app
+    let padding = app
         .atlas
         .resolved_for(ui.ctx().theme())
         .sidebar
@@ -766,17 +852,22 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     let stated = [padding.top, padding.right, padding.bottom, padding.left]
         .iter()
         .any(Option::is_some);
-    let seams = PanelSeams::apply(
+    let container_margin = app.atlas.layout().container_margin;
+    let widget_gap = app.atlas.layout().widget_gap;
+    let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Left),
         Some((Role::Splitter, RoleVariant::Normal)),
         Some((Role::Sidebar, RoleVariant::Normal)),
     );
     let (seams, margin) = if stated {
+        seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+            seams.frame.inner_margin,
+            &demo::unstated_as(&padding, container_margin.unwrap_or_default()),
+        );
         (seams, None)
     } else {
-        let margin = app.atlas.layout().container_margin;
-        (seams.unpadded(margin), margin)
+        (seams.unpadded(), container_margin)
     };
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
@@ -796,13 +887,39 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
             // pad themselves; the settings keep the panel's spacing between their rows.
             let spacing = ui.spacing().item_spacing;
             ui.spacing_mut().item_spacing.y = 0.0;
+            // The settings in a box of their own inside the padding, which Widget Info shows
+            // over the room between their rows, as the gpui showcase's theme settings carry
+            // their own info inside the side panel's padding (`demo::theme_settings`).
             let settings = padded(ui, margin, |ui| {
-                ui.spacing_mut().item_spacing = spacing;
-                settings_rows(app, ui, body);
-                ui.min_rect()
+                ui.scope(|ui| {
+                    ui.spacing_mut().item_spacing = spacing;
+                    if widget_gap.is_none() {
+                        ui.spacing_mut().item_spacing.y = THEME_SETTINGS_GAP;
+                    }
+                    settings_rows(app, ui, body);
+                })
+                .response
             });
-            app.registry
-                .place(ui, "chrome.side_panel.settings", settings);
+            app.registry.record(
+                &settings,
+                demo::info(
+                    "Theme settings",
+                    vec![demo::Seam::Role(Role::Sidebar, RoleVariant::Normal)],
+                ),
+                true,
+            );
+            app.registry.tag("chrome.side_panel.settings", &settings);
+            if widget_gap.is_none() {
+                app.registry.note_element(
+                    "chrome.side_panel.settings",
+                    "the gap between rows",
+                    &format!(
+                        "not stated by the theme (layout.widget_gap): THEME_SETTINGS_GAP, \
+                         {THEME_SETTINGS_GAP}px between the rows and between each label and its \
+                         control, the gpui showcase's own constant (spec §3.1)"
+                    ),
+                );
+            }
             let mut line = 0.0;
             let separator = demo::scoped(
                 &mut app.registry,
@@ -853,6 +970,20 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     if let Some(out) = out {
         seams.record(&mut app.registry, &out.response, "Side panel");
         app.registry.name("chrome.side_panel", &out.response);
+        if let Some(sides) = demo::unstated_sides(&padding).filter(|_| stated) {
+            let note = match container_margin {
+                Some(margin) => format!(
+                    "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
+                     the gpui showcase's side panel takes it"
+                ),
+                None => format!(
+                    "not stated by the theme on {sides}, nor layout.container_margin: none, as \
+                     the gpui showcase's side panel draws"
+                ),
+            };
+            app.registry
+                .note_element("chrome.side_panel", "padding", &note);
+        }
         // egui paints the panel's line in its outer margin, at its outer edge, in the
         // splitter scope's `noninteractive.bg_stroke` (`egui/src/containers/panel.rs:909-931`).
         let rect = out.response.rect;
@@ -880,8 +1011,8 @@ pub(crate) fn separator_line(separator: &egui::Response, width: f32) -> egui::Re
 }
 
 /// A key binding as the menus and tooltips print it: the modifiers' names and the key's
-/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:3772-3778`,
-/// `showcase-gpui/chrome.rs:152`). `Context::format_shortcut` spells a key by its name outside
+/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:4427-4435`,
+/// `showcase-gpui/chrome.rs:165`). `Context::format_shortcut` spells a key by its name outside
 /// macOS (`Ctrl+Comma`: `ModifierNames::NAMES` is not short,
 /// `egui/src/data/input/keyboard_shortcut.rs:30-34`); on macOS it is kept, its symbols short.
 pub(crate) fn shortcut_text(ctx: &egui::Context, shortcut: &egui::KeyboardShortcut) -> String {
@@ -905,7 +1036,7 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
 }
 
 /// A theme setting's label, above its control and as wide as its text, as the gpui showcase's
-/// (`showcase-gpui/demo.rs:1420-1432`), in the side panel's font (`sidebar.font`, `Body` in the
+/// (`showcase-gpui/demo.rs:1470-1489`), in the side panel's font (`sidebar.font`, `Body` in the
 /// sidebar scope), recorded with the side panel body's role; the control names it as its
 /// AccessKit label.
 fn setting_label(
@@ -921,7 +1052,7 @@ fn setting_label(
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
 /// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
-/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1409-1434`, `chrome.rs:166-211`).
+/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1438-1463`, `chrome.rs:179-224`).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -932,35 +1063,24 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         .map(|(_, label)| label.clone())
         .unwrap_or_default();
     let current_mode = app.settings.mode;
-    // The gpui showcase's icon-theme list (`showcase-gpui/app.rs:517-541`), less its
-    // gpui-component row: `default`, `system`, the installed themes, Lucide, Material.
-    let mut icon_rows = Vec::new();
-    if let choice @ IconSetChoice::Default(_) =
-        default_icon_choice(app.atlas.icon_set(), app.atlas.icon_theme(theme))
-    {
-        icon_rows.push(choice);
-    }
-    icon_rows.push(IconSetChoice::System);
-    icon_rows.extend(
-        app.settings
-            .installed_themes
-            .iter()
-            .map(|name| IconSetChoice::Freedesktop(name.clone())),
-    );
-    icon_rows.push(IconSetChoice::Lucide);
-    icon_rows.push(IconSetChoice::Material);
-    let icon_rows: Vec<(IconSetChoice, String)> = icon_rows
+    // The shared crate's icon-theme rows (`rows::icon_rows`): `default` where the theme names an
+    // available icon theme, `system`, the installed themes, Lucide, Material; the gpui
+    // showcase adds its gpui-component row to them.
+    let icon_rows: Vec<(IconSetChoice, String)> = rows::icon_rows(
+        app.atlas.icon_set(),
+        app.atlas.icon_theme(theme),
+        &app.settings.installed_themes,
+    )
+    .into_iter()
+    .map(|choice| {
+        let text = choice.to_string();
+        (choice, text)
+    })
+    .collect();
+    let mode_rows: Vec<(ModeChoice, String)> = ModeChoice::ALL
         .into_iter()
-        .map(|choice| {
-            let text = choice.to_string();
-            (choice, text)
-        })
+        .map(|mode| (mode, Action::SetMode(mode).label().to_string()))
         .collect();
-    let mode_rows: Vec<(ModeChoice, String)> =
-        [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
-            .into_iter()
-            .map(|mode| (mode, Action::SetMode(mode).label().to_string()))
-            .collect();
     let current_icon = app.settings.icon.clone();
 
     let registry = &mut app.registry;
@@ -1093,7 +1213,7 @@ fn setting<T: Clone + PartialEq>(
 
 /// The inspector's two tabs, drawn as the page tabs are (`demo::tab_bar`), padded by
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
-/// (`showcase-gpui/inspector.rs:678-692`).
+/// (`showcase-gpui/inspector.rs:779-794`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
     let picked = demo::tab_bar(
@@ -1140,6 +1260,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                         elements,
                         manifest,
                         (json, app.preset_key()),
+                        (&app.atlas, ui.ctx()),
                     )),
                     (Err(error), _, _) | (_, Err(error), _) | (_, _, Err(error)) => {
                         Err(error.clone())
@@ -1154,17 +1275,18 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
                 &mut app.registry,
             );
         }
-        InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.manifest),
+        InspectorTab::Theme => crate::info::theme_tab(ui, &app.atlas, &app.semibold, &app.manifest),
     }
 }
 
-/// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:216-230`): the
+/// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:229-243`): the
 /// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
 /// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
 /// row's right end a Ghost menu button listing every page, the current one selected, as
-/// gpui-component's tab-bar menu does (`GC/tab/tab_bar.rs:554-584`). Its caret is the chosen
-/// icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the button
-/// reads "Pages" (§10.4's icon rule).
+/// gpui-component's tab-bar menu does (gpui-component 0.8.0 `src/tab/tab_bar.rs:699-732`,
+/// `TabBar::render`'s Ghost `menu` button, the selected tab's item `checked`). Its caret is the
+/// chosen icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the
+/// button reads "Pages" (§10.4's icon rule).
 pub(crate) fn page_tabs(app: &mut App, ui: &mut egui::Ui) {
     let theme = ui.ctx().theme();
     let (set, icon_theme) = app.chosen_icons();
@@ -1287,10 +1409,17 @@ pub(crate) fn central_panel(
                 bottom: 0,
                 ..page_margin
             };
-            if app.theme_error.is_some() {
+            let errors = app.theme_errors();
+            let note = app.watcher_note();
+            if !errors.is_empty() || note.is_some() {
                 egui::Frame::NONE.inner_margin(banner).show(ui, |ui| {
                     ui.spacing_mut().item_spacing = spacing;
-                    theme_error_banner(app, ui);
+                    if !errors.is_empty() {
+                        theme_error_banner(app, ui, errors.join("\n"));
+                    }
+                    if let Some(note) = note {
+                        watcher_note_banner(app, ui, note);
+                    }
                 });
             }
             ui.spacing_mut().item_spacing = spacing;
@@ -1301,80 +1430,61 @@ pub(crate) fn central_panel(
     app.registry.untarget(&out.response);
 }
 
-/// The theme error, in a card across the content.
-fn theme_error_banner(app: &mut App, ui: &mut egui::Ui) {
-    if let Some(error) = app.theme_error.clone() {
-        // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2696-2712`):
-        // across the content, the chosen icon theme's error icon first, where it
-        // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
-        // (`showcase-gpui/support.rs:508`) — at `defaults.icon_sizes.small`.
-        let (set, icon_theme) = app.chosen_icons();
-        let size = app
-            .atlas
-            .resolved_for(ui.ctx().theme())
-            .defaults
-            .icon_sizes
-            .small;
-        demo::framed(
-            &mut app.registry,
-            ui,
-            Surface::Card,
-            None,
-            "theme error",
-            |ui, reg| {
-                ui.set_min_width(ui.available_width());
-                ui.horizontal(|ui| {
-                    let icon = demo::role_image(
-                        ui,
-                        IconRole::DialogError,
-                        set,
-                        icon_theme.as_deref(),
-                        size,
-                    );
-                    if let Some(icon) = icon {
-                        demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
-                    }
-                    demo::base(reg, ui, "theme error text", |ui| {
-                        ui.colored_label(ui.visuals().error_fg_color, error)
-                    });
+/// The theme errors, one per line, in a card across the content.
+fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
+    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2860-2884`):
+    // across the content, the chosen icon theme's error icon first, where it
+    // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
+    // (`showcase-gpui/support.rs:512-523`, `role_for_gpui_icon`) — at
+    // `defaults.icon_sizes.small`.
+    let (set, icon_theme) = app.chosen_icons();
+    let size = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .defaults
+        .icon_sizes
+        .small;
+    demo::framed(
+        &mut app.registry,
+        ui,
+        Surface::Card,
+        None,
+        "theme error",
+        |ui, reg| {
+            ui.set_min_width(ui.available_width());
+            ui.horizontal(|ui| {
+                let icon =
+                    demo::role_image(ui, IconRole::DialogError, set, icon_theme.as_deref(), size);
+                if let Some(icon) = icon {
+                    demo::base(reg, ui, "Image · theme error", |ui| ui.add(icon));
+                }
+                demo::base(reg, ui, "theme error text", |ui| {
+                    ui.colored_label(ui.visuals().error_fg_color, error)
                 });
-            },
-        );
-    }
+            });
+        },
+    );
 }
 
-/// A dialog extent the theme states, less the frame's own margins and stroke,
-/// floored at `0.0` and passed only when finite: `Ui::set_min_*` debug-assert a
-/// size of at least `0.0` (`egui/src/ui.rs:739-743`, `:749-753`), and
-/// `set_max_*` reach the same assert through `Placer` and `Layout`
-/// (`egui/src/placer.rs:233-234`, `egui/src/layout.rs:584-587`).
-pub(crate) fn inner_extent(stated: f32, frame: &egui::Frame, horizontal: bool) -> Option<f32> {
-    let (a, b, c, d) = if horizontal {
-        (
-            frame.inner_margin.left,
-            frame.inner_margin.right,
-            frame.outer_margin.left,
-            frame.outer_margin.right,
-        )
-    } else {
-        (
-            frame.inner_margin.top,
-            frame.inner_margin.bottom,
-            frame.outer_margin.top,
-            frame.outer_margin.bottom,
-        )
-    };
-    let margins = f32::from(a) + f32::from(b) + f32::from(c) + f32::from(d);
-    let inner = stated - margins - 2.0 * frame.stroke.width;
-    if inner.is_finite() {
-        Some(inner.max(0.0))
-    } else {
-        None
-    }
+/// The watcher's note, in a card across the content under the errors: in the body text's
+/// colour, since it reports no failed theme, only that the OS's changes are not followed.
+fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
+    demo::framed(
+        &mut app.registry,
+        ui,
+        Surface::Card,
+        None,
+        "watcher note",
+        |ui, reg| {
+            ui.set_min_width(ui.available_width());
+            demo::base(reg, ui, "watcher note text", |ui| ui.label(note));
+        },
+    );
 }
 
-/// A dialog's title row, as gpui-component's `Dialog` draws one (`GC/dialog/dialog.rs:696-701`) and
-/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2355`, `:2390`): the
+/// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.0
+/// `src/dialog/dialog.rs:749-756`, the `DialogTitle`, and `:789-804`, the Ghost close button) and
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2508`, `:2550`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
@@ -1400,12 +1510,6 @@ fn dialog_title(
         body.add(reg, ui, "Label · dialog title", |ui| {
             ui.label(egui::RichText::new(title).heading().color(colour))
         });
-        reg.amend_last(|i| {
-            i.read.push((
-                "dialog.title_font.color",
-                t.dialog.title_font.color.to_string(),
-            ));
-        });
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             demo::ghost(ui);
             let button = match image {
@@ -1430,7 +1534,7 @@ enum Pick {
 /// A palette row: its label, what the query matches, what it runs.
 type PaletteRow = (String, String, Pick);
 
-/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:374-429`):
+/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:369-416`):
 /// the pages, the presets the Theme row offers by their display names, found by their keys too,
 /// and the colour modes, System named by the scheme it follows now.
 fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<PaletteRow>); 3] {
@@ -1458,7 +1562,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
         .system_theme()
         .map(|theme| theme == egui::Theme::Dark)
         .or_else(|| app.atlas.os_mode().map(|mode| mode.is_dark()));
-    let modes = [ModeChoice::System, ModeChoice::Light, ModeChoice::Dark]
+    let modes = ModeChoice::ALL
         .into_iter()
         .map(|mode| {
             let label = match (mode, system) {
@@ -1476,7 +1580,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
     ]
 }
 
-/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2344-2375`): a
+/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2491-2528`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
 /// Escape clears, then closes.
@@ -1643,7 +1747,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The text-scaling field's range and step: the gpui showcase's Preferences number field
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2541-2548`), whose range is
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2713-2720`), whose range is
 /// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
 /// evenly. The model states none; they are not style values.
 const TEXT_SCALE_MIN: f32 = 1.0;
@@ -1690,11 +1794,13 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         .color(window_title_bar_text_color(t, true));
     // `dialog.max_width`, a required size (`f32` on the resolved theme).
     let dialog_width = t.dialog.max_width;
-    let mut prefs = app
-        .settings
-        .prefs
-        .clone()
-        .unwrap_or_else(|| app.atlas.accessibility().clone());
+    // The user's request: the atlas's preferences are the effective ones, which carry the OS's
+    // Reduce motion request, so with no request of the user's the switch starts off.
+    let mut prefs = app.settings.prefs.clone().unwrap_or_else(|| {
+        let mut prefs = app.atlas.accessibility().clone();
+        prefs.reduce_motion = false;
+        prefs
+    });
     let before = prefs.clone();
     // Whether the text-scaling field is still being dragged, or was just let go of.
     let mut scale_dragged = false;
@@ -1727,7 +1833,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "preferences",
                     );
-                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2604-2686`): its
+                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2776-2858`): its
                     // title and description, then a row per preference — its title and a weak
                     // description on the left, its control on the right.
                     body.add(registry, ui, "heading", |ui| {
@@ -1784,7 +1890,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                                 (
                                     "switch · reduce motion",
                                     "Reduce motion",
-                                    "reduce_motion: every style's animation time is zero and its scroll animation is off",
+                                    "reduce_motion: every style's animation time is zero and its scroll animation is off; off is no request: an OS request still stops the animations",
                                     &mut prefs.reduce_motion,
                                 ),
                                 (
@@ -1832,7 +1938,10 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
         app.settings.prefs = Some(prefs);
     }
     // A rebuild per pass of a drag would re-read the OS for `default` and rebuild the font
-    // atlas on every frame: the drag installs once, when it ends.
+    // atlas on every frame: the drag installs once, when it ends. The request is compared
+    // with the atlas's effective preferences: where the two are equal, an install would build
+    // the same atlas. An OR of the atlas's `reduce_motion` into the request would hide the
+    // user's switch-off of their own request, whose atlas holds the user's `true`.
     let differs = app
         .settings
         .prefs
@@ -1844,7 +1953,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The connector README's Compatibility table at this version's tag, as the gpui showcase links
-/// its own (`showcase-gpui/chrome.rs:331-336`, `COMPATIBILITY_URL`).
+/// its own (`showcase-gpui/chrome.rs:322-327`, `COMPATIBILITY_URL`).
 const COMPATIBILITY_URL: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     "/blob/v",
@@ -1883,7 +1992,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         if let Some(w) = max_w {
             ui.set_max_width(w);
         }
-        // The gpui showcase's About (`showcase-gpui/demo.rs:2380-2434`): its title, the name
+        // The gpui showcase's About (`showcase-gpui/demo.rs:2533-2606`): its title, the name
         // and version, then the description in `dialog.body_font` — the dialog role's `Body`
         // slot and text colour (§5) — ending in the link to the Compatibility table at this
         // version's tag.
@@ -1921,35 +2030,165 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-#[cfg(all(target_os = "macos", not(test)))]
+#[cfg(any(target_os = "macos", test))]
 pub(crate) mod system_menu {
-    //! The showcase's menus in the macOS system menu bar (spec §10.4).
+    //! The showcase's menus in the macOS system menu bar (spec §10.4), as the gpui and iced
+    //! showcases put theirs there: Apple's HIG list (*The menu bar*), under the titles the shared
+    //! crate gives the three showcases (`menu::macos_menu_titles`):
+    //!
+    //! - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the Preferences dialog, the
+    //!   in-window Theme menu's Preferences…), Services, Hide ⌘H, Hide Others ⌥⌘H, Show All, and
+    //!   Quit ⌘Q, with the HIG's separators;
+    //! - File: Close ⌘W;
+    //! - View: the in-window View menu's rows (`Action::MENUS`);
+    //! - Theme: the in-window Theme menu's rows, less Preferences…;
+    //! - Window: Minimize ⌘M, Zoom and Bring All to Front.
+    //!
+    //! About and Settings… are the showcase's own rows, which run the in-window rows' actions, so
+    //! About opens the showcase's one About dialog; the rest of the app, File and Window menus
+    //! are muda's predefined items, which AppKit runs itself, with the keys muda gives them
+    //! (muda 0.20.0 `src/items/predefined.rs:617-670`). There is no Help menu: the HIG
+    //! describes it as access to help documentation, which the showcase has none of.
+    //!
+    //! There is no Edit menu either: egui-winit 0.36.2 turns ⌘X, ⌘C and ⌘V into `Event::Cut`,
+    //! `Event::Copy` and `Event::Paste` itself (`src/lib.rs:1019-1035`, `is_cut_command`,
+    //! `is_copy_command` and `is_paste_command` at `:1418-1434`), so egui's text fields take the
+    //! editing keys without one.
+    //!
+    //! The list ([`menus`]) is built on every host, so the tests read it; the menu bar itself
+    //! ([`build`]) is built on macOS outside `cfg(test)`.
 
-    use muda::{
-        IsMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu,
-        accelerator::{Accelerator, Code, Modifiers},
-    };
-    use objc2::MainThreadMarker;
-    use objc2_app_kit::NSApplication;
+    use native_theme_showcase_support::menu::macos_menu_titles;
 
     use super::Action;
 
-    pub(crate) struct SystemMenu {
-        menu: Menu,
+    /// The application's name, as the app menu takes it: its title, and the name its About,
+    /// Hide and Quit rows give.
+    pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
+
+    /// A row of a system menu.
+    #[derive(Clone, Debug, PartialEq, Eq)]
+    pub(crate) enum Row {
+        /// One of the showcase's own: its label and the action it runs, with that action's
+        /// shortcut as its key.
+        Own {
+            label: String,
+            action: Action,
+        },
+        /// A muda predefined item, which AppKit runs.
+        System(SystemItem),
+        Separator,
     }
 
-    impl SystemMenu {
-        /// The number of top-level menus, which the readback compares with `mainMenu`'s count.
-        pub(crate) fn top_level(&self) -> usize {
-            self.menu.items().len()
+    /// The muda predefined items the menus hold.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    pub(crate) enum SystemItem {
+        Services,
+        Hide,
+        HideOthers,
+        ShowAll,
+        Quit,
+        Close,
+        Minimize,
+        Zoom,
+        BringAllToFront,
+    }
+
+    impl SystemItem {
+        /// The text the item is given where muda's own is not the three showcases' wording: on
+        /// macOS muda 0.20.0 names Hide and Quit after the running application's
+        /// `localizedName` (`src/items/predefined.rs:464-481`,
+        /// `src/platform_impl/macos/util.rs:9-13`), which need not be [`APP_NAME`], and Close
+        /// "Close Window" (`predefined.rs:441`). `None` keeps muda's.
+        pub(crate) fn wording(self) -> Option<String> {
+            match self {
+                SystemItem::Hide => Some(format!("Hide {APP_NAME}")),
+                SystemItem::Quit => Some(format!("Quit {APP_NAME}")),
+                SystemItem::Close => Some("Close".to_string()),
+                SystemItem::Services
+                | SystemItem::HideOthers
+                | SystemItem::ShowAll
+                | SystemItem::Minimize
+                | SystemItem::Zoom
+                | SystemItem::BringAllToFront => None,
+            }
         }
+    }
+
+    /// The rows of the in-window menu titled `title` (`Action::MENUS`), each under its action's
+    /// label.
+    fn in_window(title: &str) -> Vec<Row> {
+        Action::MENUS
+            .iter()
+            .filter(|(menu, _)| *menu == title)
+            .flat_map(|(_, items)| items.iter())
+            .map(|item| match item {
+                Some(action) => Row::Own {
+                    label: action.label().to_string(),
+                    action: *action,
+                },
+                None => Row::Separator,
+            })
+            .collect()
+    }
+
+    /// The five menus, in the menu bar's order, each under its title.
+    pub(crate) fn menus() -> [(String, Vec<Row>); 5] {
+        let [app, file, view, theme, window] = macos_menu_titles(APP_NAME);
+        let own = |label: String, action| Row::Own { label, action };
+        let pages = in_window(&view);
+        let mut theme_rows = in_window(&theme);
+        theme_rows.retain(
+            |row| !matches!(row, Row::Own { action, .. } if *action == Action::OpenPreferences),
+        );
+        while theme_rows.last() == Some(&Row::Separator) {
+            theme_rows.pop();
+        }
+        [
+            (
+                app,
+                vec![
+                    own(format!("About {APP_NAME}"), Action::OpenAbout),
+                    Row::Separator,
+                    own("Settings…".to_string(), Action::OpenPreferences),
+                    Row::Separator,
+                    Row::System(SystemItem::Services),
+                    Row::Separator,
+                    Row::System(SystemItem::Hide),
+                    Row::System(SystemItem::HideOthers),
+                    Row::System(SystemItem::ShowAll),
+                    Row::Separator,
+                    Row::System(SystemItem::Quit),
+                ],
+            ),
+            (file, vec![Row::System(SystemItem::Close)]),
+            (view, pages),
+            (theme, theme_rows),
+            (
+                window,
+                vec![
+                    Row::System(SystemItem::Minimize),
+                    Row::System(SystemItem::Zoom),
+                    Row::Separator,
+                    Row::System(SystemItem::BringAllToFront),
+                ],
+            ),
+        ]
+    }
+
+    /// The installed menu bar: AppKit keeps it while the muda `Menu` lives.
+    #[cfg(not(test))]
+    pub(crate) struct SystemMenu {
+        _menu: muda::Menu,
     }
 
     /// `action`'s shortcut as muda's accelerator: egui's `Modifiers::COMMAND` is Cmd on macOS,
     /// muda's `Modifiers::META`; a key this match does not map gets no accelerator.
-    fn accelerator(action: Action) -> Option<Accelerator> {
+    #[cfg(not(test))]
+    fn accelerator(action: Action) -> Option<muda::accelerator::Accelerator> {
+        use muda::accelerator::{Accelerator, Code, Modifiers};
+
         let code = match action.shortcut()?.logical_key {
-            egui::Key::Q => Code::KeyQ,
             egui::Key::B => Code::KeyB,
             egui::Key::K => Code::KeyK,
             egui::Key::Comma => Code::Comma,
@@ -1958,37 +2197,59 @@ pub(crate) mod system_menu {
         Some(Accelerator::new(Modifiers::META, code))
     }
 
-    /// Build File, View, Theme and Help from `Action::MENUS`, install them as the
-    /// application's main menu, and route every click to `tx` with a repaint,
-    /// so `logic` runs the action on the next pass.
+    /// Build [`menus`] in muda, install them as the application's main menu, the last of them
+    /// as its Window menu, to which AppKit adds its window-switching items (muda 0.20.0
+    /// `src/items/submenu.rs:334-349`, set once the menu is installed), and route every click
+    /// on an own row to `tx` with a repaint, so `logic` runs the action on the next pass.
+    #[cfg(not(test))]
     pub(crate) fn build(
         ctx: &egui::Context,
         tx: std::sync::mpsc::Sender<Action>,
     ) -> muda::Result<SystemMenu> {
+        use muda::{IsMenuItem, Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu};
+
+        let predefined = |item: SystemItem| {
+            let text = item.wording();
+            let text = text.as_deref();
+            match item {
+                SystemItem::Services => PredefinedMenuItem::services(text),
+                SystemItem::Hide => PredefinedMenuItem::hide(text),
+                SystemItem::HideOthers => PredefinedMenuItem::hide_others(text),
+                SystemItem::ShowAll => PredefinedMenuItem::show_all(text),
+                SystemItem::Quit => PredefinedMenuItem::quit(text),
+                SystemItem::Close => PredefinedMenuItem::close_window(text),
+                SystemItem::Minimize => PredefinedMenuItem::minimize(text),
+                SystemItem::Zoom => PredefinedMenuItem::zoom(text),
+                SystemItem::BringAllToFront => PredefinedMenuItem::bring_all_to_front(text),
+            }
+        };
         let menu = Menu::new();
         let mut actions = Vec::new();
-        for (title, items) in Action::MENUS {
-            let mut owned: Vec<Box<dyn IsMenuItem>> = Vec::new();
-            for item in *items {
-                match item {
-                    None => owned.push(Box::new(PredefinedMenuItem::separator())),
-                    Some(action) => {
-                        let id = MenuId::new(actions.len().to_string());
-                        actions.push(*action);
-                        owned.push(Box::new(MenuItem::with_id(
-                            id,
-                            action.label(),
-                            true,
-                            accelerator(*action),
-                        )));
+        let mut window = None;
+        for (title, rows) in menus() {
+            let owned: Vec<Box<dyn IsMenuItem>> = rows
+                .into_iter()
+                .map(|row| -> Box<dyn IsMenuItem> {
+                    match row {
+                        Row::Own { label, action } => {
+                            let id = MenuId::new(actions.len().to_string());
+                            actions.push(action);
+                            Box::new(MenuItem::with_id(id, label, true, accelerator(action)))
+                        }
+                        Row::System(item) => Box::new(predefined(item)),
+                        Row::Separator => Box::new(PredefinedMenuItem::separator()),
                     }
-                }
-            }
+                })
+                .collect();
             let refs: Vec<&dyn IsMenuItem> = owned.iter().map(|b| b.as_ref()).collect();
-            let submenu = Submenu::with_items(*title, true, &refs)?;
+            let submenu = Submenu::with_items(title, true, &refs)?;
             menu.append(&submenu)?;
+            window = Some(submenu);
         }
         menu.init_for_nsapp();
+        if let Some(window) = window {
+            window.set_as_windows_menu_for_nsapp();
+        }
         let ctx = ctx.clone();
         MenuEvent::set_event_handler(Some(move |event: MenuEvent| {
             if let Some(action) = event
@@ -2002,14 +2263,6 @@ pub(crate) mod system_menu {
                 ctx.request_repaint();
             }
         }));
-        Ok(SystemMenu { menu })
-    }
-
-    /// `NSApplication.mainMenu.numberOfItems`, on the main thread; `None` off it
-    /// or when no main menu is installed (§13's runner check).
-    pub(crate) fn main_menu_item_count() -> Option<isize> {
-        let mtm = MainThreadMarker::new()?;
-        let app = NSApplication::sharedApplication(mtm);
-        app.mainMenu().map(|menu| menu.numberOfItems())
+        Ok(SystemMenu { _menu: menu })
     }
 }
