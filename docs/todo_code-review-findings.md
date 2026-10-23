@@ -16,7 +16,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | closed 2026-10-14 (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md; *G2* below) |
 | M6–M9 | not started |
-| G3 | in progress (2026-10-21; D11, docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
+| G3 | closed 2026-10-23 (D11, docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
 
 ## Baseline (M0, 2026-10-11)
 
@@ -13068,7 +13068,7 @@ re-checked. Task 15's own review moved the live Windows hover-time item to docs/
 Post-1.0 section (`a2b97e5c`). The task reviews' deferred minors that still hold are in
 docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothing pushed.
 
-## G3 — GPUI Kit 0.8.0 (docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md)
+## G3 — GPUI Kit 0.8.0 (docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md)
 
 - **Registered (2026-10-21, Task 0).** The maintainer approved the rationale, spec and plan
   (`docs/todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md`) on 2026-10-21 and decided their
@@ -13159,3 +13159,16 @@ docs/todo.md, *GPUI Kit 0.7.3 (G1, G2): review minors left for M6 and M7*. Nothi
   showcase's tests); the egui stamp is left to M9c, whose close runs `run egui` (G3's
   Tasks 11, 13, 14 and 15 changed the egui connector's sources). Until then `scripts/check_release.sh` reports both stamps stale,
   one of spec §11's expected items.
+- **Task 10, the Task 15 review's M1 (2026-10-23, from the Task 10 review).** The iced
+  `tab_flares` doc and spec §12.2 cite iced_core 0.14.0 `src/point.rs:133-138` for `Point::snap`.
+  The Task 15 review read the signature at `:132`. In the file, `:131` is `impl Point<f32>`,
+  `:132` the doc line and `:133` `pub fn snap`, so the citation stands, as `cd5a1706`'s body
+  says.
+
+**Status:** done, closed 2026-10-23. Tasks 0–15 and 3b are complete, each reviewed by a fresh
+reviewer with its fix rounds re-checked. The commits are listed per task in the spec's *As
+built* note, and the rulings are in the review's SDD ledger. CI 39885030224 at `d8387161` was
+green on all 39 jobs, including the msrv job under `-Dwarnings` (Task 3b) and every macOS and
+Windows leg. The three documents are in `docs/archive/`. Left to others: the egui
+compatibility stamp is M9c's close, and the screenshots are the maintainer's next
+`generate_assets_release.sh` run.

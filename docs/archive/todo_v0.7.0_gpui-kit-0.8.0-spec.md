@@ -2,12 +2,56 @@
 
 **Status:** design, drafted 2026-10-21, self-checked; revised the same day for the
 maintainer's decision on D1 (§12), self-checked again; checked independently; approved by
-the maintainer on 2026-10-21, as D11 in [`todo_code-review-plan.md`](todo_code-review-plan.md)
+the maintainer on 2026-10-21, as D11 in [`todo_code-review-plan.md`](../todo_code-review-plan.md)
 records; being implemented as milestone G3. Reasons:
 [`todo_v0.7.0_gpui-kit-0.8.0-rationale.md`](todo_v0.7.0_gpui-kit-0.8.0-rationale.md)
 (K1–K18). Tasks and gates: [`todo_v0.7.0_gpui-kit-0.8.0-plan.md`](todo_v0.7.0_gpui-kit-0.8.0-plan.md).
 *Added 2026-10-21 (G3 T1 fix round 1):* the rationale's K19, Task 1's deviation (§2.4), follows
 K18.
+
+**As built (2026-10-23).** G3 was implemented in Tasks 0–15 and 3b. It ran as the one writer
+between M9b's tasks (D11), so its commits are interleaved with M9b's and form no single range.
+The review's SDD ledger lists them per task, and the review ledger
+(`docs/todo_code-review-findings.md`, *G3*) lists the gates.
+
+- **Commits, by task.**
+  - T0: `ceb90f6f`, `238988be`.
+  - T1: `62ac5935`, `b641e699`, `0be1b8fe`, `c8d89e75`, `2c7aaed7`, `8a0e760c`.
+  - T2: `901918a1`.
+  - T3: `a0ffabf4`, `60ebf586`, `11b4baae`, `b73dd1c6`.
+  - T3b: `928318bc`, `a9c34cdd`, `ea7de303`, `c47216cf`.
+  - T4: `c3c1cef9`, `37d7661b`, `c6db5a7a`.
+  - T5: `1b638fae`, `342232d6`.
+  - T6: `8856b2dc`, `c735deb3`, `c41ec977`, `5e825d6a`, `f165f8b1`.
+  - T7: `c4ca07b4`, `4a07f825`, `423895f9`.
+  - T8: `909513fd`, `fcb6b191`.
+  - T9: `bf88f99a`.
+  - T10: `cd5a1706`, `da9e7dc4`, `21dd679e`, and this archiving.
+  - T11: `bd8f5756`.
+  - T12: `28fed566`, `8f42101d`, `a1f14b93`, `42035607`.
+  - T13: `9265482f`, `2e7dffcd`.
+  - T14: `b7fad4a0`.
+  - T15: `53e7c0f6`, `fe425767`.
+- **CI.** Run 39656159244 at `b73dd1c6` closed the unit of Tasks 1–3 and M9a's red GPUI Fast
+  job. Run 39885030224 at `d8387161` covers the rest. Both were green on all 39 jobs. The second
+  run is also the first CI proof that the msrv job passes under `-Dwarnings` (Task 3b).
+- **Departures.** Each departure from the text below is a dated *Added* line at the place it
+  amends. Those lines hold over the text they follow. The ones that change the design are:
+  - §2.4 and rationale K19: GPUI Fast's partial frames. The registry's presence token, and
+    `PartBounds` taking `&mut Window`, which is a *Breaking Changes* line.
+  - §2.4, Task 4: `refresh()` is gone from the test helpers, and the three tests that leaned on
+    the forced full frame are fixed at their cause.
+  - §12.2, Task 12 fix round 1: in all three connectors the flare's fill ring runs from
+    max(r − w, 0) under the outline, so no seam opens under device-pixel snapping. Task 13's
+    line states the cost: `windows-11`'s translucent outline composites over
+    `active_background` in the overlap band, a few sRGB levels off.
+- **Left open, and whose it is.**
+  - The egui compatibility stamp is M9c's close (`update_compatibility.sh run egui`), after its
+    last change to the egui connector's sources. The iced stamp was taken at M9b's close
+    (`d8387161`).
+  - The screenshots belong to the maintainer's next `generate_assets_release.sh` run. As Task 10
+    records, the Layout page's Folder sample is below the fold of every capture at rest, so it is
+    checked by its three tests alone.
 
 Abbreviations as in the rationale: `GK8`, `GC7`/`GC8`, `GB7`/`GB8`, `GF7`/`GF10` (registry
 sources, `~/.cargo/registry/src/index.crates.io-*/<crate>-<version>/src/`), `CN` =

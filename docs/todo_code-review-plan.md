@@ -281,7 +281,8 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
 - **D11 — GPUI Kit 0.8.0 as milestone G3 (maintainer, 2026-10-20/21).** GPUI Kit 0.8.0
   (2026-10-19, on gpui-pre 0.3.9 or GPUI Fast 0.1.10; the maintainer's move to it, 2026-10-20)
   is handled by milestone G3, designed in
-  `docs/todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md` (approved 2026-10-21) and executed
+  `docs/archive/todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md` (approved 2026-10-21; archived
+  2026-10-23, G3 closed) and executed
   by subagent-driven development. G3 runs between M9b's tasks as the one writer: it starts a
   task only on a clean tree at an M9b task boundary, and its Tasks 1–3 run back to back (the
   plan's *Interleaving with M9b*). Its first green push, after Task 3, closes M9a's red CI job
@@ -970,7 +971,8 @@ fix phase → G2); G1 and G2 resume from their SDD ledger
 (`.superpowers/sdd/todo_v0.7.0_gpui-kit-0.7.3-plan/progress.md`) and `git log`. During M9b, G3
 (D11) takes turns with M9b's tasks as the one writer; both resume from the review's SDD ledger
 (`.superpowers/sdd/todo_code-review-plan/progress.md`) and `git log`, G3 at the first task of
-`docs/todo_v0.7.0_gpui-kit-0.8.0-plan.md` that ledger does not record complete. The current milestone is the first whose
+`docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md` that ledger does not record complete (G3 closed
+2026-10-23). The current milestone is the first whose
 *Status* line in the ledger is not `done`; inside it, the first unchecked step of the
 template. If the last step started was Step 2 and its Workflow did not finish, re-run it
 (Workflow resume works only inside the session that started it). If it was Step 7, re-run

@@ -113,7 +113,7 @@ cannot tell which file a bare number continues, so it does not look for one.
 
 - [ ] [1.0] WinUI 3's `TabView` draws two lines around its tabs that the model
       does not state, read at microsoft-ui-xaml 8463f45 (G3 rationale K14 (e),
-      (f), `docs/todo_v0.7.0_gpui-kit-0.8.0-rationale.md`). The separator: each
+      (f), `docs/archive/todo_v0.7.0_gpui-kit-0.8.0-rationale.md`). The separator: each
       tab draws a 1px `TabSeparator` at its right edge
       ([TabView.xaml:553](https://github.com/microsoft/microsoft-ui-xaml/blob/8463f45162149de0ec3ad7df752596893fe3e13e/controls/dev/TabView/TabView.xaml#L553)) in `TabViewItemSeparator`
       = `DividerStrokeColorDefaultBrush`
