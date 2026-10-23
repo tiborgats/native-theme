@@ -716,9 +716,12 @@ pub(crate) fn menu_bar(
 ) -> egui::Response {
     let mut bar = egui::MenuBar::new();
     if let Some(modifier) = role_modifier(ui, role, variant) {
-        // The bar's titles edge to edge, each as tall as its text and `menu.border.padding`: the
-        // theme states no gap between two titles and no bar height, and a title is no button
-        // `interact_size.y` would make taller.
+        // The bar's titles edge to edge, each as tall as its text and the menu cell's vertical
+        // padding: `menu.border.padding`, which the connector narrows where a stated
+        // `menu.row_height` is shorter than a label and that padding at a text scale of 1 or
+        // less (`roles::fit_row_padding`; none under macos-monterey). The theme states no gap
+        // between two titles and no bar height, and a title is no button `interact_size.y`
+        // would make taller.
         let titles = modifier.clone();
         let bar_style = egui::style::StyleModifier::new(move |style: &mut egui::Style| {
             titles.apply(style);

@@ -53,7 +53,7 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `defaults.icon_sizes.toolbar` | DERIVED | → T18(e) |  |
 | `defaults.info_color` | DERIVED | → T18(a) |  |
 | `defaults.info_text_color` | DERIVED | → T18(a) |  |
-| `defaults.line_height` | DERIVED | `spacing.extra_text_line_spacing` (when: the theme's line box is taller than epaint's row, §6.15); «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)); «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
+| `defaults.line_height` | DERIVED | `spacing.extra_text_line_spacing` (when: the theme's line box is taller than epaint's row, §6.15); «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)); «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `defaults.link_color` | DIRECT | `visuals.hyperlink_color` |  |
 | `defaults.mono_font.color` | DERIVED | → T18(a) |  |
 | `defaults.mono_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
@@ -146,14 +146,14 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `menu.font.color` | SCOPED | «menu» `visuals.widgets.noninteractive.fg_stroke.color`; «menu» `visuals.widgets.inactive.fg_stroke.color` |  |
 | `menu.font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `menu.font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
-| `menu.font.size` | SCOPED | «menu» `text_styles[Body].size`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
+| `menu.font.size` | SCOPED | «menu» `text_styles[Body].size`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `menu.font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `menu.font.weight` | DERIVED | → T18(c) | probe `700` |
 | `menu.hover_background` | SCOPED | «menu» `visuals.widgets.hovered.weak_bg_fill`; «menu» `visuals.widgets.active.weak_bg_fill`; «menu» `visuals.widgets.open.weak_bg_fill` |  |
 | `menu.hover_text_color` | SCOPED | «menu» `visuals.widgets.hovered.fg_stroke.color`; «menu» `visuals.widgets.active.fg_stroke.color`; «menu» `visuals.widgets.open.fg_stroke.color` |  |
 | `menu.icon_size` | DERIVED | → T18(a) | probe `20.0` |
 | `menu.icon_text_gap` | SCOPED | «menu» `spacing.icon_spacing` |  |
-| `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
+| `menu.row_height` | SCOPED | «menu» `spacing.interact_size.y`; «menu» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated menu.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `menu.separator_color` | SCOPED | «menu» `visuals.widgets.noninteractive.bg_stroke.color` |  |
 | `popover.background_color` | SCOPED | \[popover\] `fill` |  |
 | `popover.border.color` | SCOPED | \[popover\] `stroke.color` |  |
@@ -401,10 +401,10 @@ UNMAPPABLE sub-tags (§2): `egui-limited` 52, `source-side gap` 16, `source-void
 | `list.item_font.color` | SCOPED | «list» `visuals.widgets.noninteractive.fg_stroke.color` |  |
 | `list.item_font.defined_size` | UNMAPPABLE |  | `egui-limited`: egui: a stated-size unit beside FontId::size (§5.1) |
 | `list.item_font.family` | UNMAPPABLE |  | `egui-limited`: a TextStyle key naming a FontFamily::Name (declined, §5.8 item 7) |
-| `list.item_font.size` | SCOPED | «list» `text_styles[Body].size`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
+| `list.item_font.size` | SCOPED | «list» `text_styles[Body].size`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `list.item_font.style` | DERIVED | → T18(d) | probe `"italic"` |
 | `list.item_font.weight` | DERIVED | → T18(c) | probe `700` |
-| `list.row_height` | SCOPED | «list» `spacing.interact_size.y`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding)) |  |
+| `list.row_height` | SCOPED | «list» `spacing.interact_size.y`; «list» `spacing.button_padding.y` (when: a one-line label and the padding overrun the stated list.row_height at a text scale of 1 or less, which narrows the padding (roles::fit_row_padding); a label alone taller than the stated height is drawn whole, its padding 0 and the row its height, since egui takes the stated height as the row's least (egui/src/widgets/button.rs:306-309)) |  |
 | `list.selection_background` | SCOPED | «list» `visuals.selection.bg_fill` |  |
 | `list.selection_text_color` | SCOPED | «list» `visuals.selection.stroke.color` |  |
 | `text_area.border.color` | DERIVED | → T18(b) |  |
