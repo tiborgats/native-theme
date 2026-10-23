@@ -6455,7 +6455,8 @@ fn info_row_value(harness: &Harness<'_, App>, leaf: &str) -> String {
         .unwrap_or_else(|| panic!("Widget Info shows no {leaf} row"))
 }
 
-/// Every font label names the family egui draws, as the atlas records it: Widget Info's
+/// Every font label names the family egui draws, as the atlas records it: the status bar's
+/// font item, the Theme tab's `font_family` and `mono_font_family` rows, Widget Info's
 /// `defaults.font.family` row (hover a Basic group heading), its `defaults.font` row (the
 /// Basic "Off" switch), its `defaults.mono_font` row (the Basic "Monospace" line) and its
 /// `button.font` row (the Basic "Button"), under windows-11, set directly as `--theme` does not
@@ -6482,6 +6483,42 @@ fn every_font_label_names_the_drawn_family() {
         t.defaults.mono_font.family
     );
     let button = drawn_label(&harness, &t.button.font.family, false);
+    // A `Label`'s text is its AccessKit value (`egui/src/response.rs:962-964`).
+    let values = |harness: &Harness<'_, App>| -> Vec<String> {
+        harness
+            .query_all(By::new().predicate(|n| n.value().is_some()))
+            .filter_map(|n| n.accesskit_node().value())
+            .collect()
+    };
+    let font_item = format!(
+        "{body} {}",
+        native_theme_showcase_support::status::defined_size(&t.defaults.font)
+    );
+    let environment = values(&harness)
+        .into_iter()
+        // The preset item names the selection, which `open_scaled` leaves at `TEST_PRESET`.
+        .find(|v| v.contains(" · ") && v.contains(TEST_PRESET))
+        .expect("one environment line");
+    assert!(
+        environment.split(" · ").any(|item| item == font_item),
+        "the status bar does not name the drawn family as {font_item:?}: {environment}"
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let shown = values(&harness);
+    for (key, label) in [("font_family", &body), ("mono_font_family", &mono)] {
+        let row = format!("{key}\n{label}");
+        assert!(
+            shown.contains(&row),
+            "the Theme tab shows no {row:?}: {:?}",
+            shown
+                .iter()
+                .filter(|v| v.starts_with(key))
+                .collect::<Vec<_>>()
+        );
+    }
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Widget;
+    harness.run_steps(2);
     let mut row = |kind: &str, leaf: &str| {
         let pos = centre_of(&harness, kind);
         hover_and_settle(&mut harness, pos);

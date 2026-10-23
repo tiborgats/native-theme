@@ -971,8 +971,8 @@ pub(crate) fn widget_tab(
 }
 
 /// The Theme tab: `name()`, `os_mode()`, `accessibility()`, every `Note`, the
-/// fonts in their defined units (§8.7), the window-frame facts of §10.4, and the
-/// manifest's `[unwritten]` table.
+/// fonts by the families egui draws (`demo::DrawnFamilies`) in their defined units (§8.7), the
+/// window-frame facts of §10.4, and the manifest's `[unwritten]` table.
 pub(crate) fn theme_tab(
     ui: &mut egui::Ui,
     atlas: &ThemeAtlas,
@@ -1013,12 +1013,17 @@ pub(crate) fn theme_tab(
         row(ui, &kind, text);
     }
     section(ui, "Fonts");
-    row(ui, "font_family", t.defaults.font.family.to_string());
+    let families = crate::demo::DrawnFamilies::of(ui.ctx(), atlas);
+    row(
+        ui,
+        "font_family",
+        families.label(&t.defaults.font.family, false),
+    );
     row(ui, "font_size", status::defined_size(&t.defaults.font));
     row(
         ui,
         "mono_font_family",
-        t.defaults.mono_font.family.to_string(),
+        families.label(&t.defaults.mono_font.family, true),
     );
     row(
         ui,

@@ -805,9 +805,10 @@ fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme)
     ((rem / 4.0).round(), (rem / 2.0).round())
 }
 
-/// The status bar's environment items (`status::environment`, the three showcases' text):
-/// the desktop, the preset by its key (`default` by the preset it builds on) and the mode, the
-/// font in its defined unit (§8.7), the text-scaling factor and the flags that are set.
+/// The status bar's environment items (`status::environment_drawn`, the three showcases'
+/// text): the desktop, the preset by its key (`default` by the preset it builds on) and the
+/// mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
+/// the text-scaling factor and the flags that are set.
 fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
     let t = app.atlas.resolved_for(theme);
@@ -820,11 +821,12 @@ fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
         ThemeChoice::Default => rows::default_label(&app.default_preset),
         ThemeChoice::Preset(key) => key.clone(),
     };
-    status::environment(
+    let families = crate::demo::DrawnFamilies::of(ctx, &app.atlas);
+    status::environment_drawn(
         &preset,
         mode,
         &t.defaults.font,
-        None,
+        families.drawn(&t.defaults.font.family, false),
         Some(app.atlas.accessibility()),
     )
 }
