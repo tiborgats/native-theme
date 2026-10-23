@@ -1971,6 +1971,412 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
     );
 }
 
+/// The element `id`'s place this pass.
+fn place_of(harness: &Harness<'_, App>, id: &str) -> egui::Rect {
+    harness
+        .state()
+        .registry
+        .places()
+        .get(id)
+        .copied()
+        .unwrap_or_else(|| panic!("no {id} placed"))
+}
+
+/// The *Not themeable* lines of every record this pass names the element `id`, as Widget Info
+/// shows them (`what: note`), one list per record; at least one record.
+fn element_notes(harness: &Harness<'_, App>, id: &str) -> Vec<Vec<String>> {
+    let notes: Vec<Vec<String>> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.element.as_deref() == Some(id))
+        .map(|r| {
+            r.info
+                .not_themeable
+                .iter()
+                .map(|(what, note)| format!("{what}: {note}"))
+                .collect()
+        })
+        .collect();
+    assert!(!notes.is_empty(), "no record is the element {id}");
+    notes
+}
+
+/// Whether every record of the element `id` notes a line holding each of `parts`.
+fn every_record_notes(harness: &Harness<'_, App>, id: &str, parts: &[&str]) -> bool {
+    element_notes(harness, id)
+        .iter()
+        .all(|lines| lines.iter().any(|l| parts.iter().all(|p| l.contains(p))))
+}
+
+/// F rows 3, 4, 6 and 7 (M9-134's egui half): under macos-tahoe, which states no toolbar or
+/// status-bar padding, no toolbar item gap and no `layout.container_margin`, the chrome bars are
+/// padded as the gpui showcase's are, and Widget Info says so: the toolbar's first button
+/// `TOOLBAR_PADDING` in from the bar's left and top, the menu bar's first title
+/// `MENU_BAR_PADDING` from its left, the status bar gpui-component's `py_1`/`px_2` at the
+/// scaled `defaults.font.size` (a quarter of it above and below, a half at the sides, each
+/// rounded to a whole point), where egui's own panel margin stood. macos-tahoe is a preset of
+/// another platform here, so it is installed directly. Under catppuccin-mocha, which states
+/// `container_margin` but no toolbar padding, the toolbar's unstated sides are noted as that
+/// margin (I m3, J m3 (a)); kde-breeze states every side of both bars and notes none.
+#[test]
+fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none() {
+    use crate::chrome::{MENU_BAR_PADDING, TOOLBAR_PADDING};
+    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+    let atlas = &harness.state().atlas;
+    let t = atlas.resolved_for(egui::Theme::Light).clone();
+    assert_eq!(atlas.layout().container_margin, None);
+    let unstated = |p: &native_theme::theme::ResolvedPadding| {
+        [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .all(Option::is_none)
+    };
+    assert!(unstated(&t.toolbar.border.padding) && unstated(&t.status_bar.border.padding));
+    assert_eq!(t.toolbar.item_gap, None);
+
+    let bar = place_of(&harness, "chrome.toolbar");
+    let first = place_of(&harness, "chrome.toolbar.command_palette");
+    assert!(
+        (first.left() - bar.left() - TOOLBAR_PADDING).abs() < 0.5
+            && (first.top() - bar.top() - TOOLBAR_PADDING).abs() < 0.5,
+        "the toolbar's first button is {} in from the bar's left and {} from its top",
+        first.left() - bar.left(),
+        first.top() - bar.top()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.toolbar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "TOOLBAR_PADDING"
+            ]
+        ),
+        "the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+
+    let menu = place_of(&harness, "chrome.menu_bar");
+    let file = place_of(&harness, "chrome.menu_bar.file");
+    assert!(
+        (file.left() - menu.left() - MENU_BAR_PADDING).abs() < 0.5,
+        "the menu bar's first title is {} from the bar's left",
+        file.left() - menu.left()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.menu_bar",
+            &["not stated by the theme on left, right", "MENU_BAR_PADDING"]
+        ),
+        "the menu bar's info: {:?}",
+        element_notes(&harness, "chrome.menu_bar")
+    );
+
+    let rem = atlas.accessibility().scaled(t.defaults.font.size);
+    let (vertical, horizontal) = ((rem / 4.0).round(), (rem / 2.0).round());
+    let status = place_of(&harness, "chrome.status_bar");
+    let toggle = place_of(&harness, "chrome.status_bar.toggle");
+    assert!(
+        (toggle.left() - status.left() - horizontal).abs() < 0.5,
+        "the status bar's toggle is {} from the bar's left, not {horizontal}",
+        toggle.left() - status.left()
+    );
+    let size = native_theme_egui::scaled_text_size(t.status_bar.font.size, atlas.accessibility());
+    let line = harness
+        .ctx
+        .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
+    // The panel keeps room for its line, rounded to a whole point, outside its frame
+    // (`egui/src/containers/panel.rs:961-965`): macos-tahoe's line is half a pixel.
+    let rule = t.status_bar.border.line_width.round();
+    let expected = rule + vertical + line.max(toggle.height()) + vertical;
+    assert!(
+        (status.height() - expected).abs() < 0.5,
+        "the status bar is {} tall, a {rule} line + {vertical} + its content + {vertical} is \
+         {expected}",
+        status.height()
+    );
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.status_bar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "gpui-component's StatusBar padding"
+            ]
+        ),
+        "the status bar's info: {:?}",
+        element_notes(&harness, "chrome.status_bar")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.toolbar",
+            &[
+                "not stated by the theme on top, right, bottom, left",
+                "layout.container_margin"
+            ]
+        ),
+        "{TEST_PRESET}: the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "kde-breeze"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    for id in ["chrome.toolbar", "chrome.status_bar", "chrome.menu_bar"] {
+        assert!(
+            element_notes(&harness, id)
+                .iter()
+                .flatten()
+                .all(|l| !l.contains("not stated by the theme on")),
+            "kde-breeze states every side of {id}: {:?}",
+            element_notes(&harness, id)
+        );
+    }
+}
+
+/// The macos-tahoe atlas, built as `from_preset` builds it, with its layout's `widget_gap`
+/// unstated, as no bundled preset leaves it: the case where the chrome's own constants for that
+/// role stand.
+fn tahoe_without_widget_gap() -> native_theme_egui::ThemeAtlas {
+    let prefs = AccessibilityPreferences::default();
+    let (preset, _) = from_preset("macos-tahoe", false, &prefs).expect("macos-tahoe loads");
+    let [light, dark] =
+        [egui::Theme::Light, egui::Theme::Dark].map(|theme| preset.resolved_for(theme).clone());
+    let mut layout = preset.layout().clone();
+    layout.widget_gap = None;
+    let mut builder = native_theme_egui::ThemeAtlas::builder(preset.name(), &light, &dark)
+        .layout(&layout)
+        .accessibility(preset.accessibility())
+        .icon_set(preset.icon_set());
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        if let Some(name) = preset.icon_theme(theme) {
+            builder = builder.icon_theme(theme, name);
+        }
+    }
+    #[cfg(feature = "system-fonts")]
+    {
+        builder = builder.fonts(native_theme_egui::fonts::FontPlan::from_system(&light));
+    }
+    builder.build()
+}
+
+/// F rows 4 and 5 (pass 6 m2): where the theme states no `layout.widget_gap` and no
+/// `toolbar.item_gap`, the theme settings' rows, and each label and its control, are
+/// `THEME_SETTINGS_GAP` apart and the toolbar's items `TOOLBAR_GAP` apart, the gpui showcase's
+/// constants, which the settings' and the toolbar's Widget Info name.
+#[test]
+fn without_a_widget_gap_the_settings_and_the_toolbar_take_the_gpui_showcases_gaps() {
+    use crate::chrome::{THEME_SETTINGS_GAP, TOOLBAR_GAP};
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let ctx = harness.ctx.clone();
+    harness.state_mut().adopt(&ctx, tahoe_without_widget_gap());
+    harness.run_steps(4);
+    assert_eq!(harness.state().atlas.layout().widget_gap, None);
+    let stack = [
+        "chrome.side_panel.settings.theme_label",
+        "chrome.side_panel.settings.theme",
+        "chrome.side_panel.settings.mode_label",
+        "chrome.side_panel.settings.mode",
+        "chrome.side_panel.settings.icon_theme_label",
+        "chrome.side_panel.settings.icon_theme",
+    ];
+    for pair in stack.windows(2) {
+        let (above, below) = (place_of(&harness, pair[0]), place_of(&harness, pair[1]));
+        assert!(
+            (below.top() - above.bottom() - THEME_SETTINGS_GAP).abs() < 0.5,
+            "{} is {} below {}",
+            pair[1],
+            below.top() - above.bottom(),
+            pair[0]
+        );
+    }
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.side_panel.settings",
+            &["not stated by the theme", "THEME_SETTINGS_GAP"]
+        ),
+        "the settings' info: {:?}",
+        element_notes(&harness, "chrome.side_panel.settings")
+    );
+    let first = place_of(&harness, "chrome.toolbar.command_palette");
+    let second = place_of(&harness, "chrome.toolbar.reload_theme");
+    assert!(
+        (second.left() - first.right() - TOOLBAR_GAP).abs() < 0.5,
+        "the toolbar's first two items are {} apart",
+        second.left() - first.right()
+    );
+    assert!(
+        every_record_notes(&harness, "chrome.toolbar", &["TOOLBAR_GAP"]),
+        "the toolbar's info: {:?}",
+        element_notes(&harness, "chrome.toolbar")
+    );
+}
+
+/// F row 5: where `sidebar.border.padding` states some sides, the side panel keeps them, and a
+/// side it leaves unstated takes `layout.container_margin`, as the gpui showcase's panel does,
+/// where egui's own panel margin stood: windows-11 states the horizontal sides alone, so the
+/// panel's top and bottom are the margin, and Widget Info says so (I m3, J m3 (a)); adwaita
+/// states all four, and the panel keeps them. windows-11 is a preset of another platform here,
+/// so it is installed directly.
+#[test]
+fn a_side_panel_side_the_theme_leaves_unstated_takes_the_container_margin() {
+    let harness = open_scaled("windows-11", "basic", 1.0);
+    let atlas = &harness.state().atlas;
+    let padding = atlas
+        .resolved_for(egui::Theme::Light)
+        .sidebar
+        .border
+        .padding;
+    let Some(margin) = atlas.layout().container_margin else {
+        panic!("windows-11 states layout.container_margin");
+    };
+    let (Some(left), None, None) = (padding.left, padding.top, padding.bottom) else {
+        panic!("windows-11 states sidebar.border.padding across alone: {padding:?}");
+    };
+    let panel = place_of(&harness, "chrome.side_panel");
+    let settings = place_of(&harness, "chrome.side_panel.settings");
+    let inspector = place_of(&harness, "chrome.side_panel.inspector");
+    for (what, distance, expected) in [
+        ("top", settings.top() - panel.top(), margin),
+        ("bottom", panel.bottom() - inspector.bottom(), margin),
+        ("left", settings.left() - panel.left(), left),
+    ] {
+        assert!(
+            (distance - expected).abs() < 0.5,
+            "windows-11: the side panel's {what} padding is {distance}, not {expected}"
+        );
+    }
+    assert!(
+        every_record_notes(
+            &harness,
+            "chrome.side_panel",
+            &[
+                "not stated by the theme on top, bottom",
+                "layout.container_margin"
+            ]
+        ),
+        "windows-11: the side panel's info: {:?}",
+        element_notes(&harness, "chrome.side_panel")
+    );
+
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", "adwaita"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let padding = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .sidebar
+        .border
+        .padding;
+    let (Some(top), Some(bottom), Some(left)) = (padding.top, padding.bottom, padding.left) else {
+        panic!("adwaita states every side of sidebar.border.padding: {padding:?}");
+    };
+    let panel = place_of(&harness, "chrome.side_panel");
+    let settings = place_of(&harness, "chrome.side_panel.settings");
+    let inspector = place_of(&harness, "chrome.side_panel.inspector");
+    for (what, distance, expected) in [
+        ("top", settings.top() - panel.top(), top),
+        ("bottom", panel.bottom() - inspector.bottom(), bottom),
+        ("left", settings.left() - panel.left(), left),
+    ] {
+        assert!(
+            (distance - expected).abs() < 0.5,
+            "adwaita: the side panel's {what} padding is {distance}, not {expected}"
+        );
+    }
+}
+
+/// G, H and I: each side of a dialog takes the stated `dialog.border.padding` side, else
+/// gpui-component's 16 px (`DIALOG_PADDING_PX`) inside the border line, as the gpui showcase's
+/// `Dialog` draws, where egui's popup margin stood: the Overlays page's modal under nord, which
+/// states no dialog padding, and under kde-breeze, which states every side. Under nord Widget
+/// Info names the padding on the modal's frame; under kde-breeze it does not.
+#[test]
+fn a_dialog_side_the_theme_leaves_unstated_is_gpui_components_padding() {
+    use native_theme_showcase_support::DIALOG_PADDING_PX;
+    for preset in ["nord", "kde-breeze"] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "overlays")]),
+        );
+        harness.run_steps(4);
+        harness.get_by_label("Open modal").click();
+        harness.run_steps(SETTLE);
+        let border = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .dialog
+            .border
+            .clone();
+        let rect = |kind: &str| {
+            harness
+                .state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .unwrap_or_else(|| panic!("{preset}: no {kind} record"))
+        };
+        let (frame, body) = (rect("modal"), rect("modal body"));
+        let side = |stated: Option<f32>| stated.unwrap_or(DIALOG_PADDING_PX) + border.line_width;
+        let p = &border.padding;
+        for (what, distance, expected) in [
+            ("top", body.top() - frame.top(), side(p.top)),
+            ("right", frame.right() - body.right(), side(p.right)),
+            ("bottom", frame.bottom() - body.bottom(), side(p.bottom)),
+            ("left", body.left() - frame.left(), side(p.left)),
+        ] {
+            assert!(
+                (distance - expected).abs() < 0.5,
+                "{preset}: the modal's body is {distance} inside its frame at the {what}, not \
+                 {expected}"
+            );
+        }
+        hover_and_settle(&mut harness, frame.left_top() + egui::vec2(2.0, 2.0));
+        let shown = harness
+            .state()
+            .registry
+            .shown()
+            .cloned()
+            .unwrap_or_else(|| panic!("{preset}: nothing shown over the modal's frame"));
+        assert!(shown.info.seams.contains(&Seam::Surface(Surface::Dialog)));
+        let noted = shown
+            .info
+            .not_themeable
+            .iter()
+            .any(|(_, note)| note.contains("DIALOG_PADDING_PX"));
+        let unstated = [p.top, p.right, p.bottom, p.left]
+            .iter()
+            .any(Option::is_none);
+        assert_eq!(
+            noted, unstated,
+            "{preset}: the modal's info: {:?}",
+            shown.info.not_themeable
+        );
+    }
+}
+
 /// The Overlays page's `Area` floats beside its anchor label; scrolled with the page in a
 /// window too short for it, it never lies over the page tabs or the status bar. The window is
 /// short enough that the page can scroll its anchor, near the page's end, under the tabs.
@@ -2495,10 +2901,17 @@ fn the_basic_page_applies_the_per_call_leaves() {
 /// rest: a preset of another platform, which `--theme` does not take here, at the scale an OS
 /// setting or the Preferences dialog's override installs.
 fn open_scaled(preset: &str, tab: &str, factor: f32) -> Harness<'static, App> {
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", TEST_PRESET), ("--tab", tab)]),
-    );
+    open_scaled_in(egui::Theme::Light, preset, tab, factor)
+}
+
+/// [`open_scaled`] in `theme`.
+fn open_scaled_in(
+    theme: egui::Theme,
+    preset: &str,
+    tab: &str,
+    factor: f32,
+) -> Harness<'static, App> {
+    let mut harness = open(theme, cli(&[("--theme", TEST_PRESET), ("--tab", tab)]));
     harness.run_steps(4);
     let mut prefs = AccessibilityPreferences::default();
     prefs.text_scaling_factor = factor;
@@ -3032,6 +3445,72 @@ fn groups_and_columns_are_a_section_gap_apart() {
     );
 }
 
+/// M9-105: under macos-tahoe, which states no `layout.section_gap`, the Basic page puts no gap
+/// between its columns and none between the groups of a column, as the gpui and iced Basic
+/// pages do (`with_gap(.., None)`, `spacing(0)`) and as `column_count` counts: adjacent
+/// columns' `Ui`s touch, and in each column the second group's heading starts at the first
+/// group's bottom, not `item_spacing` below it. macos-tahoe is a preset of another platform
+/// here, so it is installed directly.
+#[test]
+fn the_basic_columns_and_groups_touch_where_the_theme_states_no_section_gap() {
+    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+    let state = harness.state();
+    assert_eq!(
+        state.atlas.layout().section_gap,
+        None,
+        "macos-tahoe states no layout.section_gap"
+    );
+    let places = state.registry.places();
+    let columns: Vec<egui::Rect> = (1..)
+        .map_while(|n| places.get(&format!("basic.column_{n}")).copied())
+        .collect();
+    assert!(columns.len() >= 3, "the columns: {columns:?}");
+    // Each column's left edge is on a whole pixel and its width is the page's share, fraction
+    // and all: two touching columns are less than a pixel apart.
+    for pair in columns.windows(2) {
+        let gap = pair[1].left() - pair[0].right();
+        assert!(
+            gap.abs() < 1.0,
+            "two adjacent columns are {gap} apart: {columns:?}"
+        );
+    }
+    let records = state.registry.records();
+    let groups = &state.registry.basic_groups;
+    assert!(
+        !groups.is_empty(),
+        "the Basic page lays no group out in a Ui of its own"
+    );
+    for (n, column) in columns.iter().enumerate() {
+        // The next column starts at this one's right edge, rounded to a whole pixel.
+        let inside =
+            |r: &egui::Rect| r.left() >= column.left() - 0.5 && r.left() < column.right() - 1.0;
+        let mut stack: Vec<egui::Rect> = groups
+            .iter()
+            .map(|(_, rect)| *rect)
+            .filter(inside)
+            .collect();
+        stack.sort_by(|a, b| a.top().total_cmp(&b.top()));
+        let [first, second, ..] = stack[..] else {
+            panic!("column {n}: fewer than two groups");
+        };
+        let Some(heading) = records
+            .iter()
+            .filter(|r| r.info.kind == "heading" && second.contains_rect(r.rect))
+            .map(|r| r.rect.top())
+            .reduce(f32::min)
+        else {
+            panic!("column {n}: the second group has no heading");
+        };
+        assert!(
+            (heading - first.bottom()).abs() < 0.5 && (heading - second.top()).abs() < 0.5,
+            "column {n}: the second group's heading starts {} below the first group's bottom, \
+             {} below its own Ui's top",
+            heading - first.bottom(),
+            heading - second.top()
+        );
+    }
+}
+
 /// Kinds the Basic page records for each group's controls, and how many of each.
 const BASIC_CONTROLS: [(&str, &[(&str, usize)]); 20] = [
     (
@@ -3241,7 +3720,12 @@ fn the_basic_page_has_every_group_in_its_column() {
 /// The Basic page never needs sideways scrolling at the window's default size, 1280 × 720, in
 /// both modes, under the four presets the captures compare: every element it places ends inside
 /// the content panel, and it lays out the columns its rule counts from the panel's width. It may
-/// be taller than its area (material-3 is): it then scrolls, and the test reports it.
+/// be taller than its area (material-3 is): it then scrolls, and the test reports it. The
+/// columns are as far apart as `column_count` counts them (M9-105), so the page fits at a
+/// content width just above a count boundary too, where the counted columns hold the widest
+/// control with nothing to spare: under macos-tahoe, which states no `layout.section_gap`,
+/// installed directly (a preset of another platform here), at the five- and four-column
+/// boundaries.
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
@@ -3249,39 +3733,114 @@ fn the_basic_page_fits_the_window_across() {
         for theme in [egui::Theme::Light, egui::Theme::Dark] {
             let mut harness = open(theme, cli(&[("--theme", preset), ("--tab", "basic")]));
             harness.run_steps(4);
+            fits_across(&harness, theme, preset);
+        }
+    }
+    for theme in [egui::Theme::Light, egui::Theme::Dark] {
+        for columns in [5, 4] {
+            let mut harness = open_scaled_in(theme, "macos-tahoe", "basic", 1.0);
             let state = harness.state();
-            let places = state.registry.places();
-            let Some(panel) = places.get("chrome.content").copied() else {
-                panic!("{preset} {theme:?}: no content panel placed");
-            };
-            assert!(
-                (panel.width() - state.demo_state.content_width).abs() < 0.5,
-                "{preset} {theme:?}: the panel is {} wide, the page counts from {}",
-                panel.width(),
-                state.demo_state.content_width
-            );
-            let columns = places
-                .keys()
-                .filter(|id| id.starts_with("basic.column_"))
-                .count();
-            let count = column_count(
+            let width = count_boundary(
                 state.atlas.resolved_for(theme),
                 state.atlas.layout(),
-                state.demo_state.content_width,
+                columns,
+            ) + 1.0;
+            set_content_width(&mut harness, width);
+            let state = harness.state();
+            assert!(
+                (state.demo_state.content_width - width).abs() < 0.5,
+                "macos-tahoe {theme:?}: the content is {} wide, not {width}",
+                state.demo_state.content_width
             );
-            assert_eq!(columns, count, "{preset} {theme:?}: the columns laid out");
-            for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
-                assert!(
-                    rect.right() <= panel.right() + 0.5,
-                    "{preset} {theme:?}: {id} ends at {}, past the panel's {}",
-                    rect.right(),
-                    panel.right()
-                );
-            }
-            if state.page_scrolls {
-                println!("{preset} {theme:?}: the Basic page scrolls");
-            }
+            assert_eq!(
+                column_count(
+                    state.atlas.resolved_for(theme),
+                    state.atlas.layout(),
+                    state.demo_state.content_width,
+                ),
+                columns,
+                "macos-tahoe {theme:?}: {width} is just above the {columns}-column boundary"
+            );
+            fits_across(&harness, theme, &format!("macos-tahoe at {width}"));
         }
+    }
+}
+
+/// [`the_basic_page_fits_the_window_across`]'s checks on `harness` as it is: the page counts
+/// its columns from the content panel's width, lays that many out, and places every element
+/// inside the panel.
+fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
+    use crate::pages::basic::column_count;
+    let state = harness.state();
+    let places = state.registry.places();
+    let Some(panel) = places.get("chrome.content").copied() else {
+        panic!("{what} {theme:?}: no content panel placed");
+    };
+    assert!(
+        (panel.width() - state.demo_state.content_width).abs() < 0.5,
+        "{what} {theme:?}: the panel is {} wide, the page counts from {}",
+        panel.width(),
+        state.demo_state.content_width
+    );
+    let columns = places
+        .keys()
+        .filter(|id| id.starts_with("basic.column_"))
+        .count();
+    let count = column_count(
+        state.atlas.resolved_for(theme),
+        state.atlas.layout(),
+        state.demo_state.content_width,
+    );
+    assert_eq!(columns, count, "{what} {theme:?}: the columns laid out");
+    for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
+        assert!(
+            rect.right() <= panel.right() + 0.5,
+            "{what} {theme:?}: {id} ends at {}, past the panel's {}",
+            rect.right(),
+            panel.right()
+        );
+    }
+    if state.page_scrolls {
+        println!("{what} {theme:?}: the Basic page scrolls");
+    }
+}
+
+/// The least content width at which `column_count` lays `columns` columns out under `t` and
+/// `layout`, to a hundredth of a point.
+fn count_boundary(
+    t: &native_theme_egui::ResolvedTheme,
+    layout: &native_theme::theme::LayoutTheme,
+    columns: usize,
+) -> f32 {
+    use crate::pages::basic::column_count;
+    let (mut fewer, mut enough) = (0.0_f32, 4.0 * crate::WINDOW_SIZE.x);
+    assert!(
+        column_count(t, layout, enough) >= columns,
+        "{columns} columns at no width"
+    );
+    while enough - fewer > 0.01 {
+        let mid = 0.5 * (fewer + enough);
+        if column_count(t, layout, mid) >= columns {
+            enough = mid;
+        } else {
+            fewer = mid;
+        }
+    }
+    enough
+}
+
+/// The window resized so the content panel is `width` wide: the side panel keeps its width, so
+/// the panel grows with the window.
+fn set_content_width(harness: &mut Harness<'_, App>, width: f32) {
+    let mut window = crate::WINDOW_SIZE;
+    for _ in 0..3 {
+        let now = harness.state().demo_state.content_width;
+        if (now - width).abs() < 0.01 {
+            return;
+        }
+        window.x += width - now;
+        harness.set_size(window);
+        harness.run_steps(4);
     }
 }
 

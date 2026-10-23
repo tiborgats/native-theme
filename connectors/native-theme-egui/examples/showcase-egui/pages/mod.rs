@@ -154,7 +154,9 @@ fn demo_colour() -> egui::Color32 {
 /// (`demo::heading_text`), not `ui.strong`, whose colour is the active-state text colour
 /// (`egui/src/style.rs:1147-1149`); a `Label` in the base style, recorded like any other. Every
 /// heading but a page's first is `layout.section_gap` below the section before it, where the
-/// theme states that gap: the theme's space between sections (parity item 11).
+/// theme states that gap: the theme's space between sections (parity item 11). A Basic group's
+/// heading is the first of its group's own `Ui`, and `basic::show` puts the gap between the
+/// groups.
 pub(crate) fn caption(reg: &mut Registry, ui: &mut egui::Ui, text: &str) -> egui::Response {
     let atlas = ThemeAtlas::from_ctx(ui.ctx());
     let section_gap = atlas.as_ref().and_then(|atlas| atlas.layout().section_gap);

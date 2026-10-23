@@ -206,10 +206,13 @@ fn group(
 }
 
 /// Columns of equal width, as many as [`column_count`] counts from the content panel's width,
-/// `layout.section_gap` apart (the page's gap where the theme states none: egui's
-/// `item_spacing`), each a stack of groups top-aligned: each column is laid out in a `Ui` of its
-/// own at its place, so a group wider than its column shows as the overflow it is, and the next
-/// column does not move.
+/// `layout.section_gap` apart, the gap the count takes, and none where the theme states none,
+/// as the gpui and iced pages lay theirs out (`with_gap(.., section_gap)`, `spacing(0)` where
+/// unstated); each a stack of groups top-aligned, `layout.section_gap` apart and none where
+/// unstated too, each group in a top-down `Ui` of its own with its rows the connector's
+/// `item_spacing` apart (`layout.widget_gap`): each column is laid out in a `Ui` of its own at
+/// its place, so a group wider than its column shows as the overflow it is, and the next column
+/// does not move.
 pub(crate) fn show(
     reg: &mut Registry,
     state: &mut DemoState,
@@ -217,10 +220,7 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
 ) {
-    let gap = atlas
-        .layout()
-        .section_gap
-        .unwrap_or(ui.spacing().item_spacing.x);
+    let gap = atlas.layout().section_gap.unwrap_or_default();
     let origin = ui.cursor().min;
     let count = column_count(
         atlas.resolved_for(ui.ctx().theme()),
@@ -248,8 +248,26 @@ pub(crate) fn show(
                 .max_rect(rect)
                 .layout(egui::Layout::top_down(egui::Align::Min)),
         );
-        for &ix in *members {
-            group(ix, reg, state, atlas, &mut child, chosen);
+        // The groups follow one another `gap` apart and no more: the column adds no
+        // `item_spacing` between them, each group's own `Ui` puts it between its rows, and a
+        // group's heading, first in its `Ui`, adds nothing (`caption`).
+        let rows = child.spacing().item_spacing;
+        child.spacing_mut().item_spacing.y = 0.0;
+        for (place, &ix) in members.iter().enumerate() {
+            if place > 0 {
+                child.add_space(gap);
+            }
+            let _laid = child.scope_builder(
+                egui::UiBuilder::new()
+                    .id_salt(("basic group", ix))
+                    .layout(egui::Layout::top_down(egui::Align::Min)),
+                |ui| {
+                    ui.spacing_mut().item_spacing = rows;
+                    group(ix, reg, state, atlas, ui, chosen);
+                },
+            );
+            #[cfg(test)]
+            reg.basic_groups.push((ix, _laid.response.rect));
         }
         let content = child.min_rect();
         reg.place(

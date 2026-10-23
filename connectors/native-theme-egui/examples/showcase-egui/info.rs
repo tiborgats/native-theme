@@ -276,11 +276,12 @@ pub(crate) fn value_at(json: &serde_json::Value, leaf: &str) -> Option<serde_jso
 }
 
 /// How a value prints: a colour as its `#rrggbb` or `#rrggbbaa` text (native-theme's `Rgba`
-/// `Display`, which the JSON carries), a number as itself, `null` as "not stated — egui's own
-/// value stands", anything else as its JSON text.
+/// `Display`, which the JSON carries), a number as itself, `null` as "not stated — the
+/// connector leaves egui's own value" (the Theme Map shows the connector's mapping, and the
+/// showcase's own chrome draws some unstated leaves otherwise), anything else as its JSON text.
 pub(crate) fn value_text(value: &serde_json::Value) -> String {
     match value {
-        serde_json::Value::Null => "not stated — egui's own value stands".to_string(),
+        serde_json::Value::Null => "not stated — the connector leaves egui's own value".to_string(),
         serde_json::Value::String(s) => s.clone(),
         serde_json::Value::Number(n) => n.to_string(),
         serde_json::Value::Bool(b) => b.to_string(),

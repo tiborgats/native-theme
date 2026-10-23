@@ -8,7 +8,7 @@ use native_theme::theme::IconSet;
 use native_theme_egui::{
     NativeThemeUiExt as _, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
 };
-use native_theme_showcase_support::rows;
+use native_theme_showcase_support::{DIALOG_PADDING_PX, rows};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Seam {
@@ -73,12 +73,18 @@ pub(crate) struct Registry {
     /// role's body, whose info would name rows it is not painted with.
     #[cfg(test)]
     pub base_off_base: std::collections::BTreeSet<&'static str>,
+    /// The `Ui` each Basic group was laid out in this pass, by the group's index in reading
+    /// order: where a group ends, which its last control need not show.
+    #[cfg(test)]
+    pub basic_groups: Vec<(usize, egui::Rect)>,
 }
 
 impl Registry {
     pub(crate) fn begin_pass(&mut self) {
         self.records.clear();
         self.places.clear();
+        #[cfg(test)]
+        self.basic_groups.clear();
     }
 
     /// Where the element `id` of `docs/showcase-elements.toml` is this pass: `rect` in the
@@ -228,6 +234,17 @@ impl Registry {
             f(&mut last.info);
         }
     }
+    /// Add a *Not themeable* line to every record this pass names the element `id`: a chrome
+    /// element is its panel and the row inside it, and Widget Info shows either.
+    pub(crate) fn note_element(&mut self, id: &str, what: &'static str, note: &str) {
+        for record in self
+            .records
+            .iter_mut()
+            .filter(|r| r.info.element.as_deref() == Some(id))
+        {
+            record.info.not_themeable.push((what, note.to_string()));
+        }
+    }
     /// Note on the last record that it is a button drawn in a `ghost` scope.
     pub(crate) fn ghost_last(&mut self) {
         self.amend_last(|i| {
@@ -296,6 +313,37 @@ pub(crate) fn toolbar_gap(
         && let Some(gap) = layout.widget_gap
     {
         ui.spacing_mut().item_spacing.x = gap;
+    }
+}
+
+/// The sides of `padding` the theme leaves unstated, top, right, bottom and left in that order,
+/// joined by ", " as a *Not themeable* line names them; `None` where it states all four.
+pub(crate) fn unstated_sides(padding: &native_theme::theme::ResolvedPadding) -> Option<String> {
+    let sides: Vec<&str> = [
+        ("top", padding.top),
+        ("right", padding.right),
+        ("bottom", padding.bottom),
+        ("left", padding.left),
+    ]
+    .into_iter()
+    .filter(|(_, stated)| stated.is_none())
+    .map(|(side, _)| side)
+    .collect();
+    (!sides.is_empty()).then(|| sides.join(", "))
+}
+
+/// `padding` with each side it leaves unstated set to `fill` and each stated side `None`: the
+/// sides a frame takes from a fallback, for `convert::to_margin` over the frame's margin.
+pub(crate) fn unstated_as(
+    padding: &native_theme::theme::ResolvedPadding,
+    fill: f32,
+) -> native_theme::theme::ResolvedPadding {
+    let side = |stated: Option<f32>| stated.is_none().then_some(fill);
+    native_theme::theme::ResolvedPadding {
+        top: side(padding.top),
+        right: side(padding.right),
+        bottom: side(padding.bottom),
+        left: side(padding.left),
     }
 }
 
@@ -590,18 +638,40 @@ pub(crate) fn surfaced(
     kind: &'static str,
     show: impl FnOnce(&mut egui::Ui, Chrome, &mut Registry) -> Option<egui::Response>,
 ) -> Option<egui::Response> {
-    let chrome = Chrome {
+    let mut chrome = Chrome {
         frame: ui.native_frame(surface),
         title_frame: title.then(|| ui.native_frame(Surface::WindowTitleBar)),
         modifier: role.and_then(|(r, v)| role_modifier(ui, r, v)),
     };
+    let unstated = (surface == Surface::Dialog)
+        .then(|| ThemeAtlas::from_ctx(ui.ctx()))
+        .flatten()
+        .and_then(|atlas| {
+            let padding = atlas.resolved_for(ui.ctx().theme()).dialog.border.padding;
+            chrome.frame.inner_margin = native_theme_egui::convert::to_margin(
+                chrome.frame.inner_margin,
+                &unstated_as(&padding, DIALOG_PADDING_PX),
+            );
+            unstated_sides(&padding)
+        });
     let response = show(ui, chrome, reg)?;
     let mut seams = vec![Seam::Surface(surface)];
     if title {
         seams.push(Seam::Surface(Surface::WindowTitleBar));
     }
     seams.extend(role.map(|(r, v)| Seam::Role(r, v)));
-    reg.record(&response, info(kind, seams), true);
+    let mut info = info(kind, seams);
+    if let Some(sides) = unstated {
+        info.not_themeable.push((
+            "inner margin",
+            format!(
+                "not stated by the theme on {sides}: gpui-component's {DIALOG_PADDING_PX}px \
+                 (DIALOG_PADDING_PX), inside the border line, as the gpui showcase's Dialog \
+                 keeps it"
+            ),
+        ));
+    }
+    reg.record(&response, info, true);
     Some(response)
 }
 

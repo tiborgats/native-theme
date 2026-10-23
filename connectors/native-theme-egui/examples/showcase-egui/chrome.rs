@@ -100,6 +100,30 @@ impl Action {
 #[cfg(not(all(target_os = "macos", not(test))))]
 const NO_MINIMUM: f32 = 0.0;
 
+/// The menu bar's side padding where the theme states no `layout.container_margin` (spec
+/// §3.1): the gpui showcase's `MENU_BAR_PADDING` (`showcase-gpui/demo.rs`), so the shared
+/// chrome looks as gpui's does. The model states no menu bar, and the row is the application's
+/// own element, with no toolkit default to keep: the showcases' own choice, not a platform's
+/// value, which the menu bar's Widget Info names.
+#[cfg(not(all(target_os = "macos", not(test))))]
+pub(crate) const MENU_BAR_PADDING: f32 = 8.0;
+
+/// The toolbar's padding on a side the theme leaves unstated twice over, neither
+/// `toolbar.border.padding` nor `layout.container_margin` stating it (spec §3.1): the gpui
+/// showcase's `TOOLBAR_PADDING` (`showcase-gpui/demo.rs`), the showcases' own choice, which the
+/// toolbar's Widget Info names.
+pub(crate) const TOOLBAR_PADDING: f32 = 8.0;
+
+/// The gap between the toolbar's items where the theme leaves it unstated twice over, neither
+/// `toolbar.item_gap` nor `layout.widget_gap` stating it: the gpui showcase's `TOOLBAR_GAP`
+/// (`showcase-gpui/demo.rs`), the showcases' own choice, which the toolbar's Widget Info names.
+pub(crate) const TOOLBAR_GAP: f32 = 4.0;
+
+/// The gap between the theme settings' rows, and between each row's label and its control,
+/// where `layout.widget_gap` is unstated (spec §3.1): the gpui showcase's `THEME_SETTINGS_GAP`
+/// (`showcase-gpui/demo.rs`), the showcases' own choice, which the settings' Widget Info names.
+pub(crate) const THEME_SETTINGS_GAP: f32 = 8.0;
+
 /// The Theme menu's rows in `docs/showcase-elements.toml`, in `Action::MENUS`'s order.
 #[cfg(not(all(target_os = "macos", not(test))))]
 const THEME_MENU_ROWS: [&str; 7] = [
@@ -138,25 +162,20 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         toolbar_role,
     );
     // A side of `toolbar.border.padding` the theme leaves unstated is `layout.container_margin`,
-    // as the other two showcases pad their toolbars, where the panel frame would keep egui's own.
+    // and `TOOLBAR_PADDING` where that is unstated too, as the other two showcases pad their
+    // toolbars, where the panel frame would keep egui's own (8 across, 2 down).
     let own_margin = seams.frame.inner_margin;
-    if let Some(margin) = app.atlas.layout().container_margin {
-        let stated = &app
-            .atlas
-            .resolved_for(ui.ctx().theme())
-            .toolbar
-            .border
-            .padding;
-        let side = |side: Option<f32>| side.is_none().then_some(margin);
-        let unstated = native_theme::theme::ResolvedPadding {
-            top: side(stated.top),
-            right: side(stated.right),
-            bottom: side(stated.bottom),
-            left: side(stated.left),
-        };
-        seams.frame.inner_margin =
-            native_theme_egui::convert::to_margin(seams.frame.inner_margin, &unstated);
-    }
+    let margin = app.atlas.layout().container_margin;
+    let stated = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .toolbar
+        .border
+        .padding;
+    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+        seams.frame.inner_margin,
+        &demo::unstated_as(&stated, margin.unwrap_or(TOOLBAR_PADDING)),
+    );
     // Where the theme states `toolbar.bar_height`, the bar stays that tall: the toolbar scope's
     // row (`interact_size.y`) is the stated height less the frame egui's own panel preset would
     // pad it by, so the room the margin above grew by comes off the row, as the other two
@@ -187,6 +206,32 @@ pub(crate) fn chrome_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Toolbar");
     app.registry.tag("chrome.toolbar", &out.response);
+    if let Some(sides) = demo::unstated_sides(&stated) {
+        let note = match margin {
+            Some(margin) => format!(
+                "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
+                 the gpui showcase's toolbar takes it"
+            ),
+            None => format!(
+                "not stated by the theme on {sides}, nor layout.container_margin: \
+                 TOOLBAR_PADDING, {TOOLBAR_PADDING}px, the gpui showcase's own constant (spec \
+                 §3.1)"
+            ),
+        };
+        app.registry
+            .note_element("chrome.toolbar", "padding", &note);
+    }
+    let t = app.atlas.resolved_for(ui.ctx().theme());
+    if t.toolbar.item_gap.is_none() && app.atlas.layout().widget_gap.is_none() {
+        app.registry.note_element(
+            "chrome.toolbar",
+            "the gap between items",
+            &format!(
+                "not stated by the theme (toolbar.item_gap, layout.widget_gap): TOOLBAR_GAP, \
+                 {TOOLBAR_GAP}px, the gpui showcase's own constant"
+            ),
+        );
+    }
 }
 
 /// A toolbar row `shrink` less tall than its scope's `interact_size.y` makes it.
@@ -198,14 +243,16 @@ fn fit_row(ui: &mut egui::Ui, shrink: f32) {
 /// The menu bar, a strip of its own above the toolbar, as a desktop application's is: on the
 /// window's background (`window.background_color`, the menu bar's in
 /// `docs/showcase-elements.toml`), its menus `layout.container_margin` in from the window's
-/// sides where the theme states that margin, no line under it.
+/// sides, and [`MENU_BAR_PADDING`] where the theme states no such margin, as the gpui
+/// showcase's menu bar; no line under it.
 #[cfg(not(all(target_os = "macos", not(test))))]
 fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
     let margin = app.atlas.layout().container_margin;
+    let side = Some(margin.unwrap_or(MENU_BAR_PADDING));
     let sides = native_theme::theme::ResolvedPadding {
-        left: margin,
-        right: margin,
+        left: side,
+        right: side,
         top: None,
         bottom: None,
     };
@@ -228,6 +275,17 @@ fn menu_panel(app: &mut App, ui: &mut egui::Ui) {
         });
     app.registry.name("chrome.menu_bar", &out.inner);
     app.registry.place(ui, "chrome.menu_bar", out.response.rect);
+    if margin.is_none() {
+        app.registry.note_element(
+            "chrome.menu_bar",
+            "padding",
+            &format!(
+                "not stated by the theme on left, right (layout.container_margin): \
+                 MENU_BAR_PADDING, {MENU_BAR_PADDING}px, the gpui showcase's own constant (spec \
+                 §3.1)"
+            ),
+        );
+    }
 }
 
 /// The in-window menu bar (Linux, Windows, and macOS under `cfg(test)`; macOS has the system
@@ -469,6 +527,11 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
         fit_row(ui, shrink);
         ui.horizontal(|ui| {
             demo::toolbar_gap(ui, t, layout);
+            // `TOOLBAR_GAP` where the theme states neither gap, at the chrome's toolbar alone:
+            // the Basic page's icon row keeps `toolbar_gap`, as gpui's has no constant.
+            if t.toolbar.item_gap.is_none() && layout.widget_gap.is_none() {
+                ui.spacing_mut().item_spacing.x = TOOLBAR_GAP;
+            }
             for (icon, label, action, id) in [
                 (
                     ChromeButtonIcon::Named(demo::ChromeIcon::SquareTerminal),
@@ -600,13 +663,33 @@ fn tooltip(
 /// `showcase-gpui/demo.rs:969-1048`, `:1370-1423`): the side-panel toggle, a small Ghost button
 /// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
 /// then the environment as one line joined by " · "; the shown Widget Info's title flush right.
+/// A side `status_bar.border.padding` leaves unstated is padded as gpui-component pads its
+/// `StatusBar`, which the gpui showcase's keeps ([`status_bar_padding`]), where the panel frame
+/// would keep egui's own (8 across, 2 down).
 pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     let status_role = Some((Role::StatusBar, RoleVariant::Normal));
-    let seams = PanelSeams::apply(
+    let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Bottom),
         status_role,
         status_role,
+    );
+    let stated = app
+        .atlas
+        .resolved_for(ui.ctx().theme())
+        .status_bar
+        .border
+        .padding;
+    let (vertical, horizontal) = status_bar_padding(&app.atlas, ui.ctx().theme());
+    let unstated = |side: Option<f32>, fill: f32| side.is_none().then_some(fill);
+    seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+        seams.frame.inner_margin,
+        &native_theme::theme::ResolvedPadding {
+            top: unstated(stated.top, vertical),
+            right: unstated(stated.right, horizontal),
+            bottom: unstated(stated.bottom, vertical),
+            left: unstated(stated.left, horizontal),
+        },
     );
     let chosen = app.chosen_icons();
     let out = egui::Panel::bottom("status-bar")
@@ -692,6 +775,32 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
         });
     seams.record(&mut app.registry, &out.response, "Status bar");
     app.registry.tag("chrome.status_bar", &out.response);
+    if let Some(sides) = demo::unstated_sides(&stated) {
+        app.registry.note_element(
+            "chrome.status_bar",
+            "padding",
+            &format!(
+                "not stated by the theme on {sides}: gpui-component's StatusBar padding, which \
+                 the gpui showcase's status bar keeps (py_1 / px_2: a quarter of the scaled \
+                 defaults.font.size above and below, {vertical}px, and a half at the sides, \
+                 {horizontal}px, each rounded to a whole point)"
+            ),
+        );
+    }
+}
+
+/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component `src/status_bar.rs`,
+/// `StatusBar`'s `render`): `rems(0.25)` above and below and `rems(0.5)` at the sides, at the
+/// rem gpui-component sets to the theme's font size, which the gpui connector fills with the
+/// scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding the gpui
+/// showcase's status bar keeps where the theme states none, as `(vertical, horizontal)` in
+/// logical pixels. egui's frame margin is whole points, so each side is rounded as
+/// `convert::to_margin` rounds it.
+fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
+    let rem = atlas
+        .accessibility()
+        .scaled(atlas.resolved_for(theme).defaults.font.size);
+    ((rem / 4.0).round(), (rem / 2.0).round())
 }
 
 /// The status bar's environment items (`status::environment`, the three showcases' text):
@@ -723,9 +832,14 @@ fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
 /// showcase's (`showcase-gpui/demo.rs:1504-1538`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
 /// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
-/// panel surface's inner margin), the panel keeps it and its content adds none.
+/// panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
+/// leaves unstated takes `container_margin` (none where that is unstated too), as the gpui
+/// showcase's panel, where the panel frame would keep egui's own (8 across, 2 down), and its
+/// content adds none. The settings' rows, and each label and its control, are
+/// `layout.widget_gap` apart (the panel's `item_spacing`), or [`THEME_SETTINGS_GAP`] where the
+/// theme states none.
 pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
-    let padding = &app
+    let padding = app
         .atlas
         .resolved_for(ui.ctx().theme())
         .sidebar
@@ -734,17 +848,22 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     let stated = [padding.top, padding.right, padding.bottom, padding.left]
         .iter()
         .any(Option::is_some);
-    let seams = PanelSeams::apply(
+    let container_margin = app.atlas.layout().container_margin;
+    let widget_gap = app.atlas.layout().widget_gap;
+    let mut seams = PanelSeams::apply(
         ui,
         Surface::Panel(PanelSide::Left),
         Some((Role::Splitter, RoleVariant::Normal)),
         Some((Role::Sidebar, RoleVariant::Normal)),
     );
     let (seams, margin) = if stated {
+        seams.frame.inner_margin = native_theme_egui::convert::to_margin(
+            seams.frame.inner_margin,
+            &demo::unstated_as(&padding, container_margin.unwrap_or_default()),
+        );
         (seams, None)
     } else {
-        let margin = app.atlas.layout().container_margin;
-        (seams.unpadded(), margin)
+        (seams.unpadded(), container_margin)
     };
     let mut visible = app.side_panel_visible;
     app.hold_zone = None; // set again while the inspector is drawn
@@ -764,13 +883,39 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
             // pad themselves; the settings keep the panel's spacing between their rows.
             let spacing = ui.spacing().item_spacing;
             ui.spacing_mut().item_spacing.y = 0.0;
+            // The settings in a box of their own inside the padding, which Widget Info shows
+            // over the room between their rows, as the gpui showcase's theme settings carry
+            // their own info inside the side panel's padding (`demo::theme_settings`).
             let settings = padded(ui, margin, |ui| {
-                ui.spacing_mut().item_spacing = spacing;
-                settings_rows(app, ui, body);
-                ui.min_rect()
+                ui.scope(|ui| {
+                    ui.spacing_mut().item_spacing = spacing;
+                    if widget_gap.is_none() {
+                        ui.spacing_mut().item_spacing.y = THEME_SETTINGS_GAP;
+                    }
+                    settings_rows(app, ui, body);
+                })
+                .response
             });
-            app.registry
-                .place(ui, "chrome.side_panel.settings", settings);
+            app.registry.record(
+                &settings,
+                demo::info(
+                    "Theme settings",
+                    vec![demo::Seam::Role(Role::Sidebar, RoleVariant::Normal)],
+                ),
+                true,
+            );
+            app.registry.tag("chrome.side_panel.settings", &settings);
+            if widget_gap.is_none() {
+                app.registry.note_element(
+                    "chrome.side_panel.settings",
+                    "the gap between rows",
+                    &format!(
+                        "not stated by the theme (layout.widget_gap): THEME_SETTINGS_GAP, \
+                         {THEME_SETTINGS_GAP}px between the rows and between each label and its \
+                         control, the gpui showcase's own constant (spec §3.1)"
+                    ),
+                );
+            }
             let mut line = 0.0;
             let separator = demo::scoped(
                 &mut app.registry,
@@ -821,6 +966,20 @@ pub(crate) fn side_panel(app: &mut App, ui: &mut egui::Ui) {
     if let Some(out) = out {
         seams.record(&mut app.registry, &out.response, "Side panel");
         app.registry.name("chrome.side_panel", &out.response);
+        if let Some(sides) = demo::unstated_sides(&padding).filter(|_| stated) {
+            let note = match container_margin {
+                Some(margin) => format!(
+                    "not stated by the theme on {sides}: layout.container_margin, {margin}px, as \
+                     the gpui showcase's side panel takes it"
+                ),
+                None => format!(
+                    "not stated by the theme on {sides}, nor layout.container_margin: none, as \
+                     the gpui showcase's side panel draws"
+                ),
+            };
+            app.registry
+                .note_element("chrome.side_panel", "padding", &note);
+        }
         // egui paints the panel's line in its outer margin, at its outer edge, in the
         // splitter scope's `noninteractive.bg_stroke` (`egui/src/containers/panel.rs:909-931`).
         let rect = out.response.rect;
