@@ -8,7 +8,7 @@ use native_theme::{AccessibilityPreferences, SystemTheme, theme::IconSet};
 use native_theme_egui::{SystemThemeExt as _, ThemeAtlas, from_preset};
 use native_theme_showcase_support::capture::{Content, FrameCapture};
 use native_theme_showcase_support::cli::{self, Output, Outputs};
-use native_theme_showcase_support::{Kind, dump, rows};
+use native_theme_showcase_support::{CAPTURE_WAIT, Kind, dump, rows};
 
 use crate::chrome::{self, Action, InspectorTab, PaletteState};
 use crate::{CliArgs, SCREENSHOT_DELAY_S, apply_cli_args, demo, elements, info, pages};
@@ -168,10 +168,11 @@ struct Screenshot {
     written: bool,
 }
 
-/// `--dump-layout`: where the dump goes, the layout of the last pass and the input time it was
-/// first seen at, and whether it was written.
+/// `--dump-layout`: where the dump goes, the input time of its first pass, the layout of the last
+/// pass and the input time it was first seen at, and whether it was written.
 struct LayoutDump {
     path: String,
+    started: Option<f64>,
     last: Option<(std::collections::BTreeMap<String, egui::Rect>, f64)>,
     written: bool,
 }
@@ -388,6 +389,7 @@ impl App {
             screenshot,
             dump: cli.dump_layout.clone().map(|path| LayoutDump {
                 path,
+                started: None,
                 last: None,
                 written: false,
             }),
@@ -617,8 +619,10 @@ impl App {
 
     /// `--dump-layout`: once this pass's layout has been the same for `DUMP_SETTLE_S`, write it
     /// (`dump::write_layout`), then close the window once every file the run asked for is
-    /// written, unless it is being captured (`cli::Outputs`). A failed write is reported and
-    /// ends the run with 1, as a failed `--screenshot` does (`cli::refuse`).
+    /// written, unless `--capture` keeps it for the tool that captures it (`cli::Outputs`). A
+    /// failed write is reported and ends the run with 1, as a failed `--screenshot` does
+    /// (`cli::refuse`), and so does a layout that has not settled `CAPTURE_WAIT` after the first
+    /// pass (`dump_given_up`).
     fn dump_layout(&mut self, ctx: &egui::Context) {
         let preset = self.preset_key().to_string();
         let Some(dump) = self.dump.as_mut().filter(|d| !d.written) else {
@@ -633,8 +637,12 @@ impl App {
                 now
             }
         };
+        let started = *dump.started.get_or_insert(now);
         ctx.request_repaint();
         if now - since < crate::DUMP_SETTLE_S {
+            if let Some(failure) = dump_given_up(&self.outputs, &dump.path, now - started) {
+                cli::refuse(&failure);
+            }
             return;
         }
         let json = layout_json(places, &preset, ctx.theme(), ctx.pixels_per_point());
@@ -672,10 +680,29 @@ impl App {
     }
 }
 
+/// Why `--dump-layout` to `path` failed, where `outputs` still waits for the dump `waited`
+/// seconds of input time after its first pass, once that reaches the shared crate's
+/// `CAPTURE_WAIT`, the bound the gpui and iced showcases give up theirs at: a layout that never
+/// stays the same for `DUMP_SETTLE_S` fails the run (exit 1) rather than keep it open,
+/// `--screenshot` written or not. `None` before then, once the dump is written, or where the
+/// run asked for none.
+pub(crate) fn dump_given_up(outputs: &Outputs, path: &str, waited: f64) -> Option<String> {
+    (outputs.pending(Output::Dump) && waited >= CAPTURE_WAIT.as_secs_f64()).then(|| {
+        Output::Dump.failure(
+            path,
+            &format!(
+                "no layout was written within {} s: the layout did not stay the same for {} s",
+                CAPTURE_WAIT.as_secs(),
+                crate::DUMP_SETTLE_S
+            ),
+        )
+    })
+}
+
 /// The window's content in physical pixels and the display's scale factor, as egui has them
 /// when the capture asks (`FrameCapture::poll`); a scale egui does not know is refused here, so
 /// the frame check (`capture::check_frame_capture`) always has one to measure against.
-fn content_px(ctx: &egui::Context) -> Result<Content, String> {
+pub(crate) fn content_px(ctx: &egui::Context) -> Result<Content, String> {
     let (inner, scale) = ctx.input(|i| {
         (
             i.viewport().inner_rect,

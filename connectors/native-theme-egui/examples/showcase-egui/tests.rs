@@ -4886,6 +4886,67 @@ fn a_captured_or_dumped_window_takes_no_keyboard_input() {
     let _ = std::fs::remove_file(&dump);
 }
 
+/// A `--dump-layout` run whose layout never settles gives up at the shared crate's
+/// `CAPTURE_WAIT` after its first pass, with the dump's flag and path, as the gpui and iced
+/// showcases give up theirs (the showcases' one exit rule): not before, still after a
+/// `--screenshot` alone is written, and never once the dump is written or where the run asked
+/// for none.
+#[test]
+fn a_dump_that_is_never_written_fails_after_its_bound() {
+    use native_theme_showcase_support::CAPTURE_WAIT;
+    use native_theme_showcase_support::cli::{Output, Outputs};
+
+    let both =
+        CliArgs::parse(["--dump-layout", "f.json", "--screenshot", "p.png"].map(str::to_string));
+    let mut outputs = Outputs::new(&both);
+    let bound = CAPTURE_WAIT.as_secs_f64();
+    let given_up =
+        |outputs: &Outputs, waited: f64| crate::app::dump_given_up(outputs, "f.json", waited);
+    assert_eq!(given_up(&outputs, bound - 0.5), None, "gave up early");
+    let failure = given_up(&outputs, bound);
+    assert!(
+        failure.as_deref().is_some_and(|f| f.starts_with(&format!(
+            "--dump-layout f.json: no layout was written within {} s",
+            CAPTURE_WAIT.as_secs()
+        ))),
+        "{failure:?}"
+    );
+    let _ = outputs.written(Output::Screenshot);
+    assert!(
+        given_up(&outputs, bound).is_some(),
+        "a written screenshot ended the wait for the dump"
+    );
+    let _ = outputs.written(Output::Dump);
+    assert_eq!(given_up(&outputs, bound), None, "a written dump failed");
+    let none = Outputs::new(&CliArgs::default());
+    assert_eq!(given_up(&none, bound), None, "a run with no dump failed");
+}
+
+/// `--screenshot`'s frame check needs the display's scale factor, which egui may not know:
+/// `content_px` refuses then, before the shared crate's `check_frame_capture` is called, and
+/// otherwise gives the content in physical pixels at that scale.
+#[test]
+fn a_capture_without_the_scale_factor_is_refused() {
+    let ctx = egui::Context::default();
+    let content = |pixels_per_point: Option<f32>| {
+        let mut input = egui::RawInput::default();
+        let info = input.viewports.entry(egui::ViewportId::ROOT).or_default();
+        info.inner_rect = Some(egui::Rect::from_min_size(
+            egui::Pos2::ZERO,
+            crate::WINDOW_SIZE,
+        ));
+        info.native_pixels_per_point = pixels_per_point;
+        // The pass's font atlas upload is nobody's to apply here.
+        ctx.run_ui(input, |_| {}).textures_delta.clear();
+        crate::app::content_px(&ctx)
+    };
+    assert_eq!(
+        content(None),
+        Err("the display's scale factor is unknown".to_string())
+    );
+    assert_eq!(content(Some(1.25)), Ok(((1600, 900), 1.25)));
+}
+
 // --- The chrome's icons from a fixture icon theme --------------------------------------------
 
 /// M7-15: the side-panel toggle's freedesktop icon loads from the icon theme the chrome chose
