@@ -1519,6 +1519,28 @@ and many have since drifted, as the archive's [README](README.md) warns.
 
 ---
 
+## This cycle (v0.7.0)
+
+### egui showcase: its gpui-component citations miss the code they name
+
+- [x] [v0.7.0] For M9c (G3 Task 3b, 2026-10-21): four `GC/` citations in the egui showcase
+      point at other code, at gpui-component 0.7.3 already and at 0.8.0, which the
+      workspace builds now. Their 0.8.0 lines, read in the registry's gpui-component 0.8.0:
+      - `connectors/native-theme-egui/examples/showcase-egui/chrome.rs`, `page_tabs`' doc,
+        the tab bar's page menu: `GC/tab/tab_bar.rs:554-584` (the tab row) is `:699-732`,
+        `TabBar::render`'s Ghost `menu` Button, the selected tab's item `checked`.
+      - The same file, the doc of the dialog title row: `GC/dialog/dialog.rs:696-701` is
+        `:749-756` (the `DialogTitle`) and `:789-804` (the Ghost close button,
+        `IconName::Close`).
+      - `connectors/native-theme-egui/examples/showcase-egui/demo.rs`, `GHOST_NOTE` and the
+        `ghost` scope's doc: `GC/button/button.rs:973, :1063` is `:1008` (`bg_color`'s
+        `Ghost` arm, `transparent`) and `:1098` (`border_color`'s).
+  *Closed by M9c T1 fix round 1 (2026-10-23, f95b7f23):* the four citations name the
+      locked gpui-component 0.8.0 by version and path at the lines above, each read back:
+      `page_tabs`' doc `src/tab/tab_bar.rs:699-732`; the dialog title row's
+      `src/dialog/dialog.rs:749-756` and `:789-804`; `GHOST_NOTE` and the `ghost` scope's
+      doc `src/button/button.rs:1008` and `:1098`.
+
 ## Post-1.0 / Deferred
 
 ### Change notification
