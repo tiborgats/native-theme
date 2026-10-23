@@ -541,15 +541,15 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
     cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Section: strict panic lints (library code and the gpui and iced showcases)
+# Section: strict panic lints (library code and the three showcases)
 #
 # scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
 # lints promoted to errors; the lint list and what each lint catches are
 # there, and CI's clippy job runs the same script.
 #
-# Scope: library targets (--lib), and the gpui and iced showcase examples,
-# applications the repo ships, which the no-panic rule covers as it covers the
-# libraries. Tests and the other examples are exempt because they
+# Scope: library targets (--lib), and the gpui, iced and egui showcase
+# examples, applications the repo ships, which the no-panic rule covers as it
+# covers the libraries. Tests and the other examples are exempt because they
 # legitimately use .unwrap() / asserts for failure clarity and demo brevity.
 # Bin targets (if any in the future) should be added to this list.
 #
@@ -557,15 +557,16 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
 # feature-gated modules (kde, portal, system-icons, freedesktop, spinners,
 # watch) are checked; plain `--lib` misses them. ci.yml names the same features.
 # ─────────────────────────────────────────────────────────────────────────────
-print_section "Strict panic lints (library code and the gpui and iced showcases)"
+print_section "Strict panic lints (library code and the three showcases)"
 run_check "strict-panic (native-theme, Linux features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --features "$NT_FEATURES"
 run_check "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
 # The macOS and Windows code, with each platform's features, the showcases'
-# shared crate's capture code and the iced showcase's own; CI's clippy job
-# runs the first six, its iced job the iced showcase's two. The targets are
-# the cross-target clippy section's.
+# shared crate's capture code and the iced and egui showcases' own; CI's
+# clippy job runs the first six, its iced job the iced showcase's two, its
+# egui job the egui showcase's two. The targets are the cross-target clippy
+# section's.
 NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
@@ -588,6 +589,11 @@ for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
     # with iced_aw as the screenshot workflow builds it.
     run_check "strict-panic (showcase-iced, iced_aw, $target)" \
         bash scripts/check_strict_panic.sh --target "$target" -p native-theme-iced --example showcase-iced --features iced_aw
+    # The egui showcase's: on macOS its menus in the system menu bar, which no
+    # Linux run compiles, and on Windows its build there, as the iced
+    # showcase's; with every feature, as the screenshot script builds it.
+    run_check "strict-panic (showcase-egui, all features, $target)" \
+        bash scripts/check_strict_panic.sh --target "$target" -p native-theme-egui --example showcase-egui --all-features
 done
 run_check "strict-panic (native-theme-derive)" \
     bash scripts/check_strict_panic.sh -p native-theme-derive --lib
@@ -615,6 +621,12 @@ run_check "strict-panic (showcase-gpui, gpui-fast, native, watch)" \
     bash scripts/check_strict_panic.sh -p native-theme-gpui --example showcase-gpui --features gpui-fast,native,watch
 run_check "strict-panic (native-theme-egui)" \
     bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
+# Its showcase, with every feature, and without features, whose code without
+# system-fonts the first run never compiles.
+run_check "strict-panic (showcase-egui, all features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --all-features
+run_check "strict-panic (showcase-egui, no features)" \
+    bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --no-default-features
 run_check "strict-panic (native-theme-egui-widgets)" \
     bash scripts/check_strict_panic.sh -p native-theme-egui-widgets --lib --all-features
 # The OS probe is a binary; on Linux it is the stub, and its macOS and

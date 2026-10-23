@@ -165,6 +165,26 @@ jobs:
       - name: Strict panic lints (egui connector)
         if: matrix.package == 'native-theme-egui'
         run: bash scripts/check_strict_panic.sh -p native-theme-egui --lib --all-features
+      - name: Strict panic lints (egui showcase)
+        if: matrix.package == 'native-theme-egui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --all-features
+      # The showcase without features, whose code without system-fonts the
+      # run above never compiles.
+      - name: Strict panic lints (egui showcase, no features)
+        if: matrix.package == 'native-theme-egui'
+        run: bash scripts/check_strict_panic.sh -p native-theme-egui --example showcase-egui --no-default-features
+      # The showcase's macOS code (its menus in the system menu bar), which a
+      # Linux run never compiles, and its Windows build, as the iced
+      # showcase's, under the strict panic lints, with every feature, as
+      # scripts/generate_screenshots_egui.sh builds it. Clippy builds no
+      # binary, so each target needs only its standard library.
+      - name: Strict panic lints (egui showcase, all features, macOS and Windows targets)
+        if: matrix.package == 'native-theme-egui'
+        run: |
+          rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
+          for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
+            bash scripts/check_strict_panic.sh --target "$target" -p native-theme-egui --example showcase-egui --all-features
+          done
       # The connector's and its showcase's macOS code (the showcase's menus in
       # the system menu bar and its macOS-only dev-dependencies), which no Linux
       # run compiles, as scripts/check_release.sh checks it.
