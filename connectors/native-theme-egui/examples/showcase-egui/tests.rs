@@ -2934,18 +2934,39 @@ fn grown(stated: f32, factor: f32, size: f32, line_height: f32, padding: f32, ru
     stated.max((size * factor * line_height).ceil() + padding + rule)
 }
 
-/// The family text at `weight` is drawn in over a `body`-weight body: the proportional one at
-/// the body's weight, else the face the showcase registers at `weight` where the fonts hold it,
-/// and the proportional one where they do not (`demo::weighted_family`).
-fn weighted(harness: &Harness<'_, App>, weight: u16, body: u16) -> egui::FontFamily {
-    let named = crate::demo::weight_family(weight);
-    let held = harness
-        .ctx
-        .fonts(|f| f.definitions().families.contains_key(&named));
-    if weight != body && held {
-        named
-    } else {
+/// Each of `weights` held under the family the showcase registers a face at that weight in
+/// (`demo::weight_family`), with egui's own proportional face added there, so that family is in
+/// the fonts on every host and in every feature set: the showcase registers the OS's face only
+/// where the OS has one (`demo::Semibold`), and where the fonts hold none `demo::weighted_family`
+/// asks for the proportional family, which is also what a text drawn at the body's weight is
+/// in. With the family held, a text at another weight is in it exactly when the page asks for
+/// its weight. Added after the last install, whose `set_fonts` would drop it, and in effect
+/// from the next pass.
+fn hold_weights(harness: &mut Harness<'_, App>, weights: &[u16]) {
+    let own = egui::FontDefinitions::default();
+    let face = own.families[&egui::FontFamily::Proportional][0].clone();
+    let data = own.font_data[&face].clone();
+    for weight in weights {
+        harness.ctx.add_font(egui::epaint::text::FontInsert::new(
+            &format!("test-weight-{weight}"),
+            egui::FontData::clone(&data),
+            vec![egui::epaint::text::InsertFontFamily {
+                family: crate::demo::weight_family(*weight),
+                priority: egui::epaint::text::FontPriority::Lowest,
+            }],
+        ));
+    }
+    harness.run_steps(2);
+}
+
+/// The family a text at `weight` over a `body`-weight body is asked in, with the face at that
+/// weight held ([`hold_weights`]): the proportional one at the body's weight, else the one the
+/// showcase registers at `weight` (`demo::weighted_family`).
+fn weighted(weight: u16, body: u16) -> egui::FontFamily {
+    if weight == body {
         egui::FontFamily::Proportional
+    } else {
+        crate::demo::weight_family(weight)
     }
 }
 
@@ -2972,17 +2993,20 @@ fn galley_font(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) ->
 /// scaled size, on all three tables: under material-3 (`list.header_font.weight` 500 over a 400
 /// body) at a text-scaling factor of 1.5, the Basic table's "Name" is `list_header_font`'s size
 /// in the face registered at 500 (`demo::weighted_family`), and the Data and Theme Map tables'
-/// header labels are in that font.
+/// header labels are in that font. The face at 500 is held on every host ([`hold_weights`]),
+/// so a header drawn at the body's weight fails here whatever faces the OS has.
 #[test]
 fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
     let preset = "material-3";
-    let basic = open_scaled(preset, "basic", 1.5);
+    let mut basic = open_scaled(preset, "basic", 1.5);
     let t = basic.state().atlas.resolved_for(egui::Theme::Light).clone();
+    let header_weight = t.list.header_font.weight;
+    hold_weights(&mut basic, &[header_weight]);
     let prefs = basic.state().atlas.accessibility().clone();
     assert_eq!(prefs.text_scaling_factor, 1.5, "the override is installed");
     let want = egui::FontId::new(
         native_theme_egui::list_header_font(&t, &prefs).size,
-        weighted(&basic, t.list.header_font.weight, t.defaults.font.weight),
+        weighted(header_weight, t.defaults.font.weight),
     );
     assert_ne!(
         t.list.header_font.weight, t.defaults.font.weight,
@@ -2998,7 +3022,8 @@ fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
         ("data", "table header", "Theme"),
         ("theme-map", "theme map header", "Leaf"),
     ] {
-        let page = open_scaled(preset, tab, 1.5);
+        let mut page = open_scaled(preset, tab, 1.5);
+        hold_weights(&mut page, &[header_weight]);
         let cells: Vec<egui::Rect> = page
             .state()
             .registry
@@ -3018,16 +3043,29 @@ fn the_tables_headers_are_drawn_at_their_weight_and_the_scaled_size() {
 /// M9-107: the Text page's text-role labels are drawn at the weight they name, as the Basic
 /// page's Typography lines are (`demo::role_text`): under windows-11 (`text_scale.display.weight`
 /// 600 over a 400 body) "Display, weight 600" is in the face registered at 600, and each role's
-/// label at its role's size and line height.
+/// label at its role's size and line height. The faces at the roles' weights are held on every
+/// host ([`hold_weights`]), so a label drawn at the body's weight fails here whatever faces the
+/// OS has.
 #[test]
 fn the_text_role_labels_are_drawn_at_their_weight() {
     use native_theme_egui::TextRole;
-    let harness = open_scaled("windows-11", "text", 1.0);
+    const ROLES: [(TextRole, &str); 4] = [
+        (TextRole::Caption, "Caption"),
+        (TextRole::SectionHeading, "Section heading"),
+        (TextRole::DialogTitle, "Dialog title"),
+        (TextRole::Display, "Display"),
+    ];
+    let mut harness = open_scaled("windows-11", "text", 1.0);
     let t = harness
         .state()
         .atlas
         .resolved_for(egui::Theme::Light)
         .clone();
+    let weights: Vec<u16> = ROLES
+        .iter()
+        .map(|(role, _)| native_theme_egui::text_role_weight(&t, *role))
+        .collect();
+    hold_weights(&mut harness, &weights);
     let prefs = harness.state().atlas.accessibility().clone();
     assert_ne!(
         t.text_scale.display.weight, t.defaults.font.weight,
@@ -3041,17 +3079,12 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
         .filter(|r| r.info.kind == "text role label")
         .map(|r| r.rect)
         .collect();
-    for (role, name) in [
-        (TextRole::Caption, "Caption"),
-        (TextRole::SectionHeading, "Section heading"),
-        (TextRole::DialogTitle, "Dialog title"),
-        (TextRole::Display, "Display"),
-    ] {
+    for (role, name) in ROLES {
         let weight = native_theme_egui::text_role_weight(&t, role);
         let text = format!("{name}, weight {weight}");
         let want = egui::FontId::new(
             native_theme_egui::text_role_font(&t, role, &prefs).size,
-            weighted(&harness, weight, t.defaults.font.weight),
+            weighted(weight, t.defaults.font.weight),
         );
         assert_eq!(galley_font(&harness, &text, &labels), want, "{text}");
     }
@@ -3149,10 +3182,11 @@ fn the_tables_headers_take_the_themes_header_height() {
 /// list and menu rows do (`geometry::list_item`, `geometry::menu_item`: the stated height at a
 /// factor of 1 or less, a minimum around the drawn text and padding above it) and as the iced
 /// showcase's Basic list and window menu rows do. At 1 the Basic list's rows are
-/// `list.row_height` (macos-monterey, material-3) and the window's menu rows at least
-/// `menu.row_height` (adwaita, macos-monterey, material-3): egui's `Button` takes the stated
-/// height as its least (`interact_size.y`) and grows past it to hold its text and padding, as
-/// macos-monterey's 22 px row does at 1 for its 17.33 px menu font; at 1.5 and 1.75 each is the
+/// `list.row_height` (macos-monterey, material-3) and the window's menu rows `menu.row_height`
+/// (adwaita, macos-monterey, material-3), macos-monterey's 22 px row too, whose 17.33 px menu
+/// font's line box and stated 3 + 3 padding overrun it: the connector narrows the padding to fit
+/// (`style::roles::fit_row_padding`), where egui's `Button`, which takes the stated height as
+/// its least (`interact_size.y`), drew the row 27 tall; at 1.5 and 1.75 each is the
 /// stated height or the line box of its font at its scaled size and `defaults.line_height`,
 /// rounded up, plus its padding (`list.border.padding`, the menu's button padding), whichever is
 /// more, computed from the theme at test time ([`grown`]): 1.75 puts macos-monterey's menu line
@@ -3175,9 +3209,8 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
             .clone();
         let line_height = t.defaults.line_height;
         let places = harness.state().registry.places();
-        let mut check = |id: &str, want: f32, least: bool| match places.get(id) {
+        let mut check = |id: &str, want: f32| match places.get(id) {
             Some(rect) if (rect.height() - want).abs() <= 0.05 => {}
-            Some(rect) if least && rect.height() > want => {}
             Some(rect) => faults.push(format!(
                 "{preset} at {factor}: {id} is {} tall, want {want}",
                 rect.height()
@@ -3203,7 +3236,6 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
                     padding,
                     0.0,
                 )),
-                false,
             );
         }
         let m = &t.menu;
@@ -3218,7 +3250,6 @@ fn stated_list_and_menu_rows_hold_their_text_at_every_text_scale() {
             check(
                 "chrome.menu.theme.light",
                 grown(h, factor, m.font.size, line_height, padding, 0.0),
-                factor <= 1.0,
             );
         }
     }

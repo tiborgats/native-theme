@@ -417,7 +417,9 @@ pub(crate) fn scoped(
 /// (`egui/src/widgets/button.rs:306-309`), grown above a text scale of 1 to at least the row's
 /// line box at `defaults.line_height`, rounded up, and its padding (`button_padding` above and
 /// below), as gpui's menu rows grow (`geometry::menu_item`, `with_height_rule`) and the iced
-/// showcase's (`rows::scaled_height`). At a factor of 1 or less the stated height stands.
+/// showcase's (`rows::scaled_height`). At a factor of 1 or less the stated height stands, and the
+/// connector fits the cell's vertical padding to it (`style::roles::fit_row_padding`), so the row
+/// is drawn that tall.
 fn grow_menu_rows(ui: &mut egui::Ui, role: Role) {
     if role != Role::Menu {
         return;
