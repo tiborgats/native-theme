@@ -9589,6 +9589,80 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
     tab_row
 }
 
+/// An expander's header, tagged `<id>.header`, its arrow `<id>.arrow` and
+/// its title `<id>.title`, `arrow_gap` apart. It is
+/// `expander.header_height` tall at a text scale of 1 or less, grown above
+/// it to hold its title's line and padding, as a list or menu row is
+/// (`rows::scaled_height`); the title is one line, centred in it, as a menu
+/// row's label. Its arrow is `expander.arrow_icon_size` across, on
+/// `expander.arrow_side` (docs/platform-facts.md §2.27), before the title
+/// where the side is unstated; it is drawn in `styles::expander`.
+fn expander_header<'a>(
+    resolved: &'a ResolvedTheme,
+    a11y: &'a AccessibilityPreferences,
+    arrow_gap: f32,
+    id: &'static str,
+    title: &'a str,
+    expanded: bool,
+    toggle: Message,
+) -> Element<'a, Message> {
+    let x = &resolved.expander;
+    let x_pad = expander_header_padding(x);
+    let x_height = rows::scaled_height(
+        x.header_height,
+        a11y,
+        x.font.size,
+        resolved.defaults.line_height,
+        x_pad.y(),
+        0.0,
+    );
+    let arrow_color = native_theme_iced::expander_arrow_color(resolved);
+    let trailing = x.arrow_side == Some(ArrowSide::Trailing);
+    let arrow = || {
+        let arrow = canvas(DisclosureArrow {
+            expanded,
+            trailing,
+            color: arrow_color,
+        })
+        .width(Length::Fixed(x.arrow_icon_size))
+        .height(Length::Fixed(x.arrow_icon_size));
+        match listed_part(id, "arrow") {
+            Some(arrow_id) => Element::from(tagged(arrow_id, arrow)),
+            None => arrow.into(),
+        }
+    };
+    let tag_title = |title: text::Text<'a>| -> Element<'a, Message> {
+        match listed_part(id, "title") {
+            Some(title_id) => tagged(title_id, title).into(),
+            None => title.into(),
+        }
+    };
+    let head = button(
+        row![]
+            .push((!trailing).then(arrow))
+            .push(tag_title(
+                text(title)
+                    .themed(&x.font, resolved, a11y)
+                    .wrapping(text::Wrapping::None),
+            ))
+            // A trailing arrow at the header's far end.
+            .push(trailing.then(|| space().width(Fill)))
+            .push(trailing.then(arrow))
+            .spacing(arrow_gap)
+            .align_y(iced::Center)
+            .height(Fill),
+    )
+    .padding(x_pad)
+    .width(Fill)
+    .height(Length::Fixed(x_height))
+    .style(styles::expander(resolved))
+    .on_press(toggle);
+    match listed_part(id, "header") {
+        Some(header_id) => Element::from(tagged(header_id, head)),
+        None => head.into(),
+    }
+}
+
 /// An expander header's padding: inside its own border where it draws one;
 /// where the theme states whether the expander is framed the header draws
 /// none (`styles::expander`) -- a framed one sits inside the item's frame,
@@ -10503,71 +10577,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
 
     let x = &resolved.expander;
     let x_pad = expander_header_padding(x);
-    // The header is `expander.header_height` tall at a text scale of 1 or
-    // less, grown above it to hold its title's line and padding, as a list
-    // or menu row is (`rows::scaled_height`).
-    let x_height = rows::scaled_height(
-        x.header_height,
-        a11y,
-        x.font.size,
-        resolved.defaults.line_height,
-        x_pad.y(),
-        0.0,
-    );
-    let arrow_color = native_theme_iced::expander_arrow_color(resolved);
-    // expander.arrow_side, arrow_gap, content_indent and frame_enabled
-    // (docs/platform-facts.md §2.27); where one is unstated the showcase's
-    // own stands: the arrow before the title, the widget gap, the body
-    // under the title, and each header framed by `styles::expander`.
-    let trailing = x.arrow_side == Some(ArrowSide::Trailing);
+    // expander.arrow_gap; the widget gap where it is unstated.
     let arrow_gap = x.arrow_gap.unwrap_or(gap.widget);
-    // A header, tagged `<id>.header`, its arrow `<id>.arrow` and its title
-    // `<id>.title`.
     let header = move |id: &'static str, title: &'a str, expanded: bool, toggle: Message| {
-        let arrow = || {
-            let arrow = canvas(DisclosureArrow {
-                expanded,
-                trailing,
-                color: arrow_color,
-            })
-            .width(Length::Fixed(x.arrow_icon_size))
-            .height(Length::Fixed(x.arrow_icon_size));
-            match listed_part(id, "arrow") {
-                Some(arrow_id) => Element::from(tagged(arrow_id, arrow)),
-                None => arrow.into(),
-            }
-        };
-        let tag_title = |title: text::Text<'a>| -> Element<'a, Message> {
-            match listed_part(id, "title") {
-                Some(title_id) => tagged(title_id, title).into(),
-                None => title.into(),
-            }
-        };
-        // The title one line, centred in the header, as a menu row's label.
-        let head = button(
-            row![]
-                .push((!trailing).then(arrow))
-                .push(tag_title(
-                    text(title)
-                        .themed(&x.font, resolved, a11y)
-                        .wrapping(text::Wrapping::None),
-                ))
-                // A trailing arrow at the header's far end.
-                .push(trailing.then(|| space().width(Fill)))
-                .push(trailing.then(arrow))
-                .spacing(arrow_gap)
-                .align_y(iced::Center)
-                .height(Fill),
-        )
-        .padding(x_pad)
-        .width(Fill)
-        .height(Length::Fixed(x_height))
-        .style(styles::expander(resolved))
-        .on_press(toggle);
-        match listed_part(id, "header") {
-            Some(header_id) => Element::from(tagged(header_id, head)),
-            None => head.into(),
-        }
+        expander_header(resolved, a11y, arrow_gap, id, title, expanded, toggle)
     };
     // The body sits content_indent in, or under the title, past the arrow
     // and its gap, where the theme states no indent.
@@ -22650,6 +22663,69 @@ mod tests {
             if title > title_line + 0.01 {
                 faults.push(format!(
                     "{what}: the title is {title}px tall, more than one line, {title_line}px"
+                ));
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9-156, round 2: an expander header keeps a title of several words,
+    /// wider than the Basic column, on one line, at the stated
+    /// `expander.header_height` and at one raised to four lines and the
+    /// padding, which a wrapped title would fill; the header is the rule's
+    /// height at both. iced's default `Wrapping::Word` breaks such a title,
+    /// where a single word never breaks.
+    #[test]
+    fn an_expander_header_keeps_a_long_title_on_one_line() {
+        const TITLE: &str = "Details of a header title long enough to wrap";
+        const HEADER: &str = "probe-test-expander-header";
+        let resolved = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok((_, resolved)) => resolved,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        let a11y = native_theme_iced::AccessibilityPreferences::default();
+        let x = &resolved.expander;
+        let pad = expander_header_padding(x);
+        let line = scaled_text_size(x.font.size, &a11y) * resolved.defaults.line_height;
+        let mut faults = Vec::new();
+        for header_height in [x.header_height, 4.0 * line + pad.y()] {
+            let mut r = resolved.clone();
+            r.expander.header_height = header_height;
+            let want = rows::scaled_height(
+                header_height,
+                &a11y,
+                r.expander.font.size,
+                r.defaults.line_height,
+                pad.y(),
+                0.0,
+            );
+            let arrow_gap = r.expander.arrow_gap.unwrap_or_default();
+            let header = expander_header(
+                &r,
+                &a11y,
+                arrow_gap,
+                "test.expander",
+                TITLE,
+                false,
+                Message::BasicDetailsToggled,
+            );
+            let element: Element<'_, Message> = container(probe(HEADER, Fill, header))
+                .width(Length::Fixed(BASIC_WIDE))
+                .into();
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), Size::new(BASIC_WIDE, 400.0), element);
+            let drawn = probe_bounds(&mut ui, HEADER);
+            let title = height_of(&mut ui, TITLE);
+            if (drawn.height - want).abs() >= 0.01 {
+                faults.push(format!(
+                    "header_height {header_height}: the header is {}px tall, want {want}px",
+                    drawn.height
+                ));
+            }
+            if (title - line).abs() >= 0.01 {
+                faults.push(format!(
+                    "header_height {header_height}: the title is {title}px tall, want one \
+                     line, {line}px"
                 ));
             }
         }
