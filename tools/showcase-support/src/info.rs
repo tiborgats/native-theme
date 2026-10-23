@@ -24,6 +24,18 @@ pub struct InfoRow {
     pub how: String,
 }
 
+impl InfoRow {
+    /// The row's two lines as the panel shows them and Copy copies them:
+    /// `<leaf> <value>`, then its route indented two spaces.
+    #[must_use]
+    pub fn lines(&self) -> [String; 2] {
+        [
+            format!("{} {}", self.leaf, self.value),
+            format!("  {}", self.how),
+        ]
+    }
+}
+
 /// A listed element's Widget Info.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ListedInfo {
@@ -78,7 +90,10 @@ impl ListedInfo {
     pub fn copy_text(&self) -> String {
         let mut text = format!("{}\n\nTheme\n", self.title);
         for row in &self.rows {
-            text.push_str(&format!("{} {}\n  {}\n", row.leaf, row.value, row.how));
+            for line in row.lines() {
+                text.push_str(&line);
+                text.push('\n');
+            }
         }
         if !self.not_themeable.is_empty() {
             text.push_str("\nNot themeable\n");
@@ -189,6 +204,14 @@ mod tests {
             "Button\n\nTheme\nbutton.background_color #336699\n  gpui: button.background_color\n\
              layout.widget_gap_px not stated\n  gpui: layout.widget_gap_px\n\nNot themeable\n\
              focus ring: upstream's ring\n"
+        );
+        assert_eq!(
+            info.rows.first().map(InfoRow::lines),
+            Some([
+                "button.background_color #336699".to_string(),
+                "  gpui: button.background_color".to_string(),
+            ]),
+            "a row's lines are not the ones Copy copies"
         );
         let bare = ListedInfo::new(
             &element(&leaves, &["Hovered"]),

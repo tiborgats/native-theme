@@ -582,14 +582,6 @@ impl InfoView {
         })
     }
 
-    /// The lines one row prints in Copy's text: `<leaf> <value>`, then its route, indented.
-    pub(crate) fn row_lines(row: &InfoRow) -> [String; 2] {
-        [
-            format!("{} {}", row.leaf, row.value),
-            format!("  {}", row.how),
-        ]
-    }
-
     /// What Copy puts on the clipboard: the text the panel shows, in the three showcases'
     /// form (`ListedInfo::copy_text`).
     pub(crate) fn text(&self) -> String {
@@ -907,17 +899,14 @@ pub(crate) fn widget_tab(
     let section = text.line(ui, "Theme", &text.semibold, text.colour);
     reg.place(ui, "chrome.info.section.theme", section);
     for (index, row) in view.rows.iter().enumerate() {
+        let [value_line, _] = row.lines();
         ui.add_space(widget_gap);
         let (rect, response) = ui.allocate_exact_size(
             egui::vec2(ui.available_width(), text.line + text.line),
             egui::Sense::hover(),
         );
         response.widget_info(|| {
-            egui::WidgetInfo::labeled(
-                egui::WidgetType::Label,
-                true,
-                InfoView::row_lines(row).join("\n"),
-            )
+            egui::WidgetInfo::labeled(egui::WidgetType::Label, true, row.lines().join("\n"))
         });
         let mut x = rect.left();
         let swatch = row.colour.map(|colour| {
@@ -931,12 +920,7 @@ pub(crate) fn widget_tab(
             x += text.line + widget_gap;
             square
         });
-        let line = text.galley(
-            ui,
-            &format!("{} {}", row.leaf, row.value),
-            &text.regular,
-            text.colour,
-        );
+        let line = text.galley(ui, &value_line, &text.regular, text.colour);
         // A line wider than the row is clipped at its end.
         let room = (rect.right() - x).max(0.0);
         let line_rect = egui::Rect::from_min_size(

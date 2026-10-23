@@ -3760,11 +3760,8 @@ fn the_info_is_the_manifest() {
                 );
                 assert!(!rows.is_empty(), "{seam:?} lists no row");
                 for row in rows {
-                    let printed = crate::info::InfoView::row_lines(&crate::info::manifest_row(
-                        row,
-                        &json,
-                        std::slice::from_ref(seam),
-                    ));
+                    let printed =
+                        crate::info::manifest_row(row, &json, std::slice::from_ref(seam)).lines();
                     let lines = printed.join("\n");
                     // The first line, whole: a substring would let `12` pass for `1`.
                     if let Some(value) = leaf_value(&expected, &row.leaf) {
