@@ -1595,7 +1595,13 @@ fn list_row(
             rect.top().max(view.top())..=rect.bottom().min(view.bottom()),
         );
         if shown.is_positive() {
-            let meets = |a: f32, b: f32| (a - b).abs() < 0.5;
+            // The scroll area lays the rows out on whole pixels and then on egui's layout grid
+            // (`egui/src/containers/scroll_area.rs:797-803`; `emath/src/gui_rounding.rs:58-70`),
+            // which moves each edge by at most half a pixel and half a grid step from the frame's
+            // inside: half a point under a 0.5 pt line at one pixel per point. A row is far
+            // taller, and a solid bar's groove far wider, than that.
+            let off = 0.5 / ui.pixels_per_point() + 0.5 * egui::emath::GUI_ROUNDING;
+            let meets = |a: f32, b: f32| (a - b).abs() <= off;
             let top = meets(shown.top(), edges.top());
             let bottom = meets(shown.bottom(), edges.bottom());
             let left = meets(shown.left(), edges.left());

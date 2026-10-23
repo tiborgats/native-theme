@@ -3340,13 +3340,16 @@ fn the_tables_headers_take_the_themes_header_height() {
 /// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners. The
 /// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.border.corner_radius` and has no
 /// margin, so its content lies inside its `list.border.line_width` stroke, where the frame's
-/// inner radius is the radius less the width. Under adwaita and kde-breeze set directly, whose
-/// list frames are rounded: the table's header fill is rounded by the inner radius at the top
+/// inner radius is the radius less the width. Under adwaita, kde-breeze and macos-tahoe set
+/// directly, whose list frames are rounded: the table's header fill is rounded by the inner radius at the top
 /// and square at the bottom, the selected last row at the bottom and square at the top; the
 /// list's selected row at the corners where it meets the frame, the first row at the top, the
 /// last row shown at the bottom, and square in between. On the right only where the bar floats
-/// over the rows (adwaita), so a row is the list's width: kde-breeze's bar takes its groove
-/// beside them. Each fill is the `Shape::Rect` at its element's place in its colour.
+/// over the rows (adwaita, macos-tahoe), so a row is the list's width: kde-breeze's bar takes
+/// its groove beside them. macos-tahoe's 0.5 pt line puts the frame's inside on a half point,
+/// and the list's scroll area lays its rows out on whole pixels
+/// (`egui/src/containers/scroll_area.rs:797-803`), half a point off it: a row there still meets
+/// the frame. Each fill is the `Shape::Rect` at its element's place in its colour.
 #[test]
 fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     use crate::pages::basic::{LIST_VISIBLE, TABLE_ROWS, TABLE_SELECTED};
@@ -3377,7 +3380,8 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
     let last = LIST_VISIBLE - 1;
     assert!(last > 1, "the list shows a row between its first and last");
     let mut bars = Vec::new();
-    for preset in ["adwaita", "kde-breeze"] {
+    let mut off_grid = false;
+    for preset in ["adwaita", "kde-breeze", "macos-tahoe"] {
         let mut harness = open_scaled(preset, "basic", 1.0);
         let t = harness
             .state()
@@ -3396,6 +3400,7 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
         );
         let floats = t.scrollbar.overlay_mode;
         bars.push(floats);
+        off_grid |= l.border.line_width.fract() != 0.0;
 
         assert_eq!(
             corners_of(&harness, "basic.table.header", colour(l.header_background)),
@@ -3424,11 +3429,11 @@ fn the_basic_list_and_table_fills_keep_inside_the_frames_corners() {
             );
         }
     }
-    assert_eq!(
-        bars,
-        [true, false],
-        "a floating bar and one beside the rows"
+    assert!(
+        bars.contains(&true) && bars.contains(&false),
+        "a floating bar and one beside the rows: {bars:?}"
     );
+    assert!(off_grid, "a list line off the whole-pixel grid");
 }
 
 /// M9-150's class in egui: a stated row height holds its text at every text scale, as gpui's
