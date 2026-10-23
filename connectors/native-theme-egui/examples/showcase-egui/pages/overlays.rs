@@ -2,6 +2,7 @@
 //! page `MenuBar`, each container given its surface's frame and its role's modifier as values
 //! (§1.5, §3.2), its body styled as the first statement inside.
 
+use egui::Button;
 use egui::containers::menu::SubMenuButton;
 use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
@@ -10,7 +11,7 @@ use native_theme_egui::{
     window_title_bar_font, window_title_bar_text_color,
 };
 
-use super::{DemoState, caption};
+use super::{DemoState, button_min_size, caption, inner_extent};
 use crate::demo::{self, Registry};
 
 /// The lines the window scrolls: a datum.
@@ -25,6 +26,7 @@ pub(crate) fn show(
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
+    let min = button_min_size(t);
 
     caption(
         reg,
@@ -32,7 +34,7 @@ pub(crate) fn show(
         "Window (Surface::Window, Surface::WindowTitleBar, body Role::Window)",
     );
     let open = demo::scoped(reg, ui, Role::Button, normal, "open window button", |ui| {
-        ui.button("Open window")
+        ui.add(Button::new("Open window").min_size(min))
     });
     if open.clicked() {
         state.window_open = true;
@@ -81,13 +83,19 @@ pub(crate) fn show(
         "Modal (Surface::Dialog, body Role::Dialog, buttons in dialog_button_order)",
     );
     let open = demo::scoped(reg, ui, Role::Button, normal, "open modal button", |ui| {
-        ui.button("Open modal")
+        ui.add(Button::new("Open modal").min_size(min))
     });
     if open.clicked() {
         state.modal_open = true;
     }
     if state.modal_open {
         let order = dialog_button_order(t);
+        let extents = [
+            t.dialog.min_width,
+            t.dialog.max_width,
+            t.dialog.min_height,
+            t.dialog.max_height,
+        ];
         let modal_open = &mut state.modal_open;
         demo::surfaced(
             reg,
@@ -97,10 +105,30 @@ pub(crate) fn show(
             None,
             "modal",
             |ui, chrome, reg| {
+                // The four extents egui's `Modal` never reads, per call, as the command palette
+                // takes them (`src/mapping.md`: DERIVED): each the frame's outer size, less its
+                // margins and stroke.
+                let [min_w, max_w, min_h, max_h] = extents;
+                let min_w = inner_extent(min_w, &chrome.frame, true);
+                let max_w = inner_extent(max_w, &chrome.frame, true);
+                let min_h = inner_extent(min_h, &chrome.frame, false);
+                let max_h = inner_extent(max_h, &chrome.frame, false);
                 let out = egui::Modal::new(egui::Id::new("overlays/modal"))
                     .frame(chrome.frame)
                     .show(ui.ctx(), |ui| {
                         let body = demo::styled(reg, ui, Role::Dialog, normal, "modal body");
+                        if let Some(w) = min_w {
+                            ui.set_min_width(w);
+                        }
+                        if let Some(w) = max_w {
+                            ui.set_max_width(w);
+                        }
+                        if let Some(h) = min_h {
+                            ui.set_min_height(h);
+                        }
+                        if let Some(h) = max_h {
+                            ui.set_max_height(h);
+                        }
                         body.add(reg, ui, "modal message", |ui| {
                             ui.label("A modal dialog, its two buttons in the platform's order.")
                         });
@@ -117,7 +145,7 @@ pub(crate) fn show(
                                     Role::Button,
                                     normal,
                                     "modal button",
-                                    |ui| ui.button(label),
+                                    |ui| ui.add(Button::new(label).min_size(min)),
                                 )
                                 .clicked();
                             }
@@ -139,7 +167,7 @@ pub(crate) fn show(
     );
     ui.horizontal(|ui| {
         let toggle = demo::scoped(reg, ui, Role::Button, normal, "open popup button", |ui| {
-            ui.button("Open popup")
+            ui.add(Button::new("Open popup").min_size(min))
         });
         demo::surfaced(
             reg,
@@ -157,7 +185,7 @@ pub(crate) fn show(
                 popup
                     .show(|ui| {
                         demo::scoped(reg, ui, Role::Button, normal, "popup item", |ui| {
-                            ui.button("A button in the popup")
+                            ui.add(Button::new("A button in the popup").min_size(min))
                         });
                     })
                     .map(|out| out.response)
@@ -203,7 +231,7 @@ pub(crate) fn show(
     );
     ui.horizontal(|ui| {
         let owner = demo::scoped(reg, ui, Role::Button, normal, "tooltip button", |ui| {
-            ui.button("Tooltip")
+            ui.add(Button::new("Tooltip").min_size(min))
         });
         demo::surfaced(
             reg,

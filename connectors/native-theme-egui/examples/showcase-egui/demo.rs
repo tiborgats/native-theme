@@ -234,6 +234,10 @@ impl Registry {
             f(&mut last.info);
         }
     }
+    /// Add the *Not themeable* line `what`: `note` to the last record.
+    pub(crate) fn note_last(&mut self, what: &'static str, note: &str) {
+        self.amend_last(|i| i.not_themeable.push((what, note.to_string())));
+    }
     /// Add a *Not themeable* line to every record this pass names the element `id`: a chrome
     /// element is its panel and the row inside it, and Widget Info shows either.
     pub(crate) fn note_element(&mut self, id: &str, what: &'static str, note: &str) {

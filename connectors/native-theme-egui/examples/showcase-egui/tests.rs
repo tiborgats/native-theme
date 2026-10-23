@@ -2896,6 +2896,155 @@ fn the_basic_page_applies_the_per_call_leaves() {
     }
 }
 
+/// M9-106 and M9-108: the per-call leaves the connector leaves to the application
+/// (`src/mapping.md`, `dialog.min_width` … `input.min_height`, DERIVED) reach the palette pages
+/// as they reach Basic. Under windows-11 set directly, which states every one: the Overlays
+/// page's modal is at least `dialog.min_width` × `dialog.min_height` and at most the max
+/// extents; every `Role::Button` kind of the Buttons and Overlays pages built with
+/// `Button::new` is at least `button.min_width` wide, and every `TextEdit (…)` of the Inputs
+/// page at least `input.min_height` tall, there and under material-3, whose fields are taller
+/// than egui's. egui's own kinds keep egui's sizes, each saying so under *Not themeable*.
+#[test]
+fn the_palette_pages_apply_the_per_call_leaves() {
+    fn rects(harness: &Harness<'_, App>, kind: &str) -> Vec<egui::Rect> {
+        let rects: Vec<egui::Rect> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .map(|r| r.rect)
+            .collect();
+        assert!(!rects.is_empty(), "no record of kind {kind}");
+        rects
+    }
+    fn assert_noted(harness: &Harness<'_, App>, kind: &str, leaf: &str) {
+        let notes: Vec<String> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == kind)
+            .flat_map(|r| r.info.not_themeable.iter())
+            .map(|(what, note)| format!("{what}: {note}"))
+            .collect();
+        assert!(
+            notes
+                .iter()
+                .any(|n| n.contains(leaf) && n.contains("not applied")),
+            "{kind}: no Not themeable line says {leaf} is not applied: {notes:?}"
+        );
+    }
+    let wide_enough = |harness: &Harness<'_, App>, kinds: &[&str]| {
+        let t = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .clone();
+        for kind in kinds {
+            for rect in rects(harness, kind) {
+                assert!(
+                    rect.width() >= t.button.min_width - 0.01,
+                    "{kind} is {rect:?}, narrower than button.min_width {}",
+                    t.button.min_width
+                );
+            }
+        }
+    };
+
+    let harness = open_scaled("windows-11", "buttons", 1.0);
+    wide_enough(
+        &harness,
+        &[
+            "button (enabled)",
+            "button (icon and text)",
+            "button (small)",
+            "button (frameless)",
+            "button (shortcut text)",
+            "button (suggested action)",
+            "button (disabled)",
+        ],
+    );
+    for kind in ["ui.button", "ui.small_button", "ui.toggle_value"] {
+        assert_noted(&harness, kind, "button.min_width");
+    }
+    assert_noted(&harness, "ui.small_button", "button.min_height");
+    assert_noted(&harness, "button (small)", "button.min_height");
+
+    let mut harness = open_scaled("windows-11", "overlays", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let d = &t.dialog;
+    wide_enough(
+        &harness,
+        &[
+            "open window button",
+            "open modal button",
+            "open popup button",
+            "tooltip button",
+        ],
+    );
+    harness.get_by_label("Open modal").click();
+    harness.run_steps(SETTLE);
+    wide_enough(&harness, &["modal button"]);
+    for modal in rects(&harness, "modal") {
+        assert!(
+            modal.width() >= d.min_width - 0.01
+                && modal.width() <= d.max_width + 0.01
+                && modal.height() >= d.min_height - 0.01
+                && modal.height() <= d.max_height + 0.01,
+            "the modal is {:?}, outside dialog.min_width..max_width {}..{} x \
+             min_height..max_height {}..{}",
+            modal.size(),
+            d.min_width,
+            d.max_width,
+            d.min_height,
+            d.max_height
+        );
+    }
+    harness.key_press(egui::Key::Escape);
+    harness.run_steps(SETTLE);
+    harness.get_by_label("Open popup").click();
+    harness.run_steps(SETTLE);
+    wide_enough(&harness, &["popup item"]);
+
+    // windows-11's fields are as tall as egui's one row and margin already; material-3's are
+    // taller than that.
+    for preset in ["windows-11", "material-3"] {
+        let harness = open_scaled(preset, "inputs", 1.0);
+        let min_height = harness
+            .state()
+            .atlas
+            .resolved_for(egui::Theme::Light)
+            .input
+            .min_height;
+        for kind in [
+            "TextEdit (single line)",
+            "TextEdit (multiline)",
+            "TextEdit (password)",
+            "TextEdit (hint)",
+            "TextEdit (disabled)",
+        ] {
+            for rect in rects(&harness, kind) {
+                assert!(
+                    rect.height() >= min_height - 0.01,
+                    "{preset}: {kind} is {rect:?}, under input.min_height {min_height}"
+                );
+            }
+        }
+        for kind in [
+            "ui.text_edit_singleline",
+            "ui.text_edit_multiline",
+            "ui.code_editor",
+        ] {
+            assert_noted(&harness, kind, "input.min_height");
+        }
+    }
+}
+
 /// The showcase on `tab` with `preset`'s atlas installed in place of the one it opened with, as
 /// `from_preset` builds it under a text-scaling factor of `factor` and the app installs one, at
 /// rest: a preset of another platform, which `--theme` does not take here, at the scale an OS
@@ -5639,6 +5788,15 @@ const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (
         "icons_indicator",
         "the 0.5 of Vec2::splat(0.5) is the centre Image::rotate turns about (§4.10)",
+    ),
+    (
+        "button_min_size",
+        "the 0.0 is no least height: a Button raises its own to interact_size.y, \
+         button.min_height in the button scope (egui 0.36.2 src/widgets/button.rs:306-309)",
+    ),
+    (
+        "input_min_size",
+        "the 0.0 is no least width: a TextEdit is its desired_width wide",
     ),
 ];
 /// The three named constants of §10.4, and the gpui-component literals the parity decisions
