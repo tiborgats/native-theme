@@ -604,8 +604,15 @@ The elements the three showcases share are listed once, in
 `docs/showcase-elements.toml`: `--dump-layout FILE` writes their rectangles
 for `scripts/check_showcase_parity.py`, and `--open-menu theme` opens the
 Theme menu before the first settled frame, so the capture and the dump hold
-its popup and rows. Add `--features watch` to have it follow the OS theme's
-changes.
+its popup and rows.
+
+The release screenshots (`.github/workflows/screenshots.yml`) and
+`scripts/generate_screenshots_egui.sh` build the showcase with
+`--all-features`, so every feature-gated section is in the captures: over the
+default features that adds `svg-rasterize`, `native` and `watch`. A captured or
+dumped window (`--capture`, `--screenshot`, `--dump-layout`) does not follow
+the OS theme, so it shows the theme the run started with, as the gpui and iced
+showcases' captures do.
 
 ## Gallery
 
