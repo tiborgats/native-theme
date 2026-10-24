@@ -1633,6 +1633,67 @@ fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
     );
 }
 
+/// Under a preset that states no `button.checked_background`, the Basic page's "On" toggle is
+/// filled from another leaf (`pages/basic.rs`, `buttons`: `button.active_background`, else
+/// `button.hover_background`), and its Widget Info says which under *Not themeable*; its text
+/// colour likewise, where `button.checked_text_color` is unstated (M9-111).
+#[test]
+fn the_toggle_that_is_on_names_the_leaf_its_fill_is_drawn_in() {
+    let prefs = AccessibilityPreferences::default();
+    let (key, t) = Theme::list_presets_for_platform()
+        .into_iter()
+        .find_map(|info| {
+            let (_, t) = from_preset(info.key, false, &prefs).ok()?;
+            t.button
+                .checked_background
+                .is_none()
+                .then_some((info.key, t))
+        })
+        .expect("a preset offered here states no button.checked_background");
+    let fill = if t.button.active_background.is_some() {
+        "button.active_background"
+    } else {
+        "button.hover_background"
+    };
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", key), ("--variant", "light"), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let pos = centre_of(&harness, "toggle button (on)");
+    hover_and_settle(&mut harness, pos);
+    let shown = harness
+        .state()
+        .registry
+        .shown()
+        .cloned()
+        .expect("hovering the toggle shows its info");
+    assert_eq!(
+        shown.info.element.as_deref(),
+        Some("basic.buttons.toggle_on")
+    );
+    let lines: Vec<String> = shown
+        .info
+        .not_themeable
+        .iter()
+        .map(|(what, note)| format!("{what}: {note}"))
+        .collect();
+    let names = |unstated: &str, drawn: &str| {
+        lines
+            .iter()
+            .any(|line| line.contains(unstated) && line.contains(drawn))
+    };
+    assert!(
+        names("button.checked_background", fill),
+        "{key}: no Not themeable line says the fill is {fill}: {lines:?}"
+    );
+    assert_eq!(
+        names("button.checked_text_color", "button.active_text_color"),
+        t.button.checked_text_color.is_none(),
+        "{key}: the text colour's line: {lines:?}"
+    );
+}
+
 /// A radio button and a check box take no selected flag of their own: the checked look is
 /// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is painted
 /// as a checked one.

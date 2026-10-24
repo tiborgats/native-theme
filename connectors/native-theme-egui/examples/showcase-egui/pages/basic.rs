@@ -540,6 +540,27 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         let held = |text: egui::RichText| Button::new(text.color(on_text)).fill(on_fill);
         text_button(reg, ui, kind, ("On", min), held, true);
     });
+    // Where the theme states no checked colour, the leaf the toggle is drawn in instead.
+    let b = &t.button;
+    if b.checked_background.is_none() {
+        let drawn = if b.active_background.is_some() {
+            "button.active_background"
+        } else {
+            "button.hover_background"
+        };
+        reg.note_element(
+            "basic.buttons.toggle_on",
+            "fill while on",
+            &format!("not stated by the theme (button.checked_background): {drawn}"),
+        );
+    }
+    if b.checked_text_color.is_none() {
+        reg.note_element(
+            "basic.buttons.toggle_on",
+            "text colour while on",
+            "not stated by the theme (button.checked_text_color): button.active_text_color",
+        );
+    }
 }
 
 /// The Checkboxes group.
