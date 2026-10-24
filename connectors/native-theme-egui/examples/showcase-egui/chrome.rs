@@ -140,6 +140,23 @@ const THEME_MENU_ROWS: [&str; 7] = [
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct PaletteState {
     pub query: String,
+    /// The highlighted row, counted across the groups among the rows the query keeps: the
+    /// first when the palette opens and whenever the query changes, as gpui-component's
+    /// `Command` (`command/state.rs:440-450`).
+    pub selected: usize,
+}
+
+/// The highlighted row after `down` presses of Down and `up` of Up from `selected`, among `len`
+/// rows, wrapping at either end as gpui-component's `Command` does (`select_by`,
+/// `command/state.rs:553-577`); `None` where there are no rows.
+fn palette_highlight(selected: usize, down: usize, up: usize, len: usize) -> Option<usize> {
+    let forward = selected
+        .checked_rem(len)?
+        .saturating_add(down.checked_rem(len)?);
+    forward
+        .checked_rem(len)?
+        .saturating_add(len.saturating_sub(up.checked_rem(len)?))
+        .checked_rem(len)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -1600,7 +1617,10 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
 /// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2491-2528`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
-/// Escape clears, then closes.
+/// Its keys are gpui-component's `Command`'s (`command/state.rs:65-68`): Up and Down move the
+/// highlighted row, Enter runs it, and Escape clears, then closes. They are the palette's while
+/// its field has the focus or nothing has; a row or the close button that has it keeps egui's
+/// own keys.
 pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
@@ -1616,6 +1636,8 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let groups = palette_groups(app, ui.ctx());
     let chosen_icons = app.chosen_icons();
     let mut query = palette.query.clone();
+    let mut selected = palette.selected;
+    let query_id = egui::Id::new("command-palette").with("query");
     let mut chosen: Option<Action> = None;
     let mut chosen_theme: Option<ThemeChoice> = None;
     let mut should_close = false;
@@ -1664,9 +1686,27 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                     }
                     close_clicked =
                         dialog_title(registry, ui, dialog, t, &chosen_icons, "Command Palette");
+                    // Up, Down and Enter, consumed before the field reads them: a single-line
+                    // `TextEdit` moves its cursor on Up and Down and gives up the focus on Enter.
+                    let palette_keys = ui.memory(|m| m.focused().is_none_or(|id| id == query_id));
+                    let (down, up, enter) = if palette_keys {
+                        ui.input_mut(|i| {
+                            (
+                                i.count_and_consume_key(
+                                    egui::Modifiers::NONE,
+                                    egui::Key::ArrowDown,
+                                ),
+                                i.count_and_consume_key(egui::Modifiers::NONE, egui::Key::ArrowUp),
+                                i.consume_key(egui::Modifiers::NONE, egui::Key::Enter),
+                            )
+                        })
+                    } else {
+                        (0, 0, false)
+                    };
                     let field = dialog.add(registry, ui, "palette query", |ui| {
                         ui.add(
                             egui::TextEdit::singleline(&mut query)
+                                .id(query_id)
                                 .hint_text("A page, a preset or a colour mode…")
                                 .desired_width(ui.available_width()),
                         )
@@ -1675,6 +1715,26 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                         field.request_focus();
                     }
                     let needle = query.to_lowercase();
+                    let groups: Vec<_> = groups
+                        .into_iter()
+                        .map(|(header, rows)| {
+                            let rows: Vec<_> = rows
+                                .into_iter()
+                                .filter(|(_, matched, _)| matched.to_lowercase().contains(&needle))
+                                .collect();
+                            (header, rows)
+                        })
+                        .filter(|(_, rows)| !rows.is_empty())
+                        .collect();
+                    if query != palette.query {
+                        selected = 0;
+                    }
+                    let count = groups.iter().map(|(_, rows)| rows.len()).sum();
+                    if let Some(highlight) = palette_highlight(selected, down, up, count) {
+                        selected = highlight;
+                    }
+                    let moved = down > 0 || up > 0;
+                    let mut index = 0usize;
                     demo::scoped_container(
                         registry,
                         ui,
@@ -1691,15 +1751,6 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                         egui::Layout::top_down_justified(egui::Align::Min),
                                         |ui| {
                                             for (header, rows) in groups {
-                                                let rows: Vec<_> = rows
-                                                    .into_iter()
-                                                    .filter(|(_, matched, _)| {
-                                                        matched.to_lowercase().contains(&needle)
-                                                    })
-                                                    .collect();
-                                                if rows.is_empty() {
-                                                    continue;
-                                                }
                                                 // A command group's header, small and muted.
                                                 row.add(registry, ui, "palette group", |ui| {
                                                     ui.label(
@@ -1707,13 +1758,20 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                                     )
                                                 });
                                                 for (label, _, pick) in rows {
+                                                    let highlighted = index == selected;
+                                                    index = index.saturating_add(1);
                                                     let r = row.add(
                                                         registry,
                                                         ui,
                                                         "palette row",
-                                                        |ui| ui.selectable_label(false, &label),
+                                                        |ui| {
+                                                            ui.selectable_label(highlighted, &label)
+                                                        },
                                                     );
-                                                    if r.clicked() {
+                                                    if highlighted && moved {
+                                                        r.scroll_to_me(None);
+                                                    }
+                                                    if r.clicked() || (highlighted && enter) {
                                                         match pick {
                                                             Pick::Action(action) => {
                                                                 chosen = Some(action)
@@ -1742,6 +1800,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
             });
             if escape {
                 query.clear();
+                selected = 0;
             }
             should_close = out.should_close();
             Some(out.backdrop_response)
@@ -1751,7 +1810,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     app.palette = if close {
         None
     } else {
-        Some(PaletteState { query })
+        Some(PaletteState { query, selected })
     };
     if let Some(choice) = chosen_theme {
         settings.theme = choice;

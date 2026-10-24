@@ -1062,6 +1062,132 @@ fn the_command_palette_runs_what_it_lists() {
     );
 }
 
+/// The palette's keys, as gpui-component's `Command` binds them (`command/state.rs:65-68`): the
+/// first row is highlighted when the palette opens and again whenever the query changes
+/// (`reset_selection`, `:440-450`), Up and Down move the highlight, wrapping at either end
+/// (`select_by`, `:553-577`), and Enter runs the highlighted row (`on_action_confirm`,
+/// `:594-598`). The highlighted row's AccessKit node is the one selected: a `selectable_label`
+/// drawn selected is `Toggled::True`, the others `Toggled::False` (`egui/src/response.rs:975-980`).
+#[test]
+fn the_palettes_keys_highlight_and_run_a_row() {
+    // The palette's rows in order, each with whether its node is selected.
+    fn rows(harness: &Harness<'_, App>) -> Vec<(String, bool)> {
+        let ids: Vec<egui::accesskit::NodeId> = harness
+            .state()
+            .registry
+            .records()
+            .iter()
+            .filter(|r| r.info.kind == "palette row")
+            .map(|r| r.id.accesskit_id())
+            .collect();
+        ids.into_iter()
+            .filter_map(|id| {
+                harness
+                    .query_all(By::new().predicate(move |n| n.locate().0 == id))
+                    .next()
+                    .and_then(|n| {
+                        let selected =
+                            n.accesskit_node().toggled() == Some(egui::accesskit::Toggled::True);
+                        n.accesskit_node().label().map(|l| (l, selected))
+                    })
+            })
+            .collect()
+    }
+    fn selected(harness: &Harness<'_, App>) -> Vec<usize> {
+        rows(harness)
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, s))| *s)
+            .map(|(i, _)| i)
+            .collect()
+    }
+    fn open_palette(harness: &mut Harness<'_, App>) {
+        harness.key_press_modifiers(egui::Modifiers::COMMAND, egui::Key::K);
+        harness.run_steps(SETTLE);
+        assert!(harness.state().palette.is_some());
+        assert!(
+            harness
+                .query_all_by_role(Role::TextInput)
+                .any(|n| n.is_focused()),
+            "the palette's field has no focus"
+        );
+    }
+    let mut harness = open_default();
+    harness.run_steps(SETTLE);
+
+    // Typing filters to one row, which Enter runs.
+    open_palette(&mut harness);
+    harness
+        .query_all_by_role(Role::TextInput)
+        .find(|n| n.is_focused())
+        .expect("the palette's field has focus")
+        .type_text("Ico");
+    harness.run_steps(SETTLE);
+    let labels: Vec<String> = rows(&harness).into_iter().map(|(l, _)| l).collect();
+    assert_eq!(labels, ["Icons"], "typing did not filter the rows");
+    harness.key_press(egui::Key::Enter);
+    harness.run_steps(2);
+    assert_eq!(harness.state().settings.page, Page::Icons);
+    assert!(
+        harness.state().palette.is_none(),
+        "Enter on a row did not close the palette"
+    );
+
+    // Down twice highlights the third row, which Enter runs.
+    open_palette(&mut harness);
+    assert_eq!(selected(&harness), [0], "the first row is not highlighted");
+    let third = rows(&harness)
+        .get(2)
+        .map(|(label, _)| label.clone())
+        .expect("the palette lists three rows");
+    assert_eq!(third, Page::ALL[2].label(), "the third row is not a page");
+    assert_ne!(Page::ALL[2], harness.state().settings.page);
+    for _ in 0..2 {
+        harness.key_press(egui::Key::ArrowDown);
+        harness.run_steps(2);
+    }
+    assert_eq!(
+        selected(&harness),
+        [2],
+        "Down twice did not reach the third row"
+    );
+    assert!(
+        harness
+            .query_all_by_role(Role::TextInput)
+            .any(|n| n.is_focused()),
+        "the arrow keys took the focus from the field"
+    );
+    harness.key_press(egui::Key::Enter);
+    harness.run_steps(2);
+    assert_eq!(harness.state().settings.page, Page::ALL[2]);
+    assert!(
+        harness.state().palette.is_none(),
+        "Enter on the third row did not close the palette"
+    );
+
+    // Up from the first row wraps to the last; a changed query highlights the first again.
+    open_palette(&mut harness);
+    harness.key_press(egui::Key::ArrowUp);
+    harness.run_steps(2);
+    let last = rows(&harness).len().checked_sub(1).expect("rows");
+    assert_eq!(
+        selected(&harness),
+        [last],
+        "Up did not wrap to the last row"
+    );
+    harness
+        .query_all_by_role(Role::TextInput)
+        .find(|n| n.is_focused())
+        .expect("the palette's field keeps the focus")
+        .type_text("a");
+    harness.run_steps(2);
+    assert_eq!(
+        selected(&harness),
+        [0],
+        "a changed query left the highlight where it was"
+    );
+}
+
 use std::collections::BTreeSet;
 use std::path::Path;
 
