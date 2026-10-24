@@ -3778,6 +3778,76 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
     }
 }
 
+/// The side panel keeps `LEFT_PANEL_WIDTH` whatever a theme setting's drop-down shows: a
+/// selected text wider than the panel is cut to its width with an ellipsis, as the drop-down's
+/// rows are, and the content panel keeps its room. An icon-theme choice whose system theme is
+/// unavailable is named with the reader's whole error (`IconSetChoice`'s `Display`,
+/// `native-theme/src/icons.rs:1353-1372`), which on a desktop the detection does not recognise,
+/// CI's runner among them, runs wider than the window: the panel widened to it and pushed the
+/// content panel out of the window (M9c CI1). The detection is the process's own, so the test
+/// names an installed theme as long.
+#[test]
+fn a_setting_wider_than_the_side_panel_keeps_the_panel_its_width() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let place = |h: &Harness<'_, App>, id: &str| {
+        h.state()
+            .registry
+            .places()
+            .get(id)
+            .copied()
+            .unwrap_or_else(|| panic!("{id} is not placed"))
+    };
+    let (panel, content) = (
+        place(&harness, "chrome.side_panel"),
+        place(&harness, "chrome.content"),
+    );
+    assert_eq!(
+        panel.width(),
+        crate::LEFT_PANEL_WIDTH,
+        "the side panel as it opens"
+    );
+    let long = "an-icon-theme-named-at-length-".repeat(12);
+    harness.state_mut().settings.icon = IconSetChoice::Freedesktop(long.clone());
+    harness.run_steps(4);
+    let drawn = harness
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text) if text.galley.job.text == long => Some(text.galley.clone()),
+            _ => None,
+        });
+    let Some(drawn) = drawn else {
+        panic!("the icon-theme drop-down does not show the choice");
+    };
+    // The choice's theme has no icons, so the toolbar above may change height: the panels'
+    // horizontal extents are the claim.
+    let (after, moved) = (
+        place(&harness, "chrome.side_panel"),
+        place(&harness, "chrome.content"),
+    );
+    assert_eq!(
+        after.x_range(),
+        panel.x_range(),
+        "the side panel changed width"
+    );
+    assert_eq!(
+        moved.x_range(),
+        content.x_range(),
+        "the content panel lost its room"
+    );
+    let combo = place(&harness, "chrome.side_panel.settings.icon_theme");
+    assert!(
+        combo.right() <= panel.right(),
+        "the drop-down {combo:?} leaves the side panel {panel:?}"
+    );
+    assert!(drawn.elided, "the drop-down's text is not cut");
+}
+
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups of a column
 /// and between two columns, as on the iced and gpui Basic pages: the page lays five columns of
 /// one width out that far apart, and in a column the space the page adds makes up the gap with

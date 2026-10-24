@@ -1174,8 +1174,14 @@ fn setting<T: Clone + PartialEq>(
         RoleVariant::Normal,
         setting.kind,
         |ui, modifier, row, registry| {
+            // The selected text truncated to the panel's width, as the rows are: a wider text
+            // would widen the drop-down, and the resizable panel keeps its content's width
+            // (`egui/src/containers/panel.rs:893-896`), so the content panel would leave the
+            // window. An icon-theme choice whose system theme is unavailable is named with the
+            // reader's whole error.
             let mut combo = ComboBox::from_id_salt(setting.label)
                 .width(ui.available_width())
+                .truncate()
                 .selected_text(demo::lined(
                     ui,
                     setting.current_text,
