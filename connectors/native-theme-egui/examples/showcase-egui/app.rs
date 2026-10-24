@@ -384,6 +384,10 @@ pub(crate) struct App {
     /// The system menu's clicks, drained into `pending` by `logic`.
     #[cfg(all(target_os = "macos", not(test)))]
     menu_rx: Option<std::sync::mpsc::Receiver<Action>>,
+    /// The system icon theme's detection, `native_theme::detect::system_icon_theme`, which the
+    /// Icon theme drop-down's hover text and the Icons page's label read; a test replaces it
+    /// with one that fails or names a theme, as it cannot change the desktop's.
+    pub(crate) detect_icon_theme: fn() -> native_theme::Result<String>,
 }
 
 impl App {
@@ -496,6 +500,7 @@ impl App {
             system_menu: None,
             #[cfg(all(target_os = "macos", not(test)))]
             menu_rx: None,
+            detect_icon_theme: native_theme::detect::system_icon_theme,
         };
         app.apply(&cc.egui_ctx, atlas);
         // After the install, which clears it: the platform's preset stands in for the selection.

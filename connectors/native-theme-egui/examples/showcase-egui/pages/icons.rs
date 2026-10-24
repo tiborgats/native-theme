@@ -28,10 +28,11 @@ pub(crate) fn show(
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
+    detect_icon_theme: fn() -> native_theme::Result<String>,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let (set, icon_theme) = chosen;
-    let set_label = set_label(*set, icon_theme.as_deref());
+    let set_label = set_label(*set, icon_theme.as_deref(), detect_icon_theme);
     let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
@@ -187,14 +188,19 @@ fn cell(
 /// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs`,
 /// `icon_set_label`): a freedesktop set with the theme its icons load from — where that is the
 /// system's and it cannot be detected, `unavailable`, the reason being the Icon theme
-/// drop-down's hover text, as a label is short — else the set's name.
-fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
+/// drop-down's hover text, as a label is short — else the set's name. `detect_icon_theme` is
+/// the system icon theme's detection (`App::detect_icon_theme`).
+pub(crate) fn set_label(
+    set: IconSet,
+    icon_theme: Option<&str>,
+    detect_icon_theme: fn() -> native_theme::Result<String>,
+) -> String {
     if set != IconSet::Freedesktop {
         return set.name().to_string();
     }
     match icon_theme {
         Some(theme) => format!("freedesktop ({theme})"),
-        None => match native_theme::detect::system_icon_theme() {
+        None => match detect_icon_theme() {
             Ok(theme) => format!("freedesktop ({theme})"),
             Err(_) => "freedesktop (unavailable)".to_string(),
         },

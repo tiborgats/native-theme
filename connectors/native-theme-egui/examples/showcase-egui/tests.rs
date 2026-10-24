@@ -3849,41 +3849,64 @@ fn a_setting_wider_than_the_side_panel_keeps_the_panel_its_width() {
 }
 
 /// Where the system icon theme cannot be detected, the Icon theme drop-down's hover text says
-/// why, as its `system` row's label, `system (unavailable)`, leaves the reason out; where it is
-/// detected, no hover text says it is unavailable. The detection is the process's own: under
-/// `scripts/run_in_runner_env.sh` and on CI's runner it fails, on a desktop it names the theme,
-/// so each run holds one of the two.
+/// why, as its `system` row's label, `system (unavailable)`, leaves the reason out, and the
+/// Icons page names the freedesktop set `freedesktop (unavailable)`; where it is detected, no
+/// hover text says it is unavailable. The detection is the test's (`App::detect_icon_theme`), so
+/// both cases run on every host.
 #[test]
 fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
-    let mut harness = open(
-        egui::Theme::Light,
-        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
-    );
-    harness.run_steps(4);
-    let Some(combo) = harness
-        .state()
-        .registry
-        .places()
-        .get("chrome.side_panel.settings.icon_theme")
-        .copied()
-    else {
-        panic!("the Icon theme drop-down is not placed");
-    };
-    hover_and_settle(&mut harness, combo.center());
-    match native_theme::detect::system_icon_theme() {
-        Err(error) => {
-            let reason = native_theme_showcase_support::rows::icon_theme_unavailable(&error);
+    fn failing() -> native_theme::Result<String> {
+        Err(native_theme::error::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        })
+    }
+    fn detected() -> native_theme::Result<String> {
+        Ok("breeze".to_string())
+    }
+    const REASON: &str =
+        "System icon theme: unavailable (platform not supported: the test's failing detection)";
+    for (detect, failed) in [
+        (failing as fn() -> native_theme::Result<String>, true),
+        (detected, false),
+    ] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+        );
+        harness.state_mut().detect_icon_theme = detect;
+        harness.run_steps(4);
+        let Some(combo) = harness
+            .state()
+            .registry
+            .places()
+            .get("chrome.side_panel.settings.icon_theme")
+            .copied()
+        else {
+            panic!("the Icon theme drop-down is not placed");
+        };
+        hover_and_settle(&mut harness, combo.center());
+        assert_eq!(
+            crate::pages::icons::set_label(native_theme::theme::IconSet::Freedesktop, None, detect),
+            if failed {
+                "freedesktop (unavailable)".to_string()
+            } else {
+                "freedesktop (breeze)".to_string()
+            },
+            "the Icons page's label for the system's freedesktop set"
+        );
+        if failed {
             assert!(
-                harness.query_by_label(&reason).is_some(),
-                "no hover text reads {reason:?}"
+                harness.query_by_label(REASON).is_some(),
+                "no hover text reads {REASON:?}"
+            );
+        } else {
+            assert!(
+                harness
+                    .query_by_label_contains("System icon theme: unavailable")
+                    .is_none(),
+                "the system icon theme is detected, yet a hover text says it is unavailable"
             );
         }
-        Ok(theme) => assert!(
-            harness
-                .query_by_label_contains("System icon theme: unavailable")
-                .is_none(),
-            "the system icon theme is {theme}, yet a hover text says it is unavailable"
-        ),
     }
 }
 

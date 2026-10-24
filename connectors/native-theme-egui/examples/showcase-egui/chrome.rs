@@ -1128,7 +1128,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             current: &current_icon,
             // Why the system icon theme is unavailable, where its detection failed: the
             // `system` row's label leaves the reason out, `system (unavailable)`.
-            hover: native_theme::detect::system_icon_theme()
+            hover: (app.detect_icon_theme)()
                 .err()
                 .map(|e| rows::icon_theme_unavailable(&e)),
         },
