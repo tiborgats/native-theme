@@ -252,28 +252,10 @@ fn held(toolkit: &str, held_weights: Option<&[u16]>) -> String {
 
 /// The status bar's items: the desktop ([`desktop`]), `<preset> <mode>`
 /// (`preset_label` as the preset picker names it, `mode` `light` or `dark`),
-/// the font as [`family_label`] of its family and `drawn_family` and its
+/// the font as [`DrawnFamily::label`] of `drawn` for its family and its
 /// [`defined_size`], then, where `prefs` is given (a native theme is
 /// installed), `text ×<factor>` and each preference that is set, by its
 /// field name.
-#[must_use]
-pub fn environment(
-    preset_label: &str,
-    mode: &str,
-    font: &ResolvedFontSpec,
-    drawn_family: Option<&str>,
-    prefs: Option<&AccessibilityPreferences>,
-) -> Vec<String> {
-    environment_drawn(
-        preset_label,
-        mode,
-        font,
-        DrawnFamily::from(drawn_family),
-        prefs,
-    )
-}
-
-/// [`environment`], the font named by [`DrawnFamily::label`] of `drawn`.
 #[must_use]
 pub fn environment_drawn(
     preset_label: &str,
@@ -486,7 +468,13 @@ mod tests {
         let font = font();
         let font_item = format!("{} {}", font.family, defined_size(&font));
         assert_eq!(
-            environment("default (kde-breeze)", "light", &font, None, None),
+            environment_drawn(
+                "default (kde-breeze)",
+                "light",
+                &font,
+                DrawnFamily::from(None),
+                None
+            ),
             [
                 desktop(),
                 "default (kde-breeze) light".to_string(),
@@ -499,7 +487,13 @@ mod tests {
         prefs.high_contrast = false;
         prefs.reduce_transparency = true;
         assert_eq!(
-            environment("adwaita", "dark", &font, Some("Cantarell"), Some(&prefs)),
+            environment_drawn(
+                "adwaita",
+                "dark",
+                &font,
+                DrawnFamily::from(Some("Cantarell")),
+                Some(&prefs)
+            ),
             [
                 desktop(),
                 "adwaita dark".to_string(),
@@ -514,7 +508,13 @@ mod tests {
             ]
         );
         let none_set = AccessibilityPreferences::default();
-        let items = environment("adwaita", "dark", &font, None, Some(&none_set));
+        let items = environment_drawn(
+            "adwaita",
+            "dark",
+            &font,
+            DrawnFamily::from(None),
+            Some(&none_set),
+        );
         assert_eq!(
             items.last(),
             Some(&format!("text ×{}", none_set.text_scaling_factor))
