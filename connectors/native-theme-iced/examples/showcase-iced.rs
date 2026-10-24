@@ -297,6 +297,9 @@ mod probes {
     ];
     /// The tip of the chrome tooltip shown ([`super::chrome_tip`]).
     pub const CHROME_TIP: &str = "probe-chrome-tip";
+    /// The Icon theme drop-down's tip, why the system icon theme is
+    /// unavailable ([`super::icon_theme_picker`]).
+    pub const ICON_THEME_TIP: &str = "probe-icon-theme-tip";
     pub const DISPLAY_TIPS: [&str; 4] = [
         "probe-display-tip-top",
         "probe-display-tip-bottom",
@@ -2414,12 +2417,13 @@ impl State {
     }
 
     /// The Icons page's line for the system icon theme: its name, or why
-    /// none was detected -- then no system icon loads, and no other theme
-    /// is named in its place.
+    /// none was detected (`rows::icon_theme_unavailable`, the Icon theme
+    /// drop-down's hover text) -- then no system icon loads, and no other
+    /// theme is named in its place.
     fn system_icon_theme_label(&self) -> String {
         match (self.detect_icon_theme)() {
             Ok(theme) => format!("System icon theme: {theme}"),
-            Err(e) => format!("System icon theme: unavailable ({e})"),
+            Err(e) => rows::icon_theme_unavailable(&e),
         }
     }
 
@@ -5756,6 +5760,43 @@ where
         .into()
 }
 
+/// The Icon theme row's drop-down, a [`setting_picker`] over the icon-theme
+/// choices; where the system icon theme cannot be detected, under a tooltip
+/// reading why ([`showcase_tooltip`], below it), as the row's `system`
+/// label is short, `system (unavailable)` (`IconSetChoice`'s `Display`):
+/// iced 0.14's `PickList` has no ellipsis and lays its menu's rows out at
+/// any width (iced_widget 0.14.2 `src/overlay/menu.rs:557-575`), so the
+/// reason, which can run to a reader's whole error, is no label's.
+fn icon_theme_picker(state: &State) -> Element<'_, Message> {
+    let picker = probe(
+        probes::ICON_THEME,
+        Fill,
+        setting_picker(
+            state,
+            state.icon_set_choices.clone(),
+            Some(state.icon_set_choice.clone()),
+            Message::IconSetSelected,
+        ),
+    );
+    match (state.detect_icon_theme)() {
+        Ok(_) => picker,
+        Err(e) => {
+            let resolved = &state.current_resolved;
+            let tip = text(rows::icon_theme_unavailable(&e)).themed(
+                &resolved.tooltip.font,
+                resolved,
+                &state.accessibility,
+            );
+            showcase_tooltip(
+                state,
+                picker,
+                drawn_probe(probes::ICON_THEME_TIP, tip),
+                tooltip::Position::Bottom,
+            )
+        }
+    }
+}
+
 /// The Theme row's drop-down: a `combo_box` over [`theme_choices`]
 /// (`State::theme_combo`), searchable as the gpui showcase's preset switch
 /// is, dressed as [`setting_picker`] dresses the other rows' -- the model's
@@ -5932,16 +5973,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
                 "chrome.side_panel.settings.icon_theme"
             ),
             "Icon theme",
-            probe(
-                probes::ICON_THEME,
-                Fill,
-                setting_picker(
-                    state,
-                    state.icon_set_choices.clone(),
-                    Some(state.icon_set_choice.clone()),
-                    Message::IconSetSelected,
-                ),
-            ),
+            icon_theme_picker(state),
         ),
     ]
     .spacing(settings_gap(&state.layout));
@@ -18359,6 +18391,78 @@ mod tests {
             state.system_icon_theme_label(),
             "System icon theme: unavailable (platform not supported: the test's failing detection)"
         );
+    }
+
+    /// Where the system icon theme cannot be detected, the Icon theme
+    /// drop-down's hover text says why, as its `system` row's label leaves
+    /// the reason out; where it is detected, the drop-down has no tooltip.
+    /// The tip is the platform's, no wider than `tooltip.max_width`.
+    #[test]
+    fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
+        recording(|| {
+            let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("kde-breeze: {error}"),
+            };
+            resolved.tooltip.show_delay = None;
+            let max_width = resolved.tooltip.max_width;
+            fn failing() -> native_theme::Result<String> {
+                Err(native_theme::error::Error::PlatformUnsupported {
+                    platform: "the test's failing detection",
+                })
+            }
+            fn detected() -> native_theme::Result<String> {
+                Ok("breeze".to_string())
+            }
+            for (detect, tipped) in [
+                (failing as fn() -> native_theme::Result<String>, true),
+                (detected, false),
+            ] {
+                let state = State {
+                    current_theme: theme.clone(),
+                    current_resolved: resolved.clone(),
+                    detect_icon_theme: detect,
+                    ..State::default()
+                };
+                let iced_theme = super::theme(&state);
+                let mut ui: Simulator<'_, Message> =
+                    Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                for _ in 0..2 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
+                }
+                let picker = match drawn_layout().get("chrome.side_panel.settings.icon_theme") {
+                    Some(rect) => *rect,
+                    None => panic!("the Icon theme drop-down is not drawn"),
+                };
+                ui.point_at(picker.center());
+                let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                    position: picker.center(),
+                })]);
+                for _ in 0..3 {
+                    if let Err(error) = ui.snapshot(&iced_theme) {
+                        panic!("the interface did not draw: {error}");
+                    }
+                }
+                let tip = drawn_layout().get(probes::ICON_THEME_TIP).copied();
+                match (tipped, tip) {
+                    (true, Some(tip)) => {
+                        assert!(
+                            tip.y >= picker.y + picker.height,
+                            "the tip {tip:?} is not below the drop-down {picker:?}"
+                        );
+                        assert!(
+                            tip.width <= max_width + 0.01,
+                            "the tip {tip:?} is wider than tooltip.max_width {max_width}"
+                        );
+                    }
+                    (true, None) => panic!("a failed detection: no tip with the pointer on it"),
+                    (false, Some(tip)) => panic!("a detected theme: a tip at {tip:?}"),
+                    (false, None) => {}
+                }
+            }
+        })
     }
 
     /// After startup, an OS theme that fails to read is a failed install
