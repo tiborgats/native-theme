@@ -8928,9 +8928,11 @@ pub(crate) fn files_table(
     // A fill where a row meets the frame is rounded by the frame's inner
     // radius (`list_inner_radius`) on the corners it meets: the header's top
     // ones and the last row's bottom ones, as the egui and iced Basic tables
-    // round theirs. gpui-pre clips the frame's children to its rectangle
-    // (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a square
-    // fill would show past the frame's curve there.
+    // round theirs. GPUI Fast clips the frame's children to its curved
+    // padding edge (gpui-fast 0.1.10 src/fast/rounded_clip.rs:68-104), so a
+    // square fill would be cut at the curve; gpui-pre clips them to its
+    // rectangle (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a
+    // square fill would show past the curve there.
     let inner = list_inner_radius(&l.border);
     let [first, second] = head;
     let header_height = geometry::list_header_height(n);
