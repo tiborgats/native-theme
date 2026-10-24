@@ -8252,7 +8252,7 @@ section now says so:
   offer, 2.25, on every bundled preset), the rest is reached by scrolling
   across.
 - **§10.4, the rest of M9c** (M9c T18, 2026-10-24): M9c changed more of §10.4
-  than the three M9c lines above record: the watcher's hand-off, Reduce motion,
+  than the M9c lines above record: the watcher's hand-off, Reduce motion,
   the macOS menus, the chrome's spacing, the per-call leaves, the rounded list
   fills, the drawn family, the command palette's keys and the icon cache among
   them. Those are recorded in the code-review ledger,
