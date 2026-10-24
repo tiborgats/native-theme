@@ -2324,6 +2324,63 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
     );
 }
 
+/// The status bar's padding on a side the theme leaves unstated, `(vertical, horizontal)`, as
+/// the gpui showcase's bar draws it at a scale of 1: gpui-component's `py_1`/`px_2`, a quarter
+/// and a half of the scaled `defaults.font.size`, each rounded to a whole pixel with a half
+/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.9 `src/taffy.rs:523-527`,
+/// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`).
+fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> (f32, f32) {
+    let atlas = &harness.state().atlas;
+    let rem = atlas
+        .accessibility()
+        .scaled(atlas.resolved_for(egui::Theme::Light).defaults.font.size);
+    let whole = |length: f32| (length.abs() - 0.5).ceil().copysign(length);
+    (whole(rem / 4.0), whole(rem / 2.0))
+}
+
+/// The status bar is padded as the gpui showcase's on a side the theme leaves unstated, a half
+/// pixel rounded toward zero as gpui rounds it, where egui rounded it away from zero: under
+/// catppuccin-mocha, material-3 and windows-11 (a 14 px font, a quarter of it 3.5) 3 px above
+/// and below, where 4. The expectation is read from each resolved theme at test time.
+#[test]
+fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
+    for preset in ["catppuccin-mocha", "material-3", "windows-11"] {
+        let harness = open_scaled(preset, "basic", 1.0);
+        let atlas = &harness.state().atlas;
+        let t = atlas.resolved_for(egui::Theme::Light).clone();
+        let p = &t.status_bar.border.padding;
+        assert!(
+            [p.top, p.right, p.bottom, p.left]
+                .iter()
+                .all(Option::is_none),
+            "{preset} states a status-bar padding"
+        );
+        let (vertical, horizontal) = gpui_status_bar_padding(&harness);
+        let status = place_of(&harness, "chrome.status_bar");
+        let toggle = place_of(&harness, "chrome.status_bar.toggle");
+        assert!(
+            (toggle.left() - status.left() - horizontal).abs() < 0.25,
+            "{preset}: the status bar's toggle is {} from the bar's left, not {horizontal}",
+            toggle.left() - status.left()
+        );
+        let size =
+            native_theme_egui::scaled_text_size(t.status_bar.font.size, atlas.accessibility());
+        let line = harness
+            .ctx
+            .fonts_mut(|f| f.row_height(&egui::FontId::proportional(size)));
+        // The panel keeps room for its line, rounded to a whole point, outside its frame
+        // (`egui/src/containers/panel.rs:961-965`).
+        let rule = t.status_bar.border.line_width.round();
+        let expected = rule + vertical + line.max(toggle.height()) + vertical;
+        assert!(
+            (status.height() - expected).abs() < 0.25,
+            "{preset}: the status bar is {} tall, a {rule} line + {vertical} + its content + \
+             {vertical} is {expected}",
+            status.height()
+        );
+    }
+}
+
 /// The status bar keeps the shown Widget Info's title and cuts the environment short in the
 /// room the title leaves, as the gpui showcase's does (`demo::status_bar`, `truncate` on the
 /// environment): under windows-11 at a text scale of 1.5, where the environment and the title
@@ -2405,7 +2462,8 @@ fn every_record_notes(harness: &Harness<'_, App>, id: &str, parts: &[&str]) -> b
 /// `TOOLBAR_PADDING` in from the bar's left and top, the menu bar's first title
 /// `MENU_BAR_PADDING` from its left, the status bar gpui-component's `py_1`/`px_2` at the
 /// scaled `defaults.font.size` (a quarter of it above and below, a half at the sides, each
-/// rounded to a whole point), where egui's own panel margin stood. macos-tahoe is a preset of
+/// rounded to a whole point a half toward zero, [`gpui_status_bar_padding`]), where egui's own
+/// panel margin stood. macos-tahoe is a preset of
 /// another platform here, so it is installed directly. Under catppuccin-mocha, which states
 /// `container_margin` but no toolbar padding, the toolbar's unstated sides are noted as that
 /// margin (I m3, J m3 (a)); kde-breeze states every side of both bars and notes none.
@@ -2463,8 +2521,7 @@ fn the_chrome_bars_take_the_gpui_showcases_padding_where_the_theme_states_none()
         element_notes(&harness, "chrome.menu_bar")
     );
 
-    let rem = atlas.accessibility().scaled(t.defaults.font.size);
-    let (vertical, horizontal) = ((rem / 4.0).round(), (rem / 2.0).round());
+    let (vertical, horizontal) = gpui_status_bar_padding(&harness);
     let status = place_of(&harness, "chrome.status_bar");
     let toggle = place_of(&harness, "chrome.status_bar.toggle");
     assert!(
