@@ -779,11 +779,16 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
 # twelve tests failed that passed here. scripts/run_in_runner_env.sh runs each
 # test binary in that environment (its header gives the evidence for each
 # part). Each showcase in every feature set ci.yml's test-connectors job tests
-# it with, each one a test leg above builds, so nothing is compiled again: the
-# egui showcase with its defaults, none and all; the iced showcase with its
-# defaults and with iced_aw, watch and native (without default features its
-# required features leave it out); the gpui showcase with native and watch,
-# which add to its defaults. The egui showcase's `native` reads the desktop
+# it with: the egui showcase with its defaults, none and all; the iced
+# showcase with its defaults and with iced_aw, watch and native (without
+# default features its required features leave it out); the gpui showcase
+# with its defaults, with native and watch, which add to them, and on GPUI
+# Fast with native and watch. A test leg above builds each but the gpui
+# showcase's defaults, which the tests above leave to the native and watch
+# leg, so that one leg alone compiles the connector and the showcase again.
+# The per-commit subset skips the GPUI Fast leg, as it skips the GPUI Fast
+# test leg that builds it: there only the full run and CI check GPUI Fast in
+# the runner's environment. The egui showcase's `native` reads the desktop
 # (the KDE and portal readers): the environment has no desktop name, kdeglobals
 # or session bus, the runner no desktop session (the installed software of its
 # image, Ubuntu 24.04 20261012.334, names none), and this host has no
@@ -831,8 +836,17 @@ else
         scripts/run_in_runner_env.sh test -p native-theme-iced --example showcase-iced
     run_tests "test (iced showcase, iced_aw, watch, native, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-iced --features iced_aw,watch,native --example showcase-iced
+    run_tests "test (gpui showcase, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-gpui --example showcase-gpui
     run_tests "test (gpui showcase, native, watch, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-gpui --features native,watch --example showcase-gpui
+    if [[ $COMMIT_MODE ]]; then
+        printf "${DIM}test (gpui showcase, gpui-fast, native, watch, runner environment)${NC}\n"
+        print_skipped "test (gpui showcase, gpui-fast, native, watch, runner environment)"
+    else
+        run_tests "test (gpui showcase, gpui-fast, native, watch, runner environment)" \
+            scripts/run_in_runner_env.sh test -p native-theme-gpui --features gpui-fast,native,watch --example showcase-gpui
+    fi
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────

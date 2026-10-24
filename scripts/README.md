@@ -705,12 +705,15 @@ The packages are pinned by SHA-256 and downloaded from `snapshot.ubuntu.com`
 (else the archive's pool) into `target/runner-env/debs` once; the environment
 is built from them again when the list changes. The script's header gives the
 evidence for each part. `scripts/check_release.sh` runs the three showcases'
-tests through it in both modes (Linux only), in every feature set `ci.yml`'s
-test-connectors job tests them with, each one a test leg already builds: the
-egui showcase with its defaults, with none and with all (whose `native`
-reads the desktop, which the environment hides), the iced showcase with its
-defaults and with `iced_aw,watch,native`, the gpui showcase with
-`native,watch`. It runs `run_in_runner_env.sh --prepare` first, which
+tests through it on Linux, in every feature set `ci.yml`'s test-connectors
+job tests them with: the egui showcase with its defaults, with none and with
+all (whose `native` reads the desktop, which the environment hides), the iced
+showcase with its defaults and with `iced_aw,watch,native`, the gpui showcase
+with its defaults, with `native,watch` and on GPUI Fast with
+`gpui-fast,native,watch`. A test leg already builds each but the gpui
+showcase's defaults, which that leg compiles again. Both modes run them all
+but the GPUI Fast leg, which `--commit` skips, as it skips the gpui
+connector's other GPUI Fast tests. It runs `run_in_runner_env.sh --prepare` first, which
 builds the environment and runs nothing: where a package is not cached with
 its SHA-256 and neither server delivers it, one or both out of reach (no
 connection, a timeout, a transfer closed early) or answering transiently (5xx,
