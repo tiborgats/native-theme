@@ -29,10 +29,12 @@
 #   --commit       the per-commit subset: skips the release-only checks
 #                  (the release-tag check, the gpui connector's tests on GPUI
 #                  Fast, native-theme's ignored stem-index test, docs.rs
-#                  emulation, packaging, semver checks, security audit,
-#                  outdated dependencies, and the visual-asset and
-#                  compatibility stamp checks), each printing "skipped
-#                  (--commit mode)", and names them in the final summary.
+#                  emulation, packaging, semver checks, outdated
+#                  dependencies, and the visual-asset and compatibility stamp
+#                  checks), each printing "skipped (--commit mode)", and names
+#                  them in the final summary. The security audit runs in it
+#                  too, and offline falls back to the cached advisory
+#                  database with a warning (the section says how).
 #
 # Formatting: `cargo fmt --all` formats the tree in place rather than checking
 # it, by design: the per-commit gate formats what is about to be committed,
@@ -48,11 +50,12 @@ Usage: scripts/check_release.sh [--commit]
   (no argument)  the full pre-release check; required on the last commit of
                  every fix phase and before the release commit
   --commit       the per-commit subset: every lint, check, test, docs,
-                 widget-coverage, showcase-parity and archive-index gate; skips
-                 the release-tag check, the gpui connector's tests on GPUI
-                 Fast, native-theme's ignored stem-index test, docs.rs
-                 emulation, packaging, semver checks, the security audit,
-                 outdated dependencies, and the visual-asset and
+                 widget-coverage, showcase-parity and archive-index gate and
+                 the security audit (offline: the cached advisory database,
+                 a warning); skips the release-tag check, the gpui
+                 connector's tests on GPUI Fast, native-theme's ignored
+                 stem-index test, docs.rs emulation, packaging, semver
+                 checks, outdated dependencies, and the visual-asset and
                  compatibility stamp checks
   -h, --help     print this help and exit
 EOF
@@ -357,8 +360,8 @@ fi
 HAVE_AUDIT=""
 HAVE_OUTDATED=""
 HAVE_SEMVER_CHECKS=""
+check_tool cargo-audit "security audit" && HAVE_AUDIT=1
 if [[ ! $COMMIT_MODE ]]; then
-    check_tool cargo-audit "security audit" && HAVE_AUDIT=1
     check_tool cargo-outdated "outdated-dependency check" && HAVE_OUTDATED=1
     check_tool cargo-semver-checks "semver checks" && HAVE_SEMVER_CHECKS=1
 fi
@@ -1101,12 +1104,62 @@ fi
 # database fetch, a lockfile it cannot parse) checked nothing. .cargo/audit.toml
 # denies the informational advisories too (unmaintained, unsound, yanked), and
 # lets one pass only through an ignore entry that gives its reason.
+#
+# Both modes run it, as CI does on every push: an advisory published or a
+# release yanked between two full runs fails the next commit, where it waited
+# for the next full run (M9c CI1: RUSTSEC-2026-0386 and clipboard-win 5.4.1's
+# yank reached CI after 71 per-commit runs had passed). `cargo audit` fetches
+# the database on every run and updates the crates.io index for its yank
+# check. Without a network the fetch fails ("couldn't fetch advisory
+# database"); the full run then fails, and the per-commit subset audits the
+# lock against the cached database (`--no-fetch`, which updates no index, so
+# a new yank goes unseen) and warns, naming the cached database's date.
 # ─────────────────────────────────────────────────────────────────────────────
+audit_offline() {
+    # $1 = description; the online audit could not fetch the database.
+    local start=$SECONDS
+    local output
+    local status=0
+    set +e
+    output=$(cargo audit --no-fetch 2>&1)
+    status=$?
+    set -e
+    local elapsed
+    elapsed=$(format_elapsed "$((SECONDS - start))")
+    if [ "$status" -ne 0 ]; then
+        printf "%s\n" "$output" >&2
+        print_fail "$1, offline, cached database" "$elapsed"
+        exit 1
+    fi
+    local db dated
+    db=$(sed -n 's/\x1b\[[0-9;]*m//g; s/.*security advisories (from \(.*\))$/\1/p' <<<"$output")
+    dated=""
+    if [ -n "$db" ] && [ -d "$db" ]; then
+        dated=$(git -C "$db" log -1 --format=%cs 2>/dev/null || true)
+    fi
+    print_warn "$1: offline, the cached database of ${dated:-an unknown date}, no yank check" "$elapsed" "soft"
+}
+
 print_section "Security audit"
-if [[ $COMMIT_MODE ]]; then
-    print_skipped "Security audit"
-elif [[ ! $HAVE_AUDIT ]]; then
+if [[ ! $HAVE_AUDIT ]]; then
     printf "${DIM}   not run: cargo-audit is not installed (failed above)${NC}\n"
+elif [[ $COMMIT_MODE ]]; then
+    audit_description="cargo audit (RustSec advisories, .cargo/audit.toml)"
+    audit_start=$SECONDS
+    set +e
+    audit_output=$(cargo audit 2>&1)
+    audit_status=$?
+    set -e
+    if [ "$audit_status" -eq 0 ]; then
+        print_ok "$audit_description" "$(format_elapsed "$((SECONDS - audit_start))")"
+    elif grep -q "couldn't fetch advisory database" <<<"$audit_output"; then
+        audit_offline "$audit_description"
+    else
+        printf "%s\n" "$audit_output" >&2
+        print_fail "$audit_description" "$(format_elapsed "$((SECONDS - audit_start))")"
+        printf "${RED}   Failed command:${NC} cargo audit\n" >&2
+        exit 1
+    fi
 else
     run_check "cargo audit (RustSec advisories, .cargo/audit.toml)" cargo audit
 fi

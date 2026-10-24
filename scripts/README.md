@@ -304,18 +304,23 @@ There is no verb that writes the stamp without the run.
 
 The workspace's quality gate: source hygiene, `cargo check`, the feature
 combinations, the cross-target checks and clippy, fmt, clippy, the strict
-panic lints, the tests, the connectors' other configurations, the examples,
+panic lints, the tests, the connectors' other configurations, the showcases'
+tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
-data documents' three checks, docs and the archive index, then the release-only sections: the docs.rs emulation,
+data documents' three checks, docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
-visual-asset and compatibility stamp checks. Prints one line per check and a summary;
+visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
 cfg that matches nothing still exits 0. `CONTRIBUTING.md` lists every check.
 
 With `--commit` it runs the per-commit subset: the release-tag check, the gpui
 connector's tests on GPUI Fast, native-theme's ignored stem-index test and the
 release-only sections are skipped, each
-printing `skipped (--commit mode)`, and the summary names them.
+printing `skipped (--commit mode)`, and the summary names them. `cargo audit`
+runs in both modes, as CI audits every push. It fetches the advisory database
+each time; where it cannot (no network), the full run fails, and the
+per-commit subset audits against the cached database (`cargo audit
+--no-fetch`, which checks no yanks) and warns with that database's date.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
