@@ -1814,6 +1814,10 @@ struct State {
     /// is not installed (`default_icon_choice`), keeps following it.
     icon_choice_follows_preset: bool,
     icon_set_choices: Vec<IconSetChoice>,
+    /// Whether the Icon theme drop-down's menu is open, as its `on_open`
+    /// and `on_close` messages and a pick report it: its tooltip does not
+    /// show meanwhile ([`icon_theme_picker`]).
+    icon_theme_menu_open: bool,
     loaded_icons: Vec<LoadedIcon>,
     /// Cached list of installed freedesktop icon themes (populated once at init).
     installed_themes: Vec<String>,
@@ -2103,6 +2107,7 @@ impl State {
             icon_set_choice,
             icon_choice_follows_preset: true,
             icon_set_choices,
+            icon_theme_menu_open: false,
             loaded_icons,
             installed_themes,
             indicator,
@@ -2693,6 +2698,8 @@ enum Message {
 
     // Icons tab
     IconSetSelected(IconSetChoice),
+    /// The Icon theme drop-down's menu opened (`true`) or closed (`false`).
+    IconThemeMenuOpen(bool),
 
     // Animated Icons
     AnimationTick,
@@ -3046,7 +3053,13 @@ fn update_inner(state: &mut State, message: Message) {
         Message::AwCardToggled => state.aw_card_open = !state.aw_card_open,
         #[cfg(feature = "iced_aw")]
         Message::AwActionChosen(what) => state.aw_last_action = what,
-        Message::IconSetSelected(choice) => state.choose_icon_set(choice),
+        Message::IconSetSelected(choice) => {
+            // A pick closes the menu without its `on_close` message
+            // (iced_widget 0.14.2 `src/pick_list.rs:714-718`).
+            state.icon_theme_menu_open = false;
+            state.choose_icon_set(choice);
+        }
+        Message::IconThemeMenuOpen(open) => state.icon_theme_menu_open = open,
         // `update_at` takes these and hands none of them on: the hover and
         // settle messages, the ticks, the layout dump's, the screenshot's
         // and the capture's, Quit, Copy and the command palette's runs.
@@ -5237,12 +5250,15 @@ fn surface(
 /// ([`ShowDelay`]). Every tooltip of the showcase is built here, the
 /// chrome's, the Basic page's and the Display page's, so one rule places
 /// them all; the tip's text is the caller's, in `tooltip.font` on the
-/// theme's line height ([`Typeset::themed`]).
+/// theme's line height ([`Typeset::themed`]). Where not `shown`, the same
+/// tooltip draws nothing of its own, for a caller whose `tip` is then empty
+/// ([`icon_theme_picker`]).
 fn showcase_tooltip<'a>(
     state: &'a State,
     content: impl Into<Element<'a, Message>>,
     tip: impl Into<Element<'a, Message>>,
     position: tooltip::Position,
+    shown: bool,
 ) -> Element<'a, Message> {
     let resolved = &state.current_resolved;
     let tip = tooltip(
@@ -5253,9 +5269,15 @@ fn showcase_tooltip<'a>(
     .gap(tooltip_gap(resolved, &state.accessibility))
     .style(styles::tooltip(resolved))
     .show_delay(resolved);
-    match tooltip_padding(resolved) {
-        Some(padding) => tip.padding(padding).into(),
-        None => tip.into(),
+    match (shown, tooltip_padding(resolved)) {
+        (true, Some(padding)) => tip.padding(padding).into(),
+        (true, None) => tip.into(),
+        // The same tooltip, so the tree keeps its shape and `content` its
+        // state, with no bubble and no padding.
+        (false, _) => tip
+            .style(|_: &Theme| container::Style::default())
+            .padding(0.0)
+            .into(),
     }
 }
 
@@ -5333,6 +5355,7 @@ fn icon_button<'a>(state: &'a State, spec: IconButton<'a>) -> Element<'a, Messag
         button,
         chrome_tip(state, spec.label, spec.key),
         spec.tip,
+        true,
     )
 }
 
@@ -5730,12 +5753,14 @@ fn side_panel_content_margin(resolved: &ResolvedTheme, layout: &LayoutTheme) -> 
 /// A drop-down of the theme settings: as wide as the side panel's content,
 /// in the model's combo box (`styles::pick_list`, `combo_box.font`,
 /// `combo_box_padding`, at least `combo_box.min_height` tall, its arrow
-/// `combo_box.arrow_icon_size`).
+/// `combo_box.arrow_icon_size`). `menu`, where given, is the messages its
+/// menu's opening and closing send (`PickList::on_open`, `on_close`).
 fn setting_picker<'a, T>(
     state: &'a State,
     options: Vec<T>,
     selected: Option<T>,
     on_select: fn(T) -> Message,
+    menu: Option<(Message, Message)>,
 ) -> Element<'a, Message>
 where
     T: ToString + PartialEq + Clone + 'a,
@@ -5743,7 +5768,7 @@ where
     let resolved = &state.current_resolved;
     let size = scaled_text_size(resolved.combo_box.font.size, &state.accessibility);
     let pad = combo_box_padding(resolved);
-    pick_list(options, selected, on_select)
+    let list = pick_list(options, selected, on_select)
         .handle(arrow_handle(resolved))
         .padding(pad)
         .text_line_height(control_line_height(
@@ -5756,27 +5781,36 @@ where
         .font(theme_font(&resolved.combo_box.font))
         .style(styles::pick_list(resolved))
         .menu_style(styles::menu(resolved))
-        .width(Fill)
-        .into()
+        .width(Fill);
+    match menu {
+        Some((opened, closed)) => list.on_open(opened).on_close(closed).into(),
+        None => list.into(),
+    }
 }
 
 /// The Icon theme row's drop-down, a [`setting_picker`] over the icon-theme
 /// choices; where the system icon theme cannot be detected, under a tooltip
-/// reading why ([`showcase_tooltip`]), as the row's `system` label is short,
-/// `system (unavailable)` (`IconSetChoice`'s `Display`): iced 0.14's
-/// `PickList` has no ellipsis and lays its menu's rows out at any width
-/// (iced_widget 0.14.2 `src/overlay/menu.rs:557-575`), so the reason, which
-/// can run to a reader's whole error, is no label's.
+/// reading why ([`showcase_tooltip`], below it, as the chrome's other tips),
+/// as the row's `system` label is short, `system (unavailable)`
+/// (`IconSetChoice`'s `Display`): iced 0.14's `PickList` has no ellipsis and
+/// lays its menu's rows out at any width (iced_widget 0.14.2
+/// `src/overlay/menu.rs:557-575`), so the reason, which can run to a
+/// reader's whole error, is no label's.
 ///
-/// The tip opens on the drop-down's right, beside the column its menu opens
-/// in, below the control or above it and as wide as it
-/// (`src/overlay/menu.rs:240-270`): iced keeps a tip open while the pointer
-/// rests on its content, a press included (`src/tooltip.rs:219-268`), and
-/// draws it with the menu (`:323-369`), so a tip below would cover the rows
-/// it explains. egui hides a tooltip while a popup is open and gpui clears
-/// one on a press; iced's tooltip does neither, and `Position::Right`
-/// (`src/tooltip.rs:502-507`) keeps it out of the menu's way with no state
-/// of its own.
+/// The tip does not show while the menu is open. The list reports its menu
+/// with `on_open` and `on_close` (`src/pick_list.rs:275-285`, sent at
+/// `:456-460` and `:473-475`), and a pick closes it without `on_close`
+/// (`:714-718`), so `update` keeps [`State::icon_theme_menu_open`] from all
+/// three. iced keeps a tip open while the pointer rests on its content, a
+/// press included (`src/tooltip.rs:219-268`), and draws it with the menu
+/// (`:323-369`), so it would cover the rows it explains wherever it stood:
+/// on the control's right, a wide side panel leaves it no room and iced
+/// pulls it back over the menu (`:525-545`). egui hides a tooltip while a
+/// popup is open, and gpui clears one on a press. Meanwhile the tooltip
+/// stays in the tree, drawing nothing, its tip empty ([`showcase_tooltip`]
+/// where not `shown`): a tree of another shape would drop the list's state
+/// and close the menu, while `Tooltip::diff` (`:172-177`) diffs the content
+/// apart from the tip.
 fn icon_theme_picker(state: &State) -> Element<'_, Message> {
     let picker = probe(
         probes::ICON_THEME,
@@ -5786,10 +5820,17 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
             state.icon_set_choices.clone(),
             Some(state.icon_set_choice.clone()),
             Message::IconSetSelected,
+            Some((
+                Message::IconThemeMenuOpen(true),
+                Message::IconThemeMenuOpen(false),
+            )),
         ),
     );
     match (state.detect_icon_theme)() {
         Ok(_) => picker,
+        Err(_) if state.icon_theme_menu_open => {
+            showcase_tooltip(state, picker, space(), tooltip::Position::Bottom, false)
+        }
         Err(e) => {
             let resolved = &state.current_resolved;
             let tip = text(rows::icon_theme_unavailable(&e)).themed(
@@ -5801,7 +5842,8 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
                 state,
                 picker,
                 drawn_probe(probes::ICON_THEME_TIP, tip),
-                tooltip::Position::Right,
+                tooltip::Position::Bottom,
+                true,
             )
         }
     }
@@ -5973,6 +6015,7 @@ fn side_panel(state: &State) -> Element<'_, Message> {
                     AppColorMode::ALL.to_vec(),
                     Some(state.color_mode),
                     Message::ColorModeSelected,
+                    None,
                 ),
             ),
         ),
@@ -8930,6 +8973,7 @@ fn about(state: &State) -> Element<'_, Message> {
             link_button,
             chrome_tip(state, "Copies the address", None),
             tooltip::Position::Bottom,
+            true,
         ),
     ]
     .spacing(gap.widget)
@@ -10172,6 +10216,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             Some(layout.bounds().expand(tip_padding))
         }),
         tooltip::Position::Bottom,
+        true,
     );
 
     let buttons = group(
@@ -13442,6 +13487,7 @@ fn view_display(state: &State) -> Element<'_, Message> {
                     text(tip).themed(&resolved.tooltip.font, resolved, a11y),
                 ),
                 position,
+                true,
             )
         });
     let tooltips = hoverable(
@@ -18406,7 +18452,7 @@ mod tests {
     /// Where the system icon theme cannot be detected, the Icon theme
     /// drop-down's hover text says why, as its `system` row's label leaves
     /// the reason out; where it is detected, the drop-down has no tooltip.
-    /// The tip is the platform's, on the drop-down's right, no wider than
+    /// The tip is the platform's, below the drop-down, no wider than
     /// `tooltip.max_width`.
     #[test]
     fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
@@ -18460,8 +18506,8 @@ mod tests {
                 match (tipped, tip) {
                     (true, Some(tip)) => {
                         assert!(
-                            tip.x >= picker.x + picker.width,
-                            "the tip {tip:?} is not right of the drop-down {picker:?}"
+                            tip.y >= picker.y + picker.height,
+                            "the tip {tip:?} is not below the drop-down {picker:?}"
                         );
                         assert!(
                             tip.width <= max_width + 0.01,
@@ -18476,63 +18522,95 @@ mod tests {
         })
     }
 
-    /// The Icon theme drop-down's tooltip keeps clear of its open menu: iced
-    /// keeps a tip open while the pointer rests on its content, a press
-    /// included (iced_widget 0.14.2 `src/tooltip.rs:219-268`), and draws it
-    /// with the content's overlay, the menu, in one group (`:323-369`), so a
-    /// tip in the menu's column would cover the rows it explains. The menu
-    /// opens below the control or above it, as wide as it
-    /// (`src/overlay/menu.rs:240-270`), so the tip must lie beside that
-    /// column. Under kde-breeze light, with a failing detection.
+    /// The Icon theme drop-down's tooltip does not show while its menu is
+    /// open: iced keeps a tip open while the pointer rests on its content, a
+    /// press included (iced_widget 0.14.2 `src/tooltip.rs:219-268`), and
+    /// draws it with the menu (`:323-369`), so it would cover the rows it
+    /// explains. With the side panel as the showcase opens it and at its
+    /// widest, the window's width less `PANEL_MIN_WIDTH`, where a tip on the
+    /// control's right finds no room and iced pulls it back over the menu
+    /// (`:525-545`): a press on the drop-down opens the menu and sends
+    /// `IconThemeMenuOpen(true)`, and with the pointer resting on the
+    /// control past the delay no tip is drawn. The messages go through the
+    /// real `update`, and a second interface, built from the state they
+    /// leave, opens its menu the same way, as the window's would stay open.
+    /// A press that closes the menu, and a pick, which closes it without
+    /// `on_close` (`src/pick_list.rs:714-718`), clear the state, and the tip
+    /// shows again. Under kde-breeze light, with a failing detection.
     #[test]
-    fn the_icon_theme_tooltip_keeps_clear_of_the_open_menu() {
+    fn the_icon_theme_tooltip_does_not_show_while_the_menu_is_open() {
         recording(|| {
             let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
                 Ok(installed) => installed,
                 Err(error) => panic!("kde-breeze: {error}"),
             };
             resolved.tooltip.show_delay = None;
-            let state = State {
-                current_theme: theme,
-                current_resolved: resolved,
-                detect_icon_theme: || {
-                    Err(native_theme::error::Error::PlatformUnsupported {
-                        platform: "the test's failing detection",
-                    })
-                },
-                ..State::default()
-            };
-            let iced_theme = super::theme(&state);
-            let mut ui: Simulator<'_, Message> =
-                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
-            for _ in 0..2 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
-                }
-            }
-            let picker = match drawn_layout().get("chrome.side_panel.settings.icon_theme") {
-                Some(rect) => *rect,
-                None => panic!("the Icon theme drop-down is not drawn"),
-            };
-            click_probe(&mut ui, probes::ICON_THEME);
-            ui.point_at(picker.center());
-            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
-                position: picker.center(),
-            })]);
-            for _ in 0..3 {
-                if let Err(error) = ui.snapshot(&iced_theme) {
-                    panic!("the interface did not draw: {error}");
-                }
-            }
-            let Some(tip) = drawn_layout().get(probes::ICON_THEME_TIP).copied() else {
-                panic!("no tip with the menu open and the pointer on the drop-down");
-            };
-            assert!(
-                tip.x >= picker.x + picker.width || tip.x + tip.width <= picker.x,
-                "the tip {tip:?} lies in the column {}..{} the menu opens in",
-                picker.x,
-                picker.x + picker.width
+            let widest = splitter_width(f32::INFINITY, WINDOW_SIZE.0);
+            assert_eq!(
+                widest,
+                WINDOW_SIZE.0 - PANEL_MIN_WIDTH,
+                "the side panel's widest"
             );
+            for width in [LEFT_PANEL_WIDTH, widest] {
+                let mut state = State {
+                    current_theme: theme.clone(),
+                    current_resolved: resolved.clone(),
+                    detect_icon_theme: || {
+                        Err(native_theme::error::Error::PlatformUnsupported {
+                            platform: "the test's failing detection",
+                        })
+                    },
+                    window_width: WINDOW_SIZE.0,
+                    side_panel_width: width,
+                    ..State::default()
+                };
+                let iced_theme = super::theme(&state);
+                // Opened and drawn with the pointer on the control, past the delay.
+                let tip_with_the_menu_open = |state: &State| {
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(state));
+                    for _ in 0..2 {
+                        if let Err(error) = ui.snapshot(&iced_theme) {
+                            panic!("the interface did not draw: {error}");
+                        }
+                    }
+                    let picker = match drawn_layout().get("chrome.side_panel.settings.icon_theme") {
+                        Some(rect) => *rect,
+                        None => panic!("the Icon theme drop-down is not drawn"),
+                    };
+                    click_probe(&mut ui, probes::ICON_THEME);
+                    ui.point_at(picker.center());
+                    let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                        position: picker.center(),
+                    })]);
+                    for _ in 0..3 {
+                        if let Err(error) = ui.snapshot(&iced_theme) {
+                            panic!("the interface did not draw: {error}");
+                        }
+                    }
+                    let tip = drawn_layout().get(probes::ICON_THEME_TIP).copied();
+                    let messages: Vec<Message> = ui.into_messages().collect();
+                    (tip, messages)
+                };
+                let (_, messages) = tip_with_the_menu_open(&state);
+                for message in messages {
+                    let _ = update(&mut state, message);
+                }
+                let (tip, _) = tip_with_the_menu_open(&state);
+                assert!(
+                    tip.is_none(),
+                    "a {width} px side panel: a tip at {tip:?} with the menu open"
+                );
+                assert!(
+                    state.icon_theme_menu_open,
+                    "the press reported no open menu"
+                );
+                let _ = update(&mut state, Message::IconThemeMenuOpen(false));
+                assert!(!state.icon_theme_menu_open, "the menu's close was not kept");
+                let _ = update(&mut state, Message::IconThemeMenuOpen(true));
+                let _ = update(&mut state, Message::IconSetSelected(IconSetChoice::Lucide));
+                assert!(!state.icon_theme_menu_open, "a pick left the menu open");
+            }
         })
     }
 
@@ -20631,11 +20709,15 @@ mod tests {
     /// The `Card` is dismissed by a themed button of its own, never by
     /// `Card::on_close`: `iced_aw` 0.14.1 styles that close button with its
     /// default class (`widget/card.rs:193-206`), so the icon is white whatever
-    /// `styles::aw::card` says.
+    /// `styles::aw::card` says. The one `on_close` the showcase calls is
+    /// `PickList::on_close`, after its `on_open`, in `setting_picker`.
     #[test]
     fn the_card_has_no_iced_aw_close_button() {
         let source = strip_comments_and_strings(SHOWCASE);
-        if let Some(at) = source.find(".on_close(") {
+        if let Some((at, _)) = source
+            .match_indices(".on_close(")
+            .find(|(at, _)| !source[..*at].ends_with(".on_open(opened)"))
+        {
             panic!(
                 "Card::on_close is called at showcase-iced.rs:{}",
                 line_at(&source, at)
