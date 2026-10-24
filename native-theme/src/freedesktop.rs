@@ -761,10 +761,11 @@ mod tests {
 
     /// A size past `i16::MAX` misses every Breeze directory, so
     /// freedesktop-icons measures its distance to each: in a debug build
-    /// that subtraction overflowed `i16` and panicked.
+    /// that subtraction overflowed `i16` and panicked. Breeze is looked for
+    /// where the lookup searches, [`icon_base_dirs`].
     #[test]
     fn a_size_past_i16_loads_without_overflow() {
-        if !Path::new("/usr/share/icons/breeze/index.theme").exists() {
+        if !has_theme_index("breeze", icon_base_dirs()) {
             eprintln!("skipped: the breeze theme is not installed");
             return;
         }
@@ -1254,28 +1255,33 @@ mod tests {
 
     /// A loose file in an icon base directory (`/usr/share/icons/cachyos.svg`
     /// on CachyOS) belongs to no theme, so a theme lookup must not return it.
+    /// The file and breeze are looked for where the lookup searches,
+    /// [`icon_base_dirs`].
     #[test]
     fn find_icon_rejects_a_loose_base_dir_file() {
-        let loose = Path::new("/usr/share/icons/cachyos.svg");
-        if !loose.exists() || !Path::new("/usr/share/icons/breeze/index.theme").exists() {
-            eprintln!("skipped: needs {} and the breeze theme", loose.display());
+        let bases = icon_base_dirs();
+        let loose = bases.iter().any(|base| base.join("cachyos.svg").is_file());
+        if !loose || !has_theme_index("breeze", bases) {
+            eprintln!("skipped: needs cachyos.svg in an icon base directory and the breeze theme");
             return;
         }
         assert_eq!(find_icon("cachyos", "breeze", 24), None);
     }
 
-    /// An icon breeze lacks is not taken from `hicolor`.
+    /// An icon breeze lacks is not taken from `hicolor`. hicolor's
+    /// `scalable/apps` and breeze are looked for where the lookup searches,
+    /// [`icon_base_dirs`], and a found path is refused in hicolor's
+    /// directory under any of them.
     #[test]
     fn find_icon_never_returns_hicolor_for_another_theme() {
-        let apps = Path::new("/usr/share/icons/hicolor/scalable/apps");
-        let (Ok(entries), true) = (
-            std::fs::read_dir(apps),
-            Path::new("/usr/share/icons/breeze/index.theme").exists(),
-        ) else {
-            eprintln!("skipped: needs {} and the breeze theme", apps.display());
+        let bases = icon_base_dirs();
+        let entries = bases
+            .iter()
+            .find_map(|base| std::fs::read_dir(base.join("hicolor/scalable/apps")).ok());
+        let (Some(entries), true) = (entries, has_theme_index("breeze", bases)) else {
+            eprintln!("skipped: needs hicolor's scalable/apps and the breeze theme");
             return;
         };
-        let hicolor = Path::new("/usr/share/icons/hicolor");
         let names: Vec<String> = entries
             .filter_map(Result::ok)
             .filter_map(|e| {
@@ -1288,7 +1294,7 @@ mod tests {
         for name in &names {
             if let Some((path, _)) = find_icon(name, "breeze", 24) {
                 assert!(
-                    !path.starts_with(hicolor),
+                    !is_in_theme_dir(&path, "hicolor", bases),
                     "{name} for breeze came from hicolor: {}",
                     path.display()
                 );
