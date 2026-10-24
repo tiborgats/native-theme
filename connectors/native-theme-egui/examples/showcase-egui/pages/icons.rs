@@ -74,8 +74,8 @@ pub(crate) fn show(
 
     // Every role's icon at `defaults.icon_sizes.small` above the role's name
     // (`showcase-gpui/pages/icons.rs:138-217`); where the set has none, gpui's placeholder: a
-    // square in `skeleton` — `button.background_color` (`connectors/native-theme-gpui/src/colors.rs:174`,
-    // `:556`) — at the theme's radius, never another set's icon.
+    // square in `skeleton` — `button.background_color` (`connectors/native-theme-gpui/src/colors.rs:205`,
+    // `:582`) — at the theme's radius, never another set's icon.
     let size = icons::icon_size(t, IconContext::Small);
     let images: Vec<(IconRole, Option<egui::Image<'static>>)> = IconRole::ALL
         .iter()

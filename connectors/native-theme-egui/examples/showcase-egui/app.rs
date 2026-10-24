@@ -544,7 +544,7 @@ impl App {
 
     /// The atlas `settings` select (§10.4): `default` is `SystemTheme::from_system` through
     /// `to_egui_atlas` after `invalidate_caches()`, its public `accessibility`
-    /// (`native-theme/src/lib.rs:500`) the [`effective_preferences`] of the OS's reading it
+    /// (`native-theme/src/lib.rs:643`) the [`effective_preferences`] of the OS's reading it
     /// holds and Preferences' overrides; a preset is `from_preset` with the effective
     /// preferences of the cached OS reading (`detect::accessibility_preferences`, which the
     /// watcher and `ReloadTheme` clear before they rebuild) and the overrides. `from_preset`'s

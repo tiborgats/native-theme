@@ -937,7 +937,7 @@ impl ChromeIcon {
 
     /// The icon's names in `set` (`connectors/native-theme-gpui/src/icons.rs`: Lucide `:282`,
     /// `:296`, `:303`; Material `:426`, `:440`, `:447`; freedesktop
-    /// `freedesktop_name_candidates`, `:593`, `:599`, `:640`, where Breeze's
+    /// `freedesktop_name_candidates`, `:597`, `:603`, `:644`, where Breeze's
     /// `sidebar-expand-left` and Adwaita's `sidebar-show` name one icon, so the icon theme has
     /// whichever its convention names); empty in a set that has none — SF Symbols and Segoe
     /// Fluent here — where the button shows its label instead.
