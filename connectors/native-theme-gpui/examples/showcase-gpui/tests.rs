@@ -14630,14 +14630,17 @@ fn every_listed_leaf_has_a_route() {
     assert!(missing.is_empty(), "no route: {missing:?}");
 }
 
-/// The Basic table's header and rows and the List's rows fill squares:
-/// demo::files_table and geometry::list_item round no fill, and the frames'
-/// overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234,
-/// ContentMask). So their `list.border.corner_radius_px` and
-/// `list.border.line_width_px` routes say the radius is not applied to the
-/// fill, where the frames' own routes would claim the frame's.
+/// The Basic table's header and last row and the List's first and last rows
+/// round their own fills by the frame's inner radius where they meet the
+/// frame (demo::files_table, demo::ListRow), on either core: gpui-pre clips a
+/// rounded frame's children to a rectangle (gpui-pre 0.3.9
+/// src/window.rs:2226-2234, ContentMask), GPUI Fast to its curved inner edge
+/// (gpui-fast 0.1.10 src/fast/rounded_clip.rs:68-104), and a fill rounded
+/// inside that edge is drawn alike under both. So their
+/// `list.border.corner_radius_px` and `list.border.line_width_px` routes name
+/// the inner radius, where the frames' own routes name the frame's.
 #[test]
-fn the_row_fill_corner_routes_say_the_fills_are_square() {
+fn the_row_fill_corner_routes_say_the_fills_are_rounded() {
     let mut checked = 0usize;
     for element in crate::elements::elements() {
         let row = ["basic.table.header", "basic.table.row_", "basic.list.row_"]
@@ -14650,7 +14653,7 @@ fn the_row_fill_corner_routes_say_the_fills_are_square() {
             checked += 1;
             let how = crate::info::leaves::how(&element.id, leaf).unwrap_or_default();
             assert!(
-                how.contains("not applied") && how.contains("square"),
+                how.contains("inner radius") && !how.contains("square"),
                 "{} {leaf}: {how:?}",
                 element.id
             );
@@ -14660,6 +14663,59 @@ fn the_row_fill_corner_routes_say_the_fills_are_square() {
         checked, 10,
         "the table's header and last row and the List's three rows"
     );
+}
+
+/// The fill of a row that meets a rounded list frame is rounded where it meets it, by the
+/// frame's inner radius (`list.border.corner_radius` less `list.border.line_width`), as the egui
+/// (M9c T9) and iced (T9b) Basic pages round theirs, on either core: under adwaita the Basic
+/// table's header fill on its top corners, its last (selected) row's on its bottom corners,
+/// and the List's first row, hovered, on its top corners; each square on its other corners.
+/// The fill is the quad of the row's own bounds the frame paints.
+#[gpui::test]
+fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    show(&mut cx, &showcase, Page::Basic);
+    use_preset(&mut cx, &showcase, "adwaita");
+    without_motion(&mut cx);
+    let b = resolved_theme(&mut cx, &showcase).list.border;
+    let inner = (b.corner_radius - b.line_width).max(0.0);
+    assert!(
+        inner > 0.0,
+        "adwaita's list frame is rounded inside its line"
+    );
+    let row = bounds_of(&mut cx, "basic-list-row-0");
+    hover(&mut cx, row.center());
+    draw(&mut cx);
+    let mut wrong = Vec::new();
+    for (selector, top, bottom) in [
+        ("basic-table-header", true, false),
+        ("basic-table-row-1", false, true),
+        ("basic-list-row-0", true, false),
+    ] {
+        let bounds = bounds_of(&mut cx, selector);
+        let radii = cx.update(|window, _| {
+            let s = window.scale_factor();
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| !q.background.is_transparent())
+                .find(|q| {
+                    (q.bounds.origin.x.0 - f32::from(bounds.origin.x) * s).abs() <= 1.0
+                        && (q.bounds.origin.y.0 - f32::from(bounds.origin.y) * s).abs() <= 1.0
+                        && (q.bounds.size.width.0 - f32::from(bounds.size.width) * s).abs() <= 1.0
+                        && (q.bounds.size.height.0 - f32::from(bounds.size.height) * s).abs() <= 1.0
+                })
+                .map(|q| {
+                    let c = q.corner_radii;
+                    [c.top_left, c.top_right, c.bottom_left, c.bottom_right].map(|r| r.0 / s)
+                })
+        });
+        let want = [top, top, bottom, bottom].map(|rounded| if rounded { inner } else { 0.0 });
+        match radii {
+            Some(radii) if radii.iter().zip(want).all(|(r, w)| (r - w).abs() < 1e-3) => {}
+            other => wrong.push(format!("{selector}: corners {other:?}, not {want:?}")),
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
 /// The labels the showcase lays out one `defaults.line_height` line tall

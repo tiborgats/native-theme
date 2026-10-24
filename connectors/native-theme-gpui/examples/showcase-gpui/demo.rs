@@ -4682,6 +4682,9 @@ pub(crate) struct ListRow {
     label: SharedString,
     selected: bool,
     right_clicked: bool,
+    /// Whether the row is the List's first and its last: there its fill meets
+    /// the frame (`at_edges`).
+    edges: [bool; 2],
 }
 
 impl ListRow {
@@ -4698,7 +4701,23 @@ impl ListRow {
             label,
             selected: false,
             right_clicked: false,
+            edges: [false; 2],
         }
+    }
+
+    /// The row as the List's `first` and its `last`: its fill is rounded by
+    /// the frame's inner radius (`list.border.corner_radius` less
+    /// `list.border.line_width`) on its top corners where it is the first and
+    /// on its bottom ones where it is the last, where it meets
+    /// `geometry::list`'s frame, as the egui and iced Basic lists round
+    /// theirs. gpui-pre clips the frame's children to its rectangle (gpui-pre
+    /// 0.3.9 src/window.rs:2226-2234, ContentMask), so a square fill would
+    /// show past the curve there; the List does not tell a row where its view
+    /// is scrolled to, so a row cut by the view's edge mid-scroll keeps its
+    /// square corners.
+    pub(crate) fn at_edges(mut self, first: bool, last: bool) -> Self {
+        self.edges = [first, last];
+        self
     }
 }
 
@@ -4816,6 +4835,11 @@ impl RenderOnce for ListRow {
         let hover_text = (!self.right_clicked)
             .then(|| list_hover_text(cx, self.selected, &mut row_info))
             .flatten();
+        let inner = native_value(cx, |n| {
+            let b = &n.resolved.list.border;
+            px((b.corner_radius - b.line_width).max(0.0))
+        });
+        let [first, last] = self.edges;
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
             cx,
@@ -4824,6 +4848,12 @@ impl RenderOnce for ListRow {
             &mut row_info,
         )
         .map(|item| list_row_item(item, cx, selected_text.as_ref()))
+        .when_some(inner.filter(|_| first), |item, r| {
+            item.rounded_tl(r).rounded_tr(r)
+        })
+        .when_some(inner.filter(|_| last), |item, r| {
+            item.rounded_bl(r).rounded_br(r)
+        })
         .child({
             let label = row_label(self.label, hover_text);
             #[cfg(test)]
@@ -8890,6 +8920,13 @@ pub(crate) fn files_table(
                     )
                 })
         };
+    // A fill where a row meets the frame is rounded by the frame's inner
+    // radius, the line taken off its radius, on the corners it meets: the
+    // header's top ones and the last row's bottom ones, as the egui and iced
+    // Basic tables round theirs. gpui-pre clips the frame's children to its
+    // rectangle (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a
+    // square fill would show past the frame's curve there.
+    let inner = px((l.border.corner_radius - l.border.line_width).max(0.0));
     let [first, second] = head;
     let header_height = geometry::list_header_height(n);
     let header_info = info::data::native_table_header(r, &format!("{}, {}", first.0, second.0));
@@ -8907,9 +8944,12 @@ pub(crate) fn files_table(
         closed: true,
         height: header_height,
     })
+    .rounded_tl(inner)
+    .rounded_tr(inner)
     .info(ui, SharedString::from(format!("{id}-header")), header_info)
     .debug_selector(move || format!("{id}-header"))
     .w_full();
+    let last = rows.len().checked_sub(1);
     let body = rows.iter().enumerate().map(|(ix, cells)| {
         let (fill, text) = if ix == selected {
             (
@@ -8932,6 +8972,9 @@ pub(crate) fn files_table(
             height: None,
         })
         .id(("table-row", ix))
+        .when(Some(ix) == last, |row| {
+            row.rounded_bl(inner).rounded_br(inner)
+        })
         .when(ix != selected, |row| {
             row.hover(move |s| s.bg(hover).text_color(hover_text))
         })

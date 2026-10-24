@@ -220,8 +220,11 @@ pub(crate) trait NativeStyled: Styled + Sized {
     /// `defaults.border.color`), the radius is `Theme::radius` (from
     /// `defaults.border.corner_radius`), and the line width is the platform's
     /// `defaults.border.line_width` — 0.5 px on macOS and iOS, 1 px
-    /// elsewhere. It clips, because a child that paints its own background to
-    /// the edge would otherwise show through the rounded corners.
+    /// elsewhere. It clips a child that paints its own background to the
+    /// edge: on GPUI Fast to the rounded inside (gpui-fast 0.1.10
+    /// `src/fast/rounded_clip.rs:68-104`), on gpui-pre to the box's rectangle
+    /// (gpui-pre 0.3.9 `src/window.rs:2226-2234`, `ContentMask`), where such a
+    /// child's square corner shows past the rounded ones.
     ///
     /// A box that stands for a widget takes that widget's border instead —
     /// the List and the Tree take `geometry::list`.
@@ -1065,6 +1068,7 @@ impl ListDelegate for SampleListDelegate {
         let label = self.items.get(ix.row)?.clone();
         Some(
             demo::ListRow::new(&self.ui, self.id_prefix, ix.row, label)
+                .at_edges(ix.row == 0, Some(ix.row) == self.items.len().checked_sub(1))
                 .selected(self.selected == Some(ix.row)),
         )
     }

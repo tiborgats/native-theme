@@ -686,8 +686,15 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// is no tree theme in the model: a tree is a list view, and reads
 /// `resolved.list`.
 ///
-/// The clip is part of the frame, not decoration: a row's selected or hovered
-/// fill is a square that would otherwise show through the rounded corners.
+/// The clip keeps the rows inside the frame; how it meets the rounded corners
+/// depends on the core. GPUI Fast clips the children of a rounded box that
+/// clips both axes to its curved padding edge (gpui-fast 0.1.10
+/// `src/fast/rounded_clip.rs:68-104`), so a row's square fill is cut at the
+/// curve. gpui-pre clips them to the frame's rectangle (gpui-pre 0.3.9
+/// `src/window.rs:2226-2234`, `ContentMask`: "only rectangular content masks
+/// are supported"), so a square fill at a corner shows past the curve there.
+/// A row whose fill meets the frame rounds that fill's corners by the frame's
+/// inner radius, `corner_radius` less `line_width`, to look alike on both.
 #[must_use]
 pub fn list(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.list.border;

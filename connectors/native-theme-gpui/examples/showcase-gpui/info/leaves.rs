@@ -1267,22 +1267,22 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.table.header",
         "list.border.corner_radius_px",
-        "gpui: not applied — the header's fill is square (demo::files_table), and the frame's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+        "gpui: the header's fill takes the frame's inner radius, this less list.border.line_width, on its top corners (demo::files_table)",
     ),
     (
         "basic.table.header",
         "list.border.line_width_px",
-        "gpui: the frame's line, which the header lies inside; not applied to the fill's corners, which are square (demo::files_table)",
+        "gpui: the frame's line, which the header lies inside; taken off the frame's radius for the inner radius of the fill's top corners (demo::files_table)",
     ),
     (
         "basic.table.row_",
         "list.border.corner_radius_px",
-        "gpui: not applied — the last row's fill is square (demo::files_table), and the frame's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+        "gpui: the last row's fill takes the frame's inner radius, this less list.border.line_width, on its bottom corners (demo::files_table)",
     ),
     (
         "basic.table.row_",
         "list.border.line_width_px",
-        "gpui: the frame's line, which the row lies inside; not applied to the fill's corners, which are square (demo::files_table)",
+        "gpui: the frame's line, which the row lies inside; taken off the frame's radius for the inner radius of the last row's bottom corners (demo::files_table)",
     ),
     (
         "basic.table",
@@ -1373,12 +1373,12 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "basic.list.row_",
         "list.border.corner_radius_px",
-        "gpui: not applied — a ListItem's fill is square (geometry::list_item sets no radius), and geometry::list's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+        "gpui: the first row's fill takes the frame's inner radius, this less list.border.line_width, on its top corners and the last row's on its bottom corners (demo::ListRow)",
     ),
     (
         "basic.list.row_",
         "list.border.line_width_px",
-        "gpui: geometry::list's line, which the rows lie inside; not applied to a fill's corners, which are square (demo::ListRow)",
+        "gpui: geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
     ),
     (
         "",
