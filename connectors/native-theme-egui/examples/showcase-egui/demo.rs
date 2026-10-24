@@ -695,8 +695,8 @@ pub(crate) fn surfaced(
 }
 
 /// The context menu `target` opens on a secondary click, `Popup::context_menu`, whose style
-/// arrives as a `StyleModifier` alone (§4.2): given `menu`'s modifier, its open `Ui` styled and
-/// recorded with `menu` as `kind` ([`styled`]); `add` fills it, adding its items through the
+/// arrives as a `StyleModifier` alone (§4.2): given `menu`'s modifier, its open `Ui` styled in
+/// `menu` and recorded as `kind` ([`styled`]); `add` fills it, adding its items through the
 /// registry it gets (a disabled item through `scoped` in `RoleVariant::Disabled`). The target is
 /// the caller's, drawn and recorded in the style it is drawn in.
 pub(crate) fn context_menu(
