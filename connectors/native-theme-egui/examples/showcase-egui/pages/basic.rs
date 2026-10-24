@@ -522,17 +522,19 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
     // `button.active_background` (its hover fill where it states none, §6.4) and
     // `button.active_text_color` — per call: egui's `selected` flag would take the suggested
     // action's `selection` colours.
-    let on_fill = to_color32(
-        t.button
-            .checked_background
-            .or(t.button.active_background)
-            .unwrap_or(t.button.hover_background),
-    );
-    let on_text = to_color32(
-        t.button
-            .checked_text_color
-            .unwrap_or(t.button.active_text_color),
-    );
+    // Each colour chosen once, with the leaf it is read from where that is not the checked one:
+    // the toggle is drawn in the colour and the note names the leaf, so the two cannot part.
+    let b = &t.button;
+    let (fill_instead, on_fill) = match (b.checked_background, b.active_background) {
+        (Some(fill), _) => (None, fill),
+        (None, Some(fill)) => (Some("button.active_background"), fill),
+        (None, None) => (Some("button.hover_background"), b.hover_background),
+    };
+    let (text_instead, on_text) = match b.checked_text_color {
+        Some(colour) => (None, colour),
+        None => (Some("button.active_text_color"), b.active_text_color),
+    };
+    let (on_fill, on_text) = (to_color32(on_fill), to_color32(on_text));
     ui.horizontal_wrapped(|ui| {
         let kind = ("basic.buttons.toggle_off", "toggle button (off)", normal);
         text_button(reg, ui, kind, ("Off", min), plain, true);
@@ -541,24 +543,18 @@ fn buttons(reg: &mut Registry, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
         text_button(reg, ui, kind, ("On", min), held, true);
     });
     // Where the theme states no checked colour, the leaf the toggle is drawn in instead.
-    let b = &t.button;
-    if b.checked_background.is_none() {
-        let drawn = if b.active_background.is_some() {
-            "button.active_background"
-        } else {
-            "button.hover_background"
-        };
+    if let Some(leaf) = fill_instead {
         reg.note_element(
             "basic.buttons.toggle_on",
             "fill while on",
-            &format!("not stated by the theme (button.checked_background): {drawn}"),
+            &format!("not stated by the theme (button.checked_background): {leaf}"),
         );
     }
-    if b.checked_text_color.is_none() {
+    if let Some(leaf) = text_instead {
         reg.note_element(
             "basic.buttons.toggle_on",
             "text colour while on",
-            "not stated by the theme (button.checked_text_color): button.active_text_color",
+            &format!("not stated by the theme (button.checked_text_color): {leaf}"),
         );
     }
 }
