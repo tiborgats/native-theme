@@ -74,6 +74,19 @@ pub fn icon_rows(
         .collect()
 }
 
+/// Why the system icon theme is unavailable, `error` being why its
+/// detection (`native_theme::detect::system_icon_theme`) failed:
+/// `System icon theme: unavailable (<reason>)`. The icon-theme picker's
+/// `system` row then reads `system (unavailable)` (`IconSetChoice`'s
+/// `Display`): a control's label is short, and the reason, which can run to
+/// a reader's whole error, is shown where there is room for it: the
+/// picker's hover text in each showcase, and the iced showcase's Icons page
+/// note and the gpui showcase's Widget Info for the picker.
+#[must_use]
+pub fn icon_theme_unavailable(error: &native_theme::Error) -> String {
+    format!("System icon theme: unavailable ({error})")
+}
+
 /// A table row's height, or its header row's, where the theme states one
 /// (`list.row_height`, `list.header_height`), under the OS text-scaling
 /// factor of `prefs`: the gpui connector's rule for its `DataTable` rows
@@ -173,6 +186,18 @@ mod tests {
         for row in &rows {
             assert!(crate::cli::theme_key(&row.key).is_ok(), "{}", row.key);
         }
+    }
+
+    /// A failed detection's reason, in whole.
+    #[test]
+    fn a_failed_detection_gives_its_reason_in_whole() {
+        let failed = native_theme::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        };
+        assert_eq!(
+            icon_theme_unavailable(&failed),
+            "System icon theme: unavailable (platform not supported: the test's failing detection)"
+        );
     }
 
     /// The bundled sets' rows close the list, after `system` and the
