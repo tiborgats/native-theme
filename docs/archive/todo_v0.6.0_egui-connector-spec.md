@@ -8240,3 +8240,8 @@ section now says so:
   the scope's `interact_size.y`, egui's own value, or that line box rounded up
   where it is taller, not `interact_size.y` alone; the header likewise in the
   header font.
+  M9c T12 fix round 1: the columns that clip are the Data table's last
+  (Platform) and the Theme Map's Value and Sinks, which share the room the Leaf
+  and Verdict columns leave, so the table stays inside the page (every bundled
+  preset at text scales 1 and 1.5); the Data table's Theme column and the Theme Map's Leaf and Verdict
+  columns are as wide as their text.

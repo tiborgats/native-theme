@@ -73,10 +73,17 @@ pub(crate) fn show(
             let heights = super::data::TableRows::of(ui, atlas, t, &header_font);
             let out = ui.scope(|ui| {
                 super::data::one_line_cells(ui);
+                // The leaf and the verdict as wide as their text, each frame's (egui_extras
+                // `table.rs:844-846`); the value and the sinks share what is left equally
+                // (`sizing.rs:141-166`), each clipped, so a text too long for it is cut short
+                // and shown whole on hover (`super::data::one_line_cells`). A clipped remainder
+                // is sized from the room each frame, never from what its cells drew
+                // (`table.rs:617-646`), so a filter or a scroll never leaves it narrower than
+                // the room, as a clipped auto column would be (`:844-846`, its cells' widths).
                 egui_extras::TableBuilder::new(ui)
                     .striped(true)
                     .column(egui_extras::Column::auto())
-                    .column(egui_extras::Column::auto())
+                    .column(egui_extras::Column::remainder().clip(true))
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::remainder().clip(true))
                     .header(heights.header, |mut header| {

@@ -150,8 +150,9 @@ pub(crate) fn show(
 /// the line box rounded up, as that rule rounds it, where that is taller, as egui's own rows
 /// are at least `interact_size.y` (`egui/src/widgets/button.rs:306-309`) and as tall as their
 /// line. The cells draw no padding and no line inside the row, and each is one line in its
-/// line box, `defaults.line_height` of its font's drawn size ([`one_line_cells`]), so no row
-/// is taller than these heights.
+/// line box, `defaults.line_height` of its font's drawn size ([`one_line_cells`]), so a row is
+/// these heights tall, except a stated one shorter than its line box at a text scale of 1 or
+/// less, which grows to hold its line (egui_extras `layout.rs:160-168`).
 pub(crate) struct TableRows {
     pub(crate) body: f32,
     pub(crate) header: f32,
@@ -174,6 +175,8 @@ impl TableRows {
         let own = ui.spacing().interact_size.y;
         let body_line = egui::TextStyle::Body.resolve(ui.style()).size * line_height;
         let header_line = header_font.size * line_height;
+        // a stated row shorter than one line box still grows to its line, as the connector's
+        // List rows do (mapping.toml, `list.row_height`): no bundled preset states one
         let height = |stated: Option<f32>, size: f32, line: f32| match stated {
             Some(h) => rows::scaled_height(h, atlas.accessibility(), size, line_height, 0.0, 0.0),
             None => own.max(line.ceil()),
@@ -198,9 +201,10 @@ impl TableRows {
 
 /// The cells of the table `ui` is about to lay out, each one line: text is not wrapped, so an
 /// auto-sized column takes its text's width (egui_extras `table.rs:836-846`, the width its
-/// cells used) and the last column, `Column::clip`, cuts a text too long for it short with egui's
-/// ellipsis (`layout.rs:218-224`) in a cell no taller than its row (`:160-168`), the whole text
-/// on hover as egui's truncated `Label` shows it (`egui/src/widgets/label.rs:285-294`); and the
+/// cells used) and a clipped column (`Column::clip`: the Data table's last, the Theme Map's
+/// Value and Sinks) cuts a text too long for it short with egui's ellipsis
+/// (`layout.rs:218-224`) in a cell no taller than its row (`:160-168`), the whole text on
+/// hover as egui's truncated `Label` shows it (`egui/src/widgets/label.rs:285-294`); and the
 /// rows lie with no spacing between them, as the Basic table's, so each is its height apart
 /// (egui_extras `layout.rs:178-183`, `table.rs:1033-1034`).
 pub(crate) fn one_line_cells(ui: &mut egui::Ui) {

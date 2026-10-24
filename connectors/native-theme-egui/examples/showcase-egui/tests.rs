@@ -3561,6 +3561,55 @@ fn the_tables_headers_take_the_themes_header_height() {
 /// error, far below a pixel, so a row grown by a wrapped line or the spacing between rows fails.
 const ROW_SLACK: f32 = 0.01;
 
+/// The Data and Theme Map tables lie across the central panel, on every bundled preset at text
+/// scales 1 and 1.5: every header and body cell, cut short or whole, lies inside the panel's
+/// width (the page scrolls only vertically, `app.rs`, `ScrollArea::vertical`), where a column as
+/// wide as its longest text pushed the Theme Map's last ones past the panel's edge, out of view.
+#[test]
+fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
+    let mut wrong = Vec::new();
+    for info in Theme::list_presets() {
+        for factor in [1.0, 1.5] {
+            for (tab, kinds) in [
+                ("data", ["table header", "table cell"]),
+                ("theme-map", ["theme map header", "theme map cell"]),
+            ] {
+                let page = open_scaled(info.key, tab, factor);
+                let records = page.state().registry.records();
+                let panel = records
+                    .iter()
+                    .find(|r| r.info.kind == "Central panel")
+                    .map(|r| r.rect)
+                    .expect("the central panel records itself");
+                let cells: Vec<egui::Rect> = records
+                    .iter()
+                    .filter(|r| kinds.contains(&r.info.kind))
+                    .map(|r| r.rect)
+                    .collect();
+                assert!(!cells.is_empty(), "{} {tab}: no cells", info.key);
+                // a cell laid out past the panel's edge is clipped to it, from its left to the
+                // edge: a rectangle with no width, or one turned inside out
+                let outside: Vec<&egui::Rect> = cells
+                    .iter()
+                    .filter(|r| {
+                        r.left() < panel.left() || r.right() > panel.right() || r.width() <= 0.0
+                    })
+                    .collect();
+                if let Some(first) = outside.first() {
+                    wrong.push(format!(
+                        "{} at {factor} {tab}: {} cells outside the panel's x {} to {}, e.g. {first:?}",
+                        info.key,
+                        outside.len(),
+                        panel.left(),
+                        panel.right()
+                    ));
+                }
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
 /// The height of a row of the Data and Theme Map pages' `TableBuilder`s (`pages/data.rs`,
 /// `TableRows::of`), from the theme: `stated` grown above a text scale of 1 as gpui's table rows
 /// grow ([`grown`], no padding or rule: the cells draw none); where the theme states none, egui's
