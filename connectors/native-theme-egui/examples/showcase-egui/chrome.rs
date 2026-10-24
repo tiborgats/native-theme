@@ -1096,6 +1096,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             rows: &theme_rows,
             current: &app.settings.theme,
             current_text: current_theme,
+            hover: None,
         },
     );
     let picked_mode = setting(
@@ -1110,6 +1111,7 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             current_text: Action::SetMode(current_mode).label().to_string(),
             rows: &mode_rows,
             current: &current_mode,
+            hover: None,
         },
     );
     let picked_icon = setting(
@@ -1124,6 +1126,11 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
             current_text: current_icon.to_string(),
             rows: &icon_rows,
             current: &current_icon,
+            // Why the system icon theme is unavailable, where its detection failed: the
+            // `system` row's label leaves the reason out, `system (unavailable)`.
+            hover: native_theme::detect::system_icon_theme()
+                .err()
+                .map(|e| rows::icon_theme_unavailable(&e)),
         },
     );
 
@@ -1150,6 +1157,8 @@ struct Setting<'a, T> {
     rows: &'a [(T, String)],
     current: &'a T,
     current_text: String,
+    /// The drop-down's hover text, where it has one.
+    hover: Option<String>,
 }
 
 /// A theme setting: its label, then the companion crate's drop-down (egui's `ComboBox` as tall
@@ -1177,8 +1186,7 @@ fn setting<T: Clone + PartialEq>(
             // The selected text truncated to the panel's width, as the rows are: a wider text
             // would widen the drop-down, and the resizable panel keeps its content's width
             // (`egui/src/containers/panel.rs:893-896`), so the content panel would leave the
-            // window. An icon-theme choice whose system theme is unavailable is named with the
-            // reader's whole error.
+            // window. An installed icon theme's name can run that wide.
             let mut combo = ComboBox::from_id_salt(setting.label)
                 .width(ui.available_width())
                 .truncate()
@@ -1190,16 +1198,15 @@ fn setting<T: Clone + PartialEq>(
             if let Some(modifier) = modifier {
                 combo = combo.popup_style(modifier);
             }
-            combo
+            let combo = combo
                 .show_ui(ui, |ui| {
                     for (value, text) in setting.rows {
                         let selected = value == setting.current;
                         if row
                             .add(registry, ui, setting.row_kind, |ui| {
                                 // Truncated to the drop-down's width, the whole text on
-                                // hover: an icon-theme row names why the system's theme is
-                                // unavailable, which can run to a reader's whole error, and
-                                // would widen the popup past the window.
+                                // hover: a longer row, an installed icon theme's name, would
+                                // widen the popup past the window.
                                 ui.add(egui::Button::selectable(selected, text).truncate())
                                     .on_hover_text(text)
                             })
@@ -1210,7 +1217,11 @@ fn setting<T: Clone + PartialEq>(
                     }
                 })
                 .response
-                .labelled_by(label)
+                .labelled_by(label);
+            match setting.hover {
+                Some(hover) => combo.on_hover_text(hover),
+                None => combo,
+            }
         },
     );
     registry.tag(element, &combo);

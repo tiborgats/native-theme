@@ -2366,7 +2366,7 @@ fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
 #[test]
 fn a_truncated_drop_down_keeps_to_its_room() {
     const ROOM: f32 = 160.0;
-    const TEXT: &str = "system (unavailable: icon-theme reader failed: no file is readable)";
+    const TEXT: &str = "an installed icon theme whose name runs longer than the room";
     let drop_down = |truncate: bool| {
         move |ui: &mut egui::Ui| {
             ui.allocate_ui(egui::vec2(ROOM, 100.0), |ui| {

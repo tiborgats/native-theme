@@ -3780,12 +3780,12 @@ fn the_side_panel_keeps_its_width_when_widget_info_scrolls() {
 
 /// The side panel keeps `LEFT_PANEL_WIDTH` whatever a theme setting's drop-down shows: a
 /// selected text wider than the panel is cut to its width with an ellipsis, as the drop-down's
-/// rows are, and the content panel keeps its room. An icon-theme choice whose system theme is
-/// unavailable is named with the reader's whole error (`IconSetChoice`'s `Display`,
-/// `native-theme/src/icons.rs:1353-1372`), which on a desktop the detection does not recognise,
-/// CI's runner among them, runs wider than the window: the panel widened to it and pushed the
-/// content panel out of the window (M9c CI1). The detection is the process's own, so the test
-/// names an installed theme as long.
+/// rows are, and the content panel keeps its room. An icon-theme choice whose system theme was
+/// unavailable was named with the reader's whole error, which on a desktop the detection does
+/// not recognise, CI's runner among them, ran wider than the window: the panel widened to it and
+/// pushed the content panel out of the window (M9c CI1). That label is short now,
+/// `system (unavailable)` (`IconSetChoice`'s `Display`, M9c CI2), and an installed theme's name
+/// can still run as long, so the test names one.
 #[test]
 fn a_setting_wider_than_the_side_panel_keeps_the_panel_its_width() {
     let mut harness = open(
@@ -3846,6 +3846,45 @@ fn a_setting_wider_than_the_side_panel_keeps_the_panel_its_width() {
         "the drop-down {combo:?} leaves the side panel {panel:?}"
     );
     assert!(drawn.elided, "the drop-down's text is not cut");
+}
+
+/// Where the system icon theme cannot be detected, the Icon theme drop-down's hover text says
+/// why, as its `system` row's label, `system (unavailable)`, leaves the reason out; where it is
+/// detected, no hover text says it is unavailable. The detection is the process's own: under
+/// `scripts/run_in_runner_env.sh` and on CI's runner it fails, on a desktop it names the theme,
+/// so each run holds one of the two.
+#[test]
+fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
+    let mut harness = open(
+        egui::Theme::Light,
+        cli(&[("--theme", TEST_PRESET), ("--tab", "basic")]),
+    );
+    harness.run_steps(4);
+    let Some(combo) = harness
+        .state()
+        .registry
+        .places()
+        .get("chrome.side_panel.settings.icon_theme")
+        .copied()
+    else {
+        panic!("the Icon theme drop-down is not placed");
+    };
+    hover_and_settle(&mut harness, combo.center());
+    match native_theme::detect::system_icon_theme() {
+        Err(error) => {
+            let reason = native_theme_showcase_support::rows::icon_theme_unavailable(&error);
+            assert!(
+                harness.query_by_label(&reason).is_some(),
+                "no hover text reads {reason:?}"
+            );
+        }
+        Ok(theme) => assert!(
+            harness
+                .query_by_label_contains("System icon theme: unavailable")
+                .is_none(),
+            "the system icon theme is {theme}, yet a hover text says it is unavailable"
+        ),
+    }
 }
 
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups of a column

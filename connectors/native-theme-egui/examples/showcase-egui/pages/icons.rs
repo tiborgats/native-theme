@@ -184,9 +184,10 @@ fn cell(
     });
 }
 
-/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs:808-822`): a
-/// freedesktop set with the theme its icons load from — where that is the system's and it
-/// cannot be detected, why — else the set's name.
+/// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs`,
+/// `icon_set_label`): a freedesktop set with the theme its icons load from — where that is the
+/// system's and it cannot be detected, `unavailable`, the reason being the Icon theme
+/// drop-down's hover text, as a label is short — else the set's name.
 fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
     if set != IconSet::Freedesktop {
         return set.name().to_string();
@@ -195,7 +196,7 @@ fn set_label(set: IconSet, icon_theme: Option<&str>) -> String {
         Some(theme) => format!("freedesktop ({theme})"),
         None => match native_theme::detect::system_icon_theme() {
             Ok(theme) => format!("freedesktop ({theme})"),
-            Err(error) => format!("freedesktop (unavailable: {error})"),
+            Err(_) => "freedesktop (unavailable)".to_string(),
         },
     }
 }
