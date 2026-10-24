@@ -320,7 +320,8 @@ printing `skipped (--commit mode)`, and the summary names them. `cargo audit`
 runs in both modes, as CI audits every push. It fetches the advisory database
 each time; where it cannot (no network), the full run fails, and the
 per-commit subset audits against the cached database (`cargo audit
---no-fetch`, which checks no yanks) and warns with that database's date.
+--no-fetch`, which checks no yanks) and warns with that database's date, or,
+where no cached database loads, warns that the audit did not run.
 The subset runs before every commit; the full run on the last commit of every
 fix phase and before the release commit. An unknown argument exits 2;
 `--help` prints the usage.
@@ -685,11 +686,17 @@ The packages are pinned by SHA-256 and downloaded from `snapshot.ubuntu.com`
 is built from them again when the list changes. The script's header gives the
 evidence for each part. `scripts/check_release.sh` runs the three showcases'
 tests through it in both modes (Linux only), each in the feature set its test
-leg already builds.
+leg already builds. It runs `run_in_runner_env.sh --prepare` first, which
+builds the environment and runs nothing: where a package is neither cached
+with its SHA-256 nor fetchable from either server, the script exits 75, and
+check_release skips the three legs with a warning that the showcase tests were
+not run in CI's environment (CI runs them on the runner itself). A downloaded
+package whose SHA-256 differs fails, in both.
 
 Requires curl, sha256sum, bsdtar (libarchive) and fontconfig's `fc-match`;
 network access on the first run.
 
 ```sh
 ./scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
+./scripts/run_in_runner_env.sh --prepare
 ```

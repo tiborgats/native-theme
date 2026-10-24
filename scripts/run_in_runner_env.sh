@@ -4,6 +4,13 @@
 # fails here before it fails on CI.
 #
 #   scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
+#   scripts/run_in_runner_env.sh --prepare
+#
+# `--prepare` builds the environment and runs nothing. It, and a run, exit 75
+# (EX_TEMPFAIL) where a package is neither in target/runner-env/debs with its
+# SHA-256 nor fetchable from either server, so a caller can tell a server out
+# of reach from a failure; a downloaded package whose SHA-256 differs fails
+# with 1, as an integrity failure does.
 #
 # Cargo builds as usual; its target runner for the host's target
 # (`--config target.<host>.runner`, which no configuration file overrides)
@@ -96,8 +103,13 @@ fi
 
 cd "$ROOT"
 
-if [ "$#" -eq 0 ]; then
-    printf 'usage: scripts/run_in_runner_env.sh <cargo arguments>\n' >&2
+PREPARE=""
+if [ "${1:-}" = "--prepare" ]; then
+    PREPARE=1
+    shift
+fi
+if [[ ! $PREPARE ]] && [ "$#" -eq 0 ]; then
+    printf 'usage: scripts/run_in_runner_env.sh [--prepare | <cargo arguments>]\n' >&2
     exit 2
 fi
 
@@ -129,6 +141,7 @@ STAMP=$(printf '%s\n' "${PACKAGES[@]}")
 if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
     # Everything but the downloaded packages is built again; a package whose
     # file is already there with its SHA-256 is not downloaded again.
+    mkdir -p "$ENV_DIR"
     find "$ENV_DIR" -mindepth 1 -maxdepth 1 ! -name debs -exec rm -rf {} +
     mkdir -p "$ENV_DIR/debs" "$ENV_DIR/root" "$ENV_DIR/fonts" "$ENV_DIR/conf.d" \
         "$ENV_DIR/cache" "$ENV_DIR/bin" "$ENV_DIR/runtime"
@@ -139,8 +152,13 @@ if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
         if ! printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet --status 2>/dev/null; then
             # The snapshot first, then the archive's own pool, which holds the
             # same file while the version is current: the SHA-256 decides.
-            curl -fsSL --retry 3 -o "$deb" "$SNAPSHOT/$path" \
-                || curl -fsSL --retry 3 -o "$deb" "$ARCHIVE/$path"
+            if ! curl -fsSL --retry 3 -o "$deb" "$SNAPSHOT/$path" \
+                && ! curl -fsSL --retry 3 -o "$deb" "$ARCHIVE/$path"; then
+                rm -f "$deb"
+                printf 'run_in_runner_env.sh: cannot fetch %s from snapshot.ubuntu.com or archive.ubuntu.com\n' \
+                    "${path##*/}" >&2
+                exit 75
+            fi
             printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet
         fi
         bsdtar -xOf "$deb" 'data.tar.*' | bsdtar -xf - -C "$ENV_DIR/root"
@@ -171,6 +189,9 @@ if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
 </fontconfig>
 EOF
     printf '%s\n' "$STAMP" >"$ENV_DIR/.complete"
+fi
+if [[ $PREPARE ]]; then
+    exit 0
 fi
 
 # The home is emptied each run, so nothing a test wrote there is read back.

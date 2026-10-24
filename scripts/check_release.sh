@@ -779,11 +779,33 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
 # part). Each showcase in the feature set a test leg above builds, so nothing
 # is compiled again; the first run downloads the runner's font packages into
 # target/runner-env/. Linux only: the environment is fontconfig's and the
-# freedesktop desktops'.
+# freedesktop desktops'. The environment is prepared first: where its
+# packages can be neither fetched from either server nor found cached (the
+# script's exit 75), the three legs are skipped with a warning, since a
+# release gate does not fail because a server is out of reach and CI runs
+# these tests on the runner itself; any other failure, a package whose
+# SHA-256 differs among them, is hard.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Showcases in CI's runner environment"
+runner_env_status=0
+if [ "$(uname -s)" = "Linux" ]; then
+    runner_env_start=$SECONDS
+    set +e
+    runner_env_output=$(scripts/run_in_runner_env.sh --prepare 2>&1)
+    runner_env_status=$?
+    set -e
+fi
 if [ "$(uname -s)" != "Linux" ]; then
     print_info "skipped the showcases in CI's runner environment: it is a Linux runner's"
+elif [ "$runner_env_status" -eq 75 ]; then
+    printf "%s\n" "$runner_env_output" >&2
+    print_warn "showcases in CI's runner environment: not run, the runner's font and icon packages could be neither fetched nor found in target/runner-env/debs, so the showcase tests were not checked against CI's fonts, icon themes and desktop (CI checks them)" \
+        "$(format_elapsed "$((SECONDS - runner_env_start))")" "soft"
+elif [ "$runner_env_status" -ne 0 ]; then
+    printf "%s\n" "$runner_env_output" >&2
+    print_fail "CI's runner environment (scripts/run_in_runner_env.sh --prepare)" \
+        "$(format_elapsed "$((SECONDS - runner_env_start))")"
+    exit 1
 else
     run_tests "test (egui showcase, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
@@ -1113,7 +1135,10 @@ fi
 # check. Without a network the fetch fails ("couldn't fetch advisory
 # database"); the full run then fails, and the per-commit subset audits the
 # lock against the cached database (`--no-fetch`, which updates no index, so
-# a new yank goes unseen) and warns, naming the cached database's date.
+# a new yank goes unseen) and warns, naming the cached database's date; with
+# no cached database that loads ("error loading advisory database") it warns
+# that the audit did not run. A release gate does not fail because a server
+# is out of reach; CI audits every push.
 # ─────────────────────────────────────────────────────────────────────────────
 audit_offline() {
     # $1 = description; the online audit could not fetch the database.
@@ -1126,6 +1151,10 @@ audit_offline() {
     set -e
     local elapsed
     elapsed=$(format_elapsed "$((SECONDS - start))")
+    if [ "$status" -ne 0 ] && grep -q "error loading advisory database" <<<"$output"; then
+        print_warn "$1: not run, offline and no cached advisory database loads" "$elapsed" "soft"
+        return 0
+    fi
     if [ "$status" -ne 0 ]; then
         printf "%s\n" "$output" >&2
         print_fail "$1, offline, cached database" "$elapsed"
