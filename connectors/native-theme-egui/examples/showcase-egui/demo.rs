@@ -1260,10 +1260,10 @@ impl Semibold {
 
     /// Add `bytes`, the face at `index` of a font file of `drawn.0` at the weight `drawn.1`,
     /// under `family`, at the head of its chain, where epaint can load it ([`epaint_loads`]);
-    /// otherwise add nothing and record it in [`Semibold::invalid`], as the connector drops a
-    /// face of its plan that fails the same check and notes it (`Note::FontDataInvalid`), so
-    /// `family` stays unbound and text at that weight is drawn in the body's face
-    /// ([`weighted_family`], [`semibold_font`]).
+    /// otherwise add nothing and record it in [`Semibold::invalid`] once, however many families
+    /// ask for it, as the connector drops a face of its plan that fails the same check and notes
+    /// it once (`Note::FontDataInvalid`), so `family` stays unbound and text at that weight is
+    /// drawn in the body's face ([`weighted_family`], [`semibold_font`]).
     #[cfg(feature = "system-fonts")]
     pub(crate) fn add_face(
         &mut self,
@@ -1274,7 +1274,9 @@ impl Semibold {
         index: u32,
     ) {
         if !epaint_loads(&bytes, index) {
-            self.invalid.push((drawn.to_string(), weight));
+            if !self.invalid.iter().any(|(f, w)| f == drawn && *w == weight) {
+                self.invalid.push((drawn.to_string(), weight));
+            }
             return;
         }
         let mut data = egui::FontData::from_owned(bytes);

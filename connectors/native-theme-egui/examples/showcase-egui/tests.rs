@@ -6613,6 +6613,43 @@ fn a_weight_face_epaint_cannot_parse_is_skipped_and_noted() {
     );
 }
 
+/// A face asked for under two of the showcase's families at one weight is noted once, as the
+/// connector notes a face of its plan once (`Note::FontDataInvalid`): the semibold family and
+/// `weight_family(600)` both ask for the face at weight 600 where a text role is drawn at 600
+/// (windows-11), so the same unparsable face reaches `add_face` twice.
+#[cfg(feature = "system-fonts")]
+#[test]
+fn a_face_skipped_under_two_families_is_noted_once() {
+    let mut harness = open_page(Page::Basic, egui::Theme::Light);
+    let ctx = harness.ctx.clone();
+    for family in [
+        egui::FontFamily::Name(crate::demo::SEMIBOLD_FAMILY.into()),
+        crate::demo::weight_family(600),
+    ] {
+        harness
+            .state_mut()
+            .semibold
+            .add_face(&ctx, ("Broken Sans", 600), family, vec![0; 64], 0);
+    }
+    assert_eq!(
+        harness.state().semibold.invalid(),
+        [("Broken Sans".to_string(), 600)]
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    let noted = harness
+        .query_all(By::new().predicate(|n| {
+            n.value().is_some_and(|v| {
+                v.starts_with("FontDataInvalid\n") && v.contains("Broken Sans") && v.contains("600")
+            })
+        }))
+        .count();
+    assert_eq!(
+        noted, 1,
+        "the Theme tab's Notes list the skipped face more than once"
+    );
+}
+
 /// The label of the theme's `stated` family the showcase must show, read from what the
 /// harness has installed: the stated name alone where the atlas holds no
 /// `Note::FontFamilyUnavailable` or `Note::FontDataInvalid` for it; the platform's substitute
