@@ -8243,11 +8243,18 @@ section now says so:
   M9c T12 fix round 1: the columns that clip are the Data table's last
   (Platform) and the Theme Map's Value and Sinks, which share the room the Leaf
   and Verdict columns leave, so the table stays inside the page (every bundled
-  preset at text scales 1 and 1.5); the Data table's Theme column and the Theme Map's Leaf and Verdict
-  columns are as wide as their text.
+  preset at text scales 1 and 1.5); the Data table's Theme column and the Theme
+  Map's Leaf and Verdict columns are as wide as their text.
   M9c T12 fix round 2: the Theme Map's Value and Sinks columns are each at
   least as wide as their header's text as drawn, and the Theme Map lies in a
   horizontal `ScrollArea`, so where the Leaf and Verdict columns and those two
   floors are wider than the page (at the largest text scale the Preferences
   offer, 2.25, on every bundled preset), the rest is reached by scrolling
   across.
+- **§10.4, the rest of M9c** (M9c T18, 2026-10-24): M9c changed more of §10.4
+  than the three M9c lines above record: the watcher's hand-off, Reduce motion,
+  the macOS menus, the chrome's spacing, the per-call leaves, the rounded list
+  fills, the drawn family, the command palette's keys and the icon cache among
+  them. Those are recorded in the code-review ledger,
+  `docs/todo_code-review-findings.md`, *M9 — Showcases*, entries M9-102 to
+  M9-122 and M9-155 to M9-159, each with its status and commits, not here.
