@@ -1855,6 +1855,11 @@ platform (`native-theme/src/watch/`).
       text and pushed the Verdict and Sinks columns past the panel at a text scale of 1.5;
       the Data table's Theme column and the Theme Map's Leaf and Verdict columns are as
       wide as their text.
+      M9c T12 fix round 2 (2026-10-24, fc64f851): the Theme Map's Value and Sinks columns
+      are each at least as wide as their header's text as drawn, and the table lies in a
+      horizontal `ScrollArea`, so where the Leaf and Verdict columns and those floors are
+      wider than the page (at the text scale 2.25 the Preferences offer, on every bundled
+      preset) the rest is reached by scrolling across.
 
 ### Closed items from M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 
