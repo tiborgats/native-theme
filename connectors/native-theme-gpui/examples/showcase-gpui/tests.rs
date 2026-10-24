@@ -11018,9 +11018,10 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
 }
 
 /// A system icon theme that cannot be detected is shown as such: the Icons
-/// page's label gives the reason where it would name the theme, never a
-/// theme nothing detected. Linux only, where the system's icons are a
-/// freedesktop theme.
+/// page's label says `unavailable` where it would name the theme, never a
+/// theme nothing detected, and leaves the reason to the icon-theme Select's
+/// hover text, as a label is short. Linux only, where the system's icons
+/// are a freedesktop theme.
 #[cfg(target_os = "linux")]
 #[gpui::test]
 fn a_failed_icon_theme_detection_is_shown_as_a_failure(cx: &mut TestAppContext) {
@@ -11038,8 +11039,51 @@ fn a_failed_icon_theme_detection_is_shown_as_a_failure(cx: &mut TestAppContext) 
     cx.run_until_parked();
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_label()),
-        "freedesktop (unavailable: platform not supported: the test's failing detection)",
+        "freedesktop (unavailable)",
         "the Icons page names an icon theme though its detection failed"
+    );
+    assert_eq!(
+        read(&mut cx, &showcase, |this, _| this.icon_theme_unavailable()).as_deref(),
+        Some(
+            "System icon theme: unavailable (platform not supported: the test's failing detection)"
+        ),
+        "the Select's hover text does not give the reason"
+    );
+}
+
+/// Where the system icon theme cannot be detected, the icon-theme Select
+/// shows a tooltip on hover, the reason its `system` row's short label
+/// leaves out; where it is detected, none. The tooltip's text is not
+/// readable from the test's frame, so its box is what shows it: on hover
+/// the Select paints a narrow box of its own in the tooltip's fill too
+/// (18 px under kde-breeze), and the tooltip is wider than that.
+#[gpui::test]
+fn the_icon_theme_select_says_on_hover_why_the_system_theme_is_unavailable(
+    cx: &mut TestAppContext,
+) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    without_motion(&mut cx);
+    let mut hovered = |detect: fn() -> native_theme::Result<String>| {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.icon_theme_detection_for_test = Some(detect);
+                cx.notify();
+            })
+        });
+        cx.run_until_parked();
+        tooltip_width(&mut cx, PROBE_ICON_THEME)
+    };
+    let detected = hovered(|| Ok("breeze".to_string()));
+    let failed = hovered(|| {
+        Err(native_theme::error::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        })
+    });
+    assert!(
+        failed.is_some() && failed > detected,
+        "the Select's widest box in the tooltip's fill is {failed:?} with a failed detection \
+         and {detected:?} with a detected theme: no tooltip says why"
     );
 }
 

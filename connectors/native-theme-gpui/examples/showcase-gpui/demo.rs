@@ -1099,14 +1099,22 @@ pub(crate) fn color_mode_select(
 }
 
 /// The icon-theme `Select` over `state`, refined by `geometry::select`, as
-/// wide as the theme settings it is in.
+/// wide as the theme settings it is in; where the system icon theme cannot be
+/// detected, `unavailable` gives the reason, which the Select shows in a
+/// tooltip built as [`built_tooltip_button`]'s is, and its info in a `system`
+/// line: the `system` row's label is short, `system (unavailable)`
+/// (`IconSetChoice`'s `Display`).
 pub(crate) fn icon_set_select(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     state: &Entity<SelectState<SearchableVec<SharedString>>>,
+    unavailable: Option<String>,
 ) -> Stateful<Div> {
     let native = cx.native();
     let mut select_info = info::icon_set_select(cx.theme(), native.as_ref().map(|n| n.resolved));
+    if let Some(reason) = &unavailable {
+        select_info = select_info.instance("system", reason.clone());
+    }
     let select = native_info(
         Select::new(state),
         cx,
@@ -1115,9 +1123,29 @@ pub(crate) fn icon_set_select(
         &mut select_info,
     );
     let select = refined(select, combo_fill(cx).as_ref()).w_full();
-    combo_surface(cx, select)
-        .w_full()
-        .info(ui, "chrome-settings-icon-theme", select_info)
+    let select =
+        combo_surface(cx, select)
+            .w_full()
+            .info(ui, "chrome-settings-icon-theme", select_info);
+    let Some(reason) = unavailable.map(SharedString::from) else {
+        return select;
+    };
+    let style = native_geometry(cx, geometry::tooltip);
+    let content = native_geometry(cx, geometry::tooltip_content);
+    select
+        .tooltip(move |window, cx| {
+            let (reason, content) = (reason.clone(), content.clone());
+            refined(
+                Tooltip::element(move |_window, _cx| {
+                    refined(div().child(reason.clone()), content.as_ref())
+                }),
+                style.as_ref(),
+            )
+            .build(window, cx)
+        })
+        .when_some(tooltip_delay(cx), |select, delay| {
+            select.tooltip_show_delay(delay)
+        })
 }
 
 /// One of the toolbar's icon Buttons.

@@ -276,7 +276,7 @@ pub(crate) fn side_panel(app: &Showcase, cx: &App) -> impl IntoElement {
             (
                 CHROME_LABEL_ICON_THEME,
                 "Icon theme",
-                demo::icon_set_select(ui, cx, &app.icon_theme_select)
+                demo::icon_set_select(ui, cx, &app.icon_theme_select, app.icon_theme_unavailable())
                     .debug_selector(|| PROBE_ICON_THEME.into())
                     .into_any_element(),
             ),
