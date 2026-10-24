@@ -263,6 +263,19 @@ fn keyboard_event(event: &egui::Event) -> bool {
     )
 }
 
+/// The macOS system menu's actions `logic` runs, `drained` from the menu's channel: every one
+/// is taken off the channel, and while the window is shielded from the keyboard
+/// (`shields_keyboard`) none is run, so a key equivalent typed while the window is captured or
+/// dumped changes nothing it shows, as a key the window gets does not (`raw_input_hook`). Built
+/// where the system menu is, and in the tests on every platform.
+#[cfg(any(target_os = "macos", test))]
+pub(crate) fn system_menu_actions(
+    drained: impl Iterator<Item = Action>,
+    shields_keyboard: bool,
+) -> Vec<Action> {
+    drained.filter(|_| !shields_keyboard).collect()
+}
+
 /// Whether `event` moves, presses, touches or leaves with the window's own pointer.
 fn pointer_event(event: &egui::Event) -> bool {
     matches!(
@@ -351,7 +364,10 @@ pub(crate) struct App {
     shields_pointer: bool,
     /// `--capture`, `--screenshot` or `--dump-layout`: the window takes no keyboard input, so a
     /// key typed while it is captured or dumped changes nothing it shows (`raw_input_hook`,
-    /// `CliArgs::shields_keyboard`).
+    /// `CliArgs::shields_keyboard`); on macOS the system menu's own items run nothing either
+    /// ([`system_menu_actions`]). Outside the shield are AppKit's predefined items, which AppKit
+    /// runs itself and the showcase never sees: Close ⌘W, Quit ⌘Q, Hide ⌘H, Hide Others ⌥⌘H
+    /// and Minimize ⌘M.
     shields_keyboard: bool,
     /// `--open-menu <title>`: the menu bar's menu of that title (lower case) still to be opened;
     /// the menu bar opens it at its first pass and clears this. On macOS the menus are the
@@ -954,7 +970,10 @@ pub(crate) fn content_px(ctx: &egui::Context) -> Result<Content, String> {
 impl eframe::App for App {
     fn raw_input_hook(&mut self, ctx: &egui::Context, raw_input: &mut egui::RawInput) {
         // A captured or dumped window shows the run as it started whatever is typed while it
-        // runs: a key the desktop hands it types into no field and runs no shortcut.
+        // runs: a key the desktop hands it types into no field and runs no shortcut, and on
+        // macOS the system menu's key equivalents, which never pass through here, are dropped
+        // where `logic` drains them (`system_menu_actions`); AppKit's predefined items (⌘W ⌘Q
+        // ⌘H ⌥⌘H ⌘M) run in AppKit, outside the shield.
         if self.shields_keyboard {
             raw_input.events.retain(|e| !keyboard_event(e));
         }
@@ -1003,7 +1022,8 @@ impl eframe::App for App {
         // The system menu's clicks, as the in-window items' (§10.4).
         #[cfg(all(target_os = "macos", not(test)))]
         if let Some(rx) = &self.menu_rx {
-            self.pending.extend(rx.try_iter());
+            let actions = system_menu_actions(rx.try_iter(), self.shields_keyboard);
+            self.pending.extend(actions);
         }
         // Before anything reads input (§10.4: the palette's Ctrl+K beats a focused field's own
         // Ctrl+K); compiled out on macOS outside `cfg(test)`, where the system menu's

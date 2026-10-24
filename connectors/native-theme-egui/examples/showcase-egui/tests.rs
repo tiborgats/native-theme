@@ -7547,7 +7547,7 @@ fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
     ] {
         assert_eq!(
             inspector_fonts(&harness, name),
-            [want.clone()],
+            std::slice::from_ref(want),
             "the Theme tab's {name:?} section name"
         );
     }
@@ -7969,6 +7969,39 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
 
 /// Keys typed while a capture runs reach the window the desktop gives the focus, and changed
 /// what a capture recorded (the Basic page's focused field read "Focusedones?"): under
+/// The macOS system menu's actions are drained and dropped while the window is shielded from the
+/// keyboard, so its key equivalents (⌘, ⌘B ⌘K), which never pass through `raw_input_hook`, run
+/// nothing in a captured or dumped window; unshielded they all run, in order. The flags shield
+/// as `CliArgs::shields_keyboard` says.
+#[test]
+fn the_system_menus_actions_are_dropped_while_the_keyboard_is_shielded() {
+    use crate::chrome::Action;
+    let sent = [
+        Action::OpenPreferences,
+        Action::ToggleSidePanel,
+        Action::OpenCommandPalette,
+    ];
+    let args = |argv: &[&str]| CliArgs::parse(argv.iter().map(|a| (*a).to_string()));
+    for (argv, shielded) in [
+        (&[][..], false),
+        (&["--capture"][..], true),
+        (&["--screenshot", "p"], true),
+        (&["--dump-layout", "f"], true),
+    ] {
+        let shields = args(argv).shields_keyboard();
+        assert_eq!(shields, shielded, "{argv:?} shields the keyboard");
+        let mut channel = sent.into_iter();
+        let run = crate::app::system_menu_actions(channel.by_ref(), shields);
+        assert_eq!(
+            channel.next(),
+            None,
+            "{argv:?}: an action is left on the channel"
+        );
+        let want: &[Action] = if shielded { &[] } else { &sent };
+        assert_eq!(run, want, "{argv:?}: the system menu's actions run");
+    }
+}
+
 /// `--capture`, `--screenshot` and `--dump-layout` the window takes no keyboard input
 /// (`App::raw_input_hook`, `CliArgs::shields_keyboard`). Text typed into the focused field and
 /// the side-panel toggle's shortcut, handed to the hook as eframe hands them, change nothing;
