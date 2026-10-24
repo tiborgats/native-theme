@@ -688,12 +688,15 @@ evidence for each part. `scripts/check_release.sh` runs the three showcases'
 tests through it in both modes (Linux only), each in the feature set its test
 leg already builds. It runs `run_in_runner_env.sh --prepare` first, which
 builds the environment and runs nothing: where a package is not cached with
-its SHA-256 and neither server can be reached for it (a connection failure, a
-timeout or a 5xx answer), the script exits 75, and check_release skips the
+its SHA-256 and neither server delivers it, one or both out of reach (no
+connection, a timeout, a transfer closed early) or answering transiently (5xx,
+408, 429), the script exits 75, and check_release skips the
 three legs with a warning that the showcase tests were not run in CI's
 environment (CI runs them on the runner itself). Anything else fails, in
 both, naming its cause: a 4xx answer from both servers (a pin that has
-rotted; the message names the package and both URLs), a file that cannot be
+rotted; the message names the package and both answers; one server's 4xx
+with the other out of reach is still 75, its message saying the pin may have
+rotted), a file that cannot be
 written or extracted, a downloaded package whose SHA-256 differs. curl gives
 up on a connection after 10 s and on a stalled transfer after 30 s.
 

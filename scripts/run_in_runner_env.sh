@@ -8,12 +8,14 @@
 #
 # `--prepare` builds the environment and runs nothing. It, and a run, exit 75
 # (EX_TEMPFAIL) only where a package is not in target/runner-env/debs with its
-# SHA-256 and neither server can be reached for it: a connection failure, a
-# timeout or a 5xx answer from both, so a caller can tell an outage from a
-# failure. Everything else fails with 1, naming its cause: a 4xx answer from
-# both servers (the pin has rotted; the message names the package and both
-# URLs), a file that cannot be written or extracted, and a downloaded package
-# whose SHA-256 differs. curl gives up on a connection after 10 s and on a
+# SHA-256 and neither server delivers it, one or both of them out of reach
+# (no connection, a timeout, a transfer closed early) or answering
+# transiently (5xx, 408, 429), so a caller can tell an outage from a failure;
+# where the other server answered 4xx the message says the pin may have
+# rotted, which only both servers' 4xx decides. Everything else fails with 1,
+# naming its cause: a 4xx answer from both servers (the pin has rotted; the
+# message names the package and both answers), a file that cannot be written
+# or extracted, and a downloaded package whose SHA-256 differs. curl gives up on a connection after 10 s and on a
 # transfer slower than 1 KiB/s for 30 s, so an outage cannot hold the run.
 #
 # Cargo builds as usual; its target runner for the host's target
@@ -117,10 +119,14 @@ if [[ ! $PREPARE ]] && [ "$#" -eq 0 ]; then
     exit 2
 fi
 
-# Fetches $1 into $2. Returns 0 when fetched; 75 for an outage (curl could
-# not resolve, connect, finish the TLS handshake or receive in time, or the
-# server answered 5xx); 2 when the server answered 4xx; and 1, having
-# printed the cause, for anything else (a file it cannot write among them).
+# Fetches $1 into $2. Returns 0 when fetched; 75 for an outage, with
+# FETCHED saying what happened: curl could not resolve, connect, finish the
+# TLS handshake or receive in time, the transfer closed early, or the server
+# answered 5xx, 408 (request timeout) or 429 (too many requests), each
+# transient, curl retrying them; 2 when the server answered another 4xx, the
+# file not there; and 1, having printed the cause, for anything else (a file
+# it cannot write among them).
+FETCHED=""
 fetch() {
     local url=$1 deb=$2 code status=0
     code=$(curl -sSL --connect-timeout 10 --speed-limit 1024 --speed-time 30 \
@@ -128,7 +134,10 @@ fetch() {
         || status=$?
     case "$status" in
         0) ;;
-        5 | 6 | 7 | 28 | 35 | 52 | 55 | 56) return 75 ;;
+        5 | 6 | 7 | 18 | 28 | 35 | 52 | 55 | 56)
+            FETCHED="$url is out of reach (curl exit $status)"
+            return 75
+            ;;
         23)
             printf 'run_in_runner_env.sh: cannot write %s (curl exit 23)\n' "$deb" >&2
             return 1
@@ -140,8 +149,14 @@ fetch() {
     esac
     case "$code" in
         2??) return 0 ;;
-        5??) return 75 ;;
-        4??) return 2 ;;
+        5?? | 408 | 429)
+            FETCHED="$url answered HTTP $code, a transient answer"
+            return 75
+            ;;
+        4??)
+            FETCHED="$url answered HTTP $code"
+            return 2
+            ;;
         *)
             printf 'run_in_runner_env.sh: HTTP %s for %s\n' "$code" "$url" >&2
             return 1
@@ -190,24 +205,36 @@ if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
             # same file while the version is current: the SHA-256 decides.
             snapshot=0
             archive=0
+            FETCHED=""
             fetch "$SNAPSHOT/$path" "$deb" || snapshot=$?
+            from_snapshot=$FETCHED
             if [ "$snapshot" -eq 1 ]; then
                 rm -f "$deb"
                 exit 1
             elif [ "$snapshot" -ne 0 ]; then
+                FETCHED=""
                 fetch "$ARCHIVE/$path" "$deb" || archive=$?
             fi
             if [ "$snapshot" -ne 0 ] && [ "$archive" -ne 0 ]; then
                 rm -f "$deb"
-                if [ "$snapshot" -eq 1 ] || [ "$archive" -eq 1 ]; then
+                if [ "$archive" -eq 1 ]; then
                     exit 1
                 elif [ "$snapshot" -eq 2 ] && [ "$archive" -eq 2 ]; then
-                    printf 'run_in_runner_env.sh: %s is gone from both servers (4xx): %s and %s; update its pin\n' \
-                        "${path##*/}" "$SNAPSHOT/$path" "$ARCHIVE/$path" >&2
+                    printf 'run_in_runner_env.sh: %s is gone from both servers: %s; %s; update its pin\n' \
+                        "${path##*/}" "$from_snapshot" "$FETCHED" >&2
                     exit 1
                 fi
-                printf 'run_in_runner_env.sh: cannot fetch %s: %s and %s are out of reach\n' \
-                    "${path##*/}" "$SNAPSHOT/$path" "$ARCHIVE/$path" >&2
+                # At least one server could not answer. Where the other said
+                # the file is not there, the pin may have rotted, but only an
+                # answer from both decides that: the archive's pool drops a
+                # version once it is superseded, and the snapshot may lack a
+                # file the pool still holds. So it is an outage, said as such.
+                note=""
+                if [ "$snapshot" -eq 2 ] || [ "$archive" -eq 2 ]; then
+                    note="; the pin may have rotted, but the other server could not confirm it"
+                fi
+                printf 'run_in_runner_env.sh: cannot fetch %s: %s; %s%s\n' \
+                    "${path##*/}" "$from_snapshot" "$FETCHED" "$note" >&2
                 exit 75
             fi
             printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet
