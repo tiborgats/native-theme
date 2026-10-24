@@ -1848,6 +1848,13 @@ platform (`native-theme/src/watch/`).
       the header is now 18 px with its label in its 16.8 px line box.
       `the_tables_headers_take_the_themes_header_height` lost its `header.max(content)`
       allowance.
+      M9c T12 fix round 1 (2026-10-24, bdd5ffa9): the columns that clip are the Data
+      table's last (Platform) and the Theme Map's Value and Sinks, which share the room
+      the Leaf and Verdict columns leave (egui_extras 0.36.2 `src/sizing.rs:141-166`), so
+      the Theme Map stays inside the central panel, where its Value column took its whole
+      text and pushed the Verdict and Sinks columns past the panel at a text scale of 1.5;
+      the Data table's Theme column and the Theme Map's Leaf and Verdict columns are as
+      wide as their text.
 
 ### Closed items from M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 
