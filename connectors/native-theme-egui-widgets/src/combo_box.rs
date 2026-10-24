@@ -110,6 +110,8 @@ impl ComboBox {
     /// `egui::ComboBox::truncate`. Without it egui lays the text out on one line as wide as it
     /// runs (the drop-down's `Ui` is horizontal, `egui/src/containers/combo_box.rs:234`, and a
     /// horizontal `Ui` extends text, `egui/src/ui.rs:599-604`) and widens the drop-down to it.
+    /// As egui's, the cut text shows no tooltip: a caller that needs the whole text shows it
+    /// elsewhere, as the showcase's drop-down rows do on hover.
     pub fn truncate(mut self) -> Self {
         self.truncate = true;
         self
