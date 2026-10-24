@@ -21,10 +21,44 @@
 # `clippy::expect_used` in their crate roots; the rest of the list is enforced
 # only here. scripts/check_release.sh and ci.yml run it, so the list is kept in
 # this one place.
+#
+# The results are kept apart from the ordinary clippy's (`-- -D warnings`).
+# clippy-driver gets the lints in CLIPPY_ARGS, which every unit it lints
+# records as an `# env-dep:` of its dep-info, and cargo tracks such a variable
+# in the unit's fingerprint only, not in the metadata hash that names the
+# unit's files (the table in cargo's src/compiler/fingerprint/mod.rs:67-90 and
+# :193-197, at cargo 1.99.1). So the two lint sets shared one result per unit
+# of a workspace crate and each replaced the other's: native-theme-derive and
+# native-theme's build script were compiled again at every switch, and each
+# workspace crate above them checked again, changed or not (cargo's log,
+# `CARGO_LOG=cargo::compiler::fingerprint=info`: `ChangedEnv { var:
+# "CLIPPY_ARGS", .. }`). The profile is in the metadata hash, so this run sets
+# `debug = false` on each workspace crate (`[profile.dev.package.<crate>]`,
+# clippy's dev profile, through `--config`): their units get files of their
+# own beside the ordinary clippy's, in the same target directories. Debug
+# info is code generation's, which comes after the lints, so no lint result
+# changes; the dependencies, whose lints cargo caps, keep their one build. A
+# named profile (`--profile strict-panic`) or a target directory of its own
+# would keep the results apart too, but would check every dependency a second
+# time, in CI's steps as well: the gpui connector's library alone took 52 s
+# and 1.4 GB so (2026-10-24, at a load of 5).
+#
+# Requires jq: the workspace crates are read from `cargo metadata`.
 set -euo pipefail
+
+if ! command -v jq &>/dev/null; then
+    echo "check_strict_panic.sh: jq is required (it reads the workspace crates from cargo metadata); install jq and rerun" >&2
+    exit 2
+fi
 
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 cd "$ROOT"
+
+WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[].name')
+OWN_RESULTS=()
+for crate in $WORKSPACE_CRATES; do
+    OWN_RESULTS+=(--config "profile.dev.package.$crate.debug=false")
+done
 
 STRICT_PANIC_LINTS=(
     -D clippy::unwrap_used
@@ -44,4 +78,4 @@ STRICT_PANIC_LINTS=(
     -D clippy::exit
 )
 
-cargo clippy "$@" -- "${STRICT_PANIC_LINTS[@]}"
+cargo clippy "$@" "${OWN_RESULTS[@]}" -- "${STRICT_PANIC_LINTS[@]}"

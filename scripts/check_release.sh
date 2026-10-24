@@ -548,7 +548,9 @@ run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
 #
 # scripts/check_strict_panic.sh runs clippy with the type-aware panic-prone
 # lints promoted to errors; the lint list and what each lint catches are
-# there, and CI's clippy job runs the same script.
+# there, and CI's clippy job runs the same script. Its results are kept apart
+# from the clippy section's, so neither checks the workspace crates again
+# for the other (its header says how).
 #
 # Scope: library targets (--lib), and the gpui, iced and egui showcase
 # examples, applications the repo ships, which the no-panic rule covers as it

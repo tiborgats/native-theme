@@ -371,6 +371,23 @@ runs it on every crate's library and on the three showcase examples
 `-p native-theme-egui --example showcase-egui`), and `ci.yml`'s clippy job
 runs the same calls, so the lint list lives in this one file.
 
+Its results are kept apart from the ordinary clippy's (`-- -D warnings`):
+cargo tracks the lints, which clippy gets in `CLIPPY_ARGS`, in a unit's
+fingerprint but not in the hash that names its files, so the two lint sets
+shared one result per workspace crate and each run replaced the other's,
+compiling `native-theme-derive` and native-theme's build script again and
+checking every workspace crate again, changed or not. The script sets
+`debug = false` on each workspace crate (`--config
+profile.dev.package.<crate>.debug=false`, the crates read from `cargo
+metadata`), which is in that hash: their units get files of their own in the
+same `target/debug` and `target/<triple>/debug`, no other directory, while
+the dependencies keep their one build. Debug info is code generation's, so
+no lint result changes. A named profile or a target directory of its own
+would check every dependency a second time, locally and in CI. Exits 2 when
+`jq` is missing.
+
+Requires jq.
+
 ```sh
 ./scripts/check_strict_panic.sh -p native-theme-iced --lib
 ```
