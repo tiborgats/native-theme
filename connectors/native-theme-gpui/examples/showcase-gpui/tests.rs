@@ -9866,11 +9866,28 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
     }
 }
 
-/// A platform text system that holds the families `.0` alone, each its own face, and lays text
-/// out as gpui's `NoopTextSystem`: a host that lacks a theme's family, for a test. The test
-/// platform's own, `NoopTextSystem`, resolves every family to one face and lists none
-/// (gpui-pre 0.3.9 `src/platform.rs:1547-1553`).
-struct HeldFamilies(Vec<String>);
+/// A platform text system that holds the families `held` alone and lays text out as gpui's
+/// `NoopTextSystem`: a host that lacks a theme's family, for a test. The test platform's own,
+/// `NoopTextSystem`, resolves every family to one face and lists none (gpui-pre 0.3.9
+/// `src/platform.rs:1547-1553`). As gpui's platform text systems do, it loads a family asked
+/// for by an alias under the family the alias names (`gpui::font_name_with_fallbacks`, with
+/// Linux's system UI font, gpui-pre-linux 0.3.9 `src/linux/platform.rs:126`, gpui-pre-wgpu
+/// `src/cosmic_text_system.rs:386`), and gives each family asked for a face id of its own
+/// (`:44-47`, `:400-443`), `asked` holding them in their order.
+struct HeldFamilies {
+    held: Vec<String>,
+    asked: std::sync::Mutex<Vec<String>>,
+}
+
+impl HeldFamilies {
+    /// A text system that holds `held` alone.
+    fn new(held: Vec<String>) -> Self {
+        Self {
+            held,
+            asked: std::sync::Mutex::default(),
+        }
+    }
+}
 
 impl gpui::PlatformTextSystem for HeldFamilies {
     fn add_fonts(&self, fonts: Vec<std::borrow::Cow<'static, [u8]>>) -> gpui::Result<()> {
@@ -9878,17 +9895,29 @@ impl gpui::PlatformTextSystem for HeldFamilies {
     }
 
     fn all_font_names(&self) -> Vec<String> {
-        self.0.clone()
+        self.held.clone()
     }
 
     fn font_id(&self, descriptor: &gpui::Font) -> gpui::Result<gpui::FontId> {
-        self.0
+        let loaded = gpui::font_name_with_fallbacks(&descriptor.family, "IBM Plex Sans");
+        if !self.held.iter().any(|family| family == loaded) {
+            return Err(std::io::Error::other(format!("no face of {}", descriptor.family)).into());
+        }
+        let mut asked = self
+            .asked
+            .lock()
+            .expect("no test panicked holding the lock");
+        let id = match asked
             .iter()
             .position(|family| *family == descriptor.family.as_ref())
-            .map(gpui::FontId)
-            .ok_or_else(|| {
-                std::io::Error::other(format!("no face of {}", descriptor.family)).into()
-            })
+        {
+            Some(id) => id,
+            None => {
+                asked.push(descriptor.family.to_string());
+                asked.len() - 1
+            }
+        };
+        Ok(gpui::FontId(id))
     }
 
     fn font_metrics(&self, font_id: gpui::FontId) -> gpui::FontMetrics {
@@ -9963,7 +9992,7 @@ fn with_held_families(
             let mut cx = TestAppContext::build_with_text_system(
                 dispatcher,
                 None,
-                std::sync::Arc::new(HeldFamilies(held.clone())),
+                std::sync::Arc::new(HeldFamilies::new(held.clone())),
             );
             test(&mut cx);
             cx.run_until_parked();
@@ -10166,6 +10195,123 @@ fn a_family_gpui_finds_is_named_as_stated() {
             }
         }
     });
+}
+
+/// The label the lookup gives `stated`, a family the text system of `cx` does not hold, asked
+/// for as itself: built as an install builds it (`DrawnFamilies::of`), before any window lays
+/// text out.
+fn label_of_absent(cx: &mut TestAppContext, stated: &str) -> String {
+    cx.update(|cx| {
+        crate::inspector::DrawnFamilies::of([gpui::SharedString::from(stated.to_string())], cx)
+            .label(stated, stated)
+    })
+}
+
+/// A text system that holds no family of gpui's fallback stack is not asked: `resolve_font`
+/// would panic there for a family it lacks (gpui-pre 0.3.9 `src/text_system.rs:381-387`), so
+/// the label is the family asked for.
+#[test]
+fn a_text_system_without_a_stack_family_is_not_asked() {
+    with_held_families(&["Hack"], |cx| {
+        assert_eq!(
+            label_of_absent(cx, "NoSuchFamily-T10b"),
+            "NoSuchFamily-T10b"
+        );
+    });
+}
+
+/// Each family of gpui's fallback stack, held alone, is the one a family the text system lacks
+/// is drawn in, named by the family its platform loads for it (`.ZedMono` is Lilex, `.ZedSans`
+/// IBM Plex Sans, `gpui::font_name_with_fallbacks`); of two held in a row, the first.
+#[test]
+fn each_family_of_the_stack_is_named_where_it_is_drawn() {
+    use crate::inspector::GPUI_FALLBACK_STACK;
+    let loaded = |entry: &'static str| gpui::font_name_with_fallbacks(entry, entry);
+    let expected = |family: &str| {
+        format!(
+            "NoSuchFamily-T10b (gpui finds no face of it; drawn in the first family of gpui's \
+             fallback stack it finds, {family})"
+        )
+    };
+    for entry in GPUI_FALLBACK_STACK {
+        with_held_families(&[loaded(entry)], |cx| {
+            assert_eq!(
+                label_of_absent(cx, "NoSuchFamily-T10b"),
+                expected(loaded(entry)),
+                "{entry} held alone"
+            );
+        });
+    }
+    for pair in GPUI_FALLBACK_STACK.windows(2) {
+        let (first, second) = (loaded(pair[0]), loaded(pair[1]));
+        with_held_families(&[second, first], |cx| {
+            assert_eq!(
+                label_of_absent(cx, "NoSuchFamily-T10b"),
+                expected(first),
+                "{first} and {second} held"
+            );
+        });
+    }
+}
+
+/// The showcase's copy of gpui's fallback stack (`inspector::GPUI_FALLBACK_STACK`) is each
+/// core's, at the lines its doc cites: gpui-pre 0.3.9 `src/text_system.rs:255-266`, gpui-fast
+/// 0.1.10 `:256-267`, read from the sources `cargo metadata` names. The field is private in
+/// both, so the source is the only place to read it whole.
+#[test]
+fn the_fallback_stack_copy_is_gpuis() {
+    use crate::inspector::GPUI_FALLBACK_STACK;
+    let out = std::process::Command::new(env!("CARGO"))
+        .args(["metadata", "--format-version", "1"])
+        .current_dir(env!("CARGO_MANIFEST_DIR"))
+        .output()
+        .expect("cargo metadata runs");
+    assert!(
+        out.status.success(),
+        "cargo metadata failed: {:?}",
+        out.status
+    );
+    let meta: serde_json::Value = serde_json::from_slice(&out.stdout).expect("metadata is JSON");
+    let packages = meta["packages"]
+        .as_array()
+        .expect("cargo metadata lists packages");
+    for (core, version, first, last) in [
+        ("gpui-pre", "0.3.9", 255, 266),
+        ("gpui-fast", "0.1.10", 256, 267),
+    ] {
+        let manifest = packages
+            .iter()
+            .find(|p| p["name"] == core && p["version"] == version)
+            .and_then(|p| p["manifest_path"].as_str())
+            .unwrap_or_else(|| panic!("{core} {version} is not in the cargo metadata"));
+        let source = std::path::Path::new(manifest)
+            .with_file_name("src")
+            .join("text_system.rs");
+        let text = std::fs::read_to_string(&source).expect("the core's text_system.rs reads");
+        let lines: Vec<&str> = text.lines().collect();
+        let cited: Vec<String> = lines[first - 1..last]
+            .iter()
+            .filter_map(|line| {
+                let start = line.find("font(\"")? + "font(\"".len();
+                let end = line[start..].find('"')? + start;
+                Some(line[start..end].to_string())
+            })
+            .collect();
+        assert_eq!(
+            cited, GPUI_FALLBACK_STACK,
+            "{core} {version} src/text_system.rs:{first}-{last}"
+        );
+        assert!(
+            lines[first - 1].contains("fallback_font_stack: smallvec!["),
+            "{core} {version}: :{first} does not start the stack: {}",
+            lines[first - 1]
+        );
+        assert!(
+            lines[last].trim() == "],",
+            "{core} {version}: the line after :{last} does not end the stack: {}",
+            lines[last]
+        );
+    }
 }
 
 /// A chrome popup row is padded on each side the theme states by

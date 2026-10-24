@@ -269,6 +269,26 @@ pub(crate) fn font_rows(app: &Showcase, cx: &gpui::App) -> Vec<(&'static str, St
     ]
 }
 
+/// gpui's fallback stack, in its order: what `TextSystem::resolve_font` draws text in where
+/// its text system finds no face of the family asked for, the first family it finds a face of
+/// (gpui-pre 0.3.9 `src/text_system.rs:255-266`, gpui-fast 0.1.10 `src/text_system.rs:256-267`;
+/// private in both). `.ZedMono` and `.ZedSans` are aliases, which the platform text systems
+/// load as Lilex and IBM Plex Sans (`gpui::font_name_with_fallbacks`, gpui-pre `:1420-1430`,
+/// gpui-fast `:1406-1416`). Held against both cores' lines by
+/// `tests::the_fallback_stack_copy_is_gpuis`.
+pub(crate) const GPUI_FALLBACK_STACK: [&str; 10] = [
+    ".ZedMono",
+    ".ZedSans",
+    "Helvetica",
+    "Segoe UI",
+    "Ubuntu",
+    "Adwaita Sans",
+    "Cantarell",
+    "Noto Sans",
+    "DejaVu Sans",
+    "Arial",
+];
+
 /// What gpui draws each family it is asked for under the installed theme
 /// in, as the status bar, the Theme tab and Widget Info name it (the shared
 /// crate's `status::DrawnFamily`): the family gpui's text system resolves it
@@ -291,18 +311,27 @@ pub(crate) struct DrawnFamilies(Vec<(SharedString, Option<SharedString>)>);
 
 impl DrawnFamilies {
     /// The family the text system of `cx` resolves each of `asked` to, each
-    /// asked once. A text system that lists no font
-    /// (`TextSystem::all_font_names`, gpui-pre `:284-289`, gpui-fast
-    /// `:285-290`) is not asked, and the answer is `None`: the test
-    /// platform's `NoopTextSystem` lists none and resolves every family to
-    /// one face, whose id then names no family of its own (gpui-pre
-    /// `src/platform.rs:1547-1553`). `resolve_font` panics where its text
-    /// system finds no face of the family nor of any family of the stack, as
-    /// gpui's own layout of that family's text, which goes through it
-    /// (gpui-pre `src/text_system.rs:797`, `:911`), already does.
+    /// asked once. It is asked only where it lists a family of gpui's
+    /// fallback stack ([`GPUI_FALLBACK_STACK`], each by the family its
+    /// platform loads for it, `gpui::font_name_with_fallbacks`), in
+    /// `TextSystem::all_font_names` (gpui-pre `:284-289`, gpui-fast
+    /// `:285-290`); elsewhere the answer is `None`, so the test platform's
+    /// `NoopTextSystem`, which lists none and resolves every family to one
+    /// face (gpui-pre `src/platform.rs:1547-1553`), is not asked.
+    /// `resolve_font` panics where its text system finds no face of the
+    /// family asked for nor of any stack family (gpui-pre
+    /// `src/text_system.rs:380-387`, gpui-fast `src/fast/text.rs:1048-1057`),
+    /// so the one case where this call panics is a family the text system
+    /// finds no face of where every stack family it lists has no face it
+    /// loads; there gpui's own layout of text in that family panics too,
+    /// through the same call (gpui-pre `src/text_system.rs:797`, `:911`).
     pub(crate) fn of(asked: impl IntoIterator<Item = SharedString>, cx: &gpui::App) -> Self {
         let text_system = cx.text_system();
-        let listed = !text_system.all_font_names().is_empty();
+        let names = text_system.all_font_names();
+        let listed = GPUI_FALLBACK_STACK.iter().any(|family| {
+            let loaded = gpui::font_name_with_fallbacks(family, family);
+            names.iter().any(|name| name == loaded)
+        });
         let mut drawn: Vec<(SharedString, Option<SharedString>)> = Vec::new();
         for family in asked {
             if drawn.iter().any(|(known, _)| *known == family) {
@@ -338,7 +367,9 @@ impl DrawnFamilies {
     /// What gpui draws text of a theme font whose family is `stated` in,
     /// gpui having been asked for `asked` (the connector's `font_family` of
     /// it): where the text system resolves `asked` to another family, the
-    /// first family of gpui's fallback stack it finds, with `asked` named
+    /// first family of gpui's fallback stack it finds, named by the family
+    /// its platform loads for it (`gpui::font_name_with_fallbacks`: Lilex
+    /// for `.ZedMono`, IBM Plex Sans for `.ZedSans`), with `asked` named
     /// where it is not `stated`; else `asked` itself
     /// (`DrawnFamily::Named`, the stated name alone where `asked` is it), and
     /// so where the text system was not asked or does not say.
@@ -352,7 +383,7 @@ impl DrawnFamilies {
             Some(family) if family != asked => DrawnFamily::FallbackStack {
                 toolkit: "gpui",
                 asked: (asked != stated).then_some(asked),
-                family,
+                family: gpui::font_name_with_fallbacks(family, family),
             },
             _ => DrawnFamily::from(Some(asked)),
         }
