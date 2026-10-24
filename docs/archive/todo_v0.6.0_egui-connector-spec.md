@@ -8230,3 +8230,13 @@ section now says so:
   `Builder::os_mode` that say so (§4.6, §4.2, §4.3), are true only of an atlas
   built through `ThemeAtlas::builder` without `Builder::os_mode` and of
   `to_theme`'s, and the docs say that now.
+- **§10.4, the Data row** (M9c T12; `docs/todo.md`'s G1/G2 item "the egui
+  showcase's body rows grow past `list.row_height`"): the Data and Theme Map
+  tables' cells are one line each, in the line box of their font at
+  `defaults.line_height`, unwrapped, the last column cutting a text too long
+  for it short with egui's ellipsis and showing it whole on hover, and the rows
+  lie with no spacing between them, so each row is exactly its height, where a
+  wrapping cell grew it. Where the theme states no `list.row_height`, a row is
+  the scope's `interact_size.y`, egui's own value, or that line box rounded up
+  where it is taller, not `interact_size.y` alone; the header likewise in the
+  header font.

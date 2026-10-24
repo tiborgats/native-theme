@@ -661,19 +661,21 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
 /// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:409-416`,
 /// `:740-744`): a `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame`
 /// in `defaults.border` (`showcase-gpui/support.rs:228-235`), beside `label` in `style` — the
-/// leaf and the colour's hex; the lines `under` it — the verdict and the details — weak, as
-/// gpui's citation line is muted.
+/// leaf and the colour's hex — in a line box `line_height` tall where one is given; the lines
+/// `under` it — the verdict and the details — weak, as gpui's citation line is muted.
 pub(crate) fn swatch_row(
     ui: &mut egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
     colour: egui::Color32,
     (label, style): (&str, egui::TextStyle),
+    line_height: Option<f32>,
     under: &[String],
 ) -> egui::Response {
     let font = style.resolve(ui.style());
     let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
     let format = |color| egui::TextFormat {
         font_id: font.clone(),
+        line_height,
         color,
         valign: egui::Align::Center,
         ..Default::default()

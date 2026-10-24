@@ -3376,16 +3376,17 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 }
 
 /// The tables' header rows are `list_header_height` tall where the theme states one
-/// (material-3, macos-monterey), else a row's height where the theme states one, else as tall
-/// as before (catppuccin-mocha): on the Basic page's painted table (its `basic.table.header`
-/// place) a row of the header font, `list.border.padding` above and below its line
-/// (`pages/basic.rs`, `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s a body
-/// row, egui's own `interact_size.y` where the theme states no `list.row_height`. There the
-/// header pushes the first body row down by its height, or its tallest cell where that is
-/// taller (egui_extras `layout.rs:165`), and the spacing after a row (`:181`). At a
-/// text-scaling factor of 1.5 a stated height grows to hold its label, as gpui's table rows
-/// grow ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
-/// A body row is no measure: it grows to a cell that wraps, as the Theme Map's leaf names do.
+/// (material-3, macos-monterey), else a row's height where the theme states one, else a row
+/// (catppuccin-mocha): on the Basic page's painted table (its `basic.table.header` place) a row
+/// of the header font, `list.border.padding` above and below its line (`pages/basic.rs`,
+/// `row_metrics`); on the Data and Theme Map pages' `TableBuilder`s egui's own
+/// `interact_size.y` where the theme states no `list.row_height`, or the header font's line
+/// box, `defaults.line_height` of its scaled size rounded up, where that is taller
+/// ([`table_row`]). There
+/// the header pushes the first body row down by exactly its height: its cells are one line in
+/// that line box, and the rows lie with no spacing between them. At a text-scaling factor of
+/// 1.5 a stated height grows to hold its label, as gpui's table rows grow ([`grown`]), and an
+/// unstated Basic header is a row of the header font at its scaled size.
 #[test]
 fn the_tables_headers_take_the_themes_header_height() {
     for (preset, factor) in [
@@ -3426,41 +3427,170 @@ fn the_tables_headers_take_the_themes_header_height() {
             placed.height()
         );
 
-        // with no `list.row_height` the List scope's `interact_size.y` is egui's own for the
-        // scheme (src/style/roles.rs, `row_height`)
-        let own = egui::Theme::Light.default_style().spacing.interact_size.y;
-        let header = match stated.or(l.row_height) {
-            Some(h) => grown(h, factor, l.header_font.size, line_height, 0.0, 0.0),
-            None => own,
-        };
+        let header = table_row(
+            &t,
+            factor,
+            stated.or(l.row_height),
+            l.header_font.size,
+            size,
+        );
         for (tab, header_kind, cell_kind) in [
             ("data", "table header", "table cell"),
             ("theme-map", "theme map header", "theme map cell"),
         ] {
             let page = open_scaled(preset, tab, factor);
             let records = page.state().registry.records();
-            let of_kind = |kind: &'static str| records.iter().filter(move |r| r.info.kind == kind);
-            let top = |kind| {
-                of_kind(kind)
+            let top = |kind: &str| {
+                records
+                    .iter()
+                    .filter(|r| r.info.kind == kind)
                     .map(|r| r.rect.top())
                     .fold(f32::INFINITY, f32::min)
             };
-            // a row is as tall as its tallest cell where that is more than it is given
-            let content = of_kind(header_kind)
-                .map(|r| r.rect.height())
-                .fold(0.0, f32::max);
-            let header = header.max(content);
-            // the List scope keeps the base style's `item_spacing` (mapping.toml writes it in no
-            // List cell)
-            let gap = page.ctx.global_style().spacing.item_spacing.y;
             let pushed = top(cell_kind) - top(header_kind);
             assert!(
-                (pushed - (header + gap)).abs() <= 0.5,
+                (pushed - header).abs() <= ROW_SLACK,
                 "{preset} at {factor} {tab}: the header pushes the first row {pushed}, want \
-                 {header} and the {gap} gap"
+                 {header}"
             );
         }
     }
+}
+
+/// How far a table row's measured height may lie from its expected one: the layout's float
+/// error, far below a pixel, so a row grown by a wrapped line or the spacing between rows fails.
+const ROW_SLACK: f32 = 0.01;
+
+/// The height of a row of the Data and Theme Map pages' `TableBuilder`s (`pages/data.rs`,
+/// `TableRows::of`), from the theme: `stated` grown above a text scale of 1 as gpui's table rows
+/// grow ([`grown`], no padding or rule: the cells draw none); where the theme states none, egui's
+/// own `interact_size.y` for the scheme (src/style/roles.rs, `row_height`), or the line box of
+/// the row's font, `defaults.line_height` of `drawn`, its size as drawn, rounded up as [`grown`]
+/// rounds it, where that is taller, as egui's own rows are at least `interact_size.y` and as
+/// tall as their line.
+fn table_row(
+    t: &native_theme_egui::ResolvedTheme,
+    factor: f32,
+    stated: Option<f32>,
+    size: f32,
+    drawn: f32,
+) -> f32 {
+    let line_height = t.defaults.line_height;
+    match stated {
+        Some(h) => grown(h, factor, size, line_height, 0.0, 0.0),
+        None => {
+            let own = egui::Theme::Light.default_style().spacing.interact_size.y;
+            own.max((drawn * line_height).ceil())
+        }
+    }
+}
+
+/// docs/todo.md's G1/G2 item for M9c ("the egui showcase's body rows grow past
+/// `list.row_height`"): the Data and Theme Map tables' body rows are each exactly a row tall,
+/// [`table_row`], one after another with no spacing between them, at text scales 1 and 1.5,
+/// where the theme states `list.row_height` (windows-11, macos-monterey) and where it states
+/// none (catppuccin-mocha): every cell is one line in its line box, the auto-sized columns as
+/// wide as their text and the last column's text cut short with egui's ellipsis, where a cell
+/// wrapped in its column and grew its row (egui_extras `layout.rs:160-168`).
+#[test]
+fn the_data_and_theme_map_rows_are_the_themes_row_height() {
+    let mut wrong = Vec::new();
+    for (preset, factor) in [
+        ("windows-11", 1.0),
+        ("macos-monterey", 1.0),
+        (TEST_PRESET, 1.0),
+        ("windows-11", 1.5),
+        ("macos-monterey", 1.5),
+        (TEST_PRESET, 1.5),
+    ] {
+        for (tab, kind) in [("data", "table cell"), ("theme-map", "theme map cell")] {
+            let page = open_scaled(preset, tab, factor);
+            let t = page.state().atlas.resolved_for(egui::Theme::Light).clone();
+            let l = &t.list;
+            let drawn = native_theme_egui::scaled_text_size(
+                l.item_font.size,
+                page.state().atlas.accessibility(),
+            );
+            let want = table_row(&t, factor, l.row_height, l.item_font.size, drawn);
+            let cells: Vec<egui::Rect> = page
+                .state()
+                .registry
+                .records()
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .map(|r| r.rect)
+                .collect();
+            let mut tops: Vec<f32> = cells.iter().map(|r| r.top()).collect();
+            tops.sort_by(f32::total_cmp);
+            tops.dedup_by(|a, b| (*a - *b).abs() <= ROW_SLACK);
+            assert!(tops.len() >= 4, "{preset} at {factor} {tab}: rows {tops:?}");
+            let pitches: Vec<f32> = tops.windows(2).map(|pair| pair[1] - pair[0]).collect();
+            if pitches.iter().any(|pitch| (pitch - want).abs() > ROW_SLACK) {
+                wrong.push(format!(
+                    "{preset} at {factor} {tab}: rows {pitches:?} tall, want {want}"
+                ));
+            }
+            let tallest = cells.iter().map(egui::Rect::height).fold(0.0, f32::max);
+            if tallest > want + ROW_SLACK {
+                wrong.push(format!(
+                    "{preset} at {factor} {tab}: a cell {tallest} tall in a {want} row"
+                ));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
+/// A Theme Map cell too long for its column is cut short with egui's ellipsis and shows its
+/// whole text under the pointer, as egui's truncated `Label` does
+/// (`egui/src/widgets/label.rs:285-294`, `show_tooltip_when_elided`, on by default): under
+/// windows-11 the last column's longest sinks are cut, and hovering one paints its text whole
+/// in the tooltip, beside the cut one in the cell.
+#[test]
+fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
+    let mut page = open_scaled("windows-11", "theme-map", 1.0);
+    let cells: Vec<egui::Rect> = page
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "theme map cell")
+        .map(|r| r.rect)
+        .collect();
+    let in_a_cell = |pos: egui::Pos2| cells.iter().any(|r| r.contains(pos));
+    let cut = page
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text) if text.galley.elided && in_a_cell(text.pos) => Some((
+                text.galley.text().to_string(),
+                text.galley.rect.translate(text.pos.to_vec2()),
+            )),
+            _ => None,
+        });
+    let Some((text, rect)) = cut else {
+        panic!("no Theme Map cell is cut short");
+    };
+    let delay = page.ctx.global_style().interaction.tooltip_delay;
+    page.hover_at(rect.center());
+    // the pointer rests past the tooltip delay, in the harness's quarter-second steps
+    // (`egui_kittest/src/builder.rs:40`)
+    page.run_steps(3 + (delay / 0.25).ceil() as usize);
+    let painted: Vec<bool> = page
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(shape) if shape.galley.text() == text => Some(shape.galley.elided),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        painted,
+        vec![true, false],
+        "{text:?}: the cut cell and its whole text in the tooltip"
+    );
 }
 
 /// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners. The

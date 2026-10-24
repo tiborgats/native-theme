@@ -54,7 +54,6 @@ pub(crate) fn show(
         .filter(|r| state.theme_map_filter.is_none_or(|v| r.verdict == v))
         .collect();
     let t = atlas.resolved_for(theme);
-    let (row_height, header_height) = super::data::table_heights(atlas, t);
     // The header as the Data page's table has it: `list.header_font` at its weight
     // (`demo::weighted_family`) and scaled size (`list_header_font`), in
     // `list.header_font.color` (§10.4's Data row), not `RichText::strong`, which is the scope's
@@ -71,30 +70,31 @@ pub(crate) fn show(
         RoleVariant::Normal,
         "theme map",
         |ui, list, reg| {
-            let height = row_height.unwrap_or(ui.spacing().interact_size.y);
-            let header = header_height.unwrap_or(height);
+            let heights = super::data::TableRows::of(ui, atlas, t, &header_font);
             let out = ui.scope(|ui| {
+                super::data::one_line_cells(ui);
                 egui_extras::TableBuilder::new(ui)
                     .striped(true)
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::auto())
                     .column(egui_extras::Column::auto())
-                    .column(egui_extras::Column::remainder())
-                    .header(header, |mut header| {
+                    .column(egui_extras::Column::remainder().clip(true))
+                    .header(heights.header, |mut header| {
                         for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
                             header.col(|ui| {
                                 list.add(reg, ui, "theme map header", |ui| {
                                     ui.label(
                                         egui::RichText::new(title)
                                             .font(header_font.clone())
-                                            .color(header_color),
+                                            .color(header_color)
+                                            .line_height(Some(heights.header_line)),
                                     )
                                 });
                             });
                         }
                     })
                     .body(|body| {
-                        body.rows(height, rows.len(), |mut row| {
+                        body.rows(heights.body, rows.len(), |mut row| {
                             if let Some(r) = rows.get(row.index()) {
                                 // A colour value beside its swatch, as the gpui Theme Map shows
                                 // every colour (`showcase-gpui/demo.rs:8449-8473`).
@@ -112,9 +112,10 @@ pub(crate) fn show(
                                                 t,
                                                 colour,
                                                 (&text, egui::TextStyle::Body),
+                                                Some(heights.body_line),
                                                 &[],
                                             ),
-                                            None => ui.label(text),
+                                            None => ui.label(heights.cell(text)),
                                         });
                                     });
                                 }
