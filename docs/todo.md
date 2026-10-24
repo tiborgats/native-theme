@@ -2001,6 +2001,47 @@ model, the platform presets and the three connectors
       > `src/style.rs:743`; zed#37480), so the same tree on the `gpui-fast`
       > feature draws the corners round. Could gpui-pre take the same clip,
       > so both cores draw a rounded box alike?
+- [ ] [upstream] **File the gpui-kit issue: a non-panicking
+      `TextSystem::try_resolve_font`.** For the maintainer to file on
+      longbridge/gpui-kit (an agent files nothing); gpui-pre is a snapshot of
+      zed-industries/zed (its Cargo.toml), gpui-fast is longbridge/gpui-fast.
+      The use case: the gpui showcase names the family gpui draws a theme
+      font in (`inspector::DrawnFamilies`, M9c T10b), and the only public way
+      to ask gpui which face a family resolves to is
+      `TextSystem::resolve_font`, which panics where its text system finds no
+      face of the family nor of any family of its fallback stack (gpui-pre
+      0.3.9 `src/text_system.rs:370-388`, the `panic!` at `:380-387`;
+      gpui-fast 0.1.10 `src/text_system.rs:372-374`, `src/fast/text.rs:1029-1058`,
+      the `panic!` at `:1048-1057`). `TextSystem::font_id` is private in
+      gpui-pre (`:329`) and `pub(crate)` in gpui-fast (`:331`), and so is the
+      stack field (`:237`, `:238`). So the showcase keeps a copy
+      of the stack's ten names (`inspector::GPUI_FALLBACK_STACK`, held against
+      both cores' lines by `tests::the_fallback_stack_copy_is_gpuis`) and
+      asks only where the text system lists one of them; it still panics
+      where every listed stack family has no face gpui loads, where gpui's own
+      layout panics too. Once both cores have a non-panicking call, the
+      showcase asks it, and the copy and the guard go. Found 2026-10-24
+      (M9c T10b review, fix round 1). The issue, ready to paste:
+
+      > **Title:** A non-panicking `TextSystem::try_resolve_font`
+      >
+      > gpui-component 0.8.0 on gpui-pre 0.3.9, and on gpui-fast 0.1.10.
+      >
+      > An application that wants to say which family its text is drawn in
+      > (a theme inspector, a font picker that marks a missing family) can
+      > ask `TextSystem::resolve_font(&font)` and read the face back with
+      > `get_font_for_id`. But `resolve_font` panics where the text system
+      > finds no face of the font nor of any family of the fallback stack
+      > (gpui-pre `src/text_system.rs:380-387`, gpui-fast
+      > `src/fast/text.rs:1048-1057`), `TextSystem::font_id` is not public,
+      > and neither is the fallback stack field, so a caller cannot ask
+      > without risking the panic, nor check the condition first.
+      >
+      > Could `TextSystem` offer `try_resolve_font(&self, font: &Font) ->
+      > Option<FontId>`, the same resolution returning `None` where nothing
+      > resolves, or a public `font_id(&self, font: &Font) -> Result<FontId>`
+      > and the fallback stack as a read-only accessor? `resolve_font` could
+      > then be written over it.
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
