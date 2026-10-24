@@ -3836,9 +3836,10 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
 /// every bundled preset: the Data table's cells lie wholly inside the central panel, and the
 /// Theme Map, shown with its longest leaf in view (its verdict's rows, scrolled to it), keeps its
 /// Value and Sinks columns at least as wide as their headers' text (each header drawn whole at
-/// one end), and where it is wider than its view, the view moves across, and every cell is
-/// wholly in view at one of its two ends, or, a cell wider than the view, spans it there. Cells
-/// are read by their whole rectangles (`Record::whole`), not the parts the view's clip leaves.
+/// some view across), and where it is wider than its view, the view moves across, and every cell
+/// is wholly in view at one of the views it is moved through to its right end, or, a cell wider
+/// than the view, spans it there. Cells are read by their whole rectangles (`Record::whole`),
+/// not the parts the view's clip leaves, within half a pixel.
 #[test]
 fn the_tables_keep_their_columns_at_the_largest_text_scale() {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
@@ -3941,11 +3942,13 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                     (top, 0)
                 };
                 if r.rect.height() > 0.0 {
+                    // half a pixel: egui lays a column's edges out on its pixel grid
+                    let slack = 0.5 / map.ctx.pixels_per_point();
                     let (left, right) = (r.whole.left(), r.whole.right());
-                    let inside = left >= view.left() && right <= view.right();
+                    let inside = left >= view.left() - slack && right <= view.right() + slack;
                     let across = r.whole.width() > view.width()
-                        && left <= view.left()
-                        && right >= view.right();
+                        && left <= view.left() + slack
+                        && right >= view.right() - slack;
                     cells.insert(row, view.width() > 0.0 && (inside || across));
                 }
             }
@@ -3955,53 +3958,75 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                 .collect();
             (cells, titles)
         };
-        // the scrolling settled, in the harness's quarter-second steps, so the rows lie where
-        // they lie at the other end (only the view across moves between the two)
+        // The scrolling down settled, in the harness's quarter-second steps, so the rows lie
+        // where they lie at every view across (only the view across moves from here). Then the
+        // view is moved across in steps of `STEP`, each read: a cell narrower than the view by
+        // more than `STEP` is wholly in view at one of them at least, a column in the middle of
+        // a table far wider than the view being wholly in view only between its two ends.
+        const STEP: f32 = 40.0;
         map.run_steps(8);
-        let (at_start, titles_at_start) = in_view(&map);
+        let (first, first_titles) = in_view(&map);
         let left_at_start = table_left(&map);
-        // across to the table's right end
-        for _ in 0..20 {
+        let mut reached = first.clone();
+        let mut titles = first_titles.clone();
+        let mut left = left_at_start;
+        let mut still = 0;
+        for _ in 0..400 {
             map.event(egui::Event::MouseWheel {
                 unit: egui::MouseWheelUnit::Point,
-                delta: egui::vec2(-400.0, 0.0),
+                delta: egui::vec2(-STEP, 0.0),
                 phase: egui::TouchPhase::Move,
                 modifiers: egui::Modifiers::NONE,
             });
             map.run_steps(2);
+            let (cells, shown) = in_view(&map);
+            for (key, whole) in cells {
+                *reached.entry(key).or_insert(false) |= whole;
+            }
+            for (seen, now) in titles.iter_mut().zip(shown) {
+                if now == [false] {
+                    *seen = now;
+                }
+            }
+            // the right end: three steps with no move
+            let now = table_left(&map);
+            still = if now == left { still + 1 } else { 0 };
+            if still == 3 {
+                break;
+            }
+            left = now;
         }
-        map.run_steps(8);
-        let (at_end, titles_at_end) = in_view(&map);
-        // a table wider than the view moved across, so the cells at the two ends are two views
-        let cut_at_start = at_start.values().any(|whole| !whole);
-        let left_at_end = table_left(&map);
-        if cut_at_start && !matches!((left_at_start, left_at_end), (Some(a), Some(b)) if b < a) {
+        // a table wider than the view moved across
+        let cut_at_start = first.values().any(|whole| !whole);
+        if cut_at_start && !matches!((left_at_start, left), (Some(a), Some(b)) if b < a) {
             wrong.push(format!(
                 "{} at {factor}: the Theme Map does not fit its view, yet the view across did \
-                 not move: its first header's left edge {left_at_start:?}, then {left_at_end:?}",
+                 not move: its first header's left edge {left_at_start:?}, then {left:?}",
                 info.key
             ));
         }
         for (ix, title) in ["Value", "Sinks / upstream"].into_iter().enumerate() {
-            if titles_at_start[ix] != [false] && titles_at_end[ix] != [false] {
+            if titles.get(ix).is_none_or(|seen| seen != &[false]) {
                 wrong.push(format!(
-                    "{} at {factor}: the {title:?} header is cut short or out of view at either \
-                     end, elided {:?} and {:?}",
-                    info.key, titles_at_start[ix], titles_at_end[ix]
+                    "{} at {factor}: the {title:?} header is never drawn whole across the table, \
+                     at the start elided {:?}",
+                    info.key,
+                    first_titles.get(ix)
                 ));
             }
         }
-        let unreached: std::collections::BTreeSet<&(i64, usize)> = at_start
-            .keys()
-            .chain(at_end.keys())
-            .filter(|key| at_start.get(key) != Some(&true) && at_end.get(key) != Some(&true))
+        let unreached: Vec<&(i64, usize)> = reached
+            .iter()
+            .filter(|(_, whole)| !**whole)
+            .map(|(key, _)| key)
             .collect();
-        if at_start.is_empty() || !unreached.is_empty() {
+        if first.is_empty() || !unreached.is_empty() {
             wrong.push(format!(
-                "{} at {factor}: {} of {} Theme Map cells in view at neither end, e.g. {:?}",
+                "{} at {factor}: {} of {} Theme Map cells never wholly in view across the \
+                 table, e.g. {:?}",
                 info.key,
                 unreached.len(),
-                at_start.len(),
+                reached.len(),
                 unreached.first()
             ));
         }
