@@ -2386,21 +2386,97 @@ fn the_status_bar_padding_rounds_a_half_as_gpuis_does() {
 
 /// The status bar keeps the shown Widget Info's title and cuts the environment short in the
 /// room the title leaves, as the gpui showcase's does (`demo::status_bar`, `truncate` on the
-/// environment): under windows-11 at a text scale of 1.5, where the environment and the title
-/// together are wider than the window where the family is substituted, both lie inside the bar
-/// and the environment ends before the title begins. The places are the widgets' whole
+/// environment), its whole text on hover (egui 0.36.2 `widgets/label.rs:284-293`): under
+/// windows-11 at a text scale of 1.5, with the window narrowed until that room is half the
+/// width the whole environment line takes laid out on one line, as its hover text is, so the
+/// measured text and not the host's fonts sets the width, the environment's painted galley is
+/// cut short, both lie inside the bar and the environment ends before the title begins; the
+/// galley's text is the whole line, `chrome::environment`'s items joined. Hovered there, the
+/// environment shows its own title, and with the window narrowed again for it, its whole line
+/// is painted a second time, uncut, in its tooltip. The places are the widgets' whole
 /// rectangles, not the parts the bar's clip leaves in view.
 #[test]
 fn the_status_bar_keeps_the_title_and_cuts_the_environment_short() {
+    // Whether each painted galley of `whole` is cut short, in paint order.
+    fn painted(harness: &Harness<'_, App>, whole: &str) -> Vec<bool> {
+        harness
+            .output()
+            .shapes
+            .iter()
+            .filter_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(s) if s.galley.text() == whole => Some(s.galley.elided),
+                _ => None,
+            })
+            .collect()
+    }
+    // The window narrowed until the room the shown title leaves the environment is half the
+    // width its whole line takes, and the pointer rested at `at` of the page laid out again,
+    // which moves with the width, past the tooltip delay, in the harness's quarter-second steps
+    // (`egui_kittest/src/builder.rs:40`).
+    fn narrow(
+        harness: &mut Harness<'_, App>,
+        whole: &str,
+        at: impl Fn(&Harness<'_, App>) -> egui::Pos2,
+    ) {
+        let job = harness
+            .output()
+            .shapes
+            .iter()
+            .find_map(|clipped| match &clipped.shape {
+                egui::Shape::Text(s) if s.galley.text() == whole => Some(s.galley.job.clone()),
+                _ => None,
+            })
+            .unwrap_or_else(|| panic!("the environment {whole:?} is not painted"));
+        let needed = harness
+            .ctx
+            .fonts_mut(|fonts| {
+                fonts.layout_job(egui::text::LayoutJob {
+                    sections: job.sections.clone(),
+                    text: job.text.clone(),
+                    ..Default::default()
+                })
+            })
+            .size()
+            .x;
+        let environment = place_of(harness, "chrome.status_bar.environment");
+        let title = place_of(harness, "chrome.status_bar.shown");
+        let window = harness.ctx.viewport_rect().size(); // `egui/src/context.rs:2921`
+        let narrower = title.left() - environment.left() - needed / 2.0;
+        harness.set_size(egui::vec2(window.x - narrower, window.y));
+        harness.run_steps(4);
+        let delay = harness.ctx.global_style().interaction.tooltip_delay;
+        let pos = at(harness);
+        harness.hover_at(pos);
+        harness.run_steps(4 + (delay / 0.25).ceil() as usize);
+    }
+    let on_toggle = |harness: &Harness<'_, App>| centre_of(harness, "toggle button (on)");
+    let on_environment = |harness: &Harness<'_, App>| {
+        let environment = place_of(harness, "chrome.status_bar.environment");
+        egui::pos2(environment.left() + 4.0, environment.center().y)
+    };
+
     let mut harness = open_scaled("windows-11", "basic", 1.5);
-    let pos = centre_of(&harness, "toggle button (on)");
+    let pos = on_toggle(&harness);
     hover_and_settle(&mut harness, pos);
+    let toggle_title = harness.state().status_title();
     assert!(
-        !harness.state().status_title().is_empty(),
+        !toggle_title.is_empty(),
         "hovering the toggle shows its title in the status bar"
     );
+    let whole = crate::chrome::environment(harness.state(), &harness.ctx).join(" · ");
+    narrow(&mut harness, &whole, on_toggle);
+    assert_eq!(
+        harness.state().status_title(),
+        toggle_title,
+        "the toggle's title is not shown in the narrowed window"
+    );
+    assert_eq!(
+        painted(&harness, &whole),
+        vec![true],
+        "{whole:?}: the environment is not painted once, cut short, in half its room"
+    );
     // An egui panel grows with what it holds, so the bar is bounded by the window too.
-    let window = harness.ctx.viewport_rect(); // `egui/src/context.rs:2921`
+    let window = harness.ctx.viewport_rect();
     let bar = place_of(&harness, "chrome.status_bar");
     assert!(
         bar.right() <= window.right() + 0.5,
@@ -2417,6 +2493,20 @@ fn the_status_bar_keeps_the_title_and_cuts_the_environment_short() {
     assert!(
         environment.right() <= title.left() + 0.5,
         "the environment {environment:?} runs into the title {title:?}"
+    );
+
+    let pos = on_environment(&harness);
+    hover_and_settle(&mut harness, pos);
+    narrow(&mut harness, &whole, on_environment);
+    assert_ne!(
+        harness.state().status_title(),
+        toggle_title,
+        "hovering the environment does not show its own title"
+    );
+    assert_eq!(
+        painted(&harness, &whole),
+        vec![true, false],
+        "{whole:?}: the environment cut short and its whole line in its tooltip"
     );
 }
 

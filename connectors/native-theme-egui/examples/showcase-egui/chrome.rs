@@ -850,7 +850,7 @@ fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme)
 /// text): the desktop, the preset by its key (`default` by the preset it builds on) and the
 /// mode, the font by the family egui draws (`demo::DrawnFamilies`) in its defined unit (§8.7),
 /// the text-scaling factor and the flags that are set.
-fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
+pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
     let theme = ctx.theme();
     let t = app.atlas.resolved_for(theme);
     let mode = if theme == egui::Theme::Dark {
