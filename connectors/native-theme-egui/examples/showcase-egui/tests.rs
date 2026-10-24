@@ -8229,8 +8229,6 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
     );
 }
 
-/// Keys typed while a capture runs reach the window the desktop gives the focus, and changed
-/// what a capture recorded (the Basic page's focused field read "Focusedones?"): under
 /// The macOS system menu's actions are drained and dropped while the window is shielded from the
 /// keyboard, so its key equivalents (⌘, ⌘B ⌘K), which never pass through `raw_input_hook`, run
 /// nothing in a captured or dumped window; unshielded they all run, in order. The flags shield
@@ -8264,6 +8262,8 @@ fn the_system_menus_actions_are_dropped_while_the_keyboard_is_shielded() {
     }
 }
 
+/// Keys typed while a capture runs reach the window the desktop gives the focus, and changed
+/// what a capture recorded (the Basic page's focused field read "Focusedones?"): under
 /// `--capture`, `--screenshot` and `--dump-layout` the window takes no keyboard input
 /// (`App::raw_input_hook`, `CliArgs::shields_keyboard`). Text typed into the focused field and
 /// the side-panel toggle's shortcut, handed to the hook as eframe hands them, change nothing;
