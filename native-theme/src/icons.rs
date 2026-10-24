@@ -1332,8 +1332,10 @@ pub enum IconSetChoice {
     /// The display label ("system (breeze-dark)") is computed dynamically
     /// from [`system_icon_theme()`](crate::detect::system_icon_theme),
     /// so it tracks runtime OS theme changes. Where detection fails the
-    /// label gives the reason, `system (unavailable: <reason>)`, and the
-    /// freedesktop loaders search no theme for this choice.
+    /// label is short, `system (unavailable)`, as a control's label is:
+    /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
+    /// reason, for a tooltip or a note where there is room for it. The
+    /// freedesktop loaders then search no theme for this choice.
     System,
 
     /// User explicitly picked a specific installed freedesktop icon theme.
@@ -1363,11 +1365,12 @@ impl fmt::Display for IconSetChoice {
 }
 
 /// [`IconSetChoice::System`]'s label for the `detected` system icon theme:
-/// its name, or why there is none.
+/// its name, or `unavailable` where there is none, without the reason, which
+/// can run to a reader's whole error.
 fn system_choice_label(detected: &crate::Result<String>) -> String {
     match detected {
         Ok(name) => format!("system ({name})"),
-        Err(e) => format!("system (unavailable: {e})"),
+        Err(_) => "system (unavailable)".to_string(),
     }
 }
 
@@ -2485,10 +2488,28 @@ mod icon_set_choice_tests {
         let label = system_choice_label(&Err(crate::Error::PlatformUnsupported {
             platform: "the test's failing detection",
         }));
-        assert_eq!(
-            label,
-            "system (unavailable: platform not supported: the test's failing detection)"
-        );
+        assert_eq!(label, "system (unavailable)");
+    }
+
+    /// The label is short whatever the failure: no reader's error, which
+    /// can run to several paths and a command line, reaches it.
+    /// `system_icon_theme()` gives the reason.
+    #[test]
+    fn a_failed_detections_label_leaves_the_reason_out() {
+        let failures = [
+            crate::Error::PlatformUnsupported {
+                platform: "the test's failing detection",
+            },
+            crate::Error::WatchUnavailable {
+                reason: "a reason long enough to fill a drop-down twice over",
+            },
+        ];
+        for failure in failures {
+            let reason = failure.to_string();
+            let label = system_choice_label(&Err(failure));
+            assert_eq!(label, "system (unavailable)", "for {reason:?}");
+            assert!(!label.contains(&reason), "{label:?} quotes {reason:?}");
+        }
     }
 
     #[test]
