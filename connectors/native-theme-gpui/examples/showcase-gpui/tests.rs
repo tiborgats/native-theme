@@ -14683,8 +14683,9 @@ fn the_row_fills_are_rounded_where_they_meet_the_frame(cx: &mut TestAppContext) 
     show(&mut cx, &showcase, Page::Basic);
     use_preset(&mut cx, &showcase, "adwaita");
     without_motion(&mut cx);
-    let b = resolved_theme(&mut cx, &showcase).list.border;
-    let inner = (b.corner_radius - b.line_width).max(0.0);
+    let inner = f32::from(crate::demo::list_inner_radius(
+        &resolved_theme(&mut cx, &showcase).list.border,
+    ));
     assert!(
         inner > 0.0,
         "adwaita's list frame is rounded inside its line"

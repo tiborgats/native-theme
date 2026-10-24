@@ -4835,10 +4835,7 @@ impl RenderOnce for ListRow {
         let hover_text = (!self.right_clicked)
             .then(|| list_hover_text(cx, self.selected, &mut row_info))
             .flatten();
-        let inner = native_value(cx, |n| {
-            let b = &n.resolved.list.border;
-            px((b.corner_radius - b.line_width).max(0.0))
-        });
+        let inner = native_value(cx, |n| list_inner_radius(&n.resolved.list.border));
         let [first, last] = self.edges;
         let item = native_info(
             ListItem::new(SharedString::from(id.clone())),
@@ -8825,6 +8822,14 @@ struct TableLine<'a> {
     height: Option<Pixels>,
 }
 
+/// The inner radius of `geometry::list`'s frame, whose list border is
+/// `border`: its `corner_radius` less its `line_width`, none below zero. A
+/// fill where a row meets the frame is rounded by it on the corners it meets
+/// (`ListRow::at_edges`, `files_table`).
+pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBorder) -> Pixels {
+    px((border.corner_radius - border.line_width).max(0.0))
+}
+
 /// The Basic page's table, `width` wide across its outer border, laid out
 /// as the iced and egui showcases lay theirs out, a table none of the three
 /// toolkits' own tables can style so (gpui-component's `TableRow` draws a
@@ -8921,12 +8926,12 @@ pub(crate) fn files_table(
                 })
         };
     // A fill where a row meets the frame is rounded by the frame's inner
-    // radius, the line taken off its radius, on the corners it meets: the
-    // header's top ones and the last row's bottom ones, as the egui and iced
-    // Basic tables round theirs. gpui-pre clips the frame's children to its
-    // rectangle (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a
-    // square fill would show past the frame's curve there.
-    let inner = px((l.border.corner_radius - l.border.line_width).max(0.0));
+    // radius (`list_inner_radius`) on the corners it meets: the header's top
+    // ones and the last row's bottom ones, as the egui and iced Basic tables
+    // round theirs. gpui-pre clips the frame's children to its rectangle
+    // (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a square
+    // fill would show past the frame's curve there.
+    let inner = list_inner_radius(&l.border);
     let [first, second] = head;
     let header_height = geometry::list_header_height(n);
     let header_info = info::data::native_table_header(r, &format!("{}, {}", first.0, second.0));

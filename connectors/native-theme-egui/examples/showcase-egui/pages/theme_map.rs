@@ -135,7 +135,7 @@ pub(crate) fn show(
                                     if let Some(r) = rows.get(row.index()) {
                                         // A colour value beside its swatch, as the gpui Theme
                                         // Map shows every colour
-                                        // (`showcase-gpui/demo.rs:8514-8538`).
+                                        // (`showcase-gpui/demo.rs:8511-8535`).
                                         let colour = crate::info::value_at(json, &r.leaf)
                                             .as_ref()
                                             .and_then(crate::info::swatch_colour);
