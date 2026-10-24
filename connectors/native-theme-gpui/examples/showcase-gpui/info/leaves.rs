@@ -1265,6 +1265,26 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the table's frame (demo::files_table)",
     ),
     (
+        "basic.table.header",
+        "list.border.corner_radius_px",
+        "gpui: not applied — the header's fill is square (demo::files_table), and the frame's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+    ),
+    (
+        "basic.table.header",
+        "list.border.line_width_px",
+        "gpui: the frame's line, which the header lies inside; not applied to the fill's corners, which are square (demo::files_table)",
+    ),
+    (
+        "basic.table.row_",
+        "list.border.corner_radius_px",
+        "gpui: not applied — the last row's fill is square (demo::files_table), and the frame's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+    ),
+    (
+        "basic.table.row_",
+        "list.border.line_width_px",
+        "gpui: the frame's line, which the row lies inside; not applied to the fill's corners, which are square (demo::files_table)",
+    ),
+    (
         "basic.table",
         "list.border.corner_radius_px",
         "gpui: the frame's corner radius (demo::files_table)",
@@ -1350,6 +1370,16 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "gpui: the header row's text (demo::files_table)",
     ),
     // --- list: the List, demo::list and demo::ListRow ---------------------------
+    (
+        "basic.list.row_",
+        "list.border.corner_radius_px",
+        "gpui: not applied — a ListItem's fill is square (geometry::list_item sets no radius), and geometry::list's overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234, ContentMask)",
+    ),
+    (
+        "basic.list.row_",
+        "list.border.line_width_px",
+        "gpui: geometry::list's line, which the rows lie inside; not applied to a fill's corners, which are square (demo::ListRow)",
+    ),
     (
         "",
         "list.background_color",

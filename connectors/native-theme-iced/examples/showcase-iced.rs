@@ -8278,6 +8278,33 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "basic_table: the frame container's border.color".into()
         }
         ("list", "border.color") => "list_frame: the frame container's border.color".into(),
+        ("list", "border.corner_radius_px") if under("basic.table.header") => {
+            "table_row_style: the header's fill rounded at its top corners by the frame's \
+             inner radius, this less list.border.line_width (inner_radius)"
+                .into()
+        }
+        ("list", "border.corner_radius_px") if under("basic.table.row_") => {
+            "table_row_style: the last row's fill rounded at its bottom corners by the \
+             frame's inner radius, this less list.border.line_width (inner_radius)"
+                .into()
+        }
+        ("list", "border.corner_radius_px") if under("basic.list.row_") => {
+            "list_row_fill: the row's fill rounded where it meets the frame's inside, by the \
+             frame's inner radius, this less list.border.line_width (inner_radius)"
+                .into()
+        }
+        ("list", "border.line_width_px")
+            if under("basic.table.header") || under("basic.table.row_") =>
+        {
+            "table_row_style: taken from list.border.corner_radius for the fill's rounded \
+             corners (inner_radius)"
+                .into()
+        }
+        ("list", "border.line_width_px") if under("basic.list.row_") => {
+            "list_row_fill: taken from list.border.corner_radius for the fill's rounded \
+             corners (inner_radius)"
+                .into()
+        }
         ("list", "border.corner_radius_px") => "the frame container's border.radius".into(),
         ("list", "border.line_width_px") => {
             "the frame container's border.width and padding".into()
@@ -24495,6 +24522,42 @@ mod tests {
             }
         }
         assert!(unrouted.is_empty(), "leaves with no route: {unrouted:#?}");
+    }
+
+    /// The Basic table's header and last row and the list's rows round their
+    /// fills by the frame's inner radius (`table_row_style`,
+    /// `list_row_fill`), so their routes for `list.border.corner_radius_px`
+    /// and `list.border.line_width_px` name what rounds them, not the frame
+    /// container that the frames' own routes name.
+    #[test]
+    fn the_row_fill_corner_routes_name_what_rounds_them() {
+        let state = route_states().swap_remove(0);
+        let route = |id: &str, leaf: &str| match elements::element(id) {
+            Some(element) => iced_route(&state, element, leaf),
+            None => panic!("{id} is not listed"),
+        };
+        let leaves = ["list.border.corner_radius_px", "list.border.line_width_px"];
+        for (id, names) in [
+            ("basic.table.header", "table_row_style"),
+            ("basic.table.row_2", "table_row_style"),
+            ("basic.list.row_1", "list_row_fill"),
+            ("basic.list.row_2", "list_row_fill"),
+            ("basic.list.row_3", "list_row_fill"),
+        ] {
+            for leaf in leaves {
+                let line = route(id, leaf);
+                assert!(
+                    line.contains(names) && !line.contains("frame container"),
+                    "{id} {leaf}: {line:?}, not {names}"
+                );
+            }
+        }
+        for id in ["basic.table.frame", "basic.list.frame"] {
+            for leaf in leaves {
+                let line = route(id, leaf);
+                assert!(line.contains("frame container"), "{id} {leaf}: {line:?}");
+            }
+        }
     }
 
     /// The listed colour leaves the connector draws only where the theme

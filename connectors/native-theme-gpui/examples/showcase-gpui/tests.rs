@@ -14580,6 +14580,38 @@ fn every_listed_leaf_has_a_route() {
     assert!(missing.is_empty(), "no route: {missing:?}");
 }
 
+/// The Basic table's header and rows and the List's rows fill squares:
+/// demo::files_table and geometry::list_item round no fill, and the frames'
+/// overflow_hidden clips to a rectangle (gpui-pre 0.3.9 src/window.rs:2231-2234,
+/// ContentMask). So their `list.border.corner_radius_px` and
+/// `list.border.line_width_px` routes say the radius is not applied to the
+/// fill, where the frames' own routes would claim the frame's.
+#[test]
+fn the_row_fill_corner_routes_say_the_fills_are_square() {
+    let mut checked = 0usize;
+    for element in crate::elements::elements() {
+        let row = ["basic.table.header", "basic.table.row_", "basic.list.row_"]
+            .iter()
+            .any(|prefix| element.id.starts_with(prefix));
+        for leaf in ["list.border.corner_radius_px", "list.border.line_width_px"] {
+            if !row || !element.leaves.iter().any(|l| l == leaf) {
+                continue;
+            }
+            checked += 1;
+            let how = crate::info::leaves::how(&element.id, leaf).unwrap_or_default();
+            assert!(
+                how.contains("not applied") && how.contains("square"),
+                "{} {leaf}: {how:?}",
+                element.id
+            );
+        }
+    }
+    assert_eq!(
+        checked, 10,
+        "the table's header and last row and the List's three rows"
+    );
+}
+
 /// The labels the showcase lays out one `defaults.line_height` line tall
 /// name the route that does it (M9-031): widgets::Switch's label, the side
 /// panel's labels and the segments in demo::text_in's line box, the tab

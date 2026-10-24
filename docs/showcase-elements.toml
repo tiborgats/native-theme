@@ -1687,7 +1687,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.list.row_1"
 name = "List row"
 parent = "basic.list.frame"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1696,7 +1696,7 @@ sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 id = "basic.list.row_2"
 name = "List row"
 parent = "basic.list.row_1"
-leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.row_height_px", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1705,7 +1705,7 @@ sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 id = "basic.list.row_3"
 name = "List row"
 parent = "basic.list.row_2"
-leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.background_color", "list.item_font", "list.item_font.color", "list.row_height_px", "list.hover_background", "list.hover_text_color", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
@@ -1841,7 +1841,7 @@ sample = { border = [0.0, 0.5, 0.5, 0.0] }
 id = "basic.table.header"
 name = "Table header"
 parent = "basic.table.frame"
-leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.header_font", "list.header_font.color", "list.header_background", "list.grid_color", "separator.line_width_px", "list.row_height_px", "list.header_height_px", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Normal"]
 part = true
 sample = { fill = [0.45, 0.5] }
@@ -1877,7 +1877,7 @@ sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
 id = "basic.table.row_2"
 name = "Table row"
 parent = "basic.table.row_1"
-leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.grid_color", "list.row_height_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
+leaves = ["list.item_font", "list.selection_background", "list.selection_text_color", "list.grid_color", "list.row_height_px", "list.border.corner_radius_px", "list.border.line_width_px", "list.border.padding_top_px", "list.border.padding_right_px", "list.border.padding_bottom_px", "list.border.padding_left_px", "defaults.line_height"]
 states = ["Selected"]
 part = true
 sample = { fill = [0.45, 0.5], text = { glyph = [0.0, 0.0, 0.4, 1.0] } }
