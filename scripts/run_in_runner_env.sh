@@ -15,8 +15,9 @@
 # rotted, which only both servers' 4xx decides. Everything else fails with 1,
 # naming its cause: a 4xx answer from both servers (the pin has rotted; the
 # message names the package and both answers), a file that cannot be written
-# or extracted, and a downloaded package whose SHA-256 differs. curl gives up on a connection after 10 s and on a
-# transfer slower than 1 KiB/s for 30 s, so an outage cannot hold the run.
+# or extracted, and a downloaded package whose SHA-256 differs. curl gives up
+# on a connection after 10 s and on a transfer slower than 1 KiB/s for 30 s,
+# so an outage cannot hold the run.
 #
 # Cargo builds as usual; its target runner for the host's target
 # (`--config target.<host>.runner`, which no configuration file overrides)

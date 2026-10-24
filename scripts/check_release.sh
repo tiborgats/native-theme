@@ -569,9 +569,9 @@ run_check "strict-panic (native-theme, no features)" \
     bash scripts/check_strict_panic.sh -p native-theme --lib --no-default-features
 # The macOS and Windows code, with each platform's features, the showcases'
 # shared crate's capture code and the iced and egui showcases' own; CI's
-# clippy job runs the first six, its iced job the iced showcase's two, its
-# egui job the egui showcase's two. The targets are the cross-target clippy
-# section's.
+# clippy job runs the first six, and its iced and its egui job each run
+# their showcase's two, one per target, in one step. The targets are the
+# cross-target clippy section's.
 NT_PLATFORM_FEATURES="system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts"
 for target in x86_64-apple-darwin x86_64-pc-windows-msvc; do
     if ! printf "%s\n" "$INSTALLED_TARGETS" | grep -qx "$target"; then
