@@ -783,8 +783,10 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
 # packages can be neither fetched from either server nor found cached (the
 # script's exit 75), the three legs are skipped with a warning, since a
 # release gate does not fail because a server is out of reach and CI runs
-# these tests on the runner itself; any other failure, a package whose
-# SHA-256 differs among them, is hard.
+# these tests on the runner itself. Exit 75 is an outage alone (no
+# connection, a timeout, a 5xx answer); any other failure is hard: a pin
+# both servers answer 4xx for, a file that cannot be written or extracted, a
+# package whose SHA-256 differs.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Showcases in CI's runner environment"
 runner_env_status=0

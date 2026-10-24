@@ -687,11 +687,15 @@ is built from them again when the list changes. The script's header gives the
 evidence for each part. `scripts/check_release.sh` runs the three showcases'
 tests through it in both modes (Linux only), each in the feature set its test
 leg already builds. It runs `run_in_runner_env.sh --prepare` first, which
-builds the environment and runs nothing: where a package is neither cached
-with its SHA-256 nor fetchable from either server, the script exits 75, and
-check_release skips the three legs with a warning that the showcase tests were
-not run in CI's environment (CI runs them on the runner itself). A downloaded
-package whose SHA-256 differs fails, in both.
+builds the environment and runs nothing: where a package is not cached with
+its SHA-256 and neither server can be reached for it (a connection failure, a
+timeout or a 5xx answer), the script exits 75, and check_release skips the
+three legs with a warning that the showcase tests were not run in CI's
+environment (CI runs them on the runner itself). Anything else fails, in
+both, naming its cause: a 4xx answer from both servers (a pin that has
+rotted; the message names the package and both URLs), a file that cannot be
+written or extracted, a downloaded package whose SHA-256 differs. curl gives
+up on a connection after 10 s and on a stalled transfer after 30 s.
 
 Requires curl, sha256sum, bsdtar (libarchive) and fontconfig's `fc-match`;
 network access on the first run.

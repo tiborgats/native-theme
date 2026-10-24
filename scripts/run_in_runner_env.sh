@@ -7,10 +7,14 @@
 #   scripts/run_in_runner_env.sh --prepare
 #
 # `--prepare` builds the environment and runs nothing. It, and a run, exit 75
-# (EX_TEMPFAIL) where a package is neither in target/runner-env/debs with its
-# SHA-256 nor fetchable from either server, so a caller can tell a server out
-# of reach from a failure; a downloaded package whose SHA-256 differs fails
-# with 1, as an integrity failure does.
+# (EX_TEMPFAIL) only where a package is not in target/runner-env/debs with its
+# SHA-256 and neither server can be reached for it: a connection failure, a
+# timeout or a 5xx answer from both, so a caller can tell an outage from a
+# failure. Everything else fails with 1, naming its cause: a 4xx answer from
+# both servers (the pin has rotted; the message names the package and both
+# URLs), a file that cannot be written or extracted, and a downloaded package
+# whose SHA-256 differs. curl gives up on a connection after 10 s and on a
+# transfer slower than 1 KiB/s for 30 s, so an outage cannot hold the run.
 #
 # Cargo builds as usual; its target runner for the host's target
 # (`--config target.<host>.runner`, which no configuration file overrides)
@@ -113,6 +117,38 @@ if [[ ! $PREPARE ]] && [ "$#" -eq 0 ]; then
     exit 2
 fi
 
+# Fetches $1 into $2. Returns 0 when fetched; 75 for an outage (curl could
+# not resolve, connect, finish the TLS handshake or receive in time, or the
+# server answered 5xx); 2 when the server answered 4xx; and 1, having
+# printed the cause, for anything else (a file it cannot write among them).
+fetch() {
+    local url=$1 deb=$2 code status=0
+    code=$(curl -sSL --connect-timeout 10 --speed-limit 1024 --speed-time 30 \
+        --max-time 600 --retry 2 --retry-max-time 120 -o "$deb" -w '%{http_code}' "$url") \
+        || status=$?
+    case "$status" in
+        0) ;;
+        5 | 6 | 7 | 28 | 35 | 52 | 55 | 56) return 75 ;;
+        23)
+            printf 'run_in_runner_env.sh: cannot write %s (curl exit 23)\n' "$deb" >&2
+            return 1
+            ;;
+        *)
+            printf 'run_in_runner_env.sh: curl exit %s for %s\n' "$status" "$url" >&2
+            return 1
+            ;;
+    esac
+    case "$code" in
+        2??) return 0 ;;
+        5??) return 75 ;;
+        4??) return 2 ;;
+        *)
+            printf 'run_in_runner_env.sh: HTTP %s for %s\n' "$code" "$url" >&2
+            return 1
+            ;;
+    esac
+}
+
 for tool in curl sha256sum bsdtar fc-match sh sleep true; do
     if ! type -P "$tool" >/dev/null; then
         printf 'run_in_runner_env.sh: %s is not installed\n' "$tool" >&2
@@ -152,16 +188,34 @@ if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
         if ! printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet --status 2>/dev/null; then
             # The snapshot first, then the archive's own pool, which holds the
             # same file while the version is current: the SHA-256 decides.
-            if ! curl -fsSL --retry 3 -o "$deb" "$SNAPSHOT/$path" \
-                && ! curl -fsSL --retry 3 -o "$deb" "$ARCHIVE/$path"; then
+            snapshot=0
+            archive=0
+            fetch "$SNAPSHOT/$path" "$deb" || snapshot=$?
+            if [ "$snapshot" -eq 1 ]; then
                 rm -f "$deb"
-                printf 'run_in_runner_env.sh: cannot fetch %s from snapshot.ubuntu.com or archive.ubuntu.com\n' \
-                    "${path##*/}" >&2
+                exit 1
+            elif [ "$snapshot" -ne 0 ]; then
+                fetch "$ARCHIVE/$path" "$deb" || archive=$?
+            fi
+            if [ "$snapshot" -ne 0 ] && [ "$archive" -ne 0 ]; then
+                rm -f "$deb"
+                if [ "$snapshot" -eq 1 ] || [ "$archive" -eq 1 ]; then
+                    exit 1
+                elif [ "$snapshot" -eq 2 ] && [ "$archive" -eq 2 ]; then
+                    printf 'run_in_runner_env.sh: %s is gone from both servers (4xx): %s and %s; update its pin\n' \
+                        "${path##*/}" "$SNAPSHOT/$path" "$ARCHIVE/$path" >&2
+                    exit 1
+                fi
+                printf 'run_in_runner_env.sh: cannot fetch %s: %s and %s are out of reach\n' \
+                    "${path##*/}" "$SNAPSHOT/$path" "$ARCHIVE/$path" >&2
                 exit 75
             fi
             printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet
         fi
-        bsdtar -xOf "$deb" 'data.tar.*' | bsdtar -xf - -C "$ENV_DIR/root"
+        if ! bsdtar -xOf "$deb" 'data.tar.*' | bsdtar -xf - -C "$ENV_DIR/root"; then
+            printf 'run_in_runner_env.sh: cannot extract %s into %s\n' "$deb" "$ENV_DIR/root" >&2
+            exit 1
+        fi
     done
     find "$ENV_DIR/root/usr/share/fonts" -type f -name '*.ttf' -exec cp {} "$ENV_DIR/fonts/" \;
     # fontconfig-config's links point at /usr/share/fontconfig/conf.avail, the
