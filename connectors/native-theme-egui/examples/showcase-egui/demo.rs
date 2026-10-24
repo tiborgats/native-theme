@@ -687,28 +687,6 @@ pub(crate) fn surfaced(
     Some(response)
 }
 
-/// A popup or menu whose style arrives as a `StyleModifier` alone — `Popup::context_menu`, a
-/// page `MenuBar`'s `style` and `MenuConfig::style` (§4.2): the closure passes the modifier to
-/// its acceptor and returns the `Response` to record; it also gets the registry, so a menu's
-/// items record themselves (a disabled item through `scoped` in `RoleVariant::Disabled`).
-pub(crate) fn modifier(
-    reg: &mut Registry,
-    ui: &mut egui::Ui,
-    role: Role,
-    variant: RoleVariant,
-    kind: &'static str,
-    add: impl FnOnce(&mut egui::Ui, Option<egui::style::StyleModifier>, &mut Registry) -> egui::Response,
-) -> egui::Response {
-    let modifier = role_modifier(ui, role, variant);
-    let response = add(ui, modifier, reg);
-    reg.record(
-        &response,
-        info(kind, vec![Seam::Role(role, variant)]),
-        false,
-    );
-    response
-}
-
 /// A `MenuBar` given `role`'s modifier for both `MenuBar::style` and `MenuConfig::style` (§4.2):
 /// the closure builds the bar with the modifier and records the menu buttons egui builds in it
 /// through `Applied`; the bar's `Response` is recorded as a container with the role seam.

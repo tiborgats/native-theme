@@ -1567,6 +1567,72 @@ fn instances_are_distinct() {
     )));
 }
 
+/// §10.4: the Overlays page's context-menu target is a label drawn in the base style, so its
+/// info names the base style alone and lists no row the `Role::Menu` seam adds; the menu it
+/// opens is the instance drawn in `Role::Menu`, and its record says so (M9-109).
+#[test]
+fn the_context_menus_target_is_the_base_style_and_its_menu_the_menu_role() {
+    const TARGET: &str = "Right-click here for a context menu";
+    let menu = Seam::Role(native_theme_egui::Role::Menu, RoleVariant::Normal);
+    let mut harness = open_page(Page::Overlays, egui::Theme::Light);
+    let pos = harness.get_by_label(TARGET).rect().center();
+    hover_and_settle(&mut harness, pos);
+    let shown = harness
+        .state()
+        .registry
+        .shown()
+        .cloned()
+        .expect("hovering the target shows its info");
+    assert_eq!(
+        shown.info.seams,
+        vec![Seam::Base],
+        "{}: the target is drawn in the base style",
+        shown.info.kind
+    );
+    let (manifest, json) = manifest_and_json(&harness);
+    let base: BTreeSet<&str> = manifest
+        .rows_for(&Seam::Base)
+        .into_iter()
+        .map(|r| r.leaf.as_str())
+        .collect();
+    let menu_only: BTreeSet<&str> = manifest
+        .rows_for(&menu)
+        .into_iter()
+        .map(|r| r.leaf.as_str())
+        .filter(|leaf| !base.contains(leaf))
+        .collect();
+    assert!(!menu_only.is_empty(), "Role::Menu adds no row to the base");
+    let elements = listed_elements();
+    let scheme = (&harness.state().atlas, &harness.ctx);
+    let view =
+        crate::info::InfoView::of(&shown, &elements, &manifest, (&json, TEST_PRESET), scheme);
+    let menu_rows: Vec<&str> = view
+        .rows
+        .iter()
+        .map(|r| r.leaf.as_str())
+        .filter(|leaf| menu_only.contains(leaf))
+        .collect();
+    assert!(
+        menu_rows.is_empty(),
+        "the base-style target lists Role::Menu rows: {menu_rows:?}"
+    );
+
+    harness.get_by_label(TARGET).click_secondary();
+    harness.run_steps(2);
+    let open: Vec<&Vec<Seam>> = harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "context menu (open)")
+        .map(|r| &r.info.seams)
+        .collect();
+    assert!(
+        !open.is_empty() && open.iter().all(|seams| seams.contains(&menu)),
+        "the open context menu's records: {open:?}"
+    );
+}
+
 /// A radio button and a check box take no selected flag of their own: the checked look is
 /// `RoleVariant::Selected` (§4.4), picked per instance from its state; the mixed box is painted
 /// as a checked one.

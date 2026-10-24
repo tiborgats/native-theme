@@ -7,7 +7,7 @@ use egui::containers::menu::SubMenuButton;
 use native_theme::icons::IconRole;
 use native_theme::theme::IconSet;
 use native_theme_egui::{
-    DialogButtonOrder, Role, RoleVariant, Surface, ThemeAtlas, dialog_button_order,
+    DialogButtonOrder, Role, RoleVariant, Surface, ThemeAtlas, dialog_button_order, role_modifier,
     window_title_bar_font, window_title_bar_text_color,
 };
 
@@ -191,37 +191,30 @@ pub(crate) fn show(
                     .map(|out| out.response)
             },
         );
-        demo::modifier(
-            reg,
-            ui,
-            Role::Menu,
-            normal,
-            "context menu",
-            |ui, modifier, reg| {
-                let target = ui
-                    .label("Right-click here for a context menu")
-                    .interact(egui::Sense::click());
-                let mut popup = egui::Popup::context_menu(&target);
-                if let Some(modifier) = modifier {
-                    popup = popup.style(modifier);
-                }
-                popup.show(|ui| {
-                    demo::styled(reg, ui, Role::Menu, normal, "context menu (open)");
-                    demo::scoped(reg, ui, Role::Menu, normal, "context menu item", |ui| {
-                        ui.button("Copy")
-                    });
-                    demo::scoped(
-                        reg,
-                        ui,
-                        Role::Menu,
-                        RoleVariant::Disabled,
-                        "context menu item (disabled)",
-                        |ui| ui.add_enabled(false, egui::Button::new("Paste")),
-                    );
-                });
-                target
-            },
-        );
+        // The target is a label on the page, in the base style; only the menu it opens takes the
+        // menu role's modifier (`Popup::style`), and its `Ui` records itself in that role.
+        let target = demo::base(reg, ui, "context menu target", |ui| {
+            ui.label("Right-click here for a context menu")
+                .interact(egui::Sense::click())
+        });
+        let mut popup = egui::Popup::context_menu(&target);
+        if let Some(modifier) = role_modifier(ui, Role::Menu, normal) {
+            popup = popup.style(modifier);
+        }
+        popup.show(|ui| {
+            demo::styled(reg, ui, Role::Menu, normal, "context menu (open)");
+            demo::scoped(reg, ui, Role::Menu, normal, "context menu item", |ui| {
+                ui.button("Copy")
+            });
+            demo::scoped(
+                reg,
+                ui,
+                Role::Menu,
+                RoleVariant::Disabled,
+                "context menu item (disabled)",
+                |ui| ui.add_enabled(false, egui::Button::new("Paste")),
+            );
+        });
     });
 
     caption(
