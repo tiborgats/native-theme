@@ -693,8 +693,8 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// curve. gpui-pre clips them to the frame's rectangle (gpui-pre 0.3.9
 /// `src/window.rs:2226-2234`, `ContentMask`: "only rectangular content masks
 /// are supported"), so a square fill at a corner shows past the curve there.
-/// A row whose fill meets the frame rounds that fill's corners by the frame's
-/// inner radius, `corner_radius` less `line_width`, to look alike on both.
+/// The application rounds a fill that meets the frame by its inner radius,
+/// `corner_radius` less `line_width`: [`list_item`] sets no radius.
 #[must_use]
 pub fn list(n: Native<'_>) -> StyleRefinement {
     let b = &n.resolved.list.border;
