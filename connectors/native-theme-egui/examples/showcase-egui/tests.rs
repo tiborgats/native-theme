@@ -6896,6 +6896,67 @@ fn every_seam_is_recorded() {
     assert!(in_demo > 0, "the detector read no seam call in demo.rs");
 }
 
+/// `IconCache`'s condition, held lexically: the images it keeps name the connector's icon URIs,
+/// which `ThemeAtlas::install` and `ThemeAtlas::clear` forget (`forget_icons`), so outside the
+/// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt`, which
+/// clears the cache beside it. A spelling of these calls the patterns miss (an atlas bound to
+/// a name other than `atlas`) is left to review.
+#[test]
+fn only_app_adopt_installs_or_clears_an_atlas() {
+    const CALLS: &[&str] = &[
+        "atlas.install(",
+        "ThemeAtlas::install(",
+        "atlas.clear(",
+        "ThemeAtlas::clear(",
+        "forget_icons(",
+    ];
+    let mut in_adopt = 0;
+    for (path, source) in showcase_sources() {
+        if path.ends_with("tests.rs") {
+            continue;
+        }
+        // `App::adopt`'s body, from its first brace to the one that closes it.
+        let adopt = path
+            .ends_with("app.rs")
+            .then(|| source.find("fn adopt("))
+            .flatten()
+            .and_then(|start| {
+                let open = start + source.get(start..)?.find('{')?;
+                let mut depth = 0usize;
+                for (i, c) in source.get(open..)?.char_indices() {
+                    match c {
+                        '{' => depth += 1,
+                        '}' => {
+                            depth -= 1;
+                            if depth == 0 {
+                                return Some(open..open + i);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                None
+            });
+        for call in CALLS {
+            for (at, _) in source.match_indices(call) {
+                if adopt.as_ref().is_some_and(|body| body.contains(&at)) {
+                    in_adopt += 1;
+                    continue;
+                }
+                let line = source
+                    .get(..at)
+                    .map(|s| s.matches('\n').count() + 1)
+                    .unwrap_or_default();
+                panic!(
+                    "{path}:{line}: {call} outside App::adopt, which clears the showcase's \
+                     IconCache beside it"
+                );
+            }
+        }
+    }
+    assert!(in_adopt > 0, "the detector read no install in App::adopt");
+}
+
 #[test]
 fn every_role_and_surface_is_demonstrated() {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
