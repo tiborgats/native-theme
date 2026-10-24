@@ -19,7 +19,7 @@ use crate::{
     apply_cli_args,
 };
 
-/// A community preset every platform offers (`native-theme/src/presets.rs:196-199`).
+/// A community preset every platform offers (`native-theme/src/presets.rs:69`).
 pub(crate) const TEST_PRESET: &str = "catppuccin-mocha";
 
 /// The showcase under a named preset, never the desktop's theme (§13 T11), in a window of the
@@ -148,7 +148,7 @@ fn every_page_renders() {
 
 /// T11 (c), first rule of §10.4: a flag value the pickers do not offer is
 /// reported and ignored (the iced showcase's `the_command_line_rejects_what_it_cannot_honour`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:19316`).
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:20373`).
 #[test]
 fn the_command_line_rejects_what_it_cannot_honour() {
     let mut settings = Settings::for_tests();
@@ -256,10 +256,10 @@ fn the_pages_follow_the_counterpart_table() {
 /// T11 (c), second rule of §10.4: the icon choice follows the theme until the
 /// user picks one, and again after a pick of `default` (the iced showcase's
 /// `an_icon_choice_that_followed_the_preset_keeps_following_it`,
-/// `connectors/native-theme-iced/examples/showcase-iced.rs:19259`). Following is
+/// `connectors/native-theme-iced/examples/showcase-iced.rs:20316`). Following is
 /// `default_icon_choice` of what the atlas reports per scheme — `breeze`, then
-/// `breeze-dark`, where that theme is installed, else `system` (`native-theme/src/icons.rs:1436-1455`),
-/// which then keeps following.
+/// `breeze-dark`, where that theme is installed, else `system`
+/// (`native-theme/src/icons.rs:1439-1458`), which then keeps following.
 #[test]
 fn an_icon_choice_that_followed_the_preset_keeps_following_it() {
     let prefs = AccessibilityPreferences::default();
@@ -408,7 +408,7 @@ fn interactive_controls_respond() {
         .get_by_role_and_label(Role::ComboBox, "Icon theme")
         .click();
     harness.run_steps(SETTLE);
-    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:1353-1363`).
+    // A row's label is `IconSetChoice`'s `Display` (`native-theme/src/icons.rs:1355-1365`).
     // The list holds every installed freedesktop theme before the bundled sets, so the row may
     // lie below the popup's fold: scroll it into view first (`egui_kittest/src/node.rs:152`).
     harness.get_by_label("Material (bundled)").scroll_to_me();
@@ -1126,12 +1126,13 @@ fn open_palette(harness: &mut Harness<'_, App>) {
     );
 }
 
-/// The palette's keys, as gpui-component's `Command` binds them (`command/state.rs:65-68`): the
-/// first row is highlighted when the palette opens and again whenever the query changes
-/// (`reset_selection`, `:440-450`), Up and Down move the highlight, wrapping at either end
-/// (`select_by`, `:553-577`), and Enter runs the highlighted row (`on_action_confirm`,
-/// `:594-598`). The highlighted row's AccessKit node is the one selected: a `selectable_label`
-/// drawn selected is `Toggled::True`, the others `Toggled::False` (`egui/src/response.rs:975-980`).
+/// The palette's keys, as gpui-component 0.8.0's `Command` binds them
+/// (`src/command/state.rs:65-68`): the first row is highlighted when the palette opens and again
+/// whenever the query changes (`reset_selection`, `:441-450`), Up and Down move the highlight,
+/// wrapping at either end (`select_by`, `:553-579`), and Enter runs the highlighted row
+/// (`on_action_confirm`, `:594-598`). The highlighted row's AccessKit node is the one selected:
+/// a `selectable_label` drawn selected is `Toggled::True`, the others `Toggled::False`
+/// (`egui/src/response.rs:975-980`).
 #[test]
 fn the_palettes_keys_highlight_and_run_a_row() {
     let mut harness = open_default();
@@ -1214,10 +1215,10 @@ fn the_palettes_keys_highlight_and_run_a_row() {
     );
 }
 
-/// The palette's highlight as gpui-component's `Command` moves it: Down from the last row and Up
-/// from the first wrap (`select_by`, `command/state.rs:553-577`), presses in one pass add up, a
-/// changed query starts again from the first row (`reset_selection`, `:440-450`), and with no
-/// row there is none.
+/// The palette's highlight as gpui-component 0.8.0's `Command` moves it: Down from the last row
+/// and Up from the first wrap (`select_by`, `src/command/state.rs:553-579`), presses in one pass
+/// add up, a changed query starts again from the first row (`reset_selection`, `:441-450`), and
+/// with no row there is none.
 #[test]
 fn the_palette_highlight_wraps_resets_and_needs_a_row() {
     use crate::chrome::palette_highlight;
@@ -1256,7 +1257,7 @@ fn the_palette_highlight_wraps_resets_and_needs_a_row() {
 }
 
 /// A changed query highlights the first row it keeps and scrolls the list to it, as
-/// gpui-component's `reset_selection` scrolls to it (`command/state.rs:440-450`, its
+/// gpui-component 0.8.0's `reset_selection` scrolls to it (`src/command/state.rs:441-450`, its
 /// `pending_scroll`). At a text-scaling factor of 2.25 the rows a space keeps (each preset's,
 /// "Theme Map", "System (…)") are more than the list shows, so the list stays scrolled where the
 /// query changes.
@@ -1302,7 +1303,8 @@ use crate::{
 
 const MANIFEST: &str = include_str!("../../mapping.toml");
 
-/// Three default steps of a quarter second each pass `INFO_SETTLE` (`egui_kittest/src/builder.rs:40`).
+/// Three default steps of a quarter second each pass `INFO_SETTLE`
+/// (`egui_kittest/src/builder.rs:40`).
 fn hover_and_settle(harness: &mut Harness<'_, App>, pos: egui::Pos2) {
     harness.hover_at(pos);
     harness.run_steps(3);
@@ -1409,7 +1411,8 @@ fn every_widget_reports_itself() {
                         let mut in_window = false;
                         let mut parent = node.parent();
                         while let Some(p) = parent {
-                            // The tree's root is the viewport's own `Window` node: not an egui `Window`.
+                            // The tree's root is the viewport's own `Window` node: not an egui
+                            // `Window`.
                             in_window |= p.role() == Role::Window && p.parent().is_some();
                             parent = p.parent();
                         }
@@ -1420,9 +1423,9 @@ fn every_widget_reports_itself() {
                 else {
                     continue;
                 };
-                // `Node::rect` is the untransformed rect (`egui/src/response.rs:912-917`): a node in
-                // a transformed layer — the `Scene`'s — is hovered through its layer's transform, as
-                // `centre_of` does, where a record gives the layer.
+                // `Node::rect` is the untransformed rect (`egui/src/response.rs:912-917`): a node
+                // in a transformed layer — the `Scene`'s — is hovered through its layer's
+                // transform, as `centre_of` does, where a record gives the layer.
                 let layer = harness
                     .state()
                     .registry
@@ -3819,7 +3822,8 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
                     .collect();
                 if let Some(first) = outside.first() {
                     wrong.push(format!(
-                        "{} at {factor} {tab}: {} cells outside the panel's x {} to {}, e.g. {first:?}",
+                        "{} at {factor} {tab}: {} cells outside the panel's x {} to {}, \
+                         e.g. {first:?}",
                         info.key,
                         outside.len(),
                         panel.left(),
@@ -4267,13 +4271,13 @@ fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
 /// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.border.corner_radius` and has no
 /// margin, so its content lies inside its `list.border.line_width` stroke, where the frame's
 /// inner radius is the radius less the width. Under adwaita, kde-breeze and macos-tahoe set
-/// directly, whose list frames are rounded: the table's header fill is rounded by the inner radius at the top
-/// and square at the bottom, the selected last row at the bottom and square at the top; the
-/// list's selected row at the corners where it meets the frame, the first row at the top, the
-/// last row shown at the bottom, and square in between. On the right only where the bar floats
-/// over the rows (adwaita, macos-tahoe), so a row is the list's width: kde-breeze's bar takes
-/// its groove beside them. macos-tahoe's 0.5 pt line puts the frame's inside on a half point,
-/// and the list's scroll area lays its rows out on whole pixels
+/// directly, whose list frames are rounded: the table's header fill is rounded by the inner
+/// radius at the top and square at the bottom, the selected last row at the bottom and square
+/// at the top; the list's selected row at the corners where it meets the frame, the first row
+/// at the top, the last row shown at the bottom, and square in between. On the right only where
+/// the bar floats over the rows (adwaita, macos-tahoe), so a row is the list's width:
+/// kde-breeze's bar takes its groove beside them. macos-tahoe's 0.5 pt line puts the frame's
+/// inside on a half point, and the list's scroll area lays its rows out on whole pixels
 /// (`egui/src/containers/scroll_area.rs:797-803`), half a point off it: a row there still meets
 /// the frame. Each fill is the `Shape::Rect` at its element's place in its colour.
 #[test]
@@ -6807,7 +6811,7 @@ fn every_rendered_character_is_in_the_installed_fonts() {
 
 /// `raw` with every comment, string literal and char literal blanked to spaces,
 /// its length and line breaks kept (the gpui detector's `blanked`,
-/// `connectors/native-theme-gpui/src/showcase.rs:853`, ported line for line).
+/// `connectors/native-theme-gpui/src/showcase.rs:1054`, ported line for line).
 fn blanked(raw: &str) -> String {
     let mut out = String::with_capacity(raw.len());
     let mut at = 0usize;
@@ -6913,7 +6917,8 @@ fn every_seam_is_recorded() {
                     .map(|s| s.matches('\n').count() + 1)
                     .unwrap_or_default();
                 panic!(
-                    "{path}:{line}: {seam} applied outside demo.rs's helpers, which apply and record each seam once"
+                    "{path}:{line}: {seam} applied outside demo.rs's helpers, which apply and \
+                     record each seam once"
                 );
             }
         }
@@ -7175,8 +7180,9 @@ const CONSTRUCTORS: &[&str] = &[
     "FontId::monospace(",
 ];
 /// The sites the rule does not reach, by the enclosing `fn`, with the reason
-/// (the gpui showcase's `ALLOWED_STYLE_LITERALS`, `connectors/native-theme-gpui/src/showcase.rs:2985`).
-/// `tests.rs`, which holds the detector's own sample source, is not scanned, so it needs no entry.
+/// (the gpui showcase's `ALLOWED_STYLE_LITERALS`,
+/// `connectors/native-theme-gpui/src/showcase.rs:4628`). `tests.rs`, which holds the detector's
+/// own sample source, is not scanned, so it needs no entry.
 const ALLOWED_STYLE_LITERALS: &[(&str, &str)] = &[
     (
         "demo_colour",
@@ -8194,7 +8200,8 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
             // before the pointer reached the page would make the equality vacuous.
             assert!(
                 text == format!("{last:#}"),
-                "pointer {pointer}: the dump is not the layout the run settled in:\n{text}\n---\n{last:#}"
+                "pointer {pointer}: the dump is not the layout the run settled \
+                 in:\n{text}\n---\n{last:#}"
             );
             text
         })

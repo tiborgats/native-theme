@@ -31,7 +31,7 @@ pub(crate) enum Action {
 
 impl Action {
     /// The menus, in order; `None` is a separator (the gpui showcase's menus,
-    /// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:29-59`).
+    /// `connectors/native-theme-gpui/examples/showcase-gpui/chrome.rs:30-60`).
     pub(crate) const MENUS: &[(&str, &[Option<Action>])] = &[
         ("File", &[Some(Action::Quit)]),
         (
@@ -142,14 +142,14 @@ pub(crate) struct PaletteState {
     pub query: String,
     /// The highlighted row, counted across the groups among the rows the query keeps: the
     /// first when the palette opens and whenever the query changes, as gpui-component's
-    /// `Command` (`command/state.rs:440-450`).
+    /// `Command` (gpui-component 0.8.0 `src/command/state.rs:441-450`).
     pub selected: usize,
 }
 
 /// The highlighted row after `down` presses of Down and `up` of Up, among `len` rows, from
 /// `selected`, or from the first row where the query has changed (`reset_selection`,
-/// `command/state.rs:440-450`), wrapping at either end as gpui-component's `Command` does
-/// (`select_by`, `:553-577`); `None` where there are no rows.
+/// gpui-component 0.8.0 `src/command/state.rs:441-450`), wrapping at either end as its `Command`
+/// does (`select_by`, `:553-579`); `None` where there are no rows.
 pub(crate) fn palette_highlight(
     selected: usize,
     query_changed: bool,
@@ -496,7 +496,7 @@ fn chrome_button_image(
 /// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
 /// `active` colour (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the
 /// selected button's accent. Its icon where the set has one, else its tooltip's text as its
-/// label, as gpui's (`showcase-gpui/demo.rs:1185-1188`).
+/// label, as gpui's (`showcase-gpui/demo.rs:1217-1220`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -525,7 +525,7 @@ fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
     }
 }
 
-/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:116-173`): three tool buttons in its
+/// The gpui showcase's toolbar (`showcase-gpui/chrome.rs:191-248`): three tool buttons in its
 /// order — the command palette, a theme reload, Preferences — each with a tooltip naming it
 /// and its shortcut. Each is a toolbar item, drawn in the toolbar's own scope: its icon at
 /// `toolbar.icon_size` (a required size, `f32` on the resolved theme), a missing icon's label in
@@ -687,8 +687,8 @@ fn tooltip(
     );
 }
 
-/// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:250-290`,
-/// `showcase-gpui/demo.rs:969-1048`, `:1370-1423`): the side-panel toggle, a small Ghost button
+/// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:325-365`,
+/// `showcase-gpui/demo.rs:973-1052`, `:1402-1455`): the side-panel toggle, a small Ghost button
 /// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
 /// then the environment as one line joined by " · ", cut short in the room the title leaves; the
 /// shown Widget Info's title flush right.
@@ -874,7 +874,7 @@ fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
 
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
-/// showcase's (`showcase-gpui/demo.rs:1504-1538`): the settings padded by `container_margin`,
+/// showcase's (`showcase-gpui/demo.rs:1536-1570`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
 /// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
 /// panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
@@ -1052,8 +1052,8 @@ pub(crate) fn separator_line(separator: &egui::Response, width: f32) -> egui::Re
 }
 
 /// A key binding as the menus and tooltips print it: the modifiers' names and the key's
-/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:4427-4435`,
-/// `showcase-gpui/chrome.rs:165`). `Context::format_shortcut` spells a key by its name outside
+/// symbol, `Ctrl+,`, as the iced and gpui showcases print theirs (`showcase-iced.rs:4488-4496`,
+/// `showcase-gpui/chrome.rs:240`). `Context::format_shortcut` spells a key by its name outside
 /// macOS (`Ctrl+Comma`: `ModifierNames::NAMES` is not short,
 /// `egui/src/data/input/keyboard_shortcut.rs:30-34`); on macOS it is kept, its symbols short.
 pub(crate) fn shortcut_text(ctx: &egui::Context, shortcut: &egui::KeyboardShortcut) -> String {
@@ -1077,7 +1077,7 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
 }
 
 /// A theme setting's label, above its control and as wide as its text, as the gpui showcase's
-/// (`showcase-gpui/demo.rs:1470-1489`), in the side panel's font (`sidebar.font`, `Body` in the
+/// (`showcase-gpui/demo.rs:1502-1521`), in the side panel's font (`sidebar.font`, `Body` in the
 /// sidebar scope), recorded with the side panel body's role; the control names it as its
 /// AccessKit label.
 fn setting_label(
@@ -1093,7 +1093,7 @@ fn setting_label(
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
 /// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
-/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1438-1463`, `chrome.rs:179-224`).
+/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1470-1495`, `chrome.rs:254-299`).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -1273,7 +1273,7 @@ fn setting<T: Clone + PartialEq>(
 
 /// The inspector's two tabs, drawn as the page tabs are (`demo::tab_bar`), padded by
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
-/// (`showcase-gpui/inspector.rs:779-794`).
+/// (`showcase-gpui/inspector.rs:953-968`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
     let picked = demo::tab_bar(
@@ -1339,7 +1339,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:229-243`): the
+/// The page tabs, the gpui showcase's page `TabBar` (`showcase-gpui/chrome.rs:304-318`): the
 /// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
 /// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
 /// row's right end a Ghost menu button listing every page, the current one selected, as
@@ -1492,10 +1492,10 @@ pub(crate) fn central_panel(
 
 /// The theme errors, one per line, in a card across the content.
 fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
-    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2860-2884`):
+    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2895-2919`):
     // across the content, the chosen icon theme's error icon first, where it
     // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
-    // (`showcase-gpui/support.rs:512-523`, `role_for_gpui_icon`) — at
+    // (`showcase-gpui/support.rs:515-526`, `role_for_gpui_icon`) — at
     // `defaults.icon_sizes.small`.
     let (set, icon_theme) = app.chosen_icons();
     let size = app
@@ -1544,7 +1544,7 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
 
 /// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.0
 /// `src/dialog/dialog.rs:749-756`, the `DialogTitle`, and `:789-804`, the Ghost close button) and
-/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2508`, `:2550`): the
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2540`, `:2582`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
@@ -1594,7 +1594,7 @@ enum Pick {
 /// A palette row: its label, what the query matches, what it runs.
 type PaletteRow = (String, String, Pick);
 
-/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:369-416`):
+/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:452-499`):
 /// the pages, the presets the Theme row offers by their display names, found by their keys too,
 /// and the colour modes, System named by the scheme it follows now.
 fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<PaletteRow>); 3] {
@@ -1640,16 +1640,16 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
     ]
 }
 
-/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2491-2528`): a
+/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2523-2560`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
-/// Its keys are gpui-component's `Command`'s (`command/state.rs:65-68`): Up and Down move the
-/// highlighted row, Enter runs it, and Escape clears, then closes. They are the palette's while
-/// its field has the focus or nothing has; a row or the close button that has it keeps egui's
-/// own keys. They are matched as egui matches `Modifiers::NONE`, logically, extra Shift and Alt
-/// ignored (`egui/src/input_state/mod.rs:682-691`), so Shift+Up and Shift+Down move the highlight
-/// too, and select no text in the field, and Shift+Enter runs the highlighted row, where
-/// gpui-component binds the bare keys.
+/// Its keys are those of gpui-component 0.8.0's `Command` (`src/command/state.rs:65-68`): Up and
+/// Down move the highlighted row, Enter runs it, and Escape clears, then closes. They are the
+/// palette's while its field has the focus or nothing has; a row or the close button that has it
+/// keeps egui's own keys. They are matched as egui matches `Modifiers::NONE`, logically, extra
+/// Shift and Alt ignored (`egui/src/input_state/mod.rs:682-691`), so Shift+Up and Shift+Down move
+/// the highlight too, and select no text in the field, and Shift+Enter runs the highlighted row,
+/// where gpui-component binds the bare keys.
 pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
@@ -1855,7 +1855,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The text-scaling field's range and step: the gpui showcase's Preferences number field
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2713-2720`), whose range is
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2745-2752`), whose range is
 /// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
 /// evenly. The model states none; they are not style values.
 const TEXT_SCALE_MIN: f32 = 1.0;
@@ -1941,7 +1941,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "preferences",
                     );
-                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2776-2858`): its
+                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2811-2893`): its
                     // title and description, then a row per preference — its title and a weak
                     // description on the left, its control on the right.
                     body.add(registry, ui, "heading", |ui| {
@@ -2061,7 +2061,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The connector README's Compatibility table at this version's tag, as the gpui showcase links
-/// its own (`showcase-gpui/chrome.rs:322-327`, `COMPATIBILITY_URL`).
+/// its own (`showcase-gpui/chrome.rs:405-410`, `COMPATIBILITY_URL`).
 const COMPATIBILITY_URL: &str = concat!(
     env!("CARGO_PKG_REPOSITORY"),
     "/blob/v",
@@ -2100,7 +2100,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         if let Some(w) = max_w {
             ui.set_max_width(w);
         }
-        // The gpui showcase's About (`showcase-gpui/demo.rs:2533-2606`): its title, the name
+        // The gpui showcase's About (`showcase-gpui/demo.rs:2565-2638`): its title, the name
         // and version, then the description in `dialog.body_font` — the dialog role's `Body`
         // slot and text colour (§5) — ending in the link to the Compatibility table at this
         // version's tag.

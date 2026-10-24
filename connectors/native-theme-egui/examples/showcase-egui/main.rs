@@ -55,20 +55,20 @@ pub(crate) const WINDOW_SIZE: egui::Vec2 =
 /// gpui's `FontWeight::SEMIBOLD`
 /// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.9/src/text_system.rs:1169`),
 /// which the gpui showcase's inspector headings take (`font_semibold()`,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:154`, `:383`). Without
+/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:156`, `:538`). Without
 /// `system-fonts` no face is looked up, and the headings keep the regular one.
 #[cfg(feature = "system-fonts")]
 pub(crate) const SEMIBOLD_WEIGHT: u16 = 600;
 
 /// The side of a colour swatch in Widget Info and on the Theme Map. The model states no swatch;
 /// this is the gpui showcase's `SWATCH_SIZE`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:400`), the square both of
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:555`), the square both of
 /// its swatches draw.
 pub(crate) const SWATCH_SIZE: f32 = 16.0;
 
 /// How long `--screenshot` lets the showcase run before it captures, in seconds of
 /// `InputState::time`: the iced showcase's delay, "60 ticks × 50ms = 3s render delay"
-/// (`connectors/native-theme-iced/examples/showcase-iced.rs:2171`). Not a style value.
+/// (`connectors/native-theme-iced/examples/showcase-iced.rs:2200`). Not a style value.
 pub(crate) const SCREENSHOT_DELAY_S: f64 = 3.0;
 
 /// What `main` runs with and `the_window_asks_for_the_os_frame` reads back (§13.2):

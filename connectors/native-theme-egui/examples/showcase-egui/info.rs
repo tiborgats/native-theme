@@ -720,7 +720,7 @@ fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respons
 }
 
 /// A name over its value, one label, the gpui showcase's inspector `row` and note line
-/// (`showcase-gpui/inspector.rs:386-394`, `:751-752`): the name in the weak text colour
+/// (`showcase-gpui/inspector.rs:541-549`, `:925-926`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
 /// rule R3), the value and each line after it in the text colour, all in the side panel's font
 /// (`sidebar.font`, `Body` in the sidebar scope), wrapping.
@@ -759,7 +759,7 @@ pub(crate) fn swatch_cell(
 
 /// `rect` filled with `colour` and framed in `defaults.border`'s width, radius and colour
 /// (`native_theme_egui::border_color`, `src/accessors.rs:557-562`), as the gpui showcase's
-/// `demo_frame` (`showcase-gpui/support.rs:228-235`) frames it: the stated colour is the final
+/// `demo_frame` (`showcase-gpui/support.rs:231-238`) frames it: the stated colour is the final
 /// line colour, into which the theme has folded `defaults.border.opacity`, and no connector
 /// multiplies a colour by the opacity (docs/archive/todo_closed.md, *Border opacity: which lines
 /// `defaults.border.opacity` fades*).
@@ -1049,7 +1049,7 @@ pub(crate) fn theme_tab(
     let row = |ui: &mut egui::Ui, key: &str, value: String| {
         key_value(ui, key, &[value]);
     };
-    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:196-240`).
+    // Sections and rows as the gpui showcase's Theme tab (`showcase-gpui/inspector.rs:198-242`).
     section(ui, "Theme");
     row(ui, "name", atlas.name().to_string());
     row(ui, "os_mode", format!("{:?}", atlas.os_mode()));

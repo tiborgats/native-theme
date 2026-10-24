@@ -844,7 +844,7 @@ impl PanelSeams {
 
     /// The frame's inner margin, taken off the frame and handed to the caller, who pads the
     /// content below a row that sits flush at the panel's top with it: the page tabs, as the
-    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:2047`).
+    /// gpui showcase's sit above the page's padding (`showcase-gpui/app.rs:2128`).
     pub(crate) fn lift_margin(&mut self) -> egui::Margin {
         std::mem::take(&mut self.frame.inner_margin)
     }
@@ -852,7 +852,7 @@ impl PanelSeams {
     /// The panel with no inner margin of its own, its content padded by the caller by
     /// `layout.container_margin` where the theme states one, as the gpui showcase pads its
     /// side panel's settings and inspector
-    /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1553-1564`), so a separator
+    /// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:1585-1596`), so a separator
     /// and a tab bar's rule inside run from edge to edge.
     pub(crate) fn unpadded(mut self) -> Self {
         self.frame.inner_margin = egui::Margin::ZERO;
@@ -913,7 +913,7 @@ fn chrome_key(
 }
 
 /// A chrome icon the gpui showcase draws by a gpui-component `IconName` that no `IconRole` stands
-/// for (`showcase-gpui/support.rs:512-523`, `role_for_gpui_icon`), loaded by the names
+/// for (`showcase-gpui/support.rs:515-526`, `role_for_gpui_icon`), loaded by the names
 /// native-theme-gpui gives it in each set (parity rule R5).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum ChromeIcon {

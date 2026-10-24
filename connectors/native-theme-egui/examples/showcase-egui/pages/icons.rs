@@ -1,5 +1,5 @@
 //! Icons (spec §10.4's palette table), laid out as the gpui showcase's Icons page
-//! (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:19-280`): the chosen icon
+//! (`connectors/native-theme-gpui/examples/showcase-gpui/pages/icons.rs:19-287`): the chosen icon
 //! theme's folder icon at each size `defaults.icon_sizes` states, the loading indicator the theme
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
@@ -14,7 +14,7 @@ use super::{DemoState, caption};
 use crate::demo::{self, IconCache, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
-/// (`showcase-gpui/demo.rs:8096-8158`).
+/// (`showcase-gpui/demo.rs:8161-8223`).
 const CONTEXTS: [(IconContext, &str); 5] = [
     (IconContext::Toolbar, "toolbar"),
     (IconContext::Small, "small"),
@@ -38,7 +38,7 @@ pub(crate) fn show(
     let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
-    // (`showcase-gpui/demo.rs:8166-8207`); where the set has no folder icon, the name alone.
+    // (`showcase-gpui/demo.rs:8231-8272`); where the set has no folder icon, the name alone.
     caption(reg, ui, "Icon Sizes");
     // One height for every cell, its content from the bottom, so the names share a line, as
     // gpui's `items_end` row has them (`showcase-gpui/pages/icons.rs:35`).
@@ -73,7 +73,7 @@ pub(crate) fn show(
     icons_indicator(reg, cache, atlas, ui, chosen, &set_label);
 
     // Every role's icon at `defaults.icon_sizes.small` above the role's name
-    // (`showcase-gpui/pages/icons.rs:138-210`); where the set has none, gpui's placeholder: a
+    // (`showcase-gpui/pages/icons.rs:138-217`); where the set has none, gpui's placeholder: a
     // square in `skeleton` — `button.background_color` (`connectors/native-theme-gpui/src/colors.rs:174`,
     // `:556`) — at the theme's radius, never another set's icon.
     let size = icons::icon_size(t, IconContext::Small);
@@ -171,7 +171,7 @@ fn small_width(ui: &egui::Ui, text: &str) -> f32 {
 
 /// A cell `width` wide holding an icon of at most `icon` points over a `Small` name, its content
 /// centred in a column as the gpui showcase's icon cells are (`items_center`,
-/// `showcase-gpui/demo.rs:8032-8051`), laid out by `layout`, and padded by `pad` —
+/// `showcase-gpui/demo.rs:8097-8116`), laid out by `layout`, and padded by `pad` —
 /// `layout.container_margin` in a gallery, standing in for the gpui cell's own `px_2`/`py_2`.
 fn cell(
     ui: &mut egui::Ui,
@@ -218,7 +218,7 @@ pub(crate) fn set_label(
     }
 }
 
-/// Whether `set` is this platform's own, or bundled (`showcase-gpui/support.rs:502-510`).
+/// Whether `set` is this platform's own, or bundled (`showcase-gpui/support.rs:505-513`).
 fn native_here(set: IconSet) -> bool {
     match set {
         IconSet::Freedesktop => cfg!(target_os = "linux"),
@@ -231,7 +231,7 @@ fn native_here(set: IconSet) -> bool {
 /// The loading indicator the chosen icon theme ships (§10.4, the Icons row), in a card framed
 /// as the gpui showcase's `demo_frame` in `defaults.border` and padded by
 /// `layout.container_margin`, at `defaults.icon_sizes.dialog`, above what it is — the gpui
-/// showcase's animated-icon card (`showcase-gpui/demo.rs:8237-8294`); where the theme ships
+/// showcase's animated-icon card (`showcase-gpui/demo.rs:8302-8359`); where the theme ships
 /// none, gpui's caption.
 fn icons_indicator(
     reg: &mut Registry,
