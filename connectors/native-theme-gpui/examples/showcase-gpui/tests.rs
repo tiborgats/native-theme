@@ -10283,7 +10283,13 @@ fn the_fallback_stack_copy_is_gpuis() {
             .iter()
             .find(|p| p["name"] == core && p["version"] == version)
             .and_then(|p| p["manifest_path"].as_str())
-            .unwrap_or_else(|| panic!("{core} {version} is not in the cargo metadata"));
+            .unwrap_or_else(|| {
+                panic!(
+                    "{core} {version} is not in the cargo metadata: re-cite the fallback-stack \
+                     lines, in inspector::GPUI_FALLBACK_STACK's doc and this test's table and \
+                     doc, at the gpui-pre and gpui-fast versions Cargo.lock now holds"
+                )
+            });
         let source = std::path::Path::new(manifest)
             .with_file_name("src")
             .join("text_system.rs");
