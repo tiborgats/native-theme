@@ -48,9 +48,9 @@ pub(crate) fn show(
         // egui's own small size, as the gpui showcase's small button keeps gpui-component's.
         reg.note_last(
             "Button::small",
-            "egui's own size, its label's with no vertical padding \
-             (egui 0.36.2 src/widgets/button.rs:306-309, :339-342); button.min_width and \
-             button.min_height are not applied",
+            "egui's own size, its label's with egui's horizontal button padding and no \
+             vertical padding (egui 0.36.2 src/widgets/button.rs:306-309, :339-342); \
+             button.min_width and button.min_height are not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "button (frameless)", |ui| {
             ui.add(Button::new("Frameless").frame(false).min_size(min))
@@ -100,8 +100,8 @@ pub(crate) fn show(
         });
         reg.note_last(
             "ui.small_button",
-            "egui's own size, its label's with no vertical padding; button.min_width and \
-             button.min_height are not applied",
+            "egui's own size, its label's with egui's horizontal button padding and no \
+             vertical padding; button.min_width and button.min_height are not applied",
         );
         demo::scoped(reg, ui, Role::Button, normal, "ui.toggle_value", |ui| {
             ui.toggle_value(&mut state.toggle, "ui.toggle_value")
