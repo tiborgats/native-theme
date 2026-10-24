@@ -1847,7 +1847,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
 /// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
 /// evenly. The model states none; they are not style values.
 const TEXT_SCALE_MIN: f32 = 1.0;
-const TEXT_SCALE_MAX: f32 = 2.25;
+pub(crate) const TEXT_SCALE_MAX: f32 = 2.25;
 const TEXT_SCALE_STEP: f32 = 0.25;
 
 /// A Preferences row, as a gpui `SettingItem` lays one out: `control` flush right, the title and

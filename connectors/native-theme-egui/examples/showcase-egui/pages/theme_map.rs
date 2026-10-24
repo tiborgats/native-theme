@@ -71,64 +71,95 @@ pub(crate) fn show(
         "theme map",
         |ui, list, reg| {
             let heights = super::data::TableRows::of(ui, atlas, t, &header_font);
+            const TITLES: [&str; 4] = ["Leaf", "Value", "Verdict", "Sinks / upstream"];
+            // A header's text as drawn, its width rounded up to a whole point.
+            let title_width = |ui: &egui::Ui, title: &str| {
+                ui.fonts_mut(|f| {
+                    f.layout_no_wrap(title.to_string(), header_font.clone(), header_color)
+                })
+                .size()
+                .x
+                .ceil()
+            };
+            let (value_floor, sinks_floor) =
+                (title_width(ui, TITLES[1]), title_width(ui, TITLES[3]));
+            // The leaf and the verdict as wide as their text, each frame's (egui_extras
+            // `table.rs:844-846`); the value and the sinks share what is left equally
+            // (`sizing.rs:141-166`), each at least its header's text (`Column::at_least`, a
+            // remainder's `range.min`, `:146-153`) and clipped, so a text too long for it is cut
+            // short and shown whole on hover (`super::data::one_line_cells`). A clipped
+            // remainder is sized from the room each frame, never from what its cells drew
+            // (`table.rs:617-646`), so a filter or a scroll never leaves it narrower than the
+            // room, as a clipped auto column would be (`:844-846`, its cells' widths). Where the
+            // columns are wider than the page, the rest is reached by scrolling across: the page
+            // itself scrolls only down, and the content of a horizontal `ScrollArea` is first
+            // given its width (`egui/src/containers/scroll_area.rs:784-798`).
             let out = ui.scope(|ui| {
-                super::data::one_line_cells(ui);
-                // The leaf and the verdict as wide as their text, each frame's (egui_extras
-                // `table.rs:844-846`); the value and the sinks share what is left equally
-                // (`sizing.rs:141-166`), each clipped, so a text too long for it is cut short
-                // and shown whole on hover (`super::data::one_line_cells`). A clipped remainder
-                // is sized from the room each frame, never from what its cells drew
-                // (`table.rs:617-646`), so a filter or a scroll never leaves it narrower than
-                // the room, as a clipped auto column would be (`:844-846`, its cells' widths).
-                egui_extras::TableBuilder::new(ui)
-                    .striped(true)
-                    .column(egui_extras::Column::auto())
-                    .column(egui_extras::Column::remainder().clip(true))
-                    .column(egui_extras::Column::auto())
-                    .column(egui_extras::Column::remainder().clip(true))
-                    .header(heights.header, |mut header| {
-                        for title in ["Leaf", "Value", "Verdict", "Sinks / upstream"] {
-                            header.col(|ui| {
-                                list.add(reg, ui, "theme map header", |ui| {
-                                    ui.label(
-                                        egui::RichText::new(title)
-                                            .font(header_font.clone())
-                                            .color(header_color)
-                                            .line_height(Some(heights.header_line)),
-                                    )
-                                });
-                            });
-                        }
-                    })
-                    .body(|body| {
-                        body.rows(heights.body, rows.len(), |mut row| {
-                            if let Some(r) = rows.get(row.index()) {
-                                // A colour value beside its swatch, as the gpui Theme Map shows
-                                // every colour (`showcase-gpui/demo.rs:8449-8473`).
-                                let colour = crate::info::value_at(json, &r.leaf)
-                                    .as_ref()
-                                    .and_then(crate::info::swatch_colour);
-                                for (ix, text) in
-                                    crate::info::row_cells(r, json).into_iter().enumerate()
-                                {
-                                    let swatch = colour.filter(|_| ix == 1);
-                                    row.col(|ui| {
-                                        list.add(reg, ui, "theme map cell", |ui| match swatch {
-                                            Some(colour) => crate::info::swatch_row(
-                                                ui,
-                                                t,
-                                                colour,
-                                                (&text, egui::TextStyle::Body),
-                                                Some(heights.body_line),
-                                                &[],
-                                            ),
-                                            None => ui.label(heights.cell(text)),
+                egui::ScrollArea::horizontal()
+                    .id_salt("theme map/across")
+                    .show(ui, |ui| {
+                        super::data::one_line_cells(ui);
+                        egui_extras::TableBuilder::new(ui)
+                            .striped(true)
+                            .column(egui_extras::Column::auto())
+                            .column(
+                                egui_extras::Column::remainder()
+                                    .clip(true)
+                                    .at_least(value_floor),
+                            )
+                            .column(egui_extras::Column::auto())
+                            .column(
+                                egui_extras::Column::remainder()
+                                    .clip(true)
+                                    .at_least(sinks_floor),
+                            )
+                            .header(heights.header, |mut header| {
+                                for title in TITLES {
+                                    header.col(|ui| {
+                                        list.add(reg, ui, "theme map header", |ui| {
+                                            ui.label(
+                                                egui::RichText::new(title)
+                                                    .font(header_font.clone())
+                                                    .color(header_color)
+                                                    .line_height(Some(heights.header_line)),
+                                            )
                                         });
                                     });
                                 }
-                            }
-                        });
-                    });
+                            })
+                            .body(|body| {
+                                body.rows(heights.body, rows.len(), |mut row| {
+                                    if let Some(r) = rows.get(row.index()) {
+                                        // A colour value beside its swatch, as the gpui Theme
+                                        // Map shows every colour
+                                        // (`showcase-gpui/demo.rs:8449-8473`).
+                                        let colour = crate::info::value_at(json, &r.leaf)
+                                            .as_ref()
+                                            .and_then(crate::info::swatch_colour);
+                                        for (ix, text) in
+                                            crate::info::row_cells(r, json).into_iter().enumerate()
+                                        {
+                                            let swatch = colour.filter(|_| ix == 1);
+                                            row.col(|ui| {
+                                                list.add(reg, ui, "theme map cell", |ui| {
+                                                    match swatch {
+                                                        Some(colour) => crate::info::swatch_row(
+                                                            ui,
+                                                            t,
+                                                            colour,
+                                                            (&text, egui::TextStyle::Body),
+                                                            Some(heights.body_line),
+                                                            &[],
+                                                        ),
+                                                        None => ui.label(heights.cell(text)),
+                                                    }
+                                                });
+                                            });
+                                        }
+                                    }
+                                });
+                            });
+                    })
             });
             out.response
         },

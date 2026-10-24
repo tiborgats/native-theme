@@ -8245,3 +8245,9 @@ section now says so:
   and Verdict columns leave, so the table stays inside the page (every bundled
   preset at text scales 1 and 1.5); the Data table's Theme column and the Theme Map's Leaf and Verdict
   columns are as wide as their text.
+  M9c T12 fix round 2: the Theme Map's Value and Sinks columns are each at
+  least as wide as their header's text as drawn, and the Theme Map lies in a
+  horizontal `ScrollArea`, so where the Leaf and Verdict columns and those two
+  floors are wider than the page (at the largest text scale the Preferences
+  offer, 2.25, on every bundled preset), the rest is reached by scrolling
+  across.

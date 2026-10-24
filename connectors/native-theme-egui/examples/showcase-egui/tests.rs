@@ -3565,6 +3565,8 @@ const ROW_SLACK: f32 = 0.01;
 /// scales 1 and 1.5: every header and body cell, cut short or whole, lies inside the panel's
 /// width (the page scrolls only vertically, `app.rs`, `ScrollArea::vertical`), where a column as
 /// wide as its longest text pushed the Theme Map's last ones past the panel's edge, out of view.
+/// So at these scales the Theme Map's view across (`pages/theme_map.rs`) holds the whole table
+/// with no scrolling: a cell past its edge would be clipped away, a rectangle with no width.
 #[test]
 fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
     let mut wrong = Vec::new();
@@ -3605,6 +3607,162 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
                     ));
                 }
             }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
+/// At the largest text scale the Preferences offer (`chrome::TEXT_SCALE_MAX`), on every bundled
+/// preset: the Data table's cells lie inside the central panel, and the Theme Map, shown with its
+/// longest leaf in view (its verdict's rows, scrolled to it), keeps its Value and Sinks columns at
+/// least as wide as their headers' text (each header drawn whole), every cell in the table's
+/// scroll content, reachable by scrolling across where the columns are wider than the panel.
+#[test]
+fn the_tables_keep_their_columns_at_the_largest_text_scale() {
+    let factor = crate::chrome::TEXT_SCALE_MAX;
+    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
+    let longest = manifest
+        .rows
+        .iter()
+        .max_by_key(|r| r.leaf.chars().count())
+        .expect("the manifest has rows");
+    let mut wrong = Vec::new();
+    for info in Theme::list_presets() {
+        let data = open_scaled(info.key, "data", factor);
+        let records = data.state().registry.records();
+        let panel = records
+            .iter()
+            .find(|r| r.info.kind == "Central panel")
+            .map(|r| r.rect)
+            .expect("the central panel records itself");
+        let outside = records
+            .iter()
+            .filter(|r| ["table header", "table cell"].contains(&r.info.kind))
+            .filter(|r| {
+                r.rect.left() < panel.left()
+                    || r.rect.right() > panel.right()
+                    || r.rect.width() <= 0.0
+            })
+            .count();
+        if outside > 0 {
+            wrong.push(format!(
+                "{} data: {outside} cells outside the panel",
+                info.key
+            ));
+        }
+
+        let mut map = open_scaled(info.key, "theme-map", factor);
+        map.state_mut().demo_state.theme_map_filter = Some(longest.verdict);
+        map.run_steps(2);
+        map.hover_at(centre_of(&map, "theme map"));
+        let painted = |map: &Harness<'_, App>, text: &str| -> Vec<bool> {
+            map.output()
+                .shapes
+                .iter()
+                .filter_map(|clipped| match &clipped.shape {
+                    egui::Shape::Text(s) if s.galley.text() == text => Some(s.galley.elided),
+                    _ => None,
+                })
+                .collect()
+        };
+        for _ in 0..80 {
+            if !painted(&map, &longest.leaf).is_empty() {
+                break;
+            }
+            map.event(egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(0.0, -120.0),
+                phase: egui::TouchPhase::Move,
+                modifiers: egui::Modifiers::NONE,
+            });
+            map.run_steps(2);
+        }
+        if painted(&map, &longest.leaf).is_empty() {
+            wrong.push(format!(
+                "{}: {} not scrolled into view",
+                info.key, longest.leaf
+            ));
+            continue;
+        }
+        // Each cell of a row in the table's view, by its row's top and its column, whether it
+        // is in view across: inside the panel and not clipped away (a cell's record is its
+        // rectangle as the view clips it, one with no width, or turned inside out, where the
+        // view's edge clips it away); and each header, whether it is drawn whole. A row the
+        // view clips away below is laid out but not shown (no height), and is left out: the
+        // view scrolls across here, not down. With no panel recorded no cell is in view, and
+        // the test fails.
+        type Cells = std::collections::BTreeMap<(i64, usize), bool>;
+        let in_view = |map: &Harness<'_, App>| -> (Cells, Vec<Vec<bool>>) {
+            let records = map.state().registry.records();
+            let panel = records
+                .iter()
+                .find(|r| r.info.kind == "Central panel")
+                .map_or(egui::Rect::NOTHING, |r| r.rect);
+            let mut cells = Cells::new();
+            let mut row = (i64::MIN, 0);
+            for r in records
+                .iter()
+                .filter(|r| ["theme map header", "theme map cell"].contains(&r.info.kind))
+            {
+                let top = (r.rect.top() * 32.0).round() as i64;
+                row = if top == row.0 {
+                    (top, row.1 + 1)
+                } else {
+                    (top, 0)
+                };
+                if r.rect.height() > 0.0 {
+                    cells.insert(
+                        row,
+                        r.rect.left() >= panel.left()
+                            && r.rect.right() <= panel.right()
+                            && r.rect.width() > 0.0,
+                    );
+                }
+            }
+            let titles = ["Value", "Sinks / upstream"]
+                .into_iter()
+                .map(|title| painted(map, title))
+                .collect();
+            (cells, titles)
+        };
+        // the scrolling settled, in the harness's quarter-second steps, so the rows lie where
+        // they lie at the other end (only the view across moves between the two)
+        map.run_steps(8);
+        let (at_start, titles_at_start) = in_view(&map);
+        // across to the table's right end
+        for _ in 0..20 {
+            map.event(egui::Event::MouseWheel {
+                unit: egui::MouseWheelUnit::Point,
+                delta: egui::vec2(-400.0, 0.0),
+                phase: egui::TouchPhase::Move,
+                modifiers: egui::Modifiers::NONE,
+            });
+            map.run_steps(2);
+        }
+        map.run_steps(8);
+        let (at_end, titles_at_end) = in_view(&map);
+        for (ix, title) in ["Value", "Sinks / upstream"].into_iter().enumerate() {
+            if titles_at_start[ix] != [false] && titles_at_end[ix] != [false] {
+                wrong.push(format!(
+                    "{}: the {title:?} header is cut short or out of view at either end, \
+                     elided {:?} and {:?}",
+                    info.key, titles_at_start[ix], titles_at_end[ix]
+                ));
+            }
+        }
+        let unreached: std::collections::BTreeSet<&(i64, usize)> = at_start
+            .keys()
+            .chain(at_end.keys())
+            .filter(|key| at_start.get(key) != Some(&true) && at_end.get(key) != Some(&true))
+            .collect();
+        if at_start.is_empty() || !unreached.is_empty() {
+            wrong.push(format!(
+                "{}: {} of {} Theme Map cells in view at neither end, e.g. {:?}",
+                info.key,
+                unreached.len(),
+                at_start.len(),
+                unreached.first()
+            ));
         }
     }
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
