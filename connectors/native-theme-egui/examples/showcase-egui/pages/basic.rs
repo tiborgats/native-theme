@@ -184,7 +184,7 @@ fn group(
         1 => checkboxes(reg, atlas, ui),
         2 => radios(reg, state, ui),
         // The companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6).
-        3 => drop_down(reg, state, ui),
+        3 => drop_down(reg, state, atlas, ui),
         4 => text_inputs(reg, state, atlas, ui),
         5 => text_area(reg, state, atlas, ui),
         // The companion crate's slider (docs/archive/todo_egui-widgets-spec.md §4.2).
@@ -883,16 +883,15 @@ fn progress_bar(reg: &mut Registry, ui: &mut egui::Ui) {
 /// The Drop-down group: the companion crate's drop-down (docs/archive/todo_egui-widgets-spec.md §4.6),
 /// egui's own `ComboBox` in the combo-box scope, as tall as its text and padding make it, at
 /// least `combo_box.min_height`, where egui's square arrow box would make it taller.
-fn drop_down(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
+fn drop_down(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut egui::Ui) {
+    let t = atlas.resolved_for(ui.ctx().theme());
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.drop_down.heading", "Drop-down");
     let current = FRUITS.get(state.basic_combo).copied().unwrap_or_default();
     // `BASIC_WIDTH`, and at least `combo_box.min_width`, which egui's `ComboBox` never reads
     // from the style: the width is the application's, per call, as the gpui page's select's
     // refinement and the iced page's pick list take it.
-    let width = ThemeAtlas::from_ctx(ui.ctx()).map_or(BASIC_WIDTH, |atlas| {
-        BASIC_WIDTH.max(atlas.resolved_for(ui.ctx().theme()).combo_box.min_width)
-    });
+    let width = BASIC_WIDTH.max(t.combo_box.min_width);
     let combo = demo::scoped_popup(
         reg,
         ui,
