@@ -2359,6 +2359,79 @@ fn the_kde_drop_down_is_its_min_height_with_a_chevron() {
     assert!((a.height() - 0.45 * arrow).abs() < 1e-3, "{a:?}");
 }
 
+/// A truncated drop-down keeps to the room it is laid out in, its selected text cut there and
+/// ended by an ellipsis, with the atlas installed and without; untruncated, egui widens it to a
+/// text longer than the room. With the atlas, the text's part is the cut text, inside the
+/// drop-down, a single line as tall as the whole one.
+#[test]
+fn a_truncated_drop_down_keeps_to_its_room() {
+    const ROOM: f32 = 160.0;
+    const TEXT: &str = "system (unavailable: icon-theme reader failed: no file is readable)";
+    let drop_down = |truncate: bool| {
+        move |ui: &mut egui::Ui| {
+            ui.allocate_ui(egui::vec2(ROOM, 100.0), |ui| {
+                let combo = ComboBox::from_id_salt("icons")
+                    .selected_text(TEXT)
+                    .width(ui.available_width());
+                let combo = if truncate { combo.truncate() } else { combo };
+                combo.show_ui(ui, |ui| ui.label("Adwaita")).response
+            })
+            .inner
+        }
+    };
+    let painted = |out: &egui::FullOutput| {
+        flat(&out.shapes)
+            .into_iter()
+            .find_map(|s| match s {
+                egui::Shape::Text(text) if text.galley.job.text == TEXT => Some(text),
+                _ => None,
+            })
+            .unwrap()
+    };
+    let t = kde();
+    for (name, ctx) in [
+        (
+            "installed",
+            installed(&t, &AccessibilityPreferences::default()),
+        ),
+        ("bare", bare()),
+    ] {
+        let _ = response(&ctx, at(0.0), drop_down(false));
+        let (_, wide) = response(&ctx, at(0.0), drop_down(false));
+        assert!(
+            wide.rect.width() > ROOM + 1.0,
+            "{name}: the case this covers, a text wider than the room: {:?}",
+            wide.rect
+        );
+        let _ = response(&ctx, at(0.0), drop_down(true));
+        let (out, combo) = response(&ctx, at(0.0), drop_down(true));
+        assert!(
+            combo.rect.width() <= ROOM + 1e-3,
+            "{name}: {:?} is wider than its room, {ROOM}",
+            combo.rect
+        );
+        let text = painted(&out);
+        assert!(text.galley.elided, "{name}: the text is not cut");
+        assert_eq!(text.galley.rows.len(), 1, "{name}: one line");
+        if name == "installed" {
+            let part = Parts::of(&combo)
+                .and_then(|parts| parts.get("text"))
+                .unwrap();
+            assert!(
+                (part.width() - text.galley.size().x).abs() < 1e-3
+                    && (part.height() - text.galley.size().y).abs() < 1e-3,
+                "{name}: the text part {part:?} is not the cut text, {:?}",
+                text.galley.size()
+            );
+            assert!(
+                part.right() <= combo.rect.right(),
+                "{name}: the text part {part:?} leaves {:?}",
+                combo.rect
+            );
+        }
+    }
+}
+
 // ---- M7-22: parts of widgets no longer drawn -----------------------------------------------------
 
 /// The widgets of `one_widget` and a progress bar under ids salted with `pass_nr`, and an

@@ -65,6 +65,7 @@ pub struct ComboBox {
     width: Option<f32>,
     popup_style: Option<egui::style::StyleModifier>,
     enabled: bool,
+    truncate: bool,
 }
 
 impl ComboBox {
@@ -76,6 +77,7 @@ impl ComboBox {
             width: None,
             popup_style: None,
             enabled: true,
+            truncate: false,
         }
     }
 
@@ -104,6 +106,15 @@ impl ComboBox {
         self
     }
 
+    /// The selected text cut to the room the drop-down has, its end an ellipsis, as
+    /// `egui::ComboBox::truncate`. Without it egui lays the text out on one line as wide as it
+    /// runs (the drop-down's `Ui` is horizontal, `egui/src/containers/combo_box.rs:234`, and a
+    /// horizontal `Ui` extends text, `egui/src/ui.rs:599-604`) and widens the drop-down to it.
+    pub fn truncate(mut self) -> Self {
+        self.truncate = true;
+        self
+    }
+
     /// Show the drop-down, `contents` filling its popup while it is open; as
     /// `egui::ComboBox::show_ui`, `inner` is `None` while it is closed.
     pub fn show_ui<R>(
@@ -117,12 +128,16 @@ impl ComboBox {
             width,
             popup_style,
             enabled,
+            truncate,
         } = self;
         let theme = ui.ctx().theme();
         let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) else {
             let mut combo = egui::ComboBox::from_id_salt(id_salt).selected_text(selected_text);
             if let Some(width) = width {
                 combo = combo.width(width);
+            }
+            if truncate {
+                combo = combo.truncate();
             }
             if let Some(style) = popup_style {
                 combo = combo.popup_style(style);
@@ -169,7 +184,7 @@ impl ComboBox {
             let padding = ui.spacing().button_padding;
             let arrow = ui.spacing().icon_width;
             let mut combo = egui::ComboBox::from_id_salt(id_salt)
-                .selected_text(selected_text)
+                .selected_text(selected_text.clone())
                 .popup_style(popup_style);
             if let Some(width) = width {
                 combo = combo.width(width);
@@ -181,6 +196,28 @@ impl ComboBox {
                 arrow - line
             } else {
                 0.0
+            };
+            // A truncated text is one line, as tall as the whole one, cut to the room egui lays
+            // it out in: the room the `Ui` has less the button's padding on its left and right
+            // (`button_frame`), the arrow's box and the spacing before it (`combo_box_dyn`).
+            let text_size = if truncate {
+                combo = combo.truncate();
+                let spacing = ui.spacing();
+                let room = ui.available_width()
+                    - padding.x
+                    - padding.x
+                    - spacing.icon_spacing
+                    - spacing.icon_width;
+                selected_text
+                    .into_galley(
+                        ui,
+                        Some(egui::TextWrapMode::Truncate),
+                        room,
+                        egui::TextStyle::Button,
+                    )
+                    .size()
+            } else {
+                text_size
             };
             let arrow_box = std::rc::Rc::new(std::cell::Cell::new(None));
             let painted = std::rc::Rc::clone(&arrow_box);
