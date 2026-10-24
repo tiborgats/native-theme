@@ -3866,11 +3866,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       `border.corner_radius`, `border.line_width` and `border.shadow_enabled`
       rows. The rest of the entry stays open.
 
-### M7 close (2026-10-16), its `[v0.7.0]` entries
-The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
-- [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
-      M8 T21 (2026-10-17): `named_image`: M9c; the parity items are the G1/G2 section's (M9a), not repeated here.
-
 ---
 
 ## Post-1.0
@@ -4003,6 +3998,9 @@ items below stay.
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
 M8 T21 (2026-10-17): its `[v0.7.0]` entries are under *M7 close (2026-10-16), its
 `[v0.7.0]` entries* in *This cycle (v0.7.0)*.
+M9c T13 (2026-10-24): that section's last entry closed (efb1d47e) and the section left
+this file; its closed entries are in [`archive/todo_closed.md`](archive/todo_closed.md)
+under *M7 close (2026-10-16): items carried to M8, M9a and the presets*.
 - [ ] [1.0] egui text-size cap residuals (M7 T1): the TrueType `ISECT` instruction, the autohinter's CJK and Indic script groups, and hinting settings an application changes itself are unbounded in the hinting source, so they are not covered. Neither is a viewport two immediate levels up during its very first pass, which loses that pass's parts.
 
 ### gpui showcase: the expander header does not grow above text scale 1
