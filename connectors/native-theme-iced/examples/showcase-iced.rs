@@ -4843,7 +4843,12 @@ fn shown_fill(
 /// over round into ([`shown_fill`]). A bar beside the rows is held as far as
 /// the inner radius is more than half its wider part
 /// (`scrollbar.groove_width` or `.thumb_width`), none where it is not, and
-/// rounds its parts into the arcs ([`list_bar_style`]).
+/// rounds its parts into the arcs ([`list_bar_style`]). The wider part is
+/// what iced places the bar by, `width.max(scroller_width) + 2 margin` from
+/// the right edge (`:1966-1975`), so it is what has to fit the corners; the
+/// rows' padding beside a bar, the groove alone and the margin
+/// (`src/scrollable.rs:482-489`), only decides where they end, which the
+/// corners do not depend on, so a thumb wider than its groove still fits.
 fn list_bar_margin(resolved: &ResolvedTheme) -> f32 {
     let inner = inner_radius(&resolved.list);
     let s = &resolved.scrollbar;
@@ -4902,8 +4907,18 @@ fn list_bar_style(
         let rail = &mut style.vertical_rail;
         rail.border = rounded(rail.border, groove);
         rail.scroller.border = rounded(rail.scroller.border, thumb);
+        #[cfg(test)]
+        LIST_BAR_STYLE.set(Some(style));
         style
     }
+}
+
+#[cfg(test)]
+thread_local! {
+    /// The style [`list_bar_style`] last gave the Basic list's scrollable on
+    /// this thread, as it draws.
+    static LIST_BAR_STYLE: std::cell::Cell<Option<scrollable::Style>> =
+        const { std::cell::Cell::new(None) };
 }
 
 /// Where the Basic list's scrollable draws, which its rows' fills read
@@ -21814,6 +21829,149 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
     }
 
+    /// The first point of `rect`'s outline, its corners rounded by `radius`
+    /// each clamped to half its smaller side as the renderers clamp them, that
+    /// lies outside `inside` rounded by `inner`; `None` where the outline
+    /// keeps inside.
+    fn outline_leaves(
+        rect: Rectangle,
+        radius: iced::border::Radius,
+        inside: Rectangle,
+        inner: f32,
+    ) -> Option<iced::Point> {
+        let eps = 1e-3;
+        let (left, top) = (inside.x, inside.y);
+        let (right, bottom) = (inside.x + inside.width, inside.y + inside.height);
+        let within = |p: iced::Point| {
+            if p.x < left - eps || p.x > right + eps || p.y < top - eps || p.y > bottom + eps {
+                return false;
+            }
+            let cx = p.x.clamp(left + inner, right - inner);
+            let cy = p.y.clamp(top + inner, bottom - inner);
+            ((p.x - cx).powi(2) + (p.y - cy).powi(2)).sqrt() <= inner + eps
+        };
+        let half = rect.width.min(rect.height) / 2.0;
+        let corners = [
+            (radius.top_left.min(half), rect.x, rect.y, -1.0, -1.0),
+            (
+                radius.top_right.min(half),
+                rect.x + rect.width,
+                rect.y,
+                1.0,
+                -1.0,
+            ),
+            (
+                radius.bottom_right.min(half),
+                rect.x + rect.width,
+                rect.y + rect.height,
+                1.0,
+                1.0,
+            ),
+            (
+                radius.bottom_left.min(half),
+                rect.x,
+                rect.y + rect.height,
+                -1.0,
+                1.0,
+            ),
+        ];
+        corners
+            .iter()
+            .flat_map(|&(rho, x, y, sx, sy)| {
+                let centre = iced::Point::new(x - sx * rho, y - sy * rho);
+                (0..=32).map(move |k| {
+                    let angle = std::f32::consts::FRAC_PI_2 * k as f32 / 32.0;
+                    iced::Point::new(
+                        centre.x + sx * rho * angle.cos(),
+                        centre.y + sy * rho * angle.sin(),
+                    )
+                })
+            })
+            .find(|p| !within(*p))
+    }
+
+    /// A Basic list bar whose thumb is wider than its groove still keeps
+    /// inside the frame's rounded inside: no bundled preset states one, so
+    /// kde-breeze light is given a 6 px groove, a 10 px thumb, a solid bar and
+    /// a frame of radius 10 and line 1 (inner radius 9). iced places the bar
+    /// by its wider part, the thumb (`src/scrollable.rs:1966-1975`, `:2000-2010`),
+    /// so `list_bar_margin` is 9 − 10 / 2 = 4, the thumb's right edge 4 in
+    /// and the groove's 6, and `list_bar_style` rounds their right-hand corners
+    /// by 5 and 3, each half its width; both outlines, the thumb at the top
+    /// and at the bottom, keep inside a 168 × 60 inside.
+    #[test]
+    fn a_list_bar_with_a_thumb_wider_than_its_groove_keeps_inside_the_frame() {
+        let (theme, mut r) = match native_theme_iced::from_preset("kde-breeze", false) {
+            Ok(installed) => installed,
+            Err(error) => panic!("kde-breeze: {error}"),
+        };
+        r.scrollbar.groove_width = 6.0;
+        r.scrollbar.thumb_width = 10.0;
+        r.scrollbar.overlay_mode = false;
+        r.list.border.corner_radius = 10.0;
+        r.list.border.line_width = 1.0;
+        let inner = inner_radius(&r.list);
+        assert_eq!(inner, 9.0, "the inside's radius");
+        let margin = list_bar_margin(&r);
+        assert_eq!(margin, 4.0, "the margin the thumb, the wider part, needs");
+        let style = list_bar_style(&r)(
+            &theme,
+            scrollable::Status::Active {
+                is_horizontal_scrollbar_disabled: false,
+                is_vertical_scrollbar_disabled: false,
+            },
+        );
+        let inside = Rectangle {
+            x: 0.0,
+            y: 0.0,
+            width: 168.0,
+            height: 60.0,
+        };
+        let right = inside.x + inside.width;
+        let (groove, thumb) = (r.scrollbar.groove_width, r.scrollbar.thumb_width);
+        let centre = right - margin - groove.max(thumb) / 2.0;
+        let rail = Rectangle {
+            x: centre - groove / 2.0,
+            width: groove,
+            ..inside
+        };
+        let rest = Rectangle {
+            x: centre - thumb / 2.0,
+            width: thumb,
+            height: 24.0,
+            ..inside
+        };
+        let at_end = Rectangle {
+            y: inside.height - rest.height,
+            ..rest
+        };
+        let (rail_radius, thumb_radius) = (
+            style.vertical_rail.border.radius,
+            style.vertical_rail.scroller.border.radius,
+        );
+        assert_eq!(
+            (rail_radius.top_right, rail_radius.bottom_right),
+            (3.0, 3.0),
+            "the groove's right-hand corners"
+        );
+        assert_eq!(
+            (thumb_radius.top_right, thumb_radius.bottom_right),
+            (5.0, 5.0),
+            "the thumb's right-hand corners"
+        );
+        for (part, rect, radius) in [
+            ("rail", rail, rail_radius),
+            ("thumb at rest", rest, thumb_radius),
+            ("thumb at the end", at_end, thumb_radius),
+        ] {
+            assert_eq!(
+                outline_leaves(rect, radius, inside, inner),
+                None,
+                "the {part} {rect:?} rounded {radius:?}"
+            );
+        }
+    }
+
     /// The Basic list's scrollbar keeps inside the frame's rounded inside, at
     /// its stated widths: iced lays the rail the list's full height, so its
     /// right-hand corners, and the scroller's at the top at rest and at the
@@ -21826,7 +21984,8 @@ mod tests {
     /// to the inner radius (material-3 5, kde-breeze 0), its parts' right-hand
     /// corners rounded to touch the inside's arcs from within. The rail and
     /// the thumb are the layout dump's parts (`basic.list.scrollbar` and
-    /// `.thumb`), the radii `list_bar_style`'s, and every point of each
+    /// `.thumb`), the radii those of the style the list's scrollable drew
+    /// with (`LIST_BAR_STYLE`, `list_bar_style`'s), and every point of each
     /// part's rounded outline lies inside the inside's rounded rectangle.
     /// iced's own margin is held by where the bar takes the pointer: half a
     /// pixel inside its whole width (the bar, its margin on both sides) a row
@@ -21863,7 +22022,9 @@ mod tests {
                 (inner - bar / 2.0).max(0.0)
             };
 
+            LIST_BAR_STYLE.set(None);
             let (_, rects, _) = frame_of(&state, view(&state), size);
+            let drawn = LIST_BAR_STYLE.take();
             let rect_of = |id: &str| match rects.get(id) {
                 Some(rect) => *rect,
                 None => panic!("{preset}: {id} is not drawn"),
@@ -21895,77 +22056,22 @@ mod tests {
                 ));
             }
 
-            let theme = theme(&state);
-            let style = list_bar_style(&r)(
-                &theme,
-                scrollable::Status::Active {
-                    is_horizontal_scrollbar_disabled: false,
-                    is_vertical_scrollbar_disabled: false,
-                },
-            );
+            // The style the list's scrollable drew with: `list_bar_style`'s.
+            let Some(style) = drawn else {
+                panic!("{preset}: the list's scrollable drew with no list_bar_style");
+            };
             let rail_radius = style.vertical_rail.border.radius;
             let thumb_radius = style.vertical_rail.scroller.border.radius;
             let at_end = Rectangle {
                 y: rail.y + rail.height - rest.height,
                 ..rest
             };
-            // Whether `p` lies inside the inside's rounded rectangle.
-            let within = |p: iced::Point| {
-                let eps = 1e-3;
-                let (left, top) = (inside.x, inside.y);
-                let bottom = inside.y + inside.height;
-                if p.x < left - eps || p.x > right + eps || p.y < top - eps || p.y > bottom + eps {
-                    return false;
-                }
-                let cx = p.x.clamp(left + inner, right - inner);
-                let cy = p.y.clamp(top + inner, bottom - inner);
-                ((p.x - cx).powi(2) + (p.y - cy).powi(2)).sqrt() <= inner + eps
-            };
             for (part, rect, radius) in [
                 ("rail", rail, rail_radius),
                 ("thumb at rest", rest, thumb_radius),
                 ("thumb at the end", at_end, thumb_radius),
             ] {
-                let half = rect.width.min(rect.height) / 2.0;
-                let corners = [
-                    (radius.top_left.min(half), rect.x, rect.y, -1.0, -1.0),
-                    (
-                        radius.top_right.min(half),
-                        rect.x + rect.width,
-                        rect.y,
-                        1.0,
-                        -1.0,
-                    ),
-                    (
-                        radius.bottom_right.min(half),
-                        rect.x + rect.width,
-                        rect.y + rect.height,
-                        1.0,
-                        1.0,
-                    ),
-                    (
-                        radius.bottom_left.min(half),
-                        rect.x,
-                        rect.y + rect.height,
-                        -1.0,
-                        1.0,
-                    ),
-                ];
-                let outside: Vec<iced::Point> = corners
-                    .iter()
-                    .flat_map(|&(rho, x, y, sx, sy)| {
-                        let centre = iced::Point::new(x - sx * rho, y - sy * rho);
-                        (0..=32).map(move |k| {
-                            let angle = std::f32::consts::FRAC_PI_2 * k as f32 / 32.0;
-                            iced::Point::new(
-                                centre.x + sx * rho * angle.cos(),
-                                centre.y + sy * rho * angle.sin(),
-                            )
-                        })
-                    })
-                    .filter(|p| !within(*p))
-                    .collect();
-                if let Some(first) = outside.first() {
+                if let Some(first) = outline_leaves(rect, radius, inside, inner) {
                     faults.push(format!(
                         "{preset}: the {part} {rect:?} rounded {radius:?} leaves the inside \
                          {inside:?} (inner radius {inner}) at {first:?}"
