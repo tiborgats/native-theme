@@ -15,12 +15,12 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `70776a40`) |
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | closed 2026-10-14 (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md; *G2* below) |
-| M6 | done (2026-10-16; *M6*, Steps 7–8, fix phase closed) |
-| M7 | done (2026-10-16; *M7*, Steps 7–8, fix phase closed) |
+| M6 | done (2026-10-16; *M6*, Steps 7–8, fix phase closed, closing commit `c5ff9271`) |
+| M7 | done (2026-10-16; *M7*, Steps 7–8, fix phase closed, closing commit `c1f91449`) |
 | M8 | done (2026-10-17; *M8*, Step 8 close, stop point B, fix phase `9e2527f5..3148f231`) |
 | M9a | done (2026-10-21; *M9a Step 8*, closed on CI run 39656159244 at `b73dd1c6`) |
 | M9b | done (2026-10-23; *M9b Step 8*, closing commit `d8387161`) |
-| M9c | Steps 6–7 done 2026-10-24 (the fix phase, `7408549a..5de1f8b1`, and T18's documents); statuses set (*M9c Step 8*); Step 8 open |
+| M9c | Steps 6–7 done 2026-10-24 (the fix phase, `7408549a..5de1f8b1`, T18's documents, and the B1 fix round 1 after them, `39567144` to its ledger commit); statuses set (*M9c Step 8*); Step 8 open |
 | G3 | closed 2026-10-23 (D11, docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
 
 ## Baseline (M0, 2026-10-11)
@@ -12206,6 +12206,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* C1#2.
 **Status (M9c close, 2026-10-24):** fixed — efb1d47e, f2d9de50 (M9c T13 and its round 1): the showcase's `IconCache` loads the Icons page's indicator once per set and icon theme and builds each frame's image once per frame and scheme, and the chrome's named freedesktop icons once per key; `App::adopt` and `App::icons_chosen` clear it; 6d0cef87 and 5dfe3e74 (M9c B1 item 14, M1 and M2): its doc words each map's key, and a lexical test holds that only `App::adopt` installs or clears an atlas. docs/todo.md's `named_image` item closed with 6a1ec77e.
+**Status (M9c B1 fix round 1, 2026-10-24):** fixed, unchanged — 0e4c6951 (the B1 review, m4): the lexical test also asserts that `App::adopt` clears the `IconCache` beside the install, and was seen to fail on both halves (an install planted outside `App::adopt`; `App::adopt` without the clear).
 
 #### M9-105 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:215
 **Claim:** On macos-tahoe, which states no layout.section_gap, the Basic page puts egui's item_spacing.x between its columns, where the gpui page puts none. column_count picks the number of columns assuming no gap, so the columns laid out are (n-1)*item_spacing.x narrower in total than the width the count was chosen for, and the widest fixed-width control can overflow its column.
@@ -12793,6 +12794,7 @@ The showcase's routes were reworded in T4's fix round (9b3d9cdb).
 - The five routes name the inner radius; `geometry::list`'s doc, `demo_frame`'s and the connector README's `list` row say what each core's clip does.
 - `the_row_fills_are_rounded_where_they_meet_the_frame`, under adwaita on either core, reads the painted quads: it fails at `bcbd1365` (header, last table row and the hovered first List row all `[0, 0, 0, 0]`, where adwaita wants 8 on the corners that meet the frame) and passes on the new code; `the_row_fill_corner_routes_say_the_fills_are_rounded` replaces T14's square-fill route test.
 *Source:* m9c-T14-report.md, concern 2; m9c-final-review-part2a.md, I1.
+**Status (M9c B1 fix round 1, 2026-10-24):** fixed, unchanged — the B1 review's follow-ups: e99191d3 (m6) makes the inner radius one helper, `demo::list_inner_radius`, which both fills and the test read; d3624407 (m10) names both cores' clips in `files_table`'s comment; 4f72a45d (m8) says in `geometry::list`'s doc and the connector README's `list` row that the application rounds the fill and `geometry::list_item` sets no radius; 4292064b (part 2b, m3) joins the CHANGELOG's gpui line with the egui and iced one.
 
 ### Rejected
 
@@ -13043,6 +13045,7 @@ Set by M9c T18 from the commits `7408549a..5de1f8b1` (each entry's line names it
 - **M9c's 21 entries (M9-102–M9-122):** 21 fixed. M9-155, M9-156, M9-158 and M9-159, filed during the phase, are fixed; M9-157 is deferred to docs/todo.md, *native-theme-egui connector*, "A widget font's own family is drawn in the body's face", an upstream limit (the archived egui spec's §14 item 8).
 - **M9x entries M9c owns:** M9-124, M9-125, M9-126, M9-127, M9-130 and M9-136 fixed with their egui halves (c3abfa8f, 598b9513, 337e0de0); M9-134 fixed with its egui half (4b44ab11, 406a5727); M9-141 fixed (9a862594).
 - **Totals:** 21 entries and 4 filed during the phase fixed, 1 deferred upstream, 0 open.
+- **The B1 fix round 1 (2026-10-24, after T18):** 39567144, ee27cf37, e99191d3, d3624407, 4f72a45d, 2d550a86, 0e4c6951, f4c8ef4f, 9beb8ee1, 0104ec76, ef5f0dd3, 7e375974, af48c135, 4292064b, 798aa14f and the ledger commit that adds this line, for the B1 review's I1 and m3–m10 and the final review part 2b's I1, I2 and m1–m6. M9-104's and M9-159's status lines name theirs; no entry opens or closes, so the totals stand.
 - **What leaves M9c, and who owns it.** (1) *Showcases: the toolbar's "Reload System Theme" glyph* and (2) *Showcases: a toolbar role and arrow-key roving for the chrome toolbar* (docs/todo.md, `[1.0]`, all three showcases; `docs/todo.md:3517` and `:3542` at 4b458e20): the maintainer's tag, the file's own deferral (the Step 6 ruling, what leaves M9c (3)), for M9x's owner. (3) Three `[1.0]` entries M9c T18 files (0f4c68a9): *egui showcase: the command palette's highlight does not follow the pointer*, and, for the maintainer to decide, *Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours* and *Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts*. (4) The macOS legs of M9-117 and M9-118 (the five titles read back, `--open-menu` reported) and the macOS and Windows strict-panic and capture runs: CI and the maintainer's `screenshots.yml` dispatch after the push. (5) The R2 before/after captures and dumps the task reports list: the controller, on a free desktop. (6) 630dc84f to a60d4541 fail `every_seam_is_recorded`, which bcbd1365 restores; whether to squash bcbd1365 into 630dc84f is the maintainer's call before the push (the final review part 2a, M3).
 - The fixture half of `docs/todo.md:3646` at 4b458e20 (*M7 close (2026-10-16): items carried to M8, M9a and the presets*, "For M8 (test quality)"), the showcases' child-process fixture runner, is closed in `docs/archive/todo_closed.md` under that heading's *Closed items from* section by M8 T2 (990ab210, 32ac77a6; ticked in a936c610); M9c took nothing for it (the rulings' amendment of 2026-10-17, (1)).
 
