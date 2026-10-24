@@ -702,10 +702,12 @@ pub(crate) fn swatch_row(
     response
 }
 
-/// `rect` filled with `colour` and framed in `defaults.border`'s width and radius and its
-/// colour with `defaults.border.opacity` folded in (`native_theme_egui::border_color`), as the
-/// gpui showcase's `demo_frame` (`showcase-gpui/support.rs:228-235`), which paints the colour
-/// as stated: whether the opacity applies there is open (docs/todo.md, "Border opacity").
+/// `rect` filled with `colour` and framed in `defaults.border`'s width, radius and colour
+/// (`native_theme_egui::border_color`, `src/accessors.rs:557-562`), as the gpui showcase's
+/// `demo_frame` (`showcase-gpui/support.rs:228-235`) frames it: the stated colour is the final
+/// line colour, into which the theme has folded `defaults.border.opacity`, and no connector
+/// multiplies a colour by the opacity (docs/archive/todo_closed.md, *Border opacity: which lines
+/// `defaults.border.opacity` fades*).
 fn paint_swatch(
     ui: &egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
