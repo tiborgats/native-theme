@@ -6928,9 +6928,9 @@ fn every_seam_is_recorded() {
 
 /// `IconCache`'s condition, held lexically: the images it keeps name the connector's icon URIs,
 /// which `ThemeAtlas::install` and `ThemeAtlas::clear` forget (`forget_icons`), so outside the
-/// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt`, which
-/// clears the cache beside it. A spelling of these calls the patterns miss (an atlas bound to
-/// a name other than `atlas`) is left to review.
+/// tests an atlas is installed, cleared or its icons forgotten only in `App::adopt`, and
+/// `App::adopt` clears the cache beside it. A spelling of these calls the patterns miss (an
+/// atlas bound to a name other than `atlas`) is left to review.
 #[test]
 fn only_app_adopt_installs_or_clears_an_atlas() {
     const CALLS: &[&str] = &[
@@ -6941,6 +6941,7 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
         "forget_icons(",
     ];
     let mut in_adopt = 0;
+    let mut adopt_clears_the_cache = false;
     for (path, source) in showcase_sources() {
         if path.ends_with("tests.rs") {
             continue;
@@ -6967,6 +6968,9 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
                 }
                 None
             });
+        if let Some(body) = adopt.as_ref().and_then(|body| source.get(body.clone())) {
+            adopt_clears_the_cache |= body.contains("self.icon_cache.clear()");
+        }
         for call in CALLS {
             for (at, _) in source.match_indices(call) {
                 if adopt.as_ref().is_some_and(|body| body.contains(&at)) {
@@ -6985,6 +6989,10 @@ fn only_app_adopt_installs_or_clears_an_atlas() {
         }
     }
     assert!(in_adopt > 0, "the detector read no install in App::adopt");
+    assert!(
+        adopt_clears_the_cache,
+        "App::adopt installs the atlas but does not clear the showcase's IconCache"
+    );
 }
 
 #[test]
