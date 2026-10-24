@@ -5762,11 +5762,21 @@ where
 
 /// The Icon theme row's drop-down, a [`setting_picker`] over the icon-theme
 /// choices; where the system icon theme cannot be detected, under a tooltip
-/// reading why ([`showcase_tooltip`], below it), as the row's `system`
-/// label is short, `system (unavailable)` (`IconSetChoice`'s `Display`):
-/// iced 0.14's `PickList` has no ellipsis and lays its menu's rows out at
-/// any width (iced_widget 0.14.2 `src/overlay/menu.rs:557-575`), so the
-/// reason, which can run to a reader's whole error, is no label's.
+/// reading why ([`showcase_tooltip`]), as the row's `system` label is short,
+/// `system (unavailable)` (`IconSetChoice`'s `Display`): iced 0.14's
+/// `PickList` has no ellipsis and lays its menu's rows out at any width
+/// (iced_widget 0.14.2 `src/overlay/menu.rs:557-575`), so the reason, which
+/// can run to a reader's whole error, is no label's.
+///
+/// The tip opens on the drop-down's right, beside the column its menu opens
+/// in, below the control or above it and as wide as it
+/// (`src/overlay/menu.rs:240-270`): iced keeps a tip open while the pointer
+/// rests on its content, a press included (`src/tooltip.rs:219-268`), and
+/// draws it with the menu (`:323-369`), so a tip below would cover the rows
+/// it explains. egui hides a tooltip while a popup is open and gpui clears
+/// one on a press; iced's tooltip does neither, and `Position::Right`
+/// (`src/tooltip.rs:502-507`) keeps it out of the menu's way with no state
+/// of its own.
 fn icon_theme_picker(state: &State) -> Element<'_, Message> {
     let picker = probe(
         probes::ICON_THEME,
@@ -5791,7 +5801,7 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
                 state,
                 picker,
                 drawn_probe(probes::ICON_THEME_TIP, tip),
-                tooltip::Position::Bottom,
+                tooltip::Position::Right,
             )
         }
     }
@@ -18396,7 +18406,8 @@ mod tests {
     /// Where the system icon theme cannot be detected, the Icon theme
     /// drop-down's hover text says why, as its `system` row's label leaves
     /// the reason out; where it is detected, the drop-down has no tooltip.
-    /// The tip is the platform's, no wider than `tooltip.max_width`.
+    /// The tip is the platform's, on the drop-down's right, no wider than
+    /// `tooltip.max_width`.
     #[test]
     fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() {
         recording(|| {
@@ -18449,8 +18460,8 @@ mod tests {
                 match (tipped, tip) {
                     (true, Some(tip)) => {
                         assert!(
-                            tip.y >= picker.y + picker.height,
-                            "the tip {tip:?} is not below the drop-down {picker:?}"
+                            tip.x >= picker.x + picker.width,
+                            "the tip {tip:?} is not right of the drop-down {picker:?}"
                         );
                         assert!(
                             tip.width <= max_width + 0.01,
@@ -18462,6 +18473,66 @@ mod tests {
                     (false, None) => {}
                 }
             }
+        })
+    }
+
+    /// The Icon theme drop-down's tooltip keeps clear of its open menu: iced
+    /// keeps a tip open while the pointer rests on its content, a press
+    /// included (iced_widget 0.14.2 `src/tooltip.rs:219-268`), and draws it
+    /// with the content's overlay, the menu, in one group (`:323-369`), so a
+    /// tip in the menu's column would cover the rows it explains. The menu
+    /// opens below the control or above it, as wide as it
+    /// (`src/overlay/menu.rs:240-270`), so the tip must lie beside that
+    /// column. Under kde-breeze light, with a failing detection.
+    #[test]
+    fn the_icon_theme_tooltip_keeps_clear_of_the_open_menu() {
+        recording(|| {
+            let (theme, mut resolved) = match native_theme_iced::from_preset("kde-breeze", false) {
+                Ok(installed) => installed,
+                Err(error) => panic!("kde-breeze: {error}"),
+            };
+            resolved.tooltip.show_delay = None;
+            let state = State {
+                current_theme: theme,
+                current_resolved: resolved,
+                detect_icon_theme: || {
+                    Err(native_theme::error::Error::PlatformUnsupported {
+                        platform: "the test's failing detection",
+                    })
+                },
+                ..State::default()
+            };
+            let iced_theme = super::theme(&state);
+            let mut ui: Simulator<'_, Message> =
+                Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+            for _ in 0..2 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let picker = match drawn_layout().get("chrome.side_panel.settings.icon_theme") {
+                Some(rect) => *rect,
+                None => panic!("the Icon theme drop-down is not drawn"),
+            };
+            click_probe(&mut ui, probes::ICON_THEME);
+            ui.point_at(picker.center());
+            let _ = ui.simulate([Event::Mouse(mouse::Event::CursorMoved {
+                position: picker.center(),
+            })]);
+            for _ in 0..3 {
+                if let Err(error) = ui.snapshot(&iced_theme) {
+                    panic!("the interface did not draw: {error}");
+                }
+            }
+            let Some(tip) = drawn_layout().get(probes::ICON_THEME_TIP).copied() else {
+                panic!("no tip with the menu open and the pointer on the drop-down");
+            };
+            assert!(
+                tip.x >= picker.x + picker.width || tip.x + tip.width <= picker.x,
+                "the tip {tip:?} lies in the column {}..{} the menu opens in",
+                picker.x,
+                picker.x + picker.width
+            );
         })
     }
 
