@@ -7601,6 +7601,18 @@ fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
         "the two frames', the table's header and last row's and the List's three rows' two \
          leaves"
     );
+    // Only the rows' ids name their elements by prefix: an element under the header or a frame
+    // is not that element.
+    for (id, call) in [
+        ("basic.table.header.name", "inner_corners"),
+        ("basic.list.frame.edge", "list_frame"),
+    ] {
+        let how = crate::info::listed_how(&manifest, id, "list.border.corner_radius_px", &seams);
+        assert!(
+            !how.contains(call),
+            "{id} takes another element's route: {how:?}"
+        );
+    }
 }
 
 /// The family drawn in a family's place is the substitute the atlas's note for that family

@@ -549,11 +549,19 @@ const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
 ];
 
 /// The line under a listed element's row: the call that applies it where the Basic page paints
-/// it per call ([`PER_CALL_ROUTES`]), else [`how_line`]'s, from the leaf's `mapping.toml` row.
+/// it per call ([`PER_CALL_ROUTES`], whose `row_` ids name every row by prefix and whose other
+/// ids name one element each), else [`how_line`]'s, from the leaf's `mapping.toml` row.
 pub(crate) fn listed_how(manifest: &Manifest, element: &str, leaf: &str, seams: &[Seam]) -> String {
+    let names = |id: &str| {
+        if id.ends_with("row_") {
+            element.starts_with(id)
+        } else {
+            element == id
+        }
+    };
     PER_CALL_ROUTES
         .iter()
-        .find(|(id, l, _)| element.starts_with(id) && *l == leaf)
+        .find(|(id, l, _)| names(id) && *l == leaf)
         .map_or_else(
             || how_line(manifest, leaf, seams),
             |(_, _, line)| line.to_string(),
