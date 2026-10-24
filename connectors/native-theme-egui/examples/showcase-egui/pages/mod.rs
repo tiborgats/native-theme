@@ -239,6 +239,7 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
     let App {
         registry,
         demo_state,
+        icon_cache,
         atlas,
         settings,
         manifest,
@@ -257,7 +258,15 @@ pub(crate) fn show(app: &mut App, ui: &mut egui::Ui) {
         Page::Containers => containers::show(registry, demo_state, atlas, ui),
         Page::Data => data::show(registry, demo_state, atlas, ui),
         Page::Overlays => overlays::show(registry, demo_state, atlas, ui, &chosen),
-        Page::Icons => icons::show(registry, demo_state, atlas, ui, &chosen, *detect_icon_theme),
+        Page::Icons => icons::show(
+            registry,
+            demo_state,
+            icon_cache,
+            atlas,
+            ui,
+            &chosen,
+            *detect_icon_theme,
+        ),
         Page::ThemeMap => theme_map::show(registry, demo_state, atlas, manifest, json, ui),
     }
 }

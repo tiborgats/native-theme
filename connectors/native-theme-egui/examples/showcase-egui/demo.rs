@@ -3,7 +3,7 @@
 use std::borrow::Cow;
 
 use native_theme::Rgba;
-use native_theme::icons::{FreedesktopLoader, IconProvider, IconRole};
+use native_theme::icons::{AnimatedIcon, FreedesktopLoader, IconProvider, IconRole};
 use native_theme::theme::{IconSet, ResolvedFontSpec};
 use native_theme_egui::{
     NativeThemeUiExt as _, Note, Role, RoleVariant, Surface, ThemeAtlas, icons, role_modifier,
@@ -963,9 +963,11 @@ impl IconProvider for ChromeIcon {
 /// `icon` from the chosen set and theme at `size` points, loaded and coloured as `role_image`
 /// loads a role's; a freedesktop icon under the first of its names the icon theme has, each
 /// looked up in that one theme (`FreedesktopLoader::any`, `native-theme/src/icons.rs:259`), as
-/// the gpui showcase loads it. Its alt text is `ChromeIcon::alt_text`, whichever name loaded.
-/// `None` where the set or theme lacks it, never another set's icon.
+/// the gpui showcase loads it, read from disk once per key and kept in `cache`. Its alt text is
+/// `ChromeIcon::alt_text`, whichever name loaded. `None` where the set or theme lacks it, never
+/// another set's icon.
 pub(crate) fn named_image(
+    cache: &mut IconCache,
     ui: &egui::Ui,
     icon: ChromeIcon,
     set: IconSet,
@@ -978,22 +980,123 @@ pub(crate) fn named_image(
         icon_theme,
         size,
     );
-    let image = if set == IconSet::Freedesktop {
-        let [r, g, b, _] = ui.visuals().text_color().to_srgba_unmultiplied();
-        // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
-        let loader = FreedesktopLoader::any(icon.names(set))
-            .size(size.round() as u32)
-            .color(Rgba::rgb(r, g, b));
-        let data = match icon_theme {
-            Some(theme) => loader.theme(theme),
-            None => loader,
-        }
-        .load()?;
-        icons::to_image(ui.ctx(), &key, &data)
-    } else {
-        icons::custom_icon_to_image(ui.ctx(), &icon, &key)
-    };
-    image.map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+    if set != IconSet::Freedesktop {
+        return icons::custom_icon_to_image(ui.ctx(), &icon, &key)
+            .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)));
+    }
+    let IconCache {
+        named,
+        #[cfg(test)]
+        loads,
+        ..
+    } = cache;
+    named
+        .entry(key)
+        .or_insert_with_key(|key| {
+            #[cfg(test)]
+            loads.push(IconLoad::Named(key.clone()));
+            let [r, g, b, _] = ui.visuals().text_color().to_srgba_unmultiplied();
+            // The saturating float-to-int cast `IconKey::size` makes (§4.10, §7.1).
+            let loader = FreedesktopLoader::any(icon.names(set))
+                .size(size.round() as u32)
+                .color(Rgba::rgb(r, g, b));
+            let data = match icon_theme {
+                Some(theme) => loader.theme(theme),
+                None => loader,
+            }
+            .load()?;
+            icons::to_image(ui.ctx(), key, &data)
+                .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
+        })
+        .clone()
+}
+
+/// The icons the showcase loads itself, kept from the pass that first draws each until the
+/// next install (`App::adopt`: `ThemeAtlas::install` forgets the connector's icon URIs,
+/// `forget_icons`, which a kept image names) or the next change of the icon choice: the
+/// Icons page's loading indicator, loaded once per set and icon theme, and the image of each
+/// of its frames, built once per frame and scheme; and `named_image`'s freedesktop icons,
+/// once per key. Each is keyed as `chrome_key` keys an icon — its name, the set, the icon
+/// theme, the size and the tint — so another choice or scheme misses and loads its own. An
+/// icon the theme lacks is kept as absent too, so it is looked up once. The widgets crate's
+/// `Spinner` keeps its indicator for the same reason, "a spinner draws a frame in every
+/// pass" (`native-theme-egui-widgets/src/spinner.rs`).
+#[derive(Default)]
+pub(crate) struct IconCache {
+    indicators: std::collections::HashMap<(IconSet, Option<String>), Option<AnimatedIcon>>,
+    frames: std::collections::HashMap<
+        (icons::IconKey, egui::Theme, usize),
+        Option<egui::Image<'static>>,
+    >,
+    named: std::collections::HashMap<icons::IconKey, Option<egui::Image<'static>>>,
+    /// Every load and frame build, in order, for the tests to count; never cleared.
+    #[cfg(test)]
+    pub(crate) loads: Vec<IconLoad>,
+}
+
+/// One load or build of [`IconCache`], as the tests count them.
+#[cfg(test)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) enum IconLoad {
+    /// The loading indicator of a set and icon theme, loaded.
+    Indicator(IconSet, Option<String>),
+    /// The image of an indicator frame built: the indicator's key, the scheme, the frame.
+    Frame(icons::IconKey, egui::Theme, usize),
+    /// A `named_image` freedesktop icon loaded.
+    Named(icons::IconKey),
+}
+
+impl IconCache {
+    /// Forget every icon kept; the next pass loads what it draws again.
+    pub(crate) fn clear(&mut self) {
+        self.indicators.clear();
+        self.frames.clear();
+        self.named.clear();
+    }
+
+    /// The loading indicator `set` ships — from `icon_theme` for a freedesktop set, the
+    /// system's where it is `None` — and the image of the frame it shows in this pass
+    /// (`icons::animated_frame_index`, the first frame for a spin and under reduced motion),
+    /// built with `key`, in this pass's scheme; `None` where the set ships no indicator.
+    pub(crate) fn indicator(
+        &mut self,
+        ctx: &egui::Context,
+        key: &icons::IconKey,
+        (set, icon_theme): (IconSet, Option<&str>),
+        reduce_motion: bool,
+    ) -> Option<(&AnimatedIcon, Option<egui::Image<'static>>)> {
+        let Self {
+            indicators,
+            frames,
+            #[cfg(test)]
+            loads,
+            ..
+        } = self;
+        let anim = indicators
+            .entry((set, icon_theme.map(str::to_owned)))
+            .or_insert_with(|| {
+                #[cfg(test)]
+                loads.push(IconLoad::Indicator(set, icon_theme.map(str::to_owned)));
+                match set {
+                    IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme),
+                    set => native_theme::icons::load_icon_indicator(set, None),
+                }
+            })
+            .as_ref()?;
+        let (index, frame) = icons::animated_frame_index(ctx, anim, reduce_motion)
+            .and_then(|i| Some((i, anim.frame_list()?.get(i)?)))
+            .unwrap_or((0, anim.first_frame()));
+        let scheme = ctx.theme();
+        let image = frames
+            .entry((key.clone(), scheme, index))
+            .or_insert_with(|| {
+                #[cfg(test)]
+                loads.push(IconLoad::Frame(key.clone(), scheme, index));
+                icons::to_image(ctx, key, frame)
+            })
+            .clone();
+        Some((anim, image))
+    }
 }
 
 /// The `FontFamily::Name` the showcase registers the OS's semibold face under. Application

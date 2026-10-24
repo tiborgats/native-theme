@@ -310,6 +310,8 @@ pub(crate) struct App {
     pub(crate) theme_error: Option<String>,
     pub(crate) registry: demo::Registry,
     pub(crate) demo_state: pages::DemoState,
+    /// The icons the showcase loads itself, kept until the next install or icon choice.
+    pub(crate) icon_cache: demo::IconCache,
     pub(crate) side_panel_visible: bool,
     /// The command palette, while it is open.
     pub(crate) palette: Option<PaletteState>,
@@ -439,6 +441,7 @@ impl App {
             theme_error: None,
             registry: demo::Registry::default(),
             demo_state: pages::DemoState::default(),
+            icon_cache: demo::IconCache::default(),
             side_panel_visible: true,
             palette: None,
             preferences_open: false,
@@ -594,9 +597,10 @@ impl App {
     }
 
     /// The steps every install of an atlas takes, and nothing else: `atlas` installed into
-    /// `ctx` and held, the OS's semibold faces of its family registered, the JSON cache and the
-    /// scheme the icon choice was derived for forgotten, the shown Widget Info released, and the
-    /// theme error cleared, since a theme now loaded. `apply` runs it, so does the watcher's
+    /// `ctx` and held, the OS's semibold faces of its family registered, the JSON cache, the
+    /// icons the showcase keeps (the install forgets the connector's icon URIs they name) and
+    /// the scheme the icon choice was derived for forgotten, the shown Widget Info released, and
+    /// the theme error cleared, since a theme now loaded. `apply` runs it, so does the watcher's
     /// hand-off, which leaves the mode as it is, and so do the tests that install an atlas of
     /// their own; it sets no theme preference, so a test that holds a scheme keeps it.
     pub(crate) fn adopt(&mut self, ctx: &egui::Context, atlas: ThemeAtlas) {
@@ -604,6 +608,7 @@ impl App {
         self.semibold.register(ctx, &atlas);
         self.atlas = atlas;
         self.json = info::JsonCache::default();
+        self.icon_cache.clear();
         self.last_scheme = None;
         self.registry.screen_changed();
         self.theme_error = None;
@@ -670,6 +675,15 @@ impl App {
             icon.effective_icon_set(self.atlas.icon_set()),
             icon.freedesktop_theme().map(str::to_string),
         )
+    }
+
+    /// The icon choice was `before`: where it changed, the icons the showcase keeps are of a
+    /// set or icon theme no longer drawn, so they are forgotten; where it stayed, as at a
+    /// scheme switch under a chosen theme, they are kept, the other scheme's included.
+    pub(crate) fn icons_chosen(&mut self, before: &IconSetChoice) {
+        if self.settings.icon != *before {
+            self.icon_cache.clear();
+        }
     }
 
     #[cfg(feature = "watch")]
@@ -1024,7 +1038,9 @@ impl eframe::App for App {
         // `breeze` to `breeze-dark` on `kde-breeze`); a pass on the same scheme does nothing.
         let scheme = ctx.theme();
         if self.last_scheme != Some(scheme) {
+            let before = self.settings.icon.clone();
             self.settings.theme_installed(&self.atlas, scheme);
+            self.icons_chosen(&before);
             self.last_scheme = Some(scheme);
         }
         let now = ctx.input(|i| i.time);

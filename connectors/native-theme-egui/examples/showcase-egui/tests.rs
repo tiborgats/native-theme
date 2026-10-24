@@ -7604,9 +7604,11 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
     if native_theme_test_fixtures::in_child() {
         let ctx = egui::Context::default();
         let mut loaded = Vec::new();
+        let mut cache = crate::demo::IconCache::default();
         let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
             for theme in ["gtk-names", "breeze-names"] {
                 let image = crate::demo::named_image(
+                    &mut cache,
                     ui,
                     crate::demo::ChromeIcon::PanelLeft,
                     native_theme::theme::IconSet::Freedesktop,
@@ -7625,9 +7627,11 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
             std::env::var("XDG_CURRENT_DESKTOP")
         );
         // Its alt text names the icon, whichever name each theme holds it under.
+        let mut cache = crate::demo::IconCache::default();
         let harness = Harness::new_ui(|ui| {
             for theme in ["gtk-names", "breeze-names"] {
                 if let Some(image) = crate::demo::named_image(
+                    &mut cache,
                     ui,
                     crate::demo::ChromeIcon::PanelLeft,
                     native_theme::theme::IconSet::Freedesktop,
@@ -7661,4 +7665,167 @@ fn the_panel_icon_loads_from_a_theme_of_either_convention() -> std::io::Result<(
         })?;
     }
     Ok(())
+}
+
+/// The loads and frame builds of the showcase's icon cache from the `from`th on.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+fn icon_loads_since(harness: &Harness<'_, App>, from: usize) -> Vec<crate::demo::IconLoad> {
+    harness
+        .state()
+        .icon_cache
+        .loads
+        .get(from..)
+        .unwrap_or_default()
+        .to_vec()
+}
+
+/// How many times each load or build of `loads` was made.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+fn icon_load_counts(
+    loads: &[crate::demo::IconLoad],
+) -> std::collections::HashMap<crate::demo::IconLoad, usize> {
+    let mut counts = std::collections::HashMap::new();
+    for load in loads {
+        *counts.entry(load.clone()).or_insert(0) += 1;
+    }
+    counts
+}
+
+/// M9-104: the Icons page loads the chosen icon theme's loading indicator once, not in every
+/// pass, and builds each frame's image once per frame and scheme. Eight passes under a fixture
+/// freedesktop theme whose indicator is a three-frame sprite sheet load it once (before the
+/// cache, once a pass) and build no frame twice; an install loads it once more, since it forgets
+/// what the cache keeps; a mode switch loads no indicator and builds only the new scheme's
+/// frames. The theme is a fixture in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_icons_page_loads_its_indicator_once() -> std::io::Result<()> {
+    use crate::demo::IconLoad;
+    const NAME: &str = "tests::the_icons_page_loads_its_indicator_once";
+    if native_theme_test_fixtures::in_child() {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[
+                ("--theme", TEST_PRESET),
+                ("--variant", "light"),
+                ("--tab", "icons"),
+                ("--icon-set", "indicator"),
+            ]),
+        );
+        let ctx = harness.ctx.clone();
+        let mut from = 0;
+        for (phase, scheme) in [
+            ("the first eight passes", egui::Theme::Light),
+            ("an install", egui::Theme::Light),
+            ("a mode switch", egui::Theme::Dark),
+        ] {
+            match phase {
+                "an install" => harness.state_mut().install(&ctx),
+                "a mode switch" => harness.state_mut().set_mode(ModeChoice::Dark, &ctx),
+                _ => {}
+            }
+            harness.run_steps(8);
+            let loads = icon_loads_since(&harness, from);
+            from += loads.len();
+            let indicators = loads
+                .iter()
+                .filter(|load| matches!(load, IconLoad::Indicator(..)))
+                .collect::<Vec<_>>();
+            let expected = usize::from(phase != "a mode switch");
+            assert_eq!(indicators.len(), expected, "{phase}: {indicators:?}");
+            let frames = loads
+                .iter()
+                .filter(|load| matches!(load, IconLoad::Frame(..)))
+                .cloned()
+                .collect::<Vec<_>>();
+            assert!(!frames.is_empty(), "{phase}: no frame was built");
+            let counts = icon_load_counts(&frames);
+            assert!(counts.values().all(|n| *n == 1), "{phase}: {counts:?}");
+            assert!(
+                frames
+                    .iter()
+                    .all(|frame| matches!(frame, IconLoad::Frame(_, s, _) if *s == scheme)),
+                "{phase}: {frames:?}"
+            );
+        }
+        return Ok(());
+    }
+    // Three 16 × 16 frames, one above the other (native-theme `parse_sprite_sheet`).
+    const SHEET: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 48"><path fill="currentColor" d="M2 2h12v12H2zM2 18h12v12H2zM2 34h12v12H2z"/></svg>"#;
+    let child = native_theme_test_fixtures::Child {
+        desktop: "sway",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_indicator_theme(icons, "indicator", SHEET)
+    })
+}
+
+/// docs/todo.md's `named_image` item (M9c): the chrome's named freedesktop icons — the
+/// toolbar's Command Palette and Reload System Theme, the status bar's side-panel toggle — are
+/// read from the icon theme once per key, not in every pass. Eight passes load each key once
+/// (before the cache, once a pass); an install loads each once more, since it forgets what the
+/// cache keeps; a mode switch loads only the new text colour's keys, once each. The theme is a
+/// fixture in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_chromes_named_icons_load_once_per_key() -> std::io::Result<()> {
+    use crate::demo::IconLoad;
+    const NAME: &str = "tests::the_chromes_named_icons_load_once_per_key";
+    if native_theme_test_fixtures::in_child() {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[
+                ("--theme", TEST_PRESET),
+                ("--variant", "light"),
+                ("--icon-set", "named"),
+            ]),
+        );
+        let ctx = harness.ctx.clone();
+        let mut from = 0;
+        let mut first = Vec::new();
+        for phase in ["the first eight passes", "an install", "a mode switch"] {
+            match phase {
+                "an install" => harness.state_mut().install(&ctx),
+                "a mode switch" => harness.state_mut().set_mode(ModeChoice::Dark, &ctx),
+                _ => {}
+            }
+            harness.run_steps(8);
+            let loads = icon_loads_since(&harness, from);
+            from += loads.len();
+            let named = loads
+                .iter()
+                .filter(|load| matches!(load, IconLoad::Named(..)))
+                .cloned()
+                .collect::<Vec<_>>();
+            let counts = icon_load_counts(&named);
+            assert_eq!(counts.len(), 3, "{phase}: {counts:?}");
+            assert!(counts.values().all(|n| *n == 1), "{phase}: {counts:?}");
+            match phase {
+                "the first eight passes" => first = named,
+                "an install" => assert_eq!(icon_load_counts(&first), counts, "{phase}"),
+                _ => assert!(
+                    named.iter().all(|load| !first.contains(load)),
+                    "{phase}: {named:?} against {first:?}"
+                ),
+            }
+        }
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    let child = native_theme_test_fixtures::Child {
+        desktop: "sway",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_scalable_theme(
+            icons,
+            "named",
+            &[
+                ("utilities-terminal", SVG),
+                ("object-rotate-right", SVG),
+                ("sidebar-show", SVG),
+            ],
+        )
+    })
 }

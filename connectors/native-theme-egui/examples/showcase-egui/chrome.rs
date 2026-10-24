@@ -474,6 +474,7 @@ enum ChromeButtonIcon {
 
 /// A chrome button's icon of the chosen set and theme at `size`, or `None` where they lack it.
 fn chrome_button_image(
+    cache: &mut demo::IconCache,
     ui: &egui::Ui,
     icon: ChromeButtonIcon,
     (set, icon_theme): &(IconSet, Option<String>),
@@ -481,7 +482,7 @@ fn chrome_button_image(
 ) -> Option<egui::Image<'static>> {
     match icon {
         ChromeButtonIcon::Named(icon) => {
-            demo::named_image(ui, icon, *set, icon_theme.as_deref(), size)
+            demo::named_image(cache, ui, icon, *set, icon_theme.as_deref(), size)
         }
         ChromeButtonIcon::Role(role) => {
             demo::role_image(ui, role, *set, icon_theme.as_deref(), size)
@@ -544,6 +545,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
         registry,
         atlas,
         pending,
+        icon_cache,
         ..
     } = app;
     let t = atlas.resolved_for(theme);
@@ -578,7 +580,7 @@ fn toolbar(app: &mut App, ui: &mut egui::Ui, shrink: f32) {
                     "chrome.toolbar.preferences",
                 ),
             ] {
-                let image = chrome_button_image(ui, icon, &chosen, icon_size);
+                let image = chrome_button_image(icon_cache, ui, icon, &chosen, icon_size);
                 let drawn = image.is_some();
                 let kind = ghost_kind(drawn, false);
                 let response = ui
@@ -739,11 +741,13 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 let App {
                     registry,
                     side_panel_visible,
+                    icon_cache,
                     ..
                 } = app;
                 let label = "Toggle Side Panel";
                 let open = *side_panel_visible;
                 let image = chrome_button_image(
+                    icon_cache,
                     ui,
                     ChromeButtonIcon::Named(demo::ChromeIcon::PanelLeft),
                     &chosen,
@@ -1167,8 +1171,10 @@ fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
         app.set_mode(mode, &ctx);
     }
     if let Some(choice) = picked_icon {
+        let before = app.settings.icon.clone();
         app.settings.pick_icon(Some(choice));
         app.settings.theme_installed(&app.atlas, theme);
+        app.icons_chosen(&before);
     }
 }
 

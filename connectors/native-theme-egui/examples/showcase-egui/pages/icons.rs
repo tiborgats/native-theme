@@ -4,13 +4,13 @@
 //! ships, every icon of the theme above its role's name, and `ui.image` — an image carries no
 //! theme, so every item is in the base style.
 
-use native_theme::icons::{FreedesktopLoader, IconRole, TransformAnimation};
+use native_theme::icons::{IconRole, TransformAnimation};
 use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
 use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
 
 use super::{DemoState, caption};
-use crate::demo::{self, Registry};
+use crate::demo::{self, IconCache, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
 /// (`showcase-gpui/demo.rs:8096-8158`).
@@ -25,6 +25,7 @@ const CONTEXTS: [(IconContext, &str); 5] = [
 pub(crate) fn show(
     reg: &mut Registry,
     _state: &mut DemoState,
+    cache: &mut IconCache,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
@@ -68,7 +69,7 @@ pub(crate) fn show(
     });
 
     caption(reg, ui, "Animated Icons");
-    icons_indicator(reg, atlas, ui, chosen, &set_label);
+    icons_indicator(reg, cache, atlas, ui, chosen, &set_label);
 
     // Every role's icon at `defaults.icon_sizes.small` above the role's name
     // (`showcase-gpui/pages/icons.rs:138-210`); where the set has none, gpui's placeholder: a
@@ -224,6 +225,7 @@ fn native_here(set: IconSet) -> bool {
 /// none, gpui's caption.
 fn icons_indicator(
     reg: &mut Registry,
+    cache: &mut IconCache,
     atlas: &ThemeAtlas,
     ui: &mut egui::Ui,
     chosen: &(IconSet, Option<String>),
@@ -231,12 +233,18 @@ fn icons_indicator(
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
     let (set, icon_theme) = chosen;
-    let indicator = match set {
-        IconSet::Freedesktop => FreedesktopLoader::load_indicator(icon_theme.as_deref()),
-        set => native_theme::icons::load_icon_indicator(*set, None),
-    };
     let reduce_motion = atlas.accessibility().reduce_motion;
-    let Some(anim) = indicator else {
+    // The icon theme is in the key for the cache alone: `icons::to_image` colours by the set
+    // and the tint.
+    let mut key = icons::IconKey::name("indicator", *set);
+    if let Some(theme) = icon_theme {
+        key = key.icon_theme(theme);
+    }
+    if *set != IconSet::Freedesktop {
+        key = key.tint(ui.visuals().text_color());
+    }
+    let indicator = cache.indicator(ui.ctx(), &key, (*set, icon_theme.as_deref()), reduce_motion);
+    let Some((anim, image)) = indicator else {
         demo::base(reg, ui, "loading indicator (absent)", |ui| {
             ui.label(
                 egui::RichText::new("No animated icons available for the current icon theme")
@@ -271,16 +279,9 @@ fn icons_indicator(
     } else {
         format!("{set_label} - {what}")
     };
-    let mut key = icons::IconKey::name("indicator", *set);
-    if *set != IconSet::Freedesktop {
-        key = key.tint(ui.visuals().text_color());
-    }
     let size = icons::icon_size(t, IconContext::Dialog);
-    let frame = icons::animated_frame_index(ui.ctx(), &anim, reduce_motion)
-        .and_then(|i| anim.frame_list()?.get(i))
-        .unwrap_or_else(|| anim.first_frame());
     // `spin_angle` is `None` for a frame animation and under reduced motion: no rotation.
-    let angle = icons::spin_angle(ui.ctx(), &anim, reduce_motion).unwrap_or_default();
+    let angle = icons::spin_angle(ui.ctx(), anim, reduce_motion).unwrap_or_default();
     let margin = atlas.layout().container_margin.unwrap_or_default();
     let card = egui::Frame::NONE
         .stroke(egui::Stroke::new(
@@ -294,7 +295,7 @@ fn icons_indicator(
             let width = size.max(small_width(ui, &label));
             let layout = egui::Layout::top_down(egui::Align::Center);
             cell(ui, (width, size), layout, None, |ui| {
-                if let Some(image) = icons::to_image(ui.ctx(), &key, frame) {
+                if let Some(image) = image {
                     let image = image
                         .fit_to_exact_size(egui::Vec2::splat(size))
                         .rotate(angle, egui::Vec2::splat(0.5));
