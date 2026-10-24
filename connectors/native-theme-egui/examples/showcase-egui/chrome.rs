@@ -146,11 +146,19 @@ pub(crate) struct PaletteState {
     pub selected: usize,
 }
 
-/// The highlighted row after `down` presses of Down and `up` of Up from `selected`, among `len`
-/// rows, wrapping at either end as gpui-component's `Command` does (`select_by`,
-/// `command/state.rs:553-577`); `None` where there are no rows.
-fn palette_highlight(selected: usize, down: usize, up: usize, len: usize) -> Option<usize> {
-    let forward = selected
+/// The highlighted row after `down` presses of Down and `up` of Up, among `len` rows, from
+/// `selected`, or from the first row where the query has changed (`reset_selection`,
+/// `command/state.rs:440-450`), wrapping at either end as gpui-component's `Command` does
+/// (`select_by`, `:553-577`); `None` where there are no rows.
+pub(crate) fn palette_highlight(
+    selected: usize,
+    query_changed: bool,
+    down: usize,
+    up: usize,
+    len: usize,
+) -> Option<usize> {
+    let from = if query_changed { 0 } else { selected };
+    let forward = from
         .checked_rem(len)?
         .saturating_add(down.checked_rem(len)?);
     forward
@@ -1620,7 +1628,10 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
 /// Its keys are gpui-component's `Command`'s (`command/state.rs:65-68`): Up and Down move the
 /// highlighted row, Enter runs it, and Escape clears, then closes. They are the palette's while
 /// its field has the focus or nothing has; a row or the close button that has it keeps egui's
-/// own keys.
+/// own keys. They are matched as egui matches `Modifiers::NONE`, logically, extra Shift and Alt
+/// ignored (`egui/src/input_state/mod.rs:682-691`), so Shift+Up and Shift+Down move the highlight
+/// too, and select no text in the field, and Shift+Enter runs the highlighted row, where
+/// gpui-component binds the bare keys.
 pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
     let Some(palette) = app.palette.clone() else {
         return;
@@ -1686,6 +1697,16 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                     }
                     close_clicked =
                         dialog_title(registry, ui, dialog, t, &chosen_icons, "Command Palette");
+                    // Escape: clear the query first; only an empty query lets it close the modal
+                    // (§10.4). It is consumed before the field, so the cleared query is a changed
+                    // one below, and `should_close` sees it only when the query was already
+                    // empty, and still answers a click on the backdrop, which closes whatever the
+                    // query holds.
+                    if !query.is_empty()
+                        && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Escape))
+                    {
+                        query.clear();
+                    }
                     // Up, Down and Enter, consumed before the field reads them: a single-line
                     // `TextEdit` moves its cursor on Up and Down and gives up the focus on Enter.
                     let palette_keys = ui.memory(|m| m.focused().is_none_or(|id| id == query_id));
@@ -1726,14 +1747,18 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                         })
                         .filter(|(_, rows)| !rows.is_empty())
                         .collect();
-                    if query != palette.query {
+                    let query_changed = query != palette.query;
+                    let count = groups.iter().map(|(_, rows)| rows.len()).sum();
+                    if let Some(highlight) =
+                        palette_highlight(selected, query_changed, down, up, count)
+                    {
+                        selected = highlight;
+                    } else if query_changed {
                         selected = 0;
                     }
-                    let count = groups.iter().map(|(_, rows)| rows.len()).sum();
-                    if let Some(highlight) = palette_highlight(selected, down, up, count) {
-                        selected = highlight;
-                    }
-                    let moved = down > 0 || up > 0;
+                    // The highlighted row is scrolled into view wherever it moved, as gpui's
+                    // `pending_scroll` is set by `select_by` and `reset_selection`.
+                    let reveal = query_changed || down > 0 || up > 0;
                     let mut index = 0usize;
                     demo::scoped_container(
                         registry,
@@ -1768,7 +1793,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                                                             ui.selectable_label(highlighted, &label)
                                                         },
                                                     );
-                                                    if highlighted && moved {
+                                                    if highlighted && reveal {
                                                         r.scroll_to_me(None);
                                                     }
                                                     if r.clicked() || (highlighted && enter) {
@@ -1791,17 +1816,6 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
                         },
                     );
                 });
-            // Escape: clear the query first; only an empty query lets it close the modal
-            // (§10.4). It is consumed here, so `should_close` below sees it only when the query
-            // was already empty, and still answers a click on the backdrop, which closes
-            // whatever the query holds.
-            let escape = ui.ctx().input_mut(|i| {
-                !query.is_empty() && i.consume_key(egui::Modifiers::NONE, egui::Key::Escape)
-            });
-            if escape {
-                query.clear();
-                selected = 0;
-            }
             should_close = out.should_close();
             Some(out.backdrop_response)
         },
