@@ -869,7 +869,8 @@ impl Showcase {
     /// The icon theme as the Icons page names it: a freedesktop set with the
     /// theme its icons load from -- where that is the system's and it cannot
     /// be detected, `unavailable`, as no theme's icons load then. A label is
-    /// short: the reason is the icon-theme Select's hover text
+    /// short: the reason is the icon-theme Select's hover text and the
+    /// page's line under its Native Theme Icons heading
     /// ([`Self::icon_theme_unavailable`]).
     pub(crate) fn icon_set_label(&self) -> String {
         match self.icon_set_enum {
@@ -886,7 +887,8 @@ impl Showcase {
 
     /// Why the system icon theme is unavailable
     /// (`rows::icon_theme_unavailable`), where its detection failed: the
-    /// icon-theme Select's hover text and its info's `system` line, as the
+    /// icon-theme Select's hover text, its info's `system` line and the
+    /// Icons page's line under its Native Theme Icons heading, as the
     /// Select's `system` row and the Icons page's label leave the reason
     /// out. `None` where it is detected.
     pub(crate) fn icon_theme_unavailable(&self) -> Option<String> {

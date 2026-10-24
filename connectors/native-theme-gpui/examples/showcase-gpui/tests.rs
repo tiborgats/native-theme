@@ -11051,6 +11051,56 @@ fn a_failed_icon_theme_detection_is_shown_as_a_failure(cx: &mut TestAppContext) 
     );
 }
 
+/// The Icons page's line on why the system icon theme is unavailable.
+const ICONS_THEME_UNAVAILABLE: &str = "icons-theme-unavailable";
+
+/// Where the system icon theme cannot be detected, the Icons page says why
+/// under its Native Theme Icons heading, in the shared crate's text
+/// (`rows::icon_theme_unavailable`, read through
+/// `Showcase::icon_theme_unavailable`), as the iced and egui showcases'
+/// Icons pages do; where it is detected, the line is not laid out. The first
+/// arm takes the test's failing detection, so it runs on every host; the
+/// second the system's own, which fails in the runner environment
+/// (`scripts/run_in_runner_env.sh`) and on a desktop the detection does not
+/// know.
+#[gpui::test]
+fn the_icons_page_says_why_the_system_icon_theme_is_unavailable(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let failing: fn() -> native_theme::Result<String> = || {
+        Err(native_theme::error::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        })
+    };
+    for detect in [Some(failing), None] {
+        cx.update(|_window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.icon_theme_detection_for_test = detect;
+                cx.notify();
+            })
+        });
+        show(&mut cx, &showcase, Page::Icons);
+        let failed = detect
+            .map_or_else(native_theme::detect::system_icon_theme, |detect| detect())
+            .is_err();
+        assert_eq!(
+            cx.debug_bounds(ICONS_THEME_UNAVAILABLE).is_some(),
+            failed,
+            "the Icons page's line on the unavailable system icon theme (detection failed: \
+             {failed})"
+        );
+        if detect.is_some() {
+            assert_eq!(
+                read(&mut cx, &showcase, |this, _| this.icon_theme_unavailable()).as_deref(),
+                Some(
+                    "System icon theme: unavailable (platform not supported: the test's \
+                     failing detection)"
+                ),
+                "the Icons page's line does not give the reason"
+            );
+        }
+    }
+}
+
 /// Where the system icon theme cannot be detected, the icon-theme Select
 /// shows a tooltip on hover, the reason its `system` row's short label
 /// leaves out; where it is detected, none. The tooltip's text is not

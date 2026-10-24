@@ -8,6 +8,7 @@ use native_theme::icons::{IconRole, TransformAnimation};
 use native_theme::theme::IconSet;
 use native_theme_egui::icons::{self, IconContext};
 use native_theme_egui::{ThemeAtlas, border_color, border_corner_radius};
+use native_theme_showcase_support::rows;
 
 use super::{DemoState, caption};
 use crate::demo::{self, IconCache, Registry};
@@ -97,6 +98,14 @@ pub(crate) fn show(
             images.len()
         ),
     );
+    // Why the system icon theme is unavailable, where its detection failed: the set's label
+    // leaves the reason out, as a label is short; the iced and gpui Icons pages give it too.
+    if let Err(error) = detect_icon_theme() {
+        let reason = rows::icon_theme_unavailable(&error);
+        demo::base(reg, ui, "Label · icon theme unavailable", |ui| {
+            ui.label(egui::RichText::new(reason).small().weak())
+        });
+    }
     let skeleton = native_theme_egui::convert::to_color32(t.button.background_color);
     let radius = border_corner_radius(t);
     ui.horizontal_wrapped(|ui| {
@@ -189,7 +198,8 @@ fn cell(
 /// The icon theme as the gpui showcase's Icons page names it (`showcase-gpui/app.rs`,
 /// `icon_set_label`): a freedesktop set with the theme its icons load from — where that is the
 /// system's and it cannot be detected, `unavailable`, the reason being the Icon theme
-/// drop-down's hover text, as a label is short — else the set's name. `detect_icon_theme` is
+/// drop-down's hover text and the page's line under its Native Theme Icons heading, as a label
+/// is short — else the set's name. `detect_icon_theme` is
 /// the system icon theme's detection (`App::detect_icon_theme`).
 pub(crate) fn set_label(
     set: IconSet,

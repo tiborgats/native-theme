@@ -80,8 +80,8 @@ pub fn icon_rows(
 /// `system` row then reads `system (unavailable)` (`IconSetChoice`'s
 /// `Display`): a control's label is short, and the reason, which can run to
 /// a reader's whole error, is shown where there is room for it: the
-/// picker's hover text in each showcase, and the iced showcase's Icons page
-/// note and the gpui showcase's Widget Info for the picker.
+/// picker's hover text and a line on the Icons page in each showcase, and
+/// the gpui showcase's Widget Info for the picker.
 #[must_use]
 pub fn icon_theme_unavailable(error: &native_theme::Error) -> String {
     format!("System icon theme: unavailable ({error})")

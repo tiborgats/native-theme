@@ -4693,6 +4693,47 @@ fn the_icon_theme_drop_down_says_on_hover_why_the_system_theme_is_unavailable() 
     }
 }
 
+/// Where the system icon theme cannot be detected, the Icons page says why, in the shared crate's
+/// text (`rows::icon_theme_unavailable`), as the iced and gpui showcases' Icons pages do; where it
+/// is detected, it says nothing of the kind. The first arm takes the test's failing detection,
+/// so it runs on every host; the second the system's own, which fails in the runner
+/// environment (`scripts/run_in_runner_env.sh`) and on a desktop the detection does not know.
+#[test]
+fn the_icons_page_says_why_the_system_icon_theme_is_unavailable() {
+    fn failing() -> native_theme::Result<String> {
+        Err(native_theme::error::Error::PlatformUnsupported {
+            platform: "the test's failing detection",
+        })
+    }
+    for detect in [
+        failing as fn() -> native_theme::Result<String>,
+        native_theme::detect::system_icon_theme,
+    ] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", TEST_PRESET), ("--tab", "icons")]),
+        );
+        harness.state_mut().detect_icon_theme = detect;
+        harness.run_steps(4);
+        match detect() {
+            Err(error) => {
+                let reason = native_theme_showcase_support::rows::icon_theme_unavailable(&error);
+                assert!(
+                    harness.query_by_label(&reason).is_some(),
+                    "the Icons page does not read {reason:?}"
+                );
+            }
+            Ok(theme) => assert!(
+                harness
+                    .query_by_label_contains("System icon theme: unavailable")
+                    .is_none(),
+                "the system icon theme {theme:?} is detected, yet the Icons page says it is \
+                 unavailable"
+            ),
+        }
+    }
+}
+
 /// On the Basic page, `layout.section_gap` is the whole distance between two groups of a column
 /// and between two columns, as on the iced and gpui Basic pages: the page lays five columns of
 /// one width out that far apart, and in a column the space the page adds makes up the gap with

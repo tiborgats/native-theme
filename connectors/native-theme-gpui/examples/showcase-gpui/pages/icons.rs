@@ -204,8 +204,15 @@ impl Showcase {
             })
             .collect();
 
+        // Why the system icon theme is unavailable, where its detection
+        // failed: the set's label leaves the reason out, as a label is short;
+        // the iced and egui Icons pages give it too.
+        let unavailable = self.icon_theme_unavailable();
         with_gap(v_flex(), geometry::widget_gap(&self.layout))
             .child(demo::heading(ui, cx, "icons-heading-native", title))
+            .when_some(unavailable, |this, reason| {
+                this.child(demo::caption(ui, cx, "icons-theme-unavailable", reason))
+            })
             .child(div().flex().flex_wrap().gap(ICON_GRID_GAP).children(icons))
     }
 
