@@ -985,9 +985,11 @@ pub(crate) fn theme_tab(
     manifest: &Result<Manifest, String>,
 ) {
     let t = atlas.resolved_for(ui.ctx().theme());
+    // The section names as the Widget tab draws its own (`widget_tab`): one heading style in
+    // the panel, whichever tab is shown.
+    let text = InfoText::of(ui, t);
     let section = |ui: &mut egui::Ui, title: &str| {
-        let heading = crate::demo::heading_text(ui, title);
-        ui.label(heading);
+        text.line(ui, title, &text.semibold, text.colour);
     };
     let row = |ui: &mut egui::Ui, key: &str, value: String| {
         key_value(ui, key, &[value]);

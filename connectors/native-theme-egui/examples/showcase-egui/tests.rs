@@ -7340,6 +7340,85 @@ fn a_face_skipped_under_two_families_is_noted_once() {
     );
 }
 
+/// The fonts of the galleys of `text` painted in the inspector: across the side panel's width and
+/// below its Widget and Theme tabs, so a tab's own label and the theme settings' are not among
+/// them, and a line the inspector's scroll area holds below the window is.
+fn inspector_fonts(harness: &Harness<'_, App>, text: &str) -> Vec<egui::FontId> {
+    let records = harness.state().registry.records();
+    let panel = records
+        .iter()
+        .find(|r| r.info.kind == "Side panel")
+        .map(|r| r.rect)
+        .expect("the side panel records itself");
+    let below = records
+        .iter()
+        .filter(|r| r.info.kind == "Tab · Inspector")
+        .map(|r| r.rect.bottom())
+        .fold(f32::NEG_INFINITY, f32::max);
+    assert!(below.is_finite(), "the inspector records its tabs");
+    harness
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(shape)
+                if shape.galley.job.text == text
+                    && panel.x_range().contains(shape.pos.x)
+                    && shape.pos.y >= below =>
+            {
+                shape
+                    .galley
+                    .job
+                    .sections
+                    .first()
+                    .map(|s| s.format.font_id.clone())
+            }
+            _ => None,
+        })
+        .collect()
+}
+
+/// M9-122: the Theme tab draws its section names as the Widget tab draws its own, in
+/// `InfoText`'s semibold at the side panel's text size, so switching tabs keeps one heading
+/// style; the font is read from the Widget tab's painted "Theme" section name, and the
+/// section-heading role the names were drawn in is a size apart under the preset.
+#[test]
+fn the_theme_tabs_section_names_are_the_widget_tabs_semibold() {
+    let mut harness = open_page(Page::Basic, egui::Theme::Light);
+    let pos = centre_of(&harness, "toggle button (on)");
+    hover_and_settle(&mut harness, pos);
+    let shown = inspector_fonts(&harness, "Theme");
+    let [want] = shown.as_slice() else {
+        panic!("the Widget tab paints one \"Theme\" section name: {shown:?}");
+    };
+    let atlas = &harness.state().atlas;
+    let t = atlas.resolved_for(egui::Theme::Light);
+    let heading = native_theme_egui::text_role_font(
+        t,
+        native_theme_egui::TextRole::SectionHeading,
+        atlas.accessibility(),
+    );
+    assert_ne!(
+        heading.size, want.size,
+        "{TEST_PRESET}: the section-heading role is the panel's size, so the test shows nothing"
+    );
+    harness.state_mut().inspector_tab = crate::chrome::InspectorTab::Theme;
+    harness.run_steps(2);
+    for name in [
+        "Theme",
+        "Notes",
+        "Fonts",
+        "Window",
+        "Fields left at egui's own value",
+    ] {
+        assert_eq!(
+            inspector_fonts(&harness, name),
+            [want.clone()],
+            "the Theme tab's {name:?} section name"
+        );
+    }
+}
+
 /// The label of the theme's `stated` family the showcase must show, read from what the
 /// harness has installed: the stated name alone where the atlas holds no
 /// `Note::FontFamilyUnavailable` or `Note::FontDataInvalid` for it; the platform's substitute
