@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Runs `cargo <args>` with each test binary in the environment of CI's Linux
-# runner, so that a test which assumes this host's desktop or fonts fails here
-# before it fails on CI.
+# runner, so that a test which assumes this host's desktop, icon themes or fonts
+# fails here before it fails on CI.
 #
 #   scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
 #
-# Cargo builds as usual; its target runner (`--config target.'cfg(all())'.runner`)
+# Cargo builds as usual; its target runner for the host's target
+# (`--config target.<host>.runner`, which no configuration file overrides)
 # starts each test binary through this script's `--runner` mode, which clears
 # the environment and gives the binary what an ubuntu-latest job has:
 #
@@ -24,6 +25,21 @@
 #   (fontconfig; the run's substitutes were fc-match's, DejaVu Sans), sh, sleep,
 #   true, and the toolchain's cargo and rustc. Not gsettings, xrdb, xrandr or
 #   xfconf-query, the desktop readers native_theme::detect asks.
+# - The runner's icon themes: Adwaita, hicolor, Humanity and ubuntu-mono,
+#   none other (no breeze). The image installs firefox from the mozillateam
+#   PPA (install-firefox.sh), which Depends on libgtk-3-0t64; it Depends on
+#   adwaita-icon-theme and hicolor-icon-theme, adwaita-icon-theme on
+#   ubuntu-mono, and ubuntu-mono on humanity-icon-theme (the PPA's and Ubuntu
+#   noble's Packages indexes). Run 40041829633 fits it: its expander test
+#   failed for kde-breeze at 1.5 and not for adwaita, which fails too where no
+#   icon theme is installed at all.
+#   They are pinned below with the fonts and extracted into
+#   target/runner-env/root/usr/share, the one entry of XDG_DATA_DIRS: the icon
+#   lookup and the installed-theme list read their directories from it, the
+#   empty home's ~/.icons and ~/.local/share (native-theme/src/icons.rs:1111-
+#   1150; freedesktop-icons 0.4.0 src/theme/paths.rs:12-34 through xdg 2.5.2,
+#   which takes /usr/local/share:/usr/share where it is unset,
+#   src/base_directories.rs:306-309).
 # - The runner's fonts. The job ran on the ubuntu-24.04 image 20261012.334
 #   (the run's "Set up job" log), whose fonts are the Ubuntu 24.04 packages
 #   pinned below, each with the SHA-256 the Ubuntu archive's Packages index
@@ -38,18 +54,20 @@
 #   with fontconfig-config's configuration (fontconfig 2.15.0): the files its
 #   /etc/fonts/conf.d links name and the DejaVu packages' own, less
 #   50-user.conf and 51-local.conf, which would read this host's. They come
-#   from snapshot.ubuntu.com at the image's date, so the URLs stay valid, into
-#   target/runner-env/ once; a later run reuses them. FONTCONFIG_FILE names a
+#   from snapshot.ubuntu.com at the image's date, so the URLs stay valid (else
+#   from archive.ubuntu.com's pool; the SHA-256 is checked either way), into
+#   target/runner-env/debs once, with the icon themes; a later run reuses
+#   them. FONTCONFIG_FILE names a
 #   configuration whose one font directory is theirs: fontdb, which
 #   native-theme's `system-fonts` loads, reads it (fontdb 0.23.0
 #   src/lib.rs:509-510, its <dir> entries at :560-570), and so does fc-match,
 #   which native_theme::fonts::substitute_family runs
 #   (native-theme/src/fonts.rs:357-360).
 #
-# Requires curl, sha256sum and bsdtar (libarchive).
+# Requires curl, sha256sum, bsdtar (libarchive) and fontconfig's fc-match.
 set -euo pipefail
 
-ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 ENV_DIR="$ROOT/target/runner-env"
 
 if [ "${1:-}" = "--runner" ]; then
@@ -70,6 +88,7 @@ if [ "${1:-}" = "--runner" ]; then
         HOME="$ENV_DIR/home" \
         PATH="$ENV_DIR/bin" \
         XDG_RUNTIME_DIR="$ENV_DIR/runtime" \
+        XDG_DATA_DIRS="$ENV_DIR/root/usr/share" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=$ENV_DIR/runtime/no-bus" \
         FONTCONFIG_FILE="$ENV_DIR/fonts.conf" \
         "$@"
@@ -90,6 +109,7 @@ for tool in curl sha256sum bsdtar fc-match sh sleep true; do
 done
 
 SNAPSHOT="https://snapshot.ubuntu.com/ubuntu/20261012T000000Z"
+ARCHIVE="http://archive.ubuntu.com/ubuntu"
 PACKAGES=(
     "9df0579cd298a1f2b7a40efd519c849745aecd193a09733cf4d1032284a62bbf pool/main/f/fontconfig/fontconfig-config_2.15.0-1.1ubuntu2_amd64.deb"
     "40049660c194f3b8a2541fc7369efebb10e9f94bdac836a2f38fafedd10fa73a pool/main/f/fonts-dejavu/fonts-dejavu-core_2.37-8_all.deb"
@@ -98,18 +118,31 @@ PACKAGES=(
     "065c2ab1abc9108b17d401016dc594b79750904390f095845c93bb06e1153acc pool/main/f/fonts-liberation/fonts-liberation_2.1.5-3_all.deb"
     "9c64f03daaa4b0eee8b36ba53e4ce8ac22ec12437951c699197344989c7dc2dc pool/main/f/fonts-liberation-sans-narrow/fonts-liberation-sans-narrow_1.07.6-4_all.deb"
     "b102b62ce6a7313315223cff5e052bdf8fc0ad162c9e961ce0dc2202bc139ce2 pool/main/f/fonts-noto-color-emoji/fonts-noto-color-emoji_2.047-0ubuntu0.24.04.1_all.deb"
+    "530d1991a87ffda50f35f9a6d23712ed04c10b742c3e434097840fed50b1eb4e pool/main/a/adwaita-icon-theme/adwaita-icon-theme_46.0-1_all.deb"
+    "9000eb98868252261978ff49501c0ace3124cb369c395e9f5015ddc556fe2ba6 pool/main/h/hicolor-icon-theme/hicolor-icon-theme_0.17-2_all.deb"
+    "a9bb76c7eb926bd97e50455a79f266de826a246b2250e1ac4aebcda013dd51c7 pool/main/h/humanity-icon-theme/humanity-icon-theme_0.6.16_all.deb"
+    "3a58114f10170b253d2a574db854fa1c4399565888c78f28bbe53ce889894cdb pool/main/u/ubuntu-themes/ubuntu-mono_24.04-0ubuntu1_all.deb"
 )
+# The environment is built again whenever this list changes.
+STAMP=$(printf '%s\n' "${PACKAGES[@]}")
 
-if [ ! -f "$ENV_DIR/.complete" ]; then
-    rm -rf "$ENV_DIR"
+if [ "$(cat "$ENV_DIR/.complete" 2>/dev/null)" != "$STAMP" ]; then
+    # Everything but the downloaded packages is built again; a package whose
+    # file is already there with its SHA-256 is not downloaded again.
+    find "$ENV_DIR" -mindepth 1 -maxdepth 1 ! -name debs -exec rm -rf {} +
     mkdir -p "$ENV_DIR/debs" "$ENV_DIR/root" "$ENV_DIR/fonts" "$ENV_DIR/conf.d" \
         "$ENV_DIR/cache" "$ENV_DIR/bin" "$ENV_DIR/runtime"
     for entry in "${PACKAGES[@]}"; do
         sha=${entry%% *}
         path=${entry#* }
         deb="$ENV_DIR/debs/${path##*/}"
-        curl -fsSL --retry 3 -o "$deb" "$SNAPSHOT/$path"
-        printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet
+        if ! printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet --status 2>/dev/null; then
+            # The snapshot first, then the archive's own pool, which holds the
+            # same file while the version is current: the SHA-256 decides.
+            curl -fsSL --retry 3 -o "$deb" "$SNAPSHOT/$path" \
+                || curl -fsSL --retry 3 -o "$deb" "$ARCHIVE/$path"
+            printf '%s  %s\n' "$sha" "$deb" | sha256sum --check --quiet
+        fi
         bsdtar -xOf "$deb" 'data.tar.*' | bsdtar -xf - -C "$ENV_DIR/root"
     done
     find "$ENV_DIR/root/usr/share/fonts" -type f -name '*.ttf' -exec cp {} "$ENV_DIR/fonts/" \;
@@ -137,7 +170,7 @@ if [ ! -f "$ENV_DIR/.complete" ]; then
 	<include ignore_missing="no">$ENV_DIR/conf.d</include>
 </fontconfig>
 EOF
-    touch "$ENV_DIR/.complete"
+    printf '%s\n' "$STAMP" >"$ENV_DIR/.complete"
 fi
 
 # The home is emptied each run, so nothing a test wrote there is read back.
@@ -155,5 +188,6 @@ for tool in cargo rustc; do
 done
 
 RUNNER="$ROOT/scripts/run_in_runner_env.sh"
+HOST=$(rustc -vV | sed -n 's/^host: //p')
 export CARGO_HOME="${CARGO_HOME:-$HOME/.cargo}"
-exec cargo --config "target.'cfg(all())'.runner = ['$RUNNER', '--runner']" "$@"
+exec cargo --config "target.$HOST.runner = ['$RUNNER', '--runner']" "$@"

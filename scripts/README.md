@@ -657,20 +657,30 @@ directories (`native-theme/build.rs`).
 ## run_in_runner_env.sh
 
 Runs `cargo <arguments>` with each test binary in the environment of CI's
-Linux runner, so a test that holds only on this host's desktop or fonts fails
-here before it fails on CI. Cargo builds as usual; its target runner starts
-each test binary through the script, which clears the environment and gives
-the binary what an `ubuntu-latest` job has: no desktop (no
-`XDG_CURRENT_DESKTOP`, display or session bus), an empty home under
-`target/runner-env/home`, a `PATH` of `fc-match`, `sh`, `sleep`, `true` and the
-toolchain's `cargo` and `rustc` only (none of the desktop readers `gsettings`,
-`xrdb`, `xrandr` or `xfconf-query`), and the runner image's
-fonts: the Ubuntu 24.04 font packages and fontconfig configuration of image
-20261012.334, pinned by SHA-256 and downloaded from `snapshot.ubuntu.com` into
-`target/runner-env/` on the first run, named by `FONTCONFIG_FILE`, which both
-fontdb and `fc-match` read. The script's header gives the evidence for each
-part. `scripts/check_release.sh` runs the three showcases' tests through it in
-both modes (Linux only), each in the feature set its test leg already builds.
+Linux runner, so a test that holds only on this host's desktop, icon themes or
+fonts fails here before it fails on CI. Cargo builds as usual; its target
+runner for the host's target starts each test binary through the script,
+which clears the environment and gives the binary what an `ubuntu-latest` job
+has:
+
+- no desktop: no `XDG_CURRENT_DESKTOP`, display or session bus;
+- an empty home under `target/runner-env/home`;
+- a `PATH` of `fc-match`, `sh`, `sleep`, `true` and the toolchain's `cargo`
+  and `rustc` only, none of the desktop readers `gsettings`, `xrdb`, `xrandr`
+  or `xfconf-query`;
+- the runner's icon themes alone, Adwaita, hicolor, Humanity and ubuntu-mono
+  (the packages firefox's GTK 3 pulls in; no breeze), as the one
+  `XDG_DATA_DIRS` entry;
+- the runner image's fonts, the Ubuntu 24.04 font packages and fontconfig
+  configuration of image 20261012.334, named by `FONTCONFIG_FILE`, which both
+  fontdb and `fc-match` read.
+
+The packages are pinned by SHA-256 and downloaded from `snapshot.ubuntu.com`
+(else the archive's pool) into `target/runner-env/debs` once; the environment
+is built from them again when the list changes. The script's header gives the
+evidence for each part. `scripts/check_release.sh` runs the three showcases'
+tests through it in both modes (Linux only), each in the feature set its test
+leg already builds.
 
 Requires curl, sha256sum, bsdtar (libarchive) and fontconfig's `fc-match`;
 network access on the first run.
