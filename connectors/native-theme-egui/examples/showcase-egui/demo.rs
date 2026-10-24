@@ -687,6 +687,30 @@ pub(crate) fn surfaced(
     Some(response)
 }
 
+/// The context menu `target` opens on a secondary click, `Popup::context_menu`, whose style
+/// arrives as a `StyleModifier` alone (§4.2): given `menu`'s modifier, its open `Ui` styled and
+/// recorded with `menu` as `kind` ([`styled`]); `add` fills it, adding its items through the
+/// registry it gets (a disabled item through `scoped` in `RoleVariant::Disabled`). The target is
+/// the caller's, drawn and recorded in the style it is drawn in.
+pub(crate) fn context_menu(
+    reg: &mut Registry,
+    ui: &egui::Ui,
+    target: &egui::Response,
+    menu: (Role, RoleVariant),
+    kind: &'static str,
+    add: impl FnOnce(&mut egui::Ui, &mut Registry),
+) {
+    let (role, variant) = menu;
+    let mut popup = egui::Popup::context_menu(target);
+    if let Some(modifier) = role_modifier(ui, role, variant) {
+        popup = popup.style(modifier);
+    }
+    popup.show(|ui| {
+        styled(reg, ui, role, variant, kind);
+        add(ui, reg);
+    });
+}
+
 /// A `MenuBar` given `role`'s modifier for both `MenuBar::style` and `MenuConfig::style` (§4.2):
 /// the closure builds the bar with the modifier and records the menu buttons egui builds in it
 /// through `Applied`; the bar's `Response` is recorded as a container with the role seam.
