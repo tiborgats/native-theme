@@ -15,7 +15,12 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M5 | Steps 1–5 done 2026-10-13 (stop point A; 20 entries, no maintainer item); Step 6 done 2026-10-14 (T1–T12); Steps 7–8 done 2026-10-14 (Step 7 T1–T12b + final fix wave; Step 8 at `70776a40`) |
 | G1 | closed 2026-10-14 at `d8bc2c83` (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md) |
 | G2 | closed 2026-10-14 (D10, docs/archive/todo_v0.7.0_gpui-kit-0.7.3-plan.md; *G2* below) |
-| M6–M9 | not started |
+| M6 | done (2026-10-16; *M6*, Steps 7–8, fix phase closed) |
+| M7 | done (2026-10-16; *M7*, Steps 7–8, fix phase closed) |
+| M8 | done (2026-10-17; *M8*, Step 8 close, stop point B, fix phase `9e2527f5..3148f231`) |
+| M9a | done (2026-10-21; *M9a Step 8*, closed on CI run 39656159244 at `b73dd1c6`) |
+| M9b | done (2026-10-23; *M9b Step 8*, closing commit `d8387161`) |
+| M9c | Steps 6–7 done 2026-10-24 (the fix phase, `7408549a..5de1f8b1`, and T18's documents); statuses set (*M9c Step 8*); Step 8 open |
 | G3 | closed 2026-10-23 (D11, docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
 
 ## Baseline (M0, 2026-10-11)
@@ -12180,6 +12185,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#0.
+**Status (M9c close, 2026-10-24):** fixed — f8338303 (M9c T6): the Basic table's header is drawn at `list_header_font`'s scaled size, and above a text scale of 1 a stated header or row height grows to hold it (`rows::scaled_height`).
 
 #### M9-103 · M9c · theme-data · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/data.rs:57
 **Claim:** Under material-3 (list.header_font.weight 500), the Data page's table header and the Theme Map's header are drawn at the body weight (400), while the Basic page's table header is drawn at 500.
@@ -12189,6 +12195,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#1.
+**Status (M9c close, 2026-10-24):** fixed — f8338303 (M9c T6): the Data and Theme Map headers are drawn in `list.header_font` at its weight and scaled size; cb613ab3 holds the face at each weight on every host.
 
 #### M9-104 · M9c · perf · S3 · connectors/native-theme-egui/examples/showcase-egui/pages/icons.rs:232
 **Claim:** While the Icons page is shown, every pass reloads the chosen theme's loading indicator and recolours, rehashes and re-wraps its current frame. The indicator schedules a repaint at each frame boundary, and every frame for a Spin, so this runs continuously. For a freedesktop theme each pass is a directory lookup, a file read and a sprite-sheet parse.
@@ -12198,6 +12205,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — the per-frame/per-switch work moves to once per install; a before/after count or timing in the test.
 **Status:** open
 *Source:* C1#2.
+**Status (M9c close, 2026-10-24):** fixed — efb1d47e, f2d9de50 (M9c T13 and its round 1): the showcase's `IconCache` loads the Icons page's indicator once per set and icon theme and builds each frame's image once per frame and scheme, and the chrome's named freedesktop icons once per key; `App::adopt` and `App::icons_chosen` clear it; 6d0cef87 and 5dfe3e74 (M9c B1 item 14, M1 and M2): its doc words each map's key, and a lexical test holds that only `App::adopt` installs or clears an atlas. docs/todo.md's `named_image` item closed with 6a1ec77e.
 
 #### M9-105 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:215
 **Claim:** On macos-tahoe, which states no layout.section_gap, the Basic page puts egui's item_spacing.x between its columns, where the gpui page puts none. column_count picks the number of columns assuming no gap, so the columns laid out are (n-1)*item_spacing.x narrower in total than the width the count was chosen for, and the widest fixed-width control can overflow its column.
@@ -12207,6 +12215,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#3.
+**Status (M9c close, 2026-10-24):** fixed — 4b44ab11 (M9c T7): the Basic columns and groups are `layout.section_gap` apart, none where unstated, each group in a top-down `Ui` of its own.
 
 #### M9-106 · M9c · theme-data · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/overlays.rs:100
 **Claim:** Under windows-11 (dialog.min_width 320, min_height 184), the Overlays page's Modal is laid out at its content's size, ignoring dialog.min_width, max_width, min_height and max_height. The chrome's command palette, the same Modal on the same surface, applies all four.
@@ -12216,6 +12225,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#4.
+**Status (M9c close, 2026-10-24):** fixed — a70f0e75 (M9c T8): the Overlays modal is sized within `dialog.min_width`, `max_width`, `min_height` and `max_height` through `pages::inner_extent`.
 
 #### M9-107 · M9c · theme-data · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/text.rs:63
 **Claim:** The Text page's text-role labels read 'Section heading, weight 600' and so on, but are drawn at the body weight, while the Basic page's Typography lines in the same roles are drawn at their stated weight. Under windows-11, Display reads 'weight 600' in a 400 face.
@@ -12225,6 +12235,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#5.
+**Status (M9c close, 2026-10-24):** fixed — f8338303 (M9c T6): the Text page's text-role labels go through `demo::role_text`, in the face registered at their weight.
 
 #### M9-108 · M9c · theme-data · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/buttons.rs:30
 **Claim:** On every palette page, buttons in the Button role (Buttons page, the Overlays open/modal/popup buttons) are drawn without button.min_width, and the Inputs page's TextEdits without input.min_height. These are the per-call leaves the connector leaves to the application and the Basic page applies. A short label such as 'Small' or 'OK' under windows-11 (button.min_width 64) is narrower than the platform's minimum.
@@ -12234,6 +12245,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#6.
+**Status (M9c close, 2026-10-24):** fixed — a70f0e75, 54d072d4 (M9c T8): the `Button::new` kinds of the Buttons and Overlays pages are at least `button.min_width` and the Inputs page's `TextEdit`s `input.min_height`; `Button::small` and egui's own kinds keep egui's size, said under Not themeable (the two small-button notes worded by 80fd2ad2, M9c T18).
 
 #### M9-109 · M9c · info-truth · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/overlays.rs:166
 **Claim:** Hovering the Overlays page's 'Right-click here for a context menu' label shows the Role::Menu rows, although the label is drawn in the base style. Only the menu it opens takes the Menu modifier.
@@ -12243,6 +12255,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#7.
+**Status (M9c close, 2026-10-24):** fixed — 630dc84f, bcbd1365 (M9c T14): the context-menu target is recorded in the base style through `demo::base`, and the menu it opens through `demo::context_menu` in `Role::Menu`; 630dc84f to a60d4541 fail `every_seam_is_recorded`, which bcbd1365 restores (the final review part 2a, M3; a squash is the maintainer's call).
 
 #### M9-110 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:1631
 **Claim:** On every preset with a non-zero list.border.corner_radius (inherited from defaults.border.corner_radius: adwaita 9, macos-tahoe 6, kde-breeze 5, windows-11 4), the Basic table's header fill and its selected last row, and the List's hovered or selected first and last visible rows, are painted as square rectangles. They paint over the rounded frame's corner arcs and beyond them.
@@ -12252,6 +12265,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#8.
+**Status (M9c close, 2026-10-24):** fixed — bbd12680, 56e1c9de (M9c T9): `inner_corners` rounds the header, the selected last row and a list row at the frame's edges by `list.border.corner_radius` less `list.border.line_width`; the iced counterpart is M9-158 (T9b), the gpui one M9-159 (B1 item 11).
 
 #### M9-111 · M9c · info-truth · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:497
 **Claim:** Hovering the Basic page's 'On' toggle button shows nothing that says its fill and text colour are button.checked_background and checked_text_color (or the fallback used: active_background, hover_background, active_text_color). Hovering the table shows nothing of separator.line_width, the grid's width. Both are per-call values the instance draws that no Role::Button or Role::List row carries.
@@ -12261,6 +12275,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#9.
+**Status (M9c close, 2026-10-24):** fixed — dcb04ef9, 01e80b74 (M9c T14, B1 item 13 (a)): where the theme states no `button.checked_background` or `checked_text_color`, the "On" toggle's Not themeable lines name the leaf it is drawn in, chosen once with the colour; the toggle's checked leaves were already rows of `basic.buttons.toggle_on`. The macos-tahoe fallback difference against gpui is docs/todo.md's *Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours* (0f4c68a9, M9c T18).
 
 #### M9-112 · M9c · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/pages/basic.rs:865
 **Claim:** drop_down fetches the atlas a second time with `ThemeAtlas::from_ctx` and falls back to BASIC_WIDTH, although group() holds the atlas. Its siblings (text_inputs, number_input, card and others) take `atlas: &ThemeAtlas`.
@@ -12270,6 +12285,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C1#10.
+**Status (M9c close, 2026-10-24):** fixed — 8980c0c8 (M9c T15): `drop_down` takes the atlas `group()` holds and sizes the combo box `BASIC_WIDTH.max(t.combo_box.min_width)`.
 
 #### M9-113 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:501
 **Claim:** On Linux, with Mode = System (the default), choosing any preset in the Theme row, the palette or `--theme <preset>` draws the preset's dark variant whatever the desktop's scheme, because the preset atlas carries no OS mode and egui falls back to `Options::fallback_theme` (Dark).
@@ -12279,6 +12295,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#0.
+**Status (M9c close, 2026-10-24):** fixed — f2127fd2, 54bee846 (M9c T2, amendment I3): `from_preset` gives the atlas the OS's colour mode; no `from_preset_with`, no API added.
 
 #### M9-114 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:793
 **Claim:** A failed watcher rebuild after an OS theme change is swallowed and nothing is shown, and a successful watcher rebuild leaves an earlier theme error banner on the page. The watcher-start error is also shown as a theme error until the next unrelated install clears it, though the watcher is still not running.
@@ -12288,6 +12305,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#1.
+**Status (M9c close, 2026-10-24):** fixed — 64ce7e7a, c806c691 (M9c T3): a failed rebuild shows in the banner while the record's count is past `installed_rebuild`; `adopt` clears `theme_error`; the start error is a note no install clears.
 
 #### M9-115 · M9c · bug · S2 · connectors/native-theme-egui/examples/showcase-egui/app.rs:633
 **Claim:** If the user picks a theme, or changes Preferences, while a watcher rebuild for an OS change is under way, the rebuilt atlas of the previous selection is installed over the user's choice, and the Theme row then names a theme other than the one drawn until the next OS event.
@@ -12297,6 +12315,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#2.
+**Status (M9c close, 2026-10-24):** fixed — 64ce7e7a, c806c691 (M9c T3): the selection carries a generation; `take_rebuilt` installs only a rebuild of the current selection no install has covered, else reinstalls it; a failed pick publishes its selection.
 
 #### M9-116 · M9c · info-truth · S2 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:723
 **Claim:** Where the system lacks the stated `defaults.font.family` (windows-11's `Segoe UI` or macos-sonoma's `SF Pro` on Linux), the status bar and Widget Info's `defaults.font.family` and `defaults.font` rows name the stated family alone, while egui draws the platform's substitute. These are the same class as the known Theme-tab item (docs/todo.md:3499, info.rs:1114-1121 against :1129-1135), and that entry does not list them.
@@ -12306,6 +12325,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#3.
+**Status (M9c close, 2026-10-24):** fixed — a02f1dd7, 337e0de0, 79769ea9, fe9e8a2d, 6e69d1c2 (M9c T10): the status bar, the Theme tab and Widget Info name the family egui draws (`demo::DrawnFamilies`); gpui's lookup names gpui's own (T10b: 43b918d4, d1176bde, ee35164a); the widget-font gap is M9-157.
 
 #### M9-117 · M9c · ux · S2 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:1964
 **Claim:** On macOS the system menu bar has no File menu: AppKit shows the first submenu as the application menu under the app's name, so File's lone `Quit` sits there. About, Preferences… (Cmd+,), Hide (Cmd+H), Hide Others, Show All and Services are not in the app menu, there is no Window menu (Minimize, Zoom), and winit's default app menu that held them is switched off.
@@ -12315,6 +12335,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#4.
+**Status (M9c close, 2026-10-24):** fixed — 0669d412, 98541316 (M9c T5): the egui and gpui macOS menu bars are the HIG list, read back as five titles through the shared crate's `menu::check_main_menu`; d2e34ccc (M9c B1, FR-M3) drops the egui system menu's own actions while the keyboard is shielded. The runtime evidence waits for the macOS legs of `screenshots.yml`.
 
 #### M9-118 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/app.rs:444
 **Claim:** On macOS, `--open-menu theme` is accepted silently and does nothing: the system menu bar is not opened and no message says so, against the CLI's rule that a value the showcase cannot honour is reported and ignored.
@@ -12324,6 +12345,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#5.
+**Status (M9c close, 2026-10-24):** fixed — 0669d412 (M9c T5): `cli::open_menu`'s `menus_are_the_systems`, which the three showcases pass; the egui and gpui READMEs say the rule (48e84ffd, M9c T18).
 
 #### M9-119 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/chrome.rs:1546
 **Claim:** In the command palette, typing a query and pressing Enter runs nothing; it only takes focus from the field. Up and Down select no row, while the gpui showcase's palette moves a highlighted row with the arrow keys and runs it on Enter.
@@ -12333,6 +12355,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#6.
+**Status (M9c close, 2026-10-24):** fixed — 7f02592e, faed1cd7 (M9c T11): the first kept row is highlighted, Up and Down wrap, Enter runs it, a changed query scrolls to it; the hover highlight is docs/todo.md's *egui showcase: the command palette's highlight does not follow the pointer* (0f4c68a9, M9c T18).
 
 #### M9-120 · M9c · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/info.rs:664
 **Claim:** `InstanceInfo::read` is written at about 30 sites and shown nowhere, and every instance note but the `not stated` and Ghost ones is dropped. The status-bar toggle's `fill while the panel shows` note, and the toolbar's and status bar's icon-size reads, never reach Widget Info.
@@ -12342,6 +12365,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#7.
+**Status (M9c close, 2026-10-24):** fixed — 1bea8cf5, e2cb221d (M9c T1b): `InstanceInfo::read` and the notes the panel never showed are deleted with their writers, and `notes` is `not_themeable`, the lines Widget Info shows; the archived spec's *As built* line names R11.
 
 #### M9-121 · M9c · perf · S4 · connectors/native-theme-egui/examples/showcase-egui/demo.rs:977
 **Claim:** On each theme switch and each watcher install, `Semibold::register` works out again which family the connector drew, copying a whole font file into memory only to test `is_some()`. It then copies each weight's face twice (system_face, then `to_vec`).
@@ -12351,6 +12375,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** known — the cited entry carries it; its text is extended where the finding adds a site.
 **Status:** open
 *Source:* C2#8.
+**Status (M9c close, 2026-10-24):** fixed — 74333087 (M9c T10): `Semibold::register` takes the drawn family from the atlas's note; the known entry *Fonts: find a system face by family, weight and style* gains its caller line (c0d08a52).
 
 #### M9-122 · M9c · ux · S4 · connectors/native-theme-egui/examples/showcase-egui/info.rs:1090
 **Claim:** The inspector's Theme tab draws its section names (Theme, Notes, Fonts, Window, …) in the theme's section-heading role, while its own Widget tab and the gpui showcase's Theme tab draw section names semibold at the panel's text size, so switching tabs changes the heading style.
@@ -12360,6 +12385,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* C2#9.
+**Status (M9c close, 2026-10-24):** fixed — f8fd620f (M9c T16): the Theme tab's section names are drawn in `InfoText`'s semibold line, as the Widget tab's.
 
 #### M9-123 · M9x · info-truth · S2 · connectors/native-theme-gpui/examples/showcase-gpui/info/values.rs:31
 **Claim:** Under every preset, hovering a toolbar button, the page-tab menu button or the Basic spinner shows `defaults.icon_theme not stated` in the gpui Widget Info, even where the theme names an icon theme. The iced and egui panels show the icon theme (kde-breeze: `breeze`) for the same element.
@@ -12379,6 +12405,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T4 8ea82d65..0d0add6e); iced half M9b T1, egui half M9c T1 (I2: fixed when the last half lands)
 *Source:* X#1.
 **Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's element reader, leaf walk, value text and panel model); the egui half stays M9c T1 (I2).
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f (M9c T1: the crate's element reader, values, rows and Copy text); with M9a's and M9b's halves the entry is whole (I2).
 
 #### M9-125 · M9x · simplify · S4 · connectors/native-theme-egui/examples/showcase-egui/main.rs:213
 **Claim:** The command line and the capture checks are written three times, almost line for line: the CliArgs struct and its parser, the `--variant`/`--theme` validation with the same error texts, `parse_point`, the capture app id and `check_frame_capture`.
@@ -12389,6 +12416,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** partly fixed (the shared crate and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#2.
 **Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d, a15af491 and 7cc0c29d (M9b T1, T2: the crate's `CliArgs`, `Outputs`, `capture::app_id`, the bounded dump); the egui half stays M9c T1 (I2).
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f and 598b9513 (M9c T1: the crate's `CliArgs` and validators; the dump's bound, exit 1 naming its flag and path); with M9a's and M9b's halves the entry is whole (I2).
 
 #### M9-126 · M9x · simplify · S4 · native-theme/src/icons.rs:1436
 **Claim:** The three side panels' pickers are built three times over core's IconSetChoice: the icon-theme rows, the `--icon-set` name parser, the preset rows and the mode enum. The copies have drifted: egui accepts `--icon-set default` and gpui and iced reject it, though all three pickers show a default row.
@@ -12399,6 +12427,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** partly fixed (the shared crate's rows and parser and the gpui half: M9a T2 88e2296e..e04bd98c, T4 63570ccb; in the crate, not core, by the Step 6 ruling); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#3.
 **Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's picker rows and `--icon-set` parser, `default` accepted); the egui half stays M9c T1 (I2).
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f (M9c T1: the crate's picker rows over `IconSetChoice`); with M9a's and M9b's halves the entry is whole (I2).
 
 #### M9-127 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1050
 **Claim:** On macOS and Windows, the gpui and iced showcases capture their own window through raw unsafe FFI. They carry two copies of the same code: objc2 msg_send for mainWindow/keyWindow/windowNumber, then screencapture -l; Win32 FindWindowW, DwmGetWindowAttribute, BitBlt and GetDIBits. The egui showcase does the same capture through xcap's safe API, with the same frame check.
@@ -12409,6 +12438,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open — gpui half fixed: M9a T3 (83b9c27c, safe capture through the crate); iced half M9b T2, egui half M9c T1
 *Source:* X#4.
 **Status (M9b close, 2026-10-23):** open — iced half fixed: cfa9534c, 843620f3 and 18a8c85e (M9b T2: `capture::FrameCapture` on macOS and Windows, the frame checked at each poll); the egui half stays M9c T1. The macOS and Windows legs are unrun here: they await the maintainer's dispatch of `screenshots.yml`.
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f (M9c T1: the egui showcase captures through the crate's `capture::FrameCapture` and its frame check); with M9a's and M9b's halves the entry is whole (I2). The macOS and Windows legs still await the maintainer's dispatch of `screenshots.yml`.
 
 #### M9-128 · M9x · simplify · S4 · connectors/native-theme-gpui/examples/showcase-gpui/info/mod.rs:422
 **Claim:** Colours are printed as hex by three local formatters next to core's Rgba Display, and the formatters disagree on alpha. The gpui showcase's hsla_to_hex prints `#rrggbbff` for an alpha below 1.0 that rounds to 255. The gpui connector's own copy and core print `#rrggbb` for the same colour.
@@ -12439,6 +12469,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* X#7.
 **Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: `status::environment`, `WINDOW_SIZE_PX`), with 2fae98b0, be1731e5 and 49bb4ffc for the font-family label; the egui half stays M9c T1.
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f (M9c T1: the status bar's environment text and `WINDOW_SIZE_PX` from the crate) and 337e0de0 (M9c T10: the font item through `status::environment_drawn` with the drawn family); a71a983b (M9c B1, FR-M5) deletes `status::environment`, which no showcase called any more. With M9a's and M9b's halves the entry is whole (I2).
 
 #### M9-131 · M9x · bug · S2 · connectors/native-theme-iced/examples/showcase-iced.rs:2652
 **Claim:** In the iced showcase, hover a widget on any page but Basic (one that is not in the element list), then switch theme or mode without moving the pointer: from the command palette (Ctrl+K), or by an OS change under --features watch. Widget Info and its Copy button keep showing the previous theme's values. gpui and egui rebuild the shown info on the next frame.
@@ -12479,6 +12510,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** open
 *Source:* X#11.
 **Status (M9b close, 2026-10-23):** fixed — 127d2ed5 (M9b T8): the chrome is spaced as gpui's, each unstated distance drawing none.
+**Status (M9c close, 2026-10-24):** fixed — the egui half 4b44ab11 (M9c T7: egui's chrome spaced as gpui's, Addendum F's rows 4 to 7) and 406a5727 (M9c B1 item 8: the status bar's padding rounded a half toward zero, as gpui and iced round it); the iced half was 127d2ed5.
 
 #### M9-135 · M9x · ux · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:4572
 **Claim:** In gpui, typing into the side panel's Theme picker filters the presets by name or key. In iced the Theme picker is a plain pick_list, though iced_widget's searchable combo_box is available and the showcase already demonstrates it. egui's ComboBox has no search, which is forced by the toolkit. The difference is not recorded.
@@ -12499,6 +12531,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Status:** partly fixed (the shared crate's one flag set and the gpui half: M9a T2 88e2296e..e04bd98c, T3 83b9c27c..275814b0); iced half M9b T1, egui half M9c T1 (I2)
 *Source:* X#13.
 **Status (M9b close, 2026-10-23):** partly fixed — iced half 1d57e42d (M9b T1: the crate's flag set, `--tab inputs`); the egui half stays M9c T1 (I2).
+**Status (M9c close, 2026-10-24):** fixed — the egui half c3abfa8f (M9c T1: the crate's one flag set, the shared page keys); with M9a's and M9b's halves the entry is whole (I2).
 
 #### M9-137 · M9x · bug · S2 · connectors/native-theme-gpui/examples/showcase-gpui/main.rs:1501
 **Claim:** On macOS or Windows, `--dump-layout F --screenshot P` without `--capture` makes gpui and iced write F and exit 0 before the screenshot is taken, so P is silently missing. egui keeps running until both are written.
@@ -12548,6 +12581,7 @@ No entry changes a crate's public API, so no maintainer round: every entry is `f
 **Triage:** fix — CONFIRMED.
 **Status:** open
 *Source:* X#18.
+**Status (M9c close, 2026-10-24):** fixed — 9a862594 (M9c T17): the egui README's Showcase section says that the release screenshots and `scripts/generate_screenshots_egui.sh` build with `--all-features`, which adds `svg-rasterize`, `native` and `watch` over the defaults, and that a captured or dumped window does not follow the OS theme, by `CliArgs::follows_os` (fc2fa811, M8 T12; the crate's since c3abfa8f); the `--all-features` build stands, as the Step 6 ruling decided.
 
 #### M9-144 · M9b · info-truth · S4 · connectors/native-theme-iced/examples/showcase-iced.rs:6177
 **Claim:** Hovering the open Theme menu, Widget Info's "Not themeable" section says "shadows: iced_aw's own" under every theme, while `menu_bar_style` draws no menu shadow where `popover.border.shadow_enabled` is false.
@@ -13001,6 +13035,16 @@ Set from the commits `c0d6d530..ecfefd27` (each entry's line names its commits),
 - **M9b's 37 entries (M9-065–M9-101):** 37 fixed; M9-082's iced half 9a0c356b and its gpui half c41ec977, 5e825d6a (G3 T6). M9-142–M9-148 and M9-150–M9-154, filed during the phase, are fixed.
 - **M9x entries M9b owns:** M9-128, M9-129, M9-131–M9-135, M9-137–M9-140 fixed; M9-124, M9-125, M9-126, M9-130, M9-136 partly fixed (the iced half done, the egui half M9c T1); M9-127 open (iced half done, egui half M9c T1). M9-141 is M9c's (T17).
 - **What remains open, and who owns it.** (1) The macOS and Windows legs of M9-127, M9-133 and the T17 menu evidence (no menu row in the captures, the five titles read back, the install landing before the capture) are unrun: ci.yml tests `native-theme` only on those systems, and `screenshots.yml` is `workflow_dispatch`, so they are the maintainer's dispatch after the push. (2) The desktop-session iced re-capture (Step 8 notes, rounds 1-4) and the parity run on its dumps, with the re-read of the exceptions the notes list: the maintainer, on a free desktop. (3) The egui halves above: M9c.
+
+### M9c Step 8 — statuses (2026-10-24)
+
+Set by M9c T18 from the commits `7408549a..5de1f8b1` (each entry's line names its commits), the task reports and the final review's parts 1 and 2a; Step 8 confirms them on its closing commit.
+
+- **M9c's 21 entries (M9-102–M9-122):** 21 fixed. M9-155, M9-156, M9-158 and M9-159, filed during the phase, are fixed; M9-157 is deferred to docs/todo.md, *native-theme-egui connector*, "A widget font's own family is drawn in the body's face", an upstream limit (the archived egui spec's §14 item 8).
+- **M9x entries M9c owns:** M9-124, M9-125, M9-126, M9-127, M9-130 and M9-136 fixed with their egui halves (c3abfa8f, 598b9513, 337e0de0); M9-134 fixed with its egui half (4b44ab11, 406a5727); M9-141 fixed (9a862594).
+- **Totals:** 21 entries and 4 filed during the phase fixed, 1 deferred upstream, 0 open.
+- **What leaves M9c, and who owns it.** (1) *Showcases: the toolbar's "Reload System Theme" glyph* and (2) *Showcases: a toolbar role and arrow-key roving for the chrome toolbar* (docs/todo.md, `[1.0]`, all three showcases; `docs/todo.md:3517` and `:3542` at 4b458e20): the maintainer's tag, the file's own deferral (the Step 6 ruling, what leaves M9c (3)), for M9x's owner. (3) Three `[1.0]` entries M9c T18 files (0f4c68a9): *egui showcase: the command palette's highlight does not follow the pointer*, and, for the maintainer to decide, *Connectors: an unstated `button.active_background` gives egui's and gpui's pressed fill two colours* and *Showcases: gpui's keyboard shield also stops its own macOS menu shortcuts*. (4) The macOS legs of M9-117 and M9-118 (the five titles read back, `--open-menu` reported) and the macOS and Windows strict-panic and capture runs: CI and the maintainer's `screenshots.yml` dispatch after the push. (5) The R2 before/after captures and dumps the task reports list: the controller, on a free desktop. (6) 630dc84f to a60d4541 fail `every_seam_is_recorded`, which bcbd1365 restores; whether to squash bcbd1365 into 630dc84f is the maintainer's call before the push (the final review part 2a, M3).
+- The fixture half of `docs/todo.md:3646` at 4b458e20 (*M7 close (2026-10-16): items carried to M8, M9a and the presets*, "For M8 (test quality)"), the showcases' child-process fixture runner, is closed in `docs/archive/todo_closed.md` under that heading's *Closed items from* section by M8 T2 (990ab210, 32ac77a6; ticked in a936c610); M9c took nothing for it (the rulings' amendment of 2026-10-17, (1)).
 
 ### Status
 
