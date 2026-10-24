@@ -778,12 +778,22 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
 # icon-theme drop-down's reason for an undetected theme, past the window, and
 # twelve tests failed that passed here. scripts/run_in_runner_env.sh runs each
 # test binary in that environment (its header gives the evidence for each
-# part). Each showcase in the feature set a test leg above builds, so nothing
-# is compiled again; the first run downloads the runner's font packages into
+# part). Each showcase in every feature set ci.yml's test-connectors job tests
+# it with, each one a test leg above builds, so nothing is compiled again: the
+# egui showcase with its defaults, none and all; the iced showcase with its
+# defaults and with iced_aw, watch and native (without default features its
+# required features leave it out); the gpui showcase with native and watch,
+# which add to its defaults. The egui showcase's `native` reads the desktop
+# (the KDE and portal readers): the environment has no desktop name, kdeglobals
+# or session bus, the runner no desktop session (the installed software of its
+# image, Ubuntu 24.04 20261012.334, names none), and this host has no
+# /etc/xdg/kdeglobals; a test that asserted this KDE desktop's kde-breeze
+# preset passed here and failed in the environment, which gave adwaita
+# (2026-10-24). The first run downloads the runner's font packages into
 # target/runner-env/. Linux only: the environment is fontconfig's and the
 # freedesktop desktops'. The environment is prepared first: where its
 # packages can be neither fetched from either server nor found cached (the
-# script's exit 75), the three legs are skipped with a warning, since a
+# script's exit 75), the legs are skipped with a warning, since a
 # release gate does not fail because a server is out of reach and CI runs
 # these tests on the runner itself. Exit 75 is an outage alone (no
 # connection, a timeout, a transfer closed early, a 5xx, 408 or 429 answer);
@@ -813,8 +823,14 @@ elif [ "$runner_env_status" -ne 0 ]; then
 else
     run_tests "test (egui showcase, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
+    run_tests "test (egui showcase, no features, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-egui --no-default-features --example showcase-egui
+    run_tests "test (egui showcase, all features, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-egui --all-features --example showcase-egui
     run_tests "test (iced showcase, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-iced --example showcase-iced
+    run_tests "test (iced showcase, iced_aw, watch, native, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-iced --features iced_aw,watch,native --example showcase-iced
     run_tests "test (gpui showcase, native, watch, runner environment)" \
         scripts/run_in_runner_env.sh test -p native-theme-gpui --features native,watch --example showcase-gpui
 fi

@@ -702,13 +702,17 @@ The packages are pinned by SHA-256 and downloaded from `snapshot.ubuntu.com`
 (else the archive's pool) into `target/runner-env/debs` once; the environment
 is built from them again when the list changes. The script's header gives the
 evidence for each part. `scripts/check_release.sh` runs the three showcases'
-tests through it in both modes (Linux only), each in the feature set its test
-leg already builds. It runs `run_in_runner_env.sh --prepare` first, which
+tests through it in both modes (Linux only), in every feature set `ci.yml`'s
+test-connectors job tests them with, each one a test leg already builds: the
+egui showcase with its defaults, with none and with all (whose `native`
+reads the desktop, which the environment hides), the iced showcase with its
+defaults and with `iced_aw,watch,native`, the gpui showcase with
+`native,watch`. It runs `run_in_runner_env.sh --prepare` first, which
 builds the environment and runs nothing: where a package is not cached with
 its SHA-256 and neither server delivers it, one or both out of reach (no
 connection, a timeout, a transfer closed early) or answering transiently (5xx,
 408, 429), the script exits 75, and check_release skips the
-three legs with a warning that the showcase tests were not run in CI's
+legs with a warning that the showcase tests were not run in CI's
 environment (CI runs them on the runner itself). Anything else fails, in
 both, naming its cause: a 4xx answer from both servers (a pin that has
 rotted; the message names the package and both answers; one server's 4xx
