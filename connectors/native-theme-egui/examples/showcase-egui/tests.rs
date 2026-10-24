@@ -7692,11 +7692,12 @@ fn icon_load_counts(
 }
 
 /// M9-104: the Icons page loads the chosen icon theme's loading indicator once, not in every
-/// pass, and builds each frame's image once per frame and scheme. Eight passes under a fixture
-/// freedesktop theme whose indicator is a three-frame sprite sheet load it once (before the
-/// cache, once a pass) and build no frame twice; an install loads it once more, since it forgets
-/// what the cache keeps; a mode switch loads no indicator and builds only the new scheme's
-/// frames. The theme is a fixture in a child process.
+/// pass, and builds each frame's image once per frame and scheme. The passes of opening and
+/// eight steps under a fixture freedesktop theme whose indicator is a three-frame sprite sheet
+/// load it once (before the cache, once a pass: 14) and build no frame twice; an install and
+/// eight steps load it once more, since the install forgets what the cache keeps; a mode switch
+/// and eight steps load no indicator and build only the new scheme's frames. The theme is a
+/// fixture in a child process.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 #[test]
 fn the_icons_page_loads_its_indicator_once() -> std::io::Result<()> {
@@ -7715,7 +7716,7 @@ fn the_icons_page_loads_its_indicator_once() -> std::io::Result<()> {
         let ctx = harness.ctx.clone();
         let mut from = 0;
         for (phase, scheme) in [
-            ("the first eight passes", egui::Theme::Light),
+            ("opening and eight steps", egui::Theme::Light),
             ("an install", egui::Theme::Light),
             ("a mode switch", egui::Theme::Dark),
         ] {
@@ -7763,10 +7764,10 @@ fn the_icons_page_loads_its_indicator_once() -> std::io::Result<()> {
 
 /// docs/todo.md's `named_image` item (M9c): the chrome's named freedesktop icons — the
 /// toolbar's Command Palette and Reload System Theme, the status bar's side-panel toggle — are
-/// read from the icon theme once per key, not in every pass. Eight passes load each key once
-/// (before the cache, once a pass); an install loads each once more, since it forgets what the
-/// cache keeps; a mode switch loads only the new text colour's keys, once each. The theme is a
-/// fixture in a child process.
+/// read from the icon theme once per key, not in every pass. The passes of opening and eight
+/// steps load each key once (before the cache, once a pass: 14); an install and eight steps load
+/// each once more, since the install forgets what the cache keeps; a mode switch and eight steps
+/// load only the new text colour's keys, once each. The theme is a fixture in a child process.
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 #[test]
 fn the_chromes_named_icons_load_once_per_key() -> std::io::Result<()> {
@@ -7784,7 +7785,7 @@ fn the_chromes_named_icons_load_once_per_key() -> std::io::Result<()> {
         let ctx = harness.ctx.clone();
         let mut from = 0;
         let mut first = Vec::new();
-        for phase in ["the first eight passes", "an install", "a mode switch"] {
+        for phase in ["opening and eight steps", "an install", "a mode switch"] {
             match phase {
                 "an install" => harness.state_mut().install(&ctx),
                 "a mode switch" => harness.state_mut().set_mode(ModeChoice::Dark, &ctx),
@@ -7802,7 +7803,7 @@ fn the_chromes_named_icons_load_once_per_key() -> std::io::Result<()> {
             assert_eq!(counts.len(), 3, "{phase}: {counts:?}");
             assert!(counts.values().all(|n| *n == 1), "{phase}: {counts:?}");
             match phase {
-                "the first eight passes" => first = named,
+                "opening and eight steps" => first = named,
                 "an install" => assert_eq!(icon_load_counts(&first), counts, "{phase}"),
                 _ => assert!(
                     named.iter().all(|load| !first.contains(load)),
@@ -7827,5 +7828,127 @@ fn the_chromes_named_icons_load_once_per_key() -> std::io::Result<()> {
                 ("sidebar-show", SVG),
             ],
         )
+    })
+}
+
+/// A named freedesktop icon drawn at two sizes that `IconKey::size` rounds to one key, 16 and
+/// 16.4 points, is fitted to each: the cache keeps the image as loaded and each draw fits its
+/// clone, as the indicator's frames are. A source of one point square makes `calc_size` the
+/// fitted size itself (`egui/src/widgets/image.rs`, `ImageFit::Exact`). The theme is a fixture
+/// in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn a_named_icon_takes_each_size_it_is_drawn_at() -> std::io::Result<()> {
+    const NAME: &str = "tests::a_named_icon_takes_each_size_it_is_drawn_at";
+    if native_theme_test_fixtures::in_child() {
+        let ctx = egui::Context::default();
+        let mut cache = crate::demo::IconCache::default();
+        let mut drawn = Vec::new();
+        let mut out = ctx.run_ui(egui::RawInput::default(), |ui| {
+            for size in [16.0, 16.4] {
+                let image = crate::demo::named_image(
+                    &mut cache,
+                    ui,
+                    crate::demo::ChromeIcon::PanelLeft,
+                    native_theme::theme::IconSet::Freedesktop,
+                    Some("named"),
+                    size,
+                );
+                let fitted = image.map(|image| {
+                    image.calc_size(egui::Vec2::INFINITY, Some(egui::Vec2::splat(1.0)))
+                });
+                drawn.push((size, fitted));
+            }
+        });
+        // The font atlas's upload, which no renderer takes here (`epaint/src/textures.rs:337`).
+        out.textures_delta.clear();
+        for (size, fitted) in drawn {
+            assert_eq!(fitted, Some(egui::Vec2::splat(size)), "drawn at {size}");
+        }
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    let child = native_theme_test_fixtures::Child {
+        desktop: "sway",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_scalable_theme(icons, "named", &[("sidebar-show", SVG)])
+    })
+}
+
+/// `App::icons_chosen`: the cache is forgotten where the icon choice changes, and only there.
+/// Under kde-breeze with fixture `breeze` and `breeze-dark` themes, the choice follows the
+/// scheme, so a mode switch changes it: Light, Dark and Light again load the `breeze` indicator
+/// twice (once, were the switch to keep the cache). A pick in the side panel's Icon theme
+/// drop-down changes it too: Material, then `breeze`, whose indicator the cache would still
+/// hold, loads it a third time. The themes are fixtures in a child process.
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+#[test]
+fn the_icon_cache_is_forgotten_where_the_icon_choice_changes() -> std::io::Result<()> {
+    use crate::demo::IconLoad;
+    use native_theme::theme::IconSet;
+    const NAME: &str = "tests::the_icon_cache_is_forgotten_where_the_icon_choice_changes";
+    if native_theme_test_fixtures::in_child() {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[
+                ("--theme", "kde-breeze"),
+                ("--variant", "light"),
+                ("--tab", "icons"),
+            ]),
+        );
+        let ctx = harness.ctx.clone();
+        let loaded = |harness: &Harness<'_, App>, theme: &str| {
+            let load = IconLoad::Indicator(IconSet::Freedesktop, Some(theme.to_string()));
+            icon_loads_since(harness, 0)
+                .iter()
+                .filter(|l| **l == load)
+                .count()
+        };
+        harness.run_steps(SETTLE);
+        assert_eq!(
+            harness.state().settings.icon,
+            IconSetChoice::Default("breeze".to_string()),
+            "the choice follows kde-breeze's light icon theme"
+        );
+        assert_eq!(loaded(&harness, "breeze"), 1, "opening");
+        harness.state_mut().set_mode(ModeChoice::Dark, &ctx);
+        harness.run_steps(SETTLE);
+        assert_eq!(loaded(&harness, "breeze-dark"), 1, "the switch to Dark");
+        harness.state_mut().set_mode(ModeChoice::Light, &ctx);
+        harness.run_steps(SETTLE);
+        assert_eq!(loaded(&harness, "breeze"), 2, "the switch back to Light");
+
+        for row in ["Material (bundled)", "breeze"] {
+            harness
+                .get_by_role_and_label(Role::ComboBox, "Icon theme")
+                .click();
+            harness.run_steps(SETTLE);
+            harness.get_by_label(row).scroll_to_me();
+            harness.run_steps(SETTLE);
+            harness.get_by_label(row).click();
+            harness.run_steps(SETTLE);
+        }
+        assert_eq!(
+            harness.state().settings.icon,
+            IconSetChoice::Freedesktop("breeze".to_string())
+        );
+        assert_eq!(
+            loaded(&harness, "breeze"),
+            3,
+            "the picks of Material and breeze"
+        );
+        return Ok(());
+    }
+    const SVG: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="currentColor" d="M2 2h12v12H2z"/></svg>"#;
+    // On KDE, which kde-breeze is offered on (`native-theme/src/presets.rs`, `linux-kde`).
+    let child = native_theme_test_fixtures::Child {
+        desktop: "KDE",
+        icon_theme: None,
+    };
+    native_theme_test_fixtures::run(NAME, child, |icons| {
+        native_theme_test_fixtures::write_indicator_theme(icons, "breeze", SVG)?;
+        native_theme_test_fixtures::write_indicator_theme(icons, "breeze-dark", SVG)
     })
 }

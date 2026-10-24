@@ -4000,7 +4000,7 @@ M8 T21 (2026-10-17): its `[v0.7.0]` entries are under *M7 close (2026-10-16), it
 `[v0.7.0]` entries* in *This cycle (v0.7.0)*.
 M9c T13 (2026-10-24): that section's last entry closed (efb1d47e) and the section left
 this file; its closed entries are in [`archive/todo_closed.md`](archive/todo_closed.md)
-under *M7 close (2026-10-16): items carried to M8, M9a and the presets*.
+under *Closed items from M7 close (2026-10-16): items carried to M8, M9a and the presets*.
 - [ ] [1.0] egui text-size cap residuals (M7 T1): the TrueType `ISECT` instruction, the autohinter's CJK and Indic script groups, and hinting settings an application changes itself are unbounded in the hinting source, so they are not covered. Neither is a viewport two immediate levels up during its very first pass, which loses that pass's parts.
 
 ### gpui showcase: the expander header does not grow above text scale 1

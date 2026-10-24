@@ -1006,9 +1006,10 @@ pub(crate) fn named_image(
             }
             .load()?;
             icons::to_image(ui.ctx(), key, &data)
-                .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
         })
         .clone()
+        // Fitted after the clone: two sizes the key rounds to one each take their own.
+        .map(|image| image.fit_to_exact_size(egui::Vec2::splat(size)))
 }
 
 /// The icons the showcase loads itself, kept from the pass that first draws each until the
@@ -1017,10 +1018,17 @@ pub(crate) fn named_image(
 /// Icons page's loading indicator, loaded once per set and icon theme, and the image of each
 /// of its frames, built once per frame and scheme; and `named_image`'s freedesktop icons,
 /// once per key. Each is keyed as `chrome_key` keys an icon — its name, the set, the icon
-/// theme, the size and the tint — so another choice or scheme misses and loads its own. An
-/// icon the theme lacks is kept as absent too, so it is looked up once. The widgets crate's
-/// `Spinner` keeps its indicator for the same reason, "a spinner draws a frame in every
-/// pass" (`native-theme-egui-widgets/src/spinner.rs`).
+/// theme, the size and the tint — so another choice or scheme misses and loads its own; an
+/// image is kept as loaded, and each draw fits its clone to the size it asks for, which the
+/// key holds rounded. An icon the theme lacks is kept as absent too, so it is looked up once.
+/// The widgets crate's `Spinner` keeps its indicator for the same reason, "a spinner draws a
+/// frame in every pass" (`native-theme-egui-widgets/src/spinner.rs`).
+///
+/// The connector asks for its images to be built in each pass, not kept
+/// (`icons::to_image_source`), since `forget_icons` frees what they name, a raster's texture
+/// among them. Keeping them holds because the two calls that run it are covered: every install
+/// goes through `App::adopt`, which clears this beside it, and the showcase calls no
+/// `ThemeAtlas::clear`; a call would need `IconCache::clear` beside it.
 #[derive(Default)]
 pub(crate) struct IconCache {
     indicators: std::collections::HashMap<(IconSet, Option<String>), Option<AnimatedIcon>>,
