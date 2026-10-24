@@ -2965,9 +2965,9 @@ fn update_inner(state: &mut State, message: Message) {
             if state.overlay.is_none() {
                 state.overlay = Some(overlay);
                 state.palette_query.clear();
-                // The dialog lays the window into a stack, whose diff drops
-                // the old body's state (iced_core 0.14.0
-                // `src/widget/tree.rs:92-94`): the Icon theme drop-down's
+                // The dialog roots the window in a stack, whose tag differs, so
+                // the diff replaces the old body's tree and its state (iced_core
+                // 0.14.0 `src/widget/tree.rs:63-67`): the Icon theme drop-down's
                 // open menu closes without `on_close`.
                 state.icon_theme_menu_open = false;
             }
@@ -14929,12 +14929,12 @@ fn aw_card_info(state: &State) -> String {
                  sections the side alone; iced_aw's own (widget/card.rs:21) \
                  is set aside",
             ),
-            ("Dismiss padding", "button_padding"),
+            ("buttons' padding", "button_padding"),
             (
-                "Dismiss label",
+                "buttons' label",
                 font_row("button.font", &resolved.button.font).as_str(),
             ),
-            ("Dismiss min size", button_min_size_row(resolved).as_str()),
+            ("buttons' min size", button_min_size_row(resolved).as_str()),
         ],
         &[(
             "close icon",
@@ -18695,9 +18695,9 @@ mod tests {
     /// The menu closes without `on_close` where the drop-down leaves the
     /// tree or its state is dropped, and the tip must not stay hidden after
     /// it: Ctrl+B (`ToggleSidePanel`) hides the side panel and the picker
-    /// with it; a dialog (`Open`) lays the window into a stack, whose diff
-    /// drops the old body's state (iced_core 0.14.0
-    /// `src/widget/tree.rs:92-94`); and a new detection that fails where
+    /// with it; a dialog (`Open`) roots the window in a stack, whose tag
+    /// differs, so the diff replaces the old body's tree (iced_core 0.14.0
+    /// `src/widget/tree.rs:63-67`); and a new detection that fails where
     /// the last did not, or names a theme where it failed, gives the picker
     /// a tree of another shape. Each clears the state, and with the panel
     /// shown again the tip shows on the control. Under kde-breeze light.
