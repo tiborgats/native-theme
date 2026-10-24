@@ -34,6 +34,11 @@
 # - An empty home (target/runner-env/home): no kdeglobals, no dconf database.
 #   CARGO_HOME stays this host's cargo home, as the job sets its own
 #   (CARGO_HOME: /home/runner/.cargo in the run's test step).
+# - An empty system configuration directory (target/runner-env/config), the
+#   one entry of XDG_CONFIG_DIRS: unset, the KDE reader would read this
+#   host's /etc/xdg/kdeglobals, where the host has one, as KConfig does
+#   (native-theme/src/kde/mod.rs, kdeglobals_files_pure), and the runner has
+#   none.
 # - A PATH of the programs the binaries run that the runner has: fc-match
 #   (fontconfig; the run's substitutes were fc-match's, DejaVu Sans), sh, sleep,
 #   true, and the toolchain's cargo and rustc. Not gsettings, xrdb, xrandr or
@@ -102,6 +107,7 @@ if [ "${1:-}" = "--runner" ]; then
         PATH="$ENV_DIR/bin" \
         XDG_RUNTIME_DIR="$ENV_DIR/runtime" \
         XDG_DATA_DIRS="$ENV_DIR/root/usr/share" \
+        XDG_CONFIG_DIRS="$ENV_DIR/config" \
         DBUS_SESSION_BUS_ADDRESS="unix:path=$ENV_DIR/runtime/no-bus" \
         FONTCONFIG_FILE="$ENV_DIR/fonts.conf" \
         "$@"
@@ -275,9 +281,10 @@ if [[ $PREPARE ]]; then
     exit 0
 fi
 
-# The home is emptied each run, so nothing a test wrote there is read back.
-rm -rf "$ENV_DIR/home"
-mkdir -p "$ENV_DIR/home"
+# The home and the system configuration directory are emptied each run, so
+# nothing a test wrote there is read back.
+rm -rf "$ENV_DIR/home" "$ENV_DIR/config"
+mkdir -p "$ENV_DIR/home" "$ENV_DIR/config"
 for tool in fc-match sh sleep true; do
     ln -sf "$(type -P "$tool")" "$ENV_DIR/bin/$tool"
 done

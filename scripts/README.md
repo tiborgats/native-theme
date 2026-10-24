@@ -688,6 +688,9 @@ has:
 
 - no desktop: no `XDG_CURRENT_DESKTOP`, display or session bus;
 - an empty home under `target/runner-env/home`;
+- an empty `target/runner-env/config` as the one `XDG_CONFIG_DIRS` entry, so
+  a host's `/etc/xdg/kdeglobals` does not reach the KDE reader (the egui
+  showcase's `native` feature among its users), as the runner has none;
 - a `PATH` of `fc-match`, `sh`, `sleep`, `true` and the toolchain's `cargo`
   and `rustc` only, none of the desktop readers `gsettings`, `xrdb`, `xrandr`
   or `xfconf-query`;
