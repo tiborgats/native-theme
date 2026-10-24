@@ -941,7 +941,10 @@ pointer, and the primary button, at a point of the window),
 `--dump-layout FILE` (the rectangles of the elements
 `docs/showcase-elements.toml` lists; the showcase quits once it and any
 `--screenshot` are written, unless `--capture` keeps the window) and
-`--open-menu TITLE`.
+`--open-menu TITLE` (opens that menu of the window's menu bar, File, View,
+Theme or Help, without case; an unknown title is reported and ignored, and on
+macOS, where the menus are the system menu bar's and the window draws none,
+every title is).
 
 ## Gallery
 

@@ -604,7 +604,9 @@ The elements the three showcases share are listed once, in
 `docs/showcase-elements.toml`: `--dump-layout FILE` writes their rectangles
 for `scripts/check_showcase_parity.py`, and `--open-menu theme` opens the
 Theme menu before the first settled frame, so the capture and the dump hold
-its popup and rows.
+its popup and rows (any title of the menu bar opens its menu, and an unknown one
+is reported and ignored; on macOS, where the menus are the system menu bar's,
+every one is).
 
 The release screenshots (`.github/workflows/screenshots.yml`) and
 `scripts/generate_screenshots_egui.sh` build the showcase with
