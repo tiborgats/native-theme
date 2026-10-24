@@ -1395,15 +1395,15 @@ mod tests {
     /// Adwaita inherits AdwaitaLegacy: an icon only AdwaitaLegacy has is
     /// found for Adwaita. `default` inherits Adwaita but lists no
     /// `Directories`, so it is no icon theme, and nothing is found for it.
+    /// The themes are looked for where the lookup searches,
+    /// [`icon_base_dirs`], so the test runs exactly where the lookup can
+    /// find them.
     #[test]
     fn find_icon_reaches_a_parent_theme_and_not_through_default() {
-        let icons = Path::new("/usr/share/icons");
-        let default_index = std::fs::read_to_string(icons.join("default/index.theme"));
-        let inherits_adwaita = default_index
-            .as_deref()
-            .is_ok_and(|index| inherits(index).contains(&"Adwaita"));
-        let legacy = icons.join("AdwaitaLegacy");
-        if !inherits_adwaita || !legacy.join("index.theme").exists() {
+        let bases = icon_base_dirs();
+        let inherits_adwaita = theme_index("default", bases)
+            .is_some_and(|index| inherits(&index).contains(&"Adwaita"));
+        if !inherits_adwaita || !has_theme_index("AdwaitaLegacy", bases) {
             eprintln!("skipped: needs `default` inheriting Adwaita, and AdwaitaLegacy");
             return;
         }
@@ -1421,10 +1421,12 @@ mod tests {
             }
         }
         let mut legacy_names = std::collections::BTreeSet::new();
-        stems(&legacy, &mut legacy_names);
         let mut adwaita_names = std::collections::BTreeSet::new();
-        stems(&icons.join("Adwaita"), &mut adwaita_names);
-        stems(&icons.join("default"), &mut adwaita_names);
+        for base in bases {
+            stems(&base.join("AdwaitaLegacy"), &mut legacy_names);
+            stems(&base.join("Adwaita"), &mut adwaita_names);
+            stems(&base.join("default"), &mut adwaita_names);
+        }
         let legacy_only: Vec<&String> = legacy_names
             .iter()
             .filter(|name| {
@@ -1438,25 +1440,29 @@ mod tests {
         for name in legacy_only {
             let found = find_icon(name, "Adwaita", 24);
             assert!(
-                found
-                    .as_ref()
-                    .is_some_and(|(path, _)| path.starts_with(&legacy)),
+                found.as_ref().is_some_and(|(path, _)| is_in_theme_dir(
+                    path,
+                    "AdwaitaLegacy",
+                    bases
+                )),
                 "{name} for Adwaita: {found:?}"
             );
             assert_eq!(find_icon(name, "default", 24), None, "{name} for default");
         }
     }
 
-    /// The fix must not lose an icon the theme has.
+    /// The fix must not lose an icon the theme has. Breeze is looked for
+    /// where the lookup searches, [`icon_base_dirs`].
     #[test]
     fn find_icon_still_finds_breeze_edit_copy() {
-        if !Path::new("/usr/share/icons/breeze/index.theme").exists() {
+        let bases = icon_base_dirs();
+        if !has_theme_index("breeze", bases) {
             eprintln!("skipped: the breeze theme is not installed");
             return;
         }
         let (path, _) = find_icon("edit-copy", "breeze", 24).expect("breeze has edit-copy");
         assert!(
-            path.starts_with("/usr/share/icons/breeze"),
+            is_in_theme_dir(&path, "breeze", bases),
             "{}",
             path.display()
         );
