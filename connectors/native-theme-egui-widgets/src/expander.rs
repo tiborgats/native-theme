@@ -33,8 +33,8 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 ///   single-line labels are (`TextWrapMode::Truncate`); above 1 the title wraps at that width,
 ///   and the header is the tallest of the stated height, the title's line box at its scaled
 ///   size and `defaults.line_height`, rounded up, with the padding above and below it, and the
-///   wrapped title with that padding. Where the title cannot be that narrow the header is as wide as it
-///   needs, as egui's own header is at least its text;
+///   wrapped title with that padding. Where the title cannot be that narrow the header is as
+///   wide as it needs, as egui's own header is at least its text;
 /// * the arrow, `expander.arrow_icon_size` across in `expander.arrow_color` (the state's
 ///   text colour where unstated), is egui's triangle: before the title it turns from the
 ///   title to down as the body opens, egui's own turn; after it (`arrow_side` trailing) from
