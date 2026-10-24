@@ -485,6 +485,81 @@ pub(crate) fn how_line(manifest: &Manifest, leaf: &str, seams: &[Seam]) -> Strin
     line
 }
 
+/// The leaves the Basic page applies per call where `mapping.toml`'s row names the `Role::List`
+/// scope's style field the connector writes, by element id (a prefix, for the rows) and leaf:
+/// the List's and the table's frames, which `pages::basic::list_frame` paints, and the rows
+/// whose fills `pages::basic::inner_corners` rounds where they meet a frame.
+const PER_CALL_ROUTES: &[(&str, &str, &str)] = &[
+    (
+        "basic.list.frame",
+        "list.border.corner_radius_px",
+        "egui: per call, the frame's corner radius (pages::basic::list_frame)",
+    ),
+    (
+        "basic.list.frame",
+        "list.border.line_width_px",
+        "egui: per call, the frame's line width (pages::basic::list_frame)",
+    ),
+    (
+        "basic.table.frame",
+        "list.border.corner_radius_px",
+        "egui: per call, the frame's corner radius (pages::basic::list_frame)",
+    ),
+    (
+        "basic.table.frame",
+        "list.border.line_width_px",
+        "egui: per call, the frame's line width (pages::basic::list_frame)",
+    ),
+    (
+        "basic.table.header",
+        "list.border.corner_radius_px",
+        "egui: per call, the fill's top corners at the frame's inner radius, this less \
+         list.border.line_width (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.table.header",
+        "list.border.line_width_px",
+        "egui: per call, taken off the frame's radius for the fill's top corners \
+         (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.table.row_",
+        "list.border.corner_radius_px",
+        "egui: per call, the last row's bottom corners at the frame's inner radius, this less \
+         list.border.line_width (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.table.row_",
+        "list.border.line_width_px",
+        "egui: per call, taken off the frame's radius for the last row's bottom corners \
+         (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.list.row_",
+        "list.border.corner_radius_px",
+        "egui: per call, a fill's corners where it meets the frame at the frame's inner \
+         radius, this less list.border.line_width (pages::basic::inner_corners)",
+    ),
+    (
+        "basic.list.row_",
+        "list.border.line_width_px",
+        "egui: per call, taken off the frame's radius for a fill's corners where it meets the \
+         frame (pages::basic::inner_corners)",
+    ),
+];
+
+/// The line under a listed element's row: the call that applies it where the Basic page paints
+/// it per call ([`PER_CALL_ROUTES`]), else [`how_line`]'s, from the leaf's `mapping.toml` row.
+pub(crate) fn listed_how(manifest: &Manifest, element: &str, leaf: &str, seams: &[Seam]) -> String {
+    PER_CALL_ROUTES
+        .iter()
+        .find(|(id, l, _)| element.starts_with(id) && *l == leaf)
+        .map_or_else(
+            || how_line(manifest, leaf, seams),
+            |(_, _, line)| line.to_string(),
+        )
+}
+
 /// The row of a `mapping.toml` row for an instance drawn with `seams`: the leaf as the manifest
 /// names it, its value in `json` in the listed rows' text, a font's family as `family` labels
 /// it (`values::value_at`), and its route.
@@ -565,7 +640,10 @@ impl InfoView {
                 Some(atlas.icon_set()),
                 atlas.icon_theme(scheme),
                 family,
-                |leaf| with_exceptions(how_line(manifest, leaf, seams), &mapping_key(leaf)),
+                |leaf| {
+                    let how = listed_how(manifest, &element.id, leaf, seams);
+                    with_exceptions(how, &mapping_key(leaf))
+                },
                 not_themeable,
             ));
         }

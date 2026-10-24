@@ -7513,6 +7513,57 @@ fn widget_info_shows_the_listed_elements_rows() {
     }
 }
 
+/// The Basic page paints the List's and the table's frames per call (`pages::basic::list_frame`)
+/// and rounds the rows' fills where they meet them (`inner_corners`), so their routes name that
+/// call, not the `Role::List` scope's style field `mapping.toml` names for the connector: the
+/// frames' and the rows' radius and width (the frames' fill and line colour are per-call rows of
+/// the manifest already).
+#[test]
+fn the_list_and_table_frame_routes_name_the_call_that_paints_them() {
+    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
+    let seams = [crate::demo::Seam::Role(
+        native_theme_egui::Role::List,
+        RoleVariant::Normal,
+    )];
+    let mut checked = 0usize;
+    let mut wrong = Vec::new();
+    for element in listed_elements() {
+        let id = element.id.as_str();
+        let painted = [
+            "basic.list.frame",
+            "basic.table.frame",
+            "basic.table.header",
+        ]
+        .contains(&id)
+            || id.starts_with("basic.table.row_")
+            || id.starts_with("basic.list.row_");
+        if !painted {
+            continue;
+        }
+        for leaf in ["list.border.corner_radius_px", "list.border.line_width_px"] {
+            if !element.leaves.iter().any(|l| l == leaf) {
+                continue;
+            }
+            checked += 1;
+            let how = crate::info::listed_how(&manifest, &element.id, leaf, &seams);
+            let call = if element.id.ends_with(".frame") {
+                "list_frame"
+            } else {
+                "inner_corners"
+            };
+            if !how.contains(call) || how.contains("visuals.") {
+                wrong.push(format!("{} {leaf}: {how:?}", element.id));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+    assert_eq!(
+        checked, 14,
+        "the two frames', the table's header and last row's and the List's three rows' two \
+         leaves"
+    );
+}
+
 /// The family drawn in a family's place is the substitute the atlas's note for that family
 /// names: none for a family with no note, or whose note names no substitute (`demo::drawn_family`
 /// over the `(family, substitute)` pairs `demo::unavailable_families` takes from the notes).
