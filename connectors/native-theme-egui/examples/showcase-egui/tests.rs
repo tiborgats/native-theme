@@ -3784,8 +3784,9 @@ fn the_tables_headers_take_the_themes_header_height() {
 /// error, far below a pixel, so a row grown by a wrapped line or the spacing between rows fails.
 const ROW_SLACK: f32 = 0.01;
 
-/// The Data table at text scales 1 and 1.5, and the Theme Map at 1, lie across the central
-/// panel on every bundled preset: every header and body cell, its text cut short or whole, lies
+/// The Data table at text scales 1, 1.5 and the largest the Preferences offer
+/// (`chrome::TEXT_SCALE_MAX`), and the Theme Map at 1, lie across the central panel on every
+/// bundled preset: every header and body cell, its text cut short or whole, lies
 /// wholly inside the panel's width (the page scrolls only vertically, `app.rs`,
 /// `ScrollArea::vertical`), where a column as wide as its longest text pushed the Theme Map's
 /// last ones past the panel's edge, out of view. So at a scale of 1 the Theme Map's view across
@@ -3799,7 +3800,11 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
     let mut wrong = Vec::new();
     for info in Theme::list_presets() {
         for (tab, kinds, factors) in [
-            ("data", ["table header", "table cell"], &[1.0, 1.5][..]),
+            (
+                "data",
+                ["table header", "table cell"],
+                &[1.0, 1.5, crate::chrome::TEXT_SCALE_MAX][..],
+            ),
             ("theme-map", ["theme map header", "theme map cell"], &[1.0]),
         ] {
             for &factor in factors {
@@ -3837,13 +3842,14 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
 }
 
 /// At a text scale of 1.5 and at the largest the Preferences offer (`chrome::TEXT_SCALE_MAX`), on
-/// every bundled preset: the Data table's cells lie wholly inside the central panel, and the
-/// Theme Map, shown with its longest leaf in view (its verdict's rows, scrolled to it), keeps its
-/// Value and Sinks columns at least as wide as their headers' text (each header drawn whole at
-/// some view across), and where it is wider than its view, the view moves across, and every cell
-/// is wholly in view at one of the views it is moved through to its right end, or, a cell wider
-/// than the view, spans it there. Cells are read by their whole rectangles (`Record::whole`),
-/// not the parts the view's clip leaves, within half a pixel.
+/// every bundled preset, the Theme Map, shown with its longest leaf in view (its verdict's rows,
+/// scrolled to it), keeps its Value and Sinks columns at least as wide as their headers' text
+/// (each header drawn whole at some view across), and where it is wider than its view, the view
+/// moves across, and every cell is wholly in view at one of the views it is moved through to its
+/// right end, or, a cell wider than the view, spans it there. Cells are read by their whole
+/// rectangles (`Record::whole`), not the parts the view's clip leaves, within half a pixel. The
+/// Data table at these scales is held by
+/// [`the_data_and_theme_map_tables_lie_inside_the_central_panel`].
 #[test]
 fn the_tables_keep_their_columns_at_the_largest_text_scale() {
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
@@ -3858,25 +3864,6 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         .iter()
         .flat_map(|info| [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (info, factor)));
     for (info, factor) in runs {
-        let data = open_scaled(info.key, "data", factor);
-        let records = data.state().registry.records();
-        let panel = records
-            .iter()
-            .find(|r| r.info.kind == "Central panel")
-            .map(|r| r.rect)
-            .expect("the central panel records itself");
-        let outside = records
-            .iter()
-            .filter(|r| ["table header", "table cell"].contains(&r.info.kind))
-            .filter(|r| r.whole.left() < panel.left() || r.whole.right() > panel.right())
-            .count();
-        if outside > 0 {
-            wrong.push(format!(
-                "{} at {factor} data: {outside} cells outside the panel",
-                info.key
-            ));
-        }
-
         let mut map = open_scaled(info.key, "theme-map", factor);
         map.state_mut().demo_state.theme_map_filter = Some(longest.verdict);
         map.run_steps(2);
