@@ -2324,6 +2324,42 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
     );
 }
 
+/// The status bar keeps the shown Widget Info's title and cuts the environment short in the
+/// room the title leaves, as the gpui showcase's does (`demo::status_bar`, `truncate` on the
+/// environment): under windows-11 at a text scale of 1.5, where the environment and the title
+/// together are wider than the window where the family is substituted, both lie inside the bar
+/// and the environment ends before the title begins. The places are the widgets' whole
+/// rectangles, not the parts the bar's clip leaves in view.
+#[test]
+fn the_status_bar_keeps_the_title_and_cuts_the_environment_short() {
+    let mut harness = open_scaled("windows-11", "basic", 1.5);
+    let pos = centre_of(&harness, "toggle button (on)");
+    hover_and_settle(&mut harness, pos);
+    assert!(
+        !harness.state().status_title().is_empty(),
+        "hovering the toggle shows its title in the status bar"
+    );
+    // An egui panel grows with what it holds, so the bar is bounded by the window too.
+    let window = harness.ctx.viewport_rect(); // `egui/src/context.rs:2921`
+    let bar = place_of(&harness, "chrome.status_bar");
+    assert!(
+        bar.right() <= window.right() + 0.5,
+        "the status bar {bar:?} runs past the window {window:?}"
+    );
+    let environment = place_of(&harness, "chrome.status_bar.environment");
+    let title = place_of(&harness, "chrome.status_bar.shown");
+    for (what, rect) in [("environment", environment), ("title", title)] {
+        assert!(
+            bar.x_range().contains(rect.left()) && rect.right() <= bar.right() + 0.5,
+            "the status bar's {what} {rect:?} is not inside the bar {bar:?}"
+        );
+    }
+    assert!(
+        environment.right() <= title.left() + 0.5,
+        "the environment {environment:?} runs into the title {title:?}"
+    );
+}
+
 /// The element `id`'s place this pass.
 fn place_of(harness: &Harness<'_, App>, id: &str) -> egui::Rect {
     harness

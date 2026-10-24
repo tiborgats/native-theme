@@ -690,7 +690,8 @@ fn tooltip(
 /// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:250-290`,
 /// `showcase-gpui/demo.rs:969-1048`, `:1370-1423`): the side-panel toggle, a small Ghost button
 /// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
-/// then the environment as one line joined by " · "; the shown Widget Info's title flush right.
+/// then the environment as one line joined by " · ", cut short in the room the title leaves; the
+/// shown Widget Info's title flush right.
 /// A side `status_bar.border.padding` leaves unstated is padded as gpui-component pads its
 /// `StatusBar`, which the gpui showcase's keeps ([`status_bar_padding`]), where the panel frame
 /// would keep egui's own (8 across, 2 down).
@@ -788,19 +789,26 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
                 // The bar's own role, not the base style: its separator line and its text are
                 // `status_bar`'s (§10.4).
                 let Some(bar) = bar else { return };
-                let label = bar.add(registry, ui, "Label · environment", |ui| {
-                    ui.label(demo::lined(ui, environment, egui::TextStyle::Body))
-                });
-                registry.tag("chrome.status_bar.environment", &label);
-                // The shown Widget Info's title, flush right (§10.4).
-                if !title.is_empty() {
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                // The shown Widget Info's title, flush right (§10.4), laid out first so it keeps
+                // its width; the environment then takes the room left of it, cut short with an
+                // ellipsis where it is wider, its whole text on hover (egui 0.36.2
+                // `widgets/label.rs:284-293`), as the gpui showcase's environment shrinks alone
+                // (`showcase-gpui/demo.rs`, `status_bar`'s `truncate`).
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if !title.is_empty() {
                         let label = bar.add(registry, ui, "Label · shown info", |ui| {
                             ui.label(demo::lined(ui, title, egui::TextStyle::Body))
                         });
                         registry.tag("chrome.status_bar.shown", &label);
+                    }
+                    ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                        let label = bar.add(registry, ui, "Label · environment", |ui| {
+                            let text = demo::lined(ui, environment, egui::TextStyle::Body);
+                            ui.add(egui::Label::new(text).truncate())
+                        });
+                        registry.tag("chrome.status_bar.environment", &label);
                     });
-                }
+                });
             });
         });
     seams.record(&mut app.registry, &out.response, "Status bar");
