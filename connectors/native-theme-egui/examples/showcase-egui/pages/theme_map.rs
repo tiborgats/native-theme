@@ -146,13 +146,11 @@ pub(crate) fn show(
                                             row.col(|ui| {
                                                 list.add(reg, ui, "theme map cell", |ui| {
                                                     match swatch {
-                                                        Some(colour) => crate::info::swatch_row(
+                                                        Some(colour) => crate::info::swatch_cell(
                                                             ui,
                                                             t,
                                                             colour,
-                                                            (&text, egui::TextStyle::Body),
-                                                            Some(heights.body_line),
-                                                            &[],
+                                                            heights.cell(text),
                                                         ),
                                                         None => ui.label(heights.cell(text)),
                                                     }

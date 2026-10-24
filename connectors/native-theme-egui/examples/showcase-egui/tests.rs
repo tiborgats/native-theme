@@ -4009,6 +4009,103 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
+/// A Theme Map colour value too long for its Value column is cut short on its one line, beside
+/// its swatch, and shows its whole text on hover, as the column's other texts are: at the
+/// largest text scale under the test preset, scrolled to the longest leaf (the Leaf column as
+/// wide as it), the Value column is about its header's width, narrower than a colour's swatch
+/// and hex. Every colour value's galley in view is one row, and one cut short is hovered.
+#[test]
+fn a_narrow_colour_cell_is_cut_short_and_whole_on_hover() {
+    let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
+    let longest = manifest
+        .rows
+        .iter()
+        .max_by_key(|r| r.leaf.chars().count())
+        .expect("the manifest has rows");
+    let mut map = open_scaled(TEST_PRESET, "theme-map", crate::chrome::TEXT_SCALE_MAX);
+    map.state_mut().demo_state.theme_map_filter = Some(longest.verdict);
+    map.run_steps(2);
+    // Down to the longest leaf, as `the_tables_keep_their_columns_at_the_largest_text_scale`
+    // scrolls to it.
+    map.hover_at(centre_of(&map, "theme map"));
+    let leaf_shown = |map: &Harness<'_, App>| {
+        map.output()
+            .shapes
+            .iter()
+            .any(|c| matches!(&c.shape, egui::Shape::Text(s) if s.galley.text() == longest.leaf))
+    };
+    for _ in 0..80 {
+        if leaf_shown(&map) {
+            break;
+        }
+        map.event(egui::Event::MouseWheel {
+            unit: egui::MouseWheelUnit::Point,
+            delta: egui::vec2(0.0, -120.0),
+            phase: egui::TouchPhase::Move,
+            modifiers: egui::Modifiers::NONE,
+        });
+        map.run_steps(2);
+    }
+    map.run_steps(8);
+    assert!(
+        leaf_shown(&map),
+        "{} is not scrolled into view",
+        longest.leaf
+    );
+    // The colour values' galleys painted in a body cell in view: a colour's value is its hex
+    // (`Rgba`'s `Display`).
+    let cells: Vec<egui::Rect> = map
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "theme map cell" && r.rect.height() > 0.0)
+        .map(|r| r.rect)
+        .collect();
+    let shown: Vec<(egui::Pos2, std::sync::Arc<egui::Galley>)> = map
+        .output()
+        .shapes
+        .iter()
+        .filter_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(s)
+                if s.galley.text().starts_with('#')
+                    && cells
+                        .iter()
+                        .any(|c| c.contains(s.pos + egui::vec2(0.0, 1.0))) =>
+            {
+                Some((s.pos, s.galley.clone()))
+            }
+            _ => None,
+        })
+        .collect();
+    assert!(!shown.is_empty(), "no colour value is painted in view");
+    for (_, galley) in &shown {
+        assert_eq!(
+            galley.rows.len(),
+            1,
+            "the colour value {:?} is laid out on {} rows in a one-line cell",
+            galley.text(),
+            galley.rows.len()
+        );
+    }
+    let Some((pos, galley)) = shown.iter().find(|(_, g)| g.elided) else {
+        panic!(
+            "no colour value is cut short in the Value column: {:?}",
+            shown.iter().map(|(_, g)| g.text()).collect::<Vec<_>>()
+        );
+    };
+    // The cell's own label carries the whole text too (its `WidgetInfo`): the tooltip is a
+    // second node with it.
+    let whole = galley.text().to_string();
+    let before = map.query_all_by_label(&whole).count();
+    hover_and_settle(&mut map, *pos + galley.rect.center().to_vec2());
+    map.run_steps(4);
+    assert!(
+        map.query_all_by_label(&whole).count() > before,
+        "hovering the cut colour value shows no text reading {whole:?}"
+    );
+}
+
 /// The height of a row of the Data and Theme Map pages' `TableBuilder`s (`pages/data.rs`,
 /// `TableRows::of`), from the theme: `stated` grown above a text scale of 1 as gpui's table rows
 /// grow ([`grown`], no padding or rule: the cells draw none); where the theme states none, egui's

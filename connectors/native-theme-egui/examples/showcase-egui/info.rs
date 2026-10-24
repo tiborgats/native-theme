@@ -658,48 +658,25 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
     ui.add(egui::Label::new(job).wrap())
 }
 
-/// A colour row, the gpui showcase's `swatch` line (`showcase-gpui/inspector.rs:409-416`,
-/// `:740-744`): a `SWATCH_SIZE` square of the colour, framed as the gpui showcase's `demo_frame`
-/// in `defaults.border` (`showcase-gpui/support.rs:228-235`), beside `label` in `style` — the
-/// leaf and the colour's hex — in a line box `line_height` tall where one is given; the lines
-/// `under` it — the verdict and the details — weak, as gpui's citation line is muted.
-pub(crate) fn swatch_row(
+/// A colour's cell in a one-line table column, the Theme Map's Value: a `SWATCH_SIZE` square of
+/// the colour ([`paint_swatch`]), then `text` beside it in the cell's own wrap mode, so a column
+/// narrower than the two cuts the text short with egui's ellipsis, its whole text on hover
+/// (`pages::data::one_line_cells`), where a wrapping label with the swatch as its first row's
+/// leading space moved a text with no room on that row onto rows the one-line cell clips away
+/// (epaint 0.36.2 `src/text/text_layout.rs:668-684`, `line_break`).
+pub(crate) fn swatch_cell(
     ui: &mut egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
     colour: egui::Color32,
-    (label, style): (&str, egui::TextStyle),
-    line_height: Option<f32>,
-    under: &[String],
+    text: egui::RichText,
 ) -> egui::Response {
-    let font = style.resolve(ui.style());
-    let (weak, strong) = (ui.visuals().weak_text_color(), ui.visuals().text_color());
-    let format = |color| egui::TextFormat {
-        font_id: font.clone(),
-        line_height,
-        color,
-        valign: egui::Align::Center,
-        ..Default::default()
-    };
-    // One label: the first row leaves the swatch its room and is as tall as it, so the lines
-    // under it follow with no gap, as gpui's `v_flex` of the two lines has none.
-    let mut job = egui::text::LayoutJob {
-        first_row_min_height: crate::SWATCH_SIZE,
-        ..Default::default()
-    };
-    job.append(
-        label,
-        crate::SWATCH_SIZE + ui.spacing().item_spacing.x,
-        format(strong),
-    );
-    for line in under {
-        job.append("\n", 0.0, format(weak));
-        job.append(line, 0.0, format(weak));
-    }
-    let response = ui.add(egui::Label::new(job).wrap());
-    let square =
-        egui::Rect::from_min_size(response.rect.min, egui::Vec2::splat(crate::SWATCH_SIZE));
-    paint_swatch(ui, t, square, colour);
-    response
+    ui.horizontal(|ui| {
+        let size = egui::Vec2::splat(crate::SWATCH_SIZE);
+        let (square, _) = ui.allocate_exact_size(size, egui::Sense::hover());
+        paint_swatch(ui, t, square, colour);
+        ui.label(text);
+    })
+    .response
 }
 
 /// `rect` filled with `colour` and framed in `defaults.border`'s width, radius and colour
