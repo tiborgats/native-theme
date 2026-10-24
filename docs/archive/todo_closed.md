@@ -1824,6 +1824,30 @@ platform (`native-theme/src/watch/`).
       inside) take it. `the_tables_headers_take_the_themes_header_height` expects the
       grown heights at 1.5 over adwaita, material-3, macos-tahoe and catppuccin-mocha,
       computed at test time (adwaita's 30 px header is 32).
+- [x] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
+      auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
+      `catppuccin-mocha`'s header label (19 px) is taller than its stated header height
+      (18 px), pre-existing.
+      M8 T21 (2026-10-17): for M9c, not M7: M7's Step 6 ruling sent it to
+      M9a as the showcases' milestone; M9's plan gives each showcase its
+      own, M9a gpui, M9b iced and M9c egui.
+  *Closed by M9c T12 (2026-10-24, 8fdda5db):* the Data and Theme Map tables' rows are
+      exactly their height: `list.row_height` where the theme states it, grown above a
+      text scale of 1 by the shared crate's `rows::scaled_height`, else egui's own
+      `interact_size.y` or the line box rounded up where taller, and the header likewise
+      (`list.header_height`, else a row, in the header font). Each cell is one unwrapped
+      line in its font's line box at `defaults.line_height`, an auto-sized column as wide
+      as its text, and the last column is clipped (egui_extras 0.36.2 `Column::clip`,
+      `src/layout.rs:160-168`, `:218-224`), so a text too long for it is cut short with
+      egui's ellipsis and shown whole on hover (egui 0.36.2 `src/widgets/label.rs:285-294`);
+      the rows lie with no spacing between them. The second sentence does not hold as
+      written: catppuccin-mocha states no `list.header_height` (its two
+      `header_height_px = 40.0` keys are `[light.expander]` and `[dark.expander]`), so the
+      18 px was egui's own `interact_size.y`, under the 19 px line egui laid its label out in
+      on the host where it was measured;
+      the header is now 18 px with its label in its 16.8 px line box.
+      `the_tables_headers_take_the_themes_header_height` lost its `header.max(content)`
+      allowance.
 
 ### Closed items from M6 close (2026-10-16): items carried to M7, M8, M9a and the presets
 

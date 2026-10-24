@@ -3866,20 +3866,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       `border.corner_radius`, `border.line_width` and `border.shadow_enabled`
       rows. The rest of the entry stays open.
 
-### GPUI Kit 0.7.3 (G1, G2): review minors left for M9a, M9b and M9c
-Found by the plan's task reviews (2026-10-14) and deferred there; each was checked again at
-the plan's close.
-M8 T21 (2026-10-17): named for its open items, all the showcases' (it was *GPUI Kit
-0.7.3 (G1, G2): review minors left for M6 and M7*); its closed items are under that
-name in [`archive/todo_closed.md`](archive/todo_closed.md).
-- [ ] [v0.7.0] For M7: the egui showcase's body rows grow past `list.row_height` where an
-      auto-sized column wraps (the Data and Theme Map tables; egui_extras `layout.rs:165`);
-      `catppuccin-mocha`'s header label (19 px) is taller than its stated header height
-      (18 px), pre-existing.
-      M8 T21 (2026-10-17): for M9c, not M7: M7's Step 6 ruling sent it to
-      M9a as the showcases' milestone; M9's plan gives each showcase its
-      own, M9a gpui, M9b iced and M9c egui.
-
 ### M7 close (2026-10-16), its `[v0.7.0]` entries
 The egui connector's and egui widgets' fix phase (M7, `c5ff9271..`, ledger "## M7") left these. Each sits here until its milestone takes it.
 - [ ] [v0.7.0] For M9a: the egui showcase's `named_image` reads its freedesktop icon from disk in every pass (`role_image` is cached since M7 T12).
