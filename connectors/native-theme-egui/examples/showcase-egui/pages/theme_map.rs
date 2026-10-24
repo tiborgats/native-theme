@@ -23,8 +23,11 @@ pub(crate) fn show(
     // (`showcase-gpui/pages/theme_map.rs:271-276`).
     caption(reg, ui, "All mapping.toml Rows");
     // The filter row is one instance in the base style: selectables, frameless at rest (§10.4).
+    // It wraps at the page's width: a row wider than the page would widen the central panel past
+    // the window, and the table's view across with it, so its last column could not be
+    // scrolled into view.
     demo::contained(reg, ui, "verdict filter", |ui, reg| {
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             for (label, filter) in [
                 ("All", None),
                 ("Direct", Some(Verdict::Direct)),

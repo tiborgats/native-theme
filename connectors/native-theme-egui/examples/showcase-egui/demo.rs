@@ -41,6 +41,11 @@ pub(crate) struct Record {
     /// One of §10.4's 21 container types, or a chrome panel.
     #[cfg(test)]
     pub container: bool,
+    /// The instance's whole rectangle (`Response::rect`), where `rect` is the part its clip
+    /// leaves (`interact_rect`, egui 0.36.2 `src/ui.rs:926`): a cell cut short by its view's
+    /// edge has a whole rectangle past it.
+    #[cfg(test)]
+    pub whole: egui::Rect,
     /// `Response::contains_pointer` (`egui/src/response.rs:333`) when recorded.
     pub contains_pointer: bool,
     /// Whether Widget Info may show it: every instance but a layout box (`Registry::untarget`).
@@ -152,6 +157,8 @@ impl Registry {
             info,
             #[cfg(test)]
             container: _container,
+            #[cfg(test)]
+            whole: response.rect,
             contains_pointer: response.contains_pointer(),
             target: true,
         });

@@ -3781,21 +3781,25 @@ fn the_tables_headers_take_the_themes_header_height() {
 /// error, far below a pixel, so a row grown by a wrapped line or the spacing between rows fails.
 const ROW_SLACK: f32 = 0.01;
 
-/// The Data and Theme Map tables lie across the central panel, on every bundled preset at text
-/// scales 1 and 1.5: every header and body cell, cut short or whole, lies inside the panel's
-/// width (the page scrolls only vertically, `app.rs`, `ScrollArea::vertical`), where a column as
-/// wide as its longest text pushed the Theme Map's last ones past the panel's edge, out of view.
-/// So at these scales the Theme Map's view across (`pages/theme_map.rs`) holds the whole table
-/// with no scrolling: a cell past its edge would be clipped away, a rectangle with no width.
+/// The Data table at text scales 1 and 1.5, and the Theme Map at 1, lie across the central
+/// panel on every bundled preset: every header and body cell, its text cut short or whole, lies
+/// wholly inside the panel's width (the page scrolls only vertically, `app.rs`,
+/// `ScrollArea::vertical`), where a column as wide as its longest text pushed the Theme Map's
+/// last ones past the panel's edge, out of view. So at a scale of 1 the Theme Map's view across
+/// (`pages/theme_map.rs`) holds the whole table with no scrolling; at 1.5 it can be wider than
+/// its view (ios-13's Sinks column ends about 50 px past it), and
+/// [`the_tables_keep_their_columns_at_the_largest_text_scale`] holds it reachable there. A cell's
+/// whole rectangle is read (`Record::whole`), not the part the view's clip leaves, so a cell the
+/// edge cuts partway fails too.
 #[test]
 fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
     let mut wrong = Vec::new();
     for info in Theme::list_presets() {
-        for factor in [1.0, 1.5] {
-            for (tab, kinds) in [
-                ("data", ["table header", "table cell"]),
-                ("theme-map", ["theme map header", "theme map cell"]),
-            ] {
+        for (tab, kinds, factors) in [
+            ("data", ["table header", "table cell"], &[1.0, 1.5][..]),
+            ("theme-map", ["theme map header", "theme map cell"], &[1.0]),
+        ] {
+            for &factor in factors {
                 let page = open_scaled(info.key, tab, factor);
                 let records = page.state().registry.records();
                 let panel = records
@@ -3806,16 +3810,12 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
                 let cells: Vec<egui::Rect> = records
                     .iter()
                     .filter(|r| kinds.contains(&r.info.kind))
-                    .map(|r| r.rect)
+                    .map(|r| r.whole)
                     .collect();
                 assert!(!cells.is_empty(), "{} {tab}: no cells", info.key);
-                // a cell laid out past the panel's edge is clipped to it, from its left to the
-                // edge: a rectangle with no width, or one turned inside out
                 let outside: Vec<&egui::Rect> = cells
                     .iter()
-                    .filter(|r| {
-                        r.left() < panel.left() || r.right() > panel.right() || r.width() <= 0.0
-                    })
+                    .filter(|r| r.left() < panel.left() || r.right() > panel.right())
                     .collect();
                 if let Some(first) = outside.first() {
                     wrong.push(format!(
@@ -3832,14 +3832,15 @@ fn the_data_and_theme_map_tables_lie_inside_the_central_panel() {
     assert!(wrong.is_empty(), "{}", wrong.join("\n"));
 }
 
-/// At the largest text scale the Preferences offer (`chrome::TEXT_SCALE_MAX`), on every bundled
-/// preset: the Data table's cells lie inside the central panel, and the Theme Map, shown with its
-/// longest leaf in view (its verdict's rows, scrolled to it), keeps its Value and Sinks columns at
-/// least as wide as their headers' text (each header drawn whole), every cell in the table's
-/// scroll content, reachable by scrolling across where the columns are wider than the panel.
+/// At a text scale of 1.5 and at the largest the Preferences offer (`chrome::TEXT_SCALE_MAX`), on
+/// every bundled preset: the Data table's cells lie wholly inside the central panel, and the
+/// Theme Map, shown with its longest leaf in view (its verdict's rows, scrolled to it), keeps its
+/// Value and Sinks columns at least as wide as their headers' text (each header drawn whole at
+/// one end), and where it is wider than its view, the view moves across, and every cell is
+/// wholly in view at one of its two ends, or, a cell wider than the view, spans it there. Cells
+/// are read by their whole rectangles (`Record::whole`), not the parts the view's clip leaves.
 #[test]
 fn the_tables_keep_their_columns_at_the_largest_text_scale() {
-    let factor = crate::chrome::TEXT_SCALE_MAX;
     let manifest = Manifest::parse(MANIFEST).expect("the manifest parses");
     let longest = manifest
         .rows
@@ -3847,7 +3848,11 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         .max_by_key(|r| r.leaf.chars().count())
         .expect("the manifest has rows");
     let mut wrong = Vec::new();
-    for info in Theme::list_presets() {
+    let presets = Theme::list_presets();
+    let runs = presets
+        .iter()
+        .flat_map(|info| [1.5, crate::chrome::TEXT_SCALE_MAX].map(|factor| (info, factor)));
+    for (info, factor) in runs {
         let data = open_scaled(info.key, "data", factor);
         let records = data.state().registry.records();
         let panel = records
@@ -3858,15 +3863,11 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         let outside = records
             .iter()
             .filter(|r| ["table header", "table cell"].contains(&r.info.kind))
-            .filter(|r| {
-                r.rect.left() < panel.left()
-                    || r.rect.right() > panel.right()
-                    || r.rect.width() <= 0.0
-            })
+            .filter(|r| r.whole.left() < panel.left() || r.whole.right() > panel.right())
             .count();
         if outside > 0 {
             wrong.push(format!(
-                "{} data: {outside} cells outside the panel",
+                "{} at {factor} data: {outside} cells outside the panel",
                 info.key
             ));
         }
@@ -3899,24 +3900,33 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         }
         if painted(&map, &longest.leaf).is_empty() {
             wrong.push(format!(
-                "{}: {} not scrolled into view",
+                "{} at {factor}: {} not scrolled into view",
                 info.key, longest.leaf
             ));
             continue;
         }
         // Each cell of a row in the table's view, by its row's top and its column, whether it
-        // is in view across: inside the panel and not clipped away (a cell's record is its
-        // rectangle as the view clips it, one with no width, or turned inside out, where the
-        // view's edge clips it away); and each header, whether it is drawn whole. A row the
-        // view clips away below is laid out but not shown (no height), and is left out: the
-        // view scrolls across here, not down. With no panel recorded no cell is in view, and
-        // the test fails.
+        // is wholly in view across: its whole rectangle (`Record::whole`, not the part the
+        // view's clip leaves) inside the view (the table's record as its clip leaves it), or,
+        // a cell wider than the view, across all of it; each header, whether it is drawn whole;
+        // and the first header's left edge, which moves as the view scrolls across. A row the
+        // view clips away below is laid out but not shown (its clipped rectangle has no
+        // height), and is left out: the view scrolls across here, not down. With no view
+        // recorded no cell is in view, and the test fails.
         type Cells = std::collections::BTreeMap<(i64, usize), bool>;
+        let table_left = |map: &Harness<'_, App>| {
+            map.state()
+                .registry
+                .records()
+                .iter()
+                .find(|r| r.info.kind == "theme map header")
+                .map(|r| r.whole.left())
+        };
         let in_view = |map: &Harness<'_, App>| -> (Cells, Vec<Vec<bool>>) {
             let records = map.state().registry.records();
-            let panel = records
+            let view = records
                 .iter()
-                .find(|r| r.info.kind == "Central panel")
+                .find(|r| r.info.kind == "theme map")
                 .map_or(egui::Rect::NOTHING, |r| r.rect);
             let mut cells = Cells::new();
             let mut row = (i64::MIN, 0);
@@ -3931,12 +3941,12 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                     (top, 0)
                 };
                 if r.rect.height() > 0.0 {
-                    cells.insert(
-                        row,
-                        r.rect.left() >= panel.left()
-                            && r.rect.right() <= panel.right()
-                            && r.rect.width() > 0.0,
-                    );
+                    let (left, right) = (r.whole.left(), r.whole.right());
+                    let inside = left >= view.left() && right <= view.right();
+                    let across = r.whole.width() > view.width()
+                        && left <= view.left()
+                        && right >= view.right();
+                    cells.insert(row, view.width() > 0.0 && (inside || across));
                 }
             }
             let titles = ["Value", "Sinks / upstream"]
@@ -3949,6 +3959,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         // they lie at the other end (only the view across moves between the two)
         map.run_steps(8);
         let (at_start, titles_at_start) = in_view(&map);
+        let left_at_start = table_left(&map);
         // across to the table's right end
         for _ in 0..20 {
             map.event(egui::Event::MouseWheel {
@@ -3961,11 +3972,21 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
         }
         map.run_steps(8);
         let (at_end, titles_at_end) = in_view(&map);
+        // a table wider than the view moved across, so the cells at the two ends are two views
+        let cut_at_start = at_start.values().any(|whole| !whole);
+        let left_at_end = table_left(&map);
+        if cut_at_start && !matches!((left_at_start, left_at_end), (Some(a), Some(b)) if b < a) {
+            wrong.push(format!(
+                "{} at {factor}: the Theme Map does not fit its view, yet the view across did \
+                 not move: its first header's left edge {left_at_start:?}, then {left_at_end:?}",
+                info.key
+            ));
+        }
         for (ix, title) in ["Value", "Sinks / upstream"].into_iter().enumerate() {
             if titles_at_start[ix] != [false] && titles_at_end[ix] != [false] {
                 wrong.push(format!(
-                    "{}: the {title:?} header is cut short or out of view at either end, \
-                     elided {:?} and {:?}",
+                    "{} at {factor}: the {title:?} header is cut short or out of view at either \
+                     end, elided {:?} and {:?}",
                     info.key, titles_at_start[ix], titles_at_end[ix]
                 ));
             }
@@ -3977,7 +3998,7 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
             .collect();
         if at_start.is_empty() || !unreached.is_empty() {
             wrong.push(format!(
-                "{}: {} of {} Theme Map cells in view at neither end, e.g. {:?}",
+                "{} at {factor}: {} of {} Theme Map cells in view at neither end, e.g. {:?}",
                 info.key,
                 unreached.len(),
                 at_start.len(),
