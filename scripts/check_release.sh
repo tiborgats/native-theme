@@ -763,6 +763,34 @@ run_check "clippy (native-theme-egui-widgets, all features)" \
     cargo clippy -p native-theme-egui-widgets --all-targets --all-features -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Section: the showcases in CI's runner environment
+#
+# The showcases' tests read the desktop they run on: the platform preset, the
+# system icon theme, the system fonts and fc-match's substitutes. CI's
+# ubuntu-latest runner has no desktop session and other fonts than a
+# developer's desktop, so a test that holds only on this host's desktop fails
+# there: in run 40041829633 the egui showcase's side panel widened to the
+# icon-theme drop-down's reason for an undetected theme, past the window, and
+# twelve tests failed that passed here. scripts/run_in_runner_env.sh runs each
+# test binary in that environment (its header gives the evidence for each
+# part). Each showcase in the feature set a test leg above builds, so nothing
+# is compiled again; the first run downloads the runner's font packages into
+# target/runner-env/. Linux only: the environment is fontconfig's and the
+# freedesktop desktops'.
+# ─────────────────────────────────────────────────────────────────────────────
+print_section "Showcases in CI's runner environment"
+if [ "$(uname -s)" != "Linux" ]; then
+    print_info "skipped the showcases in CI's runner environment: it is a Linux runner's"
+else
+    run_tests "test (egui showcase, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
+    run_tests "test (iced showcase, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-iced --example showcase-iced
+    run_tests "test (gpui showcase, native, watch, runner environment)" \
+        scripts/run_in_runner_env.sh test -p native-theme-gpui --features native,watch --example showcase-gpui
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Section: examples (only crates with an examples/ directory)
 # ─────────────────────────────────────────────────────────────────────────────
 EXAMPLES_PRINTED=0

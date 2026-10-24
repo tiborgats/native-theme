@@ -653,3 +653,28 @@ empty. After a run,
 `cargo test -p native-theme --test icon_sources` checks the manifest and
 `cargo build -p native-theme` regenerates the by-name tables from the
 directories (`native-theme/build.rs`).
+
+## run_in_runner_env.sh
+
+Runs `cargo <arguments>` with each test binary in the environment of CI's
+Linux runner, so a test that holds only on this host's desktop or fonts fails
+here before it fails on CI. Cargo builds as usual; its target runner starts
+each test binary through the script, which clears the environment and gives
+the binary what an `ubuntu-latest` job has: no desktop (no
+`XDG_CURRENT_DESKTOP`, display or session bus), an empty home under
+`target/runner-env/home`, a `PATH` of `fc-match`, `sh`, `sleep`, `true` and the
+toolchain's `cargo` and `rustc` only (none of the desktop readers `gsettings`,
+`xrdb`, `xrandr` or `xfconf-query`), and the runner image's
+fonts: the Ubuntu 24.04 font packages and fontconfig configuration of image
+20261012.334, pinned by SHA-256 and downloaded from `snapshot.ubuntu.com` into
+`target/runner-env/` on the first run, named by `FONTCONFIG_FILE`, which both
+fontdb and `fc-match` read. The script's header gives the evidence for each
+part. `scripts/check_release.sh` runs the three showcases' tests through it in
+both modes (Linux only), each in the feature set its test leg already builds.
+
+Requires curl, sha256sum, bsdtar (libarchive) and fontconfig's `fc-match`;
+network access on the first run.
+
+```sh
+./scripts/run_in_runner_env.sh test -p native-theme-egui --example showcase-egui
+```
