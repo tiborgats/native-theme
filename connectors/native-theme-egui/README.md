@@ -588,25 +588,25 @@ cargo run -p native-theme-egui --example showcase-egui --features watch
 The gpui showcase's application built from egui's own containers, with
 per-instance Widget Info for every widget on screen. It opens on the Basic
 page, the controls all three showcases draw — buttons, checkboxes, radio
-buttons, text, text fields, a drop-down, a slider and a progress bar — in the
-same order and states, packed onto one screen, so the three showcases' captures
-compare control by control. Its flags `--theme`,
-`--variant`, `--icon-set`, `--tab` and `--screenshot` start it on a given
-preset, variant, icon set and tab, or capture the window with its title bar to
-a PNG (macOS and Windows; on Linux the capture scripts take it). The window
-opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture taken by
-another tool, it opens at that size whatever size the desktop remembers for it.
-`--pointer X,Y` holds the pointer at that point of the window (logical pixels)
-and `--press` holds the primary button down there, so a capture shows the
-control under it hovered or pressed where nothing can move the real pointer,
-as in a nested compositor; the gpui and iced showcases take the same flags.
-The elements the three showcases share are listed once, in
-`docs/showcase-elements.toml`: `--dump-layout FILE` writes their rectangles
-for `scripts/check_showcase_parity.py`, and `--open-menu theme` opens the
-Theme menu before the first settled frame, so the capture and the dump hold
-its popup and rows (any title of the menu bar opens its menu, and an unknown one
-is reported and ignored; on macOS, where the menus are the system menu bar's,
-every one is).
+buttons, text, text fields, a drop-down, a slider and a progress bar — in
+the same order and states, packed onto one screen, so the three showcases'
+captures compare control by control. Its flags `--theme`, `--variant`,
+`--icon-set`, `--tab` and `--screenshot` start it on a given preset,
+variant, icon set and tab, or capture the window with its title bar to a
+PNG (macOS and Windows; on Linux the capture scripts take it). The window
+opens at 1280 × 720; with `--screenshot`, or `--capture` for a capture
+taken by another tool, it opens at that size whatever size the desktop
+remembers for it. `--pointer X,Y` holds the pointer at that point of the
+window (logical pixels) and `--press` holds the primary button down there,
+so a capture shows the control under it hovered or pressed where nothing
+can move the real pointer, as in a nested compositor; the gpui and iced
+showcases take the same flags. The elements the three showcases share
+are listed once, in `docs/showcase-elements.toml`: `--dump-layout FILE`
+writes their rectangles for `scripts/check_showcase_parity.py`, and
+`--open-menu theme` opens the Theme menu before the first settled frame,
+so the capture and the dump hold its popup and rows (any title of the
+menu bar, without case, opens its menu, and an unknown one is reported and
+ignored; on macOS, where the menus are the system menu bar's, every one is).
 
 The release screenshots (`.github/workflows/screenshots.yml`) and
 `scripts/generate_screenshots_egui.sh` build the showcase with
