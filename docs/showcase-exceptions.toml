@@ -1038,6 +1038,15 @@ keys = [
 ]
 
 [[parity.group]]
+reason = "theme silence: the theme states no distance between the Basic list's scrollbar and the frame's inside or the rows. On material-3, whose bar is not floating (scrollbar.overlay_mode false), the inside's corner radius (12 - 1 = 11) is 5 more than half the groove (scrollbar.groove_width_px 12), and iced holds the bar those 5 px off both its sides so that its parts fit the rounded corners (list_bar_margin, (inner - groove / 2).max(0), connectors/native-theme-iced/examples/showcase-iced.rs, M9-158, the controller's ruling on the M9c T9b review's Minor 3, 9ff54ea6), which leaves its rows 168 - 12 - 2 x 5 = 146 wide; egui and gpui lay the bar flush in the inside's right-hand corner, where it reaches past the arcs (docs/todo.md, egui showcase: the Basic list's contents paint over its frame by fractions of a point, its items (1) and (4), ruled no code now), so their rows are 156 and egui's bar starts 5 px further right. On every other bundled preset the margin is 0, or the bar is hidden at rest"
+keys = [
+    "material-3:basic.list.row_1.w",
+    "material-3:basic.list.row_2.w",
+    "material-3:basic.list.row_3.w",
+    "material-3:basic.list.scrollbar.x",
+]
+
+[[parity.group]]
 reason = "gpui-component's List draws its scrollbar inside itself and reports no bounds of it (gpui-component src/list/list.rs:612-613, Scrollbar::vertical), so the dump has no rectangle for it; the bar is drawn | the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
 keys = [
     "catppuccin-mocha:basic.list.scrollbar.h",
