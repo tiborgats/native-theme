@@ -5711,6 +5711,86 @@ fn tessellated_extent(
     )
 }
 
+/// The page tab of `page` as drawn: the part the strip's view leaves (`Record::rect`) and its
+/// whole rectangle (`Record::whole`); the page tabs are recorded in `Page::ALL`'s order.
+fn page_tab(harness: &Harness<'_, App>, page: Page) -> (egui::Rect, egui::Rect) {
+    let index = Page::ALL
+        .iter()
+        .position(|p| *p == page)
+        .expect("a page of Page::ALL");
+    harness
+        .state()
+        .registry
+        .records()
+        .iter()
+        .filter(|r| r.info.kind == "Tab · Page")
+        .nth(index)
+        .map(|r| (r.rect, r.whole))
+        .unwrap_or_else(|| panic!("{page:?}: no page tab is recorded"))
+}
+
+/// Whether `page`'s tab lies wholly in the strip's view: the view leaves all of it, within the
+/// layout's float error ([`ROW_SLACK`]).
+fn page_tab_in_view(harness: &Harness<'_, App>, page: Page) -> bool {
+    let (shown, whole) = page_tab(harness, page);
+    whole.width() > 0.0
+        && (shown.left() - whole.left()).abs() <= ROW_SLACK
+        && (shown.right() - whole.right()).abs() <= ROW_SLACK
+}
+
+/// The page tab strip brings the open page's tab wholly into view, as the iced showcase's strip
+/// scrolls to it (`reveal_open_tab`), whichever way the page was opened: under material-3 at
+/// the window's size, whose tabs are wider than the strip, the Theme Map's tab after the
+/// showcase opens on it (`--tab theme-map`) and after a theme install, then the Basic tab and the
+/// Theme Map's again after `Action::ShowPage`, which the palette, the menus and the pages
+/// menu run. A sideways scroll of the user's own stands until the open page or the tabs change:
+/// after a wheel over the strip, the Theme Map's tab is where the wheel moved it.
+#[test]
+fn the_page_tabs_scroll_the_open_tab_into_view() {
+    let mut harness = open_scaled("material-3", "theme-map", 1.0);
+    harness.run_steps(SETTLE);
+    let cut = Page::ALL
+        .iter()
+        .filter(|p| !page_tab_in_view(&harness, **p))
+        .count();
+    assert!(
+        cut > 0,
+        "material-3: every page tab fits the strip, so none needs a scroll"
+    );
+    assert!(
+        page_tab_in_view(&harness, Page::ThemeMap),
+        "opened on theme-map: its tab is not wholly in view, {:?}",
+        page_tab(&harness, Page::ThemeMap)
+    );
+    let ctx = harness.ctx.clone();
+    for page in [Page::Basic, Page::ThemeMap] {
+        harness.state_mut().run_action(Action::ShowPage(page), &ctx);
+        harness.run_steps(SETTLE);
+        assert!(
+            page_tab_in_view(&harness, page),
+            "{page:?} shown: its tab is not wholly in view, {:?}",
+            page_tab(&harness, page)
+        );
+    }
+    let before = page_tab(&harness, Page::ThemeMap).1;
+    harness.hover_at(before.center());
+    harness.event(egui::Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta: egui::vec2(before.width(), 0.0),
+        phase: egui::TouchPhase::Move,
+        modifiers: egui::Modifiers::NONE,
+    });
+    harness.run_steps(SETTLE);
+    let after = page_tab(&harness, Page::ThemeMap).1;
+    assert!(
+        after.left() > before.left() + ROW_SLACK,
+        "a wheel over the strip moved nothing, or the strip scrolled back: the Theme Map's tab \
+         at {} before, {} after",
+        before.left(),
+        after.left()
+    );
+}
+
 /// docs/platform-facts.md §2.11 `active_outward_corner_radius`: under windows-11 with a radius
 /// of 4 and its outline of 1, each of the three tab bars draws the selected tab's two flares
 /// with the numbers every connector's test shares (spec §12.2) -- the left about

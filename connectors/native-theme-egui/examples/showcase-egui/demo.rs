@@ -1707,6 +1707,42 @@ fn tab_flares(
     }
 }
 
+/// Scrolls a scrolling tab row so its selected tab, the `index`th, drawn at `tab`, shows whole
+/// with its flares (`flare`, [`outward_radius`]), as the iced showcase's page tab strip scrolls
+/// to the open tab (`reveal_open_tab`): once each time the selected tab, its place in the row or
+/// the row's view changes, which a page opened from anywhere (`--tab`, the palette, a menu, a
+/// click), a theme install and a window resize do, so a sideways scroll of the user's own stands
+/// until then. Called while the row's scroll area lays its content out: egui scrolls that area,
+/// the innermost round the target, the least that shows the target (egui 0.36.2
+/// `src/containers/scroll_area.rs:1105-1139`), and the area takes the target on both axes, so
+/// no area round the row scrolls for it (`:1086-1091`). The place and the view's width are kept
+/// on egui's layout grid (`emath::GUI_ROUNDING`), on which egui lays them out, so a scroll,
+/// which moves the tab and the row's content together, never reads as a change.
+fn reveal_selected_tab(
+    ui: &egui::Ui,
+    kind: &str,
+    index: usize,
+    tab: egui::Rect,
+    flare: Option<f32>,
+) {
+    let grid = |v: f32| (v / egui::emath::GUI_ROUNDING).round() as i64;
+    let shown = (
+        index,
+        grid(tab.left() - ui.min_rect().left()),
+        grid(tab.width()),
+        grid(ui.clip_rect().width()),
+    );
+    let id = egui::Id::new(kind).with("revealed tab");
+    if ui.data(|d| d.get_temp::<(usize, i64, i64, i64)>(id)) != Some(shown) {
+        ui.data_mut(|d| d.insert_temp(id, shown));
+        let reach = egui::Vec2 {
+            x: flare.unwrap_or_default(),
+            ..egui::Vec2::ZERO
+        };
+        ui.scroll_to_rect(tab.expand2(reach), None);
+    }
+}
+
 /// A row of tabs as the theme states them, in one `Role::Tab` scope (§10.4): each tab a
 /// `Button::new(label).selected(..)`, whose own flag picks the selected tab's colours (§6.2) —
 /// the cell's `tab.background_color`, `tab.active_background` and `tab.active_text_color`,
@@ -1800,6 +1836,9 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                         if selected {
                             tab_indicator(ui, r.rect, top, t);
                             selected_tab = Some(r.rect);
+                            if bar.scroll {
+                                reveal_selected_tab(ui, bar.kind, index, r.rect, flare);
+                            }
                         }
                         if let Some(id) = bar.tab_elements.get(index) {
                             reg.tag(id, &r);
