@@ -398,7 +398,7 @@ mod tests {
         }
     }
 
-    /// The field, `focused` or not, wrapped in [`crate::focus_ring`] under
+    /// The field, `focused` or not, wrapped in [`crate::focus_ring()`] under
     /// `r` with a corner radius of 4, laid out at (10, 20) and drawn: the
     /// quads it filled.
     fn drawn(r: &ResolvedTheme, focused: bool) -> Vec<(Quad, Background)> {

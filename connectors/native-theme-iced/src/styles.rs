@@ -585,7 +585,7 @@ impl InputColors {
 /// line still shows its focus. A ring outside or across the edge, or inset
 /// with a gap, is no border: the focused field's line at rest then takes
 /// `input.focus_border_color` where the theme states one, and
-/// [`crate::focus_ring`] draws the ring round the field it wraps. The disabled state is
+/// [`crate::focus_ring()`] draws the ring round the field it wraps. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
 /// model states, each colour's alpha multiplied by `input.disabled_opacity`
 /// (iced has no widget opacity; `docs/platform-facts.md` §2.1.6). `icon` has
