@@ -1762,6 +1762,9 @@ pub(super) fn native_scroller(
     vertical: bool,
 ) -> Color {
     let s = &r.scrollbar;
+    if native_rail_hidden(r, status) {
+        return Color::TRANSPARENT;
+    }
     to_color(match status {
         scrollable::Status::Active {
             is_horizontal_scrollbar_disabled: _,
@@ -1799,6 +1802,26 @@ pub(super) fn native_scroller(
     })
 }
 
+/// Whether the native scrollbar is hidden in `status`: a bar that floats over
+/// the content (`scrollbar.overlay_mode`) is hidden at rest, `Active`, and
+/// shown under the pointer and while dragged, iced's nearest to the
+/// platforms' overlay bar (`styles::scrollable`'s doc).
+#[cfg(feature = "widgets")]
+fn native_rail_hidden(r: &ResolvedTheme, status: scrollable::Status) -> bool {
+    r.scrollbar.overlay_mode && matches!(status, scrollable::Status::Active { .. })
+}
+
+/// The rail fill the native fields give a scrollable in `status`:
+/// `scrollbar.track_color`, transparent where the bar is hidden.
+#[cfg(feature = "widgets")]
+fn native_rail(r: &ResolvedTheme, status: scrollable::Status) -> Color {
+    if native_rail_hidden(r, status) {
+        Color::TRANSPARENT
+    } else {
+        to_color(r.scrollbar.track_color)
+    }
+}
+
 /// Every color field of `styles::scrollable`: each rail's own fill and the
 /// scroller on it. Everything else the struct carries is iced's.
 #[cfg(feature = "widgets")]
@@ -1806,7 +1829,7 @@ pub(super) const SCROLLABLE_ROWS: &[StyleRow<scrollable::Status>] = &[
     StyleRow {
         field: "styles::scrollable.vertical_rail.background",
         statuses: SCROLLABLE_STATUSES,
-        native: |r, _| to_color(r.scrollbar.track_color),
+        native: native_rail,
         get: |t, r, s| flat(styles::scrollable(r)(t, s).vertical_rail.background),
     },
     StyleRow {
@@ -1827,7 +1850,7 @@ pub(super) const SCROLLABLE_ROWS: &[StyleRow<scrollable::Status>] = &[
     StyleRow {
         field: "styles::scrollable.horizontal_rail.background",
         statuses: SCROLLABLE_STATUSES,
-        native: |r, _| to_color(r.scrollbar.track_color),
+        native: native_rail,
         get: |t, r, s| flat(styles::scrollable(r)(t, s).horizontal_rail.background),
     },
     StyleRow {

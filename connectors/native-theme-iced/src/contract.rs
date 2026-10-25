@@ -3187,6 +3187,66 @@ fn a_scrollbar_that_is_not_an_overlay_is_embedded() -> native_theme::Result<()> 
     Ok(())
 }
 
+/// M9x CI item I5 (M9-174): a floating scrollbar is hidden at rest. iced
+/// 0.14 has no auto-hide and draws a floating bar in every status
+/// (`scrollable.rs:378-383`), so where the theme says the bar floats
+/// (`scrollbar.overlay_mode`, macOS's and libadwaita's), both rails and their
+/// scrollers are transparent while the scrollable is `Active` and shown, in
+/// `scrollbar.track_color` and the scroller's colours, once the pointer is
+/// over it (`Hovered`) or drags it: iced reveals on hover, not on scroll. A
+/// bar that does not float is shown in every status.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_floating_scrollbar_is_hidden_at_rest() -> native_theme::Result<()> {
+    let mut resolved = native_theme::theme::Theme::preset("macos-tahoe")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert!(
+        resolved.scrollbar.overlay_mode,
+        "macos-tahoe's scrollbar no longer floats, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "macos-tahoe");
+    let alpha = |b: Option<Background>| match b {
+        Some(Background::Color(c)) => c.a,
+        _ => f32::NAN,
+    };
+    let at_rest = styles::scrollable(&resolved)(&theme, scrollable_active(false, false));
+    for (what, a) in [
+        ("vertical rail", alpha(at_rest.vertical_rail.background)),
+        (
+            "vertical scroller",
+            alpha(Some(at_rest.vertical_rail.scroller.background)),
+        ),
+        ("horizontal rail", alpha(at_rest.horizontal_rail.background)),
+        (
+            "horizontal scroller",
+            alpha(Some(at_rest.horizontal_rail.scroller.background)),
+        ),
+    ] {
+        assert_eq!(a, 0.0, "a floating bar at rest: the {what} shows");
+    }
+    let hovered =
+        styles::scrollable(&resolved)(&theme, scrollable_hovered(false, true, false, false));
+    assert_eq!(
+        hovered.vertical_rail.scroller.background,
+        Background::Color(to_color(resolved.scrollbar.thumb_hover_color)),
+        "a floating bar under the pointer shows its scroller"
+    );
+    assert_eq!(
+        hovered.horizontal_rail.background,
+        Some(Background::Color(to_color(resolved.scrollbar.track_color))),
+        "a floating bar under the pointer shows its rails"
+    );
+    resolved.scrollbar.overlay_mode = false;
+    let embedded = styles::scrollable(&resolved)(&theme, scrollable_active(false, false));
+    assert_eq!(
+        embedded.vertical_rail.scroller.background,
+        Background::Color(to_color(resolved.scrollbar.thumb_color)),
+        "a bar that does not float shows at rest"
+    );
+    Ok(())
+}
+
 #[cfg(feature = "widgets")]
 #[test]
 fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {

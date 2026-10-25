@@ -1324,6 +1324,14 @@ pub fn slider(
 /// emitted as given rather than composited: iced paints them
 /// over a rail it also paints.
 ///
+/// Where the theme's scrollbar floats over the content
+/// (`scrollbar.overlay_mode`), both rails and their scrollers are transparent
+/// while the scrollable is `Active`, and shown as above while the pointer is
+/// over it (`Hovered`) or drags a scroller: iced 0.14 draws a floating bar in
+/// every status and has no auto-hide (`scrollable.rs:378-383`), and nothing
+/// tells a style that the content was scrolled, so the bar is revealed on
+/// hover, not on scroll as the platforms' overlay scrollbars are.
+///
 /// iced states the two axes separately, and its `Status` carries which one the
 /// pointer is on (`scrollable.rs:2237-2267`), so a hovered vertical scrollbar
 /// leaves the horizontal one idle -- as iced's own default does. The `Status`
@@ -1356,13 +1364,25 @@ pub fn scrollable(
     // A soft option: `None` is the platform saying a dragged scroller looks no
     // different from a hovered one, so it copies that color.
     let dragged_thumb = to_color(s.thumb_active_color.unwrap_or(s.thumb_hover_color));
+    // A floating bar is hidden at rest: iced 0.14 has no auto-hide and draws
+    // a floating bar in every status (`scrollable.rs:378-383`), and reveals
+    // nothing on scroll, so the closest it comes to the platforms' overlay
+    // scrollbar is a bar shown while the pointer is over the scrollable or
+    // drags it, and transparent while it is `Active`.
+    let floats = s.overlay_mode;
 
     move |theme, status| {
         let iced = iced_widget::scrollable::default(theme, status);
+        let shown = !(floats && matches!(status, Status::Active { .. }));
+        let rail = if shown { track } else { Color::TRANSPARENT };
         // Which scroller the pointer is on decides that axis alone. The
         // disabled flags are named and ignored: an upstream addition to the
         // status then fails to compile here rather than falling into a `..`.
         let (vertical, horizontal) = match status {
+            Status::Active {
+                is_horizontal_scrollbar_disabled: _,
+                is_vertical_scrollbar_disabled: _,
+            } if floats => (Color::TRANSPARENT, Color::TRANSPARENT),
             Status::Active {
                 is_horizontal_scrollbar_disabled: _,
                 is_vertical_scrollbar_disabled: _,
@@ -1411,7 +1431,7 @@ pub fn scrollable(
                 snap: iced.container.snap,
             },
             vertical_rail: Rail {
-                background: Some(Background::Color(track)),
+                background: Some(Background::Color(rail)),
                 border: iced.vertical_rail.border,
                 scroller: Scroller {
                     background: Background::Color(vertical),
@@ -1419,7 +1439,7 @@ pub fn scrollable(
                 },
             },
             horizontal_rail: Rail {
-                background: Some(Background::Color(track)),
+                background: Some(Background::Color(rail)),
                 border: iced.horizontal_rail.border,
                 scroller: Scroller {
                     background: Background::Color(horizontal),

@@ -4961,6 +4961,11 @@ thread_local! {
     /// this thread, as it draws.
     static LIST_BAR_STYLE: std::cell::Cell<Option<scrollable::Style>> =
         const { std::cell::Cell::new(None) };
+    /// Where the Basic list's scrollbar and its thumb last lay out on this
+    /// thread, as the layout dump records them, a floating bar's too, which
+    /// the dump leaves out at rest.
+    static LIST_BAR_PARTS: std::cell::Cell<Option<(iced::Rectangle, iced::Rectangle)>> =
+        const { std::cell::Cell::new(None) };
 }
 
 /// Where the Basic list's scrollable draws, which its rows' fills read
@@ -8352,12 +8357,17 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "not reachable: iced's scroller has no minimum length setter".into()
         }
         ("scrollbar", "overlay_mode") if under("basic.list.") => {
-            "styles::scrollbar: no spacing beside the content; list_bar_margin: a floating \
-             bar held the frame's inner radius off its right edge, one beside the rows as \
-             far as its corners need"
+            "styles::scrollbar: no spacing beside the content; styles::scrollable: a floating \
+             bar transparent at rest and shown under the pointer, iced having no reveal on \
+             scroll; list_bar_margin: a floating bar held the frame's inner radius off its \
+             right edge, one beside the rows as far as its corners need"
                 .into()
         }
-        ("scrollbar", "overlay_mode") => "styles::scrollbar: no spacing beside the content".into(),
+        ("scrollbar", "overlay_mode") => {
+            "styles::scrollbar: no spacing beside the content; styles::scrollable: a floating \
+             bar transparent at rest and shown under the pointer, iced having no reveal on scroll"
+                .into()
+        }
         // ---- expander ----
         ("expander", "font") => "the title's size and theme_font".into(),
         ("expander", "header_height_px") => {
@@ -11130,14 +11140,22 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         resolved.scrollbar.thumb_width,
     );
     let bar_margin = list_bar_margin(resolved);
+    let floats = resolved.scrollbar.overlay_mode;
     let shown = BASIC_LIST_VISIBLE / BASIC_LIST_ITEMS as f32;
-    let groove_rect = move |b: iced::Rectangle| {
+    let bar_parts = move |b: iced::Rectangle| {
         let total = groove.max(scroller) + 2.0 * bar_margin;
-        iced::Rectangle {
+        let rail = iced::Rectangle {
             x: b.x + b.width - total / 2.0 - groove / 2.0,
             width: groove,
             ..b
-        }
+        };
+        let thumb = iced::Rectangle {
+            x: rail.center_x() - scroller / 2.0,
+            width: scroller,
+            height: (rail.height * shown).max(2.0),
+            ..rail
+        };
+        (rail, thumb)
     };
     let list: Element<'a, Message> = probe(
         probes::BASIC_LIST,
@@ -11165,19 +11183,20 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .width(Length::Fixed(BASIC_WIDE))
             .style(list_frame(resolved)),
         )
+        // A floating bar is drawn under the pointer only (`styles::scrollable`),
+        // so at rest, which the layout dump records, it is not there, as
+        // egui and gpui do not draw it either; the tests read where it lies
+        // (`LIST_BAR_PARTS`).
         .part("basic.list.scrollbar", move |l| {
-            node_at(l, &[0]).map(|s| groove_rect(s.bounds()))
+            let parts = node_at(l, &[0]).map(|s| bar_parts(s.bounds()));
+            #[cfg(test)]
+            LIST_BAR_PARTS.set(parts);
+            parts.filter(|_| !floats).map(|(rail, _)| rail)
         })
         .part("basic.list.scrollbar.thumb", move |l| {
-            node_at(l, &[0]).map(|s| {
-                let g = groove_rect(s.bounds());
-                iced::Rectangle {
-                    x: g.center_x() - scroller / 2.0,
-                    width: scroller,
-                    height: (g.height * shown).max(2.0),
-                    ..g
-                }
-            })
+            node_at(l, &[0])
+                .filter(|_| !floats)
+                .map(|s| bar_parts(s.bounds()).1)
         }),
     );
     let list_group = group("basic.list.heading", "List", list);
@@ -22513,7 +22532,9 @@ mod tests {
     /// to the inner radius (material-3 5, kde-breeze 0), its parts' right-hand
     /// corners rounded to touch the inside's arcs from within. The rail and
     /// the thumb are the layout dump's parts (`basic.list.scrollbar` and
-    /// `.thumb`), the radii those of the style the list's scrollable drew
+    /// `.thumb`) where the bar lies beside the rows; a floating one, hidden at
+    /// rest (M9-174), is not in the dump, and is read where it is laid out
+    /// (`LIST_BAR_PARTS`). The radii are those of the style the list's scrollable drew
     /// with (`LIST_BAR_STYLE`, `list_bar_style`'s), and every point of each
     /// part's rounded outline lies inside the inside's rounded rectangle.
     /// iced's own margin is held by where the bar takes the pointer: half a
@@ -22552,8 +22573,28 @@ mod tests {
             };
 
             LIST_BAR_STYLE.set(None);
+            LIST_BAR_PARTS.set(None);
             let (_, rects, _) = frame_of(&state, view(&state), size);
             let drawn = LIST_BAR_STYLE.take();
+            // A floating bar is hidden at rest, so the dump leaves it out; it
+            // lies where it shows under the pointer all the same.
+            let parts = if s.overlay_mode {
+                for id in ["basic.list.scrollbar", "basic.list.scrollbar.thumb"] {
+                    if rects.contains_key(id) {
+                        faults.push(format!("{preset}: the dump records {id}, hidden at rest"));
+                    }
+                }
+                LIST_BAR_PARTS.take()
+            } else {
+                rects
+                    .get("basic.list.scrollbar")
+                    .copied()
+                    .zip(rects.get("basic.list.scrollbar.thumb").copied())
+            };
+            let Some((rail, rest)) = parts else {
+                faults.push(format!("{preset}: the list's scrollbar is not laid out"));
+                continue;
+            };
             let rect_of = |id: &str| match rects.get(id) {
                 Some(rect) => *rect,
                 None => panic!("{preset}: {id} is not drawn"),
@@ -22567,8 +22608,6 @@ mod tests {
                 height: frame.height - 2.0 * w,
             };
             let right = inside.x + inside.width;
-            let rail = rect_of("basic.list.scrollbar");
-            let rest = rect_of("basic.list.scrollbar.thumb");
             // iced lays the bar `bar + 2 margin` wide at the right edge, each
             // part centred in it (`src/scrollable.rs:1966-1990`, `:2000-2010`).
             let centre = right - margin - bar / 2.0;
