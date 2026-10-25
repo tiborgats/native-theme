@@ -3741,17 +3741,20 @@ fn the_tab_bars_are_inset_by_the_container_margin(cx: &mut TestAppContext) {
             // the theme-drawn tab row of the `widgets` feature), as
             // docs/showcase-elements.toml's `chrome.page_tabs.rule`.
             if cfg!(feature = "widgets") && bar == "page" {
-                let rule = read(&mut cx, &showcase, |this, cx| {
-                    this.info_ui
-                        .read(cx)
-                        .layout_drawn()
-                        .get("chrome.page_tabs.rule")
-                        .copied()
+                // Under the strip itself, the bar's first child, which the
+                // dump records as `chrome.page_tabs`.
+                let (rule, strip) = read(&mut cx, &showcase, |this, cx| {
+                    let drawn = this.info_ui.read(cx).layout_drawn();
+                    (
+                        drawn.get("chrome.page_tabs.rule").copied(),
+                        drawn.get("chrome.page_tabs").copied(),
+                    )
                 });
+                let under = strip.map_or(tabs.bottom(), |strip| strip.bottom());
                 assert!(
                     rule.is_some_and(|rule| (rule.left() - panel.left()).abs() <= slack
                         && (rule.right() - panel.right()).abs() <= slack
-                        && (rule.top() - tabs.bottom()).abs() <= slack),
+                        && (rule.top() - under).abs() <= slack),
                     "{preset}: the {bar} TabBar's rule at {rule:?} does not span its panel \
                      at {panel:?} under the bar at {tabs:?}"
                 );
@@ -17559,6 +17562,34 @@ fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppCon
             "{cell} does not hold the set's FolderOpen image at its size"
         );
     }
+}
+
+/// Part A's review, item 13(c): the page row's rule is laid out under the
+/// tab strip, so it covers none of the strip's pixels: under macos-tahoe at
+/// scale 1, where the rule is one device pixel thick for its 0.5 px
+/// `separator.line_width`, its top is the strip's bottom, where a margin of
+/// the stated 0.5 and an offset of -0.5 rounded to nothing and laid the rule
+/// over the strip's last row.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_page_row_rule_lies_under_the_tab_strip_at_scale_one(cx: &mut TestAppContext) {
+    let (showcase, root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    cx.simulate_window_scale_factor_change(root, 1.0);
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (rule, strip) = read(&mut cx, &showcase, |this, cx| {
+        let drawn = this.info_ui.read(cx).layout_drawn();
+        (
+            drawn.get("chrome.page_tabs.rule").copied(),
+            drawn.get("chrome.page_tabs").copied(),
+        )
+    });
+    assert!(
+        rule.zip(strip)
+            .is_some_and(|(rule, strip)| rule.top() >= strip.bottom() && rule.size.height >= px(1.)),
+        "the rule at {rule:?} is not laid out under the tab strip at {strip:?}"
+    );
 }
 
 /// Part A's review, item 13(a): the icon-theme Select's info says what a set

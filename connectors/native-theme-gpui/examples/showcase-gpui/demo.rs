@@ -2102,7 +2102,7 @@ fn native_tab_bar(
         })
         .anchor(gpui::Anchor::TopRight)
     });
-    native_tab_strip(n, id)
+    let bar = native_tab_strip(n, id)
         .w_full()
         .when_some(container_margin, |bar, margin| bar.px(margin))
         .when_some(elements::part_observer(ui, info_id), |bar, observer| {
@@ -2114,25 +2114,27 @@ fn native_tab_bar(
         .when_some(menu, |bar, menu| {
             bar.suffix(menu.listed(ui, "chrome.page_tabs.menu"))
         })
-        .info(ui, info_id, bar_info)
-        // The page row's rule, `separator.line_width` thick in
-        // `separator.line_color`, under the strip: the wrapper keeps the room
-        // below it, where the rule is laid. The line is `widgets::Separator`'s,
-        // so a line thinner than a device pixel is drawn one device pixel
-        // thick, where a box of its height takes none.
-        .when(kind == TabBarKind::Pages, |bar| {
-            let s = &n.resolved.separator;
-            let width = px(s.line_width);
-            bar.mb(width).child(
-                div()
-                    .absolute()
-                    .left_0()
-                    .right_0()
-                    .bottom(px(-s.line_width))
-                    .child(widgets::Separator::horizontal())
-                    .child(elements::record(ui, "chrome.page_tabs.rule")),
-            )
-        })
+        .info(ui, info_id, bar_info);
+    if kind != TabBarKind::Pages {
+        return bar;
+    }
+    // The page row's rule, `separator.line_width` thick in
+    // `separator.line_color`, under the strip, laid out after it: the rule
+    // takes the room it is drawn in, `widgets::Separator`'s line, one device
+    // pixel at least, so it covers none of the strip's last row of pixels.
+    div()
+        .id("page-tabs-row")
+        .w_full()
+        .flex()
+        .flex_col()
+        .child(bar.flex_none())
+        .child(
+            div()
+                .relative()
+                .w_full()
+                .child(widgets::Separator::horizontal())
+                .child(elements::record(ui, "chrome.page_tabs.rule")),
+        )
 }
 
 /// The variant a theme-drawn tab row's info names.
