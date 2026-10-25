@@ -433,6 +433,16 @@ pub fn native_number_input(
         .instance("text", "input.font's colour, which geometry::input refines the value with: Input sets no text colour of its own and the editor paints the field's text in the root's (input/input.rs, Input::render; gpui-base/input/base/element.rs, prepaint)")
         .instance("focus ring", "none: the value is an Input without its appearance, which carries upstream's ring (input/input.rs, Input::render), and the frame marks focus by its edge alone")
         .not_themeable("step buttons", "upstream's: transparent at rest, as wide as upstream's at the field's Size (input/number_input.rs, NumberInput::render: min_w_8), each half the field's height, stacked at its right end (gpui-base/number_input.rs, controls_right): the theme states no spin-box layout")
+        .instance("step glyphs", {
+            let step = (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0;
+            let small = r.defaults.icon_sizes.small;
+            format!(
+                "{}px: the smaller of defaults.icon_sizes.small, {}px, and a step's height, half input.min_height inside the frame's edge, {}px, so no glyph overflows its step (demo::number_input)",
+                px_text(small.min(step)),
+                px_text(small),
+                px_text(step)
+            )
+        })
         .instance("increment step", format!("ChevronUp: {}", up.note("the button shows no glyph")))
         .instance("decrement step", format!("ChevronDown: {}", down.note("the button shows no glyph")))
 }

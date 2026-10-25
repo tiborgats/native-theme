@@ -3981,9 +3981,15 @@ pub(crate) fn number_input(
     let foreground = info::stated(n.resolved.button.font.color);
     let tint = info::stated(i.border.color);
     let radius = px(i.border.corner_radius.max(0.0) - i.border.line_width).max(px(0.));
+    // Each step's glyph at `defaults.icon_sizes.small`, or where a step is
+    // shorter, the step's height, so no glyph overflows its step (M9-177):
+    // the steps share the field's stated height inside its edge (`frame`,
+    // `geometry::input`: `input.min_height` and `input.border.line_width`).
+    let step_height = (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0;
+    let side = Size::Size(px(n.resolved.defaults.icon_sizes.small.min(step_height)));
     let (up, down) = (
-        steps.up.glyph_sized(cx, geometry::icon_size_small),
-        steps.down.glyph_sized(cx, geometry::icon_size_small),
+        steps.up.glyph().map(|glyph| glyph.with_size(side)),
+        steps.down.glyph().map(|glyph| glyph.with_size(side)),
     );
     let step = move |button: gpui_base::Button, label: &'static str, icon: Option<Glyph>| {
         button
@@ -3995,6 +4001,7 @@ pub(crate) fn number_input(
             .hover(move |this| this.bg(tint.opacity(NUMBER_STEP_HOVER)))
             .active(move |this| this.bg(tint.opacity(NUMBER_STEP_ACTIVE)))
             .min_w_8()
+            .debug_selector(move || format!("{id}-step-{label}"))
             .children(icon)
     };
     let spin = gpui_base::NumberInput::new(state)

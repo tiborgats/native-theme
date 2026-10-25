@@ -17592,6 +17592,44 @@ fn the_page_row_rule_lies_under_the_tab_strip_at_scale_one(cx: &mut TestAppConte
     );
 }
 
+/// M9x CI item 12, the controller's ruling (M9-177): no step glyph of the
+/// Number input overflows its step. Under macos-tahoe, whose 24 px field
+/// holds two steps narrower than `defaults.icon_sizes.small` 16, with the
+/// set's ChevronUp and ChevronDown given as pixels (the Expander closed, so
+/// its arrows show ChevronRight alone), each step's image lies inside its
+/// step and inside the field.
+#[cfg(feature = "material-icons")]
+#[gpui::test]
+fn the_number_inputs_step_glyphs_fit_their_steps(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    cx.update(|_window, cx| {
+        showcase.update(cx, |this, cx| {
+            this.basic_expanded = [false, false];
+            cx.notify();
+        })
+    });
+    rasterize_icons(&mut cx, &showcase, &["ChevronUp", "ChevronDown"], &[]);
+    let field = bounds_of(&mut cx, "basic-number");
+    let mut faults = Vec::new();
+    for (step, image) in [
+        ("basic-number-step-Increment", "raster-ChevronUp"),
+        ("basic-number-step-Decrement", "raster-ChevronDown"),
+    ] {
+        let (Some(step_box), Some(glyph)) = (cx.debug_bounds(step), cx.debug_bounds(image)) else {
+            faults.push(format!("{step} or {image} is not laid out"));
+            continue;
+        };
+        if !within(glyph, step_box) || !within(glyph, field) {
+            faults.push(format!(
+                "{image} at {glyph:?} is not inside its step {step_box:?} and the field {field:?}"
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// Part A's review, item 13(d): an open expander item's arrow is turned only
 /// where it is the closed chevron itself; where the closed chevron is pixels
 /// the open item shows the set's chevron of the turned direction, which is
