@@ -713,11 +713,11 @@ with its defaults, with `native,watch` and on GPUI Fast with
 `gpui-fast,native,watch`. A test leg already builds each but the gpui
 showcase's defaults, which that leg compiles again. Both modes run them all
 but the GPUI Fast leg, which `--commit` skips, as it skips the gpui
-connector's other GPUI Fast tests. It runs `run_in_runner_env.sh --prepare` first, which
-builds the environment and runs nothing: where a package is not cached with
-its SHA-256 and neither server delivers it, one or both out of reach (no
-connection, a timeout, a transfer closed early) or answering transiently (5xx,
-408, 429), the script exits 75, and check_release skips the
+connector's other GPUI Fast tests. It runs `run_in_runner_env.sh --prepare`
+first, which builds the environment and runs nothing: where a package is not
+cached with its SHA-256 and neither server delivers it, one or both out of
+reach (no connection, a timeout, a transfer closed early) or answering
+transiently (5xx, 408, 429), the script exits 75, and check_release skips the
 legs with a warning that the showcase tests were not run in CI's
 environment (CI runs them on the runner itself). Anything else fails, in
 both, naming its cause: a 4xx answer from both servers (a pin that has

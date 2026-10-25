@@ -8618,7 +8618,7 @@ fn a_layout_dump_is_the_same_under_the_pointer() {
 }
 
 /// The macOS system menu's actions are drained and dropped while the window is shielded from the
-/// keyboard, so its key equivalents (⌘, ⌘B ⌘K), which never pass through `raw_input_hook`, run
+/// keyboard, so its key equivalents (⌘, ⌘B and ⌘K), which never pass through `raw_input_hook`, run
 /// nothing in a captured or dumped window; unshielded they all run, in order. The flags shield
 /// as `CliArgs::shields_keyboard` says.
 #[test]

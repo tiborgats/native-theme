@@ -4710,11 +4710,13 @@ impl ListRow {
     /// `list.border.line_width`) on its top corners where it is the first and
     /// on its bottom ones where it is the last, where it meets
     /// `geometry::list`'s frame, as the egui and iced Basic lists round
-    /// theirs. gpui-pre clips the frame's children to its rectangle (gpui-pre
-    /// 0.3.9 src/window.rs:2226-2234, ContentMask), so a square fill would
-    /// show past the curve there; the List does not tell a row where its view
-    /// is scrolled to, so a row cut by the view's edge mid-scroll keeps its
-    /// square corners.
+    /// theirs. GPUI Fast clips the frame's children to its curved padding
+    /// edge (gpui-fast 0.1.10 src/fast/rounded_clip.rs:68-104), so a square
+    /// fill would be cut at the curve; gpui-pre clips them to its rectangle
+    /// (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a square
+    /// fill would show past the curve there. The List does not tell a row
+    /// where its view is scrolled to, so a row cut by the view's edge
+    /// mid-scroll keeps its square corners.
     pub(crate) fn at_edges(mut self, first: bool, last: bool) -> Self {
         self.edges = [first, last];
         self
