@@ -390,6 +390,15 @@ pub fn icon_size(
                     None => "upstream's own, the inherited text size: no native theme is installed, so no builder applies (icon.rs, Icon::into_svg)".to_string(),
                 },
             ),
+        // An image keeps its own colours (`chrome_icon_note`), and is drawn
+        // at the side an Icon of the same Size takes (`demo::Glyph`).
+        ChromeIcon::Raster(..) => info.instance(
+            "size",
+            match size {
+                Some(size) => format!("{}px, {field}{unsourced}", px_text(size)),
+                None => "the inherited text size, as an Icon given no size is drawn (icon.rs, Icon::into_svg): no native theme is installed, so no builder applies".to_string(),
+            },
+        ),
         ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => info.instance(
             "size",
             match size {

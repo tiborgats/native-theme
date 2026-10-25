@@ -922,7 +922,12 @@ impl Showcase {
     /// set: its own icons where the built-in set is chosen, never another
     /// set's.
     pub(crate) fn chrome_icon(&self, icon: &IconName) -> ChromeIcon {
-        ChromeIcon::of(&self.gpui_icons, self.icon_set_enum.is_none(), icon)
+        ChromeIcon::of(
+            &self.gpui_icons,
+            &self.gpui_icon_sources,
+            self.icon_set_enum.is_none(),
+            icon,
+        )
     }
 
     /// Where the Basic page's fields laid their text out, as the elements of
@@ -974,8 +979,9 @@ impl Showcase {
     /// The chrome's icon for native-theme's `role`, from the chosen icon set
     /// as the Icons page loaded it (`loaded_icons`): gpui-component's own
     /// icon for the role where its built-in set is chosen, with the IconName
-    /// to draw; the set's SVG otherwise; `Missing` where the set has none
-    /// for the role, or only pixels -- never another set's.
+    /// to draw; the set's SVG, or its pixels as the page decoded them
+    /// (`loaded_icon_sources`), otherwise; `Missing` where the set has none
+    /// for the role -- never another set's.
     pub(crate) fn role_chrome_icon(&self, role: IconRole) -> (ChromeIcon, Option<IconName>) {
         if self.icon_set_enum.is_none() {
             return match native_theme_gpui::icons::icon_name(role) {
@@ -983,18 +989,21 @@ impl Showcase {
                 None => (ChromeIcon::Missing(role.name()), None),
             };
         }
-        let svg = self
+        let loaded = self
             .loaded_icons
             .iter()
-            .find(|(loaded, ..)| *loaded == role)
-            .and_then(|(_, data, _)| match data {
-                Some(IconData::Svg(bytes)) => Some(bytes.clone()),
-                _ => None,
-            });
-        match svg {
-            Some(bytes) => (ChromeIcon::Loaded(role.name(), bytes), None),
-            None => (ChromeIcon::Missing(role.name()), None),
-        }
+            .enumerate()
+            .find(|(_, (loaded, ..))| *loaded == role);
+        let drawn = match loaded {
+            Some((_, (_, Some(IconData::Svg(bytes)), _))) => {
+                ChromeIcon::Loaded(role.name(), bytes.clone())
+            }
+            Some((ix, (_, Some(IconData::Rgba(_)), _))) => {
+                ChromeIcon::raster(role.name(), &self.loaded_icon_sources, ix)
+            }
+            _ => ChromeIcon::Missing(role.name()),
+        };
+        (drawn, None)
     }
 
     /// A page sample's icon for gpui-component's `icon`: the chosen icon
@@ -2132,7 +2141,8 @@ impl Render for Showcase {
                     cx,
                     "content-alert",
                     message,
-                    self.chrome_icon(&IconName::CircleX),
+                    // `Alert::icon` takes an `Icon` alone (alert.rs).
+                    self.chrome_icon(&IconName::CircleX).svg_only(),
                     &self.icon_set_label(),
                 )
                 .debug_selector(|| CONTENT_ALERT.into())

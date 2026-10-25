@@ -389,8 +389,10 @@ pub fn native_number_input(
     // tokens carry under a native theme: secondary_foreground is
     // button.font's colour, and input the field's edge colour
     // (input/number_input.rs, NumberInput::render; native-theme-gpui
-    // colors.rs). A step whose chevron the icon theme lacks shows none.
-    let info = if up.shown() || down.shown() {
+    // colors.rs). A step whose chevron the icon theme lacks shows none, and
+    // a raster chevron keeps its own colours (`up.note`, `down.note`).
+    let svg = |icon: &SampleIcon| icon.shown() && !icon.is_raster();
+    let info = if svg(up) || svg(down) {
         info.color(claim(
             "step arrows",
             "font",

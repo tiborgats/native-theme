@@ -8408,7 +8408,9 @@ const PAGE_SAMPLE_ICONS: [(Page, &str, IconName); 14] = [
 fn icon_note_start(drawn: &ChromeIcon, set: &str) -> String {
     match drawn {
         ChromeIcon::Builtin(name) => format!("gpui-component's own {name}"),
-        ChromeIcon::Loaded(name, _) => format!("{set}'s icon for {name}"),
+        ChromeIcon::Loaded(name, _) | ChromeIcon::Raster(name, _) => {
+            format!("{set}'s icon for {name}")
+        }
         ChromeIcon::Missing(name) => format!("none: {set} holds no SVG for {name}"),
         ChromeIcon::Unlisted(path) => format!("none: {path} is not in the Icons page's gallery"),
     }
@@ -8719,6 +8721,46 @@ fn the_dialog_samples_icons_follow_the_chosen_set(cx: &mut TestAppContext) {
                 "Escape did not close {trigger}'s dialog"
             );
         }
+    }
+}
+
+/// The Overlays page's dialogs draw a raster set's icon as an image
+/// (M9-163): the Dialog's CircleX beside its description and the
+/// AlertDialog's TriangleAlert, which takes any element as its icon.
+#[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
+#[gpui::test]
+fn the_dialog_samples_draw_a_raster_sets_icon(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    rasterize_icons(&mut cx, &showcase, &["CircleX", "TriangleAlert"], &[]);
+    for (trigger, selector, image) in [
+        (
+            OVERLAYS_DIALOG_TRIGGER,
+            "overlays-dialog-content",
+            "raster-CircleX",
+        ),
+        (
+            PROBE_ALERT_DIALOG,
+            "overlays-alert-dialog-icon",
+            "raster-TriangleAlert",
+        ),
+    ] {
+        show(&mut cx, &showcase, Page::Overlays);
+        click(&mut cx, trigger);
+        draw(&mut cx);
+        assert!(a_dialog_is_open(&mut cx), "{trigger} opened no dialog");
+        let frame = bounds_of(&mut cx, selector);
+        let at = raster_bounds(&mut cx, image);
+        assert!(
+            at.is_some_and(|at| within(at, frame)),
+            "{selector} at {frame:?} holds no {image}: {at:?}"
+        );
+        press(&mut cx, "escape");
+        assert!(
+            !a_dialog_is_open(&mut cx),
+            "Escape did not close {trigger}'s dialog"
+        );
     }
 }
 
@@ -17338,5 +17380,348 @@ fn a_labels_weight_note_says_what_sets_the_weight() {
                 "the note tells history ({history:?}): {note:?}"
             );
         }
+    }
+}
+
+/// The chosen set's icons of the gallery's `names` and of `roles` as
+/// pixels, as the SF Symbols and Segoe Fluent loaders give every icon
+/// (`IconData::Rgba`), decoded as an install decodes them
+/// (`Showcase::rebuild_icon_caches`): what macOS and Windows draw, on this
+/// platform.
+#[cfg(feature = "material-icons")]
+fn rasterize_icons(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    names: &[&str],
+    roles: &[native_theme::icons::IconRole],
+) {
+    let pixels = || native_theme::icons::IconData::rgba(24, 24, vec![128; 24 * 24 * 4]);
+    cx.update(|window, cx| {
+        showcase.update(cx, |this, cx| {
+            for entry in &mut this.gpui_icons {
+                if names.contains(&entry.0) {
+                    entry.3 = pixels();
+                }
+            }
+            for entry in &mut this.loaded_icons {
+                if roles.contains(&entry.0) {
+                    entry.1 = pixels();
+                }
+            }
+            let fg = this.icon_cache_fg;
+            this.rebuild_icon_caches(fg, window, cx);
+            cx.notify();
+        });
+    });
+    cx.run_until_parked();
+    draw(cx);
+}
+
+/// Where the raster glyph `selector` names was laid out: `raster-` and the
+/// icon's name (`demo::raster_selector`).
+fn raster_bounds(cx: &mut VisualTestContext, selector: &'static str) -> Option<Bounds<Pixels>> {
+    cx.debug_bounds(selector)
+}
+
+/// A `geometry::icon_size_*` builder.
+type IconSizeBuilder = fn(native_theme_gpui::Native<'_>) -> gpui_component::Size;
+
+/// The side `builder` sizes an icon to under the installed native theme.
+fn icon_side(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    builder: IconSizeBuilder,
+) -> Pixels {
+    match read(cx, showcase, |_this, cx| native_value(cx, builder)) {
+        Some(gpui_component::Size::Size(side)) => side,
+        other => panic!("the builder gives no size under the installed preset: {other:?}"),
+    }
+}
+
+/// A set that gives its icons as pixels -- SF Symbols, Segoe Fluent --
+/// has them drawn on the Basic page as the Icons page draws them, as
+/// images, never the icon's name in its place (M9-163): each icon Button
+/// shows its role's image at `toolbar.icon_size`, says it is an icon
+/// Button, and each sized folder cell shows its image at its size.
+#[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
+#[gpui::test]
+fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppContext) {
+    use native_theme::icons::IconRole;
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    // Each Button, the element recording its icon, its role, and the
+    // selector of its image (`raster-` and `IconRole::name`).
+    let buttons = [
+        (
+            "basic-icon-copy",
+            "basic.icons.copy.icon",
+            IconRole::ActionCopy,
+            "raster-action-copy",
+        ),
+        (
+            "basic-icon-paste",
+            "basic.icons.paste.icon",
+            IconRole::ActionPaste,
+            "raster-action-paste",
+        ),
+        (
+            "basic-icon-delete",
+            "basic.icons.delete.icon",
+            IconRole::ActionDelete,
+            "raster-action-delete",
+        ),
+    ];
+    let mut roles: Vec<IconRole> = buttons.iter().map(|(_, _, role, _)| *role).collect();
+    roles.push(IconRole::FolderOpen);
+    rasterize_icons(&mut cx, &showcase, &[], &roles);
+    let toolbar = icon_side(&mut cx, &showcase, geometry::icon_size_toolbar);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    for (button, listed, role, selector) in buttons {
+        assert_eq!(
+            format!("raster-{}", role.name()),
+            selector,
+            "the image's selector is not raster- and the role's name"
+        );
+        let icon = drawn.get(listed).copied();
+        assert_eq!(
+            icon.map(|b| (b.size.width, b.size.height)),
+            Some((toolbar, toolbar)),
+            "{button}: the set's pixels for {} are not drawn as its icon at toolbar.icon_size",
+            role.name()
+        );
+        let image = raster_bounds(&mut cx, selector);
+        let frame = bounds_of(&mut cx, button);
+        assert!(
+            image.is_some_and(|image| within(image, frame)),
+            "{button}: no image of {} in the Button at {frame:?}: {image:?}",
+            role.name()
+        );
+        let info = settle_on(&mut cx, &showcase, button);
+        assert_eq!(
+            info.as_ref().map(|info| info.title()).as_deref(),
+            Some("Button · Ghost, icon"),
+            "{button} does not say it shows its icon"
+        );
+    }
+    let builders: [(&str, IconSizeBuilder); 3] = [
+        ("basic-icon-small", geometry::icon_size_small),
+        ("basic-icon-toolbar", geometry::icon_size_toolbar),
+        ("basic-icon-large", geometry::icon_size_large),
+    ];
+    for (cell, builder) in builders {
+        let side = icon_side(&mut cx, &showcase, builder);
+        let frame = bounds_of(&mut cx, cell);
+        assert_eq!(
+            (frame.size.width, frame.size.height),
+            (side, side),
+            "{cell} does not hold the set's FolderOpen image at its size"
+        );
+    }
+}
+
+/// A set that gives its chevrons as pixels draws them as the Expander's
+/// arrows and the Number input's steppers (M9-163): each title row holds an
+/// arrow at `expander.arrow_icon_size`, a closed item's the set's
+/// ChevronRight under a leading arrow side, and the increment step holds
+/// the set's ChevronUp image; their info says they are the set's pixels.
+#[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
+#[gpui::test]
+fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    // macos-tahoe states a leading arrow (macos-tahoe.toml, expander.arrow_side).
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    let (leading, side, open) = read(&mut cx, &showcase, |this, cx| {
+        let e = native_value(cx, |n| {
+            (
+                n.resolved.expander.arrow_side,
+                n.resolved.expander.arrow_icon_size,
+            )
+        });
+        (
+            e.map(|(s, _)| s),
+            e.map(|(_, size)| size),
+            this.basic_expanded,
+        )
+    });
+    assert_eq!(
+        leading,
+        Some(Some(native_theme::theme::ArrowSide::Leading)),
+        "macos-tahoe no longer states a leading arrow, so this case tests another one"
+    );
+    assert_eq!(
+        open,
+        [true, false],
+        "the Basic expander no longer opens on its first item"
+    );
+    let side = px(side.expect("a native theme is installed"));
+    rasterize_icons(
+        &mut cx,
+        &showcase,
+        &["ChevronRight", "ChevronDown", "ChevronUp"],
+        &[],
+    );
+    for arrow in ["basic-expander-arrow-0", "basic-expander-arrow-1"] {
+        let at = cx.debug_bounds(arrow);
+        assert_eq!(
+            at.map(|b| (b.size.width, b.size.height)),
+            Some((side, side)),
+            "{arrow}: the set's pixels are not drawn as the arrow at expander.arrow_icon_size"
+        );
+    }
+    let closed = bounds_of(&mut cx, "basic-expander-arrow-1");
+    let image = raster_bounds(&mut cx, "raster-ChevronRight");
+    assert!(
+        image.is_some_and(|image| within(image, closed)),
+        "the closed item's arrow at {closed:?} is not the set's ChevronRight image: {image:?}"
+    );
+    let number = bounds_of(&mut cx, "basic-number");
+    let up = raster_bounds(&mut cx, "raster-ChevronUp");
+    assert!(
+        // Its centre: a `defaults.icon_sizes.small` glyph is taller than a
+        // step, half the field (`demo::number_input`), as an SVG one is.
+        up.is_some_and(|up| number.contains(&up.center())),
+        "the Number input at {number:?} holds no ChevronUp image: {up:?}"
+    );
+    let info = settle_on(&mut cx, &showcase, "basic-number");
+    assert!(
+        info.as_ref()
+            .is_some_and(|info| info_says(info, "material gives it as pixels, not an SVG")),
+        "the Number input's info does not say its chevrons are the set's pixels: {info:?}"
+    );
+}
+
+/// A set that gives its icons as pixels has them drawn in the chrome as
+/// images (M9-163): the toolbar's Preferences button shows the set's
+/// Settings image, the status bar's toggle its PanelLeft, and the page
+/// row's menu its ChevronDown, each where the chrome's elements record the
+/// icon, at the size its builder gives -- not the button's name.
+#[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
+#[gpui::test]
+fn a_raster_sets_icons_are_drawn_as_images_in_the_chrome(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "windows-11");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    rasterize_icons(
+        &mut cx,
+        &showcase,
+        &["Settings", "PanelLeft", "ChevronDown"],
+        &[],
+    );
+    // A page that draws no ChevronDown of its own, so the page row's menu
+    // holds the one image of it.
+    show(&mut cx, &showcase, Page::Charts);
+    let toolbar = icon_side(&mut cx, &showcase, geometry::icon_size_toolbar);
+    let small = icon_side(&mut cx, &showcase, geometry::icon_size_small);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    for (listed, side, frame, name) in [
+        (
+            "chrome.toolbar.preferences.icon",
+            toolbar,
+            CHROME_TOOLBAR_PREFERENCES,
+            "raster-Settings",
+        ),
+        (
+            "chrome.status_bar.toggle.icon",
+            small,
+            CHROME_SIDE_PANEL_TOGGLE,
+            "raster-PanelLeft",
+        ),
+        (
+            "chrome.page_tabs.menu.icon",
+            small,
+            CHROME_PAGE_TABS,
+            "raster-ChevronDown",
+        ),
+    ] {
+        let icon = drawn.get(listed).copied();
+        assert_eq!(
+            icon.map(|b| (b.size.width, b.size.height)),
+            Some((side, side)),
+            "{listed}: the set's {name} pixels are not drawn as the icon at its size"
+        );
+        let frame = bounds_of(&mut cx, frame);
+        let image = raster_bounds(&mut cx, name);
+        assert!(
+            image.is_some_and(|image| within(image, frame)),
+            "{listed}: no {name} image at {frame:?}: {image:?}"
+        );
+    }
+    let info = settle_on(&mut cx, &showcase, CHROME_TOOLBAR_PREFERENCES);
+    assert_eq!(
+        info.as_ref().map(|info| info.title()).as_deref(),
+        Some("Button · Ghost, icon"),
+        "the Preferences button with the set's Settings pixels is not an icon Button"
+    );
+}
+
+/// The other pages draw a raster set's icons as images wherever their
+/// widget takes any element -- the Inputs page's search addon, the Data
+/// page's Attachment, the Feedback page's Empty state and Plain Marker, the
+/// Overlays page's menu rows, the Buttons page's Toolbar and the Icons
+/// page's sizes -- and show what they show without an icon where the
+/// widget takes an `Icon` alone, saying the set holds no SVG for it
+/// (M9-163): the Buttons page's Toggle, the Inputs page's Copy button.
+#[cfg(feature = "material-icons")] // the bundled set the pixels stand in for
+#[gpui::test]
+fn a_raster_sets_icons_on_the_other_pages(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    rasterize_icons(
+        &mut cx,
+        &showcase,
+        &[
+            "Search",
+            "Copy",
+            "Inbox",
+            "CircleCheck",
+            "Undo",
+            "Delete",
+            "Star",
+            "Folder",
+        ],
+        &[],
+    );
+    for (page, frame, name) in [
+        (Page::Inputs, "inputs-input-groups", "raster-Search"),
+        (Page::Data, "data-attachment-complete", "raster-Inbox"),
+        (Page::Feedback, "feedback-empty", "raster-Inbox"),
+        (
+            Page::Feedback,
+            "feedback-marker-plain",
+            "raster-CircleCheck",
+        ),
+        (Page::Overlays, "overlays-menu-row-undo", "raster-Undo"),
+        (Page::Overlays, "overlays-menu-row-delete", "raster-Delete"),
+        (Page::Buttons, "buttons-toolbar-copy", "raster-Copy"),
+        (Page::Icons, "icons-size-panel", "raster-Folder"),
+    ] {
+        show(&mut cx, &showcase, page);
+        let frame_at = bounds_of(&mut cx, frame);
+        let image = raster_bounds(&mut cx, name);
+        assert!(
+            // Its centre: a Marker's icon box reaches past the row's start
+            // (marker.rs, MarkerIcon), for an SVG icon too.
+            image.is_some_and(|image| frame_at.contains(&image.center())),
+            "{frame}: no {name} image at {frame_at:?}: {image:?}"
+        );
+    }
+    for (page, frame, name) in [
+        (Page::Buttons, "buttons-toggle-star", "Star"),
+        (Page::Inputs, "inputs-input-groups", "Copy"),
+    ] {
+        show(&mut cx, &showcase, page);
+        let info = settle_on(&mut cx, &showcase, frame);
+        let start = format!("none: material holds no SVG for {name}");
+        assert!(
+            info.as_ref().is_some_and(|info| info_says(info, &start)),
+            "{frame}, which takes an Icon alone, does not say {start:?}: {info:?}"
+        );
     }
 }

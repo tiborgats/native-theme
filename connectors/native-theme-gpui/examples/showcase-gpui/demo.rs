@@ -122,21 +122,115 @@ use crate::{
 
 /// The `Icon` `drawn` is: gpui-component's `icon` where the built-in set is
 /// chosen, the chosen set's SVG otherwise, and `None` where that set has
-/// none. An SVG is drawn as every `Icon` is, as a mask in the colour its
-/// widget gives it (gpui-pre window.rs, `Window::paint_svg`). A part: the
-/// helper that places it reports.
+/// none, or pixels alone, which an `Icon` cannot draw (icon.rs,
+/// `IconSource`): for a widget that takes an `Icon` and nothing else
+/// (`ChromeIcon::svg_only`). An SVG is drawn as every `Icon` is, as a mask in
+/// the colour its widget gives it (gpui-pre window.rs, `Window::paint_svg`).
+/// A part: the helper that places it reports.
 fn chrome_icon(drawn: &ChromeIcon, icon: &IconName) -> Option<Icon> {
     match drawn {
         ChromeIcon::Builtin(_) => Some(Icon::new(icon.clone())),
         ChromeIcon::Loaded(_, bytes) => Some(Icon::default().data(bytes)),
-        ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => None,
+        ChromeIcon::Raster(..) | ChromeIcon::Missing(_) | ChromeIcon::Unlisted(_) => None,
+    }
+}
+
+/// What `drawn` is drawn as where its widget takes any element: the `Icon`
+/// [`chrome_icon`] gives, or the chosen set's pixels as an image, as the
+/// Icons page draws them; `None` where the set has none.
+fn chrome_glyph(drawn: &ChromeIcon, icon: &IconName) -> Option<Glyph> {
+    match drawn {
+        ChromeIcon::Raster(name, raster) => Some(Glyph::Raster(name, raster.0.clone(), None)),
+        other => chrome_icon(other, icon).map(Glyph::svg),
+    }
+}
+
+/// The debug selector of a raster glyph of the icon `name`, for the
+/// self-tests: `raster-<name>`.
+pub(crate) fn raster_selector(name: &str) -> String {
+    format!("raster-{name}")
+}
+
+/// An icon of the chosen set as a widget that takes any element draws it:
+/// an SVG as an `Icon`, or pixels as an image (`gpui::img`). An image takes
+/// no text colour: a system set's pixels are in the colour its loader drew
+/// them in (`app::icon_tint`), and a bundled set has no pixels.
+#[derive(Clone, IntoElement)]
+pub(crate) enum Glyph {
+    Svg(Box<Icon>),
+    /// The icon's name, its decoded image, and the size it is drawn at;
+    /// `None` draws it at the text size, as an `Icon` given no size is drawn
+    /// (icon.rs, `Icon::into_svg`).
+    Raster(&'static str, ImageSource, Option<Size>),
+}
+
+impl Glyph {
+    /// `icon` as a glyph.
+    fn svg(icon: Icon) -> Self {
+        Self::Svg(Box::new(icon))
+    }
+
+    /// The glyph at `size`, as `Sizable::with_size` sizes an `Icon`.
+    fn with_size(self, size: Size) -> Self {
+        match self {
+            Self::Svg(icon) => Self::svg(icon.with_size(size)),
+            Self::Raster(name, source, _) => Self::Raster(name, source, Some(size)),
+        }
+    }
+
+    /// The glyph in `colour`: an `Icon`'s mask; an image keeps its own.
+    fn text_color(self, colour: Hsla) -> Self {
+        match self {
+            Self::Svg(icon) => Self::svg(icon.text_color(colour)),
+            raster @ Self::Raster(..) => raster,
+        }
+    }
+
+    /// The glyph turned by `turn`: an `Icon` through its transformation; an
+    /// image as it is, since `gpui::img` takes no transformation.
+    fn rotate(self, turn: impl Into<gpui::Radians>) -> Self {
+        match self {
+            Self::Svg(icon) => Self::svg(icon.rotate(turn)),
+            raster @ Self::Raster(..) => raster,
+        }
+    }
+}
+
+impl RenderOnce for Glyph {
+    fn render(self, window: &mut Window, _cx: &mut App) -> impl IntoElement {
+        match self {
+            Self::Svg(icon) => icon.into_any_element(),
+            // Square, at the side an `Icon` of the same `Size` takes
+            // (icon.rs, `Icon::into_svg`: `size_3`, `size_3p5`, `size_4`,
+            // `size_6`, or the text size where it has none).
+            Self::Raster(name, source, size) => {
+                let side: Length = match size {
+                    Some(Size::Size(side)) => side.into(),
+                    Some(Size::XSmall) => rems(0.75).into(),
+                    Some(Size::Small) => rems(0.875).into(),
+                    Some(Size::Medium) => rems(1.).into(),
+                    Some(Size::Large) => rems(1.5).into(),
+                    None => window
+                        .text_style()
+                        .font_size
+                        .to_pixels(window.rem_size())
+                        .into(),
+                };
+                gpui::img(source)
+                    .flex_shrink_0()
+                    .size(side)
+                    .debug_selector(move || raster_selector(name))
+                    .into_any_element()
+            }
+        }
     }
 }
 
 impl SampleIcon {
-    /// The `Icon` a page sample draws, as `chrome_icon` gives it: `None`
-    /// where the chosen icon theme has none. A part: the sample that shows
-    /// it reports.
+    /// The `Icon` a page sample draws where its widget takes an `Icon`
+    /// alone, as `chrome_icon` gives it: `None` where the chosen icon theme
+    /// has none, or pixels alone (`SampleIcon::svg_only`). A part: the
+    /// sample that shows it reports.
     fn icon(&self) -> Option<Icon> {
         chrome_icon(&self.drawn, &self.icon)
     }
@@ -146,6 +240,30 @@ impl SampleIcon {
     fn sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Icon> {
         self.icon().map(|icon| native_sized(cx, icon, role))
     }
+
+    /// The glyph a page sample draws where its widget takes any element,
+    /// as `chrome_glyph` gives it: `None` where the chosen icon theme has
+    /// none.
+    fn glyph(&self) -> Option<Glyph> {
+        chrome_glyph(&self.drawn, &self.icon)
+    }
+
+    /// The glyph at the platform's size for the role the builder names, as
+    /// `native_sized_glyph` sizes it; `None` where the chosen icon theme has
+    /// none.
+    fn glyph_sized(&self, cx: &App, role: fn(Native<'_>) -> Size) -> Option<Glyph> {
+        self.glyph()
+            .map(|glyph| native_sized_glyph(cx, glyph, role))
+    }
+
+    /// This sample for a widget that takes an `Icon` alone
+    /// (`ChromeIcon::svg_only`), whose info then says what it shows.
+    fn svg_only(&self) -> Self {
+        Self {
+            drawn: self.drawn.clone().svg_only(),
+            ..self.clone()
+        }
+    }
 }
 
 /// `icon` at the platform's size for the role the builder names; its own
@@ -154,6 +272,15 @@ fn native_sized(cx: &App, icon: Icon, role: fn(Native<'_>) -> Size) -> Icon {
     match native_value(cx, role) {
         Some(size) => icon.with_size(size),
         None => icon,
+    }
+}
+
+/// `glyph` at the platform's size for the role the builder names, as
+/// [`native_sized`] sizes an `Icon`.
+fn native_sized_glyph(cx: &App, glyph: Glyph, role: fn(Native<'_>) -> Size) -> Glyph {
+    match native_value(cx, role) {
+        Some(size) => glyph.with_size(size),
+        None => glyph,
     }
 }
 
@@ -1204,8 +1331,8 @@ pub(crate) fn toolbar_button(
     if styled {
         button_info = button_info.geometry("tooltip");
     }
-    let icon =
-        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    let icon = chrome_glyph(&drawn, &icon)
+        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
@@ -1312,8 +1439,8 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
         set,
         native.as_ref().map(|n| &n.resolved.button),
     );
-    let icon =
-        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    let icon = chrome_glyph(&drawn, &icon)
+        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
@@ -1426,8 +1553,8 @@ pub(crate) fn panel_toggle(
     if styled {
         button_info = button_info.geometry("tooltip");
     }
-    let icon =
-        chrome_icon(&drawn, &icon).map(|icon| native_sized(cx, icon, geometry::icon_size_small));
+    let icon = chrome_glyph(&drawn, &icon)
+        .map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_small));
     if icon.is_some() && native_value(cx, geometry::icon_size_small).is_some() {
         button_info = button_info.geometry("icon_size_small");
     }
@@ -1636,7 +1763,8 @@ pub(crate) fn sidebar(ui: &Entity<InfoRegistry>, cx: &App, sample: SidebarSample
             active: ix == 0,
             collapsed: false,
             icon,
-            drawn,
+            // `SidebarMenuItem::icon` takes an `Icon` alone (sidebar/menu.rs).
+            drawn: drawn.svg_only(),
             set: set.clone(),
         });
     // Plain text, not a Label: `Label::render` sets `foreground` on its own
@@ -1771,7 +1899,7 @@ pub(crate) fn tab_bar(
     menu_icon: Option<&SampleIcon>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
-    let menu_icon = menu_icon.and_then(SampleIcon::icon);
+    let menu_icon = menu_icon.and_then(SampleIcon::glyph);
     #[cfg(not(feature = "widgets"))]
     let _ = &menu_icon;
     let native = cx.native();
@@ -1906,7 +2034,7 @@ fn native_tab_bar(
     container_margin: Option<Pixels>,
     tabs: Vec<(&'static str, &'static str)>,
     selected: usize,
-    menu_icon: Option<Icon>,
+    menu_icon: Option<Glyph>,
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let (id, info_id, menu, variant) = match kind {
@@ -1946,7 +2074,7 @@ fn native_tab_bar(
         .map(|button| match menu_icon {
             Some(icon) => button.child(listed_icon(
                 ui,
-                native_sized(cx, icon, geometry::icon_size_small),
+                native_sized_glyph(cx, icon, geometry::icon_size_small),
                 Some("chrome.page_tabs.menu.icon"),
             )),
             None => button.dropdown_caret(true),
@@ -3105,6 +3233,9 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         state,
         icon,
     } = spec;
+    // `Button::icon` and `loading_icon` take an `Icon` (`ButtonIcon`) alone
+    // (button/button.rs, button/button_icon.rs).
+    let icon = icon.as_ref().map(SampleIcon::svg_only);
     // What `native_info` applies the builder under.
     let native = cx.native();
     let native_button = native.as_ref().map(|n| &n.resolved.button);
@@ -3274,6 +3405,8 @@ pub(crate) fn toggle(
     checked: bool,
     on_click: impl Fn(&bool, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
+    // `Toggle::icon` takes an `Icon` alone (button/toggle.rs).
+    let icon = &icon.svg_only();
     // What `native_info` applies the builder under.
     let styled = cx.native().is_some();
     let mut toggle_info = info::buttons::toggle(
@@ -3657,6 +3790,8 @@ pub(crate) fn input_groups(
     width: Pixels,
     gap: Option<Pixels>,
 ) -> Stateful<Div> {
+    // `Button::icon` takes an `Icon` (`ButtonIcon`) alone (button/button.rs).
+    let copy_icon = states.copy_icon.svg_only();
     let mut groups_info = info::inputs::input_groups(cx.theme())
         .instance(
             "search icon",
@@ -3664,9 +3799,7 @@ pub(crate) fn input_groups(
         )
         .instance(
             "copy icon",
-            states
-                .copy_icon
-                .note("the Copy button shows its label alone"),
+            copy_icon.note("the Copy button shows its label alone"),
         );
     // One refinement, recorded once, for both single-line groups; the
     // textarea group keeps upstream's frame. Without its padding: the frame
@@ -3694,7 +3827,7 @@ pub(crate) fn input_groups(
         &mut groups_info,
     )
     .custom(variants::ghost_button(cx))
-    .when_some(states.copy_icon.icon(), |button, icon| button.icon(icon))
+    .when_some(copy_icon.icon(), |button, icon| button.icon(icon))
     .label("Copy")
     .tooltip("Copy the field to the clipboard")
     .on_click({
@@ -3715,7 +3848,7 @@ pub(crate) fn input_groups(
                 .input(Input::new(states.search))
                 .addon(
                     InputGroupAddon::new("input-group-inline-addon")
-                        .children(states.search_icon.icon()),
+                        .children(states.search_icon.glyph()),
                 )
                 .refine_style(&frame),
         )
@@ -3829,10 +3962,10 @@ pub(crate) fn number_input(
     let tint = info::stated(i.border.color);
     let radius = px(i.border.corner_radius.max(0.0) - i.border.line_width).max(px(0.));
     let (up, down) = (
-        steps.up.sized(cx, geometry::icon_size_small),
-        steps.down.sized(cx, geometry::icon_size_small),
+        steps.up.glyph_sized(cx, geometry::icon_size_small),
+        steps.down.glyph_sized(cx, geometry::icon_size_small),
     );
-    let step = move |button: gpui_base::Button, label: &'static str, icon: Option<Icon>| {
+    let step = move |button: gpui_base::Button, label: &'static str, icon: Option<Glyph>| {
         button
             .accessibility_label(label)
             .flex()
@@ -5189,7 +5322,7 @@ pub(crate) fn attachment(
     }
     let card = Attachment::new()
         .status(status)
-        .media(AttachmentMedia::new().children(icon.sized(cx, geometry::icon_size_small)))
+        .media(AttachmentMedia::new().children(icon.glyph_sized(cx, geometry::icon_size_small)))
         .content(
             AttachmentContent::new()
                 .title(AttachmentTitle::new(file).status(status))
@@ -5570,7 +5703,7 @@ pub(crate) fn empty(
                         .with_variant(EmptyMediaVariant::Icon)
                         // An empty state's icon is the large one; `EmptyMedia`
                         // takes it as a plain child, so the size survives.
-                        .children(icon.sized(cx, geometry::icon_size_large)),
+                        .children(icon.glyph_sized(cx, geometry::icon_size_large)),
                 )
                 .title(EmptyTitle::new().child(title))
                 .description(EmptyDescription::new().child(description)),
@@ -5727,7 +5860,7 @@ pub(crate) fn marker(
         info::feedback::marker(cx.theme(), kind, text, cx.reduce_motion(), plain_icon);
     let marker = Marker::new();
     let marker = match kind {
-        MarkerKind::Plain => match icon.sized(cx, geometry::icon_size_small) {
+        MarkerKind::Plain => match icon.glyph_sized(cx, geometry::icon_size_small) {
             Some(drawn) => {
                 if native_value(cx, geometry::icon_size_small).is_some() {
                     marker_info = marker_info.geometry("icon_size_small");
@@ -6766,6 +6899,12 @@ pub(crate) struct ExpanderSpec {
 pub(crate) struct ExpanderArrows {
     pub leading: SampleIcon,
     pub trailing: SampleIcon,
+    /// The arrows of an open item where the set gives its chevrons as
+    /// pixels, which do not turn (`gpui::img` takes no transformation):
+    /// ChevronDown for a leading arrow, ChevronUp for a trailing one, the
+    /// directions a turned chevron points in.
+    pub leading_open: SampleIcon,
+    pub trailing_open: SampleIcon,
 }
 
 /// An expander row's side padding where `expander.border.padding` states no
@@ -6823,19 +6962,32 @@ fn native_expander(
     // A leading arrow points at the title while closed and down while open;
     // a trailing one down while closed and up while open (§2.27,
     // `arrow_side`).
-    let (chevron, open_turn) = if leading {
-        (&arrows.leading, 0.25)
+    let (chevron, turned, open_turn) = if leading {
+        (&arrows.leading, &arrows.leading_open, 0.25)
     } else {
-        (&arrows.trailing, 0.5)
+        (&arrows.trailing, &arrows.trailing_open, 0.5)
     };
-    let glyph = chevron
-        .icon()
-        .map(|icon| icon.with_size(px(e.arrow_icon_size)).text_color(arrow));
+    let sized = |icon: &SampleIcon| {
+        icon.glyph().map(|glyph| {
+            glyph
+                .with_size(Size::Size(px(e.arrow_icon_size)))
+                .text_color(arrow)
+        })
+    };
+    let glyph = sized(chevron);
+    // Pixels do not turn: an open item's arrow is then the set's chevron of
+    // the direction a turned one points in.
+    let open_glyph = if chevron.is_raster() {
+        sized(turned)
+    } else {
+        glyph.clone()
+    };
     let expander_info = info::layout::native_expander(
         n.resolved,
         items.map(|(title, _, _)| title),
         open,
         chevron,
+        turned,
         gap,
     )
     .geometry("accordion_title");
@@ -6871,7 +7023,8 @@ fn native_expander(
                 let on_toggle = on_toggle.clone();
                 let turn = if is_open { open_turn } else { 0. };
                 let listed = elements::expander_item(id, ix);
-                let arrow = glyph.clone().map(|glyph| {
+                let shown = if is_open { &open_glyph } else { &glyph };
+                let arrow = shown.clone().map(|glyph| {
                     div()
                         .relative()
                         .flex_none()
@@ -6999,6 +7152,8 @@ pub(crate) fn collapsible(
         open,
         icon,
     } = spec;
+    // `Button::icon` takes an `Icon` (`ButtonIcon`) alone (button/button.rs).
+    let icon = icon.svg_only();
     let text = if open {
         "Click to collapse"
     } else {
@@ -7149,10 +7304,11 @@ pub(crate) fn stepper(
     on_click: impl Fn(&usize, &mut Window, &mut App) + 'static,
 ) -> Stateful<Div> {
     let labelled: Vec<(&str, SampleIcon)> = match kind {
+        // `StepperItem::icon` takes an `Icon` alone (stepper/item.rs).
         StepperKind::Icons => STEPPER_STEPS
             .iter()
             .map(|(text, _)| *text)
-            .zip(icons.iter().cloned())
+            .zip(icons.iter().map(SampleIcon::svg_only))
             .collect(),
         StepperKind::Numbers => Vec::new(),
     };
@@ -7523,7 +7679,7 @@ pub(crate) fn confirm_dialog(
             content.child(
                 with_gap(h_flex(), gap)
                     .items_start()
-                    .children(icon.sized(cx, geometry::icon_size_dialog))
+                    .children(icon.glyph_sized(cx, geometry::icon_size_dialog))
                     .child(
                         DialogDescription::new()
                             .refine_style(&description_style)
@@ -7573,7 +7729,7 @@ pub(crate) fn alert_dialog(
         }
         None => alert,
     };
-    let drawn = icon.sized(cx, geometry::icon_size_dialog);
+    let drawn = icon.glyph_sized(cx, geometry::icon_size_dialog);
     if drawn.is_some() && native_value(cx, geometry::icon_size_dialog).is_some() {
         alert_info = alert_info.geometry("icon_size_dialog");
     }
@@ -7873,7 +8029,7 @@ pub(crate) fn menu_rows(
                 .items_center()
                 .when_some(radius, |row, radius| row.rounded(radius))
                 .hover(move |this| this.bg(hover_bg).text_color(hover_text))
-                .children(icon.sized(cx, geometry::icon_size_small))
+                .children(icon.glyph_sized(cx, geometry::icon_size_small))
                 .child(label);
             native_info(row, cx, geometry::menu_item, "menu_item", &mut row_info)
                 .info(ui, id, row_info)
@@ -8241,7 +8397,8 @@ pub(crate) fn icon_size_cell(
         _ => None,
     };
     let mut cell_info = info::icons::icon_size(cx.theme(), context, drawn, set, size, preset);
-    let icon = chrome_icon(drawn, icon).map(|icon| native_sized(cx, icon, context.builder()));
+    let icon =
+        chrome_glyph(drawn, icon).map(|icon| native_sized_glyph(cx, icon, context.builder()));
     if icon.is_some() && size.is_some() {
         cell_info = match context {
             IconSizeContext::Toolbar => cell_info.geometry("icon_size_toolbar"),
@@ -8579,7 +8736,11 @@ pub(crate) fn labelled(
 
 /// `icon` in a box of its own size that records its bounds as the element
 /// `listed`, where it is one.
-fn listed_icon(ui: &Entity<InfoRegistry>, icon: Icon, listed: Option<&'static str>) -> AnyElement {
+fn listed_icon(
+    ui: &Entity<InfoRegistry>,
+    icon: impl IntoElement,
+    listed: Option<&'static str>,
+) -> AnyElement {
     match listed {
         Some(listed) => div()
             .relative()
@@ -8680,10 +8841,19 @@ pub(crate) fn icon_button(
 ) -> Stateful<Div> {
     let native = cx.native();
     let native_button = native.as_ref().map(|n| &n.resolved.button);
-    let icon = role_icon_of(drawn);
+    let icon = role_glyph_of(drawn);
     let mut button_info = info::buttons::icon_button(cx.theme(), icon.is_some(), native_button)
         .instance("icon", format!("{name}, at toolbar.icon_size"));
-    let icon = icon.map(|icon| native_sized(cx, icon, geometry::icon_size_toolbar));
+    if drawn.0.is_raster() {
+        button_info = button_info.instance(
+            "icon colour",
+            format!(
+                "pixels, drawn as an image (gpui::img), {}",
+                info::chrome::RASTER_ICON_COLOUR
+            ),
+        );
+    }
+    let icon = icon.map(|icon| native_sized_glyph(cx, icon, geometry::icon_size_toolbar));
     if icon.is_some() && native_value(cx, geometry::icon_size_toolbar).is_some() {
         button_info = button_info.geometry("icon_size_toolbar");
     }
@@ -8776,14 +8946,15 @@ pub(crate) fn type_line(
         .debug_selector(move || id.into())
 }
 
-/// The `Icon` a role's `drawn` icon is (`Showcase::role_chrome_icon`):
+/// The glyph a role's `drawn` icon is (`Showcase::role_chrome_icon`):
 /// gpui-component's own where its built-in set is chosen, the chosen set's
-/// SVG otherwise, drawn as `chrome_icon` draws one; `None` where the set has
-/// none for the role.
-fn role_icon_of(drawn: &(ChromeIcon, Option<IconName>)) -> Option<Icon> {
+/// SVG or pixels otherwise, drawn as `chrome_glyph` draws one; `None` where
+/// the set has none for the role.
+fn role_glyph_of(drawn: &(ChromeIcon, Option<IconName>)) -> Option<Glyph> {
     match drawn {
-        (ChromeIcon::Builtin(_), Some(icon)) => Some(Icon::new(icon.clone())),
-        (ChromeIcon::Loaded(_, bytes), _) => Some(Icon::default().data(bytes)),
+        (ChromeIcon::Builtin(_), Some(icon)) => Some(Glyph::svg(Icon::new(icon.clone()))),
+        (ChromeIcon::Loaded(_, bytes), _) => Some(Glyph::svg(Icon::default().data(bytes))),
+        (ChromeIcon::Raster(name, raster), _) => Some(Glyph::Raster(name, raster.0.clone(), None)),
         _ => None,
     }
 }
@@ -8800,7 +8971,7 @@ pub(crate) fn sized_icon(
     role: fn(Native<'_>) -> Size,
     variant: &'static str,
 ) -> Stateful<Div> {
-    let shown = role_icon_of(drawn).map(|icon| native_sized(cx, icon, role));
+    let shown = role_glyph_of(drawn).map(|icon| native_sized_glyph(cx, icon, role));
     let info = WidgetInfo::new("Icon")
         .variant(variant)
         .instance("icon", "IconRole::FolderOpen, of the chosen set");

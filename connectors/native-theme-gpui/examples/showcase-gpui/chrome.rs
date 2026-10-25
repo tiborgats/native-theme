@@ -439,7 +439,8 @@ fn palette_entry(
     PaletteEntry {
         label: label.into(),
         keywords,
-        drawn: app.chrome_icon(&icon),
+        // `CommandItem::icon` takes an `Icon` alone (command/item.rs).
+        drawn: app.chrome_icon(&icon).svg_only(),
         icon,
         action,
     }

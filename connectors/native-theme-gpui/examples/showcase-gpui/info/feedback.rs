@@ -531,7 +531,8 @@ pub fn empty(
             t.muted,
             "gpui-component/empty.rs:219",
         ))
-        .colors(icon.shown().then(|| claim(
+        // A raster icon keeps its own colours (`icon.note`).
+        .colors((icon.shown() && !icon.is_raster()).then(|| claim(
             "media icon",
             "foreground",
             t.foreground,
@@ -789,12 +790,17 @@ pub fn marker(
         None => info,
     };
     let info = match kind {
-        MarkerKind::Plain if plain_icon.is_some_and(SampleIcon::shown) => info.color(claim(
-            "icon, the row's text colour",
-            "muted_foreground",
-            t.muted_foreground,
-            "gpui-component/marker.rs:219",
-        )),
+        // A raster icon keeps its own colours (`icon.note`).
+        MarkerKind::Plain
+            if plain_icon.is_some_and(|icon| icon.shown() && !icon.is_raster()) =>
+        {
+            info.color(claim(
+                "icon, the row's text colour",
+                "muted_foreground",
+                t.muted_foreground,
+                "gpui-component/marker.rs:219",
+            ))
+        }
         MarkerKind::Plain => info,
         MarkerKind::Separator => info.color(claim(
             "separator line",

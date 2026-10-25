@@ -507,10 +507,7 @@ pub fn panel_toggle(
     };
     let info = action_tooltip(info, t, tooltip_styled, tooltip_delay);
     let info = if drawn {
-        info.not_themeable(
-            "icon",
-            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
-        )
+        info.not_themeable("icon", child_icon_line(icon))
     } else {
         info
     };
@@ -1039,10 +1036,7 @@ pub fn toolbar_button(
             "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
         );
     let info = if drawn {
-        info.not_themeable(
-            "icon",
-            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
-        )
+        info.not_themeable("icon", child_icon_line(icon))
     } else {
         info
     };
@@ -1093,6 +1087,23 @@ fn action_tooltip(
     }
 }
 
+/// The "icon" line of a tool button that draws `icon` as its child: why a
+/// child, and the colour it shows.
+pub(crate) fn child_icon_line(icon: &ChromeIcon) -> String {
+    let colour = if icon.is_raster() {
+        format!("is pixels drawn as an image (gpui::img), {RASTER_ICON_COLOUR}")
+    } else {
+        "takes the text colour above".to_string()
+    };
+    format!(
+        "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and {colour}"
+    )
+}
+
+/// The colour a raster icon of the chosen set is drawn in
+/// (`ChromeIcon::Raster`), which no widget's colour reaches.
+pub(crate) const RASTER_ICON_COLOUR: &str = "which takes no text colour: it shows the colour its loader drew it in -- an SF Symbol or a Segoe Fluent glyph in defaults.font.color where a native theme is installed (the showcase's icon_tint), else in the loader's own (SF Symbols black, Segoe Fluent white: native-theme icons.rs, SfSymbolsLoader, SegoeFluentLoader); a freedesktop raster icon in its own colours";
+
 /// What a chrome icon's info says it is: `icon` as the icon theme named
 /// `set` gives it, and `absent` what its widget shows where the icon theme
 /// has none.
@@ -1103,6 +1114,9 @@ pub(crate) fn chrome_icon_note(icon: &ChromeIcon, set: &str, absent: &str) -> St
         ),
         ChromeIcon::Loaded(name, _) => format!(
             "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. It is drawn as every Icon is, as a mask in its widget's text colour (gpui-pre/window.rs, Window::paint_svg), so a coloured icon shows its shape only"
+        ),
+        ChromeIcon::Raster(name, _) => format!(
+            "{set}'s icon for {name}, the icon theme the theme settings' Icon theme Select chose. {set} gives it as pixels, not an SVG, so it is drawn as the Icons page draws it, as an image (gpui::img), {RASTER_ICON_COLOUR}"
         ),
         ChromeIcon::Missing(name) => format!(
             "none: {set} holds no SVG for {name}, and no other icon theme's icon stands in -- {absent}"

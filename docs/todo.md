@@ -3815,6 +3815,26 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       node disabled through a crate-private copy of gpui-base's wrapper
       (`A11yDisabled`, native-theme-gpui `src/widgets/mod.rs`), which can go then
       (G3 T7, 2026-10-22).
+- [ ] [upstream] PR: an `Icon` that draws an image, or an icon slot that takes any
+      element, in gpui-component's widgets that take an `Icon` alone.
+      gpui-component 0.8.0's `Icon` draws a path or SVG bytes and nothing else
+      (`src/icon.rs:78-81`, `IconSource`), and `Toggle::icon`
+      (`src/button/toggle.rs:93`), `CommandItem::icon` (`src/command/item.rs:56`),
+      `Alert::icon` (`src/alert.rs:124`), `StepperItem::icon`
+      (`src/stepper/item.rs:47`), `SidebarMenuItem::icon` (`src/sidebar/menu.rs:135`)
+      and `Button::icon` (`src/button/button.rs:399`, a `ButtonIcon`: an `Icon`, a
+      `Spinner` or a `ProgressCircle`, `src/button/button_icon.rs:55-59`) take
+      nothing else. SF Symbols and Segoe Fluent load as pixels only
+      (`IconData::Rgba`; *Segoe Fluent icons as SVG outlines* above), so under
+      `system (sf-symbols)` and `system (segoe-fluent)` the gpui showcase's
+      Buttons-page Toggles and icon Buttons, the Inputs page's Copy button, the
+      Layout page's Collapsible toggle, Stepper and Sidebar items, the command
+      palette's entries and the theme-error Alert show what they show with no
+      icon of the set, and say so; every widget that takes any element draws
+      the pixels with `gpui::img` (M9-163, the M9x CI-capture round,
+      2026-10-25). A `Button`'s children follow its label
+      (`src/button/button.rs:773-789`), so an image child cannot stand where its
+      icon stands beside an upstream label.
 
 ### gpui: a tab scrolled into view loses its outer flare
 

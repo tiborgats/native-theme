@@ -1075,7 +1075,8 @@ pub fn attachment(
                     "gpui-component/attachment.rs:797",
                 ))
             } else {
-                icon.shown().then(|| {
+                // A raster icon keeps its own colours (`icon.note`).
+                (icon.shown() && !icon.is_raster()).then(|| {
                     claim(
                         "media icon",
                         "foreground",

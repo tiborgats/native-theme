@@ -983,10 +983,7 @@ pub fn toolbar_item(
         "none until hovered: the custom variant's fill is transparent (button/button.rs, ButtonCustomVariant::new)",
     );
     let info = if drawn {
-        info.not_themeable(
-            "icon",
-            "a child of the Button, not its icon: Button::icon resizes whatever it is given to a size derived from the Button's own Size (button/button.rs, RenderOnce for Button), and an Icon's size set last wins over its own style (icon.rs, Icon::into_svg). As a child the icon keeps the size it was built at, and takes the text colour above",
-        )
+        info.not_themeable("icon", super::chrome::child_icon_line(icon))
     } else {
         info
     };

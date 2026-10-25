@@ -606,7 +606,8 @@ pub fn folder_tab_row(
 
 /// The expanders the showcase draws as `r`'s `expander.*` states them
 /// (`demo::native_expander`), reading `titles`, each `open` or not, their
-/// arrow `arrow`, of the chosen icon theme, and `gap`, the
+/// arrow `arrow`, of the chosen icon theme -- `turned`, the chevron an open
+/// item shows where the set gives `arrow` as pixels -- and `gap`, the
 /// `layout.widget_gap` that parts the items where the theme states the
 /// frame.
 pub fn native_expander(
@@ -614,6 +615,7 @@ pub fn native_expander(
     titles: [&'static str; 2],
     open: [bool; 2],
     arrow: &SampleIcon,
+    turned: &SampleIcon,
     gap: Option<Pixels>,
 ) -> WidgetInfo {
     let e = &r.expander;
@@ -644,10 +646,19 @@ pub fn native_expander(
         .colors(edge)
         .color(claim("title", "font", stated(e.font.color), "showcase"));
     let leading = e.arrow_side == Some(ArrowSide::Leading);
-    let glyph = if leading {
-        "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
-    } else {
-        "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render)"
+    let glyph = match (leading, arrow.is_raster()) {
+        (true, false) => {
+            "ChevronRight, before the title and turned down while open, as Breeze and the HIG draw a leading arrow"
+        }
+        (false, false) => {
+            "ChevronDown, after the title and turned while open, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render)"
+        }
+        (true, true) => {
+            "ChevronRight, before the title, as Breeze and the HIG draw a leading arrow; pixels do not turn (gpui::img takes no transformation), so an open item shows the set's ChevronDown instead"
+        }
+        (false, true) => {
+            "ChevronDown, after the title, as upstream's Accordion draws it (gpui-component/accordion.rs, AccordionItem::render); pixels do not turn (gpui::img takes no transformation), so an open item shows the set's ChevronUp instead"
+        }
     };
     let info = info.instance(
         "arrow glyph",
@@ -656,14 +667,27 @@ pub fn native_expander(
             arrow.note("the title row shows its title alone")
         ),
     );
+    let info = if arrow.is_raster() {
+        info.instance(
+            "open arrow glyph",
+            turned.note("an open item's title row shows its title alone"),
+        )
+    } else {
+        info
+    };
     let info = if arrow.shown() {
-        info.color(claim(
-            "arrow",
-            "arrow_color",
-            stated(e.arrow_color.unwrap_or(e.font.color)),
-            "showcase",
-        ))
-        .config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
+        // A raster arrow keeps its own colours (`arrow.note`).
+        let info = if arrow.is_raster() {
+            info
+        } else {
+            info.color(claim(
+                "arrow",
+                "arrow_color",
+                stated(e.arrow_color.unwrap_or(e.font.color)),
+                "showcase",
+            ))
+        };
+        info.config("arrow", format!("expander.arrow_icon_size, {}px", px_text(e.arrow_icon_size)))
         .config("arrow side", match e.arrow_side {
             Some(side) => format!("expander.arrow_side, {side:?}"),
             None => "not stated: upstream's Accordion's, after the title (gpui-component/accordion.rs, AccordionItem::render)".to_string(),

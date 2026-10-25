@@ -781,35 +781,107 @@ pub(crate) enum ChromeIcon {
     /// The chosen set's SVG for the IconName of this name, as the Icons
     /// page loads it (`load_gpui_icons`).
     Loaded(&'static str, Cow<'static, [u8]>),
-    /// The chosen set holds no SVG for the IconName of this name: none at
-    /// all, or only pixels, which an `Icon` cannot draw (icon.rs, `Icon`
-    /// takes a path or SVG bytes).
+    /// The chosen set's pixels for the IconName of this name: an SF Symbol
+    /// or a Segoe Fluent glyph, which the system loaders give as pixels
+    /// only (`IconData::Rgba`), or a freedesktop theme's raster icon. It is
+    /// the Icons page's decoded image of it (`Showcase::gpui_icon_sources`,
+    /// `loaded_icon_sources`), drawn as that page draws one, with
+    /// `gpui::img`: an `Icon` takes a path or SVG bytes alone (icon.rs,
+    /// `IconSource`).
+    Raster(&'static str, RasterIcon),
+    /// The chosen set holds no icon for the IconName of this name: none at
+    /// all, or pixels that did not decode into an image.
     Missing(&'static str),
     /// An IconName, by its asset path, that the Icons page's gallery does
     /// not list, so no set other than gpui-component's own was asked for it.
     Unlisted(SharedString),
 }
 
+/// A raster icon as gpui draws it: the decoded image the Icons page keeps
+/// for it (`Showcase::rebuild_icon_caches`), which a rebuild of that cache
+/// releases. A chrome icon is looked up again every frame, so it never
+/// holds an image past that rebuild.
+#[derive(Clone)]
+pub(crate) struct RasterIcon(pub(crate) ImageSource);
+
+impl PartialEq for RasterIcon {
+    /// The same decoded image: gpui's sources compare by nothing else.
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (ImageSource::Render(a), ImageSource::Render(b)) => std::sync::Arc::ptr_eq(a, b),
+            (ImageSource::Image(a), ImageSource::Image(b)) => std::sync::Arc::ptr_eq(a, b),
+            _ => false,
+        }
+    }
+}
+
+impl std::fmt::Debug for RasterIcon {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("RasterIcon")
+    }
+}
+
 impl ChromeIcon {
     /// The chrome's icon for `icon`: `icons` are the chosen set's, as
-    /// `load_gpui_icons` loaded them, and `builtin` is whether that set is
-    /// gpui-component's own. With another set chosen, an IconName the
-    /// gallery does not list is `Unlisted`: nothing was loaded for it.
-    pub(crate) fn of(icons: &[IconEntry], builtin: bool, icon: &IconName) -> Self {
+    /// `load_gpui_icons` loaded them, `sources` their decoded images in the
+    /// same order (`Showcase::gpui_icon_sources`), and `builtin` is whether
+    /// that set is gpui-component's own. With another set chosen, an
+    /// IconName the gallery does not list is `Unlisted`: nothing was loaded
+    /// for it.
+    pub(crate) fn of(
+        icons: &[IconEntry],
+        sources: &[Option<ImageSource>],
+        builtin: bool,
+        icon: &IconName,
+    ) -> Self {
         let path = icon.clone().path();
-        let listed = icons.iter().find(|(_, i, ..)| i.clone().path() == path);
+        let listed = icons
+            .iter()
+            .enumerate()
+            .find(|(_, (_, i, ..))| i.clone().path() == path);
         match listed {
-            Some((name, ..)) if builtin => Self::Builtin((*name).into()),
+            Some((_, (name, ..))) if builtin => Self::Builtin((*name).into()),
             None if builtin => Self::Builtin(path),
-            Some((name, _, _, Some(IconData::Svg(bytes)), _)) => Self::Loaded(name, bytes.clone()),
-            Some((name, ..)) => Self::Missing(name),
+            Some((_, (name, _, _, Some(IconData::Svg(bytes)), _))) => {
+                Self::Loaded(name, bytes.clone())
+            }
+            Some((ix, (name, _, _, Some(IconData::Rgba(_)), _))) => Self::raster(name, sources, ix),
+            Some((_, (name, ..))) => Self::Missing(name),
             None => Self::Unlisted(path),
+        }
+    }
+
+    /// The raster icon `name` at `ix` of the decoded images `sources`, or
+    /// `Missing` where it did not decode.
+    pub(crate) fn raster(name: &'static str, sources: &[Option<ImageSource>], ix: usize) -> Self {
+        match sources.get(ix) {
+            Some(Some(source)) => Self::Raster(name, RasterIcon(source.clone())),
+            _ => Self::Missing(name),
         }
     }
 
     /// Whether the chosen set gives an icon to draw.
     pub(crate) fn shown(&self) -> bool {
         !matches!(self, Self::Missing(_) | Self::Unlisted(_))
+    }
+
+    /// Whether the icon is drawn as an image, in its own colours, not as a
+    /// mask in its widget's text colour.
+    pub(crate) fn is_raster(&self) -> bool {
+        matches!(self, Self::Raster(..))
+    }
+
+    /// This icon for a widget that takes an `Icon` and nothing else -- a
+    /// `Toggle`'s, a `CommandItem`'s, an `Alert`'s, a `StepperItem`'s, a
+    /// `SidebarMenuItem`'s, a `Button`'s icon beside its label
+    /// (`ButtonIcon`): a raster icon is `Missing` there, since an `Icon`
+    /// draws a path or SVG bytes alone (icon.rs, `IconSource`), and the
+    /// widget shows what it shows where the set has none.
+    pub(crate) fn svg_only(self) -> Self {
+        match self {
+            Self::Raster(name, _) => Self::Missing(name),
+            other => other,
+        }
     }
 }
 
@@ -828,6 +900,12 @@ impl SampleIcon {
     /// Whether the chosen icon theme gives the sample an icon to draw.
     pub(crate) fn shown(&self) -> bool {
         self.drawn.shown()
+    }
+
+    /// Whether the sample's icon is drawn as an image, in its own colours
+    /// (`ChromeIcon::is_raster`).
+    pub(crate) fn is_raster(&self) -> bool {
+        self.drawn.is_raster()
     }
 
     /// What the sample's info says its icon is, `absent` being what the

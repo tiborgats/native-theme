@@ -728,6 +728,8 @@ impl Showcase {
                         arrows: ExpanderArrows {
                             leading: self.sample_icon(IconName::ChevronRight),
                             trailing: self.sample_icon(IconName::ChevronDown),
+                            leading_open: self.sample_icon(IconName::ChevronDown),
+                            trailing_open: self.sample_icon(IconName::ChevronUp),
                         },
                     },
                     on_expander,
