@@ -5729,13 +5729,28 @@ fn page_tab(harness: &Harness<'_, App>, page: Page) -> (egui::Rect, egui::Rect) 
         .unwrap_or_else(|| panic!("{page:?}: no page tab is recorded"))
 }
 
-/// Whether `page`'s tab lies wholly in the strip's view: the view leaves all of it, within the
-/// layout's float error ([`ROW_SLACK`]).
+/// `page`'s tab's left and right edges as shown and whole, unrounded, for a failure's message.
+fn tab_edges(harness: &Harness<'_, App>, page: Page) -> String {
+    let (shown, whole) = page_tab(harness, page);
+    format!(
+        "shown {} to {}, whole {} to {}",
+        shown.left(),
+        shown.right(),
+        whole.left(),
+        whole.right()
+    )
+}
+
+/// Whether `page`'s tab lies wholly in the strip's view: the view leaves all of it, within a
+/// step of egui's layout grid (`emath::GUI_ROUNDING`, a 32nd of a point), on which egui lays the
+/// scrolled content out, so a tab scrolled to the view's edge can end that step past it (the
+/// no-default-features build: the Theme Map's tab whole to 1183.0313 in a view ending at 1183).
 fn page_tab_in_view(harness: &Harness<'_, App>, page: Page) -> bool {
     let (shown, whole) = page_tab(harness, page);
+    let slack = egui::emath::GUI_ROUNDING;
     whole.width() > 0.0
-        && (shown.left() - whole.left()).abs() <= ROW_SLACK
-        && (shown.right() - whole.right()).abs() <= ROW_SLACK
+        && (shown.left() - whole.left()).abs() <= slack
+        && (shown.right() - whole.right()).abs() <= slack
 }
 
 /// The page tab strip brings the open page's tab wholly into view, as the iced showcase's strip
@@ -5759,8 +5774,8 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
     );
     assert!(
         page_tab_in_view(&harness, Page::ThemeMap),
-        "opened on theme-map: its tab is not wholly in view, {:?}",
-        page_tab(&harness, Page::ThemeMap)
+        "opened on theme-map: its tab is not wholly in view, {}",
+        tab_edges(&harness, Page::ThemeMap)
     );
     let ctx = harness.ctx.clone();
     for page in [Page::Basic, Page::ThemeMap] {
@@ -5768,8 +5783,8 @@ fn the_page_tabs_scroll_the_open_tab_into_view() {
         harness.run_steps(SETTLE);
         assert!(
             page_tab_in_view(&harness, page),
-            "{page:?} shown: its tab is not wholly in view, {:?}",
-            page_tab(&harness, page)
+            "{page:?} shown: its tab is not wholly in view, {}",
+            tab_edges(&harness, page)
         );
     }
     let before = page_tab(&harness, Page::ThemeMap).1;
