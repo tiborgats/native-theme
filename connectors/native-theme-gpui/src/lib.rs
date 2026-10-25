@@ -290,7 +290,7 @@ use std::time::Duration;
 /// The families are [`font_family`]'s: on macOS the stated family of the
 /// system UI font, "SF Pro", is passed to gpui as its own alias
 /// `.SystemUIFont`, and that of the system monospaced font, "SF Mono", as the
-/// face's name, `.AppleSystemUIFontMonospaced`, so Core Text supplies the
+/// font's family name, `.AppleSystemUIFontMonospaced`, so Core Text supplies the
 /// system fonts itself; a family
 /// the system lacks is the one the platform substitutes for it (feature
 /// `system-fonts`); every other family is passed as stated. The platform is
@@ -724,12 +724,16 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
 /// its memory fonts first, then in the system source (lines 294–297), so Core
 /// Text supplies its own system UI font. Its twin, the system monospaced
 /// font's stated family — "SF Mono" caselessly,
-/// `native_theme::fonts::is_macos_system_mono_family` — becomes the face's
-/// own name, `.AppleSystemUIFontMonospaced` (`docs/platform-facts.md:65`),
+/// `native_theme::fonts::is_macos_system_mono_family` — becomes the font's
+/// family name, `.AppleSystemUIFontMonospaced` (`docs/platform-facts.md:65`;
+/// the familyName macOS 26 reports for `+monospacedSystemFontOfSize:weight:`,
+/// `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`),
 /// which the same lookup takes as it takes `.AppleSystemUIFont`: font-kit's
 /// `select_family_by_name`, memory fonts first, then the system source
-/// (gpui-pre-apple 0.3.9 `src/text_system.rs` lines 290–297); "SF Mono" is in
-/// no font database of the runners (M9-167). Every other family, and every
+/// (gpui-pre-apple 0.3.9 `src/text_system.rs` lines 290–297), a Core Text
+/// query by `NSFontFamilyAttribute` (zed-font-kit 0.14.1-zed
+/// `src/sources/core_text.rs` lines 69–80); "SF Mono" is in no font database
+/// of the runners (M9-167). Every other family, and every
 /// family elsewhere, is passed as stated: fontdb-style databases file the
 /// font under `.SF NS`, but gpui does not draw from one. The platform is a
 /// parameter so the unit tests run on every platform; the callers pass

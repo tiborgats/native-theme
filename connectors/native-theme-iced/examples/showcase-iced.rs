@@ -14883,10 +14883,11 @@ fn aw_tab_width(state: &State, labels: &[&'static str], padding: Padding) -> f32
 /// label's column the one fixed height (iced_aw 0.14.1
 /// `src/widget/tab_bar.rs:491`, `:509`); the tab's padding and the label's
 /// come off it (`:494`, `:418`; iced_core 0.14.0 `src/layout/limits.rs:79-85`,
-/// `:122-133`), and the label is drawn on its line, its text size plus one
-/// at iced's 1.3 (`:398-404`, `:901-918`), clipped to what is left. So a
-/// height that leaves the line less room cuts the label: macos-tahoe's
-/// `tab.min_height` 24 leaves 4 px of its 23.8 (13 pt, 17.3 px, plus one).
+/// `:122-133`). The label is laid out on its text size plus one at iced's
+/// 1.3 (`:398-404`, `:420`) and drawn at its text size, centred in that
+/// node and clipped to it (`:696`, `:901-918`), so a height that leaves the
+/// laid-out line less room cuts the label: macos-tahoe's `tab.min_height` 24
+/// leaves a 4 px node of its 23.8 px line (13 pt, 17.3 px, plus one).
 #[cfg(feature = "iced_aw")]
 fn aw_tab_height(state: &State, padding: Padding) -> f32 {
     let t = &state.current_resolved.tab;
@@ -26986,6 +26987,15 @@ mod tests {
                     faults.push(format!(
                         "{mode:?}: {label}'s line {text:?} is {off}px off the centre of {id} {row:?}"
                     ));
+                }
+                // The layout dump records the label where it is drawn, as
+                // the egui and gpui dumps do (`basic.list.row_N.text`).
+                let dumped = format!("{id}.text");
+                match rects.get(dumped.as_str()) {
+                    Some(record) if near(record.y, text.y) && near(record.height, text.height) => {}
+                    found => faults.push(format!(
+                        "{mode:?}: {dumped} is recorded at {found:?}, the label drawn at {text:?}"
+                    )),
                 }
             }
         }

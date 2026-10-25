@@ -134,8 +134,11 @@ pub fn is_macos_system_ui_family(family: &str) -> bool {
 /// Whether `family` names the macOS system monospaced font: caselessly equal
 /// to "SF Mono", the name the platform facts give
 /// `+monospacedSystemFontOfSize:weight:` (`docs/platform-facts.md:65`) and the
-/// macOS presets state. Its face is `.AppleSystemUIFontMonospaced`; whether
-/// "SF Mono" is a family name a font database holds stays open there. A pure
+/// macOS presets state. The font's family name is
+/// `.AppleSystemUIFontMonospaced`, as macOS 26 reports it
+/// (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`);
+/// whether "SF Mono" is a family name a font database holds stays open
+/// there. A pure
 /// predicate, on every platform, with no font database: the gpui connector
 /// asks it to map the family to that face, as it maps
 /// [`is_macos_system_ui_family`]'s.

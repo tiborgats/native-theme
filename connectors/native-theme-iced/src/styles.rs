@@ -1328,7 +1328,9 @@ pub fn slider(
 /// (`scrollbar.overlay_mode`), both rails and their scrollers are transparent
 /// while the scrollable is `Active`, and shown as above while the pointer is
 /// over it (`Hovered`) or drags a scroller: iced 0.14 draws a floating bar in
-/// every status and has no auto-hide (`scrollable.rs:378-383`), and nothing
+/// every status and has no auto-hide, its style asked for `Dragged`,
+/// `Hovered` or `Active` alone (iced_widget 0.14.2 `src/scrollable.rs:1097-1121`,
+/// `:1176-1182`), and nothing
 /// tells a style that the content was scrolled, so the bar is revealed on
 /// hover, not on scroll as the platforms' overlay scrollbars are.
 ///
@@ -1365,7 +1367,8 @@ pub fn scrollable(
     // different from a hovered one, so it copies that color.
     let dragged_thumb = to_color(s.thumb_active_color.unwrap_or(s.thumb_hover_color));
     // A floating bar is hidden at rest: iced 0.14 has no auto-hide and draws
-    // a floating bar in every status (`scrollable.rs:378-383`), and reveals
+    // a floating bar in every status (iced_widget 0.14.2
+    // `src/scrollable.rs:1097-1121`, `:1176-1182`), and reveals
     // nothing on scroll, so the closest it comes to the platforms' overlay
     // scrollbar is a bar shown while the pointer is over the scrollable or
     // drags it, and transparent while it is `Active`.

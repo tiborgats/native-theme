@@ -3188,8 +3188,9 @@ fn a_scrollbar_that_is_not_an_overlay_is_embedded() -> native_theme::Result<()> 
 }
 
 /// M9x CI item I5 (M9-174): a floating scrollbar is hidden at rest. iced
-/// 0.14 has no auto-hide and draws a floating bar in every status
-/// (`scrollable.rs:378-383`), so where the theme says the bar floats
+/// 0.14 has no auto-hide and draws a floating bar in every status, its
+/// style asked for `Dragged`, `Hovered` or `Active` alone (iced_widget 0.14.2
+/// `src/scrollable.rs:1097-1121`, `:1176-1182`), so where the theme says the bar floats
 /// (`scrollbar.overlay_mode`, macOS's and libadwaita's), both rails and their
 /// scrollers are transparent while the scrollable is `Active` and shown, in
 /// `scrollbar.track_color` and the scroller's colours, once the pointer is
