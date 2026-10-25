@@ -986,17 +986,6 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence: kde-breeze, material-3 and catppuccin-mocha state no segmented_control.border.padding_* (None), so a segment is its label and each toolkit's own side padding (gpui: upstream's 12 for a segment at the default Size, gpui-component tab/tab.rs:113-118, TabVariant::inner_paddings; iced: button::DEFAULT_PADDING 5 / 10, iced_widget 0.14.2 src/button.rs; egui: button_padding in the segmented-control scope, egui-0.36.2/src/style.rs:1458); on kde-breeze and catppuccin-mocha gpui's three segments so padded are wider than the Basic page's column, so its row wraps, as a row wider than its column does in all three, and the control is two lines tall, the third segment and the line before it on the second"
-keys = [
-    "catppuccin-mocha:basic.segmented.control.h",
-    "kde-breeze:basic.segmented.control.h",
-    "catppuccin-mocha:basic.segmented.divider_2.y",
-    "kde-breeze:basic.segmented.divider_2.y",
-    "catppuccin-mocha:basic.segmented.month.y",
-    "kde-breeze:basic.segmented.month.y",
-]
-
-[[parity.group]]
 reason = "glyph coverage: catppuccin-mocha's caption is 9 px (text_scale.caption), drawn in Noto Sans, fontconfig's substitute for the Inter the capture machine lacks; iced places the Typography column at a fractional x (898.4, five Fill columns; its layout keeps fractions) and cosmic-text rasterises each glyph at its subpixel offset (cosmic-text 0.15.0 src/glyph_cache.rs:35-58, SubpixelBin), so every 9 px stem spreads over two pixels and no pixel reaches defaults.font.color (#64667d / #b3bbd7 against #4c4f69 / #cdd6f4); gpui's darkest pixel misses it as well (#635878 / #bacee7) | the theme states no text antialiasing: gpui-pre-wgpu's Linux text system asks subpixel (LCD) coverage for every font (src/cosmic_text_system.rs:277-283; drawn at :502-548) wherever the window is opaque (gpui-pre src/window.rs:4907-4924), which iced's and egui's renderers do not draw; the glyph's extreme pixel carries a colour fringe past R-glyph's 8 per channel, in the same stated colour"
 keys = [
     "catppuccin-mocha:basic.typography.caption.text",
@@ -1004,7 +993,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "a sum: the card follows the segmented control, which on kde-breeze and catppuccin-mocha is two lines tall in gpui for the reason basic.segmented.control.h gives (no segmented_control.border.padding_* stated there, so gpui-component's own 12 per side, tab/tab.rs:113-118) | sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material-3 and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
+reason = "sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material-3 and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
 keys = [
     "catppuccin-mocha:basic.card.heading.y",
     "kde-breeze:basic.card.heading.y",

@@ -966,7 +966,8 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
 /// (docs/archive/todo_egui-widgets-spec.md §4.4): one control of joined buttons in one
 /// `Role::SegmentedControl` scope, whose cell carries the segment height, padding and colours;
 /// one outline in `border`, `separator_width` dividers between the segments; a radio group. Its
-/// segments wrap onto a further line where the column is too narrow for them.
+/// segments stay on one row at their own widths, as the platforms' segmented controls do, the
+/// control running past a column narrower than they are (M9-166).
 fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.segmented.heading", "Segmented control");
@@ -978,7 +979,7 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
         "segmented control",
         |ui| {
             let segments = SEGMENTS.map(|s| demo::lined(ui, s, egui::TextStyle::Button));
-            ui.add(SegmentedControl::new(&mut state.basic_segment, segments).wrap())
+            ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
         },
     );
     reg.tag("basic.segmented.control", &control);

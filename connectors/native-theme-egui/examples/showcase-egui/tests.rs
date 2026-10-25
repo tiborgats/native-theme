@@ -591,6 +591,28 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Icons);
 }
 
+/// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on one row, as the
+/// platforms' segmented controls do, where its column is narrower than they are: under
+/// macos-monterey at the largest text scale the showcase offers, 2.25, Day, Week and Month lie
+/// at one y.
+#[test]
+fn the_segmented_control_keeps_its_segments_on_one_row() {
+    let harness = open_scaled("macos-monterey", "basic", 2.25);
+    let places = harness.state().registry.places();
+    let ys: Vec<Option<f32>> = [
+        "basic.segmented.day",
+        "basic.segmented.week",
+        "basic.segmented.month",
+    ]
+    .into_iter()
+    .map(|id| places.get(id).map(|r| r.top()))
+    .collect();
+    assert!(
+        ys.iter().all(|y| y.is_some() && *y == ys[0]),
+        "the segments are not on one row: {ys:?}"
+    );
+}
+
 /// M9x CI item E1 (M9-173): under a theme that states no `tab.border.padding` across
 /// (macos-tahoe), a page tab keeps egui's own button padding from each of its edges to its
 /// label, as the connector's pair rule gives a side the theme leaves unstated

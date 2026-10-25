@@ -2372,6 +2372,7 @@ pub(crate) fn segmented(
         let active = ix == selected;
         padded(div().id((id, ix)), &b.padding, Some(SEGMENT_PADDING), None)
             .flex()
+            .flex_none()
             .items_center()
             .min_h(px(s.segment_height))
             .when(ix > 0, |segment| {
@@ -2409,10 +2410,10 @@ pub(crate) fn segmented(
             }))
             .on_click(move |_, window, cx| on_click(&ix, window, cx))
     });
-    // The segments wrap onto a further line where the control's column is
-    // too narrow for them, as the Basic page's other rows do.
+    // The segments stay on one row at their own widths, as the platforms'
+    // segmented controls do, the control as wide as they are even where its
+    // column is narrower (M9-166).
     h_flex()
-        .flex_wrap()
         .bg(colour(s.background_color))
         .border(px(b.line_width))
         .border_color(colour(b.color))

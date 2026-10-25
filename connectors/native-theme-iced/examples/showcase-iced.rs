@@ -11089,14 +11089,16 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         probe(
             probes::BASIC_SEGMENTED,
             Length::Shrink,
+            // The segments stay on one row at their own widths, as the
+            // platforms' segmented controls do, the control as wide as they
+            // are even where its column is narrower (M9-166).
             tagged(
                 "basic.segmented.control",
-                // The segments wrap onto a further line where the column is
-                // too narrow for them, as the page's other rows do.
-                container(row(segments).spacing(sc.separator_width).wrap())
+                container(row(segments).spacing(sc.separator_width))
                     .padding(sc.border.line_width)
                     .style(styles::segmented_control(resolved)),
             )
+            .loose()
             .node("basic.segmented.day", &[0, 0])
             .node("basic.segmented.week", &[0, 1])
             .node("basic.segmented.month", &[0, 2])
@@ -25602,6 +25604,29 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its
+    /// segments on one row, as the platforms' segmented controls do, where its
+    /// column is narrower than they are: under macos-monterey at the largest
+    /// text scale the showcase offers, 2.25, Day, Week and Month lie at one y.
+    #[test]
+    fn the_segmented_control_keeps_its_segments_on_one_row() {
+        let mut state = page_state("macos-monterey", Tab::Basic);
+        let _ = update(&mut state, Message::TextScaleSelected(TextScale(2.25)));
+        let (_, rects, _) = basic_frame(&state);
+        let ys: Vec<Option<f32>> = [
+            "basic.segmented.day",
+            "basic.segmented.week",
+            "basic.segmented.month",
+        ]
+        .into_iter()
+        .map(|id| rects.get(id).map(|r| r.y))
+        .collect();
+        assert!(
+            ys.iter().all(|y| y.is_some() && *y == ys[0]),
+            "the segments are not on one row: {ys:?}"
+        );
     }
 
     /// M9x CI item I6 (M9-175): the Number input's Widget Info says how

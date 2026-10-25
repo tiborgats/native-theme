@@ -17894,3 +17894,39 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
         left + right
     );
 }
+
+/// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on
+/// one row, as the platforms' segmented controls do (NSSegmentedControl,
+/// libadwaita's `AdwToggleGroup`), where its column is narrower than they
+/// are: under macos-monterey, whose 170 px columns are a few px narrower
+/// than its three segments, the CI capture wrapped Month onto a second row.
+/// Day, Week and Month lie at one y, the control one segment row tall.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_segmented_control_keeps_its_segments_on_one_row(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "macos-monterey");
+    draw(&mut cx);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let at = |id: &str| drawn.get(id).copied();
+    let (Some(control), Some(day), Some(week), Some(month)) = (
+        at("basic.segmented.control"),
+        at("basic.segmented.day"),
+        at("basic.segmented.week"),
+        at("basic.segmented.month"),
+    ) else {
+        assert!(false, "the segmented control is not recorded: {drawn:?}");
+        return;
+    };
+    assert!(
+        day.origin.y == week.origin.y && week.origin.y == month.origin.y,
+        "the segments are not on one row: {day:?} {week:?} {month:?}"
+    );
+    let row = day.size.height.max(week.size.height).max(month.size.height);
+    assert!(
+        control.size.height <= row + px(2.),
+        "the control {control:?} is taller than one row of segments, {row:?}"
+    );
+}
