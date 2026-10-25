@@ -17561,6 +17561,32 @@ fn a_raster_sets_icons_are_drawn_as_images_on_the_basic_page(cx: &mut TestAppCon
     }
 }
 
+/// Part A's review, item 13(a): the icon-theme Select's info says what a set
+/// of pixels shows since M9-163: the pixels drawn as images where a widget
+/// takes any element, and no icon only in the widgets that take an `Icon`
+/// alone; and it cites the page row's menu caret where the showcase lays it
+/// in, as the Button's child (`demo::native_tab_bar`, M9-168), not upstream's
+/// `RenderOnce for Button`.
+#[gpui::test]
+fn the_icon_theme_select_says_what_a_raster_set_shows(cx: &mut TestAppContext) {
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let t = cx.update(|_window, cx| Theme::global(cx).clone());
+    let info = crate::info::chrome::icon_set_select(&t, None);
+    assert!(
+        info_says(&info, "pixels as images") && info_says(&info, "a Toggle"),
+        "the raster sets' line does not say the pixels are drawn: {:?}",
+        info.instance
+    );
+    assert!(
+        !info_says(&info, "show none of their icons"),
+        "the raster sets' line still says no icon is shown"
+    );
+    assert!(
+        info_says(&info, "demo::native_tab_bar"),
+        "the menu caret's citation is not where the showcase lays it in"
+    );
+}
+
 /// A set that gives its chevrons as pixels draws them as the Expander's
 /// arrows and the Number input's steppers (M9-163): each title row holds an
 /// arrow at `expander.arrow_icon_size`, a closed item's the set's
