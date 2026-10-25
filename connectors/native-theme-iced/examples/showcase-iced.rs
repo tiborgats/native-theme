@@ -8157,7 +8157,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         #[cfg(feature = "iced_aw")]
         ("tab", "min_width_px" | "min_height_px") if under("basic.tabs.") => {
             "TabBar::tab_width, tab.min_width or the wider label inside iced_aw's \
-             paddings (aw_tab_width), and height, fixed: iced_aw takes no minimum"
+             paddings (aw_tab_width), and height, tab.min_height or the label's \
+             line inside them (aw_tab_height), both fixed: iced_aw takes no minimum"
                 .into()
         }
         ("tab", "min_width_px" | "min_height_px") => {
@@ -9994,11 +9995,11 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
         // Every tab one width that fits the wider label, never below
         // tab.min_width, as the Extra page's bar ([`aw_tab_width`]), so no
         // label wraps.
-        let tab_width = aw_tab_width(
-            state,
-            &BASIC_TABS,
-            tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING)),
-        );
+        let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
+        let tab_width = aw_tab_width(state, &BASIC_TABS, drawn_padding);
+        // And one height that holds the label's line, never below
+        // tab.min_height ([`aw_tab_height`]), so no label is cut.
+        let tab_height = aw_tab_height(state, drawn_padding);
         let bar = TabBar::new(Message::BasicTabSelected)
             .push(0, TabLabel::Text(one.to_string()))
             .push(1, TabLabel::Text(two.to_string()))
@@ -10006,7 +10007,7 @@ fn basic_tab_row(state: &State) -> Element<'_, Message> {
             .text_size(scaled_text_size(tab_t.font.size, &state.accessibility))
             .text_font(theme_font(&tab_t.font))
             .tab_width(Length::Fixed(tab_width))
-            .height(Length::Fixed(tab_t.min_height))
+            .height(Length::Fixed(tab_height))
             .width(Length::Shrink)
             .style(styles::aw::tab_bar(resolved));
         // tab.item_gap between the tabs, where stated; iced_aw's own none
@@ -14736,6 +14737,26 @@ fn aw_tab_width(state: &State, labels: &[&'static str], padding: Padding) -> f32
         .max((widest + 2.0 * AW_TAB_LABEL_PADDING + padding.x()).ceil())
 }
 
+/// The one height an `iced_aw` `TabBar` lays its tabs out at, the twin of
+/// [`aw_tab_width`]: `tab.min_height`, or where a label's line is taller,
+/// that line inside [`AW_TAB_LABEL_PADDING`] and the tab's `padding`, to the
+/// next whole pixel. iced_aw gives the bar's row, each tab's row and the
+/// label's column the one fixed height (iced_aw 0.14.1
+/// `src/widget/tab_bar.rs:491`, `:509`); the tab's padding and the label's
+/// come off it (`:494`, `:418`; iced_core 0.14.0 `src/layout/limits.rs:79-85`,
+/// `:122-133`), and the label is drawn on its line, its text size plus one
+/// at iced's 1.3 (`:398-404`, `:901-918`), clipped to what is left. So a
+/// height that leaves the line less room cuts the label: macos-tahoe's
+/// `tab.min_height` 24 leaves 4 px of its 23.8 (13 pt, 17.3 px, plus one).
+#[cfg(feature = "iced_aw")]
+fn aw_tab_height(state: &State, padding: Padding) -> f32 {
+    let t = &state.current_resolved.tab;
+    let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+    let line = f32::from(text::LineHeight::default().to_absolute(iced::Pixels(size)));
+    t.min_height
+        .max((line + 2.0 * AW_TAB_LABEL_PADDING + padding.y()).ceil())
+}
+
 /// How far the Extra page's menu panels lie from the item that opens them,
 /// and their rows and the context menu's entries from one another (spec
 /// §3.1): the showcase's own, 2 px, as the model states no menu offset and
@@ -15099,7 +15120,12 @@ fn aw_tab_bar_info(state: &State) -> String {
                  width for every tab; the Tabs' share their bar, iced_aw's own \
                  (tab_width Fill, widget/tab_bar.rs:173)",
             ),
-            ("bar height", "tab.min_height"),
+            (
+                "bar height",
+                "tab.min_height, or the label's line inside iced_aw's paddings \
+                 where that is taller (aw_tab_height), as iced_aw takes one \
+                 height and cuts a label it leaves too little of",
+            ),
             (
                 "tab spacing",
                 "tab.item_gap where stated, on the TabBar's and the Tabs' \
@@ -15117,7 +15143,7 @@ fn aw_tab_bar_info(state: &State) -> String {
         &[(
             "min_width / min_height",
             "the platform states minima and iced_aw takes fixed lengths, so the \
-             bar is exactly tab.min_height tall and every tab exactly one width, \
+             bar is exactly one height and every tab exactly one width, each \
              the minimum unless a label needs more",
         )],
     )
@@ -15522,6 +15548,10 @@ fn view_extra(state: &State) -> Element<'_, Message> {
     // iced_aw keeps a tab's default padding private (widget/tab_bar.rs:41) and
     // takes a padding whole, so only a theme that states every side replaces it.
     let tab_padding = native_theme_iced::stated_padding(&tab_t.border.padding);
+    let drawn_padding = tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING));
+    // Both bars one height that holds the label's line, never below
+    // tab.min_height ([`aw_tab_height`]), so no label is cut.
+    let tab_height = aw_tab_height(state, drawn_padding);
     let tab_bar = TabBar::new(Message::AwTabBarSelected)
         .push(0usize, TabLabel::Text(AW_TAB_BAR_LABELS[0].to_string()))
         .push(1usize, TabLabel::Text(AW_TAB_BAR_LABELS[1].to_string()))
@@ -15532,9 +15562,9 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .tab_width(Length::Fixed(aw_tab_width(
             state,
             &AW_TAB_BAR_LABELS,
-            tab_padding.unwrap_or(Padding::new(AW_TAB_PADDING)),
+            drawn_padding,
         )))
-        .height(Length::Fixed(tab_t.min_height));
+        .height(Length::Fixed(tab_height));
     // tab.item_gap between the tabs, where stated; iced_aw's own none
     // otherwise (widget/tab_bar.rs:43, `DEFAULT_SPACING`), as the Basic
     // page's bar. The Tabs below take the same.
@@ -15579,7 +15609,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
         .set_active_tab(&state.aw_tabs_active)
         .text_size(scaled_text_size(tab_t.font.size, a11y))
         .text_font(theme_font(&tab_t.font))
-        .tab_bar_height(Length::Fixed(tab_t.min_height))
+        .tab_bar_height(Length::Fixed(tab_height))
         .tab_bar_style(styles::aw::tab_bar(resolved))
         .height(Length::Shrink);
     let tabs = match tab_padding {
@@ -15623,7 +15653,7 @@ fn view_extra(state: &State) -> Element<'_, Message> {
                 .push_under(
                     container(iced::widget::Space::new())
                         .width(Fill)
-                        .height(Length::Fixed(tab_t.min_height))
+                        .height(Length::Fixed(tab_height))
                         .style(surface(resolved, Surface::TabStrip)),
                 ),
         ]
@@ -26368,7 +26398,7 @@ mod tests {
             state.current_resolved.tab.active_outward_corner_radius = radius;
             state.current_resolved.tab.active_background = open_fill;
             state.current_resolved.tab.bar_background = bar_fill;
-            let bar_height = state.current_resolved.tab.min_height;
+            let bar_height = aw_bar_height(&state);
             let (image, rects, scale) = extra_frame(&state, |_| {});
             let Some(tabs) = rects.get(probes::AW_TABS).copied() else {
                 panic!("the Tabs are not drawn");
@@ -26540,6 +26570,67 @@ mod tests {
                             ));
                         }
                     }
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// The height the `iced_aw` bars are drawn at under `state`
+    /// ([`aw_tab_height`]), at the padding they are drawn with.
+    #[cfg(feature = "iced_aw")]
+    fn aw_bar_height(state: &State) -> f32 {
+        let padding = native_theme_iced::stated_padding(&state.current_resolved.tab.border.padding)
+            .unwrap_or(Padding::new(AW_TAB_PADDING));
+        aw_tab_height(state, padding)
+    }
+
+    /// M9x CI item I1 (M9-169): the Basic page's `iced_aw` `TabBar` leaves
+    /// each label its whole line. iced_aw gives the bar, each tab and its
+    /// label's column one fixed height and clips the label to what its
+    /// paddings leave of it (iced_aw 0.14.1 `src/widget/tab_bar.rs:418`,
+    /// `:491-509`, `:901-918`), so at `tab.min_height` the Screenshots run
+    /// 40209162435 cut the labels under macos-tahoe to a 4 px strip. Under
+    /// every preset in both modes, each label's text node, the tab's row's
+    /// column's text (`[i, 0, 0]` under the bar), is at least its line,
+    /// iced_aw's text size plus one at iced's 1.3, tall.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_basic_tab_labels_keep_their_whole_line() {
+        let mut faults = Vec::new();
+        for (preset, dark) in every_preset_in_both_modes() {
+            let state = loaded(preset, dark);
+            let t = &state.current_resolved.tab;
+            let size = scaled_text_size(t.font.size, &state.accessibility) + 1.0;
+            let line = f32::from(text::LineHeight::default().to_absolute(iced::Pixels(size)));
+            // The row's container, the flares' stack, its bar, then the
+            // tab's row, its label's column and the label.
+            let window = tagged("chrome.window", basic_tab_row(&state))
+                .root()
+                .part("test.tab.0", |l| node_at(l, &[0, 0, 0]).map(|n| n.bounds()))
+                .part("test.label.0", |l| {
+                    node_at(l, &[0, 0, 0, 0, 0]).map(|n| n.bounds())
+                })
+                .part("test.label.1", |l| {
+                    node_at(l, &[0, 0, 1, 0, 0]).map(|n| n.bounds())
+                });
+            let (_, rects, _) = frame_of(&state, window.into(), Size::new(WINDOW_SIZE.0, 300.0));
+            let what = format!("{preset} (dark: {dark})");
+            if rects.get("test.tab.0") != rects.get("basic.tabs.one") {
+                faults.push(format!(
+                    "{what}: the path does not reach the first tab: {:?}, {:?}",
+                    rects.get("test.tab.0"),
+                    rects.get("basic.tabs.one")
+                ));
+                continue;
+            }
+            for id in ["test.label.0", "test.label.1"] {
+                match rects.get(id) {
+                    Some(label) if label.height + 0.01 >= line => {}
+                    found => faults.push(format!(
+                        "{what}: {id} is {:?} tall, its line {line}",
+                        found.map(|label| label.height)
+                    )),
                 }
             }
         }
@@ -26741,7 +26832,7 @@ mod tests {
             let Some(tabs) = rects.get(probes::AW_TABS) else {
                 panic!("the Tabs are not drawn");
             };
-            let y = ((tabs.y + state.current_resolved.tab.min_height / 2.0) * scale) as u32;
+            let y = ((tabs.y + aw_bar_height(state) / 2.0) * scale) as u32;
             // From the Tabs' left edge across the window: iced_aw lays the
             // bar out at the width its limits give, which can pass the
             // bounds it reports for the Tabs.
