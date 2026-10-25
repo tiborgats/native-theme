@@ -500,6 +500,19 @@ cannot tell which file a bare number continues, so it does not look for one.
       Research it per platform from
       source (Breeze's style, libadwaita's CSS, WinUI's templates, AppKit's
       measured rendering) with citations, then register the shape there.
+- [ ] [1.0] Open question: does a Windows 11 text box show the system focus
+      visual at all? `docs/platform-facts.md` §2.1.5 gives WinUI's focus
+      visual (`focus_ring_*`) and, for the field's own line, the accent
+      underline a focused `TextBox` thickens to 2 (`focus_border_color`,
+      `TextBox_themeresources.xaml:136`, `:303`), but no statement whether
+      the `TextBox` template turns the system focus visual off
+      (`UseSystemFocusVisuals`) and shows the underline alone. If it does,
+      ringing a focused text field under windows-11 is not native: the iced
+      connector's `focus_ring` and the egui connector's install plugin both
+      draw the ring there today. Check WinUI's `TextBox` default style
+      (microsoft-ui-xaml `controls/dev/CommonStyles/TextBox_themeresources.xaml`,
+      its `DefaultTextBoxStyle`, at 8463f45) and state the answer in §2.1.5,
+      with its line; then decide whether the model needs a per-widget switch.
 
 ### Selection: the text colour macOS pairs with the unemphasised selection
 
