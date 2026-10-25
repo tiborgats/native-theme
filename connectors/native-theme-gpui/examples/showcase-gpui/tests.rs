@@ -18029,6 +18029,40 @@ fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
         let n = filled(line, drawn.get(id).copied());
         assert!(n >= 1, "{id}: no filled quad of separator.line_color");
     }
+    // The in-window menu's separators, `widgets::Separator`s in
+    // menu.separator_color (part B's review, item 14(c)).
+    let opened = cx.update(|window, cx| {
+        let menus = showcase.read(cx).menus.clone();
+        menus.update(cx, |m, cx| m.open_named("theme", false, window, cx))
+    });
+    assert!(opened.is_ok(), "the Theme menu does not open: {opened:?}");
+    cx.run_until_parked();
+    draw(&mut cx);
+    let menu_line = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| crate::info::stated(n.resolved.menu.separator_color))
+    });
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let separator = drawn.get("chrome.menu.theme.separator_1").copied();
+    let n = cx.update(|window, _| {
+        let (Some(colour), Some(within)) = (menu_line, separator) else {
+            return 0;
+        };
+        let within = within.scale(window.scale_factor());
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.background.as_solid() == Some(colour)
+                    && q.bounds.size.width.0.min(q.bounds.size.height.0) >= 1.0
+                    && q.bounds.intersects(&within)
+            })
+            .count()
+    });
+    assert!(
+        n >= 1,
+        "chrome.menu.theme.separator_1 at {separator:?}: no filled quad of menu.separator_color"
+    );
 }
 
 /// Under windows-11's metrics, where the chosen set has no ChevronDown the

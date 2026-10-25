@@ -1405,6 +1405,33 @@ fn a_separator_is_painted_as_a_filled_line_at_scale_one(cx: &mut TestAppContext)
     }
 }
 
+/// Part B's review, item 14(g): at scale 2 the 0.5 px separator of
+/// macos-tahoe is its stated thickness, 0.5 logical px, one device pixel:
+/// the device-pixel floor takes the line no thicker where the theme's
+/// thickness is a whole device pixel already.
+#[gpui::test]
+fn a_hairline_separator_is_its_stated_thickness_at_scale_two(cx: &mut TestAppContext) {
+    let cx = window_with(
+        cx,
+        Some(("macos-tahoe", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .w(px(200.))
+                .child(Separator::horizontal())
+                .into_any_element()
+        }),
+    );
+    let handle = cx.update(|window, _| window.window_handle());
+    cx.simulate_window_scale_factor_change(handle, 2.0);
+    redraw(cx);
+    let line = bounds(cx, "native-separator");
+    assert_eq!(
+        line.size.height,
+        px(0.5),
+        "the 0.5 px separator at scale 2 is not 0.5 logical px, one device pixel"
+    );
+}
+
 /// M6-21: a checkbox's or a radio's label is drawn in `checkbox.font`'s
 /// family and style, as in its size and weight, where the theme states
 /// them; a style is gpui's of the same name.

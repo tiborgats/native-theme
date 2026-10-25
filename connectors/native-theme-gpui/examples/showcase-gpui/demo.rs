@@ -398,7 +398,6 @@ pub(crate) struct MenuLook {
     text_scaled_up: bool,
     background: Hsla,
     separator: Hsla,
-    separator_width: Pixels,
     frame: Hsla,
     frame_width: Pixels,
     frame_radius: Pixels,
@@ -424,7 +423,6 @@ impl MenuLook {
             text_scaled_up: n.accessibility.text_scale_factor() > 1.0,
             background: info::stated(m.background_color),
             separator: info::stated(m.separator_color),
-            separator_width: px(n.resolved.separator.line_width),
             frame: info::stated(p.color),
             frame_width: px(p.line_width),
             frame_radius: px(p.corner_radius.max(0.0)),
@@ -795,12 +793,25 @@ impl MenuBar {
             .min_w(MENU_POPUP_MIN_WIDTH)
             .children(rows.iter().enumerate().map(|(ix, row)| {
                 match row {
-                    MenuRow::Separator => div()
-                        .h(look.map_or(MENU_SEPARATOR, |l| l.separator_width))
-                        .w_full()
-                        .bg(look.map_or(cx.theme().border, |l| l.separator))
-                        .children(listed(ix).map(|id| elements::record(ui, id)))
-                        .into_any_element(),
+                    // Under a native theme the line is `widgets::Separator`'s
+                    // in the menu's separator colour, one device pixel at
+                    // least, where a box `separator.line_width` 0.5 thick
+                    // (the macOS presets) rounds to nothing at scale 1
+                    // (M9-165).
+                    MenuRow::Separator => match look {
+                        Some(l) => div()
+                            .relative()
+                            .w_full()
+                            .child(widgets::Separator::horizontal().bg(l.separator))
+                            .children(listed(ix).map(|id| elements::record(ui, id)))
+                            .into_any_element(),
+                        None => div()
+                            .h(MENU_SEPARATOR)
+                            .w_full()
+                            .bg(cx.theme().border)
+                            .children(listed(ix).map(|id| elements::record(ui, id)))
+                            .into_any_element(),
+                    },
                     MenuRow::Action(name, action) => {
                         let shortcut = Kbd::global_binding_for_action(action.as_ref(), window)
                             .map(|kbd| kbd.appearance(false))

@@ -291,7 +291,7 @@ pub fn app_menus(t: &Theme, host: MenuHost, native: Option<&ResolvedTheme>) -> W
                 } else {
                     format!("none: popover.border.line_width is 0; the popup is still rounded by popover.border.corner_radius, {}px (platform-facts §2.6: a menu's popup border is §2.16's)", px_text(r.popover.border.corner_radius))
                 })
-                .config("menu separator", format!("separator.line_width, {}px", px_text(r.separator.line_width)))
+                .config("menu separator", format!("separator.line_width, {}px, one device pixel at least (widgets::Separator)", px_text(r.separator.line_width)))
         }
         None => info
             .color(claim(
