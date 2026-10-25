@@ -289,7 +289,9 @@ use std::time::Duration;
 ///
 /// The families are [`font_family`]'s: on macOS the stated family of the
 /// system UI font, "SF Pro", is passed to gpui as its own alias
-/// `.SystemUIFont`, so Core Text supplies the system font itself; a family
+/// `.SystemUIFont`, and that of the system monospaced font, "SF Mono", as the
+/// face's name, `.AppleSystemUIFontMonospaced`, so Core Text supplies the
+/// system fonts itself; a family
 /// the system lacks is the one the platform substitutes for it (feature
 /// `system-fonts`); every other family is passed as stated. The platform is
 /// asked on the calling thread, once per family per process: on Linux and
@@ -720,14 +722,23 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
 /// `font_name_with_fallbacks` (gpui-pre 0.3.9 `src/text_system.rs` lines 1420–1430,
 /// gpui-pre-apple 0.3.9 `src/text_system.rs` line 290) and looks that up among
 /// its memory fonts first, then in the system source (lines 294–297), so Core
-/// Text supplies its own system UI font. Every other family, and every
+/// Text supplies its own system UI font. Its twin, the system monospaced
+/// font's stated family — "SF Mono" caselessly,
+/// `native_theme::fonts::is_macos_system_mono_family` — becomes the face's
+/// own name, `.AppleSystemUIFontMonospaced` (`docs/platform-facts.md:65`),
+/// which the same lookup takes as it takes `.AppleSystemUIFont`: font-kit's
+/// `select_family_by_name`, memory fonts first, then the system source
+/// (gpui-pre-apple 0.3.9 `src/text_system.rs` lines 290–297); "SF Mono" is in
+/// no font database of the runners (M9-167). Every other family, and every
 /// family elsewhere, is passed as stated: fontdb-style databases file the
 /// font under `.SF NS`, but gpui does not draw from one. The platform is a
-/// parameter so the unit test runs on every platform; the callers pass
+/// parameter so the unit tests run on every platform; the callers pass
 /// `cfg!(target_os = "macos")`.
 pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> SharedString {
     if macos && native_theme::fonts::is_macos_system_ui_family(family) {
         SharedString::from(".SystemUIFont")
+    } else if macos && native_theme::fonts::is_macos_system_mono_family(family) {
+        SharedString::from(".AppleSystemUIFontMonospaced")
     } else {
         SharedString::from(family.clone())
     }
@@ -1537,9 +1548,28 @@ mod tests {
             assert_eq!(ui_font_family(&family, true).as_ref(), ".SystemUIFont");
             assert_eq!(ui_font_family(&family, false).as_ref(), name);
         }
-        for name in ["SF Mono", "SF Pro Text", "Inter"] {
+        for name in ["SF Pro Text", "SF Mono Text", "Inter", "Menlo"] {
             let family = std::sync::Arc::<str>::from(name);
             assert_eq!(ui_font_family(&family, true).as_ref(), name);
+            assert_eq!(ui_font_family(&family, false).as_ref(), name);
+        }
+    }
+
+    /// M9x CI item 10 (M9-167): on macOS the system monospaced font's stated
+    /// family, "SF Mono" caselessly, becomes the face's own name,
+    /// `.AppleSystemUIFontMonospaced` (docs/platform-facts.md:65), which gpui's
+    /// macOS text system looks up as it does `.AppleSystemUIFont`; on another
+    /// platform it stays as stated. The platform is a parameter, so this runs
+    /// everywhere.
+    #[test]
+    fn the_macos_system_mono_font_is_its_face_only_on_macos() {
+        for name in ["SF Mono", "sf mono", "SF MONO"] {
+            let family = std::sync::Arc::<str>::from(name);
+            assert_eq!(
+                ui_font_family(&family, true).as_ref(),
+                ".AppleSystemUIFontMonospaced",
+                "{name} on macOS"
+            );
             assert_eq!(ui_font_family(&family, false).as_ref(), name);
         }
     }

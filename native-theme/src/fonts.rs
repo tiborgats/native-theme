@@ -131,6 +131,19 @@ pub fn is_macos_system_ui_family(family: &str) -> bool {
     unicase::UniCase::new(family) == unicase::UniCase::new("SF Pro")
 }
 
+/// Whether `family` names the macOS system monospaced font: caselessly equal
+/// to "SF Mono", the name the platform facts give
+/// `+monospacedSystemFontOfSize:weight:` (`docs/platform-facts.md:65`) and the
+/// macOS presets state. Its face is `.AppleSystemUIFontMonospaced`; whether
+/// "SF Mono" is a family name a font database holds stays open there. A pure
+/// predicate, on every platform, with no font database: the gpui connector
+/// asks it to map the family to that face, as it maps
+/// [`is_macos_system_ui_family`]'s.
+#[must_use]
+pub fn is_macos_system_mono_family(family: &str) -> bool {
+    unicase::UniCase::new(family) == unicase::UniCase::new("SF Mono")
+}
+
 /// A face [`system_face`] chose: its bytes, and what fontdb records for it.
 #[cfg(feature = "system-fonts")]
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -545,6 +558,17 @@ mod tests {
         assert!(!is_macos_system_ui_family("SF Mono"));
         assert!(!is_macos_system_ui_family("SF Pro Text"));
         assert!(!is_macos_system_ui_family("Inter"));
+    }
+
+    /// The macOS system monospaced font's stated name, caselessly, and
+    /// nothing else (`docs/platform-facts.md:65`).
+    #[test]
+    fn the_macos_system_mono_family_is_sf_mono_caselessly() {
+        assert!(is_macos_system_mono_family("SF Mono"));
+        assert!(is_macos_system_mono_family("sf mono"));
+        assert!(!is_macos_system_mono_family("SF Pro"));
+        assert!(!is_macos_system_mono_family("SF Mono Text"));
+        assert!(!is_macos_system_mono_family("Menlo"));
     }
 
     /// fontconfig's name-syntax specials in a family — `\`, `-`, `:` and `,` —

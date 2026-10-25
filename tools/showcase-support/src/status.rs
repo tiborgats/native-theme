@@ -47,8 +47,9 @@ pub fn defined_size(font: &ResolvedFontSpec) -> String {
 /// The family the theme states, `stated`, as a label that says what the
 /// toolkit draws, `drawn` (`None` where the toolkit does not say): the
 /// stated name alone where it is drawn; the system UI font's note where gpui
-/// draws `.SystemUIFont`; else the substitute the platform draws in its
-/// place ([`DrawnFamily::label`] of [`DrawnFamily::from`] `drawn`).
+/// draws `.SystemUIFont`, the system monospaced font's where it draws
+/// `.AppleSystemUIFontMonospaced`; else the substitute the platform draws in
+/// its place ([`DrawnFamily::label`] of [`DrawnFamily::from`] `drawn`).
 #[must_use]
 pub fn family_label(stated: &str, drawn: Option<&str>) -> String {
     DrawnFamily::from(drawn).label(stated)
@@ -61,7 +62,9 @@ pub enum DrawnFamily<'a> {
     /// or the toolkit does not say.
     Stated,
     /// The family named: the platform's substitute for a family the system
-    /// lacks, or gpui's `.SystemUIFont` alias for the system UI font.
+    /// lacks, gpui's `.SystemUIFont` alias for the system UI font, or the
+    /// system monospaced font's face, `.AppleSystemUIFontMonospaced`, the
+    /// gpui connector's name for it on macOS.
     Named(&'a str),
     /// The toolkit's generic family `kind` (`sans-serif`, `monospace`),
     /// which resolves to `family` where the font database names one for it,
@@ -146,7 +149,8 @@ impl<'a> From<Option<&'a str>> for DrawnFamily<'a> {
 
 impl DrawnFamily<'_> {
     /// `stated` as a label that says what is drawn: the stated name alone
-    /// where it is drawn; the system UI font's note for `.SystemUIFont`; the
+    /// where it is drawn; the system UI font's note for `.SystemUIFont` and the
+    /// system monospaced font's for `.AppleSystemUIFontMonospaced`; the
     /// platform's substitute named otherwise; and, for a generic family or
     /// the text library's fallback, whether the system has the stated
     /// family, at which weights where its faces lie only at weights the
@@ -164,6 +168,9 @@ impl DrawnFamily<'_> {
             Self::Named(".SystemUIFont") => {
                 format!("{stated} (drawn as the system UI font, .SystemUIFont)")
             }
+            Self::Named(".AppleSystemUIFontMonospaced") => format!(
+                "{stated} (drawn as the system monospaced font, .AppleSystemUIFontMonospaced)"
+            ),
             Self::Named(drawn) => format!(
                 "{stated} (not on this system; drawn in the platform's substitute, {drawn})"
             ),
@@ -219,6 +226,10 @@ impl DrawnFamily<'_> {
                     Some(".SystemUIFont") => {
                         format!("{toolkit} finds no face of the system UI font, .SystemUIFont")
                     }
+                    Some(".AppleSystemUIFontMonospaced") => format!(
+                        "{toolkit} finds no face of the system monospaced font, \
+                         .AppleSystemUIFontMonospaced"
+                    ),
                     Some(asked) => format!(
                         "not on this system; {toolkit} finds no face of the platform's \
                          substitute, {asked}"
@@ -314,6 +325,10 @@ mod tests {
         assert_eq!(
             family_label("SF Pro", Some(".SystemUIFont")),
             "SF Pro (drawn as the system UI font, .SystemUIFont)"
+        );
+        assert_eq!(
+            family_label("SF Mono", Some(".AppleSystemUIFontMonospaced")),
+            "SF Mono (drawn as the system monospaced font, .AppleSystemUIFontMonospaced)"
         );
         assert_eq!(
             family_label("Segoe UI", Some("Adwaita Sans")),
