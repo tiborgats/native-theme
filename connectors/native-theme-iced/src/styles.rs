@@ -541,8 +541,8 @@ impl InputColors {
         // outside the edge (offset 0 or more: KDE's +2, Windows' +1),
         // straddles it (macOS's -1 with width 3) or lies inside it with a gap
         // (an offset below minus the width) is not a border iced can draw;
-        // there a focused field recolours its rest line (the contract's
-        // `UNREACHABLE` entry for `defaults.focus_ring_offset`).
+        // there a focused field recolours its rest line, and
+        // `crate::focus_ring` draws the ring round the field it wraps.
         let focus_color = i.focus_border_color.unwrap_or(d.focus_ring_color);
         let focused = if d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width {
             Border {
@@ -583,8 +583,9 @@ impl InputColors {
 /// as its border, `defaults.focus_ring_width` wide in
 /// `input.focus_border_color` (or the ring's colour), so a field with no rest
 /// line still shows its focus. A ring outside or across the edge, or inset
-/// with a gap, is not drawn: the focused field's line at rest then takes
-/// `input.focus_border_color` where the theme states one. The disabled state is
+/// with a gap, is no border: the focused field's line at rest then takes
+/// `input.focus_border_color` where the theme states one, and
+/// [`crate::focus_ring`] draws the ring round the field it wraps. The disabled state is
 /// the platform's disabled fill and disabled text color, both of which the
 /// model states, each colour's alpha multiplied by `input.disabled_opacity`
 /// (iced has no widget opacity; `docs/platform-facts.md` §2.1.6). `icon` has

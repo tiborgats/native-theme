@@ -7710,6 +7710,22 @@ fn spinner_keeps_its_colours(state: &State) -> bool {
             == IconSet::Freedesktop
 }
 
+/// Whether `native_theme_iced::focus_ring` draws the theme's ring round a
+/// focused field under `resolved`: a ring is stated and is not inset at the
+/// field's edge, as the connector draws it (`focus_ring`'s doc).
+fn ring_round_the_field(resolved: &ResolvedTheme) -> bool {
+    let d = &resolved.defaults;
+    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    width.is_finite() && offset.is_finite() && width > 0.0 && offset != -width
+}
+
+/// Whether `styles::text_input` draws the theme's ring as a focused field's
+/// border under `resolved`: a ring inset at its edge (`styles::InputColors`).
+fn ring_as_the_border(resolved: &ResolvedTheme) -> bool {
+    let d = &resolved.defaults;
+    d.focus_ring_width > 0.0 && d.focus_ring_offset == -d.focus_ring_width
+}
+
 /// How iced applies `leaf` to `element` as `state` draws it: the
 /// connector's style function or helper and the field or setter it reaches,
 /// or why it cannot. One muted line of Widget Info.
@@ -7735,6 +7751,9 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 currentColor, where it sets none, in defaults.text_color \
                 (native_theme_iced::Spinner)"
             .to_owned();
+    }
+    if leaf == "defaults.focus_ring_color" && ring_round_the_field(resolved) {
+        return "native_theme_iced::focus_ring: the ring round the focused field".to_owned();
     }
     let theme_row = id == "chrome.side_panel.settings.theme";
     let installed = state.installed_combination();
@@ -8455,18 +8474,29 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         ("defaults", "disabled_text_color") => {
             "disabled_switch_label: the label's colour, times switch.disabled_opacity".into()
         }
+        ("defaults", "focus_ring_width_px") if ring_round_the_field(resolved) => {
+            "native_theme_iced::focus_ring: the ring's width round the focused field".into()
+        }
+        ("defaults", "focus_ring_width_px" | "focus_ring_offset_px")
+            if !ring_as_the_border(resolved) && !ring_round_the_field(resolved) =>
+        {
+            "not drawn: the theme states no focus ring (focus_ring_width 0)".into()
+        }
         ("defaults", "focus_ring_width_px") => {
             "styles::text_input: the Focused border's width, border.width.max(focus_ring_width), \
              where focus_ring_offset is minus focus_ring_width (the ring inset at the edge): the \
-             ring drawn as the field's border; a ring outside or across the edge, or inset with \
-             a gap, is not drawn, the Focused border then the input's own line"
+             ring drawn as the field's border"
+                .into()
+        }
+        ("defaults", "focus_ring_offset_px") if ring_round_the_field(resolved) => {
+            "native_theme_iced::focus_ring: how far out from the field's edge the ring's inner \
+             edge lies (in where negative), its curves the field's radius grown as much; the \
+             Focused border is the input's own line"
                 .into()
         }
         ("defaults", "focus_ring_offset_px") => {
-            "styles::text_input: whether the ring is drawn: where focus_ring_offset is minus \
-             focus_ring_width (the ring inset at the edge), as the Focused border; outside or \
-             across the edge, or inset with a gap, not (the contract's UNREACHABLE \
-             defaults.focus_ring_offset), the Focused border then the input's own line"
+            "styles::text_input: the ring inset at the edge (focus_ring_offset is minus \
+             focus_ring_width), drawn as the Focused border"
                 .into()
         }
         ("defaults", "border.color") => "swatch_frame: the swatch container's border.color".into(),
@@ -8883,6 +8913,9 @@ fn command_palette(state: &State) -> Element<'_, Message> {
         .font(theme_font(&resolved.input.font))
         .style(styles::text_input(resolved))
         .padding(inp_pad);
+    // The theme's focus ring round it while it is focused, as it is from
+    // the palette's opening (`Overlay::CommandPalette` focuses it).
+    let query = native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, query);
     let l = &resolved.list;
     let row_pad = native_theme_iced::padding_or(&l.border.padding, Padding::from(AW_LIST_PADDING));
     let muted = to_color(resolved.defaults.muted_color);
@@ -10569,14 +10602,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // A field and its text: the text sits in the field's first layout node,
     // the line inside its padding (iced_widget 0.14.2 `src/text_input.rs`,
     // `layout`).
+    // Each field with the theme's focus ring round it while it is focused
+    // (`native_theme_iced::focus_ring`).
     let fielded = |id: &'static str, field: text_input::TextInput<'a, Message>, shown: &str| {
         let field = tagged(id, field);
-        match listed_part(id, "text") {
+        let field = match listed_part(id, "text") {
             Some(text_id) => field.text_part(text_id, input_text(shown), |layout| {
                 node_at(layout, &[0]).map(|node| node.bounds())
             }),
             None => field,
-        }
+        };
+        native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, field)
     };
     // A field with no `on_input` is a disabled one (text_input.rs:170).
     let inputs = group(
@@ -10626,7 +10662,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // field's text node (`NumberInput::layout` lays the text input out
     // first, iced_aw 0.14.1 `src/widget/number_input.rs:584`).
     #[cfg(feature = "iced_aw")]
-    let number: Element<'a, Message> = tagged(
+    let number = tagged(
         "basic.number_input.field",
         iced_aw::NumberInput::new(&state.basic_number, .., Message::BasicNumberChanged)
             .step(1)
@@ -10642,8 +10678,13 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         "basic.number_input.field.text",
         input_text(&state.basic_number.to_string()),
         |layout| node_at(layout, &[0, 0]).map(|node| node.bounds()),
-    )
-    .into();
+    );
+    // With the theme's focus ring round it while its field is focused: the
+    // NumberInput hands an operation to its field (iced_aw 0.14.1
+    // `src/widget/number_input.rs:587-602`).
+    #[cfg(feature = "iced_aw")]
+    let number =
+        native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, number);
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
     let number: Element<'a, Message> = fielded(
@@ -10897,36 +10938,42 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // padding (docs/platform-facts.md §2.29).
     let area_line = input_size * resolved.defaults.line_height;
     let area_pad = native_theme_iced::text_area_padding(resolved);
+    // The field with the theme's focus ring round it while it is focused.
+    let ringed = |field: Tagged<'a>| {
+        native_theme_iced::focus_ring(resolved, resolved.text_area.border.corner_radius, field)
+    };
     let text_area = group(
         "basic.text_area.heading",
         "Text area",
         probe(
             probes::BASIC_TEXT_AREA,
             Length::Shrink,
-            tagged(
-                "basic.text_area.field",
-                text_editor(&state.basic_text_area)
-                    .on_action(Message::BasicTextAreaAction)
-                    .size(input_size)
-                    .line_height(iced::Pixels(area_line))
-                    .font(theme_font(&resolved.input.font))
-                    .style(styles::text_editor(resolved))
-                    .padding(area_pad)
-                    .width(BASIC_WIDE)
-                    .height(Length::Fixed(
-                        BASIC_TEXT_AREA_LINES * area_line + area_pad.y(),
-                    )),
-            )
-            // The text: the three lines inside the padding.
-            .text_part(
-                "basic.text_area.field.text",
-                MeasuredText::new(
-                    state.basic_text_area.text(),
-                    input_size,
-                    area_line,
-                    theme_font(&resolved.input.font),
+            ringed(
+                tagged(
+                    "basic.text_area.field",
+                    text_editor(&state.basic_text_area)
+                        .on_action(Message::BasicTextAreaAction)
+                        .size(input_size)
+                        .line_height(iced::Pixels(area_line))
+                        .font(theme_font(&resolved.input.font))
+                        .style(styles::text_editor(resolved))
+                        .padding(area_pad)
+                        .width(BASIC_WIDE)
+                        .height(Length::Fixed(
+                            BASIC_TEXT_AREA_LINES * area_line + area_pad.y(),
+                        )),
+                )
+                // The text: the three lines inside the padding.
+                .text_part(
+                    "basic.text_area.field.text",
+                    MeasuredText::new(
+                        state.basic_text_area.text(),
+                        input_size,
+                        area_line,
+                        theme_font(&resolved.input.font),
+                    ),
+                    move |l| Some(l.bounds().shrink(area_pad)),
                 ),
-                move |l| Some(l.bounds().shrink(area_pad)),
             ),
         ),
     );
@@ -12444,7 +12491,7 @@ fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
             UnlistedKey::TextInput,
             column![
                 text("TextInput (single line)").role(section_title(ts), resolved, a11y),
-                input,
+                native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, input),
                 text(format!(
                     "Characters: {}  |  input.border.corner_radius: {radius:.0}px",
                     state.text_input_value.len()
@@ -12469,7 +12516,7 @@ fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
             UnlistedKey::SecureTextInput,
             column![
                 text("TextInput (secure / password)").role(section_title(ts), resolved, a11y),
-                input,
+                native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, input),
             ]
             .spacing(gap.widget)
             .into(),
@@ -12483,13 +12530,17 @@ fn view_inputs<'a>(state: &'a State, inp_pad: Padding) -> Element<'a, Message> {
             probe(
                 probes::TEXT_EDITOR,
                 Fill,
-                text_editor(&state.text_editor_content)
-                    .on_action(Message::EditorAction)
-                    .size(scaled_text_size(resolved.input.font.size, a11y))
-                    .font(theme_font(&resolved.input.font))
-                    .style(styles::text_editor(resolved))
-                    .padding(native_theme_iced::text_area_padding(resolved))
-                    .height(Length::Fixed(180.0)),
+                native_theme_iced::focus_ring(
+                    resolved,
+                    resolved.text_area.border.corner_radius,
+                    text_editor(&state.text_editor_content)
+                        .on_action(Message::EditorAction)
+                        .size(scaled_text_size(resolved.input.font.size, a11y))
+                        .font(theme_font(&resolved.input.font))
+                        .style(styles::text_editor(resolved))
+                        .padding(native_theme_iced::text_area_padding(resolved))
+                        .height(Length::Fixed(180.0)),
+                ),
             ),
             text("Supports multi-line editing, selection, and scrolling").role(
                 &ts.caption,
@@ -25403,6 +25454,73 @@ mod tests {
         )
     }
 
+    /// M9x CI item I4 (M9-172): the Basic page's focused field is drawn with
+    /// the theme's focus ring round it, where the ring is not inset at its
+    /// edge: `defaults.focus_ring_width` wide, `defaults.focus_ring_offset`
+    /// out from the field's edge, in `defaults.focus_ring_color`
+    /// (`native_theme_iced::focus_ring`). Under macos-tahoe (3 at -1) and
+    /// windows-11 (2 at +1), in both modes, with the field clicked into, a
+    /// pixel left of the field on its middle row that lies wholly in the
+    /// ring's band outside the field is the ring's colour over the ground,
+    /// the ground read past the ring, to 3 per channel.
+    #[test]
+    fn the_focused_field_draws_the_themes_ring_round_it() {
+        let mut faults = Vec::new();
+        for preset in ["macos-tahoe", "windows-11"] {
+            for mode in [AppColorMode::Light, AppColorMode::Dark] {
+                let mut state = page_state(preset, Tab::Basic);
+                assert!(
+                    state.install_in_mode(ThemeChoice::Preset(preset.to_owned()), mode),
+                    "{preset} does not install"
+                );
+                let d = state.current_resolved.defaults.clone();
+                let (image, rects, scale) = frame_after(
+                    &state,
+                    view(&state),
+                    Size::new(WINDOW_SIZE.0, 2000.0),
+                    |ui| click_probe(ui, FOCUSED_INPUT_ID),
+                );
+                let what = format!("{preset} {mode:?}");
+                let Some(field) = rects.get("basic.text_inputs.focused").copied() else {
+                    faults.push(format!("{what}: the focused field is not drawn"));
+                    continue;
+                };
+                // The band outside the field, in physical pixels: from the
+                // ring's outer edge in to the field's edge, or to the ring's
+                // inner edge where that lies outside the field.
+                let outer = (field.x - (d.focus_ring_offset + d.focus_ring_width)) * scale;
+                let inner = (field.x - d.focus_ring_offset.max(0.0)) * scale;
+                let x = outer.ceil();
+                if x + 1.0 > inner {
+                    faults.push(format!(
+                        "{what}: no whole pixel in the band {outer}..{inner}"
+                    ));
+                    continue;
+                }
+                let y = ((field.y + field.height / 2.0) * scale) as u32;
+                let pixel = |x: f32| image.get_pixel_checked(x as u32, y).map(|p| p.0);
+                let (Some(drawn), Some(ground)) = (pixel(x), pixel(outer.floor() - 3.0)) else {
+                    faults.push(format!("{what}: the band is outside the frame"));
+                    continue;
+                };
+                let ground = Color::from_rgba8(ground[0], ground[1], ground[2], 1.0);
+                let want =
+                    styles::composite_over(to_color(d.focus_ring_color), ground).into_rgba8();
+                if drawn
+                    .iter()
+                    .zip(want)
+                    .take(3)
+                    .any(|(a, b)| a.abs_diff(b) > 3)
+                {
+                    faults.push(format!(
+                        "{what}: at x {x} the band is {drawn:?}, the ring over the ground {want:?}"
+                    ));
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// M9x CI item I3 (M9-171): the Slider's Widget Info names what the
     /// theme is silent on round the thumb. The model states no thumb outline
     /// or shadow (`docs/property-registry.toml` `[slider]`) and iced's handle
@@ -28044,30 +28162,39 @@ mod tests {
     }
 
     /// The focused field's focus-ring lengths route to what draws the ring
-    /// (M8 T16): `styles::text_input`'s Focused border. In every bundled
-    /// theme whose ring is inset at the edge (adwaita's), a ring 1 wider and
-    /// still inset draws that border 1 wider, and a ring moved off the edge
-    /// moves it.
+    /// (M8 T16, M9-172): `styles::text_input`'s Focused border where the ring
+    /// is inset at the edge (adwaita), `native_theme_iced::focus_ring` round
+    /// the field where it is not (macos-tahoe, windows-11, kde-breeze). In
+    /// every bundled theme whose ring is inset, a ring 1 wider and still
+    /// inset draws that border 1 wider, and a ring moved off the edge moves
+    /// it.
     #[test]
     fn the_focus_ring_routes_name_the_border_that_draws_it() {
         let Some(element) = elements::element("basic.text_inputs.focused") else {
             panic!("basic.text_inputs.focused is not listed");
         };
         let focused = text_input::Status::Focused { is_hovered: false };
-        let state = State::default();
-        for leaf in [
-            "defaults.focus_ring_width_px",
-            "defaults.focus_ring_offset_px",
+        for (preset, drawn_by) in [
+            ("adwaita", "iced: styles::text_input: "),
+            ("macos-tahoe", "iced: native_theme_iced::focus_ring: "),
+            ("windows-11", "iced: native_theme_iced::focus_ring: "),
+            ("kde-breeze", "iced: native_theme_iced::focus_ring: "),
         ] {
-            assert!(
-                element.leaves.iter().any(|l| l == leaf),
-                "{leaf} is not listed"
-            );
-            let route = iced_route(&state, element, leaf);
-            assert!(
-                route.starts_with("iced: styles::text_input: ") && !route.contains("no focus ring"),
-                "{leaf}: {route}"
-            );
+            let state = loaded(preset, false);
+            for leaf in [
+                "defaults.focus_ring_width_px",
+                "defaults.focus_ring_offset_px",
+            ] {
+                assert!(
+                    element.leaves.iter().any(|l| l == leaf),
+                    "{leaf} is not listed"
+                );
+                let route = iced_route(&state, element, leaf);
+                assert!(
+                    route.starts_with(drawn_by) && !route.contains("no focus ring"),
+                    "{preset} {leaf}: {route}"
+                );
+            }
         }
         let mut inset = 0;
         for (label, r) in bundled_combinations() {

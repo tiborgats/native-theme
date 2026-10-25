@@ -309,7 +309,7 @@ table header's height),
 `warning_text_color`, `icon_sizes`, `text_scale`, plus `to_iced_weight(css_weight)`
 for converting CSS weight values to iced's `Weight` enum, and the widgets
 `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares`,
-`switch` / `switch_over` and `radio` (all feature `widgets`).
+`focus_ring`, `switch` / `switch_over` and `radio` (all feature `widgets`).
 
 `tab_indicator_line` is the line that marks the active tab, to lay over a
 tab or over its place in a bar that takes no per-tab content. `tab_flares`
@@ -481,7 +481,7 @@ unnecessary once iced draws with it.
 `input_padding`, `text_area_padding`, `combo_box_padding`,
 `button_content_min_size` and `at_least` helpers, and the `switch`,
 `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`,
-`tab_indicator_line` and `tab_flares` widgets; `spinner` (default, implies `widgets`) enables
+`tab_indicator_line`, `tab_flares` and `focus_ring` widgets; `spinner` (default, implies `widgets`) enables
 `Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
 enables `styles::aw`. It is off by default because `iced_aw` is a third-party
 crate with its own release cadence and an embedded icon font. The icon
@@ -523,8 +523,16 @@ field's edge (`defaults.focus_ring_offset` is minus
 `defaults.focus_ring_width`, as adwaita states it), `defaults.focus_ring_width`
 wide in `input.focus_border_color` or the ring's colour. A ring that lies
 outside the field's edge or across it (KDE, Windows, macOS), or inside it with
-a gap, is not one iced can draw; there a focused field recolours its line at
-rest, in `input.focus_border_color` where the theme states one.
+a gap, is no border a `Style` can draw: wrap the field in
+`focus_ring(&resolved, corner_radius, field)`, which draws it round the field
+while the field holds the focus, `defaults.focus_ring_width` wide,
+`defaults.focus_ring_offset` out from its edge, in `defaults.focus_ring_color`,
+as the egui connector does; the focused field's own line then takes
+`input.focus_border_color` where the theme states one. The wrapper learns the
+focus from iced's `Focusable` operation, so it rings a text input, a text
+editor or a widget that hands it one (`iced_aw`'s `NumberInput`), not a
+`ComboBox`, whose field no operation reaches (iced_widget 0.14.2
+`src/combo_box.rs` implements no `operate`).
 
 ### Text scaling
 

@@ -887,8 +887,8 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// widget's `Style`, and several of their values are carried elsewhere or
 /// left to the consumer on purpose. A value carried for some combinations
 /// and not others is listed too, with the combinations iced does draw it
-/// for as its declared exceptions (`defaults.focus_ring_offset`: an inset
-/// ring is drawn, one outside or across the edge is not).
+/// for as its declared exceptions (`styles::aw::card.close_color`: lost but
+/// where `defaults.text_color` is the white `iced_aw` paints).
 ///
 /// - `menu.font.color` and `.hover_text_color` have no receiver in `iced_aw`'s
 ///   `menu_bar::Style`, but iced's own menu takes both: `styles::menu` emits
@@ -936,7 +936,12 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// perfectly well; they are simply the consumer's layout, set where the widget
 /// is built, and `styles::*` returns a `Style`. They are neither unreachable
 /// nor a gap in the contract, and the tripwire never sees them because it
-/// walks emitted `Style` fields.
+/// walks emitted `Style` fields. So is the theme's focus ring where it is not
+/// inset at the field's edge (`defaults.focus_ring_offset` other than minus
+/// `defaults.focus_ring_width`): a `text_input::Style` has one border and no
+/// outline (iced_widget 0.14.2 `src/text_input.rs:1713-1726`), and the
+/// widget `crate::focus_ring` draws the ring round the field the consumer
+/// wraps in it.
 ///
 /// Five entries below have a builder method for their widget's size and are
 /// listed all the same: `combo_box.min_width`, `progress_bar.min_width`,
@@ -951,38 +956,6 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// `scrollbar.min_thumb_length` is listed for another reason: iced sizes the
 /// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
-    Unreachable {
-        field: "defaults.focus_ring_offset",
-        evidence: "a focused text field draws the theme's focus ring only where the \
-             ring is inset at its edge (`focus_ring_offset` is minus \
-             `focus_ring_width`), as its border: iced paints a quad's border \
-             inside the quad's bounds (iced_wgpu 0.14.0 \
-             `src/shader/quad/solid.wgsl:78-83`) and a `text_input::Style` has \
-             one border and no outline (iced_widget 0.14.2 \
-             `src/text_input.rs:1713-1726`). A ring outside the edge (KDE's +2, \
-             Windows' and the colour schemes' +1), across it (macOS's -1 with \
-             width 3) or inset with a gap has nowhere to be drawn, so a focused \
-             field recolours its rest line in `input.focus_border_color` instead",
-        lost: |_, r| {
-            let d = &r.defaults;
-            (d.focus_ring_width > 0.0 && d.focus_ring_offset != -d.focus_ring_width).then(|| {
-                format!(
-                    "a {}px ring at offset {}px",
-                    d.focus_ring_width, d.focus_ring_offset
-                )
-            })
-        },
-        exceptions: &[
-            (
-                "adwaita/light",
-                "an inset ring, 2px at -2: drawn as the focused field's border",
-            ),
-            (
-                "adwaita/dark",
-                "an inset ring, 2px at -2: drawn as the focused field's border",
-            ),
-        ],
-    },
     Unreachable {
         field: "scrollbar.min_thumb_length",
         evidence: "iced sizes the scroller itself and exposes no minimum: \

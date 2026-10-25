@@ -123,7 +123,8 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         get: |r| Some(crate::border_color(r)),
     },
     AccessorRow {
-        // iced 0.14 draws no focus ring: the consumer draws one.
+        // iced 0.14 draws no focus ring of its own: `crate::focus_ring`, or
+        // the consumer, draws one in this colour.
         accessor: "crate::focus_ring_color",
         native: |r| Some(to_color(r.defaults.focus_ring_color)),
         get: |r| Some(crate::focus_ring_color(r)),

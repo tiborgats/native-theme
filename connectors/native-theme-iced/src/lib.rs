@@ -90,7 +90,7 @@
 //!
 //! | Feature | Default | Enables |
 //! |---------|---------|---------|
-//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`, `tab_indicator_line` and `tab_flares`, through `iced_widget` |
+//! | `widgets` | yes | `styles`, `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size`, `at_least`, `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares` and `focus_ring`, through `iced_widget` |
 //! | `spinner` | yes | [`Spinner`], the icon set's animated loading indicator (or an arc at `spinner.*`), through `iced_widget`'s `svg`, `image` and `canvas`; implies `widgets` |
 //! | `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets iced itself lacks (card, menu bar, tab bar, sidebar, selection list, spinner); implies `widgets` |
 //! | `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize` | yes | the matching `native-theme` icon features |
@@ -278,6 +278,8 @@ pub(crate) mod extended;
 // The freedesktop icon-theme fixture the tests run in a child process.
 #[cfg(all(test, target_os = "linux", feature = "system-icons"))]
 use native_theme_test_fixtures as icon_fixture;
+#[cfg(feature = "widgets")]
+mod focus_ring;
 pub mod icons;
 pub mod palette;
 #[cfg(feature = "spinner")]
@@ -1390,6 +1392,45 @@ where
     match tab_flares::tab_flares_look(&resolved.tab) {
         Some(look) => tab_flares::TabFlares::new(tabs, look, selected).into(),
         None => tabs,
+    }
+}
+
+/// `field`, and round it while it holds the keyboard focus, the theme's
+/// focus ring: `defaults.focus_ring_width` wide, `defaults.focus_ring_offset`
+/// out from the field's edge (in where negative), in
+/// `defaults.focus_ring_color`, its curves the field's `corner_radius`
+/// grown by the ring's offset, as the egui connector draws it.
+///
+/// A `text_input::Style` or `text_editor::Style` has one border and no
+/// outline, and iced draws nothing outside a widget's bounds but in a widget
+/// of its own, so a ring outside the field's edge (KDE's +2, Windows' and
+/// the colour schemes' +1) or across it (macOS's -1 with width 3) is drawn
+/// here, after the field, over whatever lies round it. A ring inset at the
+/// edge (`focus_ring_offset` minus `focus_ring_width`, libadwaita's) is the
+/// field's border already ([`styles::text_input`], [`styles::text_editor`]),
+/// so where the theme states one, or no ring, `field` is returned as it is.
+///
+/// The wrapper learns whether the field is focused from iced's own
+/// `Focusable` operation over it, each time it is laid out, updated or
+/// operated on, so wrap the focusable widget itself, or a widget holding
+/// one (a `ComboBox`'s field): any focused widget inside rings the whole.
+///
+/// Requires the `widgets` feature (on by default).
+#[cfg(feature = "widgets")]
+#[must_use]
+pub fn focus_ring<'a, Message, Renderer>(
+    resolved: &native_theme::theme::ResolvedTheme,
+    corner_radius: f32,
+    field: impl Into<iced_core::Element<'a, Message, iced_core::Theme, Renderer>>,
+) -> iced_core::Element<'a, Message, iced_core::Theme, Renderer>
+where
+    Message: 'a,
+    Renderer: iced_core::Renderer + 'a,
+{
+    let field = field.into();
+    match focus_ring::ring_look(resolved, corner_radius) {
+        Some(look) => focus_ring::FocusRing::new(field, look).into(),
+        None => field,
     }
 }
 
