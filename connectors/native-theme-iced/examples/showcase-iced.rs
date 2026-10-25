@@ -8531,6 +8531,37 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
     }
 }
 
+/// The padding below which `iced_aw` lays a `NumberInput`'s step buttons
+/// side by side rather than one over the other: its `DEFAULT_PADDING`,
+/// `Padding::new(5.0)` (iced_aw 0.14.1 `src/widget/number_input.rs:38`), which
+/// it keeps private.
+#[cfg(feature = "iced_aw")]
+const AW_NUMBER_STEPS_PADDING: f32 = 5.0;
+
+/// The Number input's "Not themeable" line on its step buttons: iced_aw's
+/// own, laid out by the field's padding, `input_padding` as the Basic page
+/// pads the field: "+" and "-" side by side where its top, bottom or right
+/// side is under [`AW_NUMBER_STEPS_PADDING`], "▲" over "▼" otherwise
+/// (iced_aw 0.14.1 `src/widget/number_input.rs:544-563`), each `size × 2.5 /
+/// 4` against the field's right edge (`:535`, `:577-581`). The model has no
+/// number-input leaf, so nothing in the theme chooses it.
+#[cfg(feature = "iced_aw")]
+fn number_steps_line(resolved: &ResolvedTheme) -> String {
+    let pad = native_theme_iced::input_padding(resolved);
+    let side_by_side = [pad.top, pad.bottom, pad.right]
+        .iter()
+        .any(|side| *side < AW_NUMBER_STEPS_PADDING);
+    let layout = if side_by_side {
+        "+ and - side by side, as the field's top, bottom or right padding is under 5"
+    } else {
+        "▲ and ▼ one over the other, as the field's top, bottom and right padding are 5 or more"
+    };
+    format!(
+        "step buttons: iced_aw's, {layout} (iced_aw's own rule), at its text size × 2.5 / 4 \
+         against the field's right edge, in the field's text colour"
+    )
+}
+
 /// What iced draws for `element` as `state` shows it that the theme states
 /// nothing for: the "Not themeable" lines of its Widget Info.
 fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'static, str>> {
@@ -8575,7 +8606,10 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
             )
             .into(),
         ],
-        "Number input" => vec!["step buttons: iced_aw's, in the field's text colour".into()],
+        #[cfg(feature = "iced_aw")]
+        "Number input" => vec![number_steps_line(&state.current_resolved).into()],
+        #[cfg(not(feature = "iced_aw"))]
+        "Number input" => vec!["step buttons: none, a plain text field without iced_aw".into()],
         _ => Vec::new(),
     }
 }
@@ -10697,12 +10731,11 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         native_theme_iced::focus_ring(resolved, resolved.input.border.corner_radius, number);
     // Without iced_aw, the value in a plain field.
     #[cfg(not(feature = "iced_aw"))]
-    let number: Element<'a, Message> = fielded(
+    let number = fielded(
         "basic.number_input.field",
         field("", &state.basic_number_text),
         &state.basic_number_text,
-    )
-    .into();
+    );
     let number = group("basic.number_input.heading", "Number input", number);
 
     let combo_size = scaled_text_size(resolved.combo_box.font.size, a11y);
@@ -25558,6 +25591,34 @@ mod tests {
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// M9x CI item I6 (M9-175): the Number input's Widget Info says how
+    /// iced_aw lays its step buttons out, which the theme does not state:
+    /// side by side ("+" "-") where the field's top, bottom or right padding
+    /// is under iced_aw's own 5, one over the other ("▲" "▼") otherwise
+    /// (iced_aw 0.14.1 `src/widget/number_input.rs:38`, `:544-563`): under
+    /// macos-tahoe a side of `input_padding` is under 5, under windows-11 none
+    /// of the three is.
+    #[cfg(feature = "iced_aw")]
+    #[test]
+    fn the_number_inputs_info_says_how_its_steppers_are_laid_out() {
+        let Some(number) = elements::element("basic.number_input.field") else {
+            panic!("basic.number_input.field is not in the list");
+        };
+        for (preset, layout) in [
+            ("macos-tahoe", "side by side"),
+            ("windows-11", "one over the other"),
+        ] {
+            let state = loaded(preset, false);
+            let lines = iced_not_themeable(&state, number);
+            assert!(
+                lines
+                    .iter()
+                    .any(|l| l.starts_with("step buttons") && l.contains(layout)),
+                "{preset}: {lines:?}"
+            );
+        }
     }
 
     /// M9x CI item I3 (M9-171): the Slider's Widget Info names what the
