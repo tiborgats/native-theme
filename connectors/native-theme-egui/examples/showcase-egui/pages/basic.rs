@@ -1465,6 +1465,7 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
     let t = atlas.resolved_for(ui.ctx().theme());
     let l = &t.list;
     let mut rows_drawn: Vec<egui::Response> = Vec::new();
+    let mut labels_drawn: Vec<egui::Rect> = Vec::new();
     let mut bar = None;
     let frame_response = demo::scoped_container(
         reg,
@@ -1508,7 +1509,7 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
                                 let text = format!("Item {}", i.saturating_add(1));
                                 let selected = state.basic_list == i;
                                 let r = rows.add(reg, ui, "List row", |ui| {
-                                    list_row(
+                                    let (row, label) = list_row(
                                         ui,
                                         l,
                                         edges,
@@ -1516,7 +1517,9 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
                                         selected,
                                         (row_height, inset, line),
                                         &font,
-                                    )
+                                    );
+                                    labels_drawn.push(label);
+                                    row
                                 });
                                 if r.clicked() {
                                     state.basic_list = i;
@@ -1534,12 +1537,15 @@ fn list(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, ui: &mut 
         reg.place(ui, "basic.list.scrollbar.thumb", thumb);
     }
     reg.tag("basic.list.frame", &frame_response);
-    for (i, row) in rows_drawn.iter().take(LIST_VISIBLE).enumerate() {
-        reg.place(
-            ui,
-            &format!("basic.list.row_{}", i.saturating_add(1)),
-            row.rect,
-        );
+    for (i, (row, label)) in rows_drawn
+        .iter()
+        .zip(&labels_drawn)
+        .take(LIST_VISIBLE)
+        .enumerate()
+    {
+        let id = format!("basic.list.row_{}", i.saturating_add(1));
+        reg.place(ui, &id, row.rect);
+        reg.place(ui, &format!("{id}.text"), *label);
     }
 }
 
@@ -1582,7 +1588,8 @@ fn scroll_bar(
 
 /// One list row across the list, `height` tall, its text `inset` in, one `line` tall and
 /// centred vertically. Its fill covers what the list's view shows of it, rounded at a corner
-/// where that meets a corner of `edges`, the frame's inside.
+/// where that meets a corner of `edges`, the frame's inside. Its response, and its text's
+/// rectangle.
 fn list_row(
     ui: &mut egui::Ui,
     l: &native_theme::theme::ResolvedListTheme,
@@ -1591,7 +1598,7 @@ fn list_row(
     selected: bool,
     (height, inset, line): (f32, f32, f32),
     font: &egui::FontId,
-) -> egui::Response {
+) -> (egui::Response, egui::Rect) {
     let size = egui::vec2(ui.available_width(), height);
     let (rect, response) = ui.allocate_exact_size(size, egui::Sense::click());
     response.widget_info(|| {
@@ -1632,8 +1639,8 @@ fn list_row(
             );
         }
     }
-    paint_cell_text(ui, text, font, to_color32(colour), (rect, inset, line));
-    response
+    let label = paint_cell_text(ui, text, font, to_color32(colour), (rect, inset, line));
+    (response, label)
 }
 
 /// `text` painted in `font` and `colour`, one `line` tall, `inset` in from `rect`'s left and

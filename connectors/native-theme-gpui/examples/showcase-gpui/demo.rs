@@ -4927,7 +4927,7 @@ fn list_row_item(item: ListItem, cx: &App, selected_text: Option<&StyleRefinemen
 /// keeps between frames: the group's hitbox is made in paint (gpui-pre
 /// src/elements/div.rs, `Interactivity::compute_style_internal` and
 /// `GroupHitboxes`), so a label without an id is laid out unhovered.
-fn row_label(label: SharedString, hover_text: Option<Hsla>) -> Stateful<Div> {
+fn row_label(label: impl IntoElement, hover_text: Option<Hsla>) -> Stateful<Div> {
     div()
         .id("label")
         .child(label)
@@ -4996,7 +4996,15 @@ impl RenderOnce for ListRow {
             item.rounded_bl(r).rounded_br(r)
         })
         .child({
-            let label = row_label(self.label, hover_text);
+            // The text in a box of its own extent, which the layout dump
+            // records where the row is one of the list's
+            // (`elements::list_row_text`): in a flex row, so it is as wide
+            // as its text, not the row.
+            let text = div().relative().child(self.label).children(
+                elements::list_row_text(self.prefix, self.ix)
+                    .map(|listed| elements::record(&self.ui, listed)),
+            );
+            let label = row_label(h_flex().child(text), hover_text);
             #[cfg(test)]
             let label = probed_label(label, &self.ui, &id);
             label

@@ -4474,6 +4474,43 @@ fn a_theme_map_cell_cut_short_shows_its_whole_text_on_hover() {
     );
 }
 
+/// M9x CI item I2 (M9-170): each Basic list row's label is placed for the layout dump as the
+/// text it paints, centred down its row, as the iced and gpui showcases place theirs: under
+/// windows-11 (rows `list.row_height` 40, no vertical padding), `basic.list.row_N.text` is where
+/// the row's "Item N" galley is painted, as tall as its line, narrower than its row and centred
+/// in it to half a point.
+#[test]
+fn the_basic_list_labels_are_placed_as_painted_centred_down_their_rows() {
+    let harness = open_scaled("windows-11", "basic", 1.0);
+    let places = harness.state().registry.places();
+    let shapes = &harness.output().shapes;
+    for n in 1..=3 {
+        let row_id = format!("basic.list.row_{n}");
+        let (Some(row), Some(label)) = (places.get(&row_id), places.get(&format!("{row_id}.text")))
+        else {
+            panic!("{row_id} or its label is not placed: {places:?}");
+        };
+        let text = format!("Item {n}");
+        let painted = shapes.iter().find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(t) if t.galley.text() == text && row.contains(t.pos) => Some(t.pos),
+            _ => None,
+        });
+        assert_eq!(
+            painted,
+            Some(label.min),
+            "{row_id}: its galley is painted at its label"
+        );
+        assert!(
+            label.width() < row.width(),
+            "{row_id}: the label {label:?} is its text's"
+        );
+        assert!(
+            (label.center().y - row.center().y).abs() <= 0.5,
+            "{row_id}: the label {label:?} is off the centre of the row {row:?}"
+        );
+    }
+}
+
 /// M9-110: the Basic list's and table's fills keep inside their frame's rounded corners. The
 /// frame (`pages/basic.rs`, `list_frame`) is rounded by `list.border.corner_radius` and has no
 /// margin, so its content lies inside its `list.border.line_width` stroke, where the frame's

@@ -11020,17 +11020,30 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         ),
         None => label_line + row_pad.y(),
     };
-    const LIST_ROW_IDS: [&str; 3] = ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"];
+    const LIST_ROW_IDS: [(&str, &str); 3] = [
+        ("basic.list.row_1", "basic.list.row_1.text"),
+        ("basic.list.row_2", "basic.list.row_2.text"),
+        ("basic.list.row_3", "basic.list.row_3.text"),
+    ];
     // Where the scrollable draws, for the rows' fills, which each row paints
     // under its button, rounded where it meets the frame (`list_row_fill`).
     let list_view = ListView::default();
     let rows = (0..BASIC_LIST_ITEMS).map(|i| {
         let selected = state.basic_list_selected == Some(i);
+        // The label centred down its row, as the expander's title is: a
+        // button lays its content out at its padding in the limits its fixed
+        // height gives, so a bare text would stretch to the row and be drawn
+        // at its top (windows-11's 40 px rows, which state no vertical
+        // padding).
         let item = Underlay::new(
             button(
-                text(format!("Item {}", i.saturating_add(1)))
-                    .typeset(&list_t.item_font, a11y)
-                    .line_height(iced::Pixels(label_line)),
+                container(
+                    text(format!("Item {}", i.saturating_add(1)))
+                        .typeset(&list_t.item_font, a11y)
+                        .line_height(iced::Pixels(label_line)),
+                )
+                .height(Fill)
+                .align_y(iced::Center),
             )
             .padding(row_pad)
             .width(Fill)
@@ -11045,8 +11058,10 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             .on_press(Message::BasicListSelected(i)),
             list_row_fill(resolved, selected, list_view.clone()),
         );
+        // The label is the button's container's text (the row's `Underlay`
+        // lays its button out as it is).
         match LIST_ROW_IDS.get(i) {
-            Some(id) => tagged(id, item).into(),
+            Some(&(id, label)) => tagged(id, item).node(label, &[0, 0]).into(),
             None => item.into(),
         }
     });
@@ -26637,6 +26652,63 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
     }
 
+    /// M9x CI item I2 (M9-170): the Basic list's labels are centred down
+    /// their rows. iced's `button` lays its content out at its padding in
+    /// the limits its fixed height gives (iced_widget 0.14.2
+    /// `src/button.rs:242-254`; iced_core 0.14.0 `src/layout.rs:186-204`),
+    /// so a text stretches to the row and is drawn at its top: under
+    /// windows-11, whose rows are `list.row_height` 40 with no vertical
+    /// padding, the Screenshots run 40209162435 showed each label at its
+    /// row's top. Under windows-11 in both modes, each row's label is a text
+    /// node as tall as its line, `list.item_font` on `defaults.line_height`,
+    /// which iced draws where it lies, and that line is centred in its row
+    /// to half a pixel.
+    #[test]
+    fn the_basic_list_labels_are_centred_down_their_rows() {
+        let mut faults = Vec::new();
+        for mode in [AppColorMode::Light, AppColorMode::Dark] {
+            let mut state = page_state("windows-11", Tab::Basic);
+            assert!(
+                state.install_in_mode(ThemeChoice::Preset("windows-11".to_owned()), mode),
+                "windows-11 does not install"
+            );
+            let resolved = &state.current_resolved;
+            let line = scaled_text_size(resolved.list.item_font.size, &state.accessibility)
+                * resolved.defaults.line_height;
+            let (rects, found) = drawn_frame(&state);
+            for (i, id) in ["basic.list.row_1", "basic.list.row_2", "basic.list.row_3"]
+                .into_iter()
+                .enumerate()
+            {
+                let label = format!("Item {}", i + 1);
+                let Some(row) = rects.get(id) else {
+                    faults.push(format!("{mode:?}: {id} is not drawn"));
+                    continue;
+                };
+                let Some((_, text)) = found
+                    .iter()
+                    .find(|(content, bounds)| *content == label && row.contains(bounds.center()))
+                else {
+                    faults.push(format!("{mode:?}: {label} is not drawn in {id}"));
+                    continue;
+                };
+                if (text.height - line).abs() > 0.5 {
+                    faults.push(format!(
+                        "{mode:?}: {label}'s text {text:?} is {}px tall, its line {line}",
+                        text.height
+                    ));
+                }
+                let off = (text.center_y() - row.center_y()).abs();
+                if off > 0.5 {
+                    faults.push(format!(
+                        "{mode:?}: {label}'s line {text:?} is {off}px off the centre of {id} {row:?}"
+                    ));
+                }
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// M9b Step 8, round 3 (perf, the re-review's n7): the tab labels the
     /// tab rows are sized by are shaped once per install, not once per
     /// view: under kde-breeze, building the view again shapes no label;
@@ -31507,6 +31579,12 @@ mod tests {
                 .strip_prefix("tagged(")
                 .and_then(|rest| rest.split_once(','))
                 .map_or(label, |(_, wrapped)| wrapped.trim_start());
+            // A label in a container that places it (the Basic list's,
+            // centred down its row) is the label it holds.
+            let label = label
+                .strip_prefix("container(")
+                .unwrap_or(label)
+                .trim_start();
             let composite = label.starts_with("row![") && label.contains("text(");
             // A chrome icon button's content is its icon (`chrome_icon`), and
             // the page tabs' menu button's is its caret icon, or where the

@@ -394,6 +394,22 @@ pub fn segment_of(id: &str, ix: usize) -> Option<(&'static str, Option<&'static 
         .flatten()
 }
 
+/// The labels of the Basic page's list rows, by row, as elements of the
+/// list.
+const LIST_ROW_TEXTS: [&str; 3] = [
+    "basic.list.row_1.text",
+    "basic.list.row_2.text",
+    "basic.list.row_3.text",
+];
+
+/// The element of the list the label of the row `ix` of the list whose rows
+/// are `prefix`ed is, where it is one.
+pub fn list_row_text(prefix: &str, ix: usize) -> Option<&'static str> {
+    (prefix == "basic-list-row")
+        .then(|| LIST_ROW_TEXTS.get(ix).copied())
+        .flatten()
+}
+
 /// The elements of the list an item of the Basic page's expander is, by
 /// its index: the item, its header row, its arrow and its title.
 const EXPANDER_ITEMS: [[&str; 4]; 2] = [

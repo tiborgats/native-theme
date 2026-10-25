@@ -14338,6 +14338,45 @@ fn the_layout_dump_holds_every_element_drawn(cx: &mut TestAppContext) {
     }
 }
 
+/// M9x CI item I2 (M9-170): each Basic list row's label is recorded for the
+/// layout dump as its text's box, centred down its row, as the iced and egui
+/// showcases record theirs: under windows-11 (rows `list.row_height` 40, no
+/// vertical padding), `basic.list.row_N.text` is narrower than its row and
+/// centred in it to half a pixel.
+#[gpui::test]
+fn the_basic_list_labels_are_recorded_centred_down_their_rows(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "windows-11");
+    draw(&mut cx);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let mut faults = Vec::new();
+    for n in 1..=3 {
+        let row_id = format!("basic.list.row_{n}");
+        let text_id = format!("{row_id}.text");
+        let (Some(row), Some(label)) = (
+            drawn.get(row_id.as_str()).copied(),
+            drawn.get(text_id.as_str()).copied(),
+        ) else {
+            faults.push(format!("{row_id} or its label is not recorded"));
+            continue;
+        };
+        if label.size.width >= row.size.width {
+            faults.push(format!(
+                "{text_id} {label:?} is not its text's box in {row:?}"
+            ));
+        }
+        let off = (label.center().y - row.center().y).abs();
+        if off > px(0.5) {
+            faults.push(format!(
+                "{text_id} {label:?} is {off:?} off the centre of {row:?}"
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// The side panel's settings are padded by `layout.container_margin` where
 /// the theme states no `sidebar.border.padding`, and by the stated sides of
 /// it where it states them, the content then adding none.

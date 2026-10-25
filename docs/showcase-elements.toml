@@ -1693,6 +1693,15 @@ part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 
 [[element]]
+id = "basic.list.row_1.text"
+name = "Label"
+parent = "basic.list.row_1"
+leaves = ["list.item_font", "list.item_font.color", "defaults.line_height"]
+states = ["Normal"]
+part = true
+sample = { text = "glyph" }
+
+[[element]]
 id = "basic.list.row_2"
 name = "List row"
 parent = "basic.list.row_1"
@@ -1702,6 +1711,15 @@ part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
 
 [[element]]
+id = "basic.list.row_2.text"
+name = "Label"
+parent = "basic.list.row_2"
+leaves = ["list.item_font", "list.selection_text_color", "defaults.line_height"]
+states = ["Selected"]
+part = true
+sample = { text = "glyph" }
+
+[[element]]
 id = "basic.list.row_3"
 name = "List row"
 parent = "basic.list.row_2"
@@ -1709,6 +1727,15 @@ leaves = ["list.background_color", "list.item_font", "list.item_font.color", "li
 states = ["Normal"]
 part = true
 sample = { fill = [0.6, 0.5], text = { glyph = [0.0, 0.0, 0.5, 1.0] } }
+
+[[element]]
+id = "basic.list.row_3.text"
+name = "Label"
+parent = "basic.list.row_3"
+leaves = ["list.item_font", "list.item_font.color", "defaults.line_height"]
+states = ["Normal"]
+part = true
+sample = { text = "glyph" }
 
 # Where `scrollbar.overlay_mode` hides it at rest, no showcase draws it.
 [[element]]
