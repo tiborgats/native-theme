@@ -17911,13 +17911,17 @@ fn the_segmented_control_keeps_its_segments_on_one_row(cx: &mut TestAppContext) 
         this.info_ui.read(cx).layout_drawn()
     });
     let at = |id: &str| drawn.get(id).copied();
-    let (Some(control), Some(day), Some(week), Some(month)) = (
+    let found = (
         at("basic.segmented.control"),
         at("basic.segmented.day"),
         at("basic.segmented.week"),
         at("basic.segmented.month"),
-    ) else {
-        assert!(false, "the segmented control is not recorded: {drawn:?}");
+    );
+    assert!(
+        found.0.is_some() && found.1.is_some() && found.2.is_some() && found.3.is_some(),
+        "the segmented control is not recorded: {found:?}"
+    );
+    let (Some(control), Some(day), Some(week), Some(month)) = found else {
         return;
     };
     assert!(
