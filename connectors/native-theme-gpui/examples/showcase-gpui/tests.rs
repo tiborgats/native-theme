@@ -17592,6 +17592,26 @@ fn the_page_row_rule_lies_under_the_tab_strip_at_scale_one(cx: &mut TestAppConte
     );
 }
 
+/// Part A's review, item 13(d): an open expander item's arrow is turned only
+/// where it is the closed chevron itself; where the closed chevron is pixels
+/// the open item shows the set's chevron of the turned direction, which is
+/// not turned again, an SVG one of a mixed set (ChevronRight pixels,
+/// ChevronDown an SVG) included, where the turn pointed it left.
+#[test]
+fn an_open_arrow_turns_only_where_it_is_the_closed_chevron() {
+    use crate::demo::expander_arrow_turn;
+    for open_turn in [0.25, 0.5] {
+        assert_eq!(expander_arrow_turn(false, true, open_turn), open_turn);
+        assert_eq!(expander_arrow_turn(false, false, open_turn), 0.);
+        assert_eq!(
+            expander_arrow_turn(true, true, open_turn),
+            0.,
+            "a swapped open arrow is turned by {open_turn}"
+        );
+        assert_eq!(expander_arrow_turn(true, false, open_turn), 0.);
+    }
+}
+
 /// Part A's review, item 13(a): the icon-theme Select's info says what a set
 /// of pixels shows since M9-163: the pixels drawn as images where a widget
 /// takes any element, and no icon only in the widgets that take an `Icon`
@@ -17673,6 +17693,14 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
     assert!(
         image.is_some_and(|image| within(image, closed)),
         "the closed item's arrow at {closed:?} is not the set's ChevronRight image: {image:?}"
+    );
+    // The open item's arrow is the set's ChevronDown, pixels do not turn
+    // (part A's review, item 13(e)): both arrows ChevronRight fails here.
+    let opened = bounds_of(&mut cx, "basic-expander-arrow-0");
+    let image = raster_bounds(&mut cx, "raster-ChevronDown");
+    assert!(
+        image.is_some_and(|image| within(image, opened)),
+        "the open item's arrow at {opened:?} is not the set's ChevronDown image: {image:?}"
     );
     let number = bounds_of(&mut cx, "basic-number");
     let up = raster_bounds(&mut cx, "raster-ChevronUp");

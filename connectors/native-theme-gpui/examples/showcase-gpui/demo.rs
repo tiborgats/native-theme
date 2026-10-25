@@ -6937,6 +6937,20 @@ const EXPANDER_PADDING_X: Rems = rems(0.75);
 const EXPANDER_ARROW_GAP: Rems = rems(0.75);
 const EXPANDER_BODY_BOTTOM: Rems = rems(0.5);
 
+/// How far an expander item's arrow is turned, of a whole turn: an open
+/// item's `open_turn` where its arrow is the closed one's chevron turned, none
+/// where it is closed or where the closed chevron is pixels, which do not
+/// turn: there an open item shows the set's chevron of the direction a turned
+/// one points in, already pointing so, whether that is pixels or an SVG (a set
+/// that gives one chevron as pixels and the other as an SVG).
+pub(crate) fn expander_arrow_turn(closed_is_raster: bool, is_open: bool, open_turn: f32) -> f32 {
+    if is_open && !closed_is_raster {
+        open_turn
+    } else {
+        0.
+    }
+}
+
 /// [`expander`] under a native theme, drawn by the showcase as `expander.*`
 /// states it (ISSUES D8): where `frame_enabled` is true, each item framed by
 /// `expander.border` on its own, `layout.widget_gap` from the next; where it
@@ -7041,7 +7055,7 @@ fn native_expander(
         .children(items.into_iter().zip(open).enumerate().map(
             |(ix, ((title, body_id, body), is_open))| {
                 let on_toggle = on_toggle.clone();
-                let turn = if is_open { open_turn } else { 0. };
+                let turn = expander_arrow_turn(chevron.is_raster(), is_open, open_turn);
                 let listed = elements::expander_item(id, ix);
                 let shown = if is_open { &open_glyph } else { &glyph };
                 let arrow = shown.clone().map(|glyph| {
