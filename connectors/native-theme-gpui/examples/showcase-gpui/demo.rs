@@ -72,7 +72,7 @@ use gpui_component::{
     radio::{Radio, RadioGroup},
     rating::Rating,
     scroll::ScrollableElement as _,
-    select::{SearchableVec, Select, SelectState},
+    select::{Caret, SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sheet::Sheet,
@@ -2065,7 +2065,15 @@ fn native_tab_bar(
         // the set has one, in place of upstream's caret, which draws
         // gpui-component's own glyph at a size of its own (button/button.rs,
         // `Caret`); upstream's caret where the set has none, the button
-        // otherwise empty.
+        // otherwise empty. The caret is the Button's child, not its
+        // `dropdown_caret`: a Button with neither a label nor a child is laid
+        // out as an icon Button of a fixed side (button/button.rs,
+        // `RenderOnce for Button`, `size_5` at XSmall), whose stated side
+        // padding (`tool_box`; 11 px a side under windows-11) leaves the
+        // caret no room. It is upstream's caret in upstream's colour, the
+        // foreground at 75% (the same, `dropdown_caret`).
+        let caret =
+            Caret::new(Size::XSmall).text_color(cx.theme().secondary_foreground.opacity(0.75));
         refined(
             Button::new("page-tabs-menu").xsmall().custom(ghost),
             tool_box.as_ref(),
@@ -2077,7 +2085,7 @@ fn native_tab_bar(
                 native_sized_glyph(cx, icon, geometry::icon_size_small),
                 Some("chrome.page_tabs.menu.icon"),
             )),
-            None => button.dropdown_caret(true),
+            None => button.child(caret),
         })
         .dropdown_menu(move |menu, _, _| {
             labels

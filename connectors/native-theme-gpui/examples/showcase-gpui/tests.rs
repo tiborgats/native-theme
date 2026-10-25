@@ -17812,3 +17812,46 @@ fn a_hairline_separator_is_drawn_at_scale_one(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// Under windows-11's metrics, where the chosen set has no ChevronDown the
+/// page row's menu button still shows upstream's caret (M9-168): the
+/// button holds the caret beside the theme's `button.border.padding`, where
+/// the caret-only Button, laid out as an icon Button of a fixed side
+/// (gpui-component 0.8.0 `button/button.rs:670-677`, `size_5`), gave the
+/// stated side padding the whole of that side and the caret none.
+#[cfg(all(feature = "widgets", feature = "material-icons"))]
+#[gpui::test]
+fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "windows-11");
+    choose_icon_theme(&mut cx, &showcase, "Material (bundled)");
+    remove_icons(&mut cx, &showcase, &["ChevronDown"]);
+    let (padding, rem, menu) = read(&mut cx, &showcase, |this, cx| {
+        let padding = native_value(cx, |n| {
+            let p = &n.resolved.button.border.padding;
+            (p.left, p.right)
+        });
+        (
+            padding,
+            gpui_component::ActiveTheme::theme(cx).font_size,
+            this.info_ui
+                .read(cx)
+                .layout_drawn()
+                .get("chrome.page_tabs.menu")
+                .copied(),
+        )
+    });
+    let Some((Some(left), Some(right))) = padding else {
+        panic!("windows-11 no longer states the button's side padding: {padding:?}");
+    };
+    let menu = menu.expect("the page row's menu button is drawn");
+    // The caret is an XSmall Icon, `size_3` (select.rs, `Caret`; icon.rs,
+    // `Icon::into_svg`), a quarter less than the rem.
+    let caret = rem * 0.75;
+    assert!(
+        menu.size.width >= px(left + right) + caret - px(0.01),
+        "the menu button at {menu:?} leaves the caret {:?} of its {}px side padding, not {caret:?}",
+        menu.size.width - px(left + right),
+        left + right
+    );
+}
