@@ -9837,6 +9837,26 @@ fn basic_tabs_width(state: &State) -> f32 {
     }
 }
 
+/// The Basic Segmented control's width as the page lays it out: each label
+/// as iced shapes it in `segmented_control.font` at its scaled size
+/// ([`LabelWidths`]), inside the segment's padding (`padding_or` of the
+/// stated sides, `button::DEFAULT_PADDING` where unstated), the
+/// `separator_width` between neighbours and the container's
+/// `border.line_width` padding at both ends.
+fn basic_segmented_width(state: &State) -> f32 {
+    let resolved = &state.current_resolved;
+    let sc = &resolved.segmented_control;
+    let pad = native_theme_iced::padding_or(&sc.border.padding, button::DEFAULT_PADDING);
+    let size = scaled_text_size(sc.font.size, &state.accessibility);
+    let font = theme_font(&sc.font);
+    let segments: f32 = BASIC_SEGMENTS
+        .iter()
+        .map(|label| state.label_widths.width(label, font, size) + pad.x())
+        .sum();
+    let lines = BASIC_SEGMENTS.len().saturating_sub(1) as f32 * sc.separator_width;
+    segments + lines + sc.border.line_width + sc.border.line_width
+}
+
 /// The widest fixed-width control the theme states on the Basic page:
 /// `combo_box.min_width`, the two tabs, `tabs` wide together
 /// ([`basic_tabs_width`], their labels fitted, never below
@@ -9861,12 +9881,18 @@ fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
 /// [`basic_widest`] -- where `page` is `content_width`
 /// less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
-/// scrolling page keeps free. Three where not even three do: the page is then
-/// wider than its area.
+/// scrolling page keeps free. The column also holds `segmented`, the
+/// Segmented control's own width ([`basic_segmented_width`]), whose segments
+/// stay on one row: the control may reach into the section gap after its
+/// column, but keeps `layout.widget_gap`, the gap the page's rows keep
+/// between neighbouring widgets (Button and Primary), from the next column's
+/// left edge (M9-166). Three where not even three do: the page is then wider
+/// than its area.
 fn basic_column_count(
     resolved: &ResolvedTheme,
     layout: &LayoutTheme,
     tabs: f32,
+    segmented: f32,
     content_width: f32,
 ) -> usize {
     let margin = layout.window_margin.unwrap_or_default();
@@ -9878,7 +9904,8 @@ fn basic_column_count(
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let widest = basic_widest(resolved, tabs);
+    let widest =
+        basic_widest(resolved, tabs).max(segmented - gap + layout.widget_gap.unwrap_or_default());
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -11090,8 +11117,9 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             probes::BASIC_SEGMENTED,
             Length::Shrink,
             // The segments stay on one row at their own widths, as the
-            // platforms' segmented controls do, the control as wide as they
-            // are even where its column is narrower (M9-166).
+            // platforms' segmented controls do; the page's column count gives
+            // the control a column it overruns by at most the section gap
+            // less `layout.widget_gap` ([`basic_column_count`], M9-166).
             tagged(
                 "basic.segmented.control",
                 container(row(segments).spacing(sc.separator_width))
@@ -11505,6 +11533,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
         resolved,
         &state.layout,
         basic_tabs_width(state),
+        basic_segmented_width(state),
         content_width(state),
     );
     let columns: Vec<Element<'a, Message>> = basic_arrangement(count)
@@ -24126,6 +24155,7 @@ mod tests {
                     &state.current_resolved,
                     &state.layout,
                     basic_tabs_width(&state),
+                    basic_segmented_width(&state),
                     content
                 ),
                 columns,
@@ -24165,6 +24195,7 @@ mod tests {
             &state.current_resolved,
             &state.layout,
             basic_tabs_width(&state),
+            basic_segmented_width(&state),
             content_width(&state),
         );
         let columns: Vec<Vec<&str>> = basic_arrangement(count)
@@ -25607,6 +25638,45 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
     }
 
+    /// M9x CI item 9, the controller's rulings (M9-166): the Basic page's
+    /// column count holds the Segmented control's own width
+    /// ([`basic_segmented_width`]), so the control may reach into the
+    /// section gap but keeps `layout.widget_gap` from the next column's left
+    /// edge: under macos-monterey, macos-tahoe and kde-breeze at the largest
+    /// text scale, 2.25, with the side panel shown, as the window opens.
+    #[test]
+    fn the_column_count_holds_the_segmented_control() {
+        let mut faults = Vec::new();
+        for preset in ["macos-monterey", "macos-tahoe", "kde-breeze"] {
+            let mut state = loaded(preset, false);
+            state.active_tab = Tab::Basic;
+            let _ = update(&mut state, Message::TextScaleSelected(TextScale(2.25)));
+            let gap = state.layout.widget_gap.unwrap_or_default();
+            let (_, rects, _) = basic_frame(&state);
+            let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
+                .iter()
+                .filter_map(|id| rects.get(id).copied())
+                .collect();
+            let Some(control) = rects.get("basic.segmented.control").copied() else {
+                faults.push(format!("{preset}: no segmented control"));
+                continue;
+            };
+            let next = columns
+                .iter()
+                .map(|c| c.x)
+                .filter(|x| *x > control.x + 0.5)
+                .fold(f32::INFINITY, f32::min);
+            if next.is_finite() && control.x + control.width > next - gap + 0.01 {
+                faults.push(format!(
+                    "{preset}: the control's right edge {} is within layout.widget_gap {gap} \
+                     of the next column at {next}",
+                    control.x + control.width
+                ));
+            }
+        }
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
     /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its
     /// segments on one row, as the platforms' segmented controls do, where its
     /// column is narrower than they are: under macos-monterey at the largest
@@ -26078,7 +26148,7 @@ mod tests {
             let mut r = state.current_resolved.clone();
             r.tab.active_outward_corner_radius = radius;
             assert_eq!(
-                basic_column_count(&r, layout, tabs, content),
+                basic_column_count(&r, layout, tabs, 0.0, content),
                 columns,
                 "radius {radius:?}"
             );
@@ -29581,6 +29651,7 @@ mod tests {
                             &state.current_resolved,
                             &state.layout,
                             basic_tabs_width(&state),
+                            basic_segmented_width(&state),
                             content_width(&state),
                         );
                         assert_eq!(

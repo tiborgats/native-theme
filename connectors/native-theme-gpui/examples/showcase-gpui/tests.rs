@@ -5633,7 +5633,7 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
         assert!(r.is_ok(), "{r:?}");
         if let Ok(r) = r {
             assert_eq!(
-                basic_column_count(&r, &layout(preset), content),
+                basic_column_count(&r, &layout(preset), content, 0.0),
                 columns,
                 "{preset}"
             );
@@ -5641,7 +5641,13 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
     }
     let r = resolved("kde-breeze");
     if let Ok(r) = r {
-        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0), 3);
+        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0, 0.0), 3);
+        // A Segmented control wider than a fifth of the page drops a column
+        // (M9-166).
+        assert_eq!(
+            basic_column_count(&r, &layout("kde-breeze"), 979.0, 200.0),
+            4
+        );
     }
     for (count, arrangement) in [
         (5, &BASIC_FIVE[..]),
@@ -5703,12 +5709,12 @@ fn the_basic_page_makes_room_for_both_flares() {
     let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
     let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
     assert_eq!(
-        basic_column_count(&unstated, &layout, content),
+        basic_column_count(&unstated, &layout, content, 0.0),
         5,
         "without outward corners the two tabs fit a fifth"
     );
     assert_eq!(
-        basic_column_count(&stated, &layout, content),
+        basic_column_count(&stated, &layout, content, 0.0),
         4,
         "the two tabs and both flares do not fit a fifth"
     );
@@ -5717,7 +5723,7 @@ fn the_basic_page_makes_room_for_both_flares() {
         let mut undrawn = stated.clone();
         undrawn.tab.active_outward_corner_radius = Some(radius);
         assert_eq!(
-            basic_column_count(&undrawn, &layout, content),
+            basic_column_count(&undrawn, &layout, content, 0.0),
             5,
             "a radius of {radius} keeps room for flares the bar does not draw"
         );
@@ -6007,9 +6013,15 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
                 computed, content.size.width,
                 "{preset} {mode}: the content width the page counts columns from is not the panel's"
             );
-            let count = read(&mut cx, &showcase, |this, cx| {
+            let count = cx.update(|window, cx| {
+                let layout = showcase.read(cx).layout.clone();
                 native_value(cx, |n| {
-                    basic_column_count(n.resolved, &this.layout, f32::from(computed))
+                    let segmented = crate::demo::segmented_width(
+                        window,
+                        &n,
+                        &crate::pages::basic::BASIC_SEGMENTS,
+                    );
+                    basic_column_count(n.resolved, &layout, f32::from(computed), segmented)
                 })
             });
             let drawn = read(&mut cx, &showcase, |this, cx| {
@@ -18106,6 +18118,79 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
         menu.size.width - px(left + right),
         left + right
     );
+}
+
+/// M9x CI item 9, the controller's rulings (M9-166): the Basic page's column
+/// count holds the Segmented control's own width, so the control, on one
+/// row, may reach into the section gap but keeps `layout.widget_gap`, the gap
+/// the page's rows keep between neighbouring widgets, from the next column's
+/// left edge: under macos-monterey and macos-tahoe at a text scale of 1,
+/// where the shared count left it 9 and 13 px into the next column, and
+/// under kde-breeze at 2.25. The four Linux parity presets keep their
+/// columns at a text scale of 1: kde-breeze, adwaita and catppuccin-mocha
+/// five, material-3 four.
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut faults = Vec::new();
+    for (preset, scale, columns) in [
+        ("macos-monterey", 1.0, None),
+        ("macos-tahoe", 1.0, None),
+        ("kde-breeze", 2.25, None),
+        ("kde-breeze", 1.0, Some(5)),
+        ("adwaita", 1.0, Some(5)),
+        ("catppuccin-mocha", 1.0, Some(5)),
+        ("material-3", 1.0, Some(4)),
+    ] {
+        use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
+        draw(&mut cx);
+        let gap = read(&mut cx, &showcase, |this, _| {
+            this.layout.widget_gap.unwrap_or_default()
+        });
+        let drawn = read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).layout_drawn()
+        });
+        let laid: Vec<Bounds<Pixels>> = drawn
+            .iter()
+            .filter(|(id, _)| id.starts_with("basic.column_"))
+            .map(|(_, b)| *b)
+            .collect();
+        if let Some(want) = columns
+            && laid.len() != want
+        {
+            faults.push(format!(
+                "{preset} at {scale}: {} columns, not {want}",
+                laid.len()
+            ));
+        }
+        let Some(control) = drawn.get("basic.segmented.control").copied() else {
+            faults.push(format!("{preset} at {scale}: no segmented control"));
+            continue;
+        };
+        let Some(column) = laid
+            .iter()
+            .find(|c| c.left() <= control.left() + px(0.5) && control.left() < c.right())
+        else {
+            faults.push(format!("{preset} at {scale}: the control is in no column"));
+            continue;
+        };
+        let next = laid
+            .iter()
+            .map(|c| c.left())
+            .filter(|left| *left > column.left() + px(0.5))
+            .min();
+        if let Some(next) = next
+            && control.right() > next - px(gap) + px(0.5)
+        {
+            faults.push(format!(
+                "{preset} at {scale}: the control's right edge {:?} is within \
+                 layout.widget_gap {gap} of the next column at {next:?}",
+                control.right()
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
 }
 
 /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on

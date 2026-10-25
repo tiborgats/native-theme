@@ -591,6 +591,71 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Icons);
 }
 
+/// M9x CI item 9, the controller's rulings (M9-166): the Basic page's column count holds the
+/// Segmented control's own width as egui laid it out, so the control may reach into the section
+/// gap but keeps `layout.widget_gap` from the next column's left edge: under macos-monterey,
+/// macos-tahoe and kde-breeze at the largest text scale, 2.25; and the four Linux parity presets
+/// keep their columns at a text scale of 1: kde-breeze, adwaita and catppuccin-mocha five,
+/// material-3 four (the window's own content width).
+#[test]
+fn the_column_count_holds_the_segmented_control() {
+    let mut faults = Vec::new();
+    for preset in ["macos-monterey", "macos-tahoe", "kde-breeze"] {
+        let harness = open_scaled(preset, "basic", 2.25);
+        let gap = harness
+            .state()
+            .atlas
+            .layout()
+            .widget_gap
+            .unwrap_or_default();
+        let places = harness.state().registry.places();
+        let columns: Vec<egui::Rect> = places
+            .iter()
+            .filter(|(id, _)| id.starts_with("basic.column_"))
+            .map(|(_, r)| *r)
+            .collect();
+        let Some(control) = places.get("basic.segmented.control").copied() else {
+            faults.push(format!("{preset}: no segmented control"));
+            continue;
+        };
+        let next = columns
+            .iter()
+            .map(|c| c.left())
+            .filter(|x| *x > control.left() + 0.5)
+            .fold(f32::INFINITY, f32::min);
+        if next.is_finite() && control.right() > next - gap + 0.01 {
+            faults.push(format!(
+                "{preset}: the control's right edge {} is within layout.widget_gap {gap} of the \
+                 next column at {next}",
+                control.right()
+            ));
+        }
+    }
+    for (preset, want) in [
+        ("kde-breeze", 5),
+        ("adwaita", 5),
+        ("catppuccin-mocha", 5),
+        ("material-3", 4),
+    ] {
+        let mut harness = open(
+            egui::Theme::Light,
+            cli(&[("--theme", preset), ("--tab", "basic")]),
+        );
+        harness.run_steps(4);
+        let laid = harness
+            .state()
+            .registry
+            .places()
+            .keys()
+            .filter(|id| id.starts_with("basic.column_"))
+            .count();
+        if laid != want {
+            faults.push(format!("{preset} at 1: {laid} columns, not {want}"));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on one row, as the
 /// platforms' segmented controls do, where its column is narrower than they are: under
 /// macos-monterey at the largest text scale the showcase offers, 2.25, Day, Week and Month lie
@@ -5431,6 +5496,7 @@ fn the_basic_page_has_every_group_in_its_column() {
             harness.state().atlas.resolved_for(egui::Theme::Light),
             harness.state().atlas.layout(),
             harness.state().demo_state.content_width,
+            harness.state().demo_state.segmented_width,
         );
         assert_eq!(count, expected, "{preset}: the column count");
         let columns: Vec<Vec<&str>> = arrangement(count)
@@ -5567,6 +5633,7 @@ fn the_basic_page_fits_the_window_across() {
             let width = count_boundary(
                 state.atlas.resolved_for(theme),
                 state.atlas.layout(),
+                state.demo_state.segmented_width,
                 columns,
             ) + 1.0;
             set_content_width(&mut harness, width);
@@ -5581,6 +5648,7 @@ fn the_basic_page_fits_the_window_across() {
                     state.atlas.resolved_for(theme),
                     state.atlas.layout(),
                     state.demo_state.content_width,
+                    state.demo_state.segmented_width,
                 ),
                 columns,
                 "macos-tahoe {theme:?}: {width} is just above the {columns}-column boundary"
@@ -5614,6 +5682,7 @@ fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
         state.atlas.resolved_for(theme),
         state.atlas.layout(),
         state.demo_state.content_width,
+        state.demo_state.segmented_width,
     );
     assert_eq!(columns, count, "{what} {theme:?}: the columns laid out");
     for (id, rect) in places.iter().filter(|(id, _)| id.starts_with("basic.")) {
@@ -5630,21 +5699,22 @@ fn fits_across(harness: &Harness<'_, App>, theme: egui::Theme, what: &str) {
 }
 
 /// The least content width at which `column_count` lays `columns` columns out under `t` and
-/// `layout`, to a hundredth of a point.
+/// `layout`, with a Segmented control `segmented` wide, to a hundredth of a point.
 fn count_boundary(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
+    segmented: f32,
     columns: usize,
 ) -> f32 {
     use crate::pages::basic::column_count;
     let (mut fewer, mut enough) = (0.0_f32, 4.0 * crate::WINDOW_SIZE.x);
     assert!(
-        column_count(t, layout, enough) >= columns,
+        column_count(t, layout, enough, segmented) >= columns,
         "{columns} columns at no width"
     );
     while enough - fewer > 0.01 {
         let mid = 0.5 * (fewer + enough);
-        if column_count(t, layout, mid) >= columns {
+        if column_count(t, layout, mid, segmented) >= columns {
             enough = mid;
         } else {
             fewer = mid;
@@ -6260,12 +6330,12 @@ fn the_basic_page_makes_room_for_both_flares() {
     let tabs = t.min_width + t.min_width + t.item_gap.unwrap_or_default();
     let content = 5.0 * (tabs + 4.0) + 4.0 * gap + margin + margin + gutter;
     assert_eq!(
-        column_count(&unstated, layout, content),
+        column_count(&unstated, layout, content, 0.0),
         5,
         "without outward corners the two tabs fit a fifth"
     );
     assert_eq!(
-        column_count(&stated, layout, content),
+        column_count(&stated, layout, content, 0.0),
         4,
         "the two tabs and both flares do not fit a fifth"
     );
@@ -6273,7 +6343,7 @@ fn the_basic_page_makes_room_for_both_flares() {
         let mut undrawn = stated.clone();
         undrawn.tab.active_outward_corner_radius = Some(radius);
         assert_eq!(
-            column_count(&undrawn, layout, content),
+            column_count(&undrawn, layout, content, 0.0),
             5,
             "a radius of {radius} keeps room for flares the bar does not draw"
         );

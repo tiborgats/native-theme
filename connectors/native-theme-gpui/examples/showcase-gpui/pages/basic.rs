@@ -203,6 +203,9 @@ pub(crate) const BASIC_THREE: [&[usize]; 3] = [
 const MIN_COLUMNS: usize = 3;
 const MAX_COLUMNS: usize = 5;
 
+/// The Segmented control's segments, which the column count measures.
+pub(crate) const BASIC_SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
+
 /// The groups of each column for a page of `columns` columns.
 pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
     match columns {
@@ -223,12 +226,18 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// `page` is
 /// `content_width` less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
-/// scrolling page keeps free. Three where not even three do: the page is then
-/// wider than its area.
+/// scrolling page keeps free. The column also holds `segmented`, the
+/// Segmented control's own width (`demo::segmented_width`, as gpui measures
+/// its labels), whose segments stay on one row: the control may reach into
+/// the section gap after its column, but keeps `layout.widget_gap`, the gap
+/// the page's rows keep between neighbouring widgets (Button and Primary),
+/// from the next column's left edge (M9-166). Three where not even three do:
+/// the page is then wider than its area.
 pub(crate) fn basic_column_count(
     resolved: &native_theme::theme::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
     content_width: f32,
+    segmented: f32,
 ) -> usize {
     let margin = layout.window_margin.unwrap_or_default();
     let gap = layout.section_gap.unwrap_or_default();
@@ -247,7 +256,8 @@ pub(crate) fn basic_column_count(
         .min_width
         .max(tabs)
         .max(BASIC_WIDE)
-        .max(BASIC_WIDTH);
+        .max(BASIC_WIDTH)
+        .max(segmented - gap + layout.widget_gap.unwrap_or_default());
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -602,7 +612,7 @@ impl Showcase {
                     ui,
                     cx,
                     "basic-segmented",
-                    &["Day", "Week", "Month"],
+                    &BASIC_SEGMENTS,
                     self.basic_segment,
                     on_segment,
                 )
@@ -776,7 +786,13 @@ impl Showcase {
             .collect();
         let content_width = self.content_width(window, cx);
         let count = native_value(cx, |n| {
-            basic_column_count(n.resolved, &self.layout, f32::from(content_width))
+            let segmented = demo::segmented_width(window, &n, &BASIC_SEGMENTS);
+            basic_column_count(
+                n.resolved,
+                &self.layout,
+                f32::from(content_width),
+                segmented,
+            )
         })
         .unwrap_or(MAX_COLUMNS);
         // The width is the last frame's: where this frame lays the content

@@ -136,11 +136,16 @@ pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// where `demo::tab_bar` draws them (`demo::outward_radius`), `BASIC_WIDE` and `BASIC_WIDTH` —
 /// where `page` is `content_width` less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a scrolling page keeps free.
+/// The column also holds `segmented`, the Segmented control's own width as egui laid it out
+/// (`DemoState::segmented_width`), whose segments stay on one row: the control may reach into the
+/// section gap after its column, but keeps `layout.widget_gap`, the gap the page's rows keep
+/// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166).
 /// Three where not even three do: the page is then wider than its area.
 pub(crate) fn column_count(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
     content_width: f32,
+    segmented: f32,
 ) -> usize {
     let margin = layout.window_margin.unwrap_or_default();
     let gap = layout.section_gap.unwrap_or_default();
@@ -159,7 +164,8 @@ pub(crate) fn column_count(
         .min_width
         .max(tabs)
         .max(BASIC_WIDE)
-        .max(BASIC_WIDTH);
+        .max(BASIC_WIDTH)
+        .max(segmented - gap + layout.widget_gap.unwrap_or_default());
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
@@ -226,6 +232,7 @@ pub(crate) fn show(
         atlas.resolved_for(ui.ctx().theme()),
         atlas.layout(),
         state.content_width,
+        state.segmented_width,
     );
     let columns = count as f32;
     let page_width = ui.available_width();
@@ -966,8 +973,9 @@ fn number_input(reg: &mut Registry, state: &mut DemoState, atlas: &ThemeAtlas, u
 /// (docs/archive/todo_egui-widgets-spec.md §4.4): one control of joined buttons in one
 /// `Role::SegmentedControl` scope, whose cell carries the segment height, padding and colours;
 /// one outline in `border`, `separator_width` dividers between the segments; a radio group. Its
-/// segments stay on one row at their own widths, as the platforms' segmented controls do, the
-/// control running past a column narrower than they are (M9-166).
+/// segments stay on one row at their own widths, as the platforms' segmented controls do; the
+/// page's column count gives the control a column it overruns by at most the section gap less
+/// `layout.widget_gap` ([`column_count`], M9-166).
 fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
     let normal = RoleVariant::Normal;
     heading(reg, ui, "basic.segmented.heading", "Segmented control");
@@ -982,6 +990,14 @@ fn segmented(reg: &mut Registry, state: &mut DemoState, ui: &mut egui::Ui) {
             ui.add(SegmentedControl::new(&mut state.basic_segment, segments))
         },
     );
+    // Its width for the next pass's column count ([`column_count`]): on one row its width does
+    // not depend on the column, so a pass that learns a new width is run again with it.
+    let width = control.rect.width();
+    if (width - state.segmented_width).abs() > 0.01 {
+        state.segmented_width = width;
+        ui.ctx().request_discard("the segmented control's width");
+        ui.ctx().request_repaint();
+    }
     reg.tag("basic.segmented.control", &control);
     if let Some(parts) = Parts::of(&control) {
         for (part, id) in [

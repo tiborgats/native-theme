@@ -84,6 +84,9 @@ pub(crate) struct DemoState {
     pub basic_focus_given: bool,
     /// The content panel's width this pass, which the Basic page counts its columns from.
     pub content_width: f32,
+    /// The Basic Segmented control's width as egui last laid it out, which the page's column
+    /// count holds (M9-166); 0 until it is first drawn.
+    pub segmented_width: f32,
 }
 
 impl Default for DemoState {
@@ -140,6 +143,7 @@ impl Default for DemoState {
             basic_focused: "Focused".to_string(),
             basic_focus_given: false,
             content_width: 0.0,
+            segmented_width: 0.0,
         }
     }
 }

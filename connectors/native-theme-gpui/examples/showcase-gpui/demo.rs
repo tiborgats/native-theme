@@ -2343,6 +2343,49 @@ pub(crate) fn folder_tab_row(
 /// `TabVariant::inner_paddings`), which a `TabBar::segmented` would give it.
 pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 
+/// The width [`segmented`] lays its control over `labels` out at under `n`:
+/// each label as gpui's text system shapes it in `segmented_control.font`
+/// (its family, weight, style and scaled size, as [`text_in`] sets them),
+/// inside the segment's stated side padding ([`SEGMENT_PADDING`] on a side
+/// left unstated), the `separator_width` line before each segment after the
+/// first, and the frame's `border.line_width` at both ends. The Basic page's
+/// column count holds it (M9-166): the segments stay on one row.
+pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) -> f32 {
+    let s = &n.resolved.segmented_control;
+    let b = &s.border;
+    let font = gpui::Font {
+        weight: FontWeight(f32::from(s.font.weight)),
+        style: match s.font.style {
+            FontStyle::Normal => gpui::FontStyle::Normal,
+            FontStyle::Italic => gpui::FontStyle::Italic,
+            FontStyle::Oblique => gpui::FontStyle::Oblique,
+        },
+        ..gpui::font(native_theme_gpui::font_family(&s.font.family))
+    };
+    let size = text_size_of(n, &s.font);
+    let side = |stated: Option<f32>| stated.unwrap_or(f32::from(SEGMENT_PADDING));
+    let padding = side(b.padding.left) + side(b.padding.right);
+    let shaped = |label: &str| {
+        let run = gpui::TextRun {
+            len: label.len(),
+            font: font.clone(),
+            color: Hsla::default(),
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        };
+        f32::from(
+            window
+                .text_system()
+                .shape_line(SharedString::from(label.to_owned()), size, &[run], None)
+                .width,
+        )
+    };
+    let segments: f32 = labels.iter().map(|label| shaped(label) + padding).sum();
+    let lines = labels.len().saturating_sub(1) as f32 * s.separator_width;
+    segments + lines + b.line_width + b.line_width
+}
+
 /// A segmented control over `labels`, `selected` the one shown; a click
 /// hands `on_click` the index of the segment clicked.
 ///
@@ -2432,8 +2475,9 @@ pub(crate) fn segmented(
             .on_click(move |_, window, cx| on_click(&ix, window, cx))
     });
     // The segments stay on one row at their own widths, as the platforms'
-    // segmented controls do, the control as wide as they are even where its
-    // column is narrower (M9-166).
+    // segmented controls do; the Basic page's column count gives the control
+    // a column it overruns by at most the section gap less
+    // `layout.widget_gap` (`pages::basic::basic_column_count`, M9-166).
     h_flex()
         .bg(colour(s.background_color))
         .border(px(b.line_width))
