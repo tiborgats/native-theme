@@ -8506,6 +8506,14 @@ fn iced_not_themeable(state: &State, element: &ShowcaseElement) -> Vec<Cow<'stat
             vec!["sweep and speed of the arc: egui's Spinner's, 240° a turn a second".into()]
         }
         "Expander" => vec!["arrow shape: a filled triangle on a canvas".into()],
+        // The model has no thumb outline or shadow (docs/todo.md, *Slider:
+        // the thumb's outline or shadow*), and iced's handle has no border
+        // (`styles::slider`).
+        "Slider" => vec![
+            "thumb outline and shadow: none, iced's handle unbordered, so a thumb in \
+             the ground's colour does not show"
+                .into(),
+        ],
         "Menu" if state.current_resolved.popover.border.shadow_enabled => vec![
             "menu width: its widest row, the label and the shortcut \
              layout.widget_gap apart inside the row's padding"
@@ -25393,6 +25401,27 @@ mod tests {
             native_theme_test_fixtures::Child::kde("styled"),
             |icons| native_theme_test_fixtures::write_indicator_theme(icons, "styled", STYLED),
         )
+    }
+
+    /// M9x CI item I3 (M9-171): the Slider's Widget Info names what the
+    /// theme is silent on round the thumb. The model states no thumb outline
+    /// or shadow (`docs/property-registry.toml` `[slider]`) and iced's handle
+    /// draws no border (`styles::slider`), so under macos-tahoe light, whose
+    /// thumb is `defaults.surface_color` `#ffffff` on a `#ffffff` window, the
+    /// thumb does not show; the info says so, as "Not themeable".
+    #[test]
+    fn the_sliders_info_names_the_thumbs_unstated_outline() {
+        let state = loaded("macos-tahoe", false);
+        let Some(slider) = elements::element("basic.slider.control") else {
+            panic!("basic.slider.control is not in the list");
+        };
+        let lines = iced_not_themeable(&state, slider);
+        assert!(
+            lines
+                .iter()
+                .any(|l| l.starts_with("thumb outline and shadow")),
+            "{lines:?}"
+        );
     }
 
     /// M9-147 (M9b T5 fix round 1): the layout dump records a check box's

@@ -209,6 +209,29 @@ cannot tell which file a bare number continues, so it does not look for one.
       forbid; a platform value reaches a connector only through a model field
       that the readers and presets fill.
 
+### Slider: the thumb's outline or shadow
+
+- [ ] [1.0] `SliderTheme` states the thumb's fill and diameter, and nothing
+      round it: no border and no shadow (`docs/property-registry.toml`
+      `[slider]`). macos-tahoe light leaves `slider.thumb_color` to
+      inheritance, `defaults.surface_color` (`docs/inheritance-rules.toml:211`),
+      `#ffffff` (`macos-tahoe.toml` `[light.defaults] surface_color`), on a
+      `#ffffff` window (`[light.defaults] background_color`), and the iced
+      connector draws the handle with iced's own `border_width` 0
+      (`connectors/native-theme-iced/src/styles.rs`, `slider`; iced_widget
+      0.14.2 `src/slider.rs:695-699`): the Screenshots run 40209162435 shows
+      no thumb in the iced showcase, white on white over the rail. The real
+      knob is set off by a soft shadow, which macOS 26's own render shows
+      (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/renders/aqua/slider-regular@2x.png`,
+      and `darkAqua` beside it). Research each platform's thumb outline and
+      shadow in `docs/platform-facts.md` §2.9 **first** (macOS's measured from
+      that render), then add the leaf the platforms state to `SliderTheme`,
+      the presets and the readers; the connectors then draw it. Until then the
+      iced showcase's Widget Info names the theme's silence on the slider
+      (Not themeable), and no connector invents an outline: the egui
+      showcase's is egui's own, the handle stroked in the widget's
+      `fg_stroke` (egui 0.36.2 `src/widgets/slider.rs:811-816`).
+
 ### Radio: Material's radio is not the checkbox's shape
 
 - [ ] [1.0] Decision for the maintainer (found 2026-09-28, while adding
