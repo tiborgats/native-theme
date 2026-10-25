@@ -336,6 +336,12 @@ pub(crate) struct Showcase {
     /// reaches the client-side arm of `Showcase::frame`.
     #[cfg(test)]
     pub(crate) frame_for_test: Option<Decorations>,
+    /// The appearance `Showcase::show_window_appearance` last asked gpui to
+    /// give the window's own frame: gpui's test platform keeps no record of
+    /// it (gpui-pre platform.rs, `Platform::set_window_appearance`, a no-op
+    /// there), so this is what the self-tests read.
+    #[cfg(test)]
+    pub(crate) window_appearance_asked: Option<gpui::WindowAppearance>,
     /// The accessibility preferences the self-tests say the OS has, which a
     /// preset install then reads in place of the host's
     /// (`Showcase::os_preferences`): a test cannot change the desktop's.
@@ -1601,6 +1607,8 @@ impl Showcase {
             #[cfg(test)]
             frame_for_test: None,
             #[cfg(test)]
+            window_appearance_asked: None,
+            #[cfg(test)]
             os_preferences_for_test: None,
             #[cfg(test)]
             icon_theme_detection_for_test: None,
@@ -1704,6 +1712,7 @@ impl Showcase {
                 showcase.error_message = Some(format!("Failed to load OS theme: {e}"));
             }
         }
+        showcase.show_window_appearance(cx);
         showcase.show_icon_choice(window, cx);
         showcase.reload_icons(window, cx);
         showcase
@@ -1876,10 +1885,42 @@ impl Showcase {
         } else {
             self.keep_installed_theme(window, cx);
         }
+        self.show_window_appearance(cx);
         self.show_installed_theme(window, cx);
         self.show_icon_choice(window, cx);
         self.reload_icons(window, cx);
         installed
+    }
+
+    /// Give the window's own frame the mode the installed theme is drawn in,
+    /// the title bar the platform draws included: every install, mode
+    /// switch and reload runs through here (`apply_theme_by_name`), and the
+    /// first install (`Showcase::new`).
+    ///
+    /// gpui's `App::set_window_appearance` sets `NSApplication.appearance` on
+    /// macOS (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`, gpui-fast-macos
+    /// 0.1.10 the same lines), which the system's own dark-mode reading does
+    /// not follow: `native_theme::detect::system_is_dark` reads the global
+    /// `AppleInterfaceStyle` default. It is a no-op on every other platform
+    /// (the trait's default, gpui-pre 0.3.9 `src/platform.rs:433`, gpui-fast
+    /// 0.1.10 `:434`). On Windows gpui gives the title bar the system's mode
+    /// alone, when the window opens and when the system's changes
+    /// (gpui-pre-windows 0.3.9 `src/window.rs:574`, `src/events.rs:1229-1240`;
+    /// gpui-fast-windows 0.1.10 `src/window.rs:575`, the same `events.rs`
+    /// lines), so a Windows title bar stays in the system's mode:
+    /// docs/todo.md, *native-theme-gpui connector*, "PR: let an application
+    /// set the window's appearance on Windows".
+    fn show_window_appearance(&mut self, cx: &App) {
+        let appearance = if cx.theme().mode.is_dark() {
+            gpui::WindowAppearance::Dark
+        } else {
+            gpui::WindowAppearance::Light
+        };
+        cx.set_window_appearance(Some(appearance));
+        #[cfg(test)]
+        {
+            self.window_appearance_asked = Some(appearance);
+        }
     }
 
     /// Show the installed theme chosen in the preset switch, whichever way

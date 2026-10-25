@@ -17725,3 +17725,59 @@ fn a_raster_sets_icons_on_the_other_pages(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// The window's own frame, the title bar macOS draws, takes the mode the
+/// installed theme is drawn in (M9-164): the showcase asks gpui for that
+/// appearance when it opens and on every install, a mode switch or a
+/// preset switch, so a dark variant's title bar is not left light.
+#[gpui::test]
+fn the_window_frame_takes_the_installed_themes_mode(cx: &mut TestAppContext) {
+    use gpui::WindowAppearance;
+    use gpui_component::ActiveTheme as _;
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let drawn = |cx: &mut VisualTestContext| {
+        read(cx, &showcase, |this, cx| {
+            let expected = if cx.theme().mode.is_dark() {
+                WindowAppearance::Dark
+            } else {
+                WindowAppearance::Light
+            };
+            (this.window_appearance_asked, expected)
+        })
+    };
+    let (asked, expected) = drawn(&mut cx);
+    assert_eq!(
+        asked,
+        Some(expected),
+        "the window opened without the theme's mode"
+    );
+    for (preset, mode) in [
+        ("kde-breeze", AppColorMode::Dark),
+        ("kde-breeze", AppColorMode::Light),
+        ("windows-11", AppColorMode::Dark),
+        ("macos-tahoe", AppColorMode::Light),
+    ] {
+        cx.update(|window, cx| {
+            showcase.update(cx, |this, cx| {
+                this.install_in_mode(preset, mode, window, cx)
+            });
+        });
+        cx.run_until_parked();
+        draw(&mut cx);
+        let (asked, expected) = drawn(&mut cx);
+        assert_eq!(
+            expected,
+            if mode == AppColorMode::Dark {
+                WindowAppearance::Dark
+            } else {
+                WindowAppearance::Light
+            },
+            "{preset} in {mode:?} was not drawn in that mode"
+        );
+        assert_eq!(
+            asked,
+            Some(expected),
+            "{preset} in {mode:?}: the window's frame was not given the theme's mode"
+        );
+    }
+}

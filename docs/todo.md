@@ -3835,6 +3835,24 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       2026-10-25). A `Button`'s children follow its label
       (`src/button/button.rs:773-789`), so an image child cannot stand where its
       icon stands beside an upstream label.
+- [ ] [upstream] PR: let an application set the window's appearance on Windows,
+      as `App::set_window_appearance` sets `NSApplication.appearance` on macOS
+      (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`). On Windows the call is the
+      trait's no-op (gpui-pre 0.3.9 `src/platform.rs:433`, gpui-fast 0.1.10 `:434`),
+      and the title bar's dark mode, `DWMWA_USE_IMMERSIVE_DARK_MODE`
+      (gpui-pre-windows 0.3.9 `src/util.rs:134-148`, `configure_dwm_dark_mode`), is
+      set from the system's appearance alone, when the window opens
+      (`src/window.rs:574`) and when the system's changes (`src/events.rs:1229-1240`);
+      gpui-fast-windows 0.1.10 the same (`src/window.rs:575`, `src/events.rs:1240`).
+      So the gpui showcase's title bar on Windows stays in the system's mode under
+      a theme of the other one: the Screenshots run 40209162435 draws windows-11
+      dark with a light title bar (pixel 243 at about 640,15, where iced and egui
+      draw 32). The showcase asks gpui for the installed theme's mode on every
+      install (`Showcase::show_window_appearance`, M9-164), which macOS takes and
+      Windows does not. A fix in gpui-pre-windows: implement
+      `Platform::set_window_appearance` by calling `configure_dwm_dark_mode` on
+      each window with the appearance given, and keep it over the system's
+      `ImmersiveColorSet` changes while one is set.
 
 ### gpui: a tab scrolled into view loses its outer flare
 
