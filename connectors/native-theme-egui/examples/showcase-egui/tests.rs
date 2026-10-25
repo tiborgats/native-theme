@@ -591,6 +591,49 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Icons);
 }
 
+/// M9x CI item E1 (M9-173): under a theme that states no `tab.border.padding` across
+/// (macos-tahoe), a page tab keeps egui's own button padding from each of its edges to its
+/// label, as the connector's pair rule gives a side the theme leaves unstated
+/// (native-theme-egui `src/convert.rs`, `to_button_padding`; egui 0.36.2 `src/style.rs:1458`), where
+/// the showcase set the padding to the tab's line width and "Containers", about as wide as
+/// `tab.min_width` 64, nearly touched its neighbours. Its galley lies at least that padding
+/// inside the tab on both sides.
+#[test]
+fn a_page_tab_keeps_eguis_padding_where_the_theme_states_none() {
+    let harness = open_scaled("macos-tahoe", "basic", 1.0);
+    let t = harness
+        .state()
+        .atlas
+        .resolved_for(egui::Theme::Light)
+        .clone();
+    let padding = &t.tab.border.padding;
+    assert!(
+        padding.left.is_none() && padding.right.is_none(),
+        "macos-tahoe states a tab padding across ({padding:?}), so this test proves nothing"
+    );
+    let own = egui::Style::default().spacing.button_padding.x;
+    let label = "Containers";
+    let tab = harness.get_by_role_and_label(Role::Button, label).rect();
+    let galley = harness
+        .output()
+        .shapes
+        .iter()
+        .find_map(|clipped| match &clipped.shape {
+            egui::Shape::Text(text) if text.galley.text() == label && tab.contains(text.pos) => {
+                // The glyphs' extent: a button's galley can be laid out the button's width.
+                Some(text.visual_bounding_rect())
+            }
+            _ => None,
+        })
+        .expect("the tab paints its label");
+    let (left, right) = (galley.left() - tab.left(), tab.right() - galley.right());
+    assert!(
+        left + 0.01 >= own && right + 0.01 >= own,
+        "{label}: its label {galley:?} is {left} and {right} from the edges of its tab {tab:?}, \
+         under egui's padding {own}"
+    );
+}
+
 /// Parity items 14 to 16: the status bar is the toggle, the environment as one line joined by
 /// " · " naming the preset by its key, and the shown info's title flush right.
 #[test]

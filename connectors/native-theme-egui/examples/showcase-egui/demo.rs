@@ -1803,13 +1803,6 @@ pub(crate) fn tab_bar<T: Copy + PartialEq>(
                     };
                     let no_pen =
                         egui::Stroke::new(idle.bg_stroke.width, egui::Color32::TRANSPARENT);
-                    // Where the theme states neither side of `tab.border.padding`, a tab is its
-                    // text and border, at least `tab.min_width` wide, as the other two
-                    // showcases' tabs are: no padding stands in for the unstated one.
-                    let padding = &t.tab.border.padding;
-                    if padding.left.is_none() && padding.right.is_none() {
-                        ui.spacing_mut().button_padding.x = idle.bg_stroke.width;
-                    }
                     // The tabs `tab.item_gap` apart, and side by side where the theme states no
                     // gap, as the other two showcases' tabs are.
                     let gap = t.tab.item_gap.unwrap_or_default();
