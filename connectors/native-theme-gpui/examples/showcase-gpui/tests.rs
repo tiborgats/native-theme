@@ -17852,6 +17852,60 @@ fn a_hairline_separator_is_drawn_at_scale_one(cx: &mut TestAppContext) {
     }
 }
 
+/// M9x CI items 11 and 13(b) (M9-165): under macos-tahoe at scale 1 the
+/// Basic page's Separator, the page row's rule and the Basic table's two grid
+/// lines are painted as filled quads at least one device pixel thick, which
+/// every gpui renderer draws, where the grid lines were boxes
+/// `separator.line_width` 0.5 thick that took no room and the two lines a
+/// border one device pixel thick that no renderer shades (the connector's
+/// `a_separator_is_painted_as_a_filled_line_at_scale_one` gives the shaders'
+/// lines).
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
+    let (showcase, root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    cx.simulate_window_scale_factor_change(root, 1.0);
+    cx.run_until_parked();
+    draw(&mut cx);
+    let (grid, line) = read(&mut cx, &showcase, |_this, cx| {
+        (
+            native_value(cx, |n| crate::info::stated(n.resolved.list.grid_color)),
+            native_value(cx, |n| crate::info::stated(n.resolved.separator.line_color)),
+        )
+    });
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    let table = drawn.get("basic.table.frame").copied();
+    let mut filled = |colour: Option<gpui::Hsla>, within: Option<Bounds<Pixels>>| {
+        cx.update(|window, _| {
+            let (Some(colour), Some(within)) = (colour, within) else {
+                return 0;
+            };
+            let within = within.scale(window.scale_factor());
+            scene_quads(window)
+                .into_iter()
+                .filter(|q| {
+                    q.background.as_solid() == Some(colour)
+                        && q.bounds.size.width.0.min(q.bounds.size.height.0) >= 1.0
+                        && q.bounds.intersects(&within)
+                })
+                .count()
+        })
+    };
+    let grid_lines = filled(grid, table);
+    // The header's line and a column line in each row (header and rows).
+    assert!(
+        grid_lines >= 2,
+        "the table's grid lines: {grid_lines} filled quads"
+    );
+    for id in ["basic.separator.line", "chrome.page_tabs.rule"] {
+        let n = filled(line, drawn.get(id).copied());
+        assert!(n >= 1, "{id}: no filled quad of separator.line_color");
+    }
+}
+
 /// Under windows-11's metrics, where the chosen set has no ChevronDown the
 /// page row's menu button still shows upstream's caret (M9-168): the
 /// button holds the caret beside the theme's `button.border.padding`, where

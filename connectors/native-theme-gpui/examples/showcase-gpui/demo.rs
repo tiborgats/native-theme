@@ -9037,7 +9037,8 @@ pub(crate) fn list_inner_radius(border: &native_theme::theme::ResolvedWidgetBord
 /// in `list.selection_background` and `selection_text_color`; a
 /// `list.grid_color` line `separator.line_width`
 /// wide inside the header's bottom edge and one down the first column's
-/// right edge through every row; the whole framed by `list.border` on
+/// right edge through every row, each a `widgets::Separator` recoloured, so
+/// one device pixel at least (M9-165); the whole framed by `list.border` on
 /// `list.background_color`. The header, its two cells and every row report
 /// themselves. Without a native theme, the Data page's declarative `Table`.
 pub(crate) fn files_table(
@@ -9057,7 +9058,6 @@ pub(crate) fn files_table(
     let l = &r.list;
     let colour = info::stated;
     let grid = colour(l.grid_color);
-    let line = px(r.separator.line_width);
     let pad = &l.border.padding;
     let side = |v: Option<f32>| v.map_or(px(0.), px);
     let height = |line_height: Pixels| {
@@ -9088,8 +9088,7 @@ pub(crate) fn files_table(
                                     .top_0()
                                     .bottom_0()
                                     .right_0()
-                                    .w(line)
-                                    .bg(grid),
+                                    .child(widgets::Separator::vertical().bg(grid)),
                             )
                         })
                         .children(listed.map(|listed| elements::record(ui, listed)))
@@ -9111,8 +9110,7 @@ pub(crate) fn files_table(
                             .left_0()
                             .right_0()
                             .bottom_0()
-                            .h(line)
-                            .bg(grid),
+                            .child(widgets::Separator::horizontal().bg(grid)),
                     )
                 })
         };

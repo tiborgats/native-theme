@@ -1328,8 +1328,8 @@ fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
 }
 
 /// A line thinner than a device pixel -- macos-tahoe's `separator.line_width`
-/// 0.5, on a 1x display -- is drawn one device pixel thick, as gpui draws a
-/// border, where a box of its height took no room (M9-165).
+/// 0.5, on a 1x display -- is drawn one device pixel thick, where a box of
+/// its height took no room (M9-165).
 #[gpui::test]
 fn a_separator_thinner_than_a_device_pixel_is_one_device_pixel(cx: &mut TestAppContext) {
     let r = resolved("macos-tahoe", ColorMode::Light);
@@ -1357,6 +1357,52 @@ fn a_separator_thinner_than_a_device_pixel_is_one_device_pixel(cx: &mut TestAppC
         (px(200.), px(1.)),
         "the 0.5 px separator at scale 1 is not one device pixel thick"
     );
+}
+
+/// M9x CI item 11 (M9-165 reopened): at scale 1 the separator is painted as
+/// a filled quad of its colour over its whole box, which every gpui renderer
+/// draws. A border-only quad one device pixel tall, what a line drawn as a
+/// border is there, is drawn by none: the Metal, wgpu and DirectX quad
+/// shaders take a pixel's border by the half of the quad its centre lies in,
+/// the bottom border where it lies on the middle (gpui-pre-apple 0.3.9
+/// `src/shaders.metal:133-137`, gpui-pre-wgpu 0.3.9 `src/shaders.wgsl:603-611`,
+/// gpui-pre-windows 0.3.9 `src/shaders.hlsl:590-593`), so the one row of such
+/// a quad takes the zero bottom border and paints nothing, as the Screenshots
+/// run 40218601365 showed on macOS and Windows. Under macos-tahoe (0.5 px)
+/// and windows-11 (1 px), light.
+#[cfg(not(feature = "gpui-fast"))]
+#[gpui::test]
+fn a_separator_is_painted_as_a_filled_line_at_scale_one(cx: &mut TestAppContext) {
+    for preset in ["macos-tahoe", "windows-11"] {
+        let r = resolved(preset, ColorMode::Light);
+        let colour = crate::colors::rgba_to_hsla(r.separator.line_color);
+        let cx = window_with(
+            cx,
+            Some((preset, ColorMode::Light)),
+            Box::new(|_, _| {
+                div()
+                    .w(px(200.))
+                    .child(Separator::horizontal())
+                    .into_any_element()
+            }),
+        );
+        let handle = cx.update(|window, _| window.window_handle());
+        cx.simulate_window_scale_factor_change(handle, 1.0);
+        redraw(cx);
+        let line = bounds(cx, "native-separator");
+        let filled = cx.update(|window, _| {
+            let line = line.scale(window.scale_factor());
+            window.painted_quads().iter().any(|q| {
+                q.bounds == line
+                    && line.size.height.0 >= 1.0
+                    && q.background.as_solid() == Some(colour)
+            })
+        });
+        assert!(
+            filled,
+            "{preset}: the separator at {line:?} is not painted as a filled quad of {colour:?}"
+        );
+    }
 }
 
 /// M6-21: a checkbox's or a radio's label is drawn in `checkbox.font`'s

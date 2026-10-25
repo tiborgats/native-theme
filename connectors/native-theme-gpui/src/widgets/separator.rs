@@ -2,7 +2,7 @@
 
 use gpui::{
     AnyElement, App, Axis, Hsla, InteractiveElement as _, IntoElement, Pixels, RenderOnce,
-    StyleRefinement, Styled, Window, div,
+    StyleRefinement, Styled, Window, div, px,
 };
 use gpui_component::StyledExt as _;
 use native_theme::theme::ResolvedTheme;
@@ -34,8 +34,9 @@ impl SeparatorLook {
 }
 
 /// A solid line across its container, `separator.line_width` thick in
-/// `separator.line_color`, and at least one device pixel thick, as gpui draws
-/// a border: gpui-component's `Separator` draws its line as an
+/// `separator.line_color`, and at least one device pixel thick, a box filled
+/// in the colour, which every gpui renderer draws: gpui-component's
+/// `Separator` draws its line as an
 /// absolute child a literal `px(1.)` thick (separator.rs:78-82), which the
 /// caller's style does not reach.
 ///
@@ -82,22 +83,28 @@ impl Styled for Separator {
 }
 
 impl RenderOnce for Separator {
-    fn render(self, _: &mut Window, cx: &mut App) -> impl IntoElement {
+    fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
         let Some(look) = cx.native().and_then(|n| SeparatorLook::of(n.resolved)) else {
             return self.fallback();
         };
-        // The line is a border, not a box of the line's height: gpui rounds
-        // a box's stated size to the device-pixel grid half toward zero, so
-        // a line thinner than one device pixel (`separator.line_width` 0.5
-        // under the macOS presets, on a 1x display) would take no room and
-        // paint nothing, where it draws a border at least one device pixel
-        // wide (gpui-pre 0.3.9 `src/taffy.rs:416-426`, `src/util.rs:140-151`;
-        // gpui-fast 0.1.10 `src/taffy.rs:417` and the same `util.rs` lines),
-        // as it draws the 0.5 px frames of the same presets.
-        let line = div().flex_none().border_color(look.color);
+        // The line is a box filled in its colour, at least one device pixel
+        // thick. gpui rounds a box's stated size to the device-pixel grid half
+        // toward zero (gpui-pre 0.3.9 `src/taffy.rs:522-526`,
+        // `src/util.rs:140-142`), so a box `separator.line_width` 0.5 thick
+        // (the macOS presets) takes no room on a 1x display; and a line drawn
+        // as a border of a box one device pixel thick is drawn by no gpui
+        // renderer: the Metal, wgpu and DirectX quad shaders take a pixel's
+        // border by the half of the quad its centre lies in, and the one row
+        // of such a quad lies on its middle, which takes the opposite, zero,
+        // border (gpui-pre-apple 0.3.9 `src/shaders.metal:133-137`,
+        // gpui-pre-wgpu 0.3.9 `src/shaders.wgsl:603-611`, gpui-pre-windows
+        // 0.3.9 `src/shaders.hlsl:590-593`). A filled box is drawn by them all.
+        let device_pixel = px(1.0 / window.scale_factor());
+        let thickness = look.width.max(device_pixel);
+        let line = div().flex_none().bg(look.color);
         match self.axis {
-            Axis::Horizontal => line.w_full().border_t(look.width),
-            Axis::Vertical => line.h_full().border_l(look.width),
+            Axis::Horizontal => line.w_full().h(thickness),
+            Axis::Vertical => line.h_full().w(thickness),
         }
         .refine_style(&self.style)
         .debug_selector(|| "native-separator".into())

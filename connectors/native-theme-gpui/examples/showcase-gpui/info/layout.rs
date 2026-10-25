@@ -82,7 +82,7 @@ pub fn native_separator(t: &Theme, r: &ResolvedTheme, room: bool) -> WidgetInfo 
     };
     info
         .variant(SeparatorKind::Horizontal.name())
-        .config("drawn by", "native_theme_gpui::widgets::Separator, a line as thick as the theme states and one device pixel at least, as gpui draws a border: gpui-component's Separator draws its line an absolute child at px(1.), which no caller style reaches (separator.rs, Separator::render_base)")
+        .config("drawn by", "native_theme_gpui::widgets::Separator, a box filled in the line's colour, as thick as the theme states and one device pixel at least: gpui-component's Separator draws its line an absolute child at px(1.), which no caller style reaches (separator.rs, Separator::render_base)")
         .color(claim(
             "line",
             "line_color",

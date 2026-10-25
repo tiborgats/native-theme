@@ -495,7 +495,8 @@ fn grid_lines(info: WidgetInfo, r: &ResolvedTheme, where_drawn: &str) -> WidgetI
         .config(
             "grid",
             format!(
-                "{where_drawn}, list.grid_color at separator.line_width, {}px",
+                "{where_drawn}, list.grid_color at separator.line_width, {}px, one device \
+                 pixel at least",
                 px_text(r.separator.line_width)
             ),
         )
