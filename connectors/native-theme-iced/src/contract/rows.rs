@@ -2264,12 +2264,9 @@ pub(super) const EXPANDER_BORDER_ROWS: &[BorderRow<button::Status>] = &[BorderRo
             } else {
                 color
             },
-            // Where the theme states the frame, framed or not, the header
-            // draws none: the frame is `styles::expander_frame`'s.
-            width: match r.expander.frame_enabled {
-                Some(_) => 0.0,
-                None => r.expander.border.line_width,
-            },
+            // The header draws none: a stated frame is
+            // `styles::expander_frame`'s, and an unstated one is no frame.
+            width: 0.0,
             radius: r.expander.border.corner_radius,
         }
     },

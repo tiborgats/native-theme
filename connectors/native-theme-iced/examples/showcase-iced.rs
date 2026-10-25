@@ -7492,7 +7492,7 @@ const DERIVED_ROWS: &[(&str, &str)] = &[
     ),
     (
         "styles::expander.border",
-        "0 wide where the theme states expander.frame_enabled",
+        "0 wide: the header draws no outline, framed or not",
     ),
     (
         "styles::expander_frame.border",
@@ -8384,16 +8384,30 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "the body's left padding; under the title where unstated".into()
         }
         ("expander", "frame_enabled") => {
-            "one frame round header and body, or none; each header framed where unstated".into()
+            "one frame round header and body where true (styles::expander_frame); none where \
+             false or unstated, the header outlined in neither case"
+                .into()
+        }
+        ("expander", "border.corner_radius_px") if resolved.expander.frame_enabled == Some(true) => {
+            "styles::expander_frame: border.radius; styles::expander: the hovered header's \
+             fill's"
+                .into()
         }
         ("expander", "border.corner_radius_px") => {
-            "styles::expander / styles::expander_frame: border.radius".into()
+            "styles::expander: the hovered header's fill's radius".into()
+        }
+        ("expander", "border.line_width_px") if resolved.expander.frame_enabled == Some(true) => {
+            "styles::expander_frame: border.width".into()
         }
         ("expander", "border.line_width_px") => {
-            "styles::expander / styles::expander_frame: border.width".into()
+            "not drawn: the expander is unframed (expander.frame_enabled false or unstated), \
+             and the header draws no outline"
+                .into()
         }
         ("expander", f) if side(f).is_some() => {
-            "padding_inside_border: the header's padding, the side plus the line width".into()
+            "padding_or: the header's padding, the stated side; button::DEFAULT_PADDING's where \
+             unstated"
+                .into()
         }
         // ---- card ----
         ("card", "border.corner_radius_px") => "styles::container_card: border.radius".into(),
@@ -10260,16 +10274,13 @@ fn expander_header<'a>(
     }
 }
 
-/// An expander header's padding: inside its own border where it draws one;
-/// where the theme states whether the expander is framed the header draws
-/// none (`styles::expander`) -- a framed one sits inside the item's frame,
+/// An expander header's padding: the header draws no outline
+/// (`styles::expander`) -- a framed one sits inside the item's frame,
 /// `styles::expander_frame`, `expander.border.line_width` in -- so the
-/// stated sides are its padding as they are.
+/// stated sides are its padding as they are, `button::DEFAULT_PADDING`'s
+/// where unstated.
 fn expander_header_padding(x: &native_theme::theme::ResolvedExpanderTheme) -> Padding {
-    match x.frame_enabled {
-        Some(_) => native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING),
-        None => native_theme_iced::padding_inside_border(&x.border, button::DEFAULT_PADDING),
-    }
+    native_theme_iced::padding_or(&x.border.padding, button::DEFAULT_PADDING)
 }
 
 /// The controls the three showcases all draw, in the same order, with the

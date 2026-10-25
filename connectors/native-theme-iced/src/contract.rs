@@ -3815,6 +3815,37 @@ fn an_expander_that_states_its_frame_draws_no_header_border() -> native_theme::R
     Ok(())
 }
 
+/// M9x CI item I7 (M9-176): where the theme does not state whether the
+/// expander is framed (macos-tahoe, whose facts give `frame_enabled` as
+/// "(none)", docs/platform-facts.md §2.27), the header draws no outline, the
+/// shape KDE's and egui's expanders have: an outline round the header alone
+/// is no platform's.
+#[cfg(feature = "widgets")]
+#[test]
+fn an_expander_with_no_stated_frame_draws_no_header_border() -> native_theme::Result<()> {
+    let resolved = native_theme::theme::Theme::preset("macos-tahoe")?
+        .into_variant(ColorMode::Light)?
+        .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+    assert_eq!(
+        resolved.expander.frame_enabled, None,
+        "macos-tahoe states whether its expander is framed, so this test proves nothing"
+    );
+    assert!(
+        resolved.expander.border.line_width > 0.0,
+        "macos-tahoe's expander border has no width, so this test proves nothing"
+    );
+    let theme = crate::to_theme(&resolved, "macos-tahoe");
+    let header = styles::expander(&resolved);
+    for &status in BUTTON_STATUSES {
+        assert_eq!(
+            header(&theme, status).border.width,
+            0.0,
+            "an expander with no stated frame outlines its header ({status:?})"
+        );
+    }
+    Ok(())
+}
+
 #[cfg(feature = "widgets")]
 #[test]
 fn a_hovered_split_is_the_splitters_hover_colour() -> native_theme::Result<()> {

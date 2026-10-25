@@ -1881,12 +1881,16 @@ pub fn segment(
 /// `ExpanderTheme` states no `disabled_opacity` of its own, and a widget
 /// without one fades by the defaults' (`docs/inheritance-rules.toml`).
 ///
-/// Where the theme states `expander.frame_enabled`, the header draws no
-/// outline -- its width is 0 -- whichever way it is stated: a framed expander's
-/// frame holds its header and its body together, [`expander_frame`], and an
-/// unframed one has none (`docs/platform-facts.md` §2.27). Where the theme
-/// states nothing the header keeps `expander.border.*`. `shadow` and `snap`
-/// have no native source and come from `button::Style::default()`.
+/// The header draws no outline -- its width is 0 -- whatever the theme states
+/// of `expander.frame_enabled`: a framed expander's frame holds its header and
+/// its body together, [`expander_frame`], an unframed one has none, and where
+/// the theme states nothing (the macOS facts give "(none)",
+/// `docs/platform-facts.md` §2.27) it is drawn unframed, KDE's shape, as the
+/// egui connector draws it: platforms either frame header and body together
+/// (WinUI, libadwaita) or neither, none the header alone. The border's colour
+/// and radius stay `expander.border.*`'s, the radius the hovered fill's.
+/// `shadow` and `snap` have no native source and come from
+/// `button::Style::default()`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn expander(
     resolved: &ResolvedTheme,
@@ -1900,13 +1904,12 @@ pub fn expander(
     // `ExpanderTheme` states no `disabled_opacity`: the defaults' fades it.
     let opacity = resolved.defaults.disabled_opacity;
 
+    // The header draws no outline: a stated frame is `expander_frame`'s, a
+    // stated absence of one is none, and where the theme states nothing no
+    // platform outlines a header alone.
     let border = Border {
         color: to_color(x.border.color),
-        // A stated frame, or a stated absence of one, is not the header's.
-        width: match x.frame_enabled {
-            Some(_) => 0.0,
-            None => x.border.line_width,
-        },
+        width: 0.0,
         radius: Radius::new(x.border.corner_radius),
     };
 

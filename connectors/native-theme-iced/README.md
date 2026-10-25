@@ -219,10 +219,11 @@ let control: Container<'_, Message> = container(row(segments).spacing(sc.separat
 
 An expander's header is a button in `styles::expander`, whose label is the
 disclosure arrow, drawn in `expander_arrow_color(&resolved)` at
-`expander.arrow_icon_size`, and the title. Where the theme states
-`expander.frame_enabled` the header draws no outline: under `Some(true)` one
-frame holds the header and the body, a container in `styles::expander_frame`
-padded by `expander.border.line_width`; under `Some(false)` there is none.
+`expander.arrow_icon_size`, and the title. The header draws no outline:
+where the theme states `expander.frame_enabled = true` one frame holds the
+header and the body, a container in `styles::expander_frame` padded by
+`expander.border.line_width`; under `false`, and where the theme states
+nothing (the macOS facts give none), there is none.
 
 `toggler` lays its track out twice its height, so a platform whose track is
 not — material-3's 52 × 32, adwaita's 46 × 26 — gets a wider one than it
