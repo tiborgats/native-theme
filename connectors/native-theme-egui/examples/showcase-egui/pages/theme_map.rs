@@ -104,6 +104,7 @@ pub(crate) fn show(
                         super::data::one_line_cells(ui);
                         egui_extras::TableBuilder::new(ui)
                             .striped(true)
+                            .cell_layout(super::data::centred_cells())
                             .column(egui_extras::Column::auto())
                             .column(
                                 egui_extras::Column::remainder()

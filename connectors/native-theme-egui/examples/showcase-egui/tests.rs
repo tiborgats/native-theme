@@ -3797,9 +3797,11 @@ fn the_text_role_labels_are_drawn_at_their_weight() {
 /// box, `defaults.line_height` of its scaled size rounded up, where that is taller
 /// ([`table_row`]). There
 /// the header pushes the first body row down by exactly its height: its cells are one line in
-/// that line box, and the rows lie with no spacing between them. At a text-scaling factor of
-/// 1.5 a stated height grows to hold its label, as gpui's table rows grow ([`grown`]), and an
-/// unstated Basic header is a row of the header font at its scaled size.
+/// that line box, each centred in its row (`pages/data.rs`, `centred_cells`), and the rows lie
+/// with no spacing between them, so a first-row cell's centre lies half the header and half a
+/// row below a header cell's, on egui's layout grid ([`CENTRE_SLACK`]). At a text-scaling
+/// factor of 1.5 a stated height grows to hold its label, as gpui's table rows grow
+/// ([`grown`]), and an unstated Basic header is a row of the header font at its scaled size.
 #[test]
 fn the_tables_headers_take_the_themes_header_height() {
     for (preset, factor) in [
@@ -3847,32 +3849,141 @@ fn the_tables_headers_take_the_themes_header_height() {
             l.header_font.size,
             size,
         );
+        let drawn = native_theme_egui::scaled_text_size(
+            l.item_font.size,
+            basic.state().atlas.accessibility(),
+        );
+        let row = table_row(&t, factor, l.row_height, l.item_font.size, drawn);
         for (tab, header_kind, cell_kind) in [
             ("data", "table header", "table cell"),
             ("theme-map", "theme map header", "theme map cell"),
         ] {
             let page = open_scaled(preset, tab, factor);
             let records = page.state().registry.records();
-            let top = |kind: &str| {
+            let centre = |kind: &str| {
                 records
                     .iter()
                     .filter(|r| r.info.kind == kind)
-                    .map(|r| r.rect.top())
+                    .map(|r| r.rect.center().y)
                     .fold(f32::INFINITY, f32::min)
             };
-            let pushed = top(cell_kind) - top(header_kind);
+            let pushed = centre(cell_kind) - centre(header_kind);
+            let want = 0.5 * (header + row);
             assert!(
-                (pushed - header).abs() <= ROW_SLACK,
-                "{preset} at {factor} {tab}: the header pushes the first row {pushed}, want \
-                 {header}"
+                (pushed - want).abs() <= CENTRE_SLACK,
+                "{preset} at {factor} {tab}: the first row's centre lies {pushed} below the \
+                 header's, want {want} (a {header} header over a {row} row)"
             );
         }
     }
 }
 
+/// The painted galley of `text` whose top left lies in one of `within`, where it is drawn.
+fn galley_rect(harness: &Harness<'_, App>, text: &str, within: &[egui::Rect]) -> egui::Rect {
+    let shapes = harness.output().shapes.clone();
+    let found = shapes.iter().find_map(|clipped| match &clipped.shape {
+        egui::Shape::Text(shape)
+            if shape.galley.job.text == text && within.iter().any(|r| r.contains(shape.pos)) =>
+        {
+            Some(shape.galley.rect.translate(shape.pos.to_vec2()))
+        }
+        _ => None,
+    });
+    found.unwrap_or_else(|| panic!("no {text:?} galley was painted"))
+}
+
+/// Every table centres its text in its row's height, as the gpui showcase's table centres each
+/// cell's text in its row (`showcase-gpui/demo.rs`, `files_table`'s cells,
+/// `.h_full().flex().items_center()`): under material-3, whose `list.header_height` is taller
+/// than the header's line, the galleys of the Basic table's "Name", the Data table's "Theme"
+/// and the Theme Map's "Leaf" are each centred in their header row within half a pixel; under
+/// windows-11, whose `list.row_height` is taller than a body line, so are the Data table's and
+/// the Theme Map's first body texts in their row. The Basic header row is its place
+/// (`basic.table.header`); a `TableBuilder`'s header row begins at its table's top, its first
+/// body row under it, each [`table_row`] tall.
+#[test]
+fn the_tables_centre_their_text_in_its_row() {
+    let mut wrong = Vec::new();
+    let mut check = |what: String, galley: egui::Rect, row: egui::Rect| {
+        if (galley.center().y - row.center().y).abs() > 0.5 {
+            wrong.push(format!(
+                "{what}: the text's centre is at {}, the row's at {} ({row:?})",
+                galley.center().y,
+                row.center().y
+            ));
+        }
+    };
+
+    let basic = open_scaled("material-3", "basic", 1.0);
+    let places = basic.state().registry.places();
+    let header = places["basic.table.header"];
+    let name = galley_rect(&basic, "Name", &[places["basic.table.header.name"]]);
+    check("material-3 basic header".to_string(), name, header);
+
+    for (preset, body) in [("material-3", false), ("windows-11", true)] {
+        for (tab, container, header_kind, cell_kind) in [
+            ("data", "Table", "table header", "table cell"),
+            (
+                "theme-map",
+                "theme map",
+                "theme map header",
+                "theme map cell",
+            ),
+        ] {
+            let page = open_scaled(preset, tab, 1.0);
+            let t = page.state().atlas.resolved_for(egui::Theme::Light).clone();
+            let l = &t.list;
+            let stated = native_theme_egui::list_header_height(&t).or(l.row_height);
+            let header_height = table_row(&t, 1.0, stated, l.header_font.size, l.header_font.size);
+            let records = page.state().registry.records();
+            let top = records
+                .iter()
+                .find(|r| r.info.kind == container)
+                .map(|r| r.rect.top())
+                .unwrap_or_else(|| panic!("{preset} {tab}: the table records itself"));
+            let rects = |kind: &str| -> Vec<egui::Rect> {
+                records
+                    .iter()
+                    .filter(|r| r.info.kind == kind)
+                    .map(|r| r.rect)
+                    .collect()
+            };
+            let header =
+                egui::Rect::from_x_y_ranges(0.0..=crate::WINDOW_SIZE.x, top..=top + header_height);
+            let title = if tab == "data" { "Theme" } else { "Leaf" };
+            let galley = galley_rect(&page, title, &rects(header_kind));
+            check(format!("{preset} {tab} header"), galley, header);
+            if body {
+                let (manifest, json) = manifest_and_json(&page);
+                let first = if tab == "data" {
+                    "kde-breeze".to_string()
+                } else {
+                    let [leaf, ..] = crate::info::row_cells(&manifest.rows[0], &json);
+                    leaf
+                };
+                let row_height =
+                    table_row(&t, 1.0, l.row_height, l.item_font.size, l.item_font.size);
+                let row = egui::Rect::from_x_y_ranges(
+                    0.0..=crate::WINDOW_SIZE.x,
+                    header.bottom()..=header.bottom() + row_height,
+                );
+                let galley = galley_rect(&page, &first, &rects(cell_kind));
+                check(format!("{preset} {tab} first row"), galley, row);
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
 /// How far a table row's measured height may lie from its expected one: the layout's float
 /// error, far below a pixel, so a row grown by a wrapped line or the spacing between rows fails.
 const ROW_SLACK: f32 = 0.01;
+
+/// How far a centred cell's measured centre may lie from its expected one: egui rounds the
+/// frame a centred widget is laid in to its layout grid (egui `src/layout.rs:635`, `round_ui`;
+/// `emath::GUI_ROUNDING`), so a centre can move by up to half a grid step, and the distance
+/// between two centres by one.
+const CENTRE_SLACK: f32 = egui::emath::GUI_ROUNDING;
 
 /// The Data table at text scales 1, 1.5 and the largest the Preferences offer
 /// (`chrome::TEXT_SCALE_MAX`), and the Theme Map at 1, lie across the central panel on every
@@ -4016,7 +4127,9 @@ fn the_tables_keep_their_columns_at_the_largest_text_scale() {
                 .iter()
                 .filter(|r| ["theme map header", "theme map cell"].contains(&r.info.kind))
             {
-                let top = (r.rect.top() * 32.0).round() as i64;
+                // by its whole rectangle's centre: each cell is centred in its row
+                // (`pages/data.rs`, `centred_cells`), whatever its height and its clip
+                let top = (r.whole.center().y * 32.0).round() as i64;
                 row = if top == row.0 {
                     (top, row.1 + 1)
                 } else {
@@ -4271,12 +4384,29 @@ fn the_data_and_theme_map_rows_are_the_themes_row_height() {
                 .filter(|r| r.info.kind == kind)
                 .map(|r| r.rect)
                 .collect();
-            let mut tops: Vec<f32> = cells.iter().map(|r| r.top()).collect();
-            tops.sort_by(f32::total_cmp);
-            tops.dedup_by(|a, b| (*a - *b).abs() <= ROW_SLACK);
-            assert!(tops.len() >= 4, "{preset} at {factor} {tab}: rows {tops:?}");
-            let pitches: Vec<f32> = tops.windows(2).map(|pair| pair[1] - pair[0]).collect();
-            if pitches.iter().any(|pitch| (pitch - want).abs() > ROW_SLACK) {
+            // Each row's cells by their whole rectangle's centre: every cell is centred in its
+            // row, whatever its height (`pages/data.rs`, `centred_cells`), and a row the view
+            // cuts at its bottom keeps its whole cells' centres (`Record::whole`).
+            let whole: Vec<egui::Rect> = page
+                .state()
+                .registry
+                .records()
+                .iter()
+                .filter(|r| r.info.kind == kind)
+                .map(|r| r.whole)
+                .collect();
+            let mut centres: Vec<f32> = whole.iter().map(|r| r.center().y).collect();
+            centres.sort_by(f32::total_cmp);
+            centres.dedup_by(|a, b| (*a - *b).abs() <= CENTRE_SLACK);
+            assert!(
+                centres.len() >= 4,
+                "{preset} at {factor} {tab}: rows {centres:?}"
+            );
+            let pitches: Vec<f32> = centres.windows(2).map(|pair| pair[1] - pair[0]).collect();
+            if pitches
+                .iter()
+                .any(|pitch| (pitch - want).abs() > CENTRE_SLACK)
+            {
                 wrong.push(format!(
                     "{preset} at {factor} {tab}: rows {pitches:?} tall, want {want}"
                 ));

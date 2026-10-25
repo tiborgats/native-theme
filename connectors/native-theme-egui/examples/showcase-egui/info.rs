@@ -749,14 +749,18 @@ pub(crate) fn key_value(ui: &mut egui::Ui, key: &str, lines: &[String]) -> egui:
 /// narrower than the two cuts the text short with egui's ellipsis, its whole text on hover
 /// (`pages::data::one_line_cells`), where a wrapping label with the swatch as its first row's
 /// leading space moved a text with no room on that row onto rows the one-line cell clips away
-/// (epaint 0.36.2 `src/text/text_layout.rs:668-684`, `line_break`).
+/// (epaint 0.36.2 `src/text/text_layout.rs:668-684`, `line_break`). The two are laid out in the
+/// cell's whole height, centred down it as a plain cell's text is
+/// (`pages::data::centred_cells`), where `ui.horizontal` laid them in a row `interact_size.y`
+/// tall (egui 0.36.2 `src/ui.rs:2376-2379`), at some text scales taller than the table's row,
+/// which put the swatch and its text below the row's centre.
 pub(crate) fn swatch_cell(
     ui: &mut egui::Ui,
     t: &native_theme::theme::ResolvedTheme,
     colour: egui::Color32,
     text: egui::RichText,
 ) -> egui::Response {
-    ui.horizontal(|ui| {
+    ui.with_layout(crate::pages::data::centred_cells(), |ui| {
         let size = egui::Vec2::splat(crate::SWATCH_SIZE);
         let (square, _) = ui.allocate_exact_size(size, egui::Sense::hover());
         paint_swatch(ui, t, square, colour);

@@ -50,6 +50,7 @@ pub(crate) fn show(
                 .resizable(true)
                 .vscroll(false)
                 .sense(egui::Sense::click())
+                .cell_layout(centred_cells())
                 .column(Column::auto().resizable(true))
                 .column(Column::remainder().clip(true))
                 .header(heights.header, |mut header| {
@@ -152,7 +153,8 @@ pub(crate) fn show(
 /// line. The cells draw no padding and no line inside the row, and each is one line in its
 /// line box, `defaults.line_height` of its font's drawn size ([`one_line_cells`]), so a row is
 /// these heights tall, except a stated one shorter than its line box at a text scale of 1 or
-/// less, which grows to hold its line (egui_extras `layout.rs:160-168`).
+/// less, which grows to hold its line (egui_extras `layout.rs:160-168`); in a row taller than
+/// its line the text is centred ([`centred_cells`]).
 pub(crate) struct TableRows {
     pub(crate) body: f32,
     pub(crate) header: f32,
@@ -210,6 +212,18 @@ impl TableRows {
 pub(crate) fn one_line_cells(ui: &mut egui::Ui) {
     ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
     ui.spacing_mut().item_spacing.y = 0.0;
+}
+
+/// The layout of a table's cells, the header's and the body's: left to right, each cell's
+/// content centred down the row's height, as the gpui showcase's table centres each cell's text
+/// in its row (`showcase-gpui/demo.rs`, `files_table`'s cells, `.h_full().flex().items_center()`)
+/// and the Basic table's painted cells are (`pages/basic.rs`, `paint_cell_text`). A horizontal
+/// layout centred on its cross axis gives each widget the cell's whole height and centres it
+/// there (egui `src/layout.rs:604-623`), where the table's default, the enclosing top-down
+/// layout (egui_extras `table.rs:260`), put the text at the row's top and left a stated
+/// `list.header_height` or `list.row_height` taller than the line blank below it.
+pub(crate) fn centred_cells() -> egui::Layout {
+    egui::Layout::left_to_right(egui::Align::Center)
 }
 
 /// The grids' cells, each recorded with the grid's seam.

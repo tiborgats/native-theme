@@ -542,6 +542,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Showcases (egui)**: under a theme that states no `button.checked_background`, Widget Info for the Basic page's "On" toggle names, under Not themeable, the leaf its fill is drawn in, `button.active_background`, or `button.hover_background` where that is unstated too; where the theme states no `button.checked_text_color`, it says the text is `button.active_text_color`.
 - **Showcases (egui)**: the inspector's Theme tab draws its section names (Theme, Notes, Fonts, Window, Fields left at egui's own value) as the Widget tab draws its own, semibold at the side panel's text size, where they were drawn in the theme's section-heading role (under catppuccin-mocha 11 px at weight 700 in a 14 px panel), so switching tabs changed the heading style.
 - **Showcases (egui)**: the status bar keeps the shown Widget Info's title at its right end and cuts the environment short with an ellipsis in the room left, its whole text on hover, as the gpui showcase's does, where from a text scale of about 1.25 (windows-11 with a substituted family) the environment pushed the title and then itself past the window.
+- **Showcases (egui)**: the Data and Theme Map tables centre each cell's text down its row, as the gpui showcase's table and the Basic table centre theirs, where the text sat at the row's top and left the rest of the row blank below it: under material-3 the 56 px headers (`list.header_height`), under windows-11 the 40 px headers and rows (`list.row_height`).
 
 ## [0.6.1] - 2026-10-09
 
