@@ -194,6 +194,14 @@ impl Glyph {
             raster @ Self::Raster(..) => raster,
         }
     }
+
+    /// The icon's name where the glyph is pixels.
+    fn raster_name(&self) -> Option<&'static str> {
+        match self {
+            Self::Svg(_) => None,
+            Self::Raster(name, ..) => Some(name),
+        }
+    }
 }
 
 impl RenderOnce for Glyph {
@@ -7059,11 +7067,21 @@ fn native_expander(
                 let listed = elements::expander_item(id, ix);
                 let shown = if is_open { &open_glyph } else { &glyph };
                 let arrow = shown.clone().map(|glyph| {
+                    // Which set's pixels the arrow shows, for the self-tests:
+                    // an image's own selector names its icon alone, which
+                    // the Number input's steps show too.
+                    let shows = glyph.raster_name().map(|name| {
+                        div()
+                            .absolute()
+                            .inset_0()
+                            .debug_selector(move || format!("{id}-arrow-{ix}-{name}"))
+                    });
                     div()
                         .relative()
                         .flex_none()
                         .debug_selector(move || format!("{id}-arrow-{ix}"))
                         .child(glyph.rotate(gpui::percentage(turn)))
+                        .children(shows)
                         .children(listed.map(|[_, _, arrow, _]| elements::record(ui, arrow)))
                 });
                 let title = text_in(n, &e.font, title)

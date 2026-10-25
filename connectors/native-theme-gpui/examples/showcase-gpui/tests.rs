@@ -17695,12 +17695,14 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
         "the closed item's arrow at {closed:?} is not the set's ChevronRight image: {image:?}"
     );
     // The open item's arrow is the set's ChevronDown, pixels do not turn
-    // (part A's review, item 13(e)): both arrows ChevronRight fails here.
+    // (part A's review, item 13(e)): both arrows ChevronRight fails here. The
+    // arrow names the pixels it shows (`demo::native_expander`), as the
+    // Number input's steps show a ChevronDown image too.
     let opened = bounds_of(&mut cx, "basic-expander-arrow-0");
-    let image = raster_bounds(&mut cx, "raster-ChevronDown");
+    let shows = cx.debug_bounds("basic-expander-arrow-0-ChevronDown");
     assert!(
-        image.is_some_and(|image| within(image, opened)),
-        "the open item's arrow at {opened:?} is not the set's ChevronDown image: {image:?}"
+        shows.is_some_and(|shows| within(shows, opened)),
+        "the open item's arrow at {opened:?} does not show the set's ChevronDown image: {shows:?}"
     );
     let number = bounds_of(&mut cx, "basic-number");
     let up = raster_bounds(&mut cx, "raster-ChevronUp");
