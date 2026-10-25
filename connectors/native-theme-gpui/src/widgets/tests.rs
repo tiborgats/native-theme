@@ -1327,6 +1327,38 @@ fn the_separator_is_the_stated_thickness(cx: &mut TestAppContext) {
     assert_eq!(look.color, c(r.separator.line_color));
 }
 
+/// A line thinner than a device pixel -- macos-tahoe's `separator.line_width`
+/// 0.5, on a 1x display -- is drawn one device pixel thick, as gpui draws a
+/// border, where a box of its height took no room (M9-165).
+#[gpui::test]
+fn a_separator_thinner_than_a_device_pixel_is_one_device_pixel(cx: &mut TestAppContext) {
+    let r = resolved("macos-tahoe", ColorMode::Light);
+    assert!(
+        r.separator.line_width > 0.0 && r.separator.line_width < 1.0,
+        "macos-tahoe's separator.line_width is {}, not under one pixel, so this case tests none",
+        r.separator.line_width
+    );
+    let cx = window_with(
+        cx,
+        Some(("macos-tahoe", ColorMode::Light)),
+        Box::new(|_, _| {
+            div()
+                .w(px(200.))
+                .child(Separator::horizontal())
+                .into_any_element()
+        }),
+    );
+    let handle = cx.update(|window, _| window.window_handle());
+    cx.simulate_window_scale_factor_change(handle, 1.0);
+    redraw(cx);
+    let line = bounds(cx, "native-separator");
+    assert_eq!(
+        (line.size.width, line.size.height),
+        (px(200.), px(1.)),
+        "the 0.5 px separator at scale 1 is not one device pixel thick"
+    );
+}
+
 /// M6-21: a checkbox's or a radio's label is drawn in `checkbox.font`'s
 /// family and style, as in its size and weight, where the theme states
 /// them; a style is gpui's of the same name.

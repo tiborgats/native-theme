@@ -1744,7 +1744,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.rule",
         "separator.line_color",
-        "gpui: the page row's rule, a box laid under the tab strip, its fill (demo::native_tab_bar)",
+        "gpui: the page row's rule, a widgets::Separator laid under the tab strip, its line's colour (demo::native_tab_bar)",
     ),
     (
         "basic.table",
@@ -1754,7 +1754,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "chrome.page_tabs.rule",
         "separator.line_width_px",
-        "gpui: the page row's rule, a box laid under the tab strip, its height (demo::native_tab_bar)",
+        "gpui: the page row's rule, a widgets::Separator laid under the tab strip, its line's thickness, one device pixel at least (demo::native_tab_bar)",
     ),
     (
         "chrome.menu.",

@@ -17781,3 +17781,34 @@ fn the_window_frame_takes_the_installed_themes_mode(cx: &mut TestAppContext) {
         );
     }
 }
+
+/// Under macos-tahoe, whose `separator.line_width` is 0.5, on a 1x display
+/// -- the macOS runners' -- the Basic page's Separator and the page row's
+/// rule are one device pixel thick, as gpui draws the preset's 0.5 px
+/// frames, where they took no room and painted nothing (M9-165).
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn a_hairline_separator_is_drawn_at_scale_one(cx: &mut TestAppContext) {
+    let (showcase, root, mut cx) = open(cx, WINDOW_SIZE);
+    use_preset(&mut cx, &showcase, "macos-tahoe");
+    let width = read(&mut cx, &showcase, |_this, cx| {
+        native_value(cx, |n| n.resolved.separator.line_width)
+    });
+    assert!(
+        width.is_some_and(|w| w > 0.0 && w < 1.0),
+        "macos-tahoe's separator.line_width is {width:?}, not under one pixel"
+    );
+    cx.simulate_window_scale_factor_change(root, 1.0);
+    cx.run_until_parked();
+    draw(&mut cx);
+    let drawn = read(&mut cx, &showcase, |this, cx| {
+        this.info_ui.read(cx).layout_drawn()
+    });
+    for line in ["basic.separator.line", "chrome.page_tabs.rule"] {
+        assert_eq!(
+            drawn.get(line).map(|b| b.size.height),
+            Some(px(1.)),
+            "{line} is not one device pixel thick at scale 1"
+        );
+    }
+}

@@ -34,7 +34,8 @@ impl SeparatorLook {
 }
 
 /// A solid line across its container, `separator.line_width` thick in
-/// `separator.line_color`: gpui-component's `Separator` draws its line as an
+/// `separator.line_color`, and at least one device pixel thick, as gpui draws
+/// a border: gpui-component's `Separator` draws its line as an
 /// absolute child a literal `px(1.)` thick (separator.rs:78-82), which the
 /// caller's style does not reach.
 ///
@@ -85,10 +86,18 @@ impl RenderOnce for Separator {
         let Some(look) = cx.native().and_then(|n| SeparatorLook::of(n.resolved)) else {
             return self.fallback();
         };
-        let line = div().flex_none().bg(look.color);
+        // The line is a border, not a box of the line's height: gpui rounds
+        // a box's stated size to the device-pixel grid half toward zero, so
+        // a line thinner than one device pixel (`separator.line_width` 0.5
+        // under the macOS presets, on a 1x display) would take no room and
+        // paint nothing, where it draws a border at least one device pixel
+        // wide (gpui-pre 0.3.9 `src/taffy.rs:416-426`, `src/util.rs:140-151`;
+        // gpui-fast 0.1.10 `src/taffy.rs:417` and the same `util.rs` lines),
+        // as it draws the 0.5 px frames of the same presets.
+        let line = div().flex_none().border_color(look.color);
         match self.axis {
-            Axis::Horizontal => line.w_full().h(look.width),
-            Axis::Vertical => line.h_full().w(look.width),
+            Axis::Horizontal => line.w_full().border_t(look.width),
+            Axis::Vertical => line.h_full().border_l(look.width),
         }
         .refine_style(&self.style)
         .debug_selector(|| "native-separator".into())

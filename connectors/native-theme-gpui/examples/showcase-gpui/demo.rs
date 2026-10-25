@@ -2109,7 +2109,9 @@ fn native_tab_bar(
         .info(ui, info_id, bar_info)
         // The page row's rule, `separator.line_width` thick in
         // `separator.line_color`, under the strip: the wrapper keeps the room
-        // below it, where the rule is laid.
+        // below it, where the rule is laid. The line is `widgets::Separator`'s,
+        // so a line thinner than a device pixel is drawn one device pixel
+        // thick, where a box of its height takes none.
         .when(kind == TabBarKind::Pages, |bar| {
             let s = &n.resolved.separator;
             let width = px(s.line_width);
@@ -2119,8 +2121,7 @@ fn native_tab_bar(
                     .left_0()
                     .right_0()
                     .bottom(px(-s.line_width))
-                    .h(width)
-                    .bg(info::stated(s.line_color))
+                    .child(widgets::Separator::horizontal())
                     .child(elements::record(ui, "chrome.page_tabs.rule")),
             )
         })
