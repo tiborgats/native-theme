@@ -528,7 +528,8 @@ a gap, is no border a `Style` can draw: wrap the field in
 `focus_ring(&resolved, corner_radius, field)`, which draws it round the field
 while the field holds the focus, `defaults.focus_ring_width` wide,
 `defaults.focus_ring_offset` out from its edge, in `defaults.focus_ring_color`,
-as the egui connector does; the focused field's own line then takes
+as the egui connector does, and none while the window has lost the OS's
+keyboard focus; the focused field's own line then takes
 `input.focus_border_color` where the theme states one. The wrapper learns the
 focus from iced's `Focusable` operation, so it rings a text input, a text
 editor or a widget that hands it one (`iced_aw`'s `NumberInput`), not a

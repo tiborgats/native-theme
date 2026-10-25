@@ -7,7 +7,7 @@ use iced_core::widget::operation::Focusable;
 use iced_core::widget::{Id, Operation, Tree, tree};
 use iced_core::{
     Background, Border, Clipboard, Color, Element, Event, Length, Padding, Rectangle, Shell, Size,
-    Theme, Vector, mouse, overlay, renderer,
+    Theme, Vector, mouse, overlay, renderer, window,
 };
 use native_theme::theme::ResolvedTheme;
 
@@ -78,9 +78,50 @@ impl RingLook {
     }
 }
 
-/// Whether a widget [`Probe`] went through holds the keyboard focus.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct Focus(bool);
+/// What the wrapper keeps between frames: whether a widget [`Probe`] went
+/// through holds the keyboard focus, and whether the window holds the OS's
+/// keyboard focus, which an iced field keeps its own focus through
+/// (iced_widget 0.14.2 `src/text_input.rs:1313-1317`, `:1501-1503`), where
+/// the platforms show no ring in a window that has lost it, as the egui
+/// connector's ring shows none (its `plugin.rs`, `paint_focus_ring`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Focus {
+    field: bool,
+    window: bool,
+}
+
+impl Default for Focus {
+    /// No field focused, in a window taken to hold the focus until iced says
+    /// it lost it.
+    fn default() -> Self {
+        Self {
+            field: false,
+            window: true,
+        }
+    }
+}
+
+impl Focus {
+    /// Whether the ring is drawn.
+    fn ringed(self) -> bool {
+        self.field && self.window
+    }
+}
+
+/// Whether `event` can move the keyboard focus, so [`FocusRing`] asks the
+/// field again after it: a mouse button, a key, a touch, or a window event.
+/// A pointer move or a scroll cannot, and asking on every one would have
+/// iced_aw's `NumberInput` rebuild its step elements on each (iced_aw 0.14.1
+/// `src/widget/number_input.rs:604-640`).
+fn may_move_focus(event: &Event) -> bool {
+    match event {
+        Event::Mouse(mouse::Event::ButtonPressed(_) | mouse::Event::ButtonReleased(_))
+        | Event::Keyboard(_)
+        | Event::Touch(_)
+        | Event::Window(_) => true,
+        Event::Mouse(_) | Event::InputMethod(_) => false,
+    }
+}
 
 /// The operation that asks the wrapped field whether it is focused, through
 /// iced's own [`Focusable`] (the text input and the text editor report
@@ -101,11 +142,13 @@ impl Operation for Probe {
     }
 }
 
-/// `content`, and round it while it holds the keyboard focus, the ring of
-/// `look` ([`crate::focus_ring()`]). Its tree keeps whether the content is
-/// focused, learnt by [`Probe`] each time the tree is laid out, updated or
-/// operated on, with the content's tree its one child; every other method is
-/// the content's.
+/// `content`, and round it while it holds the keyboard focus in a window
+/// that holds the OS's, the ring of `look` ([`crate::focus_ring()`]). Its
+/// tree keeps the two ([`Focus`]), the content's focus learnt by [`Probe`]
+/// each time the tree is laid out or operated on and after each update by an
+/// event that can move it ([`may_move_focus`]), the window's from iced's
+/// `window::Event::Focused` and `Unfocused`, with the content's tree its one
+/// child; every other method is the content's.
 pub(crate) struct FocusRing<'a, Message, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     look: RingLook,
@@ -117,10 +160,7 @@ impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
     }
 
     /// Asks the content in `tree` laid out as `layout` whether it holds the
-    /// focus, and keeps the answer in the wrapper's state. `tree::State`'s
-    /// own downcasts panic on a state of another type (iced_core 0.14.0
-    /// `src/widget/tree.rs:231-241`); this reads the state through its
-    /// variant and leaves a state of another type alone.
+    /// focus, and keeps the answer in the wrapper's state ([`focus_mut`]).
     fn learn(&mut self, tree: &mut Tree, layout: Layout<'_>, renderer: &Renderer)
     where
         Renderer: iced_core::Renderer,
@@ -132,18 +172,27 @@ impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
         self.content
             .as_widget_mut()
             .operate(child, layout, renderer, &mut probe);
-        if let tree::State::Some(state) = &mut tree.state
-            && let Some(focus) = state.downcast_mut::<Focus>()
-        {
-            *focus = Focus(probe.focused);
+        if let Some(focus) = focus_mut(tree) {
+            focus.field = probe.focused;
         }
     }
 }
 
-/// Whether the wrapper's state in `tree` says its content is focused.
-fn focused(tree: &Tree) -> bool {
+/// The wrapper's state in `tree`. `tree::State`'s own downcasts panic on a
+/// state of another type (iced_core 0.14.0 `src/widget/tree.rs:231-241`);
+/// this reads it through its variant, `None` for another type.
+fn focus_mut(tree: &mut Tree) -> Option<&mut Focus> {
+    match &mut tree.state {
+        tree::State::Some(state) => state.downcast_mut::<Focus>(),
+        tree::State::None => None,
+    }
+}
+
+/// Whether the wrapper's state in `tree` says the ring is drawn: its content
+/// focused, in a window that holds the focus.
+fn ringed(tree: &Tree) -> bool {
     match &tree.state {
-        tree::State::Some(state) => state.downcast_ref::<Focus>().is_some_and(|f| f.0),
+        tree::State::Some(state) => state.downcast_ref::<Focus>().is_some_and(|f| f.ringed()),
         tree::State::None => false,
     }
 }
@@ -209,7 +258,7 @@ where
         self.content
             .as_widget()
             .draw(child, renderer, theme, style, layout, cursor, viewport);
-        if focused(tree)
+        if ringed(tree)
             && let Some((quad, background)) = self.look.quad(layout.bounds())
         {
             renderer.fill_quad(quad, background);
@@ -248,9 +297,21 @@ where
         self.content.as_widget_mut().update(
             child, event, layout, cursor, renderer, clipboard, shell, viewport,
         );
-        let was = focused(tree);
+        if !may_move_focus(event) {
+            return;
+        }
+        let was = ringed(tree);
+        if let Event::Window(window_event) = event
+            && let Some(focus) = focus_mut(tree)
+        {
+            match window_event {
+                window::Event::Focused => focus.window = true,
+                window::Event::Unfocused => focus.window = false,
+                _ => {}
+            }
+        }
         self.learn(tree, layout, renderer);
-        if focused(tree) != was {
+        if ringed(tree) != was {
             shell.request_redraw();
         }
     }
@@ -484,5 +545,188 @@ mod tests {
             assert_eq!(ring_look(&r, 4.0), None, "{width} at {offset}");
             assert!(drawn(&r, true).is_empty(), "{width} at {offset}");
         }
+    }
+
+    /// A 100 by 30 field that keeps its focus in its own tree state, as a
+    /// text input does, takes it on a left press and reports it to an
+    /// operation.
+    struct Clicked;
+
+    impl Widget<(), Theme, Recorder> for Clicked {
+        fn tag(&self) -> tree::Tag {
+            tree::Tag::of::<Held>()
+        }
+
+        fn state(&self) -> tree::State {
+            tree::State::new(Held(false))
+        }
+
+        fn size(&self) -> Size<Length> {
+            Size::new(Length::Fixed(100.0), Length::Fixed(30.0))
+        }
+
+        fn layout(&mut self, _: &mut Tree, _: &Recorder, _: &layout::Limits) -> layout::Node {
+            layout::Node::new(Size::new(100.0, 30.0))
+        }
+
+        fn draw(
+            &self,
+            _: &Tree,
+            _: &mut Recorder,
+            _: &Theme,
+            _: &renderer::Style,
+            _: Layout<'_>,
+            _: mouse::Cursor,
+            _: &Rectangle,
+        ) {
+        }
+
+        fn update(
+            &mut self,
+            tree: &mut Tree,
+            event: &Event,
+            _: Layout<'_>,
+            _: mouse::Cursor,
+            _: &Recorder,
+            _: &mut dyn Clipboard,
+            _: &mut Shell<'_, ()>,
+            _: &Rectangle,
+        ) {
+            if let Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left)) = event {
+                tree.state.downcast_mut::<Held>().focus();
+            }
+        }
+
+        fn operate(
+            &mut self,
+            tree: &mut Tree,
+            layout: Layout<'_>,
+            _: &Recorder,
+            operation: &mut dyn Operation,
+        ) {
+            operation.focusable(None, layout.bounds(), tree.state.downcast_mut::<Held>());
+        }
+    }
+
+    /// `element` laid out in `tree` at the origin: its node.
+    fn laid(element: &mut Element<'_, (), Theme, Recorder>, tree: &mut Tree) -> layout::Node {
+        element.as_widget_mut().layout(
+            tree,
+            &Recorder::default(),
+            &layout::Limits::new(Size::ZERO, Size::new(500.0, 100.0)),
+        )
+    }
+
+    /// `event` handed to `element` in `tree`, laid out as `node`.
+    fn send(
+        element: &mut Element<'_, (), Theme, Recorder>,
+        tree: &mut Tree,
+        node: &layout::Node,
+        event: Event,
+    ) {
+        let mut messages = Vec::new();
+        let mut shell = Shell::new(&mut messages);
+        element.as_widget_mut().update(
+            tree,
+            &event,
+            Layout::new(node),
+            mouse::Cursor::Unavailable,
+            &Recorder::default(),
+            &mut iced_core::clipboard::Null,
+            &mut shell,
+            &Rectangle::new(iced_core::Point::ORIGIN, Size::new(500.0, 100.0)),
+        );
+    }
+
+    /// The quads `element` in `tree`, laid out as `node`, draws.
+    fn painted(
+        element: &Element<'_, (), Theme, Recorder>,
+        tree: &Tree,
+        node: &layout::Node,
+    ) -> usize {
+        let mut recorder = Recorder::default();
+        element.as_widget().draw(
+            tree,
+            &mut recorder,
+            &Theme::Light,
+            &renderer::Style {
+                text_color: Color::BLACK,
+            },
+            Layout::new(node),
+            mouse::Cursor::Unavailable,
+            &Rectangle::new(iced_core::Point::ORIGIN, Size::new(500.0, 100.0)),
+        );
+        recorder.0.len()
+    }
+
+    /// The ring follows the focus as `update` moves it: under windows-11 a
+    /// field focused by a left press is ringed, a pointer move asks nothing
+    /// and changes nothing, and while the window has lost the OS's focus
+    /// (`window::Event::Unfocused`) no ring is drawn though the field keeps
+    /// its own, until the window has it back (`Focused`).
+    #[test]
+    fn the_ring_follows_the_focus_through_update() {
+        let r = resolved("windows-11", ColorMode::Light);
+        let mut element: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Clicked));
+        let mut tree = Tree::new(&element);
+        let node = laid(&mut element, &mut tree);
+        assert_eq!(painted(&element, &tree, &node), 0, "unfocused at first");
+        let moved = Event::Mouse(mouse::Event::CursorMoved {
+            position: iced_core::Point::new(5.0, 5.0),
+        });
+        send(&mut element, &mut tree, &node, moved);
+        assert_eq!(
+            painted(&element, &tree, &node),
+            0,
+            "a pointer move rings nothing"
+        );
+        let press = Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left));
+        send(&mut element, &mut tree, &node, press);
+        assert_eq!(painted(&element, &tree, &node), 1, "focused by the press");
+        send(
+            &mut element,
+            &mut tree,
+            &node,
+            Event::Window(window::Event::Unfocused),
+        );
+        assert_eq!(
+            painted(&element, &tree, &node),
+            0,
+            "the window lost the focus"
+        );
+        send(
+            &mut element,
+            &mut tree,
+            &node,
+            Event::Window(window::Event::Focused),
+        );
+        assert_eq!(painted(&element, &tree, &node), 1, "the window has it back");
+    }
+
+    /// Where the view replaces the field with another widget, the ring asks
+    /// the new one: a focused field's ring goes once the tree holds an
+    /// unfocused widget of another kind in its place.
+    #[test]
+    fn a_replaced_field_is_asked_again() {
+        let r = resolved("windows-11", ColorMode::Light);
+        let mut element: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Field { focused: true }));
+        let mut tree = Tree::new(&element);
+        let node = laid(&mut element, &mut tree);
+        assert_eq!(
+            painted(&element, &tree, &node),
+            1,
+            "the focused field is ringed"
+        );
+        let mut replaced: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Clicked));
+        tree.diff(&replaced);
+        let node = laid(&mut replaced, &mut tree);
+        assert_eq!(
+            painted(&replaced, &tree, &node),
+            0,
+            "the unfocused widget in the field's place is ringed"
+        );
     }
 }

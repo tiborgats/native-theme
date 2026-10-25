@@ -570,7 +570,7 @@ reason = "egui's `TextEdit::frame` paints the frame it is handed as given, and e
 connector = ["iced", "gpui"]
 name = "register_focus_shape"
 kind = "absent"
-reason = "the egui connector's install plugin paints every focus ring itself, round the widget's rect, so a widget of another shape tells it the outline (connectors/native-theme-egui/src/plugin.rs, `register_focus_shape`'s doc; the egui spec §6.18). iced draws no focus ring (a focused widget shows its `Focused` style's border), and gpui-component draws its own in `ThemeColor::ring`, which `to_theme` writes (connectors/native-theme-gpui/src/colors.rs:295)"
+reason = "the egui connector's install plugin paints every focus ring itself, round the widget's rect, so a widget of another shape tells it the outline (connectors/native-theme-egui/src/plugin.rs, `register_focus_shape`'s doc; the egui spec §6.18). iced's ring is drawn by `focus_ring` round the one field it wraps, whose bounds are the outline (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc), or as the inset ring's `Focused` border, so no shape needs telling, and gpui-component draws its own in `ThemeColor::ring`, which `to_theme` writes (connectors/native-theme-gpui/src/colors.rs:295)"
 
 [[exception]]
 connector = ["iced", "gpui"]
