@@ -6562,6 +6562,71 @@ fn manifest_and_json(harness: &Harness<'_, App>) -> (Manifest, serde_json::Value
     (manifest, json)
 }
 
+/// Whether `text` holds a clause label of the archived egui connector spec's §13 test table,
+/// a `T`, digits and an opening parenthesis (`T18(a)`), the form of `mapping.toml`'s
+/// `tested_by`.
+fn names_a_clause(text: &str) -> bool {
+    text.match_indices('T').any(|(at, _)| {
+        let rest = text.get(at + 1..).unwrap_or_default();
+        let digits = rest.chars().take_while(char::is_ascii_digit).count();
+        digits > 0 && rest.get(digits..).is_some_and(|tail| tail.starts_with('('))
+    })
+}
+
+/// The names of the `#[test]` functions in `source`, a Rust file's text.
+fn test_functions(source: &str) -> BTreeSet<String> {
+    let mut names = BTreeSet::new();
+    let mut test = false;
+    for line in source.lines().map(str::trim) {
+        if line == "#[test]" {
+            test = true;
+        } else if let Some(rest) = line.strip_prefix("fn ").filter(|_| test) {
+            names.insert(
+                rest.split(['(', '<'])
+                    .next()
+                    .unwrap_or_default()
+                    .to_string(),
+            );
+            test = false;
+        }
+    }
+    names
+}
+
+/// The Theme Map says what checks a per-call route in words a reader can follow: no row's text
+/// holds a §13 clause label such as `T18(a)`, which only the archived spec explains, and every
+/// row that `mapping.toml` checks through `tested_by` names a test of the connector by its
+/// function name, one of the `#[test]` functions of `src/install_tests.rs`; so does each
+/// clause's text Widget Info's route line takes (`info::checked_by`).
+#[test]
+fn the_theme_map_names_the_tests_that_check_a_per_call_route() {
+    let harness = open_page(Page::ThemeMap, egui::Theme::Light);
+    let (manifest, json) = manifest_and_json(&harness);
+    let tests = test_functions(include_str!("../../src/install_tests.rs"));
+    assert!(!tests.is_empty(), "no test function was read");
+    let mut wrong = Vec::new();
+    for row in &manifest.rows {
+        let cells = crate::info::row_cells(row, &json);
+        if let Some(cell) = cells.iter().find(|cell| names_a_clause(cell)) {
+            wrong.push(format!("{}: {cell:?} names a clause", row.leaf));
+        }
+        if let Some(label) = &row.tested_by {
+            let sinks = &cells[3];
+            if !tests.iter().any(|name| sinks.contains(name.as_str())) {
+                wrong.push(format!(
+                    "{} ({label}): {sinks:?} names no connector test",
+                    row.leaf
+                ));
+            }
+            let line = crate::info::checked_by(label);
+            if names_a_clause(&line) || !tests.iter().any(|name| line.contains(name.as_str())) {
+                wrong.push(format!("{label}: Widget Info's route reads {line:?}"));
+            }
+        }
+    }
+    assert!(wrong.is_empty(), "{}", wrong.join("\n"));
+}
+
 #[test]
 fn leaving_every_target_keeps_what_is_shown() {
     let mut harness = open_page(Page::Buttons, egui::Theme::Light);

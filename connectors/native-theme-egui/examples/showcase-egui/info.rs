@@ -47,9 +47,83 @@ pub(crate) struct Row {
     pub verdict: Verdict,
     pub sinks: Vec<Sink>,
     pub tested_by: Option<String>,
+    /// What checks the route a `tested_by` row names, in words a reader can follow
+    /// ([`checked_by`]).
+    pub checked_by: Option<String>,
     pub sub_tag: Option<String>,
     pub upstream: Option<String>,
     pub exceptions: Vec<(String, String)>,
+}
+
+/// The connector's test file whose `#[test]` functions hold the §13 clauses `mapping.toml`'s
+/// `tested_by` names, and its path in the connector.
+const CONNECTOR_TESTS: (&str, &str) = (
+    include_str!("../../src/install_tests.rs"),
+    "src/install_tests.rs",
+);
+
+/// What checks a per-call route whose `mapping.toml` row names `clause` in `tested_by`, a test
+/// clause of the archived egui connector spec's §13 table (`T18(a)`;
+/// `docs/archive/todo_v0.6.0_egui-connector-spec.md`): "checked by native-theme-egui's test
+/// <name> (src/install_tests.rs)", naming the `#[test]` functions of the connector's
+/// `src/install_tests.rs` that hold the clause, found by it as the file names them, a function
+/// name that begins with the clause in lower case (`t18_a_`) or a doc comment whose first line
+/// begins with it (`T14 (b)`). Where the file holds none, the clause and the spec that
+/// defines it.
+pub(crate) fn checked_by(clause: &str) -> String {
+    let (source, path) = CONNECTOR_TESTS;
+    let parts = clause
+        .strip_prefix('T')
+        .and_then(|rest| rest.strip_suffix(')'))
+        .and_then(|rest| rest.split_once('('));
+    let names = parts.map_or_else(Vec::new, |(number, letter)| {
+        clause_tests(
+            source,
+            &format!("t{number}_{letter}_"),
+            &format!("T{number} ({letter})"),
+        )
+    });
+    match names.as_slice() {
+        [] => format!(
+            "checked by the egui connector spec's §13 test {clause} \
+             (docs/archive/todo_v0.6.0_egui-connector-spec.md)"
+        ),
+        [one] => format!("checked by native-theme-egui's test {one} ({path})"),
+        [first @ .., last] => format!(
+            "checked by native-theme-egui's tests {} and {last} ({path})",
+            first.join(", ")
+        ),
+    }
+}
+
+/// The `#[test]` functions of `source` whose name begins with `prefix` or whose doc comment's
+/// first line begins with `doc`, in the file's order.
+fn clause_tests<'a>(source: &'a str, prefix: &str, doc: &str) -> Vec<&'a str> {
+    let mut names = Vec::new();
+    let (mut first_doc, mut in_doc, mut test) = (None, false, false);
+    for line in source.lines().map(str::trim) {
+        if let Some(text) = line.strip_prefix("///") {
+            if !in_doc {
+                first_doc = Some(text.trim_start());
+            }
+            in_doc = true;
+            continue;
+        }
+        in_doc = false;
+        if line == "#[test]" {
+            test = true;
+        } else if line.starts_with("#[") {
+        } else if let Some(rest) = line.strip_prefix("fn ") {
+            let name = rest.split(['(', '<']).next().unwrap_or_default();
+            if test && (name.starts_with(prefix) || first_doc.is_some_and(|d| d.starts_with(doc))) {
+                names.push(name);
+            }
+            (first_doc, test) = (None, false);
+        } else {
+            (first_doc, test) = (None, false);
+        }
+    }
+    names
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -135,11 +209,13 @@ impl Manifest {
                         .collect()
                 })
                 .unwrap_or_default();
+            let tested_by = string("tested_by");
             rows.push(Row {
                 leaf: key,
                 verdict,
                 sinks,
-                tested_by: string("tested_by"),
+                checked_by: tested_by.as_deref().map(checked_by),
+                tested_by,
                 sub_tag: string("sub_tag"),
                 upstream: string("upstream"),
                 exceptions,
@@ -354,7 +430,8 @@ fn seam_place(seam: &Seam) -> String {
 enum Route {
     /// A style or frame field: where, and the field.
     Sink(String),
-    /// No `Style` or `Frame` field: the call site applies it, as the named test checks.
+    /// No `Style` or `Frame` field: the call site applies it, as the named tests check
+    /// ([`checked_by`]).
     PerCall(String),
     /// The companion crate paints it.
     Widgets(String),
@@ -381,8 +458,8 @@ impl Route {
             };
             return Route::Lost(why);
         }
-        if let Some(test) = &row.tested_by {
-            return Route::PerCall(test.clone());
+        if let Some(check) = &row.checked_by {
+            return Route::PerCall(check.clone());
         }
         // The instance's own cells and frames first; a role's cell carries what the role does
         // not write from the base style (§3.4).
@@ -424,7 +501,7 @@ impl Route {
     fn line(&self) -> String {
         match self {
             Route::Sink(sink) => format!("egui: {sink}"),
-            Route::PerCall(test) => format!("egui: per call, no Style field ({test})"),
+            Route::PerCall(check) => format!("egui: per call, no Style field; {check}"),
             Route::Widgets(widget) => format!("egui: native-theme-egui-widgets {widget} paints it"),
             Route::Lost(why) => format!("not reachable: {why}"),
         }
@@ -692,8 +769,8 @@ pub(crate) fn row_cells(row: &Row, json: &serde_json::Value) -> [String; 4] {
             row.sub_tag.as_deref().unwrap_or_default(),
             row.upstream.as_deref().unwrap_or_default()
         )
-    } else if let Some(test) = &row.tested_by {
-        format!("per call; checked by {test}")
+    } else if let Some(check) = &row.checked_by {
+        format!("per call; {check}")
     } else {
         row.sinks
             .iter()
