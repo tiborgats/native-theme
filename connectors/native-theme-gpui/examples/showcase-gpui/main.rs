@@ -1146,8 +1146,10 @@ fn main() {
 
             if let Some(path) = &cli_args.screenshot {
                 // Whether gpui's font names hold the stated monospace family,
-                // "SF Mono" under macos-monterey: UNVERIFIED (egui spec §15).
-                // Printed for Task 39's log, never asserted. In the
+                // "SF Mono" under macos-monterey: UNVERIFIED (egui spec §15),
+                // and the family gpui draws it in, as the Theme tab and Widget
+                // Info name it (`inspector::DrawnFamilies`). Printed for the
+                // capture's log, never asserted (M9-167). In the
                 // application because a `#[gpui::test]` cannot ask:
                 // `TestAppContext::build` gives gpui's `NoopTextSystem`
                 // (gpui-pre 0.3.9 src/app/test_context.rs:131,
@@ -1157,8 +1159,11 @@ fn main() {
                     let mono = showcase_entity.read(cx).original_mono_font.family.clone();
                     let names = cx.text_system().all_font_names();
                     let held = names.iter().any(|name| name.as_str() == mono.as_ref());
+                    let asked = gpui_component::ActiveTheme::theme(cx).mono_font_family.clone();
+                    let drawn = crate::inspector::DrawnFamilies::of([asked.clone()], cx)
+                        .label(&mono, &asked);
                     println!(
-                        "font-names: stated mono family {mono:?} in gpui's font names: {held}"
+                        "font-names: stated mono family {mono:?} in gpui's font names: {held}; drawn: {drawn}"
                     );
                 }
                 screenshot(cx, window_handle, path.clone(), outputs);
