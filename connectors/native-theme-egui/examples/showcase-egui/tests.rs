@@ -5741,13 +5741,14 @@ fn tab_edges(harness: &Harness<'_, App>, page: Page) -> String {
     )
 }
 
-/// Whether `page`'s tab lies wholly in the strip's view: the view leaves all of it, within a
-/// step of egui's layout grid (`emath::GUI_ROUNDING`, a 32nd of a point), on which egui lays the
-/// scrolled content out, so a tab scrolled to the view's edge can end that step past it (the
-/// no-default-features build: the Theme Map's tab whole to 1183.0313 in a view ending at 1183).
+/// Whether `page`'s tab lies wholly in the strip's view: the view leaves all of it, within half
+/// a pixel, as the tests read egui's edges on its pixel grid: a tab scrolled to the view's end
+/// can end a fraction of a pixel past it (the
+/// no-default-features build: the Theme Map's tab whole to 1183.0313 in a view ending at 1183;
+/// under `scripts/run_in_runner_env.sh`'s fonts, to 1204.25 in one ending at 1204).
 fn page_tab_in_view(harness: &Harness<'_, App>, page: Page) -> bool {
     let (shown, whole) = page_tab(harness, page);
-    let slack = egui::emath::GUI_ROUNDING;
+    let slack = 0.5 / harness.ctx.pixels_per_point();
     whole.width() > 0.0
         && (shown.left() - whole.left()).abs() <= slack
         && (shown.right() - whole.right()).abs() <= slack
