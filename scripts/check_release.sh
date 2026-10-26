@@ -939,9 +939,9 @@ run_check "showcase parity: comparator self-test" \
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: data documents
 #
-# The four checks of the data documents, under the Python floor above
-# (check_wrong_safety_nets.py and check_todo_citations.py import `tomllib`),
-# each with its self-test:
+# The five checks of the data documents, under the Python floor above
+# (check_wrong_safety_nets.py, check_todo_citations.py and
+# check_preset_citations.py import `tomllib`), each with its self-test:
 # scripts/check_platform_facts_rows.py fails on a docs/property-registry.toml
 # field with no docs/platform-facts.md row; scripts/check_wrong_safety_nets.py
 # on a `# see wrong_safety_nets` mark in docs/inheritance-rules.toml without
@@ -950,8 +950,9 @@ run_check "showcase parity: comparator self-test" \
 # the registry, the inheritance rules, docs/showcase-elements.toml or
 # docs/new-os-version-guide.md that names no platform-facts section;
 # scripts/check_todo_citations.py on a preset key path in docs/todo.md that
-# names no key of its preset, or a preset line citation no commit dates. CI
-# runs the same eight.
+# names no key of its preset, or a preset line citation no commit dates;
+# scripts/check_preset_citations.py on a preset comment whose
+# `platform-facts.md:N` row is not the value below it. CI runs the same ten.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Data documents"
 run_check "data documents: every registry field has a platform-facts row" \
@@ -970,6 +971,10 @@ run_check "data documents: docs/todo.md cites preset values by key path" \
     python3 scripts/check_todo_citations.py
 run_check "data documents: todo citations self-test" \
     python3 scripts/check_todo_citations.py --self-test
+run_check "data documents: preset comments cite their platform-facts rows" \
+    python3 scripts/check_preset_citations.py
+run_check "data documents: preset citations self-test" \
+    python3 scripts/check_preset_citations.py --self-test
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: docs
