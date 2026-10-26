@@ -83,8 +83,9 @@ pub(super) fn offscreen_window(
     Ok(window)
 }
 
-/// A titled, closable, buffered, non-deferred NSWindow, not released on
-/// close, for the probe to order front and make key.
+/// A titled, closable, miniaturizable, resizable, buffered, non-deferred
+/// NSWindow, not released on close, for the probe to order front and make
+/// key: the three traffic lights draw their key-window colours.
 pub(super) fn titled_window(
     mtm: MainThreadMarker,
     frame: NSRect,
@@ -96,7 +97,10 @@ pub(super) fn titled_window(
         NSWindow::initWithContentRect_styleMask_backing_defer(
             NSWindow::alloc(mtm),
             frame,
-            NSWindowStyleMask::Titled | NSWindowStyleMask::Closable,
+            NSWindowStyleMask::Titled
+                | NSWindowStyleMask::Closable
+                | NSWindowStyleMask::Miniaturizable
+                | NSWindowStyleMask::Resizable,
             NSBackingStoreType::Buffered,
             false,
         )
@@ -141,6 +145,55 @@ pub(super) fn rgba_bitmap(
         )
     };
     rep.ok_or_else(|| format!("initWithBitmapDataPlanes: is nil for {width} x {height}"))
+}
+
+/// The samples of the pixel at (`x`, `y`) of `rep`, a meshed 8-bit bitmap:
+/// `samplesPerPixel` bytes from its buffer, as stored.
+pub(super) fn pixel_bytes(rep: &NSBitmapImageRep, x: isize, y: isize) -> Result<Vec<u8>, String> {
+    if rep.isPlanar() {
+        return Err("the bitmap is planar".to_owned());
+    }
+    if rep.bitsPerSample() != 8 {
+        return Err(format!("{} bits per sample", rep.bitsPerSample()));
+    }
+    let (wide, high) = (rep.pixelsWide(), rep.pixelsHigh());
+    if !(0..wide).contains(&x) || !(0..high).contains(&y) {
+        return Err(format!("({x}, {y}) is outside {wide} x {high} px"));
+    }
+    let row = rep.bytesPerRow();
+    let samples = rep.samplesPerPixel();
+    let pixel = rep
+        .bitsPerPixel()
+        .checked_div(8)
+        .ok_or_else(|| "no pixel size".to_owned())?;
+    if samples > pixel {
+        return Err(format!("{samples} samples in {pixel} bytes a pixel"));
+    }
+    let to_usize = |v: isize| usize::try_from(v).map_err(|_| format!("{v} is negative"));
+    let len = to_usize(
+        row.checked_mul(high)
+            .ok_or_else(|| "the buffer's size overflows".to_owned())?,
+    )?;
+    let start = to_usize(
+        y.checked_mul(row)
+            .and_then(|o| x.checked_mul(pixel).and_then(|p| o.checked_add(p)))
+            .ok_or_else(|| "the pixel's offset overflows".to_owned())?,
+    )?;
+    let end = start
+        .checked_add(to_usize(samples)?)
+        .ok_or_else(|| "the pixel's end overflows".to_owned())?;
+    let data = rep.bitmapData();
+    if data.is_null() {
+        return Err("bitmapData is NULL".to_owned());
+    }
+    // SAFETY: a meshed (non-planar) rep keeps its pixels in one buffer of
+    // bytesPerRow x pixelsHigh bytes at bitmapData, owned by `rep`, which
+    // outlives this borrow; nothing writes to it while the slice lives.
+    let buffer = unsafe { std::slice::from_raw_parts(data, len) };
+    buffer
+        .get(start..end)
+        .map(<[u8]>::to_vec)
+        .ok_or_else(|| format!("bytes {start}..{end} lie outside the {len} byte buffer"))
 }
 
 /// `rep` encoded as PNG.

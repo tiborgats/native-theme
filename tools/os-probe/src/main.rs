@@ -49,10 +49,19 @@ const USAGE: &str = "usage: native-theme-os-probe [--out <dir>]   (default: os-p
 
 /// The output directory from the command line, or the usage error.
 fn parse_args() -> Result<PathBuf, String> {
+    parse_args_from(std::env::args_os().skip(1))
+}
+
+/// The output directory from `args`, the command line after the program's
+/// name, or the usage error. An argument starting with `-psn_`, the process
+/// serial number LaunchServices may pass an application `open` starts, is
+/// ignored.
+fn parse_args_from(args: impl IntoIterator<Item = std::ffi::OsString>) -> Result<PathBuf, String> {
     let mut out = PathBuf::from("os-probe-out");
-    let mut args = std::env::args_os().skip(1);
+    let mut args = args.into_iter();
     while let Some(arg) = args.next() {
         match arg.to_str() {
+            Some(s) if s.starts_with("-psn_") => {}
             Some("--out") => match args.next() {
                 Some(dir) => out = PathBuf::from(dir),
                 None => return Err(format!("--out needs a directory\n{USAGE}")),
@@ -140,4 +149,37 @@ fn probe_table() -> toml::Table {
             .map_or_else(|_| out::unavailable("ImageVersion not set"), out::text),
     );
     t
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse(args: &[&str]) -> Result<PathBuf, String> {
+        parse_args_from(args.iter().map(std::ffi::OsString::from))
+    }
+
+    #[test]
+    fn the_output_directory_is_taken_from_out() {
+        assert_eq!(parse(&[]), Ok(PathBuf::from("os-probe-out")));
+        assert_eq!(parse(&["--out", "/tmp/x"]), Ok(PathBuf::from("/tmp/x")));
+        assert_eq!(parse(&["--out=/tmp/y"]), Ok(PathBuf::from("/tmp/y")));
+        assert!(parse(&["--out"]).is_err());
+        assert!(parse(&["--other"]).is_err());
+    }
+
+    /// LaunchServices may add a process serial number to an application
+    /// `open` starts; the probe ignores it wherever it comes.
+    #[test]
+    fn a_process_serial_number_argument_is_ignored() {
+        assert_eq!(
+            parse(&["-psn_0_12345", "--out", "/tmp/app"]),
+            Ok(PathBuf::from("/tmp/app"))
+        );
+        assert_eq!(
+            parse(&["--out", "/tmp/app", "-psn_0_12345"]),
+            Ok(PathBuf::from("/tmp/app"))
+        );
+        assert_eq!(parse(&["-psn_0_1"]), Ok(PathBuf::from("os-probe-out")));
+    }
 }

@@ -16,13 +16,14 @@ use objc2::runtime::{AnyObject, Sel};
 use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message, sel};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
-    NSBezelStyle, NSBitmapImageRep, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox,
-    NSControl, NSControlSize, NSControlStateValueOff, NSControlStateValueOn, NSEventMask, NSFont,
-    NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton, NSProgressIndicator,
-    NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller, NSScrollerStyle, NSSearchField,
-    NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper,
-    NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTextView, NSView,
-    NSVisualEffectBlendingMode, NSVisualEffectMaterial, NSVisualEffectView, NSWindow, NSWorkspace,
+    NSBezelStyle, NSBitmapFormat, NSBitmapImageRep, NSBox, NSBoxType, NSButton, NSButtonType,
+    NSColor, NSColorSpace, NSComboBox, NSControl, NSControlSize, NSControlStateValueOff,
+    NSControlStateValueOn, NSEventMask, NSFont, NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton,
+    NSProgressIndicator, NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller,
+    NSScrollerStyle, NSSearchField, NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView,
+    NSSplitViewDividerStyle, NSStepper, NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle,
+    NSTextField, NSTextView, NSTitlePosition, NSView, NSVisualEffectBlendingMode,
+    NSVisualEffectMaterial, NSVisualEffectState, NSVisualEffectView, NSWindow, NSWorkspace,
 };
 use objc2_foundation::{
     NSArray, NSData, NSDate, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion,
@@ -1429,6 +1430,7 @@ fn rect(r: NSRect) -> Value {
 fn insets(i: NSEdgeInsets) -> Value {
     out::floats(&[i.top, i.left, i.bottom, i.right])
 }
+
 // ── A key window ────────────────────────────────────────────────────────────
 
 /// The key window's content size, in points.
@@ -1460,8 +1462,40 @@ const KEY_SEGMENT_SAMPLE_INSET: f64 = 12.0;
 /// A point of the content view no view covers: the window's own background.
 const KEY_BACKGROUND_POINT: NSPoint = NSPoint::new(390.0, 120.0);
 
-/// One step of the run-loop pump, in seconds.
-const PUMP_STEP: f64 = 0.05;
+/// The calibration strip's first patch, in the content view: a row below
+/// the segmented control, clear of every other sample point.
+const KEY_PATCH_ORIGIN: NSPoint = NSPoint::new(200.0, 20.0);
+
+/// The size of a calibration patch, in points.
+const KEY_PATCH_SIZE: NSSize = NSSize::new(24.0, 20.0);
+
+/// The distance from one calibration patch's left edge to the next one's.
+const KEY_PATCH_STEP: f64 = 30.0;
+
+/// The calibration patches filled with an exact sRGB colour: the key and
+/// the colour's `[r, g, b]` bytes.
+const SRGB_PATCHES: [(&str, [u8; 3]); 9] = [
+    ("srgb_000000", [0x00, 0x00, 0x00]),
+    ("srgb_404040", [0x40, 0x40, 0x40]),
+    ("srgb_808080", [0x80, 0x80, 0x80]),
+    ("srgb_c0c0c0", [0xc0, 0xc0, 0xc0]),
+    ("srgb_ececec", [0xec, 0xec, 0xec]),
+    ("srgb_ffffff", [0xff, 0xff, 0xff]),
+    ("srgb_ff0000", [0xff, 0x00, 0x00]),
+    ("srgb_00ff00", [0x00, 0xff, 0x00]),
+    ("srgb_0000ff", [0x00, 0x00, 0xff]),
+];
+
+/// The calibration patches filled with a dynamic system colour, resolved
+/// under the window's appearance as it draws.
+type SystemPatch = (&'static str, fn() -> Retained<NSColor>);
+
+/// One step of the run-loop pump.
+const PUMP_STEP: std::time::Duration = std::time::Duration::from_millis(50);
+
+/// The most steps the pump waits for the application to become active after
+/// each activation call.
+const ACTIVATE_WAIT_STEPS: u32 = 20;
 
 /// The most steps the pump waits for the window to become key.
 const KEY_WAIT_STEPS: u32 = 100;
@@ -1474,24 +1508,29 @@ const SETTLE_STEPS: u32 = 10;
 const CAPTURE_WAIT_STEPS: u32 = 200;
 
 /// A titled window made key in an activated, regular application: a
-/// sidebar material view, a table with a header and a segmented control
-/// with one segment selected, captured per appearance with `screencapture`
-/// and sampled in each region. `cacheDisplayInRect:`, which the control
-/// renders use, draws no material and no key-window state. Runs after every
-/// other section, so their output is unchanged; each step that fails is
-/// recorded as data.
+/// sidebar material view, a table with a header, a segmented control with
+/// one segment selected and a strip of calibration patches, captured per
+/// appearance with `screencapture` and sampled in each region, the
+/// capture's own bytes read as they are. `cacheDisplayInRect:`, which the
+/// control renders use, draws no material and no key-window state. Runs
+/// after every other section, so their output is unchanged; each step that
+/// fails is recorded as data.
 fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) -> Table {
     let mut t = Table::new();
     out::put(
         &mut t,
         "method",
         out::text(format!(
-            "activation policy set to Regular, finishLaunching, activate; a titled NSWindow ({} x {} pt content, empty title) made key with makeKeyAndOrderFront:; the run loop pumped with nextEventMatchingMask:untilDate:inMode:dequeue: and sendEvent: in {PUMP_STEP} s steps, up to {KEY_WAIT_STEPS} steps until isKeyWindow; content: an NSVisualEffectView, material sidebar, blending behindWindow, at {}; an NSScrollView with an NSTableView of one {TABLE_COLUMN_WIDTH} pt column titled \"Column\" and its header, at {}; an NSSegmentedControl of two {KEY_SEGMENT_WIDTH} pt segments \"One\" \"Two\", segment 0 selected, sized to fit at {}; per appearance the window's appearance is set, the run loop pumped {SETTLE_STEPS} steps, and the window captured with screencapture -x -o -l <windowNumber>; each sample is the capture's pixel at a point given in points from the window frame's top left (sample_points_xy), converted to sRGB",
+            "activation policy set to Regular, finishLaunching, activateIgnoringOtherApps: YES, then -activate where the OS has it, each followed by a pump until NSApp isActive (up to {ACTIVATE_WAIT_STEPS} steps); a titled, closable, miniaturizable, resizable NSWindow ({} x {} pt content, empty title) made key with makeKeyAndOrderFront: and makeFirstResponder: nil; the run loop pumped with nextEventMatchingMask:untilDate:inMode:dequeue: and sendEvent: in {} ms steps, up to {KEY_WAIT_STEPS} steps until isKeyWindow, activateIgnoringOtherApps: YES again at each step NSApp is not active; content: an NSVisualEffectView, material sidebar, blending behindWindow, state active, at {}; an NSScrollView with an NSTableView of one {TABLE_COLUMN_WIDTH} pt column titled \"Column\" and its header, at {}; an NSSegmentedControl of two {KEY_SEGMENT_WIDTH} pt segments \"One\" \"Two\", segment 0 selected, sized to fit at {}; a calibration strip of {} x {} pt NSBox patches (custom, no border, no title) from {} every {KEY_PATCH_STEP} pt, filled with colorWithSRGBRed:green:blue:alpha: of the srgb_ patches' bytes and with the dynamic system colours; per appearance the window's appearance is set, the run loop pumped {SETTLE_STEPS} steps, and the window captured with screencapture -x -o -l <windowNumber>; each sample is the capture's pixel at a point given in points from the window frame's top left (sample_points_xy): raw, the PNG's own bytes from bitmapData as #rrggbbaa (alpha ff where the rep has none), and colorAtXY_sRGB, colorAtX:y: converted with colorUsingColorSpace: sRGB",
             KEY_WINDOW_SIZE.width,
             KEY_WINDOW_SIZE.height,
+            PUMP_STEP.as_millis(),
             rect_text(KEY_SIDEBAR_FRAME),
             rect_text(KEY_TABLE_FRAME),
             point_text(KEY_SEGMENTED_ORIGIN),
+            KEY_PATCH_SIZE.width,
+            KEY_PATCH_SIZE.height,
+            point_text(KEY_PATCH_ORIGIN),
         )),
     );
 
@@ -1501,7 +1540,7 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         out::boolean(app.setActivationPolicy(NSApplicationActivationPolicy::Regular)),
     );
     app.finishLaunching();
-    activate(app);
+    out::put_table(&mut t, "activation", activation_table(app));
 
     let frame = NSRect::new(NSPoint::new(200.0, 200.0), KEY_WINDOW_SIZE);
     let window = match ffi::titled_window(mtm, frame) {
@@ -1525,6 +1564,7 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         NSVisualEffectView::initWithFrame(NSVisualEffectView::alloc(mtm), KEY_SIDEBAR_FRAME);
     sidebar.setMaterial(NSVisualEffectMaterial::Sidebar);
     sidebar.setBlendingMode(NSVisualEffectBlendingMode::BehindWindow);
+    sidebar.setState(NSVisualEffectState::Active);
     content.addSubview(&sidebar);
 
     let scroll = NSScrollView::initWithFrame(NSScrollView::alloc(mtm), KEY_TABLE_FRAME);
@@ -1549,16 +1589,74 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
     segmented.setFrameOrigin(KEY_SEGMENTED_ORIGIN);
     content.addSubview(&segmented);
 
+    let system_patches: [SystemPatch; 2] = [
+        ("windowBackgroundColor", NSColor::windowBackgroundColor),
+        ("controlBackgroundColor", NSColor::controlBackgroundColor),
+    ];
+    let mut patches: Vec<(&str, NSPoint)> = Vec::new();
+    let mut patch_x = KEY_PATCH_ORIGIN.x;
+    let fills = SRGB_PATCHES
+        .iter()
+        .map(|(key, [r, g, b])| {
+            let color = NSColor::colorWithSRGBRed_green_blue_alpha(
+                f64::from(*r) / 255.0,
+                f64::from(*g) / 255.0,
+                f64::from(*b) / 255.0,
+                1.0,
+            );
+            (*key, color)
+        })
+        .chain(system_patches.iter().map(|(key, make)| (*key, make())));
+    for (key, color) in fills {
+        let patch_frame = NSRect::new(NSPoint::new(patch_x, KEY_PATCH_ORIGIN.y), KEY_PATCH_SIZE);
+        let patch = NSBox::initWithFrame(NSBox::alloc(mtm), patch_frame);
+        patch.setBoxType(NSBoxType::Custom);
+        patch.setTitlePosition(NSTitlePosition::NoTitle);
+        patch.setBorderWidth(0.0);
+        patch.setFillColor(&color);
+        content.addSubview(&patch);
+        patches.push((
+            key,
+            NSPoint::new(
+                patch_x + KEY_PATCH_SIZE.width / 2.0,
+                KEY_PATCH_ORIGIN.y + KEY_PATCH_SIZE.height / 2.0,
+            ),
+        ));
+        patch_x += KEY_PATCH_STEP;
+    }
+
     window.makeKeyAndOrderFront(None);
-    let steps = pump(app, KEY_WAIT_STEPS, || window.isKeyWindow());
+    out::put(
+        &mut t,
+        "makeFirstResponder_nil",
+        out::boolean(window.makeFirstResponder(None)),
+    );
+    let reactivations = std::cell::Cell::new(0_u32);
+    let steps = pump(app, KEY_WAIT_STEPS, || {
+        if !app.isActive() {
+            activate_ignoring(app);
+            reactivations.set(reactivations.get().saturating_add(1));
+        }
+        window.isKeyWindow()
+    });
     out::put(&mut t, "isKeyWindow", out::boolean(window.isKeyWindow()));
     out::put(&mut t, "isMainWindow", out::boolean(window.isMainWindow()));
     out::put(&mut t, "NSApp_isActive", out::boolean(app.isActive()));
     out::put(&mut t, "key_wait_steps", out::int(i64::from(steps)));
     out::put(
         &mut t,
+        "key_wait_reactivations",
+        out::int(i64::from(reactivations.get())),
+    );
+    out::put(
+        &mut t,
         "accessibilityDisplayShouldReduceTransparency",
         out::boolean(NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceTransparency()),
+    );
+    out::put(
+        &mut t,
+        "sidebar_state",
+        out::text(effect_state_name(sidebar.state())),
     );
     out::put(
         &mut t,
@@ -1582,6 +1680,7 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
             out::unavailable("headerView is nil"),
         ),
     }
+    out::put(&mut t, "column_width", out::float(column.width()));
     let segmented_frame = segmented.frame();
     out::put(&mut t, "segmentedControl_frame_xywh", rect(segmented_frame));
 
@@ -1626,8 +1725,12 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
             )),
         ));
     }
+    let patches: Vec<(&str, NSPoint)> = patches
+        .into_iter()
+        .map(|(key, p)| (key, from_content(p)))
+        .collect();
     let mut sample_points = Table::new();
-    for (name, p) in &points {
+    for (name, p) in points.iter().chain(patches.iter()) {
         out::put(&mut sample_points, name, out::floats(&[p.x, p.y]));
     }
     out::put_table(&mut t, "sample_points_xy", sample_points);
@@ -1650,8 +1753,19 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         pump(app, SETTLE_STEPS, || false);
         let mut run = Table::new();
         out::put(&mut run, "isKeyWindow", out::boolean(window.isKeyWindow()));
+        out::put(&mut run, "NSApp_isActive", out::boolean(app.isActive()));
+        let expected = system_expected(&appearance, &system_patches);
         match &dir_made {
-            Ok(()) => capture(&mut run, &window, &dir, key, window_frame.size, &points),
+            Ok(()) => capture(
+                &mut run,
+                &window,
+                &dir,
+                key,
+                window_frame.size,
+                &points,
+                &patches,
+                &expected,
+            ),
             Err(reason) => out::put(&mut run, "capture", out::unavailable(reason)),
         }
         out::put_table(&mut t, key, run);
@@ -1662,27 +1776,65 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
     t
 }
 
-/// `-[NSApplication activate]` where the OS has it (macOS 14), else
-/// `activateIgnoringOtherApps:`.
-fn activate(app: &NSApplication) {
+/// Activate `app`: `activateIgnoringOtherApps:` first, on every macOS, as
+/// winit does (winit 0.30.13 `src/platform_impl/macos/app_state.rs:137`),
+/// then `-activate` where the OS has it (macOS 14), each followed by a pump
+/// until `NSApp` is active; which call made it active.
+fn activation_table(app: &NSApplication) -> Table {
+    let mut t = Table::new();
+    activate_ignoring(app);
+    let ignoring_steps = pump(app, ACTIVATE_WAIT_STEPS, || app.isActive());
+    let after_ignoring = app.isActive();
+    out::put(
+        &mut t,
+        "activateIgnoringOtherApps_isActive",
+        out::boolean(after_ignoring),
+    );
+    out::put(
+        &mut t,
+        "activateIgnoringOtherApps_steps",
+        out::int(i64::from(ignoring_steps)),
+    );
     let obj: &AnyObject = app.as_ref();
-    if obj.class().responds_to(sel!(activate)) {
+    let has_activate = obj.class().responds_to(sel!(activate));
+    out::put(&mut t, "activate_available", out::boolean(has_activate));
+    let after_activate = if has_activate {
         app.activate();
+        let steps = pump(app, ACTIVATE_WAIT_STEPS, || app.isActive());
+        out::put(&mut t, "activate_steps", out::int(i64::from(steps)));
+        app.isActive()
     } else {
-        #[allow(deprecated)]
-        app.activateIgnoringOtherApps(true);
-    }
+        after_ignoring
+    };
+    out::put(&mut t, "activate_isActive", out::boolean(after_activate));
+    let by = if after_ignoring {
+        "activateIgnoringOtherApps:"
+    } else if after_activate {
+        "activate"
+    } else {
+        "none"
+    };
+    out::put(&mut t, "activated_by", out::text(by));
+    t
+}
+
+/// `-[NSApplication activateIgnoringOtherApps:]` with YES, deprecated since
+/// macOS 14 and still the call that activates an application started from a
+/// shell (winit 0.30.13 `src/platform_impl/macos/app_state.rs:137`).
+fn activate_ignoring(app: &NSApplication) {
+    #[allow(deprecated)]
+    app.activateIgnoringOtherApps(true);
 }
 
 /// Pump the run loop up to `steps` steps of `PUMP_STEP`, stopping early once
-/// `done` holds; the steps taken.
-fn pump(app: &NSApplication, steps: u32, done: impl Fn() -> bool) -> u32 {
+/// `step` returns true; it runs before each step. The steps taken.
+fn pump(app: &NSApplication, steps: u32, mut step: impl FnMut() -> bool) -> u32 {
     let mode = ffi::default_run_loop_mode();
-    for step in 0..steps {
-        if done() {
-            return step;
+    for taken in 0..steps {
+        if step() {
+            return taken;
         }
-        let until = NSDate::dateWithTimeIntervalSinceNow(PUMP_STEP);
+        let until = NSDate::dateWithTimeIntervalSinceNow(PUMP_STEP.as_secs_f64());
         while let Some(event) = app.nextEventMatchingMask_untilDate_inMode_dequeue(
             NSEventMask::Any,
             Some(&until),
@@ -1696,8 +1848,49 @@ fn pump(app: &NSApplication, steps: u32, done: impl Fn() -> bool) -> u32 {
     steps
 }
 
+fn effect_state_name(state: NSVisualEffectState) -> String {
+    if state == NSVisualEffectState::FollowsWindowActiveState {
+        "followsWindowActiveState".to_owned()
+    } else if state == NSVisualEffectState::Active {
+        "active".to_owned()
+    } else if state == NSVisualEffectState::Inactive {
+        "inactive".to_owned()
+    } else {
+        format!("unknown ({})", state.0)
+    }
+}
+
+/// What each calibration patch should read: the `srgb_` patches their
+/// bytes, the system patches their colour resolved under `appearance`, in
+/// sRGB.
+fn system_expected(appearance: &NSAppearance, system: &[SystemPatch]) -> Vec<(String, String)> {
+    let mut expected: Vec<(String, String)> = SRGB_PATCHES
+        .iter()
+        .map(|(key, [r, g, b])| ((*key).to_owned(), format!("#{r:02x}{g:02x}{b:02x}ff")))
+        .collect();
+    let resolved = RefCell::new(Vec::new());
+    {
+        let block = RcBlock::new(|| {
+            let srgb = NSColorSpace::sRGBColorSpace();
+            for (key, make) in system {
+                let value = match color_value(&make(), &srgb) {
+                    Value::String(text) => text,
+                    other => other.to_string(),
+                };
+                resolved.borrow_mut().push(((*key).to_owned(), value));
+            }
+        });
+        appearance.performAsCurrentDrawingAppearance(&block);
+    }
+    expected.extend(resolved.into_inner());
+    expected
+}
+
 /// Capture `window` to `<dir>/<key>.png` with `screencapture` and sample it
-/// at `points`, given in points from the window frame's top left.
+/// at `points` and at the calibration `patches`, given in points from the
+/// window frame's top left; each patch's sample is checked against what it
+/// is filled with (`expected`).
+#[allow(clippy::too_many_arguments)]
 fn capture(
     run: &mut Table,
     window: &NSWindow,
@@ -1705,6 +1898,8 @@ fn capture(
     key: &str,
     frame_points: NSSize,
     points: &[(&str, NSPoint)],
+    patches: &[(&str, NSPoint)],
+    expected: &[(String, String)],
 ) {
     let path = dir.join(format!("{key}.png"));
     let child = std::process::Command::new("screencapture")
@@ -1757,25 +1952,125 @@ fn capture(
         "pixels_wh",
         out::array(vec![out::int_isize(wide), out::int_isize(high)]),
     );
+    out::put_table(run, "pixel_format", pixel_format_table(&rep));
     // Pixels per point, from the capture itself: without its shadow (-o)
     // the window frame is the whole image.
     let ratio = pixel_ratio(wide, frame_points.width);
     let srgb = NSColorSpace::sRGBColorSpace();
+    let sample = |p: &NSPoint| -> (Table, Option<String>) {
+        let mut s = Table::new();
+        let (Some(x), Some(y)) = (pixel_index(p.x, ratio, wide), pixel_index(p.y, ratio, high))
+        else {
+            out::put(
+                &mut s,
+                "raw",
+                out::unavailable(format!(
+                    "{} x {} pt lies outside the {wide} x {high} px capture",
+                    p.x, p.y
+                )),
+            );
+            return (s, None);
+        };
+        out::put(
+            &mut s,
+            "pixel_xy",
+            out::array(vec![out::int_isize(x), out::int_isize(y)]),
+        );
+        let raw = ffi::pixel_bytes(&rep, x, y).and_then(|b| rgba_text(&b, rep.bitmapFormat()));
+        let raw_text = raw.as_ref().ok().cloned();
+        out::put(&mut s, "raw", raw.map_or_else(out::unavailable, out::text));
+        let converted = match rep.colorAtX_y(x, y) {
+            Some(color) => color_value(&color, &srgb),
+            None => out::unavailable(format!("colorAtX:{x} y:{y} is nil")),
+        };
+        out::put(&mut s, "colorAtXY_sRGB", converted);
+        (s, raw_text)
+    };
     let mut samples = Table::new();
     for (name, p) in points {
-        let value = match (pixel_index(p.x, ratio, wide), pixel_index(p.y, ratio, high)) {
-            (Some(x), Some(y)) => match rep.colorAtX_y(x, y) {
-                Some(color) => color_value(&color, &srgb),
-                None => out::unavailable(format!("colorAtX:{x} y:{y} is nil")),
-            },
-            _ => out::unavailable(format!(
-                "{} x {} pt lies outside the {wide} x {high} px capture",
-                p.x, p.y
-            )),
-        };
-        out::put(&mut samples, name, value);
+        out::put_table(&mut samples, name, sample(p).0);
     }
     out::put_table(run, "samples", samples);
+    let mut calibration = Table::new();
+    for (name, p) in patches {
+        let (mut s, raw) = sample(p);
+        let want = expected
+            .iter()
+            .find(|(key, _)| key == name)
+            .map(|(_, value)| value.clone());
+        match want {
+            Some(want) => {
+                out::put(
+                    &mut s,
+                    "exact",
+                    out::boolean(raw.as_deref() == Some(want.as_str())),
+                );
+                out::put(&mut s, "expected", out::text(want));
+            }
+            None => out::put(&mut s, "expected", out::unavailable("no expected value")),
+        }
+        out::put_table(&mut calibration, name, s);
+    }
+    out::put_table(run, "calibration", calibration);
+}
+
+/// How the capture's bytes are laid out, which `raw` reads them by, and the
+/// colour space they are tagged with.
+fn pixel_format_table(rep: &NSBitmapImageRep) -> Table {
+    let mut t = Table::new();
+    let space = rep.colorSpace();
+    out::put(
+        &mut t,
+        "colorSpace_localizedName",
+        space
+            .localizedName()
+            .map_or_else(|| out::unavailable("nil"), |n| out::text(n.to_string())),
+    );
+    out::put(
+        &mut t,
+        "colorSpaceName",
+        out::text(rep.colorSpaceName().to_string()),
+    );
+    let format = rep.bitmapFormat();
+    let mut flags = Vec::new();
+    for (flag, name) in [
+        (NSBitmapFormat::AlphaFirst, "alphaFirst"),
+        (
+            NSBitmapFormat::AlphaNonpremultiplied,
+            "alphaNonpremultiplied",
+        ),
+        (NSBitmapFormat::FloatingPointSamples, "floatingPointSamples"),
+    ] {
+        if format.contains(flag) {
+            flags.push(out::text(name));
+        }
+    }
+    out::put(&mut t, "bitmapFormat_flags", out::array(flags));
+    out::put(&mut t, "bitsPerSample", out::int_isize(rep.bitsPerSample()));
+    out::put(
+        &mut t,
+        "samplesPerPixel",
+        out::int_isize(rep.samplesPerPixel()),
+    );
+    out::put(&mut t, "bitsPerPixel", out::int_isize(rep.bitsPerPixel()));
+    out::put(&mut t, "bytesPerRow", out::int_isize(rep.bytesPerRow()));
+    out::put(&mut t, "hasAlpha", out::boolean(rep.hasAlpha()));
+    out::put(&mut t, "isPlanar", out::boolean(rep.isPlanar()));
+    t
+}
+
+/// A pixel's 8-bit samples as `#rrggbbaa`, in the order `format` lays them
+/// out: alpha first or last, or none (`ff`). Premultiplied samples are given
+/// as stored.
+fn rgba_text(bytes: &[u8], format: NSBitmapFormat) -> Result<String, String> {
+    let alpha_first = format.contains(NSBitmapFormat::AlphaFirst);
+    let (r, g, b, a) = match (bytes, alpha_first) {
+        ([a, r, g, b], true) => (*r, *g, *b, *a),
+        ([r, g, b, a], false) => (*r, *g, *b, *a),
+        ([r, g, b], _) => (*r, *g, *b, 0xff),
+        _ => return Err(format!("{} samples per pixel", bytes.len())),
+    };
+    Ok(format!("#{r:02x}{g:02x}{b:02x}{a:02x}"))
 }
 
 /// Wait for `child` up to `CAPTURE_WAIT_STEPS` steps of `PUMP_STEP`, then
@@ -1786,7 +2081,7 @@ fn wait_or_kill(mut child: std::process::Child) -> Result<(), String> {
         match child.try_wait() {
             Ok(Some(status)) if status.success() => return Ok(()),
             Ok(Some(status)) => return Err(format!("exited with {status}")),
-            Ok(None) => std::thread::sleep(std::time::Duration::from_secs_f64(PUMP_STEP)),
+            Ok(None) => std::thread::sleep(PUMP_STEP),
             Err(e) => return Err(format!("could not be waited for: {e}")),
         }
     }
@@ -1797,7 +2092,8 @@ fn wait_or_kill(mut child: std::process::Child) -> Result<(), String> {
     // Reap it, so no zombie outlives the probe; its status says nothing more.
     let _ = child.wait();
     Err(format!(
-        "did not finish within {CAPTURE_WAIT_STEPS} steps of {PUMP_STEP} s{killed}"
+        "did not finish within {CAPTURE_WAIT_STEPS} steps of {} ms{killed}",
+        PUMP_STEP.as_millis()
     ))
 }
 
