@@ -130,7 +130,7 @@ close.
 5. **The Dialog says what 0.8.1 does** (Task 3): an entrance and an exit, on the same curve and
    duration, and no `AnimationExt`.
 6. **The gate catches** (Task 4).
-   - Every entry is shown to flag a call, not only one: the planted function draws exactly
+   - Every entry is shown to flag a call, not only one: the planted function draws exactly one
      `disallowed_methods` error at each planted line that a configuration builds, counted per
      line (spec §5), in each of the three configurations, GPUI Fast included, and each
      `allow-invalid` entry states why.
@@ -387,3 +387,12 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   - `docs(gpui): GPUI Kit 0.8.1 in the changelog, README, roadmap and notes (G4 T8)`;
   - `docs(gpui): the compatibility stamp for GPUI Kit 0.8.1 (G4 T8)`;
   - `docs: archive the implemented GPUI Kit 0.8.1 design documents (G4 T8)`.
+
+---
+
+## Record
+
+- **2026-10-26, the start.** The code review closed: its plan and ledger archived at
+  `60fa77fd`, the branch pushed at `7f011f00`, the review session's writers stopped. The
+  maintainer approved P1 and P3 (rationale §3) and started G4 on 2026-10-26.
+- **The inputs** (Task 0): all seven are in `.superpowers/sdd/todo_code-review-plan/g4/`.
