@@ -3906,11 +3906,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had there
 (M8 T21, 2026-10-17).
 
-### iced: dialog is unmapped
-- [ ] [v0.7.0] The iced connector maps no `DialogTheme` field, and its contract lists none as unreachable: iced 0.14 has no dialog widget. `iced_aw`'s `Card` could carry the maxima, `Card::max_height` and `Card::max_width` taking an `f32` (`iced_aw-0.14.1/src/widget/card.rs:144`, `:151`); the minima, the button gap and order, the fonts and the border would still have no receiver of their own. Decide whether a `Card` is the dialog's receiver.
-  Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
-  G2 Task 13 (2026-10-14): the new `dialog.entrance` has no receiver either: iced 0.14 and `iced_aw` 0.14.1 have no dialog widget, so nothing animates a dialog's entrance; the crate docs' *Theme Field Coverage* (`connectors/native-theme-iced/src/lib.rs`) names it among the values iced has no receiver for.
-
 ### GNOME reader: title and heading sizes ignore the user's font
 - [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; `[light.text_scale]`, `[dark.text_scale]`) and for `dialog.title_font` (15pt; `[light.dialog.title_font] size_pt`, `[dark.dialog.title_font] size_pt`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
 

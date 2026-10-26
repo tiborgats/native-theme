@@ -13641,3 +13641,24 @@ functions. No bundled preset differs in the two leaves, so nothing drawn changes
   mutation, a changed area line, radar line or radar fill each turns a test red. M4:
   `ROADMAP.md` counts 29 iced style functions, `application` among the 21 that replace
   iced's own. Commit 3a0da4a3.
+
+#### C-01 · iced dialog
+**Problem:** the iced connector mapped no `DialogTheme` field, and its colour-leaf walk named the
+whole dialog `NoWidget` (iced 0.14 and `iced_aw` 0.14.1 have no dialog). The iced showcase drew
+the model's dialog as a `container` of its own (`fn dialog`, `fn dialog_padding`).
+**Fix:** the controller's rulings: an `iced_aw` `Card` is not the receiver (its head, body and
+foot have styles of their own; only `Card::max_width`/`max_height` match), and the dialog's
+helpers take the gpui and egui names. The showcase's mapping moved into the connector:
+`styles::dialog(resolved)` (text colour `dialog.body_font.color`, fill `dialog.background_color`,
+outline `dialog.border`; `DIALOG_ROWS`, `DIALOG_BORDER_ROWS`, `shadow` and `snap` in `DERIVED`),
+`dialog_padding(resolved, default)` (`padding_inside_border` of `dialog.border`),
+`dialog_max_width`, `dialog_max_height`, `dialog_min_height` (whose doc shows the content floor
+a `Container` lacks), `dialog_title_font_color` (an `AccessorRow`), `dialog_button_gap` and
+`dialog_button_order` (their two iced `absent` parity exceptions are gone; new gpui and egui
+`absent` exceptions name those connectors' receivers). `UNREACHABLE` gains `dialog.entrance` (no
+iced widget animates its appearance; 26 combinations state none and are its exceptions),
+`dialog.min_width` (a `Container` takes no minimum) and `dialog.icon_size` (no dialog type icon).
+The `UNREAD_COLOURS` "dialog" entry is gone, `contract-leaves.toml` regenerated, and the crate
+docs' *Theme Field Coverage* and the README's style table name the dialog. The showcase calls the
+new API with the same values, so its dump is unchanged (the controller's Linux gate checks it).
+**Status:** done, fad5f7f7.
