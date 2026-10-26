@@ -805,7 +805,7 @@ fn note(ui: &mut egui::Ui, text: impl Into<String>, weak: bool) -> egui::Respons
 }
 
 /// A name over its value, one label, the gpui showcase's inspector `row` and note line
-/// (`showcase-gpui/inspector.rs:541-549`, `:925-926`): the name in the weak text colour
+/// (`showcase-gpui/inspector.rs:546-554`, `:930-931`): the name in the weak text colour
 /// (gpui's `muted_foreground` is `defaults.muted_color`, as egui's `weak_text_color` is, parity
 /// rule R3), the value and each line after it in the text colour, all in the side panel's font
 /// (`sidebar.font`, `Body` in the sidebar scope), wrapping.

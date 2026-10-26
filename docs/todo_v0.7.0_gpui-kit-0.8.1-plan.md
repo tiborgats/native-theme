@@ -501,3 +501,30 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   egui entry names the gpui connector's `clippy.toml` as G4's plan's Task 4, not as a file;
   the taffy entry says G4 measures 0.15.1 once in Task 6 (the controller's ruling), for
   Task 6 to append its result as a dated line.
+- **Task 4, the inventory's count.** The grep finds the spec's 279 lines (172 doc comments,
+  107 plain). gpui-pre-shared-string 0.3.10 has no `src/`: its one file,
+  `gpui_shared_string.rs`, sits at the crate root and holds no panic line.
+- **Task 4, an entry the grep alone does not find.** `WindowTextSystem::shape_line_by_hash`'s
+  doc has no "panic": it says "Like [`Self::shape_line`], this must be used only for
+  single-line text" (gpui-pre `src/text_system.rs:721`, gpui-fast `:718`), and its body
+  holds `shape_line`'s `debug_assert!` on a newline (gpui-pre `:760-763`). It is listed
+  under `shape_line`'s doc line (`:668-670`), which it refers to, and the planted count
+  covers it: 12 entries.
+- **Task 4, a panic no gpui function documents.** gpui-base and gpui-component comment that
+  the platform text system panics on a run that splits a multi-byte character (gpui-base
+  `src/input/base/element.rs:373`, `:3666`; gpui-component
+  `src/highlighter/highlighter.rs:158`, `:1205`, `:1434`). Those lines document private
+  helpers that snap ranges to char boundaries; no doc line of gpui-pre or gpui-fast states
+  the panic. `shape_line` is listed on its own doc line; `shape_text` and `layout_line` carry
+  no panic doc and are not listed. Whether they panic on such runs was not examined.
+- **Task 4, no `allow-invalid`.** Every entry drew its error at its planted line on gpui-pre,
+  GPUI Fast and without default features; none is in a crate that a Linux configuration
+  lacks.
+- **Task 4, citations of the moved lines.** The allows add lines to `SC/demo.rs` (7, before
+  `segmented_width`'s closure), `SC/inspector.rs` (5, in `DrawnFamilies::of`) and
+  `SC/main.rs` (2 after the module doc, 1 before `mod tests`). The egui and iced
+  showcases' citations of the lines after them are renumbered (34 numbers in 18
+  citations, each checked to name the line it named before). `CN/src/lib.rs` keeps its
+  line count: the deny takes the blank line after `expect_used`. `docs/todo.md`'s
+  citations of `SC/inspector.rs:562-565` and `SC/demo.rs:6822`, `:6892` already named
+  other lines before this task and are left as they are (the file is append-only).

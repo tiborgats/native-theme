@@ -1273,7 +1273,7 @@ fn setting<T: Clone + PartialEq>(
 
 /// The inspector's two tabs, drawn as the page tabs are (`demo::tab_bar`), padded by
 /// `container_margin`, their rule from edge to edge: the gpui showcase's inspector `TabBar`
-/// (`showcase-gpui/inspector.rs:953-968`).
+/// (`showcase-gpui/inspector.rs:958-973`).
 fn inspector_tabs(app: &mut App, ui: &mut egui::Ui, margin: Option<f32>) {
     let t = app.atlas.resolved_for(ui.ctx().theme());
     let picked = demo::tab_bar(
@@ -1492,7 +1492,7 @@ pub(crate) fn central_panel(
 
 /// The theme errors, one per line, in a card across the content.
 fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
-    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2895-2919`):
+    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2902-2926`):
     // across the content, the chosen icon theme's error icon first, where it
     // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
     // (`showcase-gpui/support.rs:515-526`, `role_for_gpui_icon`) — at
@@ -1544,7 +1544,7 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
 
 /// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.1
 /// `src/dialog/dialog.rs:806-813`, the `DialogTitle`, and `:846-861`, the Ghost close button) and
-/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2540`, `:2582`): the
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2547`, `:2589`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
@@ -1640,7 +1640,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
     ]
 }
 
-/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2523-2560`): a
+/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2530-2567`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
 /// Its keys are those of gpui-component 0.8.1's `Command` (`src/command/state.rs:65-68`): Up and
@@ -1855,7 +1855,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The text-scaling field's range and step: the gpui showcase's Preferences number field
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2745-2752`), whose range is
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2752-2759`), whose range is
 /// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
 /// evenly. The model states none; they are not style values.
 const TEXT_SCALE_MIN: f32 = 1.0;
@@ -1941,7 +1941,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "preferences",
                     );
-                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2811-2893`): its
+                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2818-2900`): its
                     // title and description, then a row per preference — its title and a weak
                     // description on the left, its control on the right.
                     body.add(registry, ui, "heading", |ui| {
@@ -2100,7 +2100,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         if let Some(w) = max_w {
             ui.set_max_width(w);
         }
-        // The gpui showcase's About (`showcase-gpui/demo.rs:2565-2638`): its title, the name
+        // The gpui showcase's About (`showcase-gpui/demo.rs:2572-2645`): its title, the name
         // and version, then the description in `dialog.body_font` — the dialog role's `Body`
         // slot and text colour (§5) — ending in the link to the Compatibility table at this
         // version's tag.

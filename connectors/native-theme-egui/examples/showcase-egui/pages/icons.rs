@@ -14,7 +14,7 @@ use super::{DemoState, caption};
 use crate::demo::{self, IconCache, Registry};
 
 /// The contexts `defaults.icon_sizes` names, in the gpui showcase's order and by its names
-/// (`showcase-gpui/demo.rs:8158-8220`).
+/// (`showcase-gpui/demo.rs:8165-8227`).
 const CONTEXTS: [(IconContext, &str); 5] = [
     (IconContext::Toolbar, "toolbar"),
     (IconContext::Small, "small"),
@@ -38,7 +38,7 @@ pub(crate) fn show(
     let pad = atlas.layout().container_margin;
 
     // The folder icon at each context's size, above the context's name
-    // (`showcase-gpui/demo.rs:8228-8269`); where the set has no folder icon, the name alone.
+    // (`showcase-gpui/demo.rs:8235-8276`); where the set has no folder icon, the name alone.
     caption(reg, ui, "Icon Sizes");
     // One height for every cell, its content from the bottom, so the names share a line, as
     // gpui's `items_end` row has them (`showcase-gpui/pages/icons.rs:35`).
@@ -171,7 +171,7 @@ fn small_width(ui: &egui::Ui, text: &str) -> f32 {
 
 /// A cell `width` wide holding an icon of at most `icon` points over a `Small` name, its content
 /// centred in a column as the gpui showcase's icon cells are (`items_center`,
-/// `showcase-gpui/demo.rs:8094-8113`), laid out by `layout`, and padded by `pad` —
+/// `showcase-gpui/demo.rs:8101-8120`), laid out by `layout`, and padded by `pad` —
 /// `layout.container_margin` in a gallery, standing in for the gpui cell's own `px_2`/`py_2`.
 fn cell(
     ui: &mut egui::Ui,
@@ -231,7 +231,7 @@ fn native_here(set: IconSet) -> bool {
 /// The loading indicator the chosen icon theme ships (§10.4, the Icons row), in a card framed
 /// as the gpui showcase's `demo_frame` in `defaults.border` and padded by
 /// `layout.container_margin`, at `defaults.icon_sizes.dialog`, above what it is — the gpui
-/// showcase's animated-icon card (`showcase-gpui/demo.rs:8299-8356`); where the theme ships
+/// showcase's animated-icon card (`showcase-gpui/demo.rs:8306-8363`); where the theme ships
 /// none, gpui's caption.
 fn icons_indicator(
     reg: &mut Registry,

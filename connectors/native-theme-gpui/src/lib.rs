@@ -199,7 +199,7 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-
+#![deny(clippy::disallowed_methods)]
 // GPUI through gpui-kit, which re-exports the core it is built on: gpui-pre,
 // or GPUI Fast under `gpui-kit/gpui-fast` (gpui-kit `src/lib.rs:94, 101-103`).
 extern crate gpui_kit as gpui;

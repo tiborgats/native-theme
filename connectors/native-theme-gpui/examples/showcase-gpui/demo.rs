@@ -2371,6 +2371,13 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
     let size = text_size_of(n, &s.font);
     let side = |stated: Option<f32>| stated.unwrap_or(f32::from(SEGMENT_PADDING));
     let padding = side(b.padding.left) + side(b.padding.right);
+    #[allow(
+        clippy::disallowed_methods,
+        reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.10 \
+                  src/text_system.rs:678-681): the one non-test caller passes BASIC_SEGMENTS \
+                  (pages/basic.rs), constants without one, and the showcase tests call it in \
+                  debug builds, where a newline would fire the assert"
+    )]
     let shaped = |label: &str| {
         let run = gpui::TextRun {
             len: label.len(),

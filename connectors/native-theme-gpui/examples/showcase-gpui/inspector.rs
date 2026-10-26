@@ -338,6 +338,11 @@ impl DrawnFamilies {
                 continue;
             }
             let resolved = if listed {
+                #[allow(
+                    clippy::disallowed_methods,
+                    reason = "asked only where the text system lists a family of gpui's fallback \
+                              stack (`listed`); the one case where it panics is stated in the doc"
+                )]
                 let id = text_system.resolve_font(&gpui::font(family.clone()));
                 text_system.get_font_for_id(id).map(|font| font.family)
             } else {

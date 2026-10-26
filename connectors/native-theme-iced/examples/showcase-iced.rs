@@ -10090,7 +10090,7 @@ fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
 /// the bubble inside the popup, so the bubble stands that far from where
 /// the popup is placed. Every tooltip of the gpui showcase this one's are
 /// compared with (the toolbar's, the status bar's side-panel toggle's and
-/// the Basic page's, `showcase-gpui/demo.rs:1229`, `:1453`, `:5833`) is
+/// the Basic page's, `showcase-gpui/demo.rs:1229`, `:1453`, `:5840`) is
 /// gpui's own element tooltip, which gpui places off the pointer, a pixel
 /// right of and below it (gpui-pre 0.3.10 `src/window.rs:3834-3835`,
 /// `prepaint_tooltip`), and above it where the window's bottom edge leaves

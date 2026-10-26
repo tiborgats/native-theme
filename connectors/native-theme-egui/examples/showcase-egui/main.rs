@@ -30,7 +30,7 @@ pub(crate) use native_theme_showcase_support::cli::CliArgs;
 pub(crate) use native_theme_showcase_support::elements;
 
 /// The window's title: the crate's name and version, as the gpui showcase's
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:277-282`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:279-284`).
 pub(crate) const WINDOW_TITLE: &str = concat!(
     env!("CARGO_PKG_NAME"),
     " ",
@@ -40,7 +40,7 @@ pub(crate) const WINDOW_TITLE: &str = concat!(
 
 /// The side panel's initial width. The model states no side-panel width (spec §10.4); this
 /// is the gpui showcase's `LEFT_PANEL_WIDTH_PX`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:340`).
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/main.rs:342`).
 pub(crate) const LEFT_PANEL_WIDTH: f32 = 300.0;
 
 /// The initial window size: the shared crate's `WINDOW_SIZE_PX`, 1280 × 720 logical pixels,
@@ -55,14 +55,14 @@ pub(crate) const WINDOW_SIZE: egui::Vec2 =
 /// gpui's `FontWeight::SEMIBOLD`
 /// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.10/src/text_system.rs:1202`),
 /// which the gpui showcase's inspector headings take (`font_semibold()`,
-/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:156`, `:538`). Without
+/// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:156`, `:543`). Without
 /// `system-fonts` no face is looked up, and the headings keep the regular one.
 #[cfg(feature = "system-fonts")]
 pub(crate) const SEMIBOLD_WEIGHT: u16 = 600;
 
 /// The side of a colour swatch in Widget Info and on the Theme Map. The model states no swatch;
 /// this is the gpui showcase's `SWATCH_SIZE`
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:555`), the square both of
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:560`), the square both of
 /// its swatches draw.
 pub(crate) const SWATCH_SIZE: f32 = 16.0;
 
