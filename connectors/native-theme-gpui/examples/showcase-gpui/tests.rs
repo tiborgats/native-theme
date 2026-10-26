@@ -17792,8 +17792,9 @@ fn a_raster_sets_chevrons_are_the_expanders_arrows_and_the_steppers(cx: &mut Tes
     );
     // The open item's arrow is the set's ChevronDown, pixels do not turn
     // (part A's review, item 13(e)): both arrows ChevronRight fails here. The
-    // arrow names the pixels it shows (`demo::native_expander`), as the
-    // Number input's steps show a ChevronDown image too.
+    // arrow's glyph names the set's image it is in test builds
+    // (`demo::native_expander`), as the Number input's steps show a
+    // ChevronDown image too.
     let opened = bounds_of(&mut cx, "basic-expander-arrow-0");
     let shows = cx.debug_bounds("basic-expander-arrow-0-ChevronDown");
     assert!(

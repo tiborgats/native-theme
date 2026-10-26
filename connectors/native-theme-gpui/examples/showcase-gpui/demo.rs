@@ -196,6 +196,7 @@ impl Glyph {
     }
 
     /// The icon's name where the glyph is pixels.
+    #[cfg(test)]
     fn raster_name(&self) -> Option<&'static str> {
         match self {
             Self::Svg(_) => None,
@@ -7130,15 +7131,18 @@ fn native_expander(
                 let listed = elements::expander_item(id, ix);
                 let shown = if is_open { &open_glyph } else { &glyph };
                 let arrow = shown.clone().map(|glyph| {
-                    // Which set's pixels the arrow shows, for the self-tests:
-                    // an image's own selector names its icon alone, which
-                    // the Number input's steps show too.
+                    // Which set's image the arrow's glyph is, for the
+                    // self-tests alone: an image's own selector names its
+                    // icon alone, which the Number input's steps show too.
+                    #[cfg(test)]
                     let shows = glyph.raster_name().map(|name| {
                         div()
                             .absolute()
                             .inset_0()
                             .debug_selector(move || format!("{id}-arrow-{ix}-{name}"))
                     });
+                    #[cfg(not(test))]
+                    let shows: Option<Div> = None;
                     div()
                         .relative()
                         .flex_none()
