@@ -31,44 +31,94 @@ jobs:
         with:
           key: os-probe
       # The probe's window section captures its window with `screencapture -l`,
-      # which needs kTCCServiceScreenCapture on macOS 14+: granted to the
-      # shells that start the probe, as screenshots.yml grants it.
-      - name: Grant screen recording permission (macOS)
+      # which needs kTCCServiceScreenCapture on macOS 14+, and the extra passes
+      # below write com.apple.universalaccess, which needs Full Disk Access
+      # (kTCCServiceSystemPolicyAllFiles): both granted to the shells that run
+      # the steps, as screenshots.yml grants the first. Each insert reports its
+      # own failure and the step fails nothing, so a TCC schema an image does
+      # not share leaves the probe to record what it then cannot do.
+      - name: Grant screen recording and Full Disk Access (macOS)
         if: runner.os == 'macOS'
+        continue-on-error: true
         run: |
-          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
-             VALUES ('kTCCServiceScreenCapture', '/bin/bash', 1, 2, 4, 1);"
-          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
-            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
-             VALUES ('kTCCServiceScreenCapture', '/bin/zsh', 1, 2, 4, 1);"
+          set +e
+          for service in kTCCServiceScreenCapture kTCCServiceSystemPolicyAllFiles; do
+            for client in /bin/bash /bin/zsh; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('$service', '$client', 1, 2, 4, 1);" \
+                || echo "::warning::granting $service to $client failed"
+            done
+          done
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
-      # A second pass with Reduce Transparency off, which the runner images
-      # turn on (probe.toml's accessibilityDisplayShouldReduceTransparency),
-      # so the window section also renders the materials translucent. Writing
-      # com.apple.universalaccess may be refused on a runner; the pass's own
-      # probe.toml records whether the setting took, and a failure here fails
-      # nothing.
+      # The image's own accessibility settings, read before any pass changes
+      # them: a value, `absent` where the image sets none, or what the read
+      # said where it failed otherwise (and the pass then restores nothing).
+      - name: Record the image's accessibility settings (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          mkdir -p "$RUNNER_TEMP/universalaccess"
+          for key in reduceTransparency increaseContrast; do
+            value="$(defaults read com.apple.universalaccess "$key" 2>&1)"
+            if [ $? -ne 0 ]; then
+              case "$value" in
+                *"does not exist"*) value=absent ;;
+                *) value="unreadable: $value" ;;
+              esac
+            fi
+            echo "$value" > "$RUNNER_TEMP/universalaccess/$key"
+            echo "$key: $value"
+          done
+      # Two more passes, each into its own folder, whatever fails: with Reduce
+      # Transparency off, which the runner images turn on (probe.toml's
+      # accessibilityDisplayShouldReduceTransparency), so the window section
+      # also renders the materials translucent; and with Increase Contrast on,
+      # which they leave off, to see whether the colours the probe reads under
+      # the named Aqua and DarkAqua appearances follow it. Each folder's
+      # settings.txt records the image's value, the write's exit status and
+      # the value read back, and its probe.toml whether the setting took.
       - name: Run the probe with Reduce Transparency off (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
-          defaults write com.apple.universalaccess reduceTransparency -bool false
-          defaults read com.apple.universalaccess reduceTransparency
-          cargo run -p native-theme-os-probe --release -- --out os-probe-out/reduce-transparency-off
-      # A third pass with Increase Contrast on, which the runner images leave
-      # off (accessibilityDisplayShouldIncreaseContrast): whether the colours
-      # the probe reads under the named Aqua and DarkAqua appearances follow
-      # it. The same caveats as the pass above; its probe.toml records whether
-      # the setting took.
+          set +e
+          out=os-probe-out/reduce-transparency-off
+          mkdir -p "$out"
+          {
+            echo "image's reduceTransparency: $(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            defaults write com.apple.universalaccess reduceTransparency -bool false
+            echo "write reduceTransparency false: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
       - name: Run the probe with Increase Contrast on (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
         run: |
-          defaults write com.apple.universalaccess increaseContrast -bool true
-          defaults read com.apple.universalaccess increaseContrast
-          cargo run -p native-theme-os-probe --release -- --out os-probe-out/increase-contrast-on
+          set +e
+          out=os-probe-out/increase-contrast-on
+          mkdir -p "$out"
+          {
+            image="$(cat "$RUNNER_TEMP/universalaccess/reduceTransparency" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              1) defaults write com.apple.universalaccess reduceTransparency -bool true ;;
+              0) defaults write com.apple.universalaccess reduceTransparency -bool false ;;
+              absent) defaults delete com.apple.universalaccess reduceTransparency ;;
+              *) false ;;
+            esac
+            echo "restore reduceTransparency to the image's ($image): exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess reduceTransparency 2>&1)"
+            echo "image's increaseContrast: $(cat "$RUNNER_TEMP/universalaccess/increaseContrast" 2>/dev/null || echo 'not recorded')"
+            defaults write com.apple.universalaccess increaseContrast -bool true
+            echo "write increaseContrast true: exit $?"
+            echo "read back: $(defaults read com.apple.universalaccess increaseContrast 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
