@@ -496,7 +496,7 @@ fn chrome_button_image(
 /// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
 /// `active` colour (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the
 /// selected button's accent. Its icon where the set has one, else its tooltip's text as its
-/// label, as gpui's (`showcase-gpui/demo.rs:1217-1220`).
+/// label, as gpui's (`showcase-gpui/demo.rs:1367-1370`).
 fn ghost_button(
     ui: &egui::Ui,
     image: Option<egui::Image<'static>>,
@@ -515,7 +515,7 @@ fn ghost_button(
 }
 
 /// The kind a Ghost button records, as the gpui showcase names its toolbar and status-bar
-/// buttons (`showcase-gpui/info/chrome.rs:491-496`, `:1026-1030`).
+/// buttons (`showcase-gpui/info/chrome.rs:491-496`, `:1023-1027`).
 fn ghost_kind(drawn: bool, selected: bool) -> &'static str {
     match (drawn, selected) {
         (true, true) => "Button · Ghost, icon, selected",
@@ -688,7 +688,7 @@ fn tooltip(
 }
 
 /// The status bar, as the gpui showcase's (`showcase-gpui/chrome.rs:325-365`,
-/// `showcase-gpui/demo.rs:973-1052`, `:1402-1455`): the side-panel toggle, a small Ghost button
+/// `showcase-gpui/demo.rs:1123-1202`, `:1552-1605`): the side-panel toggle, a small Ghost button
 /// with gpui's `PanelLeft` icon at `defaults.icon_sizes.small`, selected while the panel shows;
 /// then the environment as one line joined by " · ", cut short in the room the title leaves; the
 /// shown Widget Info's title flush right.
@@ -874,7 +874,7 @@ pub(crate) fn environment(app: &App, ctx: &egui::Context) -> Vec<String> {
 
 /// The side panel: `Role::Splitter` live on the root while it is shown, its body
 /// in `Role::Sidebar`; not inside a scope (§10.4, the panel-in-scope note). As the gpui
-/// showcase's (`showcase-gpui/demo.rs:1536-1570`): the settings padded by `container_margin`,
+/// showcase's (`showcase-gpui/demo.rs:1686-1720`): the settings padded by `container_margin`,
 /// a separator and the inspector's tabs from edge to edge, the inspector's content padded too.
 /// Where the theme states the side panel's own padding (`sidebar.border.padding`, the left
 /// panel surface's inner margin) on any side, the panel keeps the stated sides, a side it
@@ -1077,7 +1077,7 @@ fn padded<R>(ui: &mut egui::Ui, margin: Option<f32>, add: impl FnOnce(&mut egui:
 }
 
 /// A theme setting's label, above its control and as wide as its text, as the gpui showcase's
-/// (`showcase-gpui/demo.rs:1502-1521`), in the side panel's font (`sidebar.font`, `Body` in the
+/// (`showcase-gpui/demo.rs:1652-1671`), in the side panel's font (`sidebar.font`, `Body` in the
 /// sidebar scope), recorded with the side panel body's role; the control names it as its
 /// AccessKit label.
 fn setting_label(
@@ -1093,7 +1093,7 @@ fn setting_label(
 
 /// Theme (`ComboBox` of `default` and the platform's presets), Mode (`ComboBox` of System,
 /// Light and Dark), Icon theme (`ComboBox`), each under its label and as wide as the panel: the
-/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1470-1495`, `chrome.rs:254-299`).
+/// gpui showcase's theme settings (`showcase-gpui/demo.rs:1620-1645`, `chrome.rs:254-299`).
 fn settings_rows(app: &mut App, ui: &mut egui::Ui, body: demo::Applied) {
     let ctx = ui.ctx().clone();
     let theme = ctx.theme();
@@ -1492,7 +1492,7 @@ pub(crate) fn central_panel(
 
 /// The theme errors, one per line, in a card across the content.
 fn theme_error_banner(app: &mut App, ui: &mut egui::Ui, error: String) {
-    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:2902-2926`):
+    // As the gpui showcase's error banner (`showcase-gpui/demo.rs:3124-3148`):
     // across the content, the chosen icon theme's error icon first, where it
     // has one — `IconRole::DialogError`, the role gpui's `CircleX` maps to
     // (`showcase-gpui/support.rs:515-526`, `role_for_gpui_icon`) — at
@@ -1544,7 +1544,7 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
 
 /// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.1
 /// `src/dialog/dialog.rs:806-813`, the `DialogTitle`, and `:846-861`, the Ghost close button) and
-/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2547`, `:2589`): the
+/// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2758`, `:2800`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's
 /// `WindowClose` at `defaults.icon_sizes.small`, or "Close" where the theme has none (§10.4's
@@ -1594,7 +1594,7 @@ enum Pick {
 /// A palette row: its label, what the query matches, what it runs.
 type PaletteRow = (String, String, Pick);
 
-/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:452-499`):
+/// The command palette's groups, as the gpui showcase's (`showcase-gpui/chrome.rs:453-500`):
 /// the pages, the presets the Theme row offers by their display names, found by their keys too,
 /// and the colour modes, System named by the scheme it follows now.
 fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<PaletteRow>); 3] {
@@ -1640,7 +1640,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
     ]
 }
 
-/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2530-2567`): a
+/// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2741-2778`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
 /// Its keys are those of gpui-component 0.8.1's `Command` (`src/command/state.rs:65-68`): Up and
@@ -1855,7 +1855,7 @@ pub(crate) fn command_palette(app: &mut App, ui: &mut egui::Ui) {
 }
 
 /// The text-scaling field's range and step: the gpui showcase's Preferences number field
-/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2752-2759`), whose range is
+/// (`connectors/native-theme-gpui/examples/showcase-gpui/demo.rs:2963-2970`), whose range is
 /// Windows' `UISettings.TextScaleFactor` (platform-facts §1.2.7) and whose step divides it
 /// evenly. The model states none; they are not style values.
 const TEXT_SCALE_MIN: f32 = 1.0;
@@ -1941,7 +1941,7 @@ pub(crate) fn preferences(app: &mut App, ui: &mut egui::Ui) {
                         RoleVariant::Normal,
                         "preferences",
                     );
-                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:2818-2900`): its
+                    // The gpui showcase's Settings page (`showcase-gpui/demo.rs:3040-3122`): its
                     // title and description, then a row per preference — its title and a weak
                     // description on the left, its control on the right.
                     body.add(registry, ui, "heading", |ui| {
@@ -2100,7 +2100,7 @@ pub(crate) fn about(app: &mut App, ui: &mut egui::Ui) {
         if let Some(w) = max_w {
             ui.set_max_width(w);
         }
-        // The gpui showcase's About (`showcase-gpui/demo.rs:2572-2645`): its title, the name
+        // The gpui showcase's About (`showcase-gpui/demo.rs:2783-2856`): its title, the name
         // and version, then the description in `dialog.body_font` — the dialog role's `Body`
         // slot and text colour (§5) — ending in the link to the Compatibility table at this
         // version's tag.

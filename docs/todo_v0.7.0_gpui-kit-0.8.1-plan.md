@@ -538,3 +538,12 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   line count: the deny takes the blank line after `expect_used`. `docs/todo.md`'s
   citations of `SC/inspector.rs:562-565` and `SC/demo.rs:6822`, `:6892` already named
   other lines before this task and are left as they are (the file is append-only).
+- **Task 4 fix round, the showcases' citations of the gpui showcase.** The review found that
+  most of the egui and iced showcases' citations of the gpui showcase's lines were already
+  wrong before Task 4 renumbered them: re-pointed by content on 2026-10-24, they drifted with
+  the M9x fixes. At b847149a, 26 of the 50 named other lines (24 by 83 to 476 lines). The
+  fix round re-points all 50 by content: each cited block, read at the commit that last wrote
+  the citation, is found at HEAD; four blocks that occur twice at HEAD (an icon-or-label
+  arm and three `.tooltip` lines) and the two functions that changed since (`panel_toggle`,
+  `icon_size_cell`) were placed by their enclosing function. A `docs/todo.md` entry, *Showcases: a gate for one showcase's citations
+  of another's lines*, asks for a gate.

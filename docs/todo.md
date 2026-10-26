@@ -3781,6 +3781,24 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       raise upstream (an agent files nothing); re-check it at the next GPUI Kit
       upgrade.
 
+### Showcases: a gate for one showcase's citations of another's lines
+
+- [ ] [v0.7.x] The egui and iced showcases cite the gpui showcase's own lines
+      (`showcase-gpui/demo.rs:N`, `inspector.rs`, `main.rs`, `chrome.rs`,
+      `info/chrome.rs`, `pages/icons.rs` and others) for what they copy from
+      it, and no gate reads those citations. The egui showcase re-pointed them
+      by content on 2026-10-24 (7408549a, e9e42718); by b847149a, after the
+      M9x fixes, 26 of the 50 named other lines, 24 of them by 83 to 476
+      lines, and nobody noticed until G4's Task 4 review. G4's Task 4 fix
+      round re-pointed all 50 by content. To do: a gate like the citation
+      gates, run by `scripts/check_release.sh` and CI, for every citation of a
+      showcase's line from another showcase or a connector: either the cited
+      line's text is recorded beside the citation and compared, or the
+      citation names a symbol (a function, a constant) that is looked up at
+      the cited line. The egui connector's citations of the gpui connector's
+      `src/lib.rs` (in its `src/atlas.rs`, `src/plugin.rs` and `src/ext.rs`)
+      have the same gap, and at b847149a several named other lines.
+
 ---
 
 ## This cycle (v0.7.0)
