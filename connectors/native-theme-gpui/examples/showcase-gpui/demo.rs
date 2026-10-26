@@ -3978,7 +3978,8 @@ pub(crate) struct StepIcons {
 /// out (Qt's QSpinBox, GTK's GtkSpinButton), where upstream's centres the
 /// value between − and + (:173-180); the buttons are upstream's otherwise
 /// (:128-171), each showing its chevron of `steps`, the chosen icon theme's
-/// at `geometry::icon_size_small`, or none where that theme has none.
+/// at `geometry::icon_size_small` or, where a step is shorter, the step's
+/// height (`info::inputs::StepGlyph`), or none where that theme has none.
 /// Without a native theme, upstream's `NumberInput`, which draws its own
 /// Minus and Plus.
 #[allow(clippy::too_many_arguments)]
@@ -4006,7 +4007,8 @@ pub(crate) fn number_input(
     let mut number_info =
         info::inputs::native_number_input(n.resolved, focused, &steps.up, &steps.down)
             .geometry("input");
-    if steps.up.shown() || steps.down.shown() {
+    let glyph = info::inputs::StepGlyph::of(n.resolved);
+    if (steps.up.shown() || steps.down.shown()) && glyph.at_icon_size_small() {
         number_info = number_info.geometry("icon_size_small");
     }
     // A soft option the theme leaves unstated keeps the edge it would cover.
@@ -4031,7 +4033,7 @@ pub(crate) fn number_input(
     // pointer and while pressed, a pixel tighter at the outer corners, as
     // wide as upstream's at the field's Size (:162-166, `min_w_8`); stacked,
     // each half the field's height, with its chevron of the chosen icon
-    // theme at `defaults.icon_sizes.small`. Their colours are the fields
+    // theme. Their colours are the fields
     // upstream's tokens carry under a native theme: secondary_foreground is
     // `button.font`'s colour, input the field's edge colour (native-theme-gpui
     // colors.rs).
@@ -4039,11 +4041,8 @@ pub(crate) fn number_input(
     let tint = info::stated(i.border.color);
     let radius = px(i.border.corner_radius.max(0.0) - i.border.line_width).max(px(0.));
     // Each step's glyph at `defaults.icon_sizes.small`, or where a step is
-    // shorter, the step's height, so no glyph overflows its step (M9-177):
-    // the steps share the field's stated height inside its edge (`frame`,
-    // `geometry::input`: `input.min_height` and `input.border.line_width`).
-    let step_height = (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0;
-    let side = Size::Size(px(n.resolved.defaults.icon_sizes.small.min(step_height)));
+    // shorter, the step's height (`info::inputs::StepGlyph`, M9-177).
+    let side = Size::Size(px(glyph.side()));
     let (up, down) = (
         steps.up.glyph().map(|glyph| glyph.with_size(side)),
         steps.down.glyph().map(|glyph| glyph.with_size(side)),

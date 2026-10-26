@@ -17642,6 +17642,52 @@ fn the_number_inputs_step_glyphs_fit_their_steps(cx: &mut TestAppContext) {
     assert!(faults.is_empty(), "{faults:#?}");
 }
 
+/// The Number input's info names the size its step glyphs are drawn at and
+/// no other (round 2-3 review, item 15(5)): under macos-tahoe, whose 24 px
+/// field leaves each step 11.5 px, the glyphs are a step tall, and no
+/// `geometry::icon_size_small` line claims `defaults.icon_sizes.small`'s 16;
+/// under material-3, whose 56 px field leaves 27, they are at
+/// `geometry::icon_size_small`, which the info names.
+#[gpui::test]
+fn the_number_inputs_info_names_its_step_glyphs_size(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    let mut faults = Vec::new();
+    for (preset, capped) in [("macos-tahoe", true), ("material-3", false)] {
+        use_preset(&mut cx, &showcase, preset);
+        show(&mut cx, &showcase, Page::Basic);
+        let Some(info) = settle_on(&mut cx, &showcase, "basic-number") else {
+            faults.push(format!("{preset}: the Number input shows no info"));
+            continue;
+        };
+        let sized = info
+            .config
+            .iter()
+            .any(|n| n.what == "geometry" && n.text.starts_with("geometry::icon_size_small:"));
+        let glyphs = info
+            .instance
+            .iter()
+            .find(|n| n.what == "step glyphs")
+            .map(|n| n.text.clone());
+        let Some(glyphs) = glyphs else {
+            faults.push(format!("{preset}: no step glyphs line: {info:?}"));
+            continue;
+        };
+        if sized == capped {
+            faults.push(format!(
+                "{preset}: the geometry::icon_size_small line is {}, the step glyphs {glyphs:?}",
+                if sized { "there" } else { "missing" }
+            ));
+        }
+        let shown = if capped { "11.5px:" } else { "16px:" };
+        if !glyphs.starts_with(shown) {
+            faults.push(format!(
+                "{preset}: the step glyphs line {glyphs:?} is not {shown}"
+            ));
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// Part A's review, item 13(d): an open expander item's arrow is turned only
 /// where it is the closed chevron itself; where the closed chevron is pixels
 /// the open item shows the set's chevron of the turned direction, which is

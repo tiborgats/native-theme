@@ -312,6 +312,42 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
         .not_themeable("own icons", super::own_icons("Minus and Plus on its step buttons (input/number_input.rs, NumberInput)"))
 }
 
+/// The size of the Number input's step glyphs under a native theme
+/// (M9-177): `defaults.icon_sizes.small`, or where a step is shorter, the
+/// step's height, so no glyph overflows its step. The steps share the
+/// field's stated height inside its edge (`geometry::input`:
+/// `input.min_height` and `input.border.line_width`). `demo::number_input`
+/// draws the glyphs at [`StepGlyph::side`] and [`native_number_input`]
+/// says so.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct StepGlyph {
+    /// `defaults.icon_sizes.small`.
+    pub(crate) small: f32,
+    /// A step's height: half `input.min_height` inside the frame's two edges.
+    pub(crate) step: f32,
+}
+
+impl StepGlyph {
+    pub(crate) fn of(r: &ResolvedTheme) -> Self {
+        let i = &r.input;
+        Self {
+            small: r.defaults.icon_sizes.small,
+            step: (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0,
+        }
+    }
+
+    /// The side each glyph is drawn at.
+    pub(crate) fn side(self) -> f32 {
+        self.small.min(self.step)
+    }
+
+    /// Whether the glyphs are at `defaults.icon_sizes.small`
+    /// (`geometry::icon_size_small`), a step being at least that tall.
+    pub(crate) fn at_icon_size_small(self) -> bool {
+        self.small <= self.step
+    }
+}
+
 /// The number field the showcase draws as `r`'s `input.*` states a text
 /// field (`demo::number_input` under a native theme): its own frame round
 /// gpui-base's NumberInput, `focused` or not, its step buttons showing `up`
@@ -434,13 +470,12 @@ pub fn native_number_input(
         .instance("focus ring", "none: the value is an Input without its appearance, which carries upstream's ring (input/input.rs, Input::render), and the frame marks focus by its edge alone")
         .not_themeable("step buttons", "upstream's: transparent at rest, as wide as upstream's at the field's Size (input/number_input.rs, NumberInput::render: min_w_8), each half the field's height, stacked at its right end (gpui-base/number_input.rs, controls_right): the theme states no spin-box layout")
         .instance("step glyphs", {
-            let step = (i.min_height - i.border.line_width - i.border.line_width).max(0.0) / 2.0;
-            let small = r.defaults.icon_sizes.small;
+            let glyph = StepGlyph::of(r);
             format!(
                 "{}px: the smaller of defaults.icon_sizes.small, {}px, and a step's height, half input.min_height inside the frame's edge, {}px, so no glyph overflows its step (demo::number_input)",
-                px_text(small.min(step)),
-                px_text(small),
-                px_text(step)
+                px_text(glyph.side()),
+                px_text(glyph.small),
+                px_text(glyph.step)
             )
         })
         .instance("increment step", format!("ChevronUp: {}", up.note("the button shows no glyph")))
