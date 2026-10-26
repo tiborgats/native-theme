@@ -266,7 +266,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # segmented_control (§2.25)
 "segmented_control.background_color"         = "defaults.background_color"
-"segmented_control.active_background"        = "defaults.accent_color"
+"segmented_control.active_background"        = "defaults.accent_color"        # see wrong_safety_nets
 "segmented_control.active_text_color"        = "defaults.accent_text_color"
 "segmented_control.disabled_opacity"         = "defaults.disabled_opacity"
 
@@ -641,6 +641,10 @@ why_wrong     = "Windows fills a progress bar with AccentFillColorDefault, the a
 [wrong_safety_nets."switch.checked_background"]
 inherits_from = "defaults.accent_color"
 why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE lays the highlight at alpha 0.5 over the off track (platform-facts.md:1521, §2.21); iOS draws an on UISwitch in systemGreen, not the accent, which ios-13 states (ios-13.toml [light.switch] checked_background)"
+
+[wrong_safety_nets."segmented_control.active_background"]
+inherits_from = "defaults.accent_color"
+why_wrong     = "GNOME's AdwToggleGroup draws a checked toggle in --active-toggle-bg-color, white in light and white at 20 % in dark (libadwaita 1.10.0 _toggle-group.scss:79-80, _colors.scss:238, :245-247), and macOS 14 and 15 draw the selected segment raised and neutral, #ffffff / #666666 measured (platform-facts.md:1636, §2.25): a neutral pill, not the accent"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #

@@ -440,6 +440,16 @@ cannot tell which file a bare number continues, so it does not look for one.
       named `docs/platform-facts.md:1307` and `:181` as "citing probe 15" (its
       words; `:1307` gives the macOS 14.8.9 probe's legacy 15): re-check what
       each should cite now that the reader reads the width live (e6c5c737).
+      *W2-j (2026-10-26):* §2.8's KDE `thumb_hover_color` cell now has its
+      source and value, Breeze's `DecorationHover` at half alpha over the
+      window, #96cfed / #2f6888 (`docs/platform-facts.md:1306`), which
+      kde-breeze states and the reader writes (D7). The KDE `thumb_color`
+      cell (`:1305`) is still the placeholder "thumb color". By the same
+      source a resting handle is `WindowText` at alpha 0.5 (breezehelper.cpp:279
+      at breeze f0b1d75), times 0.7 + 0.3 × the groove's hover opacity
+      (breezestyle.cpp:6402), filled at half that over the window
+      (breezehelper.cpp:1284): give the cell that value for Breeze and Breeze
+      Dark, then state it in kde-breeze in both modes.
 
 ### Fonts: find a system face by family, weight and style
 
@@ -1230,18 +1240,14 @@ model, the platform presets and the three connectors
         toolbar's border (§2.13: none), the list's (§2.15: none for a plain
         list), the progress bar's padding (§2.10: 0) and the sidebar's
         (§2.12: 6, 6 top / 4 bottom).
-      - kde-breeze: `button.active_background` `#3daee9`
-        (`kde-breeze.toml` `[light.button] active_background`,
-        `[dark.button] active_background`; §2.3: `mix(Button, Highlight,
-        0.3)`, #c3e5f6 / #2f5368), `button.active_text_color` `#ffffff` light
-        (`[light.button] active_text_color`; §2.3: `ButtonText`, #232629);
+      - kde-breeze (its pressed button's fill and text and its scroll bar's
+        pressed thumb left this list in D7, 2026-10-26: the reader now writes
+        them from the colour scheme, and it cannot be right while the preset
+        states another value; the rest of this entry stays for 1.0, M8-76):
         `checkbox.hover_background` `#93cee9`
-        (`[light.checkbox] hover_background`, `[dark.checkbox] hover_background`;
-        §2.5: no hover fill, a `DecorationFocus` ring);
-        `scrollbar.thumb_active_color` `#3daee9`
-        (`[light.scrollbar] thumb_active_color`,
-        `[dark.scrollbar] thumb_active_color`; §2.8: ← `thumb_hover_color`,
-        which the preset states `#93cee9`); `slider.thumb_hover_color`
+        (`kde-breeze.toml` `[light.checkbox] hover_background`,
+        `[dark.checkbox] hover_background`; §2.5: no hover fill, a
+        `DecorationFocus` ring); `slider.thumb_hover_color`
         `#93cee9` (`[light.slider] thumb_hover_color`,
         `[dark.slider] thumb_hover_color`; §2.9: the `Button` fill, #fcfcfc /
         #292c30, hover being an outline), `slider.disabled_fill_color`,

@@ -416,8 +416,10 @@ shadow_enabled = false
 background_color = "#e6e6e7"
 segment_height_px = 28.0
 separator_width_px = 1.0
-active_background = "#3584e4"
-active_text_color = "#ffffff"
+# platform-facts.md:1636-1637 (§2.25): AdwToggleGroup's checked toggle, --active-toggle-bg-color #ffffff and
+# --active-toggle-fg-color RGB(0 0 6 / 80%) over it (libadwaita 1.10.0 _toggle-group.scss:79-81, _colors.scss:238-239)
+active_background = "#ffffff"
+active_text_color = "#333338"
 hover_background = "#d5d5d5"
 
 
@@ -853,7 +855,10 @@ shadow_enabled = false
 background_color = "#38383c"
 segment_height_px = 28.0
 separator_width_px = 1.0
-active_background = "#3584e4"
+# platform-facts.md:1636-1637 (§2.25): AdwToggleGroup's checked toggle, --active-toggle-bg-color white at 20 %
+# over the group's #38383c, and --active-toggle-fg-color #ffffff (libadwaita 1.10.0 _toggle-group.scss:79-81,
+# _colors.scss:245-248)
+active_background = "#606063"
 active_text_color = "#ffffff"
 hover_background = "#464649"
 

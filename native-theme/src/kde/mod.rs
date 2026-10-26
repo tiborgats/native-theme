@@ -1232,13 +1232,16 @@ BackgroundNormal=49,54,59
     }
 
     /// A colour scheme's background and text keys, `(BackgroundNormal,
-    /// ForegroundNormal)`, of the sets the derived leaves read, with an
-    /// optional `[Colors:Header]` group and `[KDE] frameContrast`.
+    /// ForegroundNormal)`, of the sets the derived leaves read, the View
+    /// set's `DecorationFocus` and `DecorationHover`, with an optional
+    /// `[Colors:Header]` group and `[KDE] frameContrast`.
     struct Scheme {
         button: (&'static str, &'static str),
         header: Option<(&'static str, &'static str)>,
         selection: &'static str,
         view: (&'static str, &'static str),
+        focus: &'static str,
+        hover: &'static str,
         window: (&'static str, &'static str),
         frame_contrast: Option<&'static str>,
     }
@@ -1256,7 +1259,11 @@ BackgroundNormal=49,54,59
                 "[Colors:Selection]\nBackgroundNormal={}\n\n",
                 self.selection
             ));
-            content.push_str(&group("View", self.view));
+            content.push_str(&format!(
+                "[Colors:View]\nBackgroundNormal={}\nForegroundNormal={}\n\
+                 DecorationFocus={}\nDecorationHover={}\n\n",
+                self.view.0, self.view.1, self.focus, self.hover
+            ));
             content.push_str(&group("Window", self.window));
             if let Some(contrast) = self.frame_contrast {
                 content.push_str(&format!("[KDE]\nframeContrast={contrast}\n"));
@@ -1267,31 +1274,37 @@ BackgroundNormal=49,54,59
 
     /// The keys of BreezeLight.colors at breeze v6.7.5 (LGPL-2.0-or-later)
     /// the derived leaves read: Button :31, :39; Header :59, :67; Selection
-    /// :87; View :115, :123; Window :129, :137. No `[KDE] frameContrast`
+    /// :87; View :115, :123, DecorationFocus :116 and DecorationHover :117;
+    /// Window :129, :137. No `[KDE] frameContrast`
     /// (:193-194), so KColorScheme's 0.2.
     const BREEZE_LIGHT_SCHEME: Scheme = Scheme {
         button: ("252,252,252", "35,38,41"),
         header: Some(("222,224,226", "35,38,41")),
         selection: "61,174,233",
         view: ("255,255,255", "35,38,41"),
+        focus: "61,174,233",
+        hover: "61,174,233",
         window: ("239,240,241", "35,38,41"),
         frame_contrast: None,
     };
 
     /// The same keys of BreezeDark.colors at breeze v6.7.5
     /// (LGPL-2.0-or-later): Button :32, :40; Header :60, :68; Selection :88;
-    /// View :116, :124; Window :130, :138; no frameContrast (:200-201).
+    /// View :116, :124, DecorationFocus :117 and DecorationHover :118;
+    /// Window :130, :138; no frameContrast (:200-201).
     const BREEZE_DARK_SCHEME: Scheme = Scheme {
         button: ("41,44,48", "252,252,252"),
         header: Some(("41,44,48", "252,252,252")),
         selection: "61,174,233",
         view: ("20,22,24", "252,252,252"),
+        focus: "61,174,233",
+        hover: "61,174,233",
         window: ("32,35,38", "252,252,252"),
         frame_contrast: None,
     };
 
-    /// The fifteen colour leaves the reader derives from the colour scheme.
-    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 15] {
+    /// The twenty-two colour leaves the reader derives from the colour scheme.
+    fn derived_leaves(mode: &crate::ThemeMode) -> [(&'static str, Option<Rgba>); 22] {
         let border = |b: &Option<crate::WidgetBorderSpec>| b.as_ref().and_then(|b| b.color);
         let sw = &mode.switch;
         [
@@ -1322,11 +1335,27 @@ BackgroundNormal=49,54,59
             ("toolbar.border.color", border(&mode.toolbar.border)),
             ("popover.border.color", border(&mode.popover.border)),
             ("card.border.color", border(&mode.card.border)),
+            ("button.active_background", mode.button.active_background),
+            ("input.hover_border_color", mode.input.hover_border_color),
+            ("input.focus_border_color", mode.input.focus_border_color),
+            ("tab.hover_background", mode.tab.hover_background),
+            (
+                "segmented_control.active_background",
+                mode.segmented_control.active_background,
+            ),
+            (
+                "scrollbar.thumb_hover_color",
+                mode.scrollbar.thumb_hover_color,
+            ),
+            (
+                "scrollbar.thumb_active_color",
+                mode.scrollbar.thumb_active_color,
+            ),
         ]
     }
 
     /// The same leaves resolved.
-    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 15] {
+    fn resolved_leaves(theme: &crate::ResolvedTheme) -> [(&'static str, Option<Rgba>); 22] {
         let sw = &theme.switch;
         [
             (
@@ -1365,6 +1394,22 @@ BackgroundNormal=49,54,59
             ("toolbar.border.color", Some(theme.toolbar.border.color)),
             ("popover.border.color", Some(theme.popover.border.color)),
             ("card.border.color", Some(theme.card.border.color)),
+            ("button.active_background", theme.button.active_background),
+            ("input.hover_border_color", theme.input.hover_border_color),
+            ("input.focus_border_color", theme.input.focus_border_color),
+            ("tab.hover_background", theme.tab.hover_background),
+            (
+                "segmented_control.active_background",
+                Some(theme.segmented_control.active_background),
+            ),
+            (
+                "scrollbar.thumb_hover_color",
+                Some(theme.scrollbar.thumb_hover_color),
+            ),
+            (
+                "scrollbar.thumb_active_color",
+                theme.scrollbar.thumb_active_color,
+            ),
         ]
     }
 
@@ -1410,10 +1455,12 @@ BackgroundNormal=49,54,59
         Ok(())
     }
 
-    /// Another accent moves only the switch's on track, hovered or not, and
-    /// its outline; the checkbox and the progress bar follow it as before.
+    /// Another accent moves the switch's on track, hovered or not, and its
+    /// outline, the pressed button and the selected segment; the checkbox and
+    /// the progress bar follow it as before.
     #[test]
-    fn an_accent_moves_only_the_switch_on_track_and_its_outline() -> crate::Result<()> {
+    fn an_accent_moves_the_on_track_the_pressed_button_and_the_selected_segment()
+    -> crate::Result<()> {
         let scheme = Scheme {
             selection: "233,84,32",
             ..BREEZE_LIGHT_SCHEME
@@ -1424,6 +1471,8 @@ BackgroundNormal=49,54,59
                 "switch.checked_background",
                 "switch.hover_checked_background",
                 "switch.checked_track_border_color",
+                "button.active_background",
+                "segmented_control.active_background",
             ]
         );
         Ok(())
@@ -1448,6 +1497,7 @@ BackgroundNormal=49,54,59
                 "switch.thumb_background",
                 "switch.unchecked_track_border_color",
                 "switch.thumb_border_color",
+                "button.active_background",
             ]
         );
         Ok(())
@@ -1475,7 +1525,14 @@ BackgroundNormal=49,54,59
             window,
             ..BREEZE_LIGHT_SCHEME
         };
-        assert_eq!(moved_leaves(&with_header)?, ["popover.border.color"]);
+        assert_eq!(
+            moved_leaves(&with_header)?,
+            [
+                "popover.border.color",
+                "scrollbar.thumb_hover_color",
+                "scrollbar.thumb_active_color",
+            ]
+        );
         let without_header = Scheme {
             window,
             header: None,
@@ -1487,6 +1544,8 @@ BackgroundNormal=49,54,59
                 "toolbar.background_color",
                 "toolbar.border.color",
                 "popover.border.color",
+                "scrollbar.thumb_hover_color",
+                "scrollbar.thumb_active_color",
             ]
         );
         Ok(())
@@ -1499,6 +1558,32 @@ BackgroundNormal=49,54,59
             ..BREEZE_LIGHT_SCHEME
         };
         assert_eq!(moved_leaves(&scheme)?, ["card.border.color"]);
+        Ok(())
+    }
+
+    /// The View set's decorations (D7): DecorationHover moves a hovered
+    /// field's frame, the tab hover and the scroll-bar handle, DecorationFocus
+    /// a focused field's frame alone.
+    #[test]
+    fn the_view_decorations_move_the_frames_the_tab_hover_and_the_handle() -> crate::Result<()> {
+        let hover = Scheme {
+            hover: "240,160,20",
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(
+            moved_leaves(&hover)?,
+            [
+                "input.hover_border_color",
+                "tab.hover_background",
+                "scrollbar.thumb_hover_color",
+                "scrollbar.thumb_active_color",
+            ]
+        );
+        let focus = Scheme {
+            focus: "20,200,90",
+            ..BREEZE_LIGHT_SCHEME
+        };
+        assert_eq!(moved_leaves(&focus)?, ["input.focus_border_color"]);
         Ok(())
     }
 
@@ -1604,6 +1689,8 @@ BackgroundNormal=49,54,59
             header: Some(("180,200,220", "10,40,80")),
             selection: "233,84,32",
             view: ("250,240,230", "120,30,60"),
+            focus: "20,200,90",
+            hover: "240,160,20",
             window: ("230,220,200", "90,40,20"),
             frame_contrast: Some("0.5"),
         })?;

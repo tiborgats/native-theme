@@ -172,6 +172,11 @@ fn apply_gnome_accent(
     high_contrast: bool,
 ) {
     apply_accent(variant, accent);
+    // GtkInfoBar's info type is `--accent-bg-color` (libadwaita 1.10.0
+    // `_deprecated.scss:174`; docs/platform-facts.md §2.1.4). Not in
+    // `apply_accent`, which a KDE read shares, where the info colour is
+    // `[Colors:View] ForegroundActive`.
+    variant.defaults.info_color = Some(*accent);
     let ring = accent::focus_ring(*accent, dark, high_contrast);
     variant.defaults.focus_ring_color = Some(ring);
     variant.input.focus_border_color = Some(ring);
@@ -1560,7 +1565,8 @@ mod tests {
     /// bar's with `--accent-bg-color`, the portal's accent (libadwaita 1.10.0
     /// `src/stylesheet/widgets/_checks.scss:54`, `_switch.scss:43`,
     /// `_scale.scss:15`, `_progress-bar.scss:31`; `_colors.scss:166`), so they
-    /// resolve to it.
+    /// resolve to it. The info colour, which adwaita states, is the reader's
+    /// (GtkInfoBar's `--accent-bg-color`, `_deprecated.scss:174`; D7).
     #[test]
     fn a_portal_accent_reaches_the_accent_fills() {
         let mut data = default_gnome_data();
@@ -1584,6 +1590,7 @@ mod tests {
         assert_eq!(r.switch.checked_background, accent);
         assert_eq!(r.slider.fill_color, accent);
         assert_eq!(r.progress_bar.fill_color, accent);
+        assert_eq!(r.defaults.info_color, accent);
     }
 
     /// `size` in points, `None` for a pixel size or none.

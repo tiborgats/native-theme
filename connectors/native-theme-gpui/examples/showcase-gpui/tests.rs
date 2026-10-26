@@ -4055,8 +4055,10 @@ fn the_inspector_copies_the_shown_info(cx: &mut TestAppContext) {
 /// child, so it is painted in the text colour the box is laid out under,
 /// which the registry records for `chrome.info.copy` (a text colour is no
 /// quad of the scene). kde-breeze light states the same colour for its
-/// sidebar text and its hovered button text, so the hovered one is set to
-/// the theme's accent, a colour of the same theme that differs from both.
+/// sidebar text, its hovered button text and its pressed button text, so
+/// the hovered one is set to the theme's accent and the pressed one to its
+/// selection text, colours of the same theme that differ from the sidebar's
+/// and from each other.
 /// The routes are read from the panel's own text for `chrome.info.copy`
 /// (`inspector::listed`, beside the info of the page tab the pointer settled
 /// on), where the panel names each leaf with its value and how it applies.
@@ -4067,6 +4069,7 @@ fn the_copy_box_takes_the_buttons_hover_and_pressed_text_colours(cx: &mut TestAp
     use_light_preset(&mut cx, &showcase, "kde-breeze");
     let mut r = resolved_theme(&mut cx, &showcase);
     r.button.hover_text_color = r.defaults.accent_color;
+    r.button.active_text_color = r.defaults.selection_text_color;
     for (state, colour) in [
         ("hovered", r.button.hover_text_color),
         ("pressed", r.button.active_text_color),

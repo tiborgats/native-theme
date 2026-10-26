@@ -130,9 +130,10 @@ icon_text_gap_px = 4.0
 # it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
 hover_background = "#fcfcfc"
 hover_text_color = "#232629"
-active_background = "#3daee9"
-# no facts row: the text on the accent fill, [Colors:Selection] ForegroundNormal 255,255,255 (BreezeLight.colors:95, breeze v6.7.5)
-active_text_color = "#ffffff"
+# platform-facts.md:1196 (§2.3): a pressed button is KColorUtils::mix(Button, Highlight, Blend_Value 0.3)
+# (breezehelper.cpp:694, breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in
+# every state (platform-facts.md:1197, breezestyle.cpp:5350-5362)
+active_background = "#c3e5f6"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a8a9aa"
@@ -153,7 +154,9 @@ color = "#232629"
 [light.input]
 background_color = "#ffffff"
 min_height_px = 32.0
+# platform-facts.md:1218 (§2.4): [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117)
 hover_border_color = "#3daee9"
+# platform-facts.md:1219 (§2.4): [Colors:View] DecorationFocus 61,174,233 (BreezeLight.colors:116)
 focus_border_color = "#3daee9"
 # platform-facts.md:1208 (§2.4): [Colors:View] ForegroundInactive 112,125,138 (BreezeLight.colors:119, breeze v6.7.5)
 placeholder_color = "#707d8a"
@@ -224,8 +227,11 @@ groove_width_px = 21.0
 min_thumb_length_px = 20.0
 thumb_width_px = 8.0
 overlay_mode = false
-thumb_hover_color = "#93cee9"
-thumb_active_color = "#3daee9"
+# platform-facts.md:1306 (§2.8): [Colors:View] DecorationHover at half alpha over the window
+# (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at breeze f0b1d75)
+thumb_hover_color = "#96cfed"
+# platform-facts.md:1311 (§2.8): no pressed colour of its own, the hovered one
+thumb_active_color = "#96cfed"
 
 [light.slider]
 track_height_px = 6.0
@@ -291,8 +297,6 @@ padding_vertical_px = 4.0
 # platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
 icon_text_gap_px = 8.0
-hover_background = "#3daee9"
-hover_text_color = "#fcfcfc"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#a0a1a3"
 
@@ -506,8 +510,8 @@ color = "#232629"
 [light.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
+# platform-facts.md:1636 (§2.25): [Colors:Selection] BackgroundNormal 61,174,233
 active_background = "#3daee9"
-active_text_color = "#fcfcfc"
 hover_background = "#dee0e2"
 
 [light.segmented_control.border]
@@ -671,8 +675,10 @@ icon_text_gap_px = 4.0
 # it is down, checked or the default button, and hover only sets the pen to Highlight (breezehelper.cpp:693-707, :710-712)
 hover_background = "#292c30"
 hover_text_color = "#fcfcfc"
-active_background = "#3daee9"
-active_text_color = "#fcfcfc"
+# platform-facts.md:1196 (§2.3): a pressed button is KColorUtils::mix(Button, Highlight, Blend_Value 0.3)
+# (breezehelper.cpp:694, breezemetrics.h:176 at breeze f0b1d75); its text inherits font.color, ButtonText in
+# every state (platform-facts.md:1197, breezestyle.cpp:5350-5362)
+active_background = "#2f5368"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal / ForegroundNormal, KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#6d6f72"
@@ -694,7 +700,9 @@ color = "#fcfcfc"
 # platform-facts.md:1203 (§2.4): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116)
 background_color = "#141618"
 min_height_px = 32.0
+# platform-facts.md:1218 (§2.4): [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118)
 hover_border_color = "#3daee9"
+# platform-facts.md:1219 (§2.4): [Colors:View] DecorationFocus 61,174,233 (BreezeDark.colors:117)
 focus_border_color = "#3daee9"
 # platform-facts.md:1208 (§2.4): [Colors:View] ForegroundInactive 161,169,177 (BreezeDark.colors:120, breeze v6.7.5)
 placeholder_color = "#a1a9b1"
@@ -766,8 +774,11 @@ groove_width_px = 21.0
 min_thumb_length_px = 20.0
 thumb_width_px = 8.0
 overlay_mode = false
-thumb_hover_color = "#93cee9"
-thumb_active_color = "#3daee9"
+# platform-facts.md:1306 (§2.8): [Colors:View] DecorationHover at half alpha over the window
+# (breezehelper.cpp:292, :1284; breezestyle.cpp:6400-6405 at breeze f0b1d75)
+thumb_hover_color = "#2f6888"
+# platform-facts.md:1311 (§2.8): no pressed colour of its own, the hovered one
+thumb_active_color = "#2f6888"
 
 [dark.slider]
 track_height_px = 6.0
@@ -834,8 +845,6 @@ padding_vertical_px = 4.0
 # platform-facts.md:1268 (§2.6): KIconLoader's Small, 16
 icon_size_px = 16.0
 icon_text_gap_px = 8.0
-hover_background = "#3daee9"
-hover_text_color = "#fcfcfc"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Window] ForegroundNormal, KColorScheme 6.31.0
 disabled_text_color = "#686a6c"
 
@@ -1049,8 +1058,8 @@ color = "#fcfcfc"
 [dark.segmented_control]
 segment_height_px = 30.0
 separator_width_px = 1.0
+# platform-facts.md:1636 (§2.25): [Colors:Selection] BackgroundNormal 61,174,233
 active_background = "#3daee9"
-active_text_color = "#fcfcfc"
 hover_background = "#31363b"
 
 [dark.segmented_control.border]

@@ -358,6 +358,23 @@ fn switch_on_track(off: QtColor, highlight: Rgba) -> Rgba {
 /// docs/platform-facts.md §2.3).
 const CHECKED_BUTTON_MIX: f64 = 0.125;
 
+/// How far a pressed, enabled, non-flat Breeze button's fill moves from
+/// `Button` towards `Highlight`: `KColorUtils::mix(palette.button().color(),
+/// highlightColor, Metrics::Blend_Value)`, the `qreal` 0.3
+/// (breezehelper.cpp:694, breezemetrics.h:176 at breeze f0b1d75;
+/// docs/platform-facts.md §2.3).
+const PRESSED_BUTTON_MIX: f64 = 0.3;
+
+/// The alpha of the hover decoration a hovered, unselected Breeze tab is
+/// filled with, `alphaColor(hoverColor(palette), 0.2)` (breezehelper.cpp:1497
+/// at breeze f0b1d75; docs/platform-facts.md §2.11).
+const TAB_HOVER_ALPHA: f32 = 0.2;
+
+/// The alpha a Breeze scroll-bar handle's colour is filled with over the
+/// window, `overlayColors(bg, alphaColor(fg, 0.5))` (breezehelper.cpp:1284
+/// at breeze f0b1d75; docs/platform-facts.md §2.8).
+const SCROLLBAR_HANDLE_ALPHA: f32 = 0.5;
+
 /// The alpha of the accent over the window in a Breeze progress bar's
 /// contents, `alphaColor(fg, 0.7)` (breezehelper.cpp:1216 at breeze f0b1d75;
 /// docs/platform-facts.md §2.10).
@@ -491,6 +508,15 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         .zip(button_fg)
         .map(|(button, text)| mix(button, text, CHECKED_BUTTON_MIX));
     variant.button.checked_text_color = button_fg;
+    // A pressed button (docs/platform-facts.md §2.3): the button colour moved
+    // `Metrics::Blend_Value` towards the highlight (breezehelper.cpp:694 at
+    // breeze f0b1d75); its text stays the button text, which
+    // `active_text_color` inherits from the font.
+    variant.button.active_background = variant
+        .button
+        .background_color
+        .zip(get_color(ini, "Colors:Selection", "BackgroundNormal"))
+        .map(|(button, highlight)| mix(button, highlight, PRESSED_BUTTON_MIX));
     // A hovered button keeps its fill and its text: Breeze's hover changes
     // only the pen (breezehelper.cpp:693-707, :710-712 at breeze f0b1d75), and
     // a non-flat button is lettered in `QPalette::ButtonText` in every state
@@ -521,6 +547,13 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.input.placeholder_color = get_color(ini, "Colors:View", "ForegroundInactive");
     // input.caret from View/DecorationFocus (the focus decoration color)
     variant.input.caret_color = get_color(ini, "Colors:View", "DecorationFocus");
+    // A field's frame (docs/platform-facts.md §2.4): `frameOutlineColor`
+    // strokes a hovered one in `hoverColor()` and a focused one in
+    // `focusColor()`, focus winning, the View set's DecorationHover and
+    // DecorationFocus (breezehelper.cpp:89-90, :142-168 at breeze f0b1d75).
+    let view_hover = get_color(ini, "Colors:View", "DecorationHover");
+    variant.input.hover_border_color = view_hover;
+    variant.input.focus_border_color = get_color(ini, "Colors:View", "DecorationFocus");
 
     // Checkbox and radio (docs/platform-facts.md §2.5): Breeze fills an
     // unchecked indicator with the button colour and outlines it in
@@ -572,6 +605,15 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // Tab (docs/platform-facts.md §2.11): Breeze marks the selected tab with a
     // strip of `QPalette::Highlight`, the selection background.
     variant.tab.active_indicator_color = selection_bg;
+    // A hovered, unselected tab is filled with the hover decoration at alpha
+    // 0.2 in place of its own fill (breezehelper.cpp:1496-1503 at breeze
+    // f0b1d75; docs/platform-facts.md §2.11).
+    variant.tab.hover_background = view_hover.map(|hover| translucent(hover, TAB_HOVER_ALPHA));
+
+    // Segmented control (docs/platform-facts.md §2.25): the selected segment
+    // is the selection background; its text, the selection's text, reaches
+    // it through `defaults.accent_text_color`.
+    variant.segmented_control.active_background = selection_bg;
 
     // Progress bar (docs/platform-facts.md §2.10): Breeze fills the contents
     // with `QPalette::Accent`, the selection background
@@ -585,6 +627,17 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.progress_bar.border.get_or_insert_default().color =
             Some(translucent(text, frame_contrast(ini) as f32));
     }
+
+    // Scroll bar (docs/platform-facts.md §2.8): a hovered handle is the hover
+    // decoration, at full alpha while the pointer is over the scroll bar,
+    // filled at half alpha over the window (breezehelper.cpp:292, :1284;
+    // breezestyle.cpp:6400-6405 at breeze f0b1d75); Breeze has no colour of
+    // its own for a dragged handle, which keeps the hovered one.
+    let handle = window_bg
+        .zip(view_hover)
+        .map(|(window, hover)| overlay_colors(window, hover, SCROLLBAR_HANDLE_ALPHA));
+    variant.scrollbar.thumb_hover_color = handle;
+    variant.scrollbar.thumb_active_color = handle;
 
     // Toolbar (docs/platform-facts.md §2.13): Breeze fills a main window's
     // tools area with the Header set's background and strokes its bottom edge
@@ -802,6 +855,84 @@ inactiveForeground=161,169,177
                 ours, breezes,
                 "{field}: the custom selection colour did not reach it"
             );
+        }
+    }
+
+    /// D7: the colours Breeze paints a pressed button, a hovered and a
+    /// focused field's frame, a hovered tab, the selected segment and a
+    /// hovered or dragged scroll-bar handle with, each from the key it reads
+    /// (docs/platform-facts.md §2.3, §2.4, §2.11, §2.25, §2.8). The fixture's
+    /// DecorationHover differs from its DecorationFocus, so the frames are
+    /// told apart.
+    #[test]
+    fn the_pressed_hovered_and_focused_colours_come_from_their_keys() {
+        let v = populate_fixture(BREEZE_DARK);
+        let button = Rgba::rgb(49, 54, 59);
+        let selection = Rgba::rgb(61, 174, 233);
+        let hover = Rgba::rgb(29, 153, 243);
+        let window = Rgba::rgb(49, 54, 59);
+        assert_eq!(
+            v.button.active_background,
+            Some(mix(button, selection, PRESSED_BUTTON_MIX))
+        );
+        assert_eq!(v.input.hover_border_color, Some(hover));
+        assert_eq!(v.input.focus_border_color, Some(selection));
+        assert_eq!(
+            v.tab.hover_background,
+            Some(translucent(hover, TAB_HOVER_ALPHA))
+        );
+        assert_eq!(v.tab.hover_background.map(|c| c.a), Some(0x33));
+        assert_eq!(v.segmented_control.active_background, Some(selection));
+        let handle = Some(overlay_colors(window, hover, SCROLLBAR_HANDLE_ALPHA));
+        assert_eq!(v.scrollbar.thumb_hover_color, handle);
+        assert_eq!(v.scrollbar.thumb_active_color, handle);
+    }
+
+    /// D7: a scheme whose selection, focus and hover colours are not
+    /// Breeze's reaches the same fields, so a live desktop does not keep
+    /// kde-breeze's blue there.
+    #[test]
+    fn a_custom_scheme_reaches_the_pressed_hovered_and_focused_colours() {
+        let breeze = populate_fixture(BREEZE_DARK);
+        let custom = BREEZE_DARK
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=20,200,90")
+            .replace("DecorationHover=29,153,243", "DecorationHover=240,160,20");
+        assert_ne!(custom, BREEZE_DARK, "the fixture's colours moved");
+        let v = populate_fixture(&custom);
+        assert_eq!(v.input.hover_border_color, Some(Rgba::rgb(240, 160, 20)));
+        assert_eq!(v.input.focus_border_color, Some(Rgba::rgb(20, 200, 90)));
+        assert_eq!(
+            v.segmented_control.active_background,
+            Some(Rgba::rgb(200, 40, 90))
+        );
+        for (field, ours, breezes) in [
+            (
+                "button.active_background",
+                v.button.active_background,
+                breeze.button.active_background,
+            ),
+            (
+                "tab.hover_background",
+                v.tab.hover_background,
+                breeze.tab.hover_background,
+            ),
+            (
+                "scrollbar.thumb_hover_color",
+                v.scrollbar.thumb_hover_color,
+                breeze.scrollbar.thumb_hover_color,
+            ),
+            (
+                "scrollbar.thumb_active_color",
+                v.scrollbar.thumb_active_color,
+                breeze.scrollbar.thumb_active_color,
+            ),
+        ] {
+            assert!(ours.is_some(), "{field}: not written");
+            assert_ne!(ours, breezes, "{field}: the custom scheme did not reach it");
         }
     }
 

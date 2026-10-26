@@ -49,11 +49,25 @@ fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> 
     Some(crate::Rgba::from_f32(r, g, b, a))
 }
 
+/// The first macOS major version with `NSColor.textInsertionPointColor`
+/// ("introducedAt": "14.0" in Apple's documentation;
+/// docs/platform-facts.md:1209). Below it the selector does not exist, so
+/// the reader does not send it and the preset's caret stands.
+const TEXT_INSERTION_POINT_MAJOR: u32 = 14;
+
+/// Whether `version` has `NSColor.textInsertionPointColor`; the version is
+/// `os_version`'s, the one the generation table reads.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn has_text_insertion_point_color(version: crate::pipeline::OsVersion) -> bool {
+    version.major >= TEXT_INSERTION_POINT_MAJOR
+}
+
 /// Per-widget colors read from appearance-dependent NSColor APIs.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 #[derive(Default)]
 struct PerWidgetColors {
     placeholder: Option<crate::Rgba>,
+    caret: Option<crate::Rgba>,
     alternate_row: Option<crate::Rgba>,
     header_foreground: Option<crate::Rgba>,
     grid_color: Option<crate::Rgba>,
@@ -90,6 +104,10 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
 
     // Additional per-widget color bindings (MACOS-03).
     let placeholder_c = NSColor::placeholderTextColor();
+    // platform-facts.md:1209 (§2.4): the insertion point's own colour, on
+    // macOS 14 and later only.
+    let insertion_point_c =
+        has_text_insertion_point_color(os_version()).then(NSColor::textInsertionPointColor);
     let unemph_sel_bg = NSColor::unemphasizedSelectedContentBackgroundColor();
     let alt_bg_colors = NSColor::alternatingContentBackgroundColors();
     let header_text_c = NSColor::headerTextColor();
@@ -143,6 +161,9 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
 
     let per_widget = PerWidgetColors {
         placeholder: nscolor_to_rgba(&placeholder_c, &srgb),
+        caret: insertion_point_c
+            .as_ref()
+            .and_then(|c| nscolor_to_rgba(c, &srgb)),
         alternate_row,
         header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
         grid_color: nscolor_to_rgba(&grid_c, &srgb),
@@ -169,6 +190,7 @@ fn read_variant(appearance: &NSAppearance) -> (crate::ThemeDefaults, PerWidgetCo
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn apply_per_widget(v: &mut crate::ThemeMode, pw: PerWidgetColors) {
     v.input.placeholder_color = pw.placeholder;
+    v.input.caret_color = pw.caret;
     v.list.alternate_row_background = pw.alternate_row;
     if let Some(color) = pw.header_foreground {
         v.list.header_font.get_or_insert_default().color = Some(color);
@@ -893,6 +915,20 @@ mod tests {
             light.scrollbar.overlay_mode.is_none(),
             "overlay_mode starts None (set by from_macos)"
         );
+    }
+
+    /// D7: the reader asks for `textInsertionPointColor` from macOS 14 on,
+    /// macOS 26's early betas' 16 included, and not below, where the selector
+    /// does not exist.
+    #[test]
+    fn the_insertion_point_colour_is_read_from_macos_14() {
+        use crate::pipeline::OsVersion;
+        assert!(!has_text_insertion_point_color(OsVersion::new(13, 7, 8)));
+        assert!(!has_text_insertion_point_color(OsVersion::new(12, 0, 0)));
+        assert!(has_text_insertion_point_color(OsVersion::new(14, 0, 0)));
+        assert!(has_text_insertion_point_color(OsVersion::new(15, 7, 9)));
+        assert!(has_text_insertion_point_color(OsVersion::new(16, 0, 0)));
+        assert!(has_text_insertion_point_color(OsVersion::new(26, 6, 2)));
     }
 
     /// The groove width is the one AppKit gives the user's scroller style,

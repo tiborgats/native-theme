@@ -130,10 +130,8 @@ caret_color = "#007aff"
 placeholder_color = "#0000003f"
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
-# soft_option: NSTextField hover ring -- accent-derived border
-hover_border_color = "#007aff80"
-# soft_option: accent-derived focus ring border
-focus_border_color = "#007aff"
+# no hover_border_color / focus_border_color: platform-facts.md:1218-1219 give no bezel colour for a
+# hovered or a focused field, focus being the ring; unset, as in macos-tahoe
 # soft_option: disabled text field bg -- surface with reduced alpha
 disabled_background = "#ffffff80"
 
@@ -209,8 +207,7 @@ tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly darker surface
 thumb_hover_color = "#e0e0e0"
-# disabled slider fill -- accent at reduced opacity
-disabled_fill_color = "#007aff50"
+# no disabled_fill_color: no source gives it (platform-facts.md:1325); unset, as in macos-tahoe
 # disabled slider track -- no source: the former muted colour #86868b at alpha 0x50
 disabled_track_color = "#86868b50"
 # disabled slider knob -- surface at reduced opacity
@@ -271,9 +268,8 @@ row_height_px = 24.0
 # platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no source: platform-facts.md:1435 names selectedContentBackgroundColor at reduced opacity and
-# gives no alpha; this is the accent at alpha 0x18
-hover_background = "#007aff18"
+# no hover_background: platform-facts.md:1435 names selectedContentBackgroundColor at reduced
+# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
@@ -303,9 +299,8 @@ padding_vertical_px = 0.0
 # (os-probe run 40320895749, os-probe-macos-14/probe.toml:3315)
 background_color = "#f6f6f6"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
-# gives no alpha; this is the accent at alpha 0x18
-hover_background = "#007aff18"
+# no hover_background: platform-facts.md:1379 names selectedContentBackgroundColor at reduced
+# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
 
 
 [light.sidebar.font]
@@ -339,12 +334,10 @@ track_height_px = 22.0
 thumb_diameter_px = 20.0
 track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
-# NSSwitch hover checked -- slightly brighter accent
-hover_checked_background = "#1a8aff"
+# no hover_checked_background: platform-facts.md:1527 gives no hover colour for a switch; unset, as in macos-tahoe
 # NSSwitch hover unchecked -- slightly darker trough
 hover_unchecked_background = "#c8c8cd"
-# NSSwitch disabled checked -- no source: the accent at alpha 0x50, the former disabled_opacity 0.3
-disabled_checked_background = "#007aff50"
+# no disabled_checked_background: no source gives it (platform-facts.md:1529); unset, as in macos-tahoe
 # NSSwitch disabled unchecked -- no source: the former off track #d5d5d5 at the former disabled_opacity 0.3
 disabled_unchecked_background = "#d5d5d550"
 # NSSwitch disabled thumb -- white at reduced opacity
@@ -609,10 +602,8 @@ caret_color = "#007aff"
 placeholder_color = "#ffffff3f"
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
-# soft_option, no source: NSTextField hover ring -- the former dark accent #0a84ff at alpha 0x80
-hover_border_color = "#0a84ff80"
-# soft_option, no source: focus ring border -- the former dark accent #0a84ff
-focus_border_color = "#0a84ff"
+# no hover_border_color / focus_border_color: platform-facts.md:1218-1219 give no bezel colour for a
+# hovered or a focused field, focus being the ring; unset, as in macos-tahoe
 # soft_option, no source: disabled text field bg -- the former dark surface #2d2d2d at alpha 0x80
 disabled_background = "#2d2d2d80"
 
@@ -689,8 +680,7 @@ thumb_color = "#ffffff80"
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
-# disabled slider fill -- no source: the former dark accent #0a84ff at alpha 0x50
-disabled_fill_color = "#0a84ff50"
+# no disabled_fill_color: no source gives it (platform-facts.md:1325); unset, as in macos-tahoe
 # disabled slider track -- no source: the former muted colour #98989d at alpha 0x50
 disabled_track_color = "#98989d50"
 # thumb_hover_color and disabled_thumb_color stay unset: no source gives either, and unset they
@@ -752,9 +742,8 @@ row_height_px = 24.0
 # platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no source: platform-facts.md:1435 names selectedContentBackgroundColor at reduced opacity and
-# gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
-hover_background = "#0a84ff18"
+# no hover_background: platform-facts.md:1435 names selectedContentBackgroundColor at reduced
+# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
@@ -784,9 +773,8 @@ padding_vertical_px = 0.0
 # (os-probe run 40320895749, os-probe-macos-14/probe.toml:3439)
 background_color = "#383838"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
-# gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
-hover_background = "#0a84ff18"
+# no hover_background: platform-facts.md:1379 names selectedContentBackgroundColor at reduced
+# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
 
 
 [dark.sidebar.font]
@@ -820,12 +808,10 @@ track_height_px = 22.0
 thumb_diameter_px = 20.0
 track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
-# NSSwitch hover checked -- slightly brighter accent
-hover_checked_background = "#2e94ff"
+# no hover_checked_background: platform-facts.md:1527 gives no hover colour for a switch; unset, as in macos-tahoe
 # NSSwitch hover unchecked -- slightly brighter trough
 hover_unchecked_background = "#4a4a4c"
-# NSSwitch disabled checked -- no source: #0a84ff at alpha 0x50, the former disabled_opacity 0.3
-disabled_checked_background = "#0a84ff50"
+# no disabled_checked_background: no source gives it (platform-facts.md:1529); unset, as in macos-tahoe
 # NSSwitch disabled unchecked -- no source: the former off track #3d3d3d at the former disabled_opacity 0.3
 disabled_unchecked_background = "#3d3d3d50"
 # NSSwitch disabled thumb -- white at reduced opacity
