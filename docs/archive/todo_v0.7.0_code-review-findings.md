@@ -1,6 +1,6 @@
 # Whole-codebase review — finding ledger
 
-Status: Closed `2026-10-26` at `CO_COMMIT` and archived with its plan,
+Status: Closed `2026-10-26` at `60fa77fd` and archived with its plan,
 [`todo_v0.7.0_code-review-plan.md`](todo_v0.7.0_code-review-plan.md). See *As built* below.
 
 ## As built

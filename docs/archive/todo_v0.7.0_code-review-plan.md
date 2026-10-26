@@ -1,6 +1,6 @@
 # Whole-codebase code review — plan
 
-Status: Implemented (2026-10-11 to 2026-10-26, closed at `CO_COMMIT`) and archived; the ledger is
+Status: Implemented (2026-10-11 to 2026-10-26, closed at `60fa77fd`) and archived; the ledger is
 [`todo_v0.7.0_code-review-findings.md`](todo_v0.7.0_code-review-findings.md). See *As built* below.
 
 ## As built
@@ -86,7 +86,7 @@ Status: Implemented (2026-10-11 to 2026-10-26, closed at `CO_COMMIT`) and archiv
   patch drafts under `.superpowers/sdd/`) were local and are not in the repository.
 
 **Close-out.**
-- The CHANGELOG `[Unreleased]` and ROADMAP audit is applied in `CO_COMMIT`, with the C and D rounds'
+- The CHANGELOG `[Unreleased]` and ROADMAP audit is applied in `5c3bd3bb`, with the C and D rounds'
   lines reconciled with each other and with v0.6.1.
 - The release asset run is `at the release`. It regenerates the visual assets and the gpui, iced and egui
   compatibility stamps, which every full `check_release.sh` of the round reported as expected
