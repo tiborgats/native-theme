@@ -2376,7 +2376,8 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
         reason = "shape_line's panic is a debug_assert! on a newline (gpui-pre 0.3.10 \
                   src/text_system.rs:678-681): the one non-test caller passes BASIC_SEGMENTS \
                   (pages/basic.rs), constants without one, and the showcase tests call it in \
-                  debug builds, where a newline would fire the assert"
+                  debug builds, where a newline would fire the assert; its one run is the \
+                  label's whole length, so no run splits a character or passes the text"
     )]
     let shaped = |label: &str| {
         let run = gpui::TextRun {

@@ -509,14 +509,24 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   single-line text" (gpui-pre `src/text_system.rs:721`, gpui-fast `:718`), and its body
   holds `shape_line`'s `debug_assert!` on a newline (gpui-pre `:760-763`). It is listed
   under `shape_line`'s doc line (`:668-670`), which it refers to, and the planted count
-  covers it: 12 entries.
+  covers it: 12 entries, 14 after the fix round below.
 - **Task 4, a panic no gpui function documents.** gpui-base and gpui-component comment that
   the platform text system panics on a run that splits a multi-byte character (gpui-base
   `src/input/base/element.rs:373`, `:3666`; gpui-component
   `src/highlighter/highlighter.rs:158`, `:1205`, `:1434`). Those lines document private
   helpers that snap ranges to char boundaries; no doc line of gpui-pre or gpui-fast states
-  the panic. `shape_line` is listed on its own doc line; `shape_text` and `layout_line` carry
-  no panic doc and are not listed. Whether they panic on such runs was not examined.
+  the panic. The review traced it: `WindowTextSystem::shape_text` and `layout_line` (gpui-pre
+  `src/text_system.rs:783`, `:919`; gpui-fast `:780`, `:916`), like `shape_line` and
+  `shape_line_by_hash`, hand their runs' lengths to the platform text system's
+  `layout_line`, and on Linux `compute_run_spans` slices the text by them
+  (`&text[run_offset..run_end]`, gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12
+  `src/cosmic_text_system.rs:1074`), in the branch for a run whose font has fallbacks. A run
+  that splits a character panics there, and so does one past the text, which `shape_text`
+  clips to each line and the other three do not. The `&text[range.clone()]` at `:666`
+  slices at paragraph separators found by `char_indices`, so runs do not reach it. The
+  fix round lists `shape_text` and `layout_line` (14 entries), and the reasons of
+  `shape_line` and `shape_line_by_hash` add this path. The macOS and Windows text systems
+  were not examined.
 - **Task 4, no `allow-invalid`.** Every entry drew its error at its planted line on gpui-pre,
   GPUI Fast and without default features; none is in a crate that a Linux configuration
   lacks.
