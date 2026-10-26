@@ -133,10 +133,11 @@ review session running the C and D rounds in this tree has said that the D round
    - Every existing call is allowed, with its reason; a guard comes in addition where needed.
 7. **The toolbar tests fail before the fix** (Task 5): the single-fixture test is red first,
    and both toolbar unit tests pass after it.
-8. **The Separator is closed only on a measurement** (Task 6), per core: the test where it
-   finds the label's box, a capture on a core where it cannot.
+8. **The Separator is closed only on gpui-pre's measurement** (Task 6): the test, or a capture
+   if the test cannot find the label's box there. GPUI Fast asserts where it finds the box.
 9. **Both cores lay the showcase out alike** (Task 6): the four dump pairs compared, each
-   difference fixed or explained.
+   difference fixed or explained. The same for gpui-pre on taffy 0.15.1 against 0.15.0, and
+   the temporary manifest and lock restored.
 
 ---
 
@@ -244,9 +245,8 @@ clean tree.
 - [ ] **Push** `v0.7.0-rc1`, then CI green, including *Test the gpui connector on GPUI Fast*.
   A failure is fixed in G4 before Task 3b.
 - [ ] **The dependency canary dispatched on the branch** (`gh workflow run
-  dependency-canary.yml --ref v0.7.0-rc1`), after `main`'s latest scheduled run is noted as
-  the baseline. It is green, or each failure is the baseline's or is read and found outside
-  the gpui stack (spec §10).
+  dependency-canary.yml --ref v0.7.0-rc1`). It is green, or each failure is read as spec §10
+  says: every gpui failure is G4's, and gpui lines the step never reached are run by hand.
 
 ## Task 3b: The citations no gate reads, and the version-stating prose
 
@@ -272,7 +272,7 @@ Task 2 commit that states it.
 `SC/inspector.rs`, `SC/demo.rs`, `SC/tests.rs` (the allows), and whatever further call sites
 the inventory finds. **Depends on:** Task 3 (after the unit).
 
-- [ ] **Spec §5's inventory:** the 172 candidate lines, each function assigned to a group with
+- [ ] **Spec §5's inventory:** the 279 candidate lines (172 doc-comment, 107 plain), each function assigned to a group with
   the reason, and each set-aside line with its reason, in the commit body.
 - [ ] **`CN/clippy.toml`:** one entry per listed function, with a reason citing its doc line,
   and the header line about the upgrade sweep.
@@ -314,18 +314,22 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - `docs/todo.md`, `docs/archive/todo_closed.md` (for any entry that closes), `ROADMAP.md`
   (its upstream list);
 - the exception files and any code a parity or layout difference needs;
+- `CN/Cargo.toml` and `Cargo.lock`, changed for the taffy 0.15.1 measurement only and restored, never committed;
 - `.superpowers/sdd/todo_code-review-plan/g4/t2/lookup.py` (new, untracked).
 
 **Depends on:** Tasks 3b and 5, so that the comparisons read the final layout.
 
-- [ ] **Spec §7's Separator test**, passing on both cores, or on one core with the capture
-  fallback for the other, each with its reason.
+- [ ] **Spec §7's Separator test**, passing on both cores; or with GPUI Fast's half under a
+  `cfg` with its reason; or, if gpui-pre cannot find the box, the capture there.
 - [ ] **The Separator entry** closes with its dated line and moves to the archive, or stays open
   with the measured positions (and the rationale's §1.8 corrected in its own commit).
 - [ ] **The two drafts' dated lines** (spec §7). Their texts are not rewritten.
 - [ ] **Announce the desktop runs.** Then:
   - spec §7's dumps on both cores, compared pair by pair, each difference fixed or explained in
     the ledger;
+  - spec §7's taffy 0.15.1 measurement on gpui-pre (the suite and the four dumps on a lock
+    without gpui-fast), then `CN/Cargo.toml` and `Cargo.lock` restored and `git status`
+    showing neither changed;
   - the Linux parity run against iced and egui: a new difference is fixed or excepted with its
     measured reason, and a stale exception is removed. The three asset directories are restored
     afterwards, and `git status` shows none of them changed.
@@ -347,10 +351,10 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 **Files:** `docs/todo.md`, `SC/info/chrome.rs` (the Dialog's placement row) and
 `SC/info/typography.rs` (the inline-code row). **Depends on:** Task 3.
 
-- [ ] **Spec §8:** the three todo entries (the Dialog's placement, Markdown, and the iced and
-  egui gate), with their tags and reasons, and the two Widget Info rows.
+- [ ] **Spec §8:** the four todo entries (the Dialog's placement, Markdown, the iced and egui
+  gate, and gpui-fast's taffy pin), with their tags and reasons, and the two Widget Info rows.
 - [ ] **Gates:** `--commit` green.
-- **Commit:** `docs(gpui): Dialog::centered and TextView's text styles are recorded as model questions, and the Dialog and TextView panels say what the theme cannot reach yet (G4 T7)`.
+- **Commit:** `docs(gpui): Dialog::centered and TextView's text styles are recorded as model questions, with the iced and egui panic gate and gpui-fast's taffy pin, and the Dialog and TextView panels say what the theme cannot reach yet (G4 T7)`.
 
 ## Task 8: Documents, stamp, gates, close, archive
 

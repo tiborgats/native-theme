@@ -70,7 +70,8 @@ Nothing a task needs is only there: every count and finding used here is restate
   test or allow used only under `widgets` or an icon feature takes that `cfg`, as D8 did for
   the existing ones.
 - **The project's panic hook** (`.claude/hooks/no-runtime-panics.sh`) refuses an edit whose new
-  text holds `.unwrap()`, `.expect(` or `panic!(`, unless the text holds `#[test]`,
+  text holds `.unwrap()`, `.expect(`, `panic!(`, `unreachable!(`, `unimplemented!(`, `todo!(` or
+  `unsafe`, unless the text holds `#[test]`,
   `#[cfg(test)]` or `#[allow(clippy::unwrap_used` or the file is under `tests/`. `SC/tests.rs`
   and `CN/src/widgets/tests.rs` are not exempt, and `#[gpui::test]` is not `#[test]`.
   - An edit leaves an existing `.unwrap()` or `.expect(` outside its text.
@@ -519,15 +520,15 @@ versions. Sort each public function they document:
   - `TextSystem::resolve_font` (`GP/text_system.rs:351`);
   - `WindowTextSystem::shape_line` (`:668-670`, the `impl` at `:641`);
   - the line-boundary function at `GP/text_system/line.rs:280-281`;
-  - `Bounds::inset` ("may panic", `GP/geometry.rs:1101`), if its doc's condition is an
-    argument's;
   - gpui-base's scroll-bounce parameters (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio
     (`GB/motion.rs:484`).
   A gpui-fast function at the same path needs no entry of its own where clippy resolves the
   path in both cores' `gpui` crate. The done-criterion shows whether it does; where it does
   not, the gpui-fast path gets its own entry.
 - **Not listed** where it is a panic on framework state or misuse: a global never set, a
-  re-entrant update, a wrong arena or App, the test and bench harnesses.
+  re-entrant update, a wrong arena or App, the test and bench harnesses. Also not listed:
+  `Bounds::inset` ("may panic if T does not support negative values", `GP/geometry.rs:1101`),
+  whose condition is the type's, and whose impl already requires `T: Neg` (`:1089-1097`).
 - **Set aside** where the line is not a function's panic, such as a "does not panic" remark.
 
 The commit body holds the whole sorted list: each candidate, its group, and for the not-listed
@@ -584,8 +585,12 @@ clippy warns about a path only when it is in none of them. So the proof counts e
    - Its doc says it is the G4 proof and is removed before the commit.
 2. **The count.** Run `cargo clippy -p native-theme-gpui --all-targets -- -D warnings` with
    `--features native,watch`, with `--features gpui-fast,native,watch` and with
-   `--no-default-features`. In each, clippy reports exactly one `clippy::disallowed_methods`
-   error per entry the configuration builds, each with its entry's reason.
+   `--no-default-features`. In each, every entry the configuration builds draws a
+   `clippy::disallowed_methods` error at its planted line, with its entry's reason, and no
+   other such error appears.
+   - The count is of planted lines: `--all-targets` builds the showcase as an example and as a
+     test target, so one line may be reported twice.
+   - A planted call for an entry that a core lacks takes that core's `cfg`.
    - A missing error is an entry that gates nothing there: its path is corrected, and the run
      repeated.
    - The output of the three runs goes in the commit body.
@@ -657,22 +662,20 @@ floor (rationale P7).
     the theme's `tokens.background` (`GC/separator.rs:149`) and narrower than the line;
   - it asserts that the box's horizontal centre is within 1 px of the Separator's.
   It runs on both cores through the usual suites.
-- **If the label's box cannot be told apart** from the other quads on a core, the fallback
-  is decided per core (rationale P11). On GPUI Fast the scene reader skips composited scroll
-  layers (`CN/src/widgets/scene_read.rs:15-18`).
-  - On a core where the box is found, the test asserts there, with a `cfg` and its reason
-    where it is one core only.
-  - On the other core, a desktop capture is made, announced first:
-    - start the showcase with `--capture --tab layout`, on that core (the default features,
-      or `--features gpui-fast`);
-    - capture it with `scripts/capture_window.sh`'s `capture_showcase gpui <pid> <png>`
-      (`:300-372`);
-    - read the label's and the line's x-ranges from the PNG.
-  - Where the test holds on neither core, it is recorded as not written, with the reason.
-- **Centred on both cores:** the `docs/todo.md` entry *File the gpui-kit issue: on gpui-pre a
-  labelled `Separator` draws its label at the line's end* closes. Its dated line names taffy
-  0.15.0's `src/compute/flexbox.rs:2274-2275` and the test (or the captures' x-ranges), and the
-  entry moves to the archive.
+- **The entry is about gpui-pre**, so gpui-pre's result decides it (rationale P11):
+  - **If the label's box cannot be told apart on gpui-pre**, a desktop capture is made there,
+    announced first. Start the showcase with `--capture --tab layout` (default features), and
+    capture it with `scripts/capture_window.sh`'s `capture_showcase gpui <pid> <png>`
+    (`:300-372`). Then read the label's and the line's x-ranges from the PNG, and record the
+    test as not written, with the reason.
+  - **If only GPUI Fast cannot find the box** (its scene reader skips composited scroll layers,
+    `CN/src/widgets/scene_read.rs:15-18`), the test's GPUI Fast half takes a `cfg` with that
+    reason. No capture is made.
+- **Centred on gpui-pre:** the `docs/todo.md` entry *File the gpui-kit issue: on gpui-pre a
+  labelled `Separator` draws its label at the line's end* closes. Its dated line names taffy's
+  "the auto margins have absorbed all of the free space" (0.15.0 `src/compute/flexbox.rs:2274-2275`,
+  0.15.1 `:2320-2321`) and the test (or the capture's x-ranges), and the entry moves to the
+  archive.
 - **Not centred:** the entry stays open, with a dated line giving the measured positions, and
   the rationale's §1.8 is corrected in its own commit.
 
@@ -694,6 +697,22 @@ takes the desktop's focus:
   equal, as a JSON diff.
 - **A difference** is fixed in its own commit, gated, or explained in the ledger. Both cores
   now share taffy 0.15.0, so a difference G3 recorded may be gone; one that is gone is noted.
+
+**taffy 0.15.1, measured once (P11 (d)).** After the dumps, on a clean tree:
+
+1. In the working tree only, `CN/Cargo.toml`'s feature becomes `gpui-fast = []`.
+   `cargo tree --workspace -i gpui-fast` then finds nothing, and `cargo update -p taffy` takes
+   0.15.1. If gpui-fast stays in the resolve, stop: the gap is recorded as P11's (a), with the
+   reason.
+2. `cargo test -p native-theme-gpui --features native,watch --all-targets`, the Separator test
+   among them.
+3. The four gpui-pre dumps again, each compared element by element with its 0.15.0 dump.
+4. `git checkout -- connectors/native-theme-gpui/Cargo.toml Cargo.lock`, and `git status` shows
+   neither changed. Nothing of steps 1–3 is committed.
+
+A failure or a difference is explained in the ledger, or fixed in its own commit where it is
+ours. The commit body of Task 6's docs commit records the result: the taffy versions, the test
+result, and the differences or "none".
 
 **Parity.** On the final layout (after §6), the Linux parity run, as
 `scripts/generate_assets_release.sh:126-156` makes it:
@@ -739,7 +758,7 @@ re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current 
 
 ## 8 — New upstream API recorded (P13)
 
-**`docs/todo.md`, two new entries:**
+**`docs/todo.md`, four new entries:**
 
 - ***Dialog: the platform's vertical placement*, `[1.0]`.**
   - The seam: `Dialog::centered` / `AlertDialog::centered` (`GC/dialog/dialog.rs:495`,
@@ -762,6 +781,14 @@ re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current 
   (rationale P6).
   - The same inventory over iced, iced_aw and egui, and a `clippy.toml` per connector.
   - Its place is those crates' next upgrade, as §5's sweep is the gpui connector's.
+- ***gpui-fast pins `taffy = "=0.15.0"`*, `[upstream]`** (rationale P11).
+  - The fact: gpui-fast 0.1.12 `Cargo.toml:344-345`, against gpui-pre 0.3.10's caret
+    (`:524-525`). So a workspace that builds both cores locks gpui-pre to 0.15.0, while an
+    application on gpui-pre alone gets 0.15.1.
+  - The effect: our CI and canary cannot test the taffy that default-core applications get;
+    G4 measured it once.
+  - For the maintainer to raise upstream (an agent files nothing). It is re-checked at the next
+    GPUI Kit upgrade.
 
 **Widget Info:**
 
@@ -842,13 +869,14 @@ native-theme-gpui --allow-dirty --target-dir target/package-verify --features gp
 and Windows GPUI Fast builds.
 
 **The dependency canary, dispatched on the branch** (`gh workflow run dependency-canary.yml --ref
-v0.7.0-rc1`), is green, or each failure is read and found outside the gpui stack (rationale
-P15). It runs after the unit's push and after the close.
-- **Before each dispatch**, the latest scheduled run on `main` (`gh run list --workflow
-  dependency-canary.yml --branch main`) is read, and its failing steps and errors are noted
-  as the baseline.
-- A branch failure with the same step and error is that standing failure. Any other failure
-  is G4's until shown otherwise.
+v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It runs after the unit's push and after the close.
+- **Every failure of a gpui test or of the gpui coverage line is G4's**, even where `main`
+  fails the same way. `main`'s standing failures are gpui gates on released code (rationale
+  §0), so they are no baseline for the branch.
+- **A failure elsewhere** (native-theme, iced, egui) is read like any canary failure.
+- **If the Test step stops before its gpui lines** (`bash -e`), those lines are run by hand
+  on the same resolve: `cargo update` in the tree, the canary's gpui lines, then `git checkout
+  -- Cargo.lock`.
 
 **For the close-out's `generate_assets_release.sh`, these screenshots change:**
 

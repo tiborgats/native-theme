@@ -39,8 +39,16 @@ The connector's floors are carets (`CN/Cargo.toml:66`, `:70`, `:75`: `"0.8.0"`).
 - **The branch's own CI goes red at its first push that resolves 0.8.1**: the test code of
   §1.3 does not compile there. The nightly dependency canary does not see it: a scheduled
   workflow runs on the default branch, `main`, whose released 0.6.1 code asks for `^0.7.1`.
-  (That canary has failed every night since at least 2026-10-23, in its *Test* and *Widget
-  coverage* steps. The cause is unrelated to 0.8.1 and not diagnosed here.)
+  (That canary has failed on every scheduled run from 2026-10-20 to 2026-10-25, in its *Test*
+  and *Widget coverage* steps. Run 40232134026, 2026-10-25, shows why, and it is unrelated to
+  0.8.1:
+  - the fresh resolve moves `main` from gpui-component 0.7.1 to 0.7.3;
+  - so the released showcase's gpui citation gates fail: "140 of 738 colour claims", "1 of
+    745 prose citations";
+  - the widget coverage gate finds 0.7.3's `Diff` neither shown nor excepted ("gpui: Diff").
+
+  The step runs under `bash -e`, so it stops at that first failing line, and the later gpui
+  and egui test lines never ran there. These failures last until v0.7.0 reaches `main`.)
 
 The question is what v0.7.0 changes for 0.8.1 before it is released.
 
@@ -60,9 +68,20 @@ Two parts of the release are not compatible:
   them: `Keystroke::parse` and `KeyBinding::new` take `&'static str`, a `secondary-` modifier
   needs the OS, `unparse` takes an `OperatingSystem`, and `ScrollWheelEvent` is renamed
   `ScrollEvent` and gains a `source` field.
-- **Both GPUI cores move to taffy 0.15.0**, the layout engine:
-  - gpui-pre 0.3.10 from 0.13.0 (`[dependencies.taffy] version = "0.15.0"`, was `"0.13.0"`);
-  - gpui-fast 0.1.12 from `=0.14.0` (`Cargo.toml:344-345`: `version = "=0.15.0"`).
+- **Both GPUI cores move to taffy 0.15**, the layout engine:
+  - gpui-pre 0.3.10 from 0.13.0: `[dependencies.taffy] version = "0.15.0"`, a caret
+    (`Cargo.toml:524-525`, was `"0.13.0"`);
+  - gpui-fast 0.1.12 from `=0.14.0`: `version = "=0.15.0"`, exact (`Cargo.toml:344-345`).
+- **taffy 0.15.1 exists** (published 2026-10-25). It changes `compute/flexbox.rs`,
+  `block.rs`, the alignment, grid and float code and `style/flex.rs`. The flexbox changes
+  include box sizing, stretching, empty containers and the hypothetical cross size. So the two
+  cores now resolve differently:
+  - **an application on the default core gets 0.15.1.** Measured 2026-10-26: a scratch
+    project on `gpui-component = "0.8.1"` locks taffy 0.15.1 and gpui-pre 0.3.10, with no
+    gpui-fast;
+  - **our workspace lock holds 0.15.0** for both cores. The connector's `gpui-fast` feature
+    puts gpui-fast's `=0.15.0` into the one resolve, and the dispatched canary resolves the
+    same workspace. So no G4 check, CI run or canary run sees 0.15.1 (P11).
 
 The theme schema is untouched:
 
@@ -662,7 +681,7 @@ take, and never checks that the theme installed.
 
 **Test code is written so the project's panic hook passes it.**
 `.claude/hooks/no-runtime-panics.sh` refuses an edit whose new text holds `.unwrap()`,
-`.expect(` or `panic!(`, unless the file is under `tests/` or the text holds `#[test]`,
+`.expect(`, `panic!(`, `unreachable!(`, `unimplemented!(`, `todo!(` or `unsafe`, unless the file is under `tests/` or the text holds `#[test]`,
 `#[cfg(test)]` or `#[allow(clippy::unwrap_used`. `SC/tests.rs` and `CN/src/widgets/tests.rs`
 match none of these, and `#[gpui::test]` is not `#[test]`. So:
 - an edit leaves an existing `.unwrap()` or `.expect(` outside its text. `activate_key`'s edit
@@ -710,7 +729,8 @@ and plain ones, that mention a panic (`\b[Pp]anic`) in the `src/` of gpui-base, 
 gpui-pre, gpui-fast, and the gpui-pre and gpui-fast sub-crates.
 - There are 172 such doc-comment lines (`///`, `//!`) at 0.8.1 / 0.3.10 / 0.1.12.
 - A narrower pattern (`# Panics`, "Panics if") finds 84 and misses forms such as "may panic
-  if" (`Bounds::inset`, `GP/geometry.rs:1101`) and the sub-crates' docs (gpui-pre-sum-tree
+  if" (`Bounds::inset`, `GP/geometry.rs:1101`; not listed: the condition is the type's, and
+  the impl already requires `T: Neg`, `:1089-1097`) and the sub-crates' docs (gpui-pre-sum-tree
   `cursor.rs:418`).
 - Plain `//` comments add 107 more lines: 279 in all, measured by the sixth check's reviewer.
   What they hold has not been sorted, and a panic may be noted only there. So the sweep reads
@@ -753,8 +773,9 @@ configuration.
 
 **Why a clean run proves nothing for GPUI Fast.**
 - gpui-kit and gpui-base depend on gpui-pre without `optional` (`gpui-kit-0.8.1/Cargo.toml`,
-  `[dependencies.gpui]` `=0.3.10`; gpui-base the same). So gpui-pre stays in the crate graph
-  under `--features gpui-fast`.
+  `[dependencies.gpui]` `=0.3.10`; gpui-base the same), and so does the connector's own `gpui`
+  alias (`CN/Cargo.toml:63`). So gpui-pre stays in the crate graph under
+  `--features gpui-fast`.
 - Both cores' library is named `gpui` (gpui-pre `Cargo.toml:93-95`, gpui-fast `:94-96`).
 - clippy resolves a disallowed path in every crate of that name. It warns only when the path
   is in none of them ("does not refer to a reachable", `clippy-driver`'s strings, rustc
@@ -769,9 +790,11 @@ and gates nothing on GPUI Fast.
 - its parameters supply what the calls need;
 - each call is written as the showcase writes its gpui calls.
 
-In each of the three configurations, clippy must report exactly one `disallowed_methods`
-error per entry, each with its entry's reason. A missing error is an entry that gates nothing
-there. The function is then removed and the ordinary runs pass. This one measurement replaces
+In each of the three configurations, every entry that configuration builds must draw a
+`disallowed_methods` error at its planted line, with its entry's reason, and no other such
+error may appear. The count is of planted lines: `--all-targets` builds the showcase both as an
+example and as a test target, so a line may be reported twice. A planted call for an entry that
+a core lacks takes that core's `cfg`. A missing error is an entry that gates nothing there. The function is then removed and the ordinary runs pass. This one measurement replaces
 a separate check of the unresolved-path warning, a clean run, and a planted call per entry.
 
 - **`allow-invalid = true`** is for an entry whose path is in no crate of some Linux
@@ -965,7 +988,7 @@ Rewriting the text in place would keep the draft paste-ready in one piece, but a
 file's rule, for no gain the dated line does not give. The drafts stay for the maintainer to
 file (an agent files nothing).
 
-### P11 — taffy 0.15: the Separator checked by a test; both cores' layouts compared; parity re-run
+### P11 — taffy 0.15: the Separator checked by a test; both cores' layouts compared; parity re-run; 0.15.1 measured once
 
 **The Separator.** The draft's cause is gone from taffy 0.15.0 (§1.8). What is not yet seen is
 the label centred in the showcase. The options for seeing it:
@@ -984,15 +1007,21 @@ the label centred in the showcase. The options for seeing it:
 - **(c) The layout dump.** The dump records the Separator's wrapper, not upstream's label
   inside it, so it cannot answer.
 
-**(b), with (a) only where (b) cannot find the label's box, decided per core.** On GPUI Fast
-the scene reader does not follow tiled frames, the composited scroll layers
-(`CN/src/widgets/scene_read.rs:15-18`). If the Layout page's content is drawn in one, the box
-is found on gpui-pre only. Then the test asserts on gpui-pre (`cfg(not(feature =
-"gpui-fast"))`, with the reason), and a capture covers GPUI Fast. Once both cores are
-measured, the `docs/todo.md` entry closes
-with a dated line naming taffy 0.15.0's `flexbox.rs:2274-2275` and the test, and moves to
-`docs/archive/todo_closed.md`. If the test shows the label is not centred, the entry stays
-open, the draft is re-cited to taffy 0.15.0, and this document's §1.8 is corrected.
+**(b).** The draft is about gpui-pre only: GPUI Fast was on taffy 0.14 and never had the
+defect. So the entry closes on gpui-pre's measurement.
+- **A capture, (a), is the fallback only where the test cannot find the label's box on
+  gpui-pre.**
+- **On GPUI Fast** the test asserts too, where it finds the box. The scene reader does not
+  follow tiled frames, the composited scroll layers (`CN/src/widgets/scene_read.rs:15-18`).
+  Other showcase tests already read page content through it on both cores, so this is not
+  expected. If it happens, the GPUI Fast half takes a `cfg` with that reason, and no capture is
+  made: GPUI Fast is not what the entry is about.
+
+Centred on gpui-pre, the `docs/todo.md` entry closes with a dated line naming taffy's
+`flexbox.rs` "the auto margins have absorbed all of the free space" (0.15.0 `:2274-2275`, 0.15.1
+`:2320-2321`) and the test, and moves to `docs/archive/todo_closed.md`. If the test shows the
+label is not centred, the entry stays open, the draft is re-cited to taffy 0.15, and this
+document's §1.8 is corrected.
 
 **No exception or claim names the label's position today.** The two exception files and
 `SC/info/layout.rs` were checked, so nothing else changes for the label.
@@ -1011,6 +1040,36 @@ the iced and egui showcases: a layout-engine bump and 0.8.1's scroll-area flex c
 can move elements. Any exception it shows to be unnecessary goes. The gpui screenshots are then
 regenerated by the release scripts, a release gate already (`generate_assets_release.sh`, the
 PROVENANCE stamp).
+
+**taffy 0.15.1, which an application on the default core gets (§1.1).** Every other layout
+check here runs on our lock's 0.15.0. The options:
+
+- **(a) Accept the gap.** It costs nothing, but it is P1's option (a) again: the release would
+  ship checks of a layout engine that a fresh resolve no longer gets.
+- **(b) Pin `taffy = "=0.15.0"` in the connector**, so applications get what we test. That is
+  an exact pin in a library, which `CN/Cargo.toml:60-62` rules out (P1 (c)). It would also hold
+  every application on gpui-pre back from taffy's fixes.
+- **(c) A scratch application.** It resolves 0.15.1, but it cannot run the showcase, its
+  tests or its dumps.
+- **(d) One measurement in the tree, on a lock without gpui-fast.**
+  - The `gpui-fast` feature is emptied in the working tree only (`gpui-fast = []`), so the
+    resolve drops gpui-fast. `cargo tree -i gpui-fast` shows none.
+  - `cargo update -p taffy` then takes 0.15.1.
+  - The gpui-pre suite runs (the Separator test among them), with the four gpui-pre dumps,
+    compared element by element with the 0.15.0 dumps.
+  - `CN/Cargo.toml` and `Cargo.lock` are then restored (`git checkout --`), and nothing of it
+    is committed.
+  - It costs one rebuild of the gpui-pre stack each way, in the same build folder.
+
+**(d).** It is the only option that measures what users run. A difference is explained in the
+ledger, or fixed where it is ours. The release screenshots stay those of our lock, 0.15.0, and
+a visible difference is recorded beside them. If the resolve keeps gpui-fast after all, the
+gap is recorded as (a), with the reason.
+
+**The split itself is upstream's.** gpui-fast's exact pin keeps any workspace that builds both
+cores off gpui-pre's newest taffy. A `docs/todo.md` entry records it: *gpui-fast pins
+`taffy = "=0.15.0"`*, `[upstream]`. It is for the maintainer to raise, and is re-checked at the
+next GPUI Kit upgrade.
 
 ### P12 — The upstream entries are re-checked at 0.8.1
 
@@ -1169,12 +1228,15 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
   on exactly that resolve.
 - It is one command each time. A failure there is read like any canary failure: an upstream
   release, not this change, unless it touches the gpui stack.
-- **Read against a baseline.** The canary has failed on `main` every night since at least
-  2026-10-23, cause undiagnosed (§0), and that failure may itself be in a gpui test.
-  - Before each dispatch, the latest scheduled run on `main` is read and its failing steps and
-    errors are noted.
-  - A branch failure with the same step and error is the standing failure, not G4's. Any other
-    failure is read as G4's until shown otherwise.
+- **How its result is read.** `main`'s standing failures are gpui gates themselves (§0): the
+  citation gates and the widget coverage gate, on released code against a newer gpui. So a
+  "same failure as `main`" rule would file exactly G4's kind of failure as standing. Instead:
+  - **every failure of a gpui test or of the gpui coverage line on the branch is G4's**, to be
+    diagnosed and fixed or explained;
+  - **a failure elsewhere** (native-theme, iced, egui) is read like any canary failure;
+  - **if the Test step stops before its gpui lines** (`bash -e`, §0), those lines did not run.
+    They are run by hand on the same resolve: a full `cargo update` in the tree, the canary's
+    gpui lines, then `Cargo.lock` restored. Without that, the dispatch shows nothing for gpui.
 
 ---
 
@@ -1211,6 +1273,9 @@ Neither approval is touched by the later check passes.
 - **Three open `[upstream]` entries spot-checked** against the 0.8.1 diff (P12; the full
   re-check is G4's), `DialogTheme`'s exhaustiveness (P13), `.cargo/audit.toml` (P2), and the
   citation-bearing files outside the gates (P9).
+- **A fresh resolve of `gpui-component = "0.8.1"`** (2026-10-26): taffy 0.15.1, gpui-pre
+  0.3.10, no gpui-fast (§1.1), and taffy 0.15.0 against 0.15.1's source diff.
+- **The canary's last scheduled run on `main`** (40232134026), read for its failing steps (§0).
 - **A `--plan`-only dry run of G3's script**, adapted as spec §4.1 says, at HEAD after the D
   round's first commits. An independent reviewer ran it on 2026-10-26 and wrote nothing to the
   repository. It found the attribution cases of P9.
