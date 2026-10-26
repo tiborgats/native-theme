@@ -32,6 +32,7 @@ untracked, like the rest of that directory:
   the gates' full lists of the 125 colour claims and 14 prose citations that moved.
 - `gk081-lockdiff.txt`: the trial's lock change.
 - `gk081-diff-review.md`: the review of the upstream non-test diff.
+- `gk081-msrv-1.94.txt`: the 1.94.0 run's command and output.
 - `trial.sh` and `trial2.sh`.
 
 Nothing a task needs is only there: every count and finding used here is restated.
@@ -63,6 +64,18 @@ Nothing a task needs is only there: every count and finding used here is restate
   cited source or measured.
 - **Both cores.** Every gpui change is tested on gpui-pre (`--features native,watch`) and on
   GPUI Fast (`--features gpui-fast,native,watch`).
+- **And without default features.** Since the D round's `29634cfd`, `check_release.sh`
+  (`--commit` included) and CI also run `cargo clippy -p native-theme-gpui --all-targets
+  --no-default-features -- -D warnings`. New code compiles there with no warning. A helper,
+  test or allow used only under `widgets` or an icon feature takes that `cfg`, as D8 did for
+  the existing ones.
+- **The project's panic hook** (`.claude/hooks/no-runtime-panics.sh`) refuses an edit whose new
+  text holds `.unwrap()`, `.expect(` or `panic!(`, unless the text holds `#[test]`,
+  `#[cfg(test)]` or `#[allow(clippy::unwrap_used` or the file is under `tests/`. `SC/tests.rs`
+  and `CN/src/widgets/tests.rs` are not exempt, and `#[gpui::test]` is not `#[test]`.
+  - An edit leaves an existing `.unwrap()` or `.expect(` outside its text.
+  - A new failure in test code is an `assert!`.
+  - The hook is never worked around (rationale P5).
 - **Shared files are located by content.** A task that edits a file the review rounds also write
   re-reads, before writing, the code this spec describes there. Those files are `Cargo.lock`,
   `CHANGELOG.md`, `docs/todo.md`, the ledger, `docs/showcase-exceptions.toml`, the showcase
@@ -205,7 +218,8 @@ Each of these sites failed to compile in the trial, or would assert nothing:
 - **`CN/src/widgets/tests.rs`, `activate_key` (`:1712-1721`):** the keystroke comes from
   `cx.update(|_, cx| gpui::Keystroke::parse_with_os(key, cx.platform_info().os))`, as
   gpui-component 0.8.1's own `activate_key`s do (`GC/checkbox.rs`, `switch.rs`,
-  `button/toggle.rs` tests). `.unwrap()` stays as it is: test code.
+  `button/toggle.rs` tests). `.unwrap()` stays as it is: test code. The edit replaces only the
+  `parse` call before it (§0.2, the hook).
 - **`SC/tests.rs`, `scroll_at` (`:413-424`):** a `gpui::ScrollEvent`, not the deprecated
   `ScrollWheelEvent` alias. It gains `source: gpui::ScrollSource::Pointer`
   (`GP/interactive.rs:522-555`), with the other fields as they are. No
@@ -221,7 +235,8 @@ Each of these sites failed to compile in the trial, or would assert nothing:
   - it becomes `fn secondary(key: &str, os: gpui::OperatingSystem) -> String`;
   - it parses with `parse_with_os(&format!("secondary-{key}"), os)` and returns
     `.unparse(os)`;
-  - on a parse failure it fails the test (`expect` with the key), instead of returning `""`;
+  - on a parse failure it fails the test instead of returning `""`: it asserts that the parse
+    is `Ok`, with the key in the message, before it reads the keystroke (§0.2, the hook);
   - its doc no longer cites gpui-pre `keystroke.rs:143-150`: it cites `GP`'s `:158-168`
     (the `secondary` arm of `parse_internal`);
   - its callers (`:2351-2354`, `:2417`, `:5335`) pass the test platform's OS.
@@ -236,8 +251,22 @@ Each of these sites failed to compile in the trial, or would assert nothing:
   tests that pass `"no-such-preset"` on purpose to provoke a theme error:
   `the_theme_error_alerts_icon_follows_the_chosen_set` (`:8613`) and
   `a_theme_error_is_an_alert` (`:13164`). Both call it instead of `use_preset`.
-- **Any other call that fails the assertion** was testing the theme installed before. It is
+- **`set_preset` (`SC/tests.rs:11108`)** gains a `showcase: &Entity<Showcase>` parameter,
+  which every caller already holds. After the dispatch, it asserts
+  `showcase.current_theme_name == key`, for every key but `"default"`.
+  `apply_theme_by_name` sets that field only on a successful install (`SC/app.rs:1883-1887`).
+  The six `"default"` calls are not asserted, since the OS read may fail on a runner.
+- **A new `set_missing_preset`** asserts that `current_theme_name` did not change. The two
+  `"no-such-preset"` calls (`:11925`, `:11970`) use it, and keep their error-alert assertions.
+- **Any other call that fails either assertion** was testing the theme installed before. It is
   fixed in this task by its right preset name, and listed in the commit body.
+- **A new test, `the_typography_page_draws_its_kbds`:**
+  - it shows the Typography page;
+  - it finds each of the four `KBDS` ids laid out (`bounds_of`);
+  - so a `demo::kbd` whose parse fails fails it (rationale P4).
+
+  The test is red on 0.8.1 without §2.2's change. `the_kbds_take_the_showcases_modifier` parses
+  `KBDS` itself and would not see that.
 - **No cross-OS test is added** (rationale P5).
 
 **Gates:**
@@ -300,6 +329,26 @@ there, for the review to read at the new versions.
 **The check of the copy:** before the run, `grep -n '0\.7\.3\|0\.1\.7\|0\.1\.8\|c8d89e75\|62ac5935'`
 over the five files finds nothing. A remaining constant would map numbers against the wrong
 versions with every gate passing.
+
+**Three attribution rules, added to `remap.py` and to `gates.py` alike** (rationale P9). Without
+them, a citation given to the wrong crate is renumbered by that crate's diff, and `gates.py`,
+which attributes the same way, agrees:
+
+1. **Outside `CN/`**, a citation whose note names no family crate is out of scope. Two cases
+   are known:
+   - `connectors/native-theme-iced/examples/showcase-iced.rs:385`'s `` `scrollable.rs:548-560` ``
+     cites iced_widget, which the script would give to gpui-component;
+   - the egui and iced showcases otherwise cite their own crates unnamed.
+2. **A citation whose note names two or more family crates that each hold the cited file is
+   set aside.** For example, `CN/src/geometry.rs`'s `` `toolbar.rs:243-257` `` ("Neither
+   gpui-component's `Toolbar` nor gpui-base's") is gpui-component's `RenderOnce for Toolbar`,
+   but the nearest name is gpui-base.
+3. **The plan's output lists every renumbered chain outside `CN/` or attributed to gpui-pre or
+   a sub-crate**, the crates new to the scope. Task 2's review reads each one's old text against
+   its claim. A `--plan`-only dry run at HEAD on 2026-10-26 gave about 75 and about 60.
+
+Each rule is checked on its example before the run, in `--plan` output: the iced citation is
+out of scope, and the toolbar citation is set aside.
 
 **`lookup.py`, new beside the copy, read-only**, for §7's re-check:
 
@@ -411,7 +460,12 @@ renumbering or this hand-read.
 **Version-stating prose:** `grep -rn '0\.8\.0\|0\.3\.9\|0\.1\.10' connectors/native-theme-gpui
 connectors/native-theme-egui/examples connectors/native-theme-iced/examples
 docs/showcase-exceptions.toml scripts/connector_parity_exceptions.toml
-tools/showcase-support/src`. The count at the start goes in the commit body.
+tools/showcase-support/src native-theme/src`. The count at the start goes in the commit body.
+
+`native-theme/src` holds two gpui citations outside the script's scope: `src/lib.rs:354` and
+`src/gnome/mod.rs:572-576`. Both cite gpui-pre-linux 0.3.9 `src/linux/x11/client.rs:2671-2678`
+and `:2620-2666`. Both are re-read at 0.3.10 and re-cited (rationale P9). In the grep's output,
+native-theme's own version numbers are history or are not gpui's.
 
 Two kinds of line are not this task's:
 - **`CN/README.md`'s version statements** are §9's (Task 8), and its `toolbar` row is §6's
@@ -494,24 +548,37 @@ needed, comes in addition to the allow, not instead of it.
 - **`SC/inspector.rs:341`, `resolve_font`:** allowed. It is reached only where the text
   system lists a fallback-stack family, `DrawnFamilies::of`'s existing guard, and its doc
   states the one case left.
-- **`SC/demo.rs:2384`, `shape_line`** (a `debug_assert!` on a newline,
-  `GP/text_system.rs:678-681`): allowed, with "the segment labels are the showcase's constants,
-  none holds a newline". A test asserts that no label holds one.
+- **`SC/demo.rs:2384`, `shape_line`** in `segmented_width` (a `debug_assert!` on a newline,
+  `GP/text_system.rs:678-681`): allowed, with this reason. Its one non-test caller passes
+  `BASIC_SEGMENTS` (`SC/pages/basic.rs`), constants without a newline. The showcase tests call
+  it in debug builds, where the `debug_assert!` would fire (`the_segmented_width_is_the_drawn_controls`
+  among them). No new test is needed.
 - **The test modules** that call listed functions with literals (`shape_line` in `SC/tests.rs`
   at `:1969`, `:4945`, `:5231`, as of `8086a20e`) carry an allow on the module or the item,
   with the reason "test code may panic".
 - Any other call the inventory finds is decided the same way.
 
 **Done-criterion, mechanical, for every entry** (rationale P6). A wrong path flags nothing and
-passes every run.
+passes every run. clippy reports a path it cannot resolve as a warning, unless the entry has
+`allow-invalid = true`. The steps:
 
-1. **Does clippy report an unresolvable path?** Add a deliberately wrong entry, run
-   `cargo clippy -p native-theme-gpui --all-targets -- -D warnings`, and record the result.
-2. **If it reports one**, a clean run on both cores shows that every entry resolves. One planted
-   `gpui::KeyBinding::new("a", Quit, None)` in a non-test showcase function fails on both cores
-   and passes once removed, which shows the alias and GPUI Fast are reached.
-3. **If it does not**, each entry gets its own planted call, failing on both cores and passing
-   once removed.
+1. **Measure the unresolved-path warning.** Add a deliberately wrong entry, run
+   `cargo clippy -p native-theme-gpui --all-targets -- -D warnings`, and record two things:
+   the warning's text, and whether `-D warnings` makes it fatal. If no warning appears at all,
+   every entry gets its own planted call instead of steps 2 and 4.
+2. **Define "clean".** A run is clean only if it passes and its output holds no
+   unresolved-path warning (the text step 1 recorded). It runs in each of the three
+   configurations: `--features native,watch`, `--features gpui-fast,native,watch` and
+   `--no-default-features`.
+3. **Mark the entries that resolve only in some configurations.** These are a function on one
+   core only, or in a platform crate Linux does not build. Each carries `allow-invalid = true`
+   with its reason, or is left out with its reason. Where it resolves on Linux, a planted call
+   there fails and passes once removed. Otherwise the commit body records it as not proven on
+   Linux.
+4. **Prove every other entry.** A clean run in all three configurations shows that each one
+   resolves. One planted `gpui::KeyBinding::new("a", Quit, None)` in a non-test showcase
+   function fails on both cores and passes once removed, which shows the alias and GPUI Fast
+   are reached.
 
 The results go in the commit body.
 
@@ -531,16 +598,22 @@ gpui's default minimum, `Size::auto()` (`GP/style.rs:789`).
 builder replaces it with `bar_height` where the theme states one, and with `auto`, the
 content's height, where it states none. It sets the height to `auto` as before.
 
-**The test `toolbar_carries_the_models_toolbar` (`:2811-2861`):** the bar-height assertion
-(`:2824-2828`) expects `Some(px(h).into())` where `bar_height` is stated and
-`Some(gpui::Length::Auto)` where it is not.
+**The two unit tests that assert the unstated case** (rationale P7) both change:
 
-- **Red first:** the changed expectation fails on today's builder. The loop asserts preset by
-  preset, so the run stops at the first preset in `Theme::list_presets()`'s order that states
-  no bar height, and the message names it. That is enough to show the test sees the defect.
-  The fix reaches all 14 presets that state none; only macos-monterey, material-3 and
-  windows-11 state one.
-- Then the fix makes it pass.
+- **`toolbar_leaves_min_height_unset_without_a_bar_height` (`:2981-2994`), the red-first test:**
+  - its `min_size.height` assertion with `bar_height = None` expects
+    `Some(gpui::Length::Auto)`;
+  - its stated-height half (`Some(40.0)`) is unchanged;
+  - its name and doc, which say "no floor", become the reset: for example
+    `toolbar_resets_the_min_height_without_a_bar_height`, "the minimum is reset to `auto`, so
+    the bar is its content's height, whatever upstream's `Toolbar` sets".
+  - It is one fixture with an explicit `None`, so it fails on today's builder whatever the
+    presets state. The failure is kept for the commit body.
+- **`toolbar_carries_the_models_toolbar` (`:2811-2861`):** the bar-height assertion
+  (`:2824-2828`) expects `Some(px(h).into())` where `bar_height` is stated and
+  `Some(gpui::Length::Auto)` where it is not. It holds the fix for every preset. Today 14 state
+  none; only macos-monterey, material-3 and windows-11 state one.
+- Then the fix makes both pass.
 
 **`CN/README.md:365`** (the `toolbar` row) states the same. **The Widget Info claim
 `SC/info/buttons.rs:902`** reads: `min_h_8, p_1, gap_1 and text_sm at its default Small Size
@@ -731,7 +804,7 @@ unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows 
 
 - `cargo test -p native-theme-gpui --all-targets` passes, and the doctests on gpui-pre;
 - clippy `-D warnings`, the strict panic lints and §5's gate are clean on the library and the
-  showcase;
+  showcase, and clippy also with `--no-default-features` (§0.2), each run clean in §5's sense;
 - the MSRV is as §1.
 
 **The full `./scripts/check_release.sh`** shows only the expected items:
@@ -739,8 +812,9 @@ unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows 
 - stale visual assets;
 - the existing `v0.6.1` tag;
 - the approved soft semver warnings;
-- the iced and egui stamps, if their connectors changed since their last stamp;
 - `cargo outdated` as recorded.
+
+The iced and egui stamps are not among them: Task 8 re-takes both before this run (§9).
 
 There is no gpui item. Right after it, the packaging check with `--features gpui-fast` passes,
 as G3's acceptance ran it (`cargo package -p native-theme-derive -p native-theme -p

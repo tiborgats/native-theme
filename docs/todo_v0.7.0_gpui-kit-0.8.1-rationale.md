@@ -190,10 +190,10 @@ What it does to the branch, by site:
 | Site (`d2d4a3af`) | On 0.8.1 | How it shows |
 |---|---|---|
 | `SC/app.rs:178-181`, `KeyBinding::new("secondary-q" / "-b" / "-k" / "-,", …)` in `app::init` | compiles (the literals are `'static`), **panics at start-up** inside gpui (`binding.rs:47`) | measured: with only this file unmigrated, **240 of 323 showcase tests panic** at `gpui-pre-0.3.10/src/keymap/binding.rs:47:10`, since the test harness calls `app::init` (`SC/tests.rs:125`) |
-| `SC/pages/typography.rs:97` `KBDS` (`"secondary-c"` …) through `SC/demo.rs:6478` `Keystroke::parse(keys).ok()?` | compiles, every parse fails, `filter_map` drops all four Kbds (`SC/pages/typography.rs:196`) | **the Typography page's Kbd row is silently empty**; `the_kbds_take_the_showcases_modifier` (`SC/tests.rs:17424`) fails on it |
+| `SC/pages/typography.rs:97` `KBDS` (`"secondary-c"` …) through `SC/demo.rs:6478` `Keystroke::parse(keys).ok()?` | compiles, every parse fails, `filter_map` drops all four Kbds (`SC/pages/typography.rs:196`) | **the Typography page's Kbd row is silently empty**; `the_kbds_take_the_showcases_modifier` (`SC/tests.rs:17424`) fails, but only because it parses `KBDS` itself: no test checks that the row is drawn (P5) |
 | `SC/pages/feedback.rs:136` `SAVE_KEYS = "secondary-s"` through `:142` | compiles, the parse fails, the fallback prints the raw literal | **the Save tooltip reads "Save file (secondary-s)"**; the tooltip test (`SC/tests.rs:17452`) fails on it |
-| `SC/tests.rs:2380` `fn secondary(key)`, `Keystroke::parse(&format!(..))` | does not compile: its `unparse()` now takes the OS (the error at `:2382`) | fixed naively with an OS argument, it compiles. But its `unwrap_or_default()` returns `""` on a parse failure, so **`no_inspector_toggle_remains` (`:2403`) would pass while checking nothing**: it compares every binding with an empty string |
-| `SC/tests.rs:416` (`ScrollWheelEvent`), `:2229` (`parse(keys)`), `:2363`, `:2382`, `:2414`, `:5345` (`unparse()`); `CN/src/widgets/tests.rs:1714` (`parse(key)`) | 7 compile errors, 1 deprecation warning | `cargo check --all-targets` fails on both cores |
+| `SC/tests.rs:2380` `fn secondary(key)`, `Keystroke::parse(&format!(..))` | does not compile: its `unparse()` now takes the OS (the error at `:2382`), and `parse` now takes a `&'static str`, which `&format!(..)` is not | the trial's log shows only the first error: the compiler skips the borrow check of a function that already has a type error. Migrated to `parse_with_os` with an OS argument, it compiles, but its `unwrap_or_default()` returns `""` on a parse failure, so **`no_inspector_toggle_remains` (`:2403`) would pass while checking nothing**: it compares every binding with an empty string |
+| `SC/tests.rs:416` (`ScrollWheelEvent`), `:2229` (`parse(keys)`), `:2363`, `:2382`, `:2414`, `:5345` (`unparse()`); `CN/src/widgets/tests.rs:1714` (`parse(key)`) | 7 compile errors in the trial's log, 1 deprecation warning; `secondary`'s borrow error at `:2381` would follow once `:2382` is fixed | `cargo check --all-targets` fails on both cores |
 
 The library's own code calls none of these outside its tests: `CN/src` compiles unchanged.
 
@@ -273,9 +273,13 @@ not affected.
 - The showcase test `the_toolbar_is_the_models_toolbar` (`SC/tests.rs:1398`) holds the bar to
   `bar_height` where one is stated, and says of the unstated case "nothing to hold it to"
   (`:1412`).
-- The connector's unit test `toolbar_carries_the_models_toolbar` (`CN/src/geometry.rs:2811`)
-  asserts `min_size.height == None` there. On 0.8.1, that `None` is the leak itself: it leaves
-  upstream's minimum in place.
+- The connector's two unit tests assert `min_size.height == None` there:
+  - `toolbar_carries_the_models_toolbar` (`CN/src/geometry.rs:2811`), over every preset;
+  - `toolbar_leaves_min_height_unset_without_a_bar_height` (`:2984`), on one theme with
+    `bar_height` set to `None`. Its doc says "the toolbar is its content's height, with no
+    floor".
+
+  On 0.8.1, that `None` is the leak itself: it leaves upstream's minimum in place.
 
 ### 1.6 Dialog: an exit animation, and the curve moved
 
@@ -569,6 +573,13 @@ not parse (`.ok()?`), and the tooltip prints the raw literal. That is how 0.3.10
 would have gone unseen but for a test. Both keep their fallback, since a showcase must still
 draw, and each writes one stderr line naming the keys, as P3's `load` helper does.
 
+**The Kbd row gets a test that it is drawn.** `the_kbds_take_the_showcases_modifier` parses
+`KBDS` itself and never calls `demo::kbd`. So a `demo::kbd` left on `parse`, or migrated
+wrongly, would empty the row again with only a stderr line to show it. A showcase test opens
+the Typography page and finds each of the four `KBDS` ids laid out (`bounds_of`). It is one
+short test, and it checks the visible result that the Kbd change exists for. The tooltip needs
+no such test: its test calls `save_tooltip` itself (P5).
+
 ### P5 — Test code: migrated as upstream migrated its own, and the one test that would go vacuous made strict
 
 **The mechanical part:**
@@ -606,6 +617,36 @@ before. That is how the §1.5 probe measured "macos-sonoma" and "ios-26".
   has been checking the wrong theme. It is the same wrong-safety-net class as `secondary`, in
   the file this change already edits, so it is done here rather than recorded for later.
 
+**`set_preset` gets the same check.** It is the other preset helper (`SC/tests.rs:10878`,
+29 calls). It dispatches `SetPreset`, the path the theme settings and the command palette
+take, and never checks that the theme installed.
+- Its calls name kde-breeze, adwaita, nord, material-3 and catppuccin-mocha, all bundled
+  presets today. There are also six `"default"` calls and two `"no-such-preset"` calls, made
+  to provoke the error (`:11695`, `:11740`).
+- **The options:**
+  - **(a) Record it for later.** That contradicts the reason above.
+  - **(b) Assert the install.** `apply_theme_by_name` sets `Showcase::current_theme_name` to the
+    name only where the install succeeded (`SC/app.rs:1883-1887`, a `pub(crate)` field). Every
+    caller already holds the showcase entity.
+- **(b).** `set_preset` takes the showcase and asserts `current_theme_name == key` for every key
+  but `"default"`. The OS read behind `"default"` may legitimately fail on a runner, so those
+  six calls stay unasserted, as `use_preset` has no such call to assert.
+- The two error calls go to a `set_missing_preset`, which asserts the name did not change, as
+  `use_missing_preset` does. Their tests already check the error alert.
+
+**Test code is written so the project's panic hook passes it.**
+`.claude/hooks/no-runtime-panics.sh` refuses an edit whose new text holds `.unwrap()`,
+`.expect(` or `panic!(`, unless the file is under `tests/` or the text holds `#[test]`,
+`#[cfg(test)]` or `#[allow(clippy::unwrap_used`. `SC/tests.rs` and `CN/src/widgets/tests.rs`
+match none of these, and `#[gpui::test]` is not `#[test]`. So:
+- an edit leaves an existing `.unwrap()` or `.expect(` outside its text. `activate_key`'s edit
+  replaces only the `parse` call before its `.unwrap()`;
+- a new failure in a test helper is an `assert!`. `secondary` asserts that the parse is `Ok`,
+  naming the key, before it reads the keystroke.
+
+Working around the hook, for example by writing the file through the shell, is not an option:
+it is the maintainer's gate.
+
 ### P6 — A gate for dependency functions that panic on their input
 
 **Options:**
@@ -627,8 +668,9 @@ paths name nothing.
   `examples/`, where every one of today's sites is, and it cannot tell `gpui::KeyBinding::new`
   from another type's `new`.
 - **(c)** is type-aware, and the ordinary clippy runs that deny warnings already lint every
-  target on both cores: CI's clippy job (`RUSTFLAGS: -Dwarnings`, `--all-targets`, once per
-  core) and `check_release.sh`'s *clippy (-D warnings)* section. The canary's clippy denies
+  target in three configurations: gpui-pre, GPUI Fast, and since the D round's `29634cfd`, no
+  default features. The runs are CI's clippy job (`RUSTFLAGS: -Dwarnings`, `--all-targets`)
+  and `check_release.sh`'s clippy sections, `--commit` included. The canary's clippy denies
   warnings too (`dependency-canary.yml:92`), but its schedule runs it on `main` (§0).
   - It names the method and the reason in the error: "panics on a parse error; use
     `KeyBinding::load`".
@@ -677,18 +719,30 @@ not done here, because this change is the gpui connector's, and those crates' up
 where their sweep belongs.
 
 **Done-criterion, mechanical, for every entry, not only one.** A wrong path in the list would
-flag nothing and pass every run, so each entry's resolution is shown on both cores.
+flag nothing and pass every run, so each entry's resolution is shown in every configuration.
 
-- **First:** whether clippy reports a path it cannot resolve. A deliberately wrong entry is
-  added and clippy run.
-- **If clippy reports it**, a clean `cargo clippy -p native-theme-gpui --all-targets -- -D
-  warnings` on both cores shows every entry resolves, and one planted call (`KeyBinding::new`)
-  shows the alias and GPUI Fast are reached.
-- **If clippy does not report it**, each entry gets its own planted call, each failing on both
-  cores and passing once removed.
+**What clippy does with a path it cannot resolve.** clippy 1.99 has a per-entry key,
+`allow-invalid`, whose help text is "add `allow-invalid = true` to the entry to suppress this
+warning" (`clippy-driver`'s strings, rustc 1.99.1). So it reports such a path as a warning,
+not as a lint, and two things follow:
 
-Either way this is measured, not assumed: clippy resolves a disallowed path by its definition,
-and the two cores define it in different crates under the same library name.
+- **A run's exit status may not show the warning.** Whether `-D warnings` makes it fatal is
+  measured first, by adding a deliberately wrong entry and running clippy. Either way a run is
+  clean only if its output holds no unresolved-path warning, in each configuration. If the
+  wrong entry draws no warning at all, every entry gets its own planted call instead.
+- **Some paths cannot resolve everywhere.** A function may exist on one core only, or in a
+  platform crate that Linux does not build. Such an entry carries `allow-invalid = true`, with
+  its reason, or is left out with its reason. Its proof is a planted call where it resolves,
+  if that runs on Linux; otherwise the commit body records it as not proven on Linux.
+
+**Then**, for the entries that resolve in every Linux configuration:
+- a clean run (as defined above) of `cargo clippy -p native-theme-gpui --all-targets -- -D
+  warnings`, in all three configurations, shows that each entry resolves;
+- one planted call (`KeyBinding::new`) failing on both cores shows that the alias and GPUI
+  Fast are reached.
+
+This is measured, not assumed: clippy resolves a disallowed path by its definition, and the
+two cores define it in different crates under the same library name.
 
 **Tests stay out of scope**, as for the other panic gates: a test may panic on purpose. clippy
 applies the config to test code too, so the test modules that call such functions with literals
@@ -711,16 +765,25 @@ site allow is.
 - the README row (`CN/README.md:365`);
 - the Widget Info claim (`SC/info/buttons.rs:902`).
 
-**The guard is the existing unit test's expectation.** `toolbar_carries_the_models_toolbar`
-(`CN/src/geometry.rs:2811`) runs over every preset in both modes and asserts
-`out.min_size.height == t.bar_height.map(..)`, i.e. `None` where no bar height is stated. A
-`None` refinement leaves upstream's minimum in place, which is the defect. The expectation
-becomes `Some(Length::Auto)` there. So the test fails until the fix lands and holds the fix
-for every preset, whatever their content heights.
+**The guard is the two existing unit tests' expectations** (§1.5). Both assert `None` where no
+bar height is stated, and a `None` refinement leaves upstream's minimum in place, which is the
+defect. Both expectations become `Some(Length::Auto)` there:
+
+- **`toolbar_leaves_min_height_unset_without_a_bar_height`** (`CN/src/geometry.rs:2984`) is
+  the red-first test. It is one fixture with an explicit `bar_height = None`, so its failure
+  depends neither on the presets' data nor on their order. Its name and doc state the old
+  contract ("no floor"), so both are rewritten: the minimum is reset to `auto`, so the bar
+  sizes to its content.
+- **`toolbar_carries_the_models_toolbar`** (`:2811`) runs over every preset in both modes and
+  asserts `out.min_size.height == t.bar_height.map(..)`. It holds the fix for every preset,
+  whatever its content height.
+
+Neither test passes until the fix lands. Changing only one would leave the other red after
+the fix.
 
 A showcase measurement would be a weaker guard. It reads one page's content, which on the two
 measured presets is taller than the floor anyway, so it would pass there with or without the
-fix. The unit test reads the refinement itself, for every preset. The showcase test's comment
+fix. The unit tests read the refinement itself, for every preset. The showcase test's comment
 "nothing to hold it to" (`SC/tests.rs:1412`) gets a clause saying why the chrome's own row,
 which it measures, is not upstream's `Toolbar`.
 
@@ -788,6 +851,40 @@ What changes is which upstream crates are in scope:
   - and the inspector's platform crates.
   Without them in the family, the script would skip these citations, and the version grep
   would swap the versioned ones' versions with no line check.
+
+**The wider scope makes a wrong crate a wrong number.** A citation that names no crate is
+attributed by the nearest crate name in its note, or else by the only family crate whose old
+file has a non-blank line there. `gates.py` uses the same rule, so it agrees with every
+misattribution. In G3 a citation wrongly given to gpui-pre was a harmless "unchanged file".
+With gpui-pre, its sub-crates and the iced and egui showcases in scope, the same mistake
+rewrites digits. Two cases found by an independent reviewer's `--plan`-only dry run of the
+adapted script at HEAD (2026-10-26, nothing written):
+
+- `showcase-iced.rs:385` cites `` `scrollable.rs:548-560` ``, iced_widget's
+  `operation.scrollable(…)`. The script gives it to gpui-component's `scroll/scrollable.rs`,
+  whose lines there are test asserts, and moves it to 665-677.
+- `CN/src/geometry.rs:1043` cites `` `toolbar.rs:243-257` ``, gpui-component 0.8.0's
+  `RenderOnce for Toolbar`. Its note names both crates ("Neither gpui-component's `Toolbar`
+  nor gpui-base's"). The nearest name is gpui-base, so gpui-base's diff renumbers it.
+
+**So three rules are added**, to the script's copy and to `gates.py` alike:
+
+1. Outside `CN/`, a citation whose note names no family crate is out of scope. The iced and
+   egui showcases cite their own crates mostly without a name.
+2. A citation whose note names two or more family crates that each hold the cited file is
+   set aside.
+3. Task 2's review reads every renumbered chain that is outside `CN/` or attributed to a crate
+   new to the scope (gpui-pre and the sub-crates). That was about 75 and about 60 chains in
+   the dry run, a bounded read.
+
+Each rule costs a few lines of script. The alternative, trusting the attribution, has already
+been shown wrong.
+
+**Two citations sit outside every scope**, in native-theme itself: `native-theme/src/lib.rs:354`
+and `native-theme/src/gnome/mod.rs:572-576` state what gpui-pre-linux 0.3.9 does
+(`src/linux/x11/client.rs:2671-2678`, `:2620-2666`). The claim still holds in 0.3.10, but the
+lines moved. They are present-tense claims, so P14's version grep covers `native-theme/src`
+too and the two are hand-read. That is cheaper than widening the script's scope for two lines.
 
 **Read by hand, beyond what the script sets aside:**
 
@@ -965,6 +1062,7 @@ The one partial answer, inline code's seam, is P13's.
 - **The manifest comments:** `CN/Cargo.toml:6-11`, `:56-62`, `:76-82`. The `image` comment
   still holds: gpui-pre 0.3.10 and gpui-fast 0.1.12 both ask for `image` `0.25.1`.
 - **`.cargo/audit.toml`'s comments** (P2).
+- **native-theme's two gpui-pre-linux citations** (P9), re-read at 0.3.10 and re-cited.
 
 **CHANGELOG `[Unreleased]`:**
 
@@ -1029,6 +1127,10 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - **P3, the showcase's key bindings through `KeyBinding::load`: approved** (2026-10-26). This
   includes the unmeasured Windows keyboard-mapper difference as an accepted risk.
 
+Neither approval is touched by the later check passes. Those passes added the second toolbar
+test (P7), the attribution rules (P9), clippy's `allow-invalid` handling (P6), and the Kbd-row
+test, the `set_preset` check and the hook-compatible test style (P4, P5).
+
 ## 4 — What was checked, and what was not
 
 **Checked:**
@@ -1052,8 +1154,11 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - **The keyboard mappers** of gpui-pre, its test platform, macOS and Windows (P3), and
   `Kbd::format`'s OS source (P4, P5).
 - **Three open `[upstream]` entries spot-checked** against the 0.8.1 diff (P12; the full
-  re-check is G4's), `DialogTheme`'s exhaustiveness (P13), `.cargo/audit.toml` (P2), and the citation-bearing files outside the
-  gates (P9).
+  re-check is G4's), `DialogTheme`'s exhaustiveness (P13), `.cargo/audit.toml` (P2), and the
+  citation-bearing files outside the gates (P9).
+- **A `--plan`-only dry run of G3's script**, adapted as spec §4.1 says, at HEAD after the D
+  round's first commits. An independent reviewer ran it on 2026-10-26 and wrote nothing to the
+  repository. It found the attribution cases of P9.
 
 **Not checked; the plan's gates decide:**
 

@@ -19,8 +19,8 @@
 - **What changes:**
   - the gpui connector, its tests and its showcase, plus the documents;
   - in the egui and iced showcases, only their citations of gpui sources (Task 2, Task 3b);
-  - in native-theme, nothing in its code, but its property tests run on proptest 1.12 after
-    the lock update (spec §1).
+  - in native-theme, nothing in its code, but two doc comments re-cite gpui-pre-linux
+    (Task 3b), and its property tests run on proptest 1.12 after the lock update (spec §1).
 - **The unit:** Tasks 1–3 — the bump with the migration, the renumbering, and the hand-read.
 - **After the unit:** Tasks 3b, 4, 5 and 7, each independent of the others, and Task 6 after
   3b and 5, so that its parity run reads the final layout. Documents and the stamp close
@@ -60,7 +60,11 @@ review session running the C and D rounds in this tree has said that the D round
 - **No invented values.** A number in a claim, comment or document is read from the cited
   source or measured.
 - **Both cores.** Every gpui change is tested on both: `--features native,watch` and
-  `--features gpui-fast,native,watch`.
+  `--features gpui-fast,native,watch`. New code also lints clean with `--no-default-features`,
+  which `check_release.sh --commit` and CI run (spec §0.2).
+- **The project's panic hook** is not worked around. Test-code edits follow spec §0.2: an
+  existing `.unwrap()` or `.expect(` stays outside the edit's text, and a new failure is an
+  `assert!`.
 - **Commits:**
   - explicit paths (`git commit -- <paths>`, never `-a` or `add -A`), since another session's
     files may be in the tree;
@@ -73,7 +77,8 @@ review session running the C and D rounds in this tree has said that the D round
   with its closing commit. Entries are cited by heading and opening words.
 - **Gates per task:**
   - `./scripts/check_release.sh --commit` green on the task's last commit;
-  - since `--commit` skips the GPUI Fast tests (`check_release.sh:705-706`), every task that
+  - since `--commit` skips the GPUI Fast tests (`check_release.sh`'s *test (native-theme-gpui,
+    gpui-fast, native, watch)* leg), every task that
     changes the connector or the showcase — 1, 3, 3b, 4, 5 and 7, and 6 if it changes code —
     also runs `cargo test -p native-theme-gpui --features gpui-fast,native,watch --all-targets`.
   - **One exception, stated in advance:** Tasks 1–3 are one unit. Task 1's commit leaves the
@@ -107,20 +112,26 @@ review session running the C and D rounds in this tree has said that the D round
 2. **No vacuous test** (Task 1).
    - `secondary` fails the test on a parse error.
    - `no_inspector_toggle_remains` compares with a real key.
-   - `use_preset` fails the test on a preset that does not install.
-3. **The Kbd row and the tooltip are back** (Task 1): four Kbds on the Typography page, and
-   "Ctrl+S" or "⌘S" in the tooltip, by the test platform's OS.
+   - `use_preset` and `set_preset` fail the test on a preset that does not install.
+3. **The Kbd row and the tooltip are back** (Task 1): four Kbds on the Typography page, held by
+   `the_typography_page_draws_its_kbds`, and "Ctrl+S" or "⌘S" in the tooltip, by the test
+   platform's OS.
 4. **No cited number skipped or mis-moved** (Task 2), as G3 Task 2's focus.
    - gpui-pre's citations are in scope this time.
    - The unit's own lines are left alone and listed.
+   - No citation is renumbered by the wrong crate's diff: the three attribution rules of spec
+     §4.1 hold on their examples, and every listed chain outside `CN/` or on gpui-pre or a
+     sub-crate is read against its claim.
 5. **The Dialog says what 0.8.1 does** (Task 3): an entrance and an exit, on the same curve and
    duration, and no `AnimationExt`.
 6. **The gate catches** (Task 4).
    - Every entry is shown to resolve, not only one; the planted call fails clippy on both
-     cores.
+     cores. "Clean" means no unresolved-path warning in the output, in all three
+     configurations, and each `allow-invalid` entry states why.
    - Every listed function's group is argued from its doc line.
    - Every existing call is guarded or allowed with its reason.
-7. **The toolbar test fails before the fix** (Task 5), at a preset that states no bar height.
+7. **The toolbar tests fail before the fix** (Task 5): the single-fixture test is red first,
+   and both toolbar unit tests pass after it.
 8. **The Separator is closed only on a measurement** (Task 6): the test on both cores, or the
    captures if the test cannot find the label's box.
 9. **Both cores lay the showcase out alike** (Task 6): the four dump pairs compared, each
@@ -143,7 +154,8 @@ review session running the C and D rounds in this tree has said that the D round
 - [ ] **`docs/todo_code-review-findings.md`** (re-read first): a *G4* status row and section.
 - [ ] **The inputs** the spec names are in `.superpowers/sdd/todo_code-review-plan/g4/`:
   `gk081-trial-check.log`, `gk081-trial-tests.log`, `gk081-lockdiff.txt`,
-  `gk081-diff-review.md`, `trial.sh` and `trial2.sh`. If one is missing, the ledger says so.
+  `gk081-diff-review.md`, `gk081-msrv-1.94.txt`, `trial.sh` and `trial2.sh`. If one is
+  missing, the ledger says so.
 - **Commit:** `docs(review): GPUI Kit 0.8.1 as milestone G4, after the D round (G4 T0)`.
 
 ## Task 1: The bump, the keys and the test migration (the unit opens)
@@ -173,7 +185,10 @@ clean tree.
   - `secondary(key, os)` strict;
   - the two plain tests made `#[gpui::test]`;
   - `use_preset` asserting the install, `use_missing_preset` for the two error tests, and any
-    call the assertion exposes fixed and listed.
+    call the assertion exposes fixed and listed;
+  - `set_preset(cx, showcase, key)` asserting the install for every key but `"default"`, and
+    `set_missing_preset` for the two error calls;
+  - the new `the_typography_page_draws_its_kbds`.
 - [ ] **Every suite on both cores:** `cargo test -p native-theme-gpui --all-targets` with
   `--features native,watch` and with `--features gpui-fast,native,watch`.
   - Expected red: the two showcase citation gates and `the_fallback_stack_copy_is_gpuis`.
@@ -193,11 +208,16 @@ clean tree.
 
 - [ ] **Spec §4.1's script setup:**
   - G3's script copied to `.superpowers/sdd/todo_code-review-plan/g4/t2/`;
-  - the versions changed, gpui-pre joining `FAMILY`, `scripts/connector_parity_exceptions.toml`
-    added to the scope;
+  - the versions changed, gpui-pre and the sub-crates joining `FAMILY`,
+    `scripts/connector_parity_exceptions.toml` and the egui and iced showcases added to the
+    scope;
+  - the three attribution rules in `remap.py` and `gates.py`, each shown on its example in
+    `--plan` output;
   - `T1_COMMITS` set to Task 1's commits, and `BASE_REV` to Task 2's starting HEAD.
 - [ ] **The run:** `--plan`, then the one `--write`, then the four gates (`gates.py` among
   them).
+- [ ] **The review reads** every renumbered chain outside `CN/` or attributed to gpui-pre or a
+  sub-crate against its claim (spec §4.1, rule 3), before the `--write`.
 - [ ] **The commit body holds:** the command lines, the counts by form and by rule, the list
   of the unit's lines it skipped, and the set-aside list in full (each entry with its reason,
   its cited text and the repo line's text). A fix round that changes the list restates it whole.
@@ -234,7 +254,8 @@ Task 2 commit that states it.
   - the set-aside citations outside `SC/info/`;
   - `DrawnFamilies`' docs against the new cache;
   - the connector's dialog docs;
-  - the version grep with its present-tense claims and measurements;
+  - the version grep with its present-tense claims and measurements, `native-theme/src`'s two
+    gpui-pre-linux citations among them;
   - the counts re-measured.
 - [ ] **Gates:** the digits-only check over the re-pointed lines, each new line read by hand;
   the second grep with the kept lines listed; `--commit` green; and the GPUI Fast tests.
@@ -244,34 +265,37 @@ Task 2 commit that states it.
 
 **Files:** `CN/clippy.toml` (new), `CN/src/lib.rs` (the deny), `SC/main.rs` (the deny),
 `SC/inspector.rs`, `SC/demo.rs`, `SC/tests.rs` (the allows), and whatever further call sites
-the inventory finds. **Depends on:** Task 1.
+the inventory finds. **Depends on:** Task 3 (after the unit).
 
 - [ ] **Spec §5's inventory:** the 172 candidate lines, each function assigned to a group with
   the reason, and each set-aside line with its reason, in the commit body.
 - [ ] **`CN/clippy.toml`:** one entry per listed function, with a reason citing its doc line,
   and the header line about the upgrade sweep.
 - [ ] **The two `#![deny(clippy::disallowed_methods)]`.**
-- [ ] **Today's calls:** `resolve_font` allowed with its reason. `shape_line` in `demo.rs` made
-  unable to panic, or else allowed with its test. Test code allowed. Any other call decided.
+- [ ] **Today's calls:** `resolve_font` and `segmented_width`'s `shape_line` allowed, each with
+  spec §5's reason. Test code allowed. Any other call decided.
 - [ ] **Spec §5's done-criterion, for every entry:**
-  - whether clippy reports an unresolvable path, recorded;
-  - then either the clean run plus one planted call, or one planted call per entry, on both
-    cores.
+  - the unresolved-path warning measured (its text, and whether `-D warnings` makes it fatal);
+  - the entries that resolve only in some configurations given `allow-invalid = true` with
+    their reasons, or left out;
+  - the clean runs in all three configurations plus one planted call, or one planted call per
+    entry if the wrong entry draws no warning.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests and clippy.
-- **Commit:** `build(gpui): clippy's disallowed-methods gate lists the upstream functions that panic on their input; the inspector's guarded resolve_font and the remaining calls are allowed or made unable to panic (G4 T4)`.
+- **Commit:** `build(gpui): clippy's disallowed-methods gate lists the upstream functions that panic on their input; the inspector's guarded resolve_font, segmented_width's shape_line and the test calls are allowed with their reasons (G4 T4)`.
 
 ## Task 5: The toolbar's unstated height
 
 **Files:** `CN/src/geometry.rs`, `CN/README.md` (the `toolbar` row), `SC/info/buttons.rs`,
-`SC/tests.rs` (the comment). **Depends on:** Task 1.
+`SC/tests.rs` (the comment). **Depends on:** Task 3 (after the unit).
 
-- [ ] **Red first:** `toolbar_carries_the_models_toolbar`'s bar-height expectation changed to
-  `Some(gpui::Length::Auto)` where unstated. It fails at the first preset that states no bar
-  height; the output is kept for the body.
+- [ ] **Red first:** `toolbar_leaves_min_height_unset_without_a_bar_height`'s unstated
+  expectation changed to `Some(gpui::Length::Auto)`, with its new name and doc, and
+  `toolbar_carries_the_models_toolbar`'s likewise. Both fail on today's builder; the
+  single-fixture test's output is kept for the body.
 - [ ] **Spec §6:**
   - `None => r.min_h_auto()`;
   - the doc;
-  - the test passes;
+  - both tests pass;
   - the README row, the Widget Info claim and the showcase test's comment.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests.
 - **Commit:** `fix(gpui): geometry::toolbar resets the minimum height to auto where the theme states no bar height, since gpui-component 0.8.1's Toolbar sets min_h_8 where 0.8.0 set h_8, so such a bar sizes to its content again (G4 T5)`.
