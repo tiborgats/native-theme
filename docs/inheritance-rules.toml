@@ -528,7 +528,7 @@ why_wrong     = "Only macOS ~ surface; Win/KDE/GNOME distinct"
 
 [wrong_safety_nets."list.header_background"]
 inherits_from = "defaults.surface_color"
-why_wrong     = "macOS ~ surface, Win ~ background, KDE/GNOME distinct"
+why_wrong     = "macOS ~ surface, Win ~ background, KDE distinct; GNOME equals surface, which adwaita states (platform-facts.md §2.15)"
 
 [wrong_safety_nets."input.background_color"]
 inherits_from = "defaults.background_color"
