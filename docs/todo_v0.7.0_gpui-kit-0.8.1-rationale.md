@@ -226,24 +226,30 @@ sets `min_h_7` / `min_h_8` / `min_h_12` in 0.8.1 ("Toolbar: grow with taller con
 - **adds `min_h(bar_height)` only where the theme states one.**
 
 On 0.8.1, `h_auto` still overrides the height, but nothing resets the new minimum. So where
-`toolbar.bar_height` is unstated, upstream's 2 rem minimum stays. The unstated case is
-kde-breeze and adwaita, whose presets say "sizes to content" (`kde-breeze.toml:340`).
+`toolbar.bar_height` is unstated, upstream's 2 rem minimum stays. **14 of the 17 bundled
+presets state none**; only macos-monterey (38), material-3 (64) and windows-11 (48) do
+(`native-theme/src/presets/*.toml`, `bar_height_px`). kde-breeze's says why: "sizes to
+content" (`kde-breeze.toml:340`).
 
-**Measured in the trial:** the Buttons page's component Toolbar (`SC/demo.rs:1427`) under six
-presets, with a throwaway probe test:
+**Measured in the trial:** the Buttons page's component Toolbar (`SC/demo.rs:1427`), with a
+throwaway probe test:
 
 | Preset | `bar_height` | Toolbar height | Button height |
 |---|---|---|---|
 | kde-breeze | none | 47 px | 34 px |
 | adwaita | none | 38 px | 26 px |
 | windows-11 | 48 | 48 px | 27 px |
-| macos-sonoma | 48 | 48 px | 27 px |
 | material-3 | 64 | 64 px | 44 px |
-| ios-26 | 64 | 64 px | 44 px |
 
-In every case the content and padding are already taller than 32 px, so **no pixel changes
-today**. But two statements are no longer true in general, and a smaller body font or a
-denser theme would show it:
+- On kde-breeze and adwaita the content and padding are already taller than 32 px, so the
+  floor changes no pixel there.
+- The other 12 presets without a bar height were not measured. Whether the floor shows on
+  any of them is not known.
+- The probe also asked for "macos-sonoma" and "ios-26", which are not preset keys. The probe
+  kept the previous preset and printed its numbers again. The test helper's silence about an
+  unknown name is P5's.
+
+Two statements are no longer true in general:
 
 - the connector's contract, "the height is the content's" (`CN/README.md:365` and the
   geometry doc);
@@ -516,8 +522,10 @@ meets it without an exception.
   worst case is one showcase shortcut on Windows layouts that map a key differently, not the
   library.
 
-**How a `load` error is handled:** the binding is left out. No panic, and no fallback to a
-guessed key. `app::init` returns nothing, so there is no caller to hand the error to.
+**How a `load` error is handled:** the binding is left out, with one line on stderr — the
+showcase's existing pattern for an input it refuses (`SC/app.rs:1416`). No panic, and no
+fallback to a guessed key. `app::init` returns nothing, so there is no caller to hand the
+error to.
 
 **A left-out binding cannot pass unnoticed:**
 
@@ -561,6 +569,19 @@ the Typography page.
 fails, instead of returning `""`.** As it is, `no_inspector_toggle_remains` (`:2403`) would
 pass vacuously (§1.3). A helper whose failure silently satisfies an assertion is a wrong
 safety net.
+
+**`use_preset` fails the test where the preset does not install.** Found during this work:
+the showcase's test helper ignores `apply_theme_by_name`'s `bool`
+(`SC/app.rs:1861-1866`), so a test that names a preset that does not exist runs, unnoticed,
+against the theme installed before. That is how the §1.5 probe measured "macos-sonoma" and
+"ios-26".
+- 103 calls go through it, `use_preset_scaled` among them. Each passes a literal or a name
+  from a preset list, and none passes `"default"`, whose OS read may legitimately fail on a
+  runner.
+- An assertion on the returned value therefore costs nothing where the names are right, and
+  shows any test that has been checking the wrong theme.
+- This is the same wrong-safety-net class as `secondary`, in the file this change already
+  edits, so it is done here rather than recorded for later.
 
 **No new cross-OS test.** `set_platform_info` (§1.3) could run the bindings under Mac on a
 Linux host. But that half would test gpui's parser rather than our code. The drawn half cannot
@@ -659,12 +680,16 @@ site allow is.
 becomes `Some(Length::Auto)` there. So the test fails until the fix lands and holds the fix
 for every preset, whatever their content heights.
 
-A showcase measurement would not guard it: §1.5 shows the content is taller than the floor in
-all six presets measured, so such a test passes with or without the fix. The showcase test's comment "nothing
-to hold it to" (`SC/tests.rs:1412`) gets a clause saying why the chrome's own row, which it
-measures, is not upstream's `Toolbar`.
+A showcase measurement would be a weaker guard. It reads one page's content, which on the two
+measured presets is taller than the floor anyway, so it would pass there with or without the
+fix. The unit test reads the refinement itself, for every preset. The showcase test's comment
+"nothing to hold it to" (`SC/tests.rs:1412`) gets a clause saying why the chrome's own row,
+which it measures, is not upstream's `Toolbar`.
 
-**Measured: no pixel changes today** (§1.5), so the screenshots do not move for this.
+**After the fix the sizing is 0.8.0's exactly:** the height `auto`, the minimum `auto`, and
+upstream's padding and gap where the theme states none. So no screenshot taken after G4 shows
+the floor. Between Task 1 and Task 5 a preset without a bar height may show it, which is not
+measured and does not matter: no screenshot is taken in between.
 
 ### P8 — Dialog: the claims say what 0.8.1 draws, entrance and exit
 
@@ -736,8 +761,8 @@ for the maintainer to file (an agent files nothing).
 ### P11 — taffy 0.15: the Separator entry closes once a capture shows it; parity and screenshots re-run
 
 **Before the Separator draft is dropped:** on gpui-pre, the Layout page's "Section Break" has
-to be centred on its line at rest (the same `--capture` comparison G3 Task 9 used), and the
-GPUI Fast capture has to agree. Then the `todo.md` entry closes with a dated line naming
+to be centred on its line at rest, in a capture of the page on each core (spec §7 gives the
+procedure), and the GPUI Fast capture has to agree. Then the `todo.md` entry closes with a dated line naming
 taffy 0.15.0's `flexbox.rs:2274-2275` and moves to `docs/archive/todo_closed.md`.
 
 **No exception or claim names the label's position today.** The two exception files and
@@ -756,14 +781,39 @@ parity run below shows to be unnecessary goes.
 **If the label is still at the end:** the entry stays open, the draft is re-cited to taffy
 0.15.0, and this document's §1.8 is corrected.
 
-### P12 — The `todo.md` entries 0.8.1 touches get dated lines
+### P12 — The upstream entries are re-checked at 0.8.1
 
-**Citations that name their version stay as they are**, in `docs/todo.md` and in
-`ROADMAP.md`'s upstream list (`:137-171`). "`tab/tab.rs:958-966` at gpui-component 0.8.0" stays
-true of 0.8.0. This is K3's rule for `docs/todo.md`: its entries are not renumbered.
+**What the question is.** `docs/todo.md`'s open `[upstream]` gpui entries and `ROADMAP.md`'s
+upstream list (`:137-171`) each claim that upstream does something, citing a line "at
+gpui-component 0.8.0". Those citations stay true of 0.8.0. The question is whether each claim
+still holds at 0.8.1, and where its line is now: the lists are what an upstream PR is written
+from.
 
-**An entry gets a dated line** — *GPUI Kit 0.8.1 (2026-10-26, G4):* — **only where it waits
-on upstream and 0.8.1 is the release it waited for:**
+**Options:**
+
+- **(a) Leave them.** Their citations name their version.
+- **(b) Dated lines only on the entries that wait for a release** (this document's first
+  draft).
+- **(c) G3's rule** (archived G3 spec §10): every open `[upstream]` gpui entry whose cited
+  upstream file changed in 0.8.1's non-test code is re-read at 0.8.1.
+  - One that 0.8.1 resolved closes and moves to the archive.
+  - One that still holds gets a dated line with its 0.8.1 lines where they moved.
+  - One whose file changed but whose claim and lines did not gets a dated "still so" line.
+  - `ROADMAP.md`'s bullets are re-cited in place, since ROADMAP states the current plan and is
+    not append-only.
+
+**(c).** The reasons:
+
+- (a) and (b) keep claims that nobody re-read against the code they describe. My spot-checks
+  (`WindowBorder`, the Input placeholder, `Dialog::max_h`, the theme reads) found none
+  resolved, but a spot-check is not a re-read.
+- (c) is bounded. About 20 open gpui entries cite files 0.8.1 changed, and fewer cite files it
+  changed outside tests (`checkbox.rs`, `button/toggle.rs`, `tab/tab_bar.rs`, `link.rs` and
+  `message_scroller.rs` changed in tests only). Four ROADMAP bullets are affected.
+- §4.1's script, run in its `--plan` mode over those two files, gives each cited number's
+  0.8.1 line without writing anything, so only the claims are read by hand.
+
+**Entries that wait for a release** get their dated line under the same rule:
 
 - **the Separator draft** (P11) and **the two other drafts** (P10);
 - **`unicode-properties`:** still pinned by gpui-fast-web 0.1.12;
@@ -772,12 +822,7 @@ on upstream and 0.8.1 is the release it waited for:**
 (The base-palette repair's entry needs none: the C round fixed it and closed the entry in
 `e92c288a`, C-04.)
 
-No other `[upstream]` entry is answered by 0.8.1:
-- its non-test diff adds and removes no theme read (§1.1);
-- `WindowBorder` gained only safe-area insets;
-- the Input's placeholder change is accessibility only;
-- the Dialog gained no `max_h`;
-- the new public API (§1.10) adds no style seam beyond TextView's and the trigger-layout one.
+The new public API (§1.10) adds no style seam beyond TextView's and the trigger-layout one.
 The one partial answer, inline code's seam, is P13's.
 
 ### P13 — New upstream API: what is shown, mapped, or recorded
@@ -824,6 +869,8 @@ The one partial answer, inline code's seam, is P13's.
   `compat::` checks the table and the quick start.
 - **`docs/COMPATIBILITY.toml`:** through `scripts/update_compatibility.sh`.
 - **`ROADMAP.md:72-73`.**
+- **`docs/todo_gpui-full-theme.md`:** an appended "gpui-component 0.8.1" note, as G3 appended
+  one for 0.8.0. That file records which upstream version its theme map was checked against.
 - **The manifest comments:** `CN/Cargo.toml:6-11`, `:56-62`, `:76-82`. The `image` comment
   still holds: gpui-pre 0.3.10 and gpui-fast 0.1.12 both ask for `image` `0.25.1`.
 - **`.cargo/audit.toml`'s comments** (P2).
@@ -893,13 +940,14 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - **gpui-fast 0.1.10 against 0.1.12**: the list of changed files, plus `keymap/binding.rs`,
   `platform/keystroke.rs`, `text_system.rs`, `window.rs`.
 - **taffy 0.15.0**: `compute/flexbox.rs`.
-- **The toolbar probe** (§1.5), under six presets on gpui-pre.
+- **The toolbar probe** (§1.5), under four presets on gpui-pre (two further names were not
+  preset keys).
 - **A fresh resolve** of `gpui-component = "0.8.0"`, with and without `rust-version = "1.88"`
   (§1.2).
 - **The keyboard mappers** of gpui-pre, its test platform, macOS and Windows (P3), and
   `Kbd::format`'s OS source (P4, P5).
-- **The open `[upstream]` entries against the 0.8.1 diff** (P12), `DialogTheme`'s
-  exhaustiveness (P13), `.cargo/audit.toml` (P2), and the citation-bearing files outside the
+- **Three open `[upstream]` entries spot-checked** against the 0.8.1 diff (P12; the full
+  re-check is G4's), `DialogTheme`'s exhaustiveness (P13), `.cargo/audit.toml` (P2), and the citation-bearing files outside the
   gates (P9).
 
 **Not checked; the plan's gates decide:**

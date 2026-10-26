@@ -97,9 +97,10 @@ and before the v0.7.0 close-out (rationale P15).
    - No `KeyBinding::new` remains in the showcase's non-test code.
    - `load`'s error path leaves the binding out, with one `eprintln!` line.
    - The binding table test and `the_macos_menus_keys_are_the_higs` cover all eight bindings.
-2. **No vacuous key test** (Task 1).
+2. **No vacuous test** (Task 1).
    - `secondary` fails the test on a parse error.
    - `no_inspector_toggle_remains` compares with a real key.
+   - `use_preset` fails the test on a preset that does not install.
 3. **The Kbd row and the tooltip are back** (Task 1): four Kbds on the Typography page, and
    "Ctrl+S" or "⌘S" in the tooltip, by the test platform's OS.
 4. **No cited number skipped or mis-moved** (Task 2), as G3 Task 2's focus.
@@ -111,7 +112,8 @@ and before the v0.7.0 close-out (rationale P15).
    - The planted call fails clippy on both cores.
    - Every listed function's group is argued from its doc line.
    - Every existing call is guarded or allowed with its reason.
-7. **The toolbar test fails before the fix** (Task 5), on kde-breeze and adwaita in both modes.
+7. **The toolbar test fails before the fix** (Task 5), on the 14 presets that state no bar
+   height, in both modes.
 8. **The Separator is closed only on a capture** (Task 6).
 
 ---
@@ -154,8 +156,11 @@ and before the v0.7.0 close-out (rationale P15).
   - `demo::kbd` and `save_tooltip(cx)` with `parse_with_os`;
   - the `KBDS` and `SAVE_KEYS` docs;
   - the grep showing no `KeyBinding::new` outside tests.
-- [ ] **Spec §3:** the migration of every listed site, `secondary(key, os)` strict, and the two
-  plain tests made `#[gpui::test]`.
+- [ ] **Spec §3:**
+  - the migration of every listed site;
+  - `secondary(key, os)` strict;
+  - the two plain tests made `#[gpui::test]`;
+  - `use_preset` asserting the install, with any call it exposes fixed and listed.
 - [ ] **Every suite on both cores:** `cargo test -p native-theme-gpui --all-targets` with
   `--features native,watch` and with `--features gpui-fast,native,watch`.
   - Expected red: the two showcase citation gates and `the_fallback_stack_copy_is_gpuis`.
@@ -244,8 +249,8 @@ the inventory finds. **Depends on:** Task 1.
 `SC/tests.rs` (the comment). **Depends on:** Task 1.
 
 - [ ] **Red first:** `toolbar_carries_the_models_toolbar`'s bar-height expectation changed to
-  `Some(gpui::Length::Auto)` where unstated. It fails, on kde-breeze and adwaita in both
-  modes; the output is kept for the body.
+  `Some(gpui::Length::Auto)` where unstated. It fails, on the 14 presets that state no bar
+  height, in both modes; the output is kept for the body.
 - [ ] **Spec §6:**
   - `None => r.min_h_auto()`;
   - the doc;
@@ -256,8 +261,8 @@ the inventory finds. **Depends on:** Task 1.
 
 ## Task 6: The Separator, the issue drafts, parity, the dated lines
 
-**Files:** `docs/todo.md`, `docs/archive/todo_closed.md` (if the Separator entry closes),
-the exception files (if parity says so). **Depends on:** Tasks 3b and 5, so that parity reads
+**Files:** `docs/todo.md`, `docs/archive/todo_closed.md` (for any entry that closes),
+`ROADMAP.md` (its upstream list), the exception files (if parity says so). **Depends on:** Tasks 3b and 5, so that parity reads
 the final layout.
 
 - [ ] **Announce the desktop capture.** Then spec §7's two Layout-page captures, on gpui-pre and
@@ -268,9 +273,14 @@ the final layout.
 - [ ] **The parity run** (spec §7): a new difference is fixed or excepted with its measured
   reason; a stale exception is removed. The three asset directories are restored afterwards,
   and `git status` shows none of them changed.
-- [ ] **The two gpui-fast entries' dated lines.**
+- [ ] **Spec §7's re-check of the upstream entries:**
+  - each open `[upstream]` gpui entry whose cited file changed in 0.8.1's non-test code is
+    closed or given its dated line, its 0.8.1 lines from the script's line map;
+  - the two gpui-fast entries' dated lines;
+  - ROADMAP's upstream list re-cited in place.
+  The commit body lists each entry re-read and its outcome.
 - **Commit(s):**
-  - `docs(todo): GPUI Kit 0.8.1 — the Separator entry <closes on the captures | stays open>, the issue drafts re-cited, the gpui-fast entries checked (G4 T6)`;
+  - `docs(todo): GPUI Kit 0.8.1 — the Separator entry <closes on the captures | stays open>, the issue drafts re-cited, the upstream entries and ROADMAP's list re-checked (G4 T6)`;
   - a parity change, if any, in its own commit.
 
 ## Task 7: The new upstream API recorded

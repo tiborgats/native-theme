@@ -217,6 +217,11 @@ Each of these sites failed to compile in the trial, or would assert nothing:
   `the_shortcut_tooltip_names_its_keystroke` (`:17682`)** parse with `parse_with_os` and the
   test platform's OS. Both are plain `#[test]`s today. Each becomes a `#[gpui::test]`, for the
   OS, and the tooltip test also for `save_tooltip(cx)`. Their expected strings are unchanged.
+- **`use_preset` (`SC/tests.rs:263-272`)** asserts that `apply_theme_by_name` returned `true`
+  (`SC/app.rs:1861-1866`), with the preset's name in the message. `use_preset_scaled` calls
+  it, so the assertion covers all 103 calls. A call that fails it was testing the theme
+  installed before. It is fixed in this task, by its right preset name, and listed in the
+  commit body.
 - **No cross-OS test is added** (rationale P5).
 
 **Gates:**
@@ -233,23 +238,45 @@ Each of these sites failed to compile in the trial, or would assert nothing:
 
 ### 4.1 Renumbering — digits only, one run
 
-**The script is G3's**, `.superpowers/sdd/todo_code-review-plan/g3/t2/remap.py` with
-`upstream.py`, `notes.py` and `gates.py`, which implement the archived G3 spec §3.1. It is
-copied to `.superpowers/sdd/todo_code-review-plan/g4/t2/` and changed only as follows:
+**The script is G3's**, `.superpowers/sdd/todo_code-review-plan/g3/t2/`: `remap.py` with
+`upstream.py` and `notes.py`, and its gates `gates.py` with `gate4_additions.py`, which
+implement the archived G3 spec §3.1. It is copied to `.superpowers/sdd/todo_code-review-plan/g4/t2/`,
+and every G3-specific constant and branch is changed. These are all of them, as of the copy:
 
-- **Versions** (`upstream.py`, `FAMILY`):
-  - gpui-component, gpui-base, gpui-kit and gpui-kit-assets go from `("0.8.0", "0.8.1")`;
-  - gpui-fast goes from `("0.1.10", "0.1.12")`;
-  - **gpui-pre joins `FAMILY` with `("0.3.9", "0.3.10")`**: it changed this time, so its
-    citations are in scope (rationale §1.11). `PRE` and `ALSO_OLD` go.
-- **The scope** (`remap.py`, `SCOPE`) gains `scripts/connector_parity_exceptions.toml`, which
-  G3 read by hand.
-- **"Task 1's lines" become the unit's own commits.** These are the lines §1–§3's commits
-  wrote, read with `git show` of each commit, as G3 Task 1's ruling read them. `T1_COMMITS`
-  names those commits, and `gates.py`'s `BASE_REV` is §4.1's starting HEAD. Those lines
-  already cite the new versions. The script leaves them alone and lists every upstream
-  citation it skips there, for the review to read at the new versions.
-- **The docstrings** name G4 and these versions.
+- **`upstream.py`:**
+  - `FAMILY`: gpui-component, gpui-base, gpui-kit and gpui-kit-assets `("0.8.0", "0.8.1")`,
+    gpui-fast `("0.1.10", "0.1.12")`;
+  - **gpui-pre joins it** as `("0.3.9", "0.3.10")`: it changed this time, so its citations are
+    in scope (rationale §1.11);
+  - `PRE` and `ALSO_OLD` go, with their uses (`:46`, `:82-83`).
+- **`remap.py`:**
+  - its imports and `FAMILY_NAMES` (`:20`, `:40`) and the candidate loop (`:108`) without
+    `PRE`;
+  - the gpui-pre exemption (`:367-368`) goes;
+  - the gpui-fast "0.1.7 / 0.1.8" special case (`:370-371`, `:381-382`, the `alt` map at
+    `:392` and `:403`) goes. No citation in scope names two gpui-fast versions together
+    (grep, 2026-10-26), so a citation naming a version other than the old or the new one is
+    set aside by the generic rule (`:372-379`).
+  - `T1_COMMITS` (`:33`): see "Task 1's lines" below;
+  - `SCOPE` (`:23-31`) gains `scripts/connector_parity_exceptions.toml`, which G3 read by hand;
+  - the docstring and the messages (`:2-3`, `:468`) name G4 and these versions.
+- **`gates.py`**, which keeps its own copy of the versions on purpose, so that its attribution
+  stays independent of `remap.py`'s:
+  - `VERSIONS` (`:22-29`) as `FAMILY` above, gpui-pre included as `("0.3.9", "0.3.10")`;
+  - `TASK1` (`:30`) as `T1_COMMITS`;
+  - `BASE_REV` (`:20`) is Task 2's starting HEAD;
+  - `SCOPE` as `remap.py`'s;
+  - the docstring and the messages (`:2`, `:358`).
+- **`gate4_additions.py`** reads `BASE_REV` from `gates.py` and needs no change.
+
+**"Task 1's lines" become the unit's own commits.** These are the lines §1–§3's commits wrote,
+read with `git show` of each commit, as G3 Task 1's ruling read them. Those lines already cite
+the new versions. The script leaves them alone and lists every upstream citation it skips
+there, for the review to read at the new versions.
+
+**The check of the copy:** before the run, `grep -n '0\.7\.3\|0\.1\.7\|0\.1\.8\|c8d89e75\|62ac5935'`
+over the four files finds nothing. A remaining constant would map numbers against the wrong
+versions with every gate passing.
 
 **Everything else is G3 spec §3.1's rule, unchanged:**
 
@@ -383,7 +410,10 @@ each public function they document:
   `TextSystem::resolve_font` (`GP/text_system.rs:351`), `TextSystem::shape_line`
   (`:668-670`), the line-boundary function at `GP/text_system/line.rs:280-281`, gpui-base's
   scroll-bounce parameters (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio
-  (`GB/motion.rs:484`), and their gpui-fast twins.
+  (`GB/motion.rs:484`).
+  A gpui-fast function at the same path needs no entry of its own where clippy resolves the
+  path in both cores' `gpui` crate. The done-criterion shows whether it does; where it does
+  not, the gpui-fast path gets its own entry.
 - **Not listed** where it is a panic on framework state or misuse: a global never set, a
   re-entrant update, a wrong arena or App, the test and bench harnesses.
 
@@ -453,8 +483,9 @@ content's height, where it states none. It sets the height to `auto` as before.
 (`:2824-2828`) expects `Some(px(h).into())` where `bar_height` is stated and
 `Some(gpui::Length::Auto)` where it is not.
 
-- **Red first:** the changed expectation fails on today's builder for kde-breeze and adwaita in
-  both modes.
+- **Red first:** the changed expectation fails on today's builder for the 14 presets that
+  state no bar height, in both modes. Only macos-monterey, material-3 and windows-11 state
+  one.
 - Then the fix makes it pass.
 
 **`CN/README.md:365`** (the `toolbar` row) states the same. **The Widget Info claim
@@ -466,8 +497,9 @@ height to the content's and the minimum to `toolbar.bar_height` where stated, el
 which this test measures, is the showcase's own div, not upstream's `Toolbar`; the builder's
 unit test holds the unstated case.
 
-**No screenshot moves.** Measured: every measured preset's content is taller than the old floor
-(rationale §1.5).
+**The sizing is then 0.8.0's exactly**: the height `auto`, the minimum `auto`, and upstream's
+padding and gap where the theme states none. So no screenshot taken after this task shows the
+floor (rationale P7).
 
 ---
 
@@ -517,14 +549,29 @@ What follows from it:
   are the close-out's `generate_assets_release.sh` run, which stamps them
   (`docs/assets/PROVENANCE.toml`).
 
-**Dated lines (P12)** — *GPUI Kit 0.8.1 (2026-10-26, G4):* — on these entries only:
+**The upstream entries re-checked (P12).** Every open `[upstream]` gpui entry of `docs/todo.md`
+whose cited upstream file changed in 0.8.1's non-test code
+(`git diff --name-only v0.8.0 v0.8.1 -- crates/base/src crates/component/src`, test-only
+changes excluded, plus the gpui-pre and gpui-fast files that changed) is re-read at 0.8.1:
+
+- **resolved by 0.8.1:** it closes, with a dated line naming what resolved it, and moves to the
+  archive;
+- **still so:** a dated line *GPUI Kit 0.8.1 (2026-10-26, G4):* says so, with its 0.8.1 lines
+  where they moved.
+
+Each cited number's 0.8.1 line is found with §4.1's line map (`upstream.py`, `Crates.line_map`,
+the same rule), not by eye. A number the map sets aside is read in the diff. Entries citing
+iced or egui files of the same name are not in scope.
+
+**Also dated, as they wait for a release:**
 
 - *`unicode-properties` back to 0.1.4 when gpui-fast-web unpins it*: gpui-fast-web 0.1.12 still
   pins `=0.1.3`.
 - *File the gpui-fast issue: `Window::painted_quads()` omits …*: unchanged in gpui-fast 0.1.12
   (`GF/window.rs:2925-2927`).
 
-Citations that name their version are not renumbered.
+**`ROADMAP.md`'s upstream list** (`:137-171`) is re-checked the same way. Its bullets are
+re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current plan.
 
 ---
 
@@ -584,7 +631,7 @@ change. Gates: `compat::the_verified_line_is_the_stamps` and
 - No entry for §2, §3 or §6: no released version had those defects (rationale P14).
 
 **`ROADMAP.md:72-73`:** GPUI Kit 0.8.1 on gpui-pre 0.3.10, GPUI Fast 0.1.12. Its upstream list
-(`:137-171`) keeps its version-stated citations (rationale P12).
+(`:137-171`) is §7's.
 
 **`docs/todo_gpui-full-theme.md`:** an appended "gpui-component 0.8.1" note: the theme is
 unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows its entrance.
