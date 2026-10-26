@@ -133,3 +133,30 @@ gives #d5d5d5 / #434343.
 
 The switch and slider renders of macOS 14 and 15 are identical pixel for pixel; those of macOS 26
 and xcode-27 agree at every point sampled above.
+
+## The disabled push button, checkbox and radio
+
+The renders only: the key window has none of these controls. Uniform fills, light / dark, of the
+@2x renders (macOS 14 and 15 identical; macOS 26 and xcode-27 agree at these points):
+
+| Part | macOS 14, 15: enabled → disabled | macOS 26, 27: enabled → disabled |
+|------|----------------------------------|----------------------------------|
+| push button bezel | #ffffff / #ffffff40 → #ffffff80 / #ffffff20 | #00000014 / #ffffff14 → #0000000a / #ffffff0a |
+| unchecked checkbox and radio | #ffffff / #ffffff37 → #ffffff80 / #ffffff1b | #00000019 / #ffffff19 → #0000000d / #ffffff0d |
+| checkbox label, densest pixel | #000000d9 / #ffffffd9 → #00000040 / #ffffff40 | #000000d3 / #ffffffd7 → #00000041 / #ffffff3f (antialiased text) |
+
+- A disabled push button's bezel, and its shadow on macOS 14 and 15, are the enabled ones at half
+  their alpha; its label is `disabledControlTextColor` over the faded bezel.
+- A disabled unchecked box, fill and edge, is the enabled one at half its alpha on macOS 14 and
+  15, and at 13/255 against 25/255 on macOS 26.
+- A checked box or radio draws the not-key look here, neutral, with no accent; in a key window it
+  is the accent, which no capture of this run shows disabled.
+- The switch's disabled renders keep the enabled ones' kind of rim on macOS 14 and 15, fainter
+  (the off track's 7/255 rising to 12/255 and 20/255 near the edge), and the grey pixel around the
+  knob at about half its alpha; on macOS 26 neither has an edge.
+
+Whether a disabled control draws differently in a key window: in the probe's key and not-key
+windows every neutral part draws the same (the unselected segment, the switch's off track and
+knob, the slider's track and knob, enabled and disabled), and only the accent parts differ, apart
+from macOS 26's disabled slider fill. The neutral fills above are taken as the key window's on
+that ground, not by a capture.
