@@ -258,6 +258,9 @@ hover_text_color = "#ffffff"
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [light.list]
+# platform-facts.md:1429 (§2.15): the table's own fill in a key window, measured on
+# macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3335)
+header_background = "#ffffff"
 # platform-facts.md:1421 (§2.15): controlBackgroundColor, probe :323, alternatingContentBackgroundColors[0] (:377)
 background_color = "#ffffff"
 # platform-facts.md:1424 (§2.15): alternatingContentBackgroundColors[1], probe :377
@@ -295,9 +298,10 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [light.sidebar]
-# no source: a material (platform-facts.md:1370, §2.12: NSVisualEffectView.Material.sidebar, no
-# colour); the colour it renders under Reduce Transparency was not probed
-background_color = "#e8e8ed"
+# platform-facts.md:1370 (§2.12): NSVisualEffectView.Material.sidebar's opaque rendering with Reduce
+# Transparency on, in an active view of a key window, measured on macOS 14 and 15, which agree
+# (os-probe run 40320895749, os-probe-macos-14/probe.toml:3315)
+background_color = "#f6f6f6"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the accent at alpha 0x18
@@ -418,10 +422,13 @@ color = "#000000d8"
 segment_height_px = 22.0
 separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
-# platform-facts.md:1636: selectedContentBackgroundColor, probe :324
-active_background = "#0064e1"
-# platform-facts.md:1637: alternateSelectedControlTextColor, probe :317
-active_text_color = "#ffffff"
+# platform-facts.md:1636 (§2.25): the selected segment in a key window, measured on
+# macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3320)
+active_background = "#ffffff"
+# platform-facts.md:1637 (§2.25): labelColor (probe :308); a key window's selected label
+# measures within one level of it over the segment on macOS 14 and 15 (os-probe run 40320895749,
+# os-probe-macos-14/renders/key_window/aqua.png)
+active_text_color = "#000000d8"
 # soft_option: NSSegmentedControl hover -- subtle highlight
 hover_background = "#e0e0e5"
 
@@ -456,8 +463,15 @@ arrow_color = "#86868b"
 shadow_enabled = false
 
 [light.window]
-# platform-facts.md:1166-1167 (§2.2): no inactive title-bar colours, macOS dims the window itself;
-# inactive_title_bar_background and inactive_title_bar_text_color inherit the active title bar's
+# platform-facts.md:1160 (§2.2): a key window's title bar with Reduce Transparency on, measured
+# on macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3310)
+title_bar_background = "#ffffff"
+# platform-facts.md:1166 (§2.2): the title bar of a window that is not key while another window of the
+# application is, measured on macOS 14 and 15, which agree (os-probe run 40324458365,
+# os-probe-macos-14/not-key/probe.toml:3321)
+inactive_title_bar_background = "#ececec"
+# inactive_title_bar_text_color inherits the active title bar's (platform-facts.md:1167): the probe's
+# window has no title to measure
 
 [light.window.title_bar_font]
 weight = 700
@@ -724,6 +738,9 @@ hover_text_color = "#ffffff"
 padding_horizontal_px = 12.0
 padding_vertical_px = 3.0
 [dark.list]
+# platform-facts.md:1429 (§2.15): the table's own fill in a key window, measured on
+# macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3459)
+header_background = "#1e1e1e"
 # platform-facts.md:1421 (§2.15): controlBackgroundColor, probe :397, alternatingContentBackgroundColors[0] (:451)
 background_color = "#1e1e1e"
 # platform-facts.md:1424 (§2.15): alternatingContentBackgroundColors[1], probe :451; over the
@@ -762,9 +779,10 @@ padding_horizontal_px = 8.0
 padding_vertical_px = 0.0
 
 [dark.sidebar]
-# no source: a material (platform-facts.md:1370, §2.12: NSVisualEffectView.Material.sidebar, no
-# colour); the colour it renders under Reduce Transparency was not probed
-background_color = "#262626"
+# platform-facts.md:1370 (§2.12): NSVisualEffectView.Material.sidebar's opaque rendering with Reduce
+# Transparency on, in an active view of a key window, measured on macOS 14 and 15, which agree
+# (os-probe run 40320895749, os-probe-macos-14/probe.toml:3439)
+background_color = "#383838"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
 # no source: platform-facts.md:1379 names selectedContentBackgroundColor at reduced opacity and
 # gives no alpha; this is the former dark accent #0a84ff at alpha 0x18
@@ -885,10 +903,13 @@ color = "#ffffffd8"
 segment_height_px = 22.0
 separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
-# platform-facts.md:1636: selectedContentBackgroundColor, probe :398
-active_background = "#0059d1"
-# platform-facts.md:1637: alternateSelectedControlTextColor, probe :391
-active_text_color = "#ffffff"
+# platform-facts.md:1636 (§2.25): the selected segment in a key window, measured on
+# macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3444)
+active_background = "#666666"
+# platform-facts.md:1637 (§2.25): labelColor (probe :382); a key window's selected label
+# measures within one level of it over the segment on macOS 14 and 15 (os-probe run 40320895749,
+# os-probe-macos-14/renders/key_window/darkAqua.png)
+active_text_color = "#ffffffd8"
 # soft_option: NSSegmentedControl hover -- subtle highlight
 hover_background = "#444446"
 
@@ -923,8 +944,15 @@ arrow_color = "#98989d"
 shadow_enabled = false
 
 [dark.window]
-# platform-facts.md:1166-1167 (§2.2): no inactive title-bar colours, macOS dims the window itself;
-# inactive_title_bar_background and inactive_title_bar_text_color inherit the active title bar's
+# platform-facts.md:1160 (§2.2): a key window's title bar with Reduce Transparency on, measured
+# on macOS 14 and 15, which agree (os-probe run 40320895749, os-probe-macos-14/probe.toml:3434)
+title_bar_background = "#262626"
+# platform-facts.md:1166 (§2.2): the title bar of a window that is not key while another window of the
+# application is, measured on macOS 14 and 15, which agree (os-probe run 40324458365,
+# os-probe-macos-14/not-key/probe.toml:3447)
+inactive_title_bar_background = "#141414"
+# inactive_title_bar_text_color inherits the active title bar's (platform-facts.md:1167): the probe's
+# window has no title to measure
 
 [dark.window.title_bar_font]
 weight = 700
