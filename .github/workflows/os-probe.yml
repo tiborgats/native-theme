@@ -52,8 +52,8 @@ jobs:
           done
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
-      # The image's own accessibility settings and wallpaper tinting, read
-      # before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
+      # The image's own accessibility settings, wallpaper tinting and accent,
+      # read before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
       # said where it failed otherwise (and a pass then restores nothing).
       - name: Record the image's accessibility settings (macOS)
@@ -64,7 +64,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/universalaccess"
           for setting in "com.apple.universalaccess reduceTransparency" \
                          "com.apple.universalaccess increaseContrast" \
-                         "-g AppleReduceDesktopTinting"; do
+                         "-g AppleReduceDesktopTinting" \
+                         "-g AppleAccentColor"; do
             set -- $setting
             value="$(defaults read "$1" "$2" 2>&1)"
             if [ $? -ne 0 ]; then
@@ -177,6 +178,54 @@ jobs:
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A pass with the accent set to red (`AppleAccentColor` 0; the image's
+      # is recorded above, `absent` being the default blue), the other settings
+      # the image's, to see which colours follow the user's accent: the
+      # selected segment, the caret (`textInsertionPointColor`), the selection
+      # and the disabled controls. Only the accent is set, not the highlight
+      # colour (`AppleHighlightColor`), which System Settings pairs with it.
+      # After the probe the image's accent is restored, so the passes below
+      # keep it; settings.txt records each write, restore and read-back.
+      - name: Run the probe with a red accent (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/accent-red
+          mkdir -p "$out"
+          {
+            restore() {
+              image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+              case "$image" in
+                1) defaults write "$1" "$2" -bool true ;;
+                0) defaults write "$1" "$2" -bool false ;;
+                absent) defaults delete "$1" "$2" ;;
+                *) false ;;
+              esac
+              echo "restore $2 to the image's ($image): exit $?"
+              echo "read back: $(defaults read "$1" "$2" 2>&1)"
+            }
+            restore com.apple.universalaccess reduceTransparency
+            restore com.apple.universalaccess increaseContrast
+            restore -g AppleReduceDesktopTinting
+            echo "image's AppleAccentColor: $(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleAccentColor -int 0
+            echo "write AppleAccentColor 0: exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+          {
+            image="$(cat "$RUNNER_TEMP/universalaccess/AppleAccentColor" 2>/dev/null || echo 'not recorded')"
+            case "$image" in
+              absent) defaults delete -g AppleAccentColor ;;
+              -[0-9]*|[0-9]*) defaults write -g AppleAccentColor -int "$image" ;;
+              *) false ;;
+            esac
+            echo "restore AppleAccentColor to the image's ($image): exit $?"
+            echo "read back: $(defaults read -g AppleAccentColor 2>&1)"
+          } >> "$out/settings.txt" 2>&1
+          tail -n 2 "$out/settings.txt"
       # A pass with the image's own settings in which the probe's window is
       # captured while a second window of the probe is key (`--not-key`), for
       # what macOS draws in a window that is not key.
