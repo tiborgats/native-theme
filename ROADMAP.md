@@ -77,12 +77,13 @@ and the gpui showcase's Typography page shows `Diff`.
 
 v0.5.9 ships most of it, and the code review's M5 adds `styles::button_toggle`,
 `pane_grid` and `expander_frame` in v0.7.0. `native_theme_iced::styles`
-(feature `widgets`, on by default) has 28 style functions, closures built
-from the resolved theme. Twenty replace iced's own: every `Style` field —
+(feature `widgets`, on by default) has 29 style functions, closures built
+from the resolved theme. Twenty-one replace iced's own: every `Style` field —
 colours, border radius and width included — of the button (neutral, primary,
 danger, success, warning and link classes), text input, text editor,
 checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar,
-rule, pane grid split lines, tooltip and a card container.
+rule, pane grid split lines, tooltip, a card container and the application's
+base style (`styles::application`, the window's background).
 `styles::checkbox_over` and `toggler_over` are the checkbox and toggler of a
 control drawn on a backdrop rather than on the window (a disabled one is
 faded as one widget over it), `styles::button_toggle` is a toggle button,

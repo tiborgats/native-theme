@@ -8275,15 +8275,22 @@ pub(crate) fn line_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) 
         .debug_selector(move || id.into())
 }
 
-/// An `AreaChart` of `SAMPLE_MONTHS_AREA`: one series, its line in
-/// `chart_3` over a fill of `chart_3` at `AREA_FILL_OPACITY`.
+/// The AreaChart's line and fill: `chart_3`, and `chart_3` at
+/// `AREA_FILL_OPACITY`.
+pub(crate) fn area_series(t: &gpui_component::theme::Theme) -> (Hsla, Hsla) {
+    (t.chart_3, t.chart_3.opacity(AREA_FILL_OPACITY))
+}
+
+/// An `AreaChart` of `SAMPLE_MONTHS_AREA`: one series, its line and fill
+/// [`area_series`].
 pub(crate) fn area_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     let t = cx.theme();
+    let (stroke, fill) = area_series(t);
     AreaChart::new(SAMPLE_MONTHS_AREA)
         .x(|d: &(&'static str, f64)| d.0)
         .y(|d: &(&'static str, f64)| d.1)
-        .stroke(t.chart_1)
-        .fill(t.chart_3.opacity(AREA_FILL_OPACITY))
+        .stroke(stroke)
+        .fill(fill)
         .info(ui, id, info::charts::area_chart(t))
         .h(CHART_HEIGHT)
         .w_full()
@@ -8329,21 +8336,28 @@ pub(crate) fn candlestick_chart(
         .debug_selector(move || id.into())
 }
 
-/// A `RadarChart` of `RADAR_DIMENSIONS`: two series, their lines in
-/// `chart_1` and `chart_2` over fills of the same at `RADAR_FILL_OPACITY`.
+/// The RadarChart's two series as `(line, fill)`: `chart_1` and `chart_2`,
+/// each over a fill of itself at `RADAR_FILL_OPACITY`.
+pub(crate) fn radar_series(t: &gpui_component::theme::Theme) -> [(Hsla, Hsla); 2] {
+    [t.chart_1, t.chart_2].map(|line| (line, line.opacity(RADAR_FILL_OPACITY)))
+}
+
+/// A `RadarChart` of `RADAR_DIMENSIONS`: two series, their lines and fills
+/// [`radar_series`].
 pub(crate) fn radar_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
     type Dimension = (&'static str, f64, f64);
     let t = cx.theme();
     let [first, second] = RADAR_SERIES;
+    let [(first_line, first_fill), (second_line, second_fill)] = radar_series(t);
     RadarChart::new(RADAR_DIMENSIONS)
         .label(|d: &Dimension| d.0)
         .value(|d: &Dimension| d.1)
-        .stroke(t.chart_1)
-        .fill(t.chart_1.opacity(RADAR_FILL_OPACITY))
+        .stroke(first_line)
+        .fill(first_fill)
         .name(first)
         .value(|d: &Dimension| d.2)
-        .stroke(t.chart_2)
-        .fill(t.chart_2.opacity(RADAR_FILL_OPACITY))
+        .stroke(second_line)
+        .fill(second_fill)
         .name(second)
         .max_value(RADAR_MAX_VALUE)
         .info(ui, id, info::charts::radar_chart(t))

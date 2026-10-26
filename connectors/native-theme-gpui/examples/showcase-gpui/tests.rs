@@ -7964,41 +7964,135 @@ fn every_chart_shows_its_own_info(cx: &mut TestAppContext) {
 }
 
 /// The AreaChart's fill swatch is the colour the showcase asks upstream to
-/// paint: the series colour at `AREA_FILL_OPACITY`, not the colour at full.
-/// The area is a path, not a quad of the scene, so the swatch is checked
-/// against what the showcase passes, not against the frame.
+/// paint, `demo::area_series`' fill: the series colour at
+/// `AREA_FILL_OPACITY`, not the colour at full. The area is a path, not a
+/// quad of the scene, so the swatch is checked against what the showcase
+/// passes, not against the frame.
 #[gpui::test]
 fn the_area_charts_fill_swatch_is_the_series_at_the_fill_opacity(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Charts);
     let info = settle_on(&mut cx, &showcase, CHARTS_AREA_CHART);
-    let painted = cx.update(|_window, cx| Theme::global(cx).chart_3.opacity(AREA_FILL_OPACITY));
+    let painted = cx.update(|_window, cx| crate::demo::area_series(Theme::global(cx)).1);
     let fill = info
         .as_ref()
         .and_then(|info| info.colors.iter().find(|c| c.role.starts_with("fill")));
     assert_eq!(
         fill.map(|c| c.value),
         Some(painted),
-        "the AreaChart's fill swatch is not chart_3 at {}: {info:?}",
+        "the AreaChart's fill swatch is not what the showcase passes, chart_3 at {}: {info:?}",
         percent_text(AREA_FILL_OPACITY)
     );
 }
 
-/// The RadarChart's fill swatches are the colours the showcase asks upstream
-/// to paint: each series colour at `RADAR_FILL_OPACITY`. The fills are paths,
-/// so they are checked against what the showcase passes, as the AreaChart's
-/// is.
+/// The side of the dot a chart marks a hovered point with:
+/// gpui-component's `HOVER_DOT_SIZE` (src/chart/mod.rs:128), crate-private.
+const HOVER_DOT_SIDE: f32 = 8.;
+
+/// The side of the halo behind that dot at full hover:
+/// gpui-component's `HOVER_HALO_SIZE` (src/chart/mod.rs:134), crate-private.
+const HOVER_HALO_SIDE: f32 = 20.;
+
+/// The marks a chart paints at the hovered point, with the pointer settled
+/// on `selector`'s centre: the fills of the `HOVER_DOT_SIDE` quads, the
+/// edges of the bordered ones, and the fills of the `HOVER_HALO_SIDE`
+/// quads, inside the chart's bounds. gpui paints a dot as a filled quad and
+/// an edge quad over the same bounds (plot/tooltip.rs, Dot).
+fn hover_marks(
+    cx: &mut VisualTestContext,
+    showcase: &Entity<Showcase>,
+    selector: &'static str,
+) -> (Vec<gpui::Hsla>, Vec<gpui::Hsla>, Vec<gpui::Hsla>) {
+    settle_on(cx, showcase, selector);
+    let bounds = bounds_of(cx, selector);
+    cx.update(|window, _cx| {
+        let scale = window.scale_factor();
+        let bounds = bounds.scale(scale);
+        let quads: Vec<gpui::Quad> = scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+            })
+            .collect();
+        let sided = |side: f32| {
+            let side = side * scale;
+            quads
+                .iter()
+                .filter(move |q| {
+                    (q.bounds.size.width.0 - side).abs() < 0.5
+                        && (q.bounds.size.height.0 - side).abs() < 0.5
+                })
+                .cloned()
+                .collect::<Vec<gpui::Quad>>()
+        };
+        let fills = |quads: &[gpui::Quad]| -> Vec<gpui::Hsla> {
+            quads
+                .iter()
+                .filter(|q| !q.background.is_transparent())
+                .filter_map(|q| q.background.as_solid())
+                .collect()
+        };
+        let dots = sided(HOVER_DOT_SIDE);
+        let edges = dots
+            .iter()
+            .filter(|q| q.border_widths.top.0 > 0.)
+            .map(|q| q.border_color)
+            .collect();
+        (fills(&dots), edges, fills(&sided(HOVER_HALO_SIDE)))
+    })
+}
+
+/// The AreaChart's hovered point is marked in the colour the showcase
+/// strokes its line with, `demo::area_series`' line: the dot filled in it
+/// (chart/area_chart.rs, AreaChart::tooltip) and the halo in it at 20%
+/// (plot/tooltip.rs, Dot), the colours the Info's "line" claims. The line
+/// is a path; the dot and the halo are quads, so a line the showcase strokes
+/// in another colour turns this red.
+#[gpui::test]
+fn the_area_charts_hover_marks_are_its_line_colour(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    show(&mut cx, &showcase, Page::Charts);
+    let (dots, _, halos) = hover_marks(&mut cx, &showcase, CHARTS_AREA_CHART);
+    let (line, info_line) = (
+        cx.update(|_window, cx| crate::demo::area_series(Theme::global(cx)).0),
+        settle_on(&mut cx, &showcase, CHARTS_AREA_CHART).and_then(|info| {
+            info.colors
+                .iter()
+                .find(|c| c.role == "line")
+                .map(|c| c.value)
+        }),
+    );
+    assert_eq!(dots, [line], "the hover dot is not the area's line colour");
+    assert_eq!(
+        halos,
+        [line.opacity(0.2)],
+        "the halo is not the line at 20%"
+    );
+    assert_eq!(
+        info_line,
+        Some(line),
+        "the Info's line swatch is not the line painted"
+    );
+}
+
+/// The RadarChart's fill swatches are what the showcase passes,
+/// `demo::radar_series`' fills: each series colour at `RADAR_FILL_OPACITY`.
+/// The fills are paths, so they are checked against what the showcase
+/// passes, as the AreaChart's is.
 #[gpui::test]
 fn the_radar_charts_fill_swatches_are_the_series_at_the_fill_opacity(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     show(&mut cx, &showcase, Page::Charts);
     let info = settle_on(&mut cx, &showcase, CHARTS_RADAR_CHART);
-    let painted = cx.update(|_window, cx| {
-        let t = Theme::global(cx);
-        vec![
-            t.chart_1.opacity(RADAR_FILL_OPACITY),
-            t.chart_2.opacity(RADAR_FILL_OPACITY),
-        ]
+    let passed: Vec<gpui::Hsla> = cx.update(|_window, cx| {
+        crate::demo::radar_series(Theme::global(cx))
+            .into_iter()
+            .map(|(_, fill)| fill)
+            .collect()
     });
     let fills: Vec<gpui::Hsla> = info
         .as_ref()
@@ -8012,72 +8106,68 @@ fn the_radar_charts_fill_swatches_are_the_series_at_the_fill_opacity(cx: &mut Te
         .unwrap_or_default();
     assert_eq!(
         fills,
-        painted,
-        "the RadarChart's fill swatches are not chart_1 and chart_2 at {}: {info:?}",
+        passed,
+        "the RadarChart's fill swatches are not what the showcase passes, chart_1 and chart_2 at {}: {info:?}",
         percent_text(RADAR_FILL_OPACITY)
     );
 }
 
-/// The side of the dot a chart marks a hovered point with:
-/// gpui-component's `HOVER_DOT_SIZE` (src/chart/mod.rs:128), crate-private.
-const HOVER_DOT_SIDE: f32 = 8.;
-
 /// The RadarChart marks the hovered spoke with one dot per series, filled in
-/// the colour the showcase strokes the series with, `chart_1` and `chart_2`,
-/// and edged in `background`: gpui paints each dot as a filled quad and an
-/// edge quad over the same bounds. They are quads, so a series the showcase
-/// paints in another colour turns this red.
+/// the colour the showcase strokes the series with (`demo::radar_series`,
+/// `chart_1` and `chart_2`) and edged in `background`, over a halo of that
+/// colour at 20%; the Info's halo swatches are those halos. They are quads,
+/// so a series the showcase paints in another colour turns this red.
 #[gpui::test]
 fn the_radar_charts_hover_dots_are_its_series_colours(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     without_motion(&mut cx);
     show(&mut cx, &showcase, Page::Charts);
-    settle_on(&mut cx, &showcase, CHARTS_RADAR_CHART);
-    let bounds = bounds_of(&mut cx, CHARTS_RADAR_CHART);
-    let (fills, edges, series, background) = cx.update(|window, cx| {
+    let (fills, edges, halos) = hover_marks(&mut cx, &showcase, CHARTS_RADAR_CHART);
+    let (lines, background) = cx.update(|_window, cx| {
         let t = Theme::global(cx);
-        let scale = window.scale_factor();
-        let bounds = bounds.scale(scale);
-        let side = HOVER_DOT_SIDE * scale;
-        let quads: Vec<gpui::Quad> = scene_quads(window)
-            .into_iter()
-            .filter(|q| {
-                (q.bounds.size.width.0 - side).abs() < 0.5
-                    && (q.bounds.size.height.0 - side).abs() < 0.5
-                    && q.bounds.left() >= bounds.left()
-                    && q.bounds.top() >= bounds.top()
-                    && q.bounds.right() <= bounds.right()
-                    && q.bounds.bottom() <= bounds.bottom()
-            })
-            .collect();
-        let fills: Vec<Option<gpui::Hsla>> = quads
-            .iter()
-            .filter(|q| !q.background.is_transparent())
-            .map(|q| q.background.as_solid())
-            .collect();
-        let edges: Vec<gpui::Hsla> = quads
-            .iter()
-            .filter(|q| q.border_widths.top.0 > 0.)
-            .map(|q| q.border_color)
-            .collect();
-        (fills, edges, [t.chart_1, t.chart_2], t.background)
+        (
+            crate::demo::radar_series(t).map(|(line, _)| line),
+            t.background,
+        )
     });
+    let info = settle_on(&mut cx, &showcase, CHARTS_RADAR_CHART);
+    let info_halos: Vec<gpui::Hsla> = info
+        .as_ref()
+        .map(|info| {
+            info.colors
+                .iter()
+                .filter(|c| c.role.contains("hover halo"))
+                .map(|c| c.value)
+                .collect()
+        })
+        .unwrap_or_default();
     assert_eq!(
         edges,
         [background, background],
         "not two dots edged in background"
     );
-    for colour in series {
-        assert!(
-            fills.contains(&Some(colour)),
-            "no hover dot is {colour:?}: {fills:?}"
-        );
-    }
-    assert!(
-        fills
-            .iter()
-            .all(|fill| fill.is_some_and(|f| series.contains(&f))),
-        "an 8px quad is not a series colour: {fills:?}"
+    let sorted = |mut colours: Vec<gpui::Hsla>| {
+        colours.sort_by(|a, b| a.h.total_cmp(&b.h));
+        colours
+    };
+    let mut expected_dots = lines.to_vec();
+    expected_dots.sort_by(|a, b| a.h.total_cmp(&b.h));
+    assert_eq!(
+        sorted(fills),
+        expected_dots,
+        "the hover dots are not the series colours"
+    );
+    let mut expected_halos: Vec<gpui::Hsla> = lines.iter().map(|l| l.opacity(0.2)).collect();
+    expected_halos.sort_by(|a, b| a.h.total_cmp(&b.h));
+    assert_eq!(
+        sorted(halos),
+        expected_halos,
+        "the halos are not the series at 20%"
+    );
+    assert_eq!(
+        sorted(info_halos),
+        expected_halos,
+        "the Info's halo swatches are not the halos painted"
     );
 }
 
