@@ -13760,3 +13760,18 @@ probes a clone of the styled theme; the test
 fails, by mutation, without the token write). The showcase's Theme Map and the contract cited
 `colors.rs` lines the new doc moved by 10; they cite the moved lines.
 **Status:** done, e92c288a.
+
+#### C-05 · egui: a ring inside an Expander body takes the body's radius
+**Problem:** the widgets crate's `Expander` draws its body in the caller's style, but the install
+plugin rang a focused widget there at `expander.border.corner_radius`: the expander's scope
+records its `Ui` with `Role::Expander`'s radius, and the body's `Ui` recorded none
+(`connectors/native-theme-egui/src/ext.rs`, `native_scope`; `src/plugin.rs`, the innermost
+recorded scope).
+**Fix:** `set_scope_style(ui, style)` (`ext.rs`, re-exported at the crate root): `Ui::set_style`
+plus `record_scope(.., radius, true)` of the style's `widgets.active.corner_radius`, only where an
+atlas is installed; the `Expander` body wrapper calls it with the caller's style. Its CHANGELOG
+Added line, the `Expander` doc, and an iced and gpui `absent` parity exception (neither records a
+scope). Test: `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius` (kde-breeze,
+adwaita, windows-11, catppuccin-mocha): the body's ring equals a plain button's; a
+`Role::Expander` scope's differs in at least one preset; red by mutation.
+**Status:** done, 64bd92be.

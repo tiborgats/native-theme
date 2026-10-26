@@ -1710,6 +1710,11 @@ and many have since drifted, as the archive's [README](README.md) warns.
       crates' `src` finds none).
   *Closed 2026-10-26 in e92c288a (C-04):* the tokens are on the styled `Theme`, not on `ThemeColor`: `Theme::tokens: ThemeTokens` (gpui-component 0.8.0 `src/theme/mod.rs:154`), whose `red` … `cyan_light` (`src/theme/theme_color.rs:533-544`) a rebuild resets with the colours. `colors::copy_base_palette` now takes the `Theme` and writes each colour's solid token (`From<Hsla> for ThemeToken`, `:30-37`) beside it, and `repair_base_palette` probes a clone of it; `the_base_palette_repair_keeps_the_tokens_with_the_colours` holds all 12 tokens to the native colours after a rebuild (red's upstream token differs, so it proves the write).
 
+### egui: the focus ring inside an Expander's body takes the expander's radius
+
+- [x] [v0.7.x] The companion crate's `Expander` draws its body in the caller's style (round 4 review, item 17 I1), but the connector's install plugin rings a focused widget there with `expander.border.corner_radius`: `native_scope` records the scope's `Ui` with `Role::Expander`'s radius (`connectors/native-theme-egui/src/ext.rs:103-106`), and the ring takes the innermost recorded scope round the widget (`src/plugin.rs:595-613`, `:646-651`); the body's `Ui` records none. Add a public hook to native-theme-egui that sets a style on a `Ui` and records that `Ui`'s radius from it with `replace = true`, as `native_set_style` does for a role's cell, and call it in the `Expander`'s body wrapper (`connectors/native-theme-egui-widgets/src/expander.rs`, `Expander::show`) with the caller's style. Predates the round.
+  *Closed 2026-10-26 in 64bd92be (C-05):* `native_theme_egui::set_scope_style(ui, style)` sets `style` on the `Ui` and records its `widgets.active.corner_radius` for the focus ring with `replace = true`, as `native_set_style` does for a role's cell (nothing is recorded without an atlas); `Expander::show`'s body wrapper calls it with the caller's style, and the `Expander` doc (473899a7's) says the ring takes the caller's radius. `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius` holds the body's ring to a plain button's over four presets, where a `Role::Expander` scope rings at another radius (and fails, by mutation, with the old `set_style`).
+
 ## Post-1.0 / Deferred
 
 ### Change notification
