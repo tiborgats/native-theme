@@ -44,22 +44,21 @@ Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archiv
 
 ## v0.7.0 — Whole-codebase review
 
-The release after v0.6.1 is 0.7.0. The review's design phase accepted three
-breaking changes ([`docs/todo_code-review-plan.md`](docs/todo_code-review-plan.md), D1):
+The release after v0.6.1 is 0.7.0. The review's design phase accepted two
+breaking changes ([`docs/archive/todo_v0.7.0_code-review-plan.md`](docs/archive/todo_v0.7.0_code-review-plan.md), D1):
 
 - the `-live` preset tier is removed: the platform readers merge over the
   platform preset, and `Theme::preset("…-live")`, `PlatformPreset::is_live`
   and `PlatformPreset::live_name()` are gone;
-- the `material` preset is now `material-3`, and `Theme::preset("material")`
-  returns `UnknownPreset`;
 - the connectors' `from_system` returns a named result struct instead of a
   tuple, and their accessors take the model's field names.
 
 The rest of the release is the review's fixes: its design decisions, platform
 fidelity per OS version, and the code review of every crate, recorded in
-[`docs/todo_code-review-findings.md`](docs/todo_code-review-findings.md).
-Many of them break the public API too: among others, the `macos-sonoma` and
-`ios` presets are `macos-monterey` and `ios-13`, the `model` module is
+[`docs/archive/todo_v0.7.0_code-review-findings.md`](docs/archive/todo_v0.7.0_code-review-findings.md).
+Many of them break the public API too: among others, the `material`,
+`macos-sonoma` and `ios` presets are `material-3` (decision D6), `macos-monterey`
+and `ios-13`, the `model` module is
 private and the icon and detection items have one path each (`icons`,
 `detect`), `Error::Io` names the file, more types are `#[non_exhaustive]`,
 and the gpui and egui connectors run a platform reader only with their
@@ -69,9 +68,17 @@ platform preset in the OS's light or dark mode and reduced-motion
 preference, and macOS and Windows an error. The *Breaking Changes* of
 [CHANGELOG.md](CHANGELOG.md)'s *Unreleased* section list every one.
 
+New in it: the `macos-tahoe` preset, macOS 26's Liquid Glass look, and the
+platform preset picked by the running OS version's generation
+(`SystemTheme::version_match` reports the match); GPUI Kit 0.7.3's elements as
+theme data (`tooltip.show_delay_ms`, `dialog.entrance`,
+`list.header_height_px`); the selected tab's folder shape
+(`tab.active_outward_corner_radius_px`, windows-11's); the switch's track and
+thumb outlines; and theme-change integrations in the iced and gpui connectors
+(`theme_changes()`, `on_theme_change`).
+
 It also moves the gpui connector to GPUI Kit 0.8.0 on gpui-pre 0.3.9, with a
-`gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.10,
-and the gpui showcase's Typography page shows `Diff`.
+`gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.10.
 
 ## v0.7.1 — Full theme geometry in the iced connector
 
