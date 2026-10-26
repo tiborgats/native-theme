@@ -325,7 +325,6 @@ keys = [
     "material-3:basic.column_1.h",
     "adwaita:basic.column_3.h",
     "catppuccin-mocha:basic.column_3.h",
-    "kde-breeze:basic.column_3.h",
     "adwaita:basic.buttons.heading.h",
     "adwaita:basic.buttons.default.y",
     "adwaita:basic.buttons.default.label.h",
@@ -499,7 +498,6 @@ keys = [
     "catppuccin-mocha:chrome.side_panel.inspector_tabs.theme.w",
     # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
     # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
-    "catppuccin-mocha:basic.switches.disabled.label.w",
 ]
 
 [[parity.group]]
@@ -714,12 +712,10 @@ reason = "gpui's text metrics are whole pixels: a line of text is laid out one l
 keys = [
     # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
     # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
-    "catppuccin-mocha:basic.checkboxes.unchecked.w",
     "kde-breeze:basic.checkboxes.unchecked.w",
     "adwaita:basic.radios.option_a.w",
     # 2026-10-22 (M9b Step 8): matches nothing in the after batch, whose gpui catppuccin-mocha
     # dump is older (b208a698); M9c keeps or removes it on a current gpui catppuccin-mocha dump.
-    "catppuccin-mocha:basic.radios.option_a.w",
     "kde-breeze:basic.radios.option_a.w",
 ]
 
@@ -1004,12 +1000,6 @@ keys = [
     "kde-breeze:basic.typography.caption.text",
 ]
 
-[[parity.group]]
-reason = "sub-pixel line box: iced lays a line of text out on the theme's own line box, the font size times defaults.line_height, and its layout keeps the fraction (adwaita 14.67 x 1.21 = 17.75 px, kde-breeze 13.33 x 1.36 = 18.13, material-3 and catppuccin-mocha 14 x 1.2 = 16.8; iced_core 0.14.0's layout, src/layout.rs and src/layout/, rounds nothing), while gpui rounds a measured text box up (gpui-pre 0.3.6 src/taffy.rs:412-414) and egui rounds a text row to whole pixels (epaint 0.36.2 src/text/text_layout.rs:971), so after R-snap the box, and a box centred on it or placed after it, can differ by one pixel"
-keys = [
-    "catppuccin-mocha:basic.card.heading.y",
-    "kde-breeze:basic.card.heading.y",
-]
 
 [[parity.group]]
 reason = "the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow | toolkit limit, sub-pixel phase: the exact layouts agree within a pixel and their edges round apart. egui lays a text row out a whole number of pixels tall (epaint 0.36.2 src/text/text_layout.rs:971) on its 1/32-point grid (emath 0.36.2 src/gui_rounding.rs:18) and paints rectangles and text on the pixel each edge rounds to, ties away from zero (src/gui_rounding.rs:68-70; epaint src/tessellator.rs:2024-2025); iced keeps the stated fractional line box (the font size times defaults.line_height: 14 x 1.2 = 16.8, 13.33 x 1.36 = 18.13, 14.67 x 1.21 = 17.75) wherever its layout puts it (cosmic-text 0.15.0 src/layout.rs:84 truncates a glyph's y); gpui rounds each line box and then each edge, ties toward zero (gpui-pre src/style.rs:554-556, src/util.rs:128-132). So a fraction the theme states (a line box, a row of line box and padding, a centring offset such as (40 - 16.8) / 2 = 11.6) paints on one pixel or the next by where the box sits and whose rounding applies; R-snap compares the rounded edges"
