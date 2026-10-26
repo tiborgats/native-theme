@@ -542,6 +542,12 @@ done
 # features leave off, with `native` and `watch` as in the loop.
 run_check "clippy (native-theme-gpui, gpui-fast, native, watch)" \
     cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch -- -D warnings
+# The gpui connector with no features, its showcase included: the showcase
+# builds without `widgets` and the bundled icon sets (gpui-component's own
+# widgets, and the connector's separator line drawn by the showcase), and only
+# this run compiles that code.
+run_check "clippy (native-theme-gpui, no features)" \
+    cargo clippy -p native-theme-gpui --all-targets --no-default-features -- -D warnings
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: strict panic lints (library code and the three showcases)

@@ -7,9 +7,10 @@ use native_theme_gpui::ResolvedTheme;
 #[cfg(feature = "widgets")]
 use native_theme_gpui::widgets::{CheckboxLook, SwitchLook};
 
+#[cfg(feature = "widgets")]
+use super::percent_text;
 use super::{
-    WidgetInfo, chrome::input_background, claim, edge_claim, percent_text, px_text, stated,
-    stated_claim,
+    WidgetInfo, chrome::input_background, claim, edge_claim, px_text, stated, stated_claim,
 };
 use crate::demo::{InputField, NUMBER_STEP_ACTIVE, NUMBER_STEP_HOVER};
 use crate::support::SampleIcon;
@@ -898,6 +899,7 @@ pub fn native_checkbox(
 /// as stated, `focus_ring_width` wide, its outer edge `focus_ring_offset` plus
 /// the width outside the part; inset at the edge it is a band inside the
 /// part's edge, as none of these parts has a border of its own.
+#[cfg(feature = "widgets")]
 fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetInfo {
     let d = &r.defaults;
     let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);

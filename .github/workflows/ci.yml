@@ -53,6 +53,9 @@ jobs:
       - name: Clippy (gpui connector, gpui-fast, native, watch)
         if: matrix.package == 'native-theme-gpui'
         run: cargo clippy -p native-theme-gpui --all-targets --features gpui-fast,native,watch
+      - name: Clippy (gpui connector, no features)
+        if: matrix.package == 'native-theme-gpui'
+        run: cargo clippy -p native-theme-gpui --all-targets --no-default-features
       - name: Clippy (iced connector, iced_aw, watch, native)
         if: matrix.package == 'native-theme-iced'
         run: cargo clippy -p native-theme-iced --all-targets --features iced_aw,watch,native

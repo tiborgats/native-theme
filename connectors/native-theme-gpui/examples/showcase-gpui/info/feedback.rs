@@ -7,7 +7,9 @@ use gpui_base::TooltipDefaults;
 use gpui_component::{Colorize as _, Size, theme::Theme};
 use native_theme_gpui::ResolvedTheme;
 
-use super::{ColorClaim, WidgetInfo, as_rgba, claim, edge_claim, percent_text, px_text, stated};
+#[cfg(feature = "widgets")]
+use super::edge_claim;
+use super::{ColorClaim, WidgetInfo, as_rgba, claim, percent_text, px_text, stated};
 use crate::demo::{CircleKind, MarkerKind, Severity, ShimmerKind, SpinnerKind, TagKind};
 use crate::support::SampleIcon;
 

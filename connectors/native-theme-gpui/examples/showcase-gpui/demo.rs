@@ -10,6 +10,8 @@ use gpui::{
     deferred, div, prelude::*, px, relative, rems,
 };
 use gpui_base::{ResizeHandleContext, ResizeHandleRenderer};
+#[cfg(feature = "widgets")]
+use gpui_component::select::Caret;
 use gpui_component::{
     ActiveTheme, ChildElement, Collapsible, Disableable as _, Icon, IconName, Selectable, Sizable,
     Size, StyledExt as _, ThemeStyled as _, TitleBar, WindowExt as _,
@@ -73,7 +75,7 @@ use gpui_component::{
     radio::{Radio, RadioGroup},
     rating::Rating,
     scroll::ScrollableElement as _,
-    select::{Caret, SearchableVec, Select, SelectState},
+    select::{SearchableVec, Select, SelectState},
     separator::Separator,
     setting::{NumberFieldOptions, SettingField, SettingGroup, SettingItem, SettingPage, Settings},
     sheet::Sheet,
@@ -6602,6 +6604,81 @@ pub(crate) fn spacing_box(
         .children(children)
         .info(ui, id, box_info)
         .debug_selector(move || id.into())
+}
+
+/// Without the connector's `widgets` feature, the one connector widget the
+/// showcase draws its own lines with, the menu separator and the table's grid
+/// lines (M9-165): a stand-in for `native_theme_gpui::widgets::Separator`
+/// drawn as that one draws (connectors/native-theme-gpui/src/widgets/separator.rs,
+/// `RenderOnce for Separator`), a box filled in `separator.line_color` (or
+/// the colour a caller's `bg` gives), `separator.line_width` thick and at
+/// least one device pixel, which every gpui renderer draws; gpui-component's
+/// `Separator` without a native theme or with a width that is not finite.
+#[cfg(not(feature = "widgets"))]
+mod widgets {
+    use gpui::{
+        AnyElement, App, Axis, InteractiveElement as _, IntoElement, RenderOnce, StyleRefinement,
+        Styled, Window, div, px,
+    };
+    use gpui_component::StyledExt as _;
+
+    /// A line across its container, as the connector's `Separator`.
+    #[derive(IntoElement)]
+    pub(crate) struct Separator {
+        axis: Axis,
+        style: StyleRefinement,
+    }
+
+    impl Separator {
+        /// A line across the container's width.
+        pub(crate) fn horizontal() -> Self {
+            Self {
+                axis: Axis::Horizontal,
+                style: StyleRefinement::default(),
+            }
+        }
+
+        /// A line down the container's height.
+        pub(crate) fn vertical() -> Self {
+            Self {
+                axis: Axis::Vertical,
+                style: StyleRefinement::default(),
+            }
+        }
+    }
+
+    impl Styled for Separator {
+        fn style(&mut self) -> &mut StyleRefinement {
+            &mut self.style
+        }
+    }
+
+    impl RenderOnce for Separator {
+        fn render(self, window: &mut Window, cx: &mut App) -> impl IntoElement {
+            let width = crate::support::native_value(cx, |n| n.resolved.separator.line_width)
+                .filter(|w| w.is_finite() && *w >= 0.0);
+            let color = crate::support::native_color(cx, |n| n.resolved.separator.line_color);
+            let look = color.zip(width.map(px));
+            let Some((color, width)) = look else {
+                return match self.axis {
+                    Axis::Horizontal => gpui_component::separator::Separator::horizontal(),
+                    Axis::Vertical => gpui_component::separator::Separator::vertical(),
+                }
+                .refine_style(&self.style)
+                .into_any_element();
+            };
+            let thickness = width.max(px(1.0 / window.scale_factor()));
+            let line = div().flex_none().bg(color);
+            let line: AnyElement = match self.axis {
+                Axis::Horizontal => line.w_full().h(thickness),
+                Axis::Vertical => line.h_full().w(thickness),
+            }
+            .refine_style(&self.style)
+            .debug_selector(|| "native-separator".into())
+            .into_any_element();
+            line
+        }
+    }
 }
 
 /// The Separators the Layout page builds, so the match over them in

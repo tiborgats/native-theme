@@ -14011,3 +14011,23 @@ holds the menu hover to adwaita and windows-11. `contract-leaves.toml` regenerat
 on x86_64-apple-darwin (strict-panic, `-D warnings`).
 **Status:** done, 0618906f. The controller's Linux gate: kde-breeze's pressed button and
 scroll-bar handle, adwaita's selected segment and monterey's field frames move.
+
+#### D8 · the gpui showcase without default features
+**Problem:** `cargo clippy -p native-theme-gpui --no-default-features --all-targets` failed in the
+showcase: three lines it draws with `widgets::Separator` (the menu separator and the files table's
+two grid lines, M9-165) have no build without `widgets`, and imports, helpers and test cases used
+only with `widgets` or the bundled icon sets warned or did not resolve. No gate compiled that
+build: check_release and CI lint the gpui connector's `--lib` only without features.
+**Decision:** the showcase supports it (dozens of `cfg(feature = "widgets")` and icon-set `cfg`s
+choose gpui-component's own widgets and leave out the bundled sets), so it builds, and no
+`required-features` is declared.
+**Fix:** without `widgets`, a showcase-local `widgets::Separator` stands in for the connector's,
+drawn as that one draws (`separator.line_width` thick, at least one device pixel, in
+`separator.line_color` or the caller's `bg`; gpui-component's `Separator` without a native theme);
+the widget-only imports (`Caret`, `percent_text`, `edge_claim`) and helpers
+(`theme_focus_ring`, `ring_findings`, `windows_11_curving_out`) take `cfg(feature = "widgets")`,
+the icon-only test helpers (`raster_bounds`, `IconSizeBuilder`, `icon_side`, the Icons page's
+distance cases and material-3's step-glyph case) the icon features they need. check_release and
+ci.yml gain `cargo clippy -p native-theme-gpui --all-targets --no-default-features -D warnings`.
+The showcase's tests pass in that build too (291, 1 ignored), and in the default one (328).
+**Status:** done, the commit that files this entry.

@@ -5683,6 +5683,7 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
 /// on it to 4, the value the preset states (G3 T15), so the tests hold
 /// spec §12.2's numbers whatever the preset says; a resolved theme's fields
 /// are public.
+#[cfg(feature = "widgets")]
 fn windows_11_curving_out(is_dark: bool) -> (Theme, native_theme_gpui::ResolvedTheme) {
     let prefs = native_theme_gpui::AccessibilityPreferences::default();
     let (theme, mut r) =
@@ -10122,6 +10123,7 @@ fn a_substituted_family_is_named_in_every_own_font_line() {
             .map(|n| n.text.clone())
             .unwrap_or_default()
     };
+    #[cfg_attr(not(feature = "widgets"), allow(unused_mut))]
     let mut lines = vec![(
         "the chrome menus",
         line(
@@ -15886,6 +15888,7 @@ fn look_findings(
 /// that can take the focus (`focusable`) claims `defaults.focus_ring_color` as
 /// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:344), where
 /// the theme states a ring, and none otherwise.
+#[cfg(feature = "widgets")]
 fn ring_findings(
     whose: &str,
     info: &WidgetInfo,
@@ -16797,6 +16800,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
         cx.update(|_w, cx| crate::info::rems_text(r, Theme::global(cx)))
     };
     let pixels = |p: Pixels| format!("{}px", crate::info::px_text(p.as_f32()));
+    #[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
     let grid = vec![
         rem(&mut cx, crate::pages::ICON_GRID_GAP),
         "ICON_GRID_GAP".to_string(),
@@ -16810,7 +16814,8 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
         ]
     };
     let cell_spacing = cell(&mut cx);
-    let cases: [(Page, &'static str, bool, &str, Vec<String>); 13] = [
+    let cases: Vec<(Page, &'static str, bool, &str, Vec<String>)> = vec![
+        #[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
@@ -16818,6 +16823,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             "grid gap",
             grid.clone(),
         ),
+        #[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
         (
             Page::Icons,
             ICONS_GPUI_TRIANGLE_ALERT,
@@ -16856,6 +16862,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             "geometry",
             vec![pixels(crate::pages::SWATCH_SIZE), "SWATCH_SIZE".to_string()],
         ),
+        #[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
         (
             Page::Icons,
             ICONS_NATIVE_DIALOG_WARNING,
@@ -16863,6 +16870,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
             "cell spacing",
             cell_spacing.clone(),
         ),
+        #[cfg(all(feature = "material-icons", feature = "svg-rasterize"))]
         (
             Page::Icons,
             ICONS_GPUI_TRIANGLE_ALERT,
@@ -16954,6 +16962,7 @@ fn the_pages_own_distances_are_named_in_their_infos(cx: &mut TestAppContext) {
     }
     let built = cx.update(|_window, cx| {
         let t = Theme::global(cx);
+        #[cfg_attr(not(feature = "widgets"), allow(unused_mut))]
         let mut built = vec![
             (
                 "the Collapsible",
@@ -17851,14 +17860,17 @@ fn rasterize_icons(
 
 /// Where the raster glyph `selector` names was laid out: `raster-` and the
 /// icon's name (`demo::raster_selector`).
+#[cfg(feature = "material-icons")]
 fn raster_bounds(cx: &mut VisualTestContext, selector: &'static str) -> Option<Bounds<Pixels>> {
     cx.debug_bounds(selector)
 }
 
 /// A `geometry::icon_size_*` builder.
+#[cfg(feature = "material-icons")]
 type IconSizeBuilder = fn(native_theme_gpui::Native<'_>) -> gpui_component::Size;
 
 /// The side `builder` sizes an icon to under the installed native theme.
+#[cfg(feature = "material-icons")]
 fn icon_side(
     cx: &mut VisualTestContext,
     showcase: &Entity<Showcase>,
@@ -18025,12 +18037,17 @@ fn the_number_inputs_step_glyphs_fit_their_steps(cx: &mut TestAppContext) {
 /// field leaves each step 11.5 px, the glyphs are a step tall, and no
 /// `geometry::icon_size_small` line claims `defaults.icon_sizes.small`'s 16;
 /// under material-3, whose 56 px field leaves 27, they are at
-/// `geometry::icon_size_small`, which the info names.
+/// `geometry::icon_size_small`, which the info names (with `material-icons`,
+/// without which material-3's set draws no step glyph).
 #[gpui::test]
 fn the_number_inputs_info_names_its_step_glyphs_size(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
     let mut faults = Vec::new();
-    for (preset, capped) in [("macos-tahoe", true), ("material-3", false)] {
+    for (preset, capped) in [
+        ("macos-tahoe", true),
+        #[cfg(feature = "material-icons")]
+        ("material-3", false),
+    ] {
         use_preset(&mut cx, &showcase, preset);
         show(&mut cx, &showcase, Page::Basic);
         let Some(info) = settle_on(&mut cx, &showcase, "basic-number") else {
