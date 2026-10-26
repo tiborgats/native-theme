@@ -29646,6 +29646,69 @@ mod tests {
         }
     }
 
+    /// The layout dump's rectangles of the fields `focus_ring` wraps are where
+    /// the page lays them out, however many times the page is laid out after
+    /// the dump's survey: the controller's parity run on d12398a8 dumped the
+    /// Basic page's four text fields, its text area and its number input at
+    /// (0, 0) under material-3 light alone, a layout after the survey having
+    /// recorded them again where the wrapper's own focus probe ran over its
+    /// field before the field was placed (M9-172). Under every bundled
+    /// preset in both modes (a preset whose ring is the field's border has
+    /// no wrapper), the page is surveyed, laid out again five
+    /// times, and each wrapped field is where the survey first found it, at
+    /// its column's left edge.
+    #[test]
+    fn the_layout_dump_has_the_ring_wrapped_fields_where_they_are() {
+        let wrapped = [
+            "basic.text_inputs.placeholder",
+            "basic.text_inputs.filled",
+            "basic.text_inputs.disabled",
+            "basic.text_inputs.focused",
+            "basic.text_area.field",
+            "basic.number_input.field",
+        ];
+        let mut faults = Vec::new();
+        recording(|| {
+            for (preset, dark) in every_preset_in_both_modes() {
+                let mut state = loaded(preset, dark);
+                state.active_tab = Tab::Basic;
+                let mut ui = interface(&state);
+                let _ = texts(&mut ui);
+                let surveyed = surveyed_layout();
+                for again in 0..5 {
+                    let _relaid = interface(&state);
+                    let now = surveyed_layout();
+                    for id in wrapped {
+                        let (Some(first), Some(later), Some(heading)) =
+                            (surveyed.get(id), now.get(id), surveyed.get(heading_of(id)))
+                        else {
+                            faults.push(format!("{preset} (dark: {dark}): {id} is not surveyed"));
+                            continue;
+                        };
+                        if later != first || (first.x - heading.x).abs() > 0.01 {
+                            faults.push(format!(
+                                "{preset} (dark: {dark}), layout {again}: {id} at {later:?}, \
+                                 surveyed at {first:?}, its heading at x {}",
+                                heading.x
+                            ));
+                        }
+                    }
+                }
+            }
+        });
+        faults.dedup();
+        assert!(faults.is_empty(), "{faults:#?}");
+    }
+
+    /// The heading of the Basic group `id` is in: `basic.<group>.heading`.
+    fn heading_of(id: &'static str) -> &'static str {
+        match id.split('.').nth(1) {
+            Some("text_inputs") => "basic.text_inputs.heading",
+            Some("text_area") => "basic.text_area.heading",
+            _ => "basic.number_input.heading",
+        }
+    }
+
     /// The Basic page never needs sideways scrolling under any bundled preset
     /// in either mode (M9-074: macos-tahoe states no `layout.section_gap`, and
     /// the column count takes none), nor in light at the largest text scale,

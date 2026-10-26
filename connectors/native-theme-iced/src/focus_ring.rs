@@ -148,10 +148,15 @@ impl Operation for Probe {
 /// `content`, and round it while it holds the keyboard focus in a window
 /// that holds the OS's, the ring of `look` ([`crate::focus_ring()`]). Its
 /// tree keeps the two ([`Focus`]), the content's focus learnt by [`Probe`]
-/// each time the tree is laid out or operated on and after each update by an
-/// event that can move it ([`may_move_focus`]), the window's from iced's
-/// `window::Event::Focused` and `Unfocused`, with the content's tree its one
-/// child; every other method is the content's.
+/// each time the tree is operated on and after each update by an event that
+/// can move it ([`may_move_focus`]), and taken as lost where the view puts a
+/// widget of another kind in the content's place, whose new state holds no
+/// focus; the window's from iced's `window::Event::Focused` and `Unfocused`,
+/// with the content's tree its one child; every other method is the
+/// content's. It asks the content nothing while it is laid out: the content
+/// is not placed yet, and an operation hands each widget its layout as
+/// placed in the window, which a widget that records its bounds as it is
+/// operated on keeps.
 pub(crate) struct FocusRing<'a, Message, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     look: RingLook,
@@ -218,7 +223,14 @@ where
     }
 
     fn diff(&self, tree: &mut Tree) {
+        let before = tree.children.first().map(|child| child.tag);
         tree.diff_children(std::slice::from_ref(&self.content));
+        let after = tree.children.first().map(|child| child.tag);
+        if before != after
+            && let Some(focus) = focus_mut(tree)
+        {
+            focus.field = false;
+        }
     }
 
     fn size(&self) -> Size<Length> {
@@ -238,9 +250,7 @@ where
         let Some(child) = tree.children.first_mut() else {
             return layout::Node::new(Size::ZERO);
         };
-        let node = self.content.as_widget_mut().layout(child, renderer, limits);
-        self.learn(tree, Layout::new(&node), renderer);
-        node
+        self.content.as_widget_mut().layout(child, renderer, limits)
     }
 
     /// `content`, then, while it holds the focus, the ring over it in the
@@ -463,8 +473,9 @@ mod tests {
     }
 
     /// The field, `focused` or not, wrapped in [`crate::focus_ring()`] under
-    /// `r` with a corner radius of 4, laid out at (10, 20) and drawn: the
-    /// quads it filled.
+    /// `r` with a corner radius of 4, laid out at (10, 20), operated on, as
+    /// iced's focus operations operate on the tree, and drawn: the quads it
+    /// filled.
     fn drawn(r: &ResolvedTheme, focused: bool) -> Vec<(Quad, Background)> {
         let mut element: Element<'_, (), Theme, Recorder> =
             crate::focus_ring(r, 4.0, Element::new(Field { focused }));
@@ -478,6 +489,7 @@ mod tests {
                 &layout::Limits::new(Size::ZERO, Size::new(500.0, 100.0)),
             )
             .move_to(iced_core::Point::new(10.0, 20.0));
+        operated(&mut element, &mut tree, &node);
         element.as_widget().draw(
             &tree,
             &mut recorder,
@@ -609,6 +621,21 @@ mod tests {
         ) {
             operation.focusable(None, layout.bounds(), tree.state.downcast_mut::<Held>());
         }
+    }
+
+    /// `element` in `tree`, laid out as `node`, operated on by an operation
+    /// that changes nothing.
+    fn operated(
+        element: &mut Element<'_, (), Theme, Recorder>,
+        tree: &mut Tree,
+        node: &layout::Node,
+    ) {
+        element.as_widget_mut().operate(
+            tree,
+            Layout::new(node),
+            &Recorder::default(),
+            &mut Probe::default(),
+        );
     }
 
     /// `element` laid out in `tree` at the origin: its node.
@@ -773,16 +800,39 @@ mod tests {
         }
     }
 
-    /// Where the view replaces the field with another widget, the ring asks
-    /// the new one: a focused field's ring goes once the tree holds an
-    /// unfocused widget of another kind in its place.
+    /// Laying the wrapper out hands its field no operation: the field is not
+    /// placed yet, and a widget that records the bounds it is operated with
+    /// (the showcases' layout dump) kept them at the origin, where the
+    /// layout dump of the controller's parity run on d12398a8 found the
+    /// iced Basic page's ring-wrapped fields (M9-172).
     #[test]
-    fn a_replaced_field_is_asked_again() {
+    fn laying_the_ring_out_asks_its_field_nothing() {
+        let r = resolved("windows-11", ColorMode::Light);
+        let asked = std::rc::Rc::new(std::cell::Cell::new(0));
+        let mut element: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Asked(asked.clone())));
+        let mut tree = Tree::new(&element);
+        for _ in 0..3 {
+            let _ = laid(&mut element, &mut tree);
+        }
+        assert_eq!(
+            asked.get(),
+            0,
+            "the field was operated on as it was laid out"
+        );
+    }
+
+    /// Where the view replaces the field with a widget of another kind, whose
+    /// new state holds no focus, the ring goes: a focused field's ring goes
+    /// once the tree holds the other widget in its place.
+    #[test]
+    fn a_replaced_field_loses_the_ring() {
         let r = resolved("windows-11", ColorMode::Light);
         let mut element: Element<'_, (), Theme, Recorder> =
             crate::focus_ring(&r, 4.0, Element::new(Field { focused: true }));
         let mut tree = Tree::new(&element);
         let node = laid(&mut element, &mut tree);
+        operated(&mut element, &mut tree, &node);
         assert_eq!(
             painted(&element, &tree, &node),
             1,

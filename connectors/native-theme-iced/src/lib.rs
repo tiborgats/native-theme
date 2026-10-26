@@ -1411,10 +1411,11 @@ where
 /// so where the theme states one, or no ring, `field` is returned as it is.
 ///
 /// The wrapper learns whether the field is focused from iced's own
-/// `Focusable` operation over it, each time it is laid out or operated on
-/// and after an event that can move the focus (a mouse button, a key, a
-/// touch, the window gaining or losing the OS's focus), so wrap the focusable widget itself, or a widget
-/// that hands it the operation (`iced_aw`'s `NumberInput`): any focused
+/// `Focusable` operation over it, each time it is operated on (iced's focus
+/// operations go through it) and after an event that can move the focus (a
+/// mouse button, a key, a touch, the window gaining or losing the OS's
+/// focus), so wrap the focusable widget itself, or a widget that hands it
+/// the operation (`iced_aw`'s `NumberInput`): any focused
 /// widget inside rings the whole. A `ComboBox` cannot be ringed: iced_widget
 /// 0.14.2's implements no `operate` (`src/combo_box.rs`), so no operation
 /// reaches its field. While the window has lost the OS's keyboard focus no
