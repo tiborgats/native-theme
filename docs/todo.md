@@ -1472,10 +1472,9 @@ model, the platform presets and the three connectors
       publish, and the preset states the fallback of the acrylic brush of the
       same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md` §2.6
       `background_color`); and under high contrast the stated strokes and fills
-      the reader does not map (`input.hover_border_color`,
-      `input.focus_border_color`, whose TextBox HighContrast dictionary leaves
-      the key out, the check box's and the switch's off colours, the slider's
-      track and disabled colours), which keep their light or dark values. Each
+      the reader does not map (`input.hover_border_color`, the check box's and
+      the switch's off colours, the slider's track and disabled colours), which
+      keep their light or dark values. Each
       needs a measured or published source first: an OS-probe read in dark mode
       for the selected text, a render of the menu's backdrop, and the
       high-contrast dictionaries of the control resources for the rest.

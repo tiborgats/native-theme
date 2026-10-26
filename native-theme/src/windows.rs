@@ -414,6 +414,11 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     // A hovered on switch, `ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColor`
     // (ToggleSwitch_themeresources.xaml:88), a replacing fill.
     variant.switch.hover_checked_background = Some(colors.btn_face);
+    // A focused text box's line: the TextBox HighContrast dictionary has no key of its own
+    // (TextBox_themeresources.xaml:67-110), so `TextControlBorderBrushFocused` is
+    // generic.xaml's, SystemControlHighlightAccentBrush (generic.xaml:2658, :2055),
+    // COLOR_HIGHLIGHT.
+    variant.input.focus_border_color = Some(colors.highlight);
 }
 
 /// Read accessibility settings (WIN-04).
@@ -546,8 +551,8 @@ fn build_theme(
         variant.link.hover_text_color = if dark { light3 } else { dark3 };
         variant.link.active_text_color = if dark { light2 } else { dark1 };
         // A focused text box's bottom line, `TextControlElevationBorderFocusedBrush`: the
-        // same shade (docs/platform-facts.md:1219). Not under high contrast, whose TextBox
-        // dictionary leaves the key out; the preset's value stands there.
+        // same shade (docs/platform-facts.md:1219). Under high contrast `apply_sys_colors`
+        // writes it.
         variant.input.focus_border_color = Some(primary_bg);
     }
 
@@ -935,6 +940,28 @@ mod tests {
                     "{mode:?} channel {channel}: {got} against WinUI's {want}"
                 );
             }
+            // A layer, not a fill: over another accent's shade it is WinUI's
+            // 0.9 · S + 0.1 · W, the window W being the layer's colour.
+            assert!(layer.a < 255, "{mode:?}: the hover is an opaque fill");
+            let other = crate::Rgba::rgb(0x8a, 0x2b, 0xe2);
+            let [red, green, blue, _] =
+                crate::color::composite_over(layer.to_f32_array(), other.to_f32_array());
+            let got = crate::Rgba::from_f32(red, green, blue, 1.0);
+            let winui = |s: u8, w: u8| 0.9 * f32::from(s) + 0.1 * f32::from(w);
+            for (channel, (got, want)) in [got.r, got.g, got.b]
+                .into_iter()
+                .zip([
+                    winui(other.r, layer.r),
+                    winui(other.g, layer.g),
+                    winui(other.b, layer.b),
+                ])
+                .enumerate()
+            {
+                assert!(
+                    (f32::from(got) - want).abs() <= 1.0,
+                    "{mode:?} channel {channel} over another shade: {got} against WinUI's {want}"
+                );
+            }
         }
     }
 
@@ -1195,14 +1222,12 @@ mod tests {
         // text, and the user's accent shades are not written under high contrast.
         assert_eq!(v.link.hover_text_color, None);
         assert_eq!(v.link.active_text_color, None);
-        // The accent controls take the highlight, the hovered on switch the
-        // button face; the text box's focus line is not written (its
-        // HighContrast dictionary leaves the key out).
-        for (field, value) in accent_fills(v).into_iter().take(4) {
+        // The accent controls and the text box's focus line take the
+        // highlight, the hovered on switch the button face.
+        for (field, value) in accent_fills(v) {
             assert_eq!(value, Some(c.highlight), "{field}");
         }
         assert_eq!(v.switch.hover_checked_background, Some(c.btn_face));
-        assert_eq!(v.input.focus_border_color, None);
         assert_eq!(v.defaults.info_color, Some(c.window_text));
         assert_eq!(
             v.progress_bar.border.as_ref().and_then(|b| b.line_width),

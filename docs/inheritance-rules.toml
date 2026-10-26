@@ -640,7 +640,7 @@ why_wrong     = "Windows fills a progress bar with AccentFillColorDefault, the a
 
 [wrong_safety_nets."switch.checked_background"]
 inherits_from = "defaults.accent_color"
-why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE lays the highlight at alpha 0.5 over the off track (platform-facts.md:1521, §2.21)"
+why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE lays the highlight at alpha 0.5 over the off track (platform-facts.md:1521, §2.21); iOS draws an on UISwitch in systemGreen, not the accent, which ios-13 states (ios-13.toml [light.switch] checked_background)"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #

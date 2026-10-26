@@ -13864,3 +13864,14 @@ the Complementary set any more. The unit tests assert the fixtures' View values,
 set that does not reach the sidebar and no sidebar without a View set; `tests/reader_kde.rs`
 follows (Breeze Light's sidebar is now white).
 **Status:** done, 2caad225 (facts and rules 719680cb).
+- *D2 review follow-up (2026-10-26):* M1: iOS draws an on switch in systemGreen, which ios-13
+  states; the switch entry's `why_wrong` names iOS too, so a cleanup that follows the rule keeps
+  it, and the D2 entry above and the archive's closing line should read "GNOME, macOS, iOS and
+  Material keep inheriting the accent, but for iOS's on switch". M2:
+  `the_windows_11_switch_hover_composites_to_winuis` asserts the hover is translucent and
+  composites it over another shade against WinUI's 0.9 · S + 0.1 · W, so an opaque #1875c5 fails
+  it. M3: under high contrast the focused text box's line is `SystemColorHighlightColor`: the
+  TextBox HighContrast dictionary (TextBox_themeresources.xaml:67-110) has no
+  `TextControlBorderBrushFocused`, so generic.xaml's (:2658, SystemControlHighlightAccentBrush,
+  :2055) stands (W2-k); `apply_sys_colors` writes it, its high-contrast test expects it, the D2
+  entry's "not under high contrast" and the `[1.0]` entry's line for it are corrected.
