@@ -267,7 +267,15 @@ Each of these sites failed to compile in the trial, or would assert nothing:
 
   The test is red on 0.8.1 without §2.2's change. `the_kbds_take_the_showcases_modifier` parses
   `KBDS` itself and would not see that.
-- **No cross-OS test is added** (rationale P5).
+- **A new test, `the_bindings_take_cmd_under_macos`** (rationale P5):
+  - before `open`, it calls `cx.set_platform_info(gpui::PlatformInfo { os:
+    gpui::OperatingSystem::Mac, target: gpui::PlatformTarget::Native })`
+    (`GP/app/test_context.rs:127`; gpui-fast has the same);
+  - it checks the four `app::init` bindings against `secondary(key, OperatingSystem::Mac)`,
+    `cmd-q` and the rest, through the binding-table loop of `the_menus_run_actions`
+    (`SC/tests.rs:2350-2375`), which becomes a helper shared by both tests and taking the OS;
+  - its doc states what it does not cover: `Kbd::format` draws by the compile target, and the
+    macOS menu-bar bindings are bound only under `cfg!(target_os = "macos")` (`SC/app.rs:184`).
 
 **Gates:**
 
@@ -334,8 +342,10 @@ versions with every gate passing.
 them, a citation given to the wrong crate is renumbered by that crate's diff, and `gates.py`,
 which attributes the same way, agrees:
 
-1. **Outside `CN/`**, a citation whose note names no family crate is out of scope. Two cases
-   are known:
+1. **In `connectors/native-theme-iced/examples` and `connectors/native-theme-egui/examples`
+   only**, a citation whose note names no family crate is out of scope. The rule is limited
+   to them. `docs/showcase-exceptions.toml` and `scripts/connector_parity_exceptions.toml`
+   cite gpui files unnamed too, in scope, and are renumbered as before. Two cases are known:
    - `connectors/native-theme-iced/examples/showcase-iced.rs:385`'s `` `scrollable.rs:548-560` ``
      cites iced_widget, which the script would give to gpui-component;
    - the egui and iced showcases otherwise cite their own crates unnamed.
@@ -347,8 +357,11 @@ which attributes the same way, agrees:
    a sub-crate**, the crates new to the scope. Task 2's review reads each one's old text against
    its claim. A `--plan`-only dry run at HEAD on 2026-10-26 gave about 75 and about 60.
 
-Each rule is checked on its example before the run, in `--plan` output: the iced citation is
-out of scope, and the toolbar citation is set aside.
+Each rule is checked on its example before the run, in `--plan` output:
+- the iced citation is out of scope;
+- the toolbar citation is set aside;
+- `docs/showcase-exceptions.toml:48`'s `components.rs:1023-1032` is still renumbered, to
+  `1024-1033` (the dry run's result, rationale P9).
 
 **`lookup.py`, new beside the copy, read-only**, for §7's re-check:
 
@@ -495,8 +508,9 @@ Two kinds of line are not this task's:
 ## 5 — The gate for upstream functions that panic on their input (P6)
 
 **The inventory.** Collect every doc or comment line that mentions a panic
-(`grep -rEn '^\s*//[/!].*\b[Pp]anic'`) in the `src/` of `GP`, `GF`, `GB`, `GC`, gpui-kit 0.8.1,
-and the gpui-pre and gpui-fast sub-crates at 0.3.10 and 0.1.12. There are 172 at these
+(`grep -rEn '^\s*//.*\b[Pp]anic'`, doc comments and plain ones) in the `src/` of `GP`, `GF`,
+`GB`, `GC`, gpui-kit 0.8.1, and the gpui-pre and gpui-fast sub-crates at 0.3.10 and 0.1.12.
+There are 279 (172 doc-comment lines, 107 plain; rationale P6) at these
 versions. Sort each public function they document:
 
 - **Listed** where the documented panic depends on an argument's value, whether or not the
@@ -559,31 +573,31 @@ needed, comes in addition to the allow, not instead of it.
 - Any other call the inventory finds is decided the same way.
 
 **Done-criterion, mechanical, for every entry** (rationale P6). A wrong path flags nothing and
-passes every run. clippy reports a path it cannot resolve as a warning, unless the entry has
-`allow-invalid = true`. The steps:
+passes every run. A clean run proves nothing for GPUI Fast: gpui-pre stays in its crate graph
+(gpui-kit and gpui-base depend on it without `optional`). Both crates are named `gpui`, and
+clippy warns about a path only when it is in none of them. So the proof counts errors.
 
-1. **Measure the unresolved-path warning.** Add a deliberately wrong entry, run
-   `cargo clippy -p native-theme-gpui --all-targets -- -D warnings`, and record two things:
-   the warning's text, and whether `-D warnings` makes it fatal. If no warning appears at all,
-   every entry gets its own planted call instead of steps 2 and 4.
-2. **Define "clean".** A run is clean only if it passes and its output holds no
-   unresolved-path warning (the text step 1 recorded). It runs in each of the three
-   configurations: `--features native,watch`, `--features gpui-fast,native,watch` and
-   `--no-default-features`.
-3. **Mark the entries that resolve only in some configurations.** These are a function on one
-   core only, or in a platform crate Linux does not build. Each carries `allow-invalid = true`
-   with its reason, or is left out with its reason. Where it resolves on Linux, a planted call
-   there fails and passes once removed. Otherwise the commit body records it as not proven on
-   Linux.
-4. **Prove every other entry.** A clean run in all three configurations shows that each one
-   resolves. One planted `gpui::KeyBinding::new("a", Quit, None)` in a non-test showcase
-   function fails on both cores and passes once removed, which shows the alias and GPUI Fast
-   are reached.
+1. **A planted function.** It is temporary, in the showcase's non-test code (for example in
+   `SC/demo.rs`), and carries `#[allow(dead_code)]`.
+   - It calls every listed entry once, written as the showcase writes its gpui calls.
+   - Its parameters supply what the calls need (`&mut App`, `&Window`, a `Font`, …).
+   - Its doc says it is the G4 proof and is removed before the commit.
+2. **The count.** Run `cargo clippy -p native-theme-gpui --all-targets -- -D warnings` with
+   `--features native,watch`, with `--features gpui-fast,native,watch` and with
+   `--no-default-features`. In each, clippy reports exactly one `clippy::disallowed_methods`
+   error per entry the configuration builds, each with its entry's reason.
+   - A missing error is an entry that gates nothing there: its path is corrected, and the run
+     repeated.
+   - The output of the three runs goes in the commit body.
+3. **`allow-invalid = true`** is set only on an entry whose path is in no crate of some Linux
+   configuration, such as a gpui-fast-only function or a platform crate that Linux does not
+   build. Each such entry states its reason. One that none of the three configurations
+   builds is recorded as not proven on Linux.
+4. **Removal.** The planted function is removed. The three runs then pass, with no
+   unresolved-path warning in their output ("does not refer to a reachable").
 
-The results go in the commit body.
-
-**The upgrade checklist:** a line in `CN/clippy.toml`'s header comment says the sweep is redone
-at each GPUI Kit upgrade (rationale P6).
+**The upgrade checklist:** a line in `CN/clippy.toml`'s header comment says that the sweep and
+this planted-function count are redone at each GPUI Kit upgrade (rationale P6).
 
 ---
 
@@ -643,14 +657,18 @@ floor (rationale P7).
     the theme's `tokens.background` (`GC/separator.rs:149`) and narrower than the line;
   - it asserts that the box's horizontal centre is within 1 px of the Separator's.
   It runs on both cores through the usual suites.
-- **If the label's box cannot be told apart** from the other quads, the fallback is a desktop
-  capture, announced first:
-  - start the showcase with `--capture --tab layout`, with the default features and with
-    `--features gpui-fast`;
-  - capture each with `scripts/capture_window.sh`'s `capture_showcase gpui <pid> <png>`
-    (`:300-372`);
-  - read the label's and the line's x-ranges from the PNGs.
-  The test is then recorded as not written, with the reason.
+- **If the label's box cannot be told apart** from the other quads on a core, the fallback
+  is decided per core (rationale P11). On GPUI Fast the scene reader skips composited scroll
+  layers (`CN/src/widgets/scene_read.rs:15-18`).
+  - On a core where the box is found, the test asserts there, with a `cfg` and its reason
+    where it is one core only.
+  - On the other core, a desktop capture is made, announced first:
+    - start the showcase with `--capture --tab layout`, on that core (the default features,
+      or `--features gpui-fast`);
+    - capture it with `scripts/capture_window.sh`'s `capture_showcase gpui <pid> <png>`
+      (`:300-372`);
+    - read the label's and the line's x-ranges from the PNG.
+  - Where the test holds on neither core, it is recorded as not written, with the reason.
 - **Centred on both cores:** the `docs/todo.md` entry *File the gpui-kit issue: on gpui-pre a
   labelled `Separator` draws its label at the line's end* closes. Its dated line names taffy
   0.15.0's `src/compute/flexbox.rs:2274-2275` and the test (or the captures' x-ranges), and the
@@ -826,6 +844,11 @@ and Windows GPUI Fast builds.
 **The dependency canary, dispatched on the branch** (`gh workflow run dependency-canary.yml --ref
 v0.7.0-rc1`), is green, or each failure is read and found outside the gpui stack (rationale
 P15). It runs after the unit's push and after the close.
+- **Before each dispatch**, the latest scheduled run on `main` (`gh run list --workflow
+  dependency-canary.yml --branch main`) is read, and its failing steps and errors are noted
+  as the baseline.
+- A branch failure with the same step and error is that standing failure. Any other failure
+  is G4's until shown otherwise.
 
 **For the close-out's `generate_assets_release.sh`, these screenshots change:**
 

@@ -108,7 +108,8 @@ review session running the C and D rounds in this tree has said that the D round
 1. **No binding can panic** (Task 1).
    - No `KeyBinding::new` remains in the showcase's non-test code.
    - `load`'s error path leaves the binding out, with one `eprintln!` line.
-   - The binding table test and `the_macos_menus_keys_are_the_higs` cover all eight bindings.
+   - The binding table test, its Mac run (`the_bindings_take_cmd_under_macos`) and
+     `the_macos_menus_keys_are_the_higs` cover all eight bindings.
 2. **No vacuous test** (Task 1).
    - `secondary` fails the test on a parse error.
    - `no_inspector_toggle_remains` compares with a real key.
@@ -125,15 +126,15 @@ review session running the C and D rounds in this tree has said that the D round
 5. **The Dialog says what 0.8.1 does** (Task 3): an entrance and an exit, on the same curve and
    duration, and no `AnimationExt`.
 6. **The gate catches** (Task 4).
-   - Every entry is shown to resolve, not only one; the planted call fails clippy on both
-     cores. "Clean" means no unresolved-path warning in the output, in all three
-     configurations, and each `allow-invalid` entry states why.
+   - Every entry is shown to flag a call, not only one: the planted function draws exactly
+     one `disallowed_methods` error per entry in each of the three configurations, GPUI Fast
+     included, and each `allow-invalid` entry states why.
    - Every listed function's group is argued from its doc line.
-   - Every existing call is guarded or allowed with its reason.
+   - Every existing call is allowed, with its reason; a guard comes in addition where needed.
 7. **The toolbar tests fail before the fix** (Task 5): the single-fixture test is red first,
    and both toolbar unit tests pass after it.
-8. **The Separator is closed only on a measurement** (Task 6): the test on both cores, or the
-   captures if the test cannot find the label's box.
+8. **The Separator is closed only on a measurement** (Task 6), per core: the test where it
+   finds the label's box, a capture on a core where it cannot.
 9. **Both cores lay the showcase out alike** (Task 6): the four dump pairs compared, each
    difference fixed or explained.
 
@@ -188,7 +189,7 @@ clean tree.
     call the assertion exposes fixed and listed;
   - `set_preset(cx, showcase, key)` asserting the install for every key but `"default"`, and
     `set_missing_preset` for the two error calls;
-  - the new `the_typography_page_draws_its_kbds`.
+  - the new `the_typography_page_draws_its_kbds` and `the_bindings_take_cmd_under_macos`.
 - [ ] **Every suite on both cores:** `cargo test -p native-theme-gpui --all-targets` with
   `--features native,watch` and with `--features gpui-fast,native,watch`.
   - Expected red: the two showcase citation gates and `the_fallback_stack_copy_is_gpuis`.
@@ -240,8 +241,9 @@ clean tree.
 - [ ] **Push** `v0.7.0-rc1`, then CI green, including *Test the gpui connector on GPUI Fast*.
   A failure is fixed in G4 before Task 3b.
 - [ ] **The dependency canary dispatched on the branch** (`gh workflow run
-  dependency-canary.yml --ref v0.7.0-rc1`). It is green, or each failure is read and found
-  outside the gpui stack (spec §10).
+  dependency-canary.yml --ref v0.7.0-rc1`), after `main`'s latest scheduled run is noted as
+  the baseline. It is green, or each failure is the baseline's or is read and found outside
+  the gpui stack (spec §10).
 
 ## Task 3b: The citations no gate reads, and the version-stating prose
 
@@ -275,11 +277,12 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - [ ] **Today's calls:** `resolve_font` and `segmented_width`'s `shape_line` allowed, each with
   spec §5's reason. Test code allowed. Any other call decided.
 - [ ] **Spec §5's done-criterion, for every entry:**
-  - the unresolved-path warning measured (its text, and whether `-D warnings` makes it fatal);
-  - the entries that resolve only in some configurations given `allow-invalid = true` with
-    their reasons, or left out;
-  - the clean runs in all three configurations plus one planted call, or one planted call per
-    entry if the wrong entry draws no warning.
+  - the planted function calling every entry, and its three clippy runs, each with exactly one
+    `disallowed_methods` error per entry built there, in the commit body;
+  - `allow-invalid = true` only on entries absent from some Linux configuration, each with
+    its reason;
+  - the planted function removed, and the three runs passing with no unresolved-path
+    warning.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests and clippy.
 - **Commit:** `build(gpui): clippy's disallowed-methods gate lists the upstream functions that panic on their input; the inspector's guarded resolve_font, segmented_width's shape_line and the test calls are allowed with their reasons (G4 T4)`.
 
@@ -312,8 +315,8 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 
 **Depends on:** Tasks 3b and 5, so that the comparisons read the final layout.
 
-- [ ] **Spec §7's Separator test**, passing on both cores, or the capture fallback with its
-  reason.
+- [ ] **Spec §7's Separator test**, passing on both cores, or on one core with the capture
+  fallback for the other, each with its reason.
 - [ ] **The Separator entry** closes with its dated line and moves to the archive, or stays open
   with the measured positions (and the rationale's §1.8 corrected in its own commit).
 - [ ] **The two drafts' dated lines** (spec §7). Their texts are not rewritten.

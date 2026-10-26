@@ -551,7 +551,10 @@ error to.
   action's highest-precedence binding, fails for any action that lost its binding;
 - for the macOS four, `the_macos_menus_keys_are_the_higs` does.
 
-Both run on every host. With all eight on `load`, the showcase's non-test code calls no
+Both run wherever the showcase tests run: Linux, in CI's gpui test jobs and in
+`check_release.sh`. CI's macOS and Windows jobs only build the showcase (`ci.yml`,
+`gpui-fast-build`). So the macOS meaning of `secondary-` is tested on Linux, under a Mac
+platform identity (P5). With all eight on `load`, the showcase's non-test code calls no
 `KeyBinding::new` at all, which is what P6's gate then enforces.
 
 ### P4 — The Kbd samples and the Save tooltip read the OS from gpui
@@ -600,6 +603,28 @@ fails, instead of returning `""`.** As it is, `no_inspector_toggle_remains` (`:2
 pass vacuously (§1.3). A helper whose failure silently satisfies an assertion is a wrong
 safety net.
 
+**The bindings are tested under macOS too, on Linux.** No showcase test runs on macOS (P3),
+so without this the half that macOS users get, `secondary-` as Cmd through `load`, is tested
+nowhere. The options:
+
+- **(a) Accept the gap.** It costs nothing now, but the half that differs is left unchecked.
+- **(b) A Linux test under a Mac platform identity.** `TestAppContext::set_platform_info`
+  (`GP/app/test_context.rs:127`, the same in gpui-fast) is set to `PlatformInfo { os: Mac,
+  target: Native }` before the showcase opens. The binding table of `the_menus_run_actions` is
+  then checked against `secondary(key, Mac)`, `cmd-q` and the rest.
+  - It checks the showcase's choice, not only gpui's parser: a binding that took its key from
+    the compile target, or a literal `ctrl-`, fails it.
+  - It is one short test, with the table's loop shared as a helper between the two tests.
+- **(c) Run the showcase tests on CI's macOS job.** That is a whole second test suite on a
+  paid runner, for one table.
+
+**(b).** Its limits are stated in the test's doc:
+- `Kbd::format` draws by the compile target (P4), so "⌘S" stays macOS-only and is not tested
+  here;
+- the macOS menu-bar bindings are bound only where the compile target is macOS (`cfg!`,
+  `SC/app.rs:184`), so they are checked by `the_macos_menus_keys_are_the_higs`, not by this
+  test.
+
 **`use_preset` fails the test where the preset does not install.** Found during this work:
 the showcase's test helper ignores `apply_theme_by_name`'s `bool` (`SC/app.rs:1861-1866`).
 So a test that names a preset that does not exist runs, unnoticed, against the theme installed
@@ -618,10 +643,11 @@ before. That is how the §1.5 probe measured "macos-sonoma" and "ios-26".
   the file this change already edits, so it is done here rather than recorded for later.
 
 **`set_preset` gets the same check.** It is the other preset helper (`SC/tests.rs:10878`,
-29 calls). It dispatches `SetPreset`, the path the theme settings and the command palette
+28 calls). It dispatches `SetPreset`, the path the theme settings and the command palette
 take, and never checks that the theme installed.
-- Its calls name kde-breeze, adwaita, nord, material-3 and catppuccin-mocha, all bundled
-  presets today. There are also six `"default"` calls and two `"no-such-preset"` calls, made
+- Its literal calls name kde-breeze, adwaita, nord, material-3 and catppuccin-mocha, all
+  bundled presets today. Two pass a variable: `"material-3"`, and the first key of
+  `list_presets_for_platform()`. There are also six `"default"` calls and two `"no-such-preset"` calls, made
   to provoke the error (`:11695`, `:11740`).
 - **The options:**
   - **(a) Record it for later.** That contradicts the reason above.
@@ -679,13 +705,16 @@ paths name nothing.
     the allow too. One case is the inspector's `resolve_font`, behind its own guard (§1.9). The
     allow is visible in review.
 
-**The list is an inventory, not a guess.** The candidates are the doc and comment lines that
-mention a panic (`\b[Pp]anic`) in the `src/` of gpui-base, gpui-component, gpui-kit,
+**The list is an inventory, not a guess.** The candidates are the comment lines, doc comments
+and plain ones, that mention a panic (`\b[Pp]anic`) in the `src/` of gpui-base, gpui-component, gpui-kit,
 gpui-pre, gpui-fast, and the gpui-pre and gpui-fast sub-crates.
-- There are 172 such lines at 0.8.1 / 0.3.10 / 0.1.12.
+- There are 172 such doc-comment lines (`///`, `//!`) at 0.8.1 / 0.3.10 / 0.1.12.
 - A narrower pattern (`# Panics`, "Panics if") finds 84 and misses forms such as "may panic
   if" (`Bounds::inset`, `GP/geometry.rs:1101`) and the sub-crates' docs (gpui-pre-sum-tree
   `cursor.rs:418`).
+- Plain `//` comments add 107 more lines: 279 in all, measured by the sixth check's reviewer.
+  What they hold has not been sorted, and a panic may be noted only there. So the sweep reads
+  all 279: 107 more lines to sort, against the risk of missing one.
 
 The sweep sorts each public function the lines document into two groups, and sets aside the
 lines that are not a function's panic (a "does not panic" remark):
@@ -718,31 +747,40 @@ panics on its input is invisible to the same three gates. That is a `docs/todo.m
 not done here, because this change is the gpui connector's, and those crates' upgrades are
 where their sweep belongs.
 
-**Done-criterion, mechanical, for every entry, not only one.** A wrong path in the list would
-flag nothing and pass every run, so each entry's resolution is shown in every configuration.
+**Done-criterion, mechanical, for every entry, not only one.** A wrong path in the list
+flags nothing and passes every run, so each entry is shown to flag a call, in every
+configuration.
 
-**What clippy does with a path it cannot resolve.** clippy 1.99 has a per-entry key,
-`allow-invalid`, whose help text is "add `allow-invalid = true` to the entry to suppress this
-warning" (`clippy-driver`'s strings, rustc 1.99.1). So it reports such a path as a warning,
-not as a lint, and two things follow:
+**Why a clean run proves nothing for GPUI Fast.**
+- gpui-kit and gpui-base depend on gpui-pre without `optional` (`gpui-kit-0.8.1/Cargo.toml`,
+  `[dependencies.gpui]` `=0.3.10`; gpui-base the same). So gpui-pre stays in the crate graph
+  under `--features gpui-fast`.
+- Both cores' library is named `gpui` (gpui-pre `Cargo.toml:93-95`, gpui-fast `:94-96`).
+- clippy resolves a disallowed path in every crate of that name. It warns only when the path
+  is in none of them ("does not refer to a reachable", `clippy-driver`'s strings, rustc
+  1.99.1; the per-entry `allow-invalid = true` silences it).
 
-- **A run's exit status may not show the warning.** Whether `-D warnings` makes it fatal is
-  measured first, by adding a deliberately wrong entry and running clippy. Either way a run is
-  clean only if its output holds no unresolved-path warning, in each configuration. If the
-  wrong entry draws no warning at all, every entry gets its own planted call instead.
-- **Some paths cannot resolve everywhere.** A function may exist on one core only, or in a
-  platform crate that Linux does not build. Such an entry carries `allow-invalid = true`, with
-  its reason, or is left out with its reason. Its proof is a planted call where it resolves,
-  if that runs on Linux; otherwise the commit body records it as not proven on Linux.
+So an entry that resolves in gpui-pre but sits at another path in gpui-fast gives no warning
+and gates nothing on GPUI Fast.
 
-**Then**, for the entries that resolve in every Linux configuration:
-- a clean run (as defined above) of `cargo clippy -p native-theme-gpui --all-targets -- -D
-  warnings`, in all three configurations, shows that each entry resolves;
-- one planted call (`KeyBinding::new`) failing on both cores shows that the alias and GPUI
-  Fast are reached.
+**The proof is therefore one planted function that calls every listed entry**:
+- it is temporary, in the showcase's non-test code, with `#[allow(dead_code)]`, so an unused
+  function does not fail the run on its own;
+- its parameters supply what the calls need;
+- each call is written as the showcase writes its gpui calls.
 
-This is measured, not assumed: clippy resolves a disallowed path by its definition, and the
-two cores define it in different crates under the same library name.
+In each of the three configurations, clippy must report exactly one `disallowed_methods`
+error per entry, each with its entry's reason. A missing error is an entry that gates nothing
+there. The function is then removed and the ordinary runs pass. This one measurement replaces
+a separate check of the unresolved-path warning, a clean run, and a planted call per entry.
+
+- **`allow-invalid = true`** is for an entry whose path is in no crate of some Linux
+  configuration. Examples: a gpui-fast-only function under the default features, or a
+  platform crate that Linux does not build. Each such entry states its reason. Where none of
+  the configurations builds it, the commit body records it as not proven on Linux.
+- **At each upgrade**, `CN/clippy.toml`'s header names this planted-function check as the
+  sweep's proof. A rename upstream would otherwise only draw a warning, or nothing, where the
+  other core still has the path.
 
 **Tests stay out of scope**, as for the other panic gates: a test may panic on purpose. clippy
 applies the config to test code too, so the test modules that call such functions with literals
@@ -869,8 +907,16 @@ adapted script at HEAD (2026-10-26, nothing written):
 
 **So three rules are added**, to the script's copy and to `gates.py` alike:
 
-1. Outside `CN/`, a citation whose note names no family crate is out of scope. The iced and
-   egui showcases cite their own crates mostly without a name.
+1. In the iced and egui showcases (`connectors/native-theme-{iced,egui}/examples`), a citation
+   whose note names no family crate is out of scope: they cite their own crates mostly without
+   a name.
+   - The rule is limited to those two directories. `docs/showcase-exceptions.toml` and
+     `scripts/connector_parity_exceptions.toml` cite gpui files by bare name too. Their
+     `[gpui]` notes name no crate, and only the file header does. The dry run renumbers 27 such
+     chains there, a dozen of them moved; for example `showcase-exceptions.toml:48`,
+     `components.rs:1023-1032` → `1024-1033`.
+   - A wider rule ("outside `CN/`") would drop those citations silently. That would be out of
+     scope, not set aside, and `gates.py` would agree.
 2. A citation whose note names two or more family crates that each hold the cited file is
    set aside.
 3. Task 2's review reads every renumbered chain that is outside `CN/` or attributed to a crate
@@ -938,7 +984,12 @@ the label centred in the showcase. The options for seeing it:
 - **(c) The layout dump.** The dump records the Separator's wrapper, not upstream's label
   inside it, so it cannot answer.
 
-**(b), with (a) only if (b) cannot find the label's box.** Then the `docs/todo.md` entry closes
+**(b), with (a) only where (b) cannot find the label's box, decided per core.** On GPUI Fast
+the scene reader does not follow tiled frames, the composited scroll layers
+(`CN/src/widgets/scene_read.rs:15-18`). If the Layout page's content is drawn in one, the box
+is found on gpui-pre only. Then the test asserts on gpui-pre (`cfg(not(feature =
+"gpui-fast"))`, with the reason), and a capture covers GPUI Fast. Once both cores are
+measured, the `docs/todo.md` entry closes
 with a dated line naming taffy 0.15.0's `flexbox.rs:2274-2275` and the test, and moves to
 `docs/archive/todo_closed.md`. If the test shows the label is not centred, the entry stays
 open, the draft is re-cited to taffy 0.15.0, and this document's §1.8 is corrected.
@@ -1118,6 +1169,12 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
   on exactly that resolve.
 - It is one command each time. A failure there is read like any canary failure: an upstream
   release, not this change, unless it touches the gpui stack.
+- **Read against a baseline.** The canary has failed on `main` every night since at least
+  2026-10-23, cause undiagnosed (§0), and that failure may itself be in a gpui test.
+  - Before each dispatch, the latest scheduled run on `main` is read and its failing steps and
+    errors are noted.
+  - A branch failure with the same step and error is the standing failure, not G4's. Any other
+    failure is read as G4's until shown otherwise.
 
 ---
 
@@ -1127,9 +1184,7 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - **P3, the showcase's key bindings through `KeyBinding::load`: approved** (2026-10-26). This
   includes the unmeasured Windows keyboard-mapper difference as an accepted risk.
 
-Neither approval is touched by the later check passes. Those passes added the second toolbar
-test (P7), the attribution rules (P9), clippy's `allow-invalid` handling (P6), and the Kbd-row
-test, the `set_preset` check and the hook-compatible test style (P4, P5).
+Neither approval is touched by the later check passes.
 
 ## 4 — What was checked, and what was not
 
