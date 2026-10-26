@@ -57,6 +57,18 @@ jobs:
           defaults write com.apple.universalaccess reduceTransparency -bool false
           defaults read com.apple.universalaccess reduceTransparency
           cargo run -p native-theme-os-probe --release -- --out os-probe-out/reduce-transparency-off
+      # A third pass with Increase Contrast on, which the runner images leave
+      # off (accessibilityDisplayShouldIncreaseContrast): whether the colours
+      # the probe reads under the named Aqua and DarkAqua appearances follow
+      # it. The same caveats as the pass above; its probe.toml records whether
+      # the setting took.
+      - name: Run the probe with Increase Contrast on (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          defaults write com.apple.universalaccess increaseContrast -bool true
+          defaults read com.apple.universalaccess increaseContrast
+          cargo run -p native-theme-os-probe --release -- --out os-probe-out/increase-contrast-on
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
