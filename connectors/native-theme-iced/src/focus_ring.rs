@@ -91,8 +91,15 @@ struct Focus {
 }
 
 impl Default for Focus {
-    /// No field focused, in a window taken to hold the focus until iced says
-    /// it lost it.
+    /// No field focused, in a window taken to hold the OS's focus until iced
+    /// says it lost it (`window::Event::Unfocused`). iced keeps the flag in
+    /// each wrapper's tree state and sends `Focused` only when the window's
+    /// focus changes, so a wrapper built after the window gained it, a field
+    /// on a page opened later, would never learn it held it; egui-winit's
+    /// window state starts unfocused (egui-winit 0.36.2 `src/lib.rs:149`)
+    /// because it is one per window. The corner case: a window opened
+    /// without the OS's focus shows a focused field's ring until its first
+    /// focus change.
     fn default() -> Self {
         Self {
             field: false,
