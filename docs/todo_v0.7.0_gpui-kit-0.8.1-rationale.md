@@ -598,12 +598,31 @@ paths name nothing.
     site, with its reason. One case is the inspector's `resolve_font`, behind its own guard
     (§1.9). The allow is visible in review.
 
-**The list is an inventory, not a guess.** Every public function of gpui-pre, gpui-fast,
-gpui-base, gpui-component and gpui-kit whose documentation says it panics (`# Panics`,
-"Panics on", "panics if"), intersected with the calls the connector, its tests and the
-showcase make. The plan does the sweep. `KeyBinding::new` and `TextSystem::resolve_font` are
-known members. The sweep is repeated at each GPUI Kit upgrade, as one step of the upgrade's
-plan: a new panicking function only enters through an upgrade.
+**The list is an inventory, not a guess.** The candidates are every public function of
+gpui-pre, gpui-fast, gpui-base, gpui-component and gpui-kit whose documentation says it
+panics (`# Panics`, "Panics on/if/when", "will panic"): 84 such doc lines in 0.8.1 / 0.3.10 /
+0.1.12. The sweep sorts them into two groups:
+
+- **Listed: a panic that depends on an argument's value**, whether or not we call the
+  function today, since a future call is what the gate is for. Examples:
+  - `KeyBinding::new`'s parse error (`GP/keymap/binding.rs:32`);
+  - `TextSystem::resolve_font`'s missing font (`GP/text_system.rs:351`);
+  - `shape_line` on a text with a newline (`:668-670`);
+  - a line boundary out of range (`GP/text_system/line.rs:280-281`);
+  - gpui-base's non-finite or non-positive scroll-bounce parameters
+    (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio (`GB/motion.rs:484`).
+- **Not listed: a panic on framework state or misuse**, with the reason recorded. Examples:
+  - a global that was never set (`GP/global.rs:33`, `GP/app.rs:2520`);
+  - a re-entrant update (`GP/app.rs:190-191`);
+  - a wrong arena or App (`GP/window.rs:424`, `:488`);
+  - the test and bench harnesses' assertions.
+  These hold for every correct gpui program, and gpui's ordinary calls (`Theme::global`, an
+  entity's `update`) would otherwise need an allow at hundreds of sites.
+
+`KeyBinding::new` and `TextSystem::resolve_font` are known members of the listed group.
+
+The sweep is repeated at each GPUI Kit upgrade, as one step of the upgrade's plan: a new
+panicking function only enters through an upgrade.
 
 **Done-criterion, mechanical:** a planted `gpui::KeyBinding::new("a", …)` in a non-test
 showcase function fails `cargo clippy -p native-theme-gpui --all-targets -- -D warnings` on
@@ -692,8 +711,9 @@ What changes is which upstream crates are in scope:
 
 **Read by hand, beyond what the script sets aside:**
 
-- **The panels of widgets whose behaviour changed** (§1.5–§1.7): Toolbar, Dialog, Table,
-  TimeField, Sheet, Input.
+- **The panels of widgets whose behaviour changed** (§1.6, §1.7): Dialog (with P8's rewrite),
+  Table, TimeField, Sheet, Input. The Toolbar panel (§1.5) is P7's: its text changes together
+  with P7's fix, and no gate reads it (its citation names a symbol that still exists).
 - **The inspector's `DrawnFamilies` doc** (§1.9), rewritten against the new cache on both
   cores.
 - **The `secondary` doc at `SC/tests.rs:2377-2379`.**
@@ -838,12 +858,13 @@ at a time keeps them consistent.
 1. the bump (P1, P2), with the README's Compatibility table and quick start (from P14), since
    `compat::` fails on them the moment the manifest moves;
 2. the migration (P3–P5);
-3. the citations (P9).
+3. the citations (P9), whose hand-read of the behaviour-changed panels includes P8's Dialog
+   claims, so those claims are touched once.
 
 The bump turns these gates red and the unit turns them green, and `check_release.sh --commit`
 runs them.
 
-**After the unit**, each its own task: P6, P7, P8, P10–P13 and the rest of P14.
+**After the unit**, each its own task: P6, P7, P10–P13 and the rest of P14.
 
 **Until the unit lands, nothing is red**: the branch's lock holds 0.8.0, and the canary
 tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass with it.
