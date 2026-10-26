@@ -811,7 +811,7 @@ unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows 
 
 **The review** (re-read before each edit):
 
-- `docs/todo_code-review-plan.md`: the G4 row, D12;
+- `docs/todo_code-review-plan.md`: the G4 row, decision D12 (the review plan's decision list, not the D round's ledger item D12);
 - `docs/todo_code-review-findings.md`: the *G4* section and status row.
 
 ---

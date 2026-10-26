@@ -148,7 +148,10 @@ review session running the C and D rounds in this tree has said that the D round
   Task 0 checks that they are there.
 - [ ] **`docs/todo_code-review-plan.md`** (re-read first):
   - a G4 row in the milestone table;
-  - a decision line, D12: GPUI Kit 0.8.1 as milestone G4. It points at these documents,
+  - a decision line in its decision list, after D10 and D11 (G1–G3): D12, GPUI Kit 0.8.1 as
+    milestone G4. This D12 is the review plan's decision, not the D round's ledger item `D12`
+    (`docs/todo_code-review-findings.md`, *D round*). Where the two could be confused, the
+    text says "decision D12". It points at these documents,
     records the maintainer's approval of P1 and P3 (2026-10-26), and says that G4 runs after
     the D round's close, as the one writer;
   - the *Resuming* rule names G4.
@@ -370,7 +373,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - [ ] **Close:**
   - the three documents to `docs/archive/`, with an *As built* note at the top of the spec;
   - the archive index row;
-  - D12 and the ledger's links pointed at the archive;
+  - decision D12 and the ledger's links pointed at the archive;
   - the ledger's G4 status: done;
   - the memory;
   - `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
