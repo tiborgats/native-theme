@@ -815,6 +815,70 @@ fn a_widget_in_the_body_keeps_the_callers_style() {
     }
 }
 
+/// The corner radius of the focus ring `ctx` paints round the button `add` draws, once the
+/// button has the focus: it asks for it in the first pass, and the third pass paints the ring.
+fn ring_round_a_focused_button(
+    ctx: &egui::Context,
+    t: &ResolvedTheme,
+    mut add: impl FnMut(&mut egui::Ui, &mut dyn FnMut(&mut egui::Ui)),
+) -> Option<egui::CornerRadius> {
+    let mut asked = false;
+    let mut out = None;
+    for _ in 0..3 {
+        out = Some(pass(ctx, at(0.0), |ui| {
+            add(ui, &mut |ui: &mut egui::Ui| {
+                let r = ui.button("Inside");
+                if !asked {
+                    r.request_focus();
+                    asked = true;
+                }
+            })
+        }));
+    }
+    let ring = focus_ring_color(t);
+    out.as_ref().and_then(|out| {
+        rects(out)
+            .into_iter()
+            .find(|s| s.stroke.color == ring && s.stroke.width > 0.0)
+            .map(|s| s.corner_radius)
+    })
+}
+
+/// A widget focused in the body is ringed at the caller's corner radius, which the body records
+/// with `set_scope_style`, the radius a button outside any scope is ringed at, and not at the
+/// expander scope's, which a button in a plain `Role::Expander` scope is ringed at.
+#[test]
+fn a_widget_focused_in_the_body_is_ringed_at_the_callers_radius() {
+    use native_theme_egui::{NativeThemeUiExt, Role, RoleVariant};
+    let prefs = AccessibilityPreferences::default();
+    let mut differs = 0;
+    for preset in ["kde-breeze", "adwaita", "windows-11", "catppuccin-mocha"] {
+        let t = from_preset(preset, false, &prefs).unwrap().1;
+        let plain = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| add(ui));
+        let scoped = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| {
+            ui.native_scope(Role::Expander, RoleVariant::Normal, |ui| add(ui));
+        });
+        let body = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| {
+            let _ = Expander::new("Details")
+                .default_open(true)
+                .show(ui, |ui| add(ui));
+        });
+        assert!(plain.is_some(), "{preset}: no ring round a focused button");
+        assert_eq!(
+            body, plain,
+            "{preset}: the ring in the body is not at the caller's radius"
+        );
+        if scoped != plain {
+            differs += 1;
+        }
+    }
+    assert!(
+        differs > 0,
+        "no preset gives the expander scope another ring radius than the base style, so this \
+         test proves nothing"
+    );
+}
+
 /// `scale` as the OS's text-scaling factor.
 fn scaled_by(scale: f32) -> AccessibilityPreferences {
     let mut prefs = AccessibilityPreferences::default();

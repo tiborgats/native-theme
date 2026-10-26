@@ -6,7 +6,9 @@ use native_theme_egui::native_theme::color::Rgba;
 use native_theme_egui::native_theme::theme::{
     ArrowSide, ResolvedExpanderTheme, ResolvedPadding, ResolvedTheme,
 };
-use native_theme_egui::{AccessibilityPreferences, Role, ThemeAtlas, expander_icon};
+use native_theme_egui::{
+    AccessibilityPreferences, Role, ThemeAtlas, expander_icon, set_scope_style,
+};
 
 use crate::parts::Parts;
 use crate::scope;
@@ -55,9 +57,9 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// open state lives in egui's `CollapsingState` under the header's id, so it animates and
 /// persists as egui's does. Either way the body is drawn in the style the expander is shown
 /// in, not in the header's `Role::Expander` cell: a widget in it takes the caller's fills,
-/// outlines and text. The focus ring a focused widget in it shows (the connector's install
-/// plugin) still takes `expander.border.corner_radius`, the radius the expander's scope records
-/// for the `Ui` it opens, which holds the body (`docs/todo.md`).
+/// outlines and text, and the focus ring a focused widget in it shows (the connector's install
+/// plugin) takes the caller's radius too, which the body records with
+/// `native_theme_egui::set_scope_style`.
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -155,9 +157,11 @@ impl Expander {
         // The body is drawn in the style the expander is shown in, not in the header's cell,
         // which `native_scope` puts in place of the whole style: a widget in the body is the
         // caller's. The disabled state lives on the `Ui`, so the body keeps it.
+        // `set_scope_style` also records the body's own radius for the focus ring, so a widget
+        // focused in it is ringed at the caller's corners, not at the expander scope's.
         let outer = std::sync::Arc::clone(ui.style());
         let add_body = move |ui: &mut egui::Ui| {
-            ui.set_style(outer);
+            set_scope_style(ui, outer);
             add_body(ui)
         };
         if e.arrow_side.is_none()
