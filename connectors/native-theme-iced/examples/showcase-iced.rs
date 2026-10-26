@@ -25697,7 +25697,11 @@ mod tests {
                 state.active_tab = Tab::Basic;
                 let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
                 let gap = state.layout.widget_gap.unwrap_or_default();
-                let (_, rects, _) = basic_frame(&state);
+                // Tall enough for one column at 2.25, whose Segmented group
+                // lies below the 2000 px `basic_frame` draws, and at a scale
+                // factor of 2 inside wgpu's 8192 px texture limit.
+                let (_, rects, _) =
+                    frame_of(&state, view(&state), Size::new(WINDOW_SIZE.0, 4000.0));
                 let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
                     .iter()
                     .filter_map(|id| rects.get(id).copied())
@@ -29775,7 +29779,9 @@ mod tests {
                                  width {width}px",
                                     rect.width
                                 ),
-                                None => panic!("{preset} (dark: {dark}, scale {scale}): {id} is not laid out"),
+                                None => panic!(
+                                    "{preset} (dark: {dark}, scale {scale}): {id} is not laid out"
+                                ),
                             }
                         }
                         // The columns the count chose hold the widest control it
