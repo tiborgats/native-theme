@@ -61,7 +61,7 @@ const CONTROL_SIZES: [(&str, NSControlSize); 4] = [
 ];
 
 /// Fill `doc` with the macOS results; renders go under `out_dir/renders`.
-pub(crate) fn probe(doc: &mut Table, out_dir: &Path) {
+pub(crate) fn probe(doc: &mut Table, out_dir: &Path, not_key: bool) {
     let (os, version) = os_table();
     out::put_table(doc, "os", os);
     out::put_table(doc, "probe", crate::probe_table());
@@ -98,7 +98,11 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path) {
             out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
             // Last: it makes the application regular and active, which no
             // earlier section may see.
-            out::put_table(&mut mac, "key_window", key_window_table(mtm, &app, out_dir));
+            out::put_table(
+                &mut mac,
+                "key_window",
+                key_window_table(mtm, &app, out_dir, not_key),
+            );
         }
         _ => {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
@@ -1504,6 +1508,10 @@ const KEY_WAIT_STEPS: u32 = 100;
 /// server holds the redrawn window before it is captured.
 const SETTLE_STEPS: u32 = 10;
 
+/// The second window `--not-key` makes key, in screen points: small, and
+/// clear of the probe window's frame.
+const NOT_KEY_FRAME: NSRect = NSRect::new(NSPoint::new(900.0, 200.0), NSSize::new(240.0, 120.0));
+
 /// The most steps of `PUMP_STEP` a `screencapture` run is waited for.
 const CAPTURE_WAIT_STEPS: u32 = 200;
 
@@ -1515,7 +1523,12 @@ const CAPTURE_WAIT_STEPS: u32 = 200;
 /// control renders use, draws no material and no key-window state. Runs
 /// after every other section, so their output is unchanged; each step that
 /// fails is recorded as data.
-fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) -> Table {
+fn key_window_table(
+    mtm: MainThreadMarker,
+    app: &NSApplication,
+    out_dir: &Path,
+    not_key: bool,
+) -> Table {
     let mut t = Table::new();
     out::put(
         &mut t,
@@ -1648,6 +1661,8 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         "key_wait_reactivations",
         out::int(i64::from(reactivations.get())),
     );
+    let other = not_key.then(|| not_key_window(mtm, app, &window, &mut t));
+    let other = other.flatten();
     out::put(
         &mut t,
         "accessibilityDisplayShouldReduceTransparency",
@@ -1754,6 +1769,18 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
         let mut run = Table::new();
         out::put(&mut run, "isKeyWindow", out::boolean(window.isKeyWindow()));
         out::put(&mut run, "NSApp_isActive", out::boolean(app.isActive()));
+        if let Some(other) = &other {
+            out::put(
+                &mut run,
+                "isMainWindow",
+                out::boolean(window.isMainWindow()),
+            );
+            out::put(
+                &mut run,
+                "other_window_isKeyWindow",
+                out::boolean(other.isKeyWindow()),
+            );
+        }
         let expected = system_expected(&appearance, &system_patches);
         match &dir_made {
             Ok(()) => capture(
@@ -1773,7 +1800,54 @@ fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) 
     window.setAppearance(None);
     window.orderOut(None);
     window.close();
+    if let Some(other) = other {
+        other.orderOut(None);
+        other.close();
+    }
     t
+}
+
+/// `--not-key`: a second, small titled window made key and front, and the
+/// run loop pumped until the probe's `window` reports it is no longer key
+/// (up to `KEY_WAIT_STEPS` steps), recorded under `not_key` in `t`; the
+/// second window, which the captures report on, or `None` where it could
+/// not be made.
+fn not_key_window(
+    mtm: MainThreadMarker,
+    app: &NSApplication,
+    window: &NSWindow,
+    t: &mut Table,
+) -> Option<Retained<NSWindow>> {
+    let mut nk = Table::new();
+    out::put(&mut nk, "not_key_requested", out::boolean(true));
+    out::put(&mut nk, "other_window_frame_xywh", rect(NOT_KEY_FRAME));
+    let other = match ffi::titled_window(mtm, NOT_KEY_FRAME) {
+        Ok(other) => other,
+        Err(reason) => {
+            out::put(&mut nk, "other_window", out::unavailable(reason));
+            out::put_table(t, "not_key", nk);
+            return None;
+        }
+    };
+    other.setTitle(&ns("Other"));
+    other.makeKeyAndOrderFront(None);
+    let steps = pump(app, KEY_WAIT_STEPS, || {
+        if !app.isActive() {
+            activate_ignoring(app);
+        }
+        !window.isKeyWindow()
+    });
+    out::put(&mut nk, "wait_steps", out::int(i64::from(steps)));
+    out::put(&mut nk, "isKeyWindow", out::boolean(window.isKeyWindow()));
+    out::put(&mut nk, "isMainWindow", out::boolean(window.isMainWindow()));
+    out::put(&mut nk, "NSApp_isActive", out::boolean(app.isActive()));
+    out::put(
+        &mut nk,
+        "other_window_isKeyWindow",
+        out::boolean(other.isKeyWindow()),
+    );
+    out::put_table(t, "not_key", nk);
+    Some(other)
 }
 
 /// Activate `app`: `activateIgnoringOtherApps:` first, on every macOS, as
