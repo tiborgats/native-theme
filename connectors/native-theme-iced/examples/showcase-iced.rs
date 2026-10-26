@@ -9908,7 +9908,9 @@ fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
 /// between neighbouring widgets (Button and Primary), from the next column's
 /// left edge (M9-166); in the last column it may reach into the page's right
 /// margin, `layout.window_margin`, keeping `layout.widget_gap` from the
-/// scroll area's edge or its scroll bar. One where not even one does: the
+/// scroll area's edge or its scroll bar: where `scrollbar.overlay_mode` is
+/// true the bar floats over that margin, its `scrollbar.groove_width` taken
+/// off the room. One where not even one does: the
 /// page is then wider than its area.
 fn basic_column_count(
     resolved: &ResolvedTheme,
@@ -9925,6 +9927,12 @@ fn basic_column_count(
     } else {
         bar.groove_width
     };
+    // a floating bar takes no width of the page, and is drawn over its right margin
+    let overlay = if bar.overlay_mode {
+        bar.groove_width
+    } else {
+        0.0
+    };
     let page = content_width - margin - margin - gutter;
     let widest = basic_widest(resolved, tabs);
     let widget_gap = layout.widget_gap.unwrap_or_default();
@@ -9933,9 +9941,10 @@ fn basic_column_count(
         .find(|&n| {
             let column = (page - (n as f32 - 1.0) * gap) / n as f32;
             // past the column into the section gap, or in the last column into the page's
-            // right margin, keeping `layout.widget_gap` from what lies beyond either
+            // right margin, keeping `layout.widget_gap` from what lies beyond either: the
+            // scroll area's edge, or a floating bar drawn over the margin
             let room = if basic_segmented_in_last_column(n) {
-                column + margin - widget_gap
+                column + margin - overlay - widget_gap
             } else {
                 column + gap - widget_gap
             };
@@ -25838,11 +25847,20 @@ mod tests {
                          layout.widget_gap {gap} of the next column at {next}"
                     ));
                 }
-                if !next.is_finite() && right > page.x + page.width + margin - gap + 0.01 {
+                // A floating bar is drawn over the right margin, its stated
+                // groove wide.
+                let bar = &state.current_resolved.scrollbar;
+                let floating = if bar.overlay_mode {
+                    bar.groove_width
+                } else {
+                    0.0
+                };
+                if !next.is_finite() && right > page.x + page.width + margin - floating - gap + 0.01
+                {
                     faults.push(format!(
                         "{preset} at {scale}: the control in the last column ends at {right}, \
-                         within layout.widget_gap {gap} of the scroll area's edge, the page's \
-                         {} and its {margin} margin",
+                         within layout.widget_gap {gap} of the scroll area's edge or a \
+                         floating bar {floating} wide, the page's {} and its {margin} margin",
                         page.x + page.width
                     ));
                 }

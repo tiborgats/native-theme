@@ -648,11 +648,24 @@ fn the_column_count_holds_the_segmented_control() {
                 .layout()
                 .window_margin
                 .unwrap_or_default();
-            if !next.is_finite() && control.right() > page.right() + margin - gap + 0.01 {
+            // A floating bar is drawn over the right margin, its stated groove wide.
+            let bar = &harness
+                .state()
+                .atlas
+                .resolved_for(egui::Theme::Light)
+                .scrollbar;
+            let floating = if bar.overlay_mode {
+                bar.groove_width
+            } else {
+                0.0
+            };
+            // Half a pixel: the page puts each column's left edge on a whole pixel
+            // (`pages::basic::show`), the count's columns being exact.
+            if !next.is_finite() && control.right() > page.right() + margin - floating - gap + 0.5 {
                 faults.push(format!(
                     "{preset} at {scale}: the control in the last column ends at {}, within \
-                     layout.widget_gap {gap} of the panel's edge, the page's {} and its {margin} \
-                     margin",
+                     layout.widget_gap {gap} of the panel's edge or a floating bar {floating} \
+                     wide, the page's {} and its {margin} margin",
                     control.right(),
                     page.right()
                 ));

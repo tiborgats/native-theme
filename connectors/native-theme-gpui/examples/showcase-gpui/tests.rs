@@ -18257,6 +18257,18 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
                     this.layout.window_margin.unwrap_or_default(),
                 )
             });
+            // A floating bar is drawn over the right margin, its stated groove wide.
+            let floating = read(&mut cx, &showcase, |_, cx| {
+                native_value(cx, |n| {
+                    let bar = &n.resolved.scrollbar;
+                    if bar.overlay_mode {
+                        bar.groove_width
+                    } else {
+                        0.0
+                    }
+                })
+            })
+            .unwrap_or_default();
             let drawn = read(&mut cx, &showcase, |this, cx| {
                 this.info_ui.read(cx).layout_drawn()
             });
@@ -18305,11 +18317,13 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
                         control.right()
                     ));
                 }
-                None if control.right() > page.right() + px(margin) - px(gap) + px(0.5) => {
+                None if control.right()
+                    > page.right() + px(margin) - px(floating) - px(gap) + px(0.5) =>
+                {
                     faults.push(format!(
                         "{preset} at {scale}: the control in the last column ends at {:?}, \
-                         within layout.widget_gap {gap} of the scroll area's edge, the page's \
-                         {:?} and its {margin} margin",
+                         within layout.widget_gap {gap} of the scroll area's edge or a floating \
+                         bar {floating} wide, the page's {:?} and its {margin} margin",
                         control.right(),
                         page.right()
                     ));

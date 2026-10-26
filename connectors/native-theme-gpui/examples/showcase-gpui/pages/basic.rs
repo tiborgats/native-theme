@@ -256,7 +256,9 @@ fn segmented_in_last_column(columns: usize) -> bool {
 /// the page's rows keep between neighbouring widgets (Button and Primary),
 /// from the next column's left edge (M9-166); in the last column it may
 /// reach into the page's right margin, `layout.window_margin`, keeping
-/// `layout.widget_gap` from the scroll area's edge or its scroll bar. One
+/// `layout.widget_gap` from the scroll area's edge or its scroll bar: where
+/// `scrollbar.overlay_mode` is true the bar floats over that margin, its
+/// `scrollbar.groove_width` taken off the room. One
 /// where not even one does: the page is then wider than its area.
 pub(crate) fn basic_column_count(
     resolved: &native_theme::theme::ResolvedTheme,
@@ -271,6 +273,12 @@ pub(crate) fn basic_column_count(
         0.0
     } else {
         bar.groove_width
+    };
+    // a floating bar takes no width of the page, and is drawn over its right margin
+    let overlay = if bar.overlay_mode {
+        bar.groove_width
+    } else {
+        0.0
     };
     let page = content_width - margin - margin - gutter;
     let t = &resolved.tab;
@@ -288,9 +296,10 @@ pub(crate) fn basic_column_count(
         .find(|&n| {
             let column = (page - (n as f32 - 1.0) * gap) / n as f32;
             // past the column into the section gap, or in the last column into the page's
-            // right margin, keeping `layout.widget_gap` from what lies beyond either
+            // right margin, keeping `layout.widget_gap` from what lies beyond either: the
+            // scroll area's edge, or a floating bar drawn over the margin
             let room = if segmented_in_last_column(n) {
-                column + margin - widget_gap
+                column + margin - overlay - widget_gap
             } else {
                 column + gap - widget_gap
             };
