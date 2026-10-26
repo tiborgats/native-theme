@@ -207,10 +207,30 @@ jobs:
               --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
-      - name: Upload screenshots
+      # Only the files the capture step above writes, named one by one, so a
+      # committed asset the run did not overwrite (an older release's
+      # screenshot in docs/assets) cannot slip into the artifact beside the
+      # fresh captures. Keep these lists in step with the `themes` lists.
+      - name: Upload screenshots (macOS)
+        if: runner.os == 'macOS'
         uses: actions/upload-artifact@v7
         with:
           name: screenshots-${{ matrix.toolkit }}-${{ matrix.os_name }}
+          if-no-files-found: error
           path: |
-            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png
-            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-os-version.txt
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/macos-macos-monterey-light.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/macos-macos-monterey-dark.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/macos-macos-tahoe-light.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/macos-macos-tahoe-dark.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/macos-os-version.txt
+
+      - name: Upload screenshots (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots-${{ matrix.toolkit }}-${{ matrix.os_name }}
+          if-no-files-found: error
+          path: |
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/windows-windows-11-light.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/windows-windows-11-dark.png
+            connectors/native-theme-${{ matrix.toolkit }}/docs/assets/windows-os-version.txt
