@@ -1456,6 +1456,34 @@ and many have since drifted, as the archive's [README](README.md) warns.
       gutter and the line-number colours. The syntax colours themselves are a
       separate question: native-theme models none. Found 2026-09-22.
   *Closed 2026-10-26 in c77b6f77 (D4):* the highlight theme the connector installs, in `to_theme` and in the `ThemeConfig` that `Theme::change` reads, is upstream's default for the mode with `editor_background` = `input.background_color`, the field's fill, as `geometry::input_fill` gives a text field (a code editor is an `Input` in code mode, gpui-component 0.8.0 `src/input/input.rs:720-722`), and `editor_gutter_background` that fill over `window.background_color`, opaque wherever the window is, as gpui-base wants the gutter over the text scrolling under it (`src/input/base/element.rs:3352-3358`; windows-11's field fill is translucent). Clearing `editor_background` would have landed on `input_background()`, the border token mixed toward transparent in dark (`src/theme/mod.rs:485-499`). The current line, the line numbers, the invisibles and the syntax colours stay upstream's scheme: the model states none of them (`config::highlight_style`). `the_code_editor_takes_the_platforms_field_fill` checks both fills over every preset and mode, and the Editor's Widget Info claims them.
+- [x] [v0.7.0] **The iced connector reads nothing of the model's toolbar.** The gpui
+      connector gained `geometry::toolbar` in v0.5.9, which carries
+      `toolbar.bar_height`, `item_gap`, the `toolbar.border` padding,
+      `background_color` and the `toolbar.font` size and weight
+      (`connectors/native-theme-gpui/src/geometry.rs`, `toolbar`). The iced
+      connector has no counterpart: nothing under
+      `connectors/native-theme-iced/src/` reads `resolved.toolbar` (the one
+      `toolbar` there is `defaults.icon_sizes.toolbar`, in a test of
+      `icon_sizes`), and the iced showcase draws no toolbar. Parity means an
+      iced reader of the same fields, and a toolbar row in the iced showcase
+      to show it. Found in the final review of the v0.5.9 showcase-app work
+      (2026-09-23).
+      Named in the iced colour-leaf coverage test (M5 T12b, 9c46d834).
+      M9b T19 (2026-10-22): the showcase half is not open, and "the iced
+      showcase draws no toolbar" no longer holds: the iced showcase has drawn
+      a toolbar row since the v0.5.9 chrome (`toolbar` in
+      `connectors/native-theme-iced/examples/showcase-iced.rs`), which reads
+      `resolved.toolbar` itself: `icon_size`, `background_color`, the
+      `toolbar.border` padding, line width and colour, `item_gap` and
+      `bar_height`. The connector half stays open: nothing under
+      `connectors/native-theme-iced/src/` reads `resolved.toolbar` yet, and a
+      reader is a connector API, which M9b leaves to this entry (M9b's fix
+      plan, the ruling on what leaves M9b, item 5).
+      M9b final fix (2026-10-22): the showcase's reads include
+      `toolbar.font` too, the M9b T19 line left it out: `toolbar` hands
+      `font: &t.font` to every item, and the bar's `Surface::Toolbar` takes
+      `toolbar.font.color` as its text colour.
+  *Closed 2026-10-26 in 2eca456a (D5):* the connector half, in the shape C-01 gave the dialog: `styles::toolbar(&resolved)`, the container a consumer draws its toolbar in (fill `toolbar.background_color`, text `toolbar.font.color`, iced's border, shadow and snap: the edge is the rule under the bar), `styles::toolbar_rule(&resolved)`, that rule in `toolbar.border.color` (the edge gpui's `geometry::toolbar` draws as `border_b`), and the crate-root `toolbar_padding(&resolved, default)`, `toolbar_item_gap`, `toolbar_bar_height` (the outer height, the rule included; `None` where the platform states none, KDE and GNOME, docs/platform-facts.md §2.13) and `toolbar_border_line_width`. Contract rows for the three colours; the toolbar's `UNREAD_COLOURS` entry is gone and `contract-leaves.toml` moves the three leaves to the new rows. The iced showcase's toolbar calls the API (`Surface::Toolbar` and `Line::Toolbar` go) at the same values, so its dump is unchanged; its fallbacks (`layout.container_margin`, `TOOLBAR_PADDING`, `TOOLBAR_GAP`) stay the showcase's. The toolbar font stays the showcase's to hand its items: plan §1 for 3417 gives the connector the colours and the geometry, not the font.
 
 ### Closed items from Follow-ups from the v0.5.9 showcase and contract work
 

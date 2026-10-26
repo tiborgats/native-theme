@@ -13911,3 +13911,20 @@ and the Widget Info's `geometry::editor` line; the gutter citations name gpui-ba
 `element.rs:3352-3358`. An `[upstream]` entry asks gpui-component to paint the five slots.
 **Status:** done, c77b6f77. Needs the controller's Linux gate (the gpui Editor's fill, gutter and
 line height on the Typography page; the list dump identical).
+
+#### D5 · iced: the connector reads the model's toolbar (todo 3417)
+**Problem:** nothing under `connectors/native-theme-iced/src/` read `resolved.toolbar`; the
+iced showcase drew its toolbar from the model by hand (`Surface::Toolbar`, `Line::Toolbar`), and
+the contract named the three toolbar colours in `UNREAD_COLOURS` as having no widget.
+**Fix:** W2's d-w1-d5-iced-toolbar.patch, applied, reviewed and gated: `styles::toolbar` and
+`styles::toolbar_rule` (C-01's dialog shape: a container and a rule, iced's border, shadow,
+snap, radius and fill mode), the crate-root `toolbar_padding`, `toolbar_item_gap`,
+`toolbar_bar_height` and `toolbar_border_line_width`, `TOOLBAR_ROWS` and `TOOLBAR_RULE_ROWS`
+with `DERIVED` entries for the iced-default fields, `rule_style_fields` taking a prefix, and the
+toolbar's `UNREAD_COLOURS` entry dropped; `contract-leaves.toml` regenerated (the three leaves
+move to the new rows). The showcase's toolbar calls the API; the values are those it drew
+(`styles::toolbar_rule` builds on `rule::default` as `styles::rule`, which `line_style` built
+on). Review fix on the patch: `styles_cover_every_widget_shown` accepts `styles::toolbar_rule`
+as a horizontal rule's style. Parity exceptions name gpui's `geometry::toolbar` and egui's
+toolbar role as the receivers.
+**Status:** done, 2eca456a. The controller's Linux gate: the iced dump identical.
