@@ -14,7 +14,7 @@ use objc2_app_kit::{
     NSFontTextStyleTitle2, NSFontTextStyleTitle3, NSFontTraitsAttribute, NSFontWeightRegular,
     NSFontWeightTrait, NSWindow, NSWindowStyleMask,
 };
-use objc2_foundation::{NSDictionary, NSRect, NSString};
+use objc2_foundation::{NSDefaultRunLoopMode, NSDictionary, NSRect, NSRunLoopMode, NSString};
 
 /// `NSFontWeightRegular`.
 pub(super) fn font_weight_regular() -> Result<f64, String> {
@@ -81,6 +81,37 @@ pub(super) fn offscreen_window(
     // documented pattern for NSWindow).
     unsafe { window.setReleasedWhenClosed(false) };
     Ok(window)
+}
+
+/// A titled, closable, buffered, non-deferred NSWindow, not released on
+/// close, for the probe to order front and make key.
+pub(super) fn titled_window(
+    mtm: MainThreadMarker,
+    frame: NSRect,
+) -> Result<Retained<NSWindow>, String> {
+    // SAFETY: `initWithContentRect:styleMask:backing:defer:` with a plain
+    // rect, a valid style mask and backing type; the result is owned by the
+    // returned `Retained`.
+    let window = unsafe {
+        NSWindow::initWithContentRect_styleMask_backing_defer(
+            NSWindow::alloc(mtm),
+            frame,
+            NSWindowStyleMask::Titled | NSWindowStyleMask::Closable,
+            NSBackingStoreType::Buffered,
+            false,
+        )
+    };
+    // SAFETY: `Retained` owns the window, and the probe closes it before the
+    // `Retained` is dropped; not releasing it on close keeps that ownership
+    // the only one (objc2's documented pattern for NSWindow).
+    unsafe { window.setReleasedWhenClosed(false) };
+    Ok(window)
+}
+
+/// `NSDefaultRunLoopMode`, the mode the probe pumps its events in.
+pub(super) fn default_run_loop_mode() -> &'static NSRunLoopMode {
+    // SAFETY: reads a Foundation `extern` NSString constant.
+    unsafe { NSDefaultRunLoopMode }
 }
 
 /// An 8-bit RGBA NSBitmapImageRep of `width` x `height` pixels that owns

@@ -1,7 +1,9 @@
 //! macOS: NSProcessInfo, NSFont, NSColor in both appearances, AppKit control
-//! sizes and cell geometry for every NSControlSize, and PNG renders of each
-//! control at regular size. The calls objc2-app-kit 0.3 marks `unsafe` are
-//! in [`ffi`]; this file has none.
+//! sizes and cell geometry for every NSControlSize, PNG renders of each
+//! control at regular size, and, last, a key window's captures: a sidebar
+//! material, a table header and a selected segment, sampled per appearance.
+//! The calls objc2-app-kit 0.3 marks `unsafe` are in [`ffi`]; this file has
+//! none.
 
 mod ffi;
 
@@ -15,15 +17,16 @@ use objc2::{ClassType, MainThreadMarker, MainThreadOnly, Message, sel};
 use objc2_app_kit::{
     NSAppearance, NSAppearanceCustomization, NSApplication, NSApplicationActivationPolicy,
     NSBezelStyle, NSBitmapImageRep, NSButton, NSButtonType, NSColor, NSColorSpace, NSComboBox,
-    NSControl, NSControlSize, NSControlStateValueOff, NSControlStateValueOn, NSFont, NSMenu,
-    NSMenuItem, NSOutlineView, NSPopUpButton, NSProgressIndicator, NSProgressIndicatorStyle,
-    NSScreen, NSScrollView, NSScroller, NSScrollerStyle, NSSearchField, NSSegmentedControl,
-    NSSlider, NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper, NSSwitch,
-    NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTextView, NSView, NSWorkspace,
+    NSControl, NSControlSize, NSControlStateValueOff, NSControlStateValueOn, NSEventMask, NSFont,
+    NSMenu, NSMenuItem, NSOutlineView, NSPopUpButton, NSProgressIndicator,
+    NSProgressIndicatorStyle, NSScreen, NSScrollView, NSScroller, NSScrollerStyle, NSSearchField,
+    NSSegmentedControl, NSSlider, NSSliderCell, NSSplitView, NSSplitViewDividerStyle, NSStepper,
+    NSSwitch, NSTableColumn, NSTableView, NSTableViewStyle, NSTextField, NSTextView, NSView,
+    NSVisualEffectBlendingMode, NSVisualEffectMaterial, NSVisualEffectView, NSWindow, NSWorkspace,
 };
 use objc2_foundation::{
-    NSArray, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion, NSPoint,
-    NSProcessInfo, NSRect, NSSize, NSString,
+    NSArray, NSData, NSDate, NSDictionary, NSEdgeInsets, NSNumber, NSOperatingSystemVersion,
+    NSPoint, NSProcessInfo, NSRect, NSSize, NSString,
 };
 use toml::{Table, Value};
 
@@ -92,12 +95,16 @@ pub(crate) fn probe(doc: &mut Table, out_dir: &Path) {
             out::put_table(&mut mac, "environment", env);
             out::put_table(&mut mac, "metrics", metrics_table(mtm));
             out::put_table(&mut mac, "controls", controls_table(mtm, &version, out_dir));
+            // Last: it makes the application regular and active, which no
+            // earlier section may see.
+            out::put_table(&mut mac, "key_window", key_window_table(mtm, &app, out_dir));
         }
         _ => {
             let reason = out::unavailable("not on the main thread (MainThreadMarker::new is None)");
             out::put(&mut mac, "environment", reason.clone());
             out::put(&mut mac, "metrics", reason.clone());
-            out::put(&mut mac, "controls", reason);
+            out::put(&mut mac, "controls", reason.clone());
+            out::put(&mut mac, "key_window", reason);
         }
     }
     out::put_table(doc, "macos", mac);
@@ -1421,4 +1428,409 @@ fn rect(r: NSRect) -> Value {
 
 fn insets(i: NSEdgeInsets) -> Value {
     out::floats(&[i.top, i.left, i.bottom, i.right])
+}
+// ── A key window ────────────────────────────────────────────────────────────
+
+/// The key window's content size, in points.
+const KEY_WINDOW_SIZE: NSSize = NSSize::new(600.0, 400.0);
+
+/// The sidebar material view's frame in the key window's content view, in
+/// points (bottom-left origin).
+const KEY_SIDEBAR_FRAME: NSRect = NSRect::new(NSPoint::new(0.0, 0.0), NSSize::new(180.0, 400.0));
+
+/// The table's scroll view's frame in the key window's content view.
+const KEY_TABLE_FRAME: NSRect = NSRect::new(NSPoint::new(200.0, 160.0), NSSize::new(380.0, 220.0));
+
+/// How far right of the table's left edge the header's sample point lies:
+/// past the one `TABLE_COLUMN_WIDTH` column and its title, in the header's
+/// empty part.
+const KEY_HEADER_SAMPLE_INSET: f64 = 260.0;
+
+/// Where the segmented control is put in the key window's content view.
+const KEY_SEGMENTED_ORIGIN: NSPoint = NSPoint::new(200.0, 60.0);
+
+/// The width given to each of the segmented control's two segments, so a
+/// sample point clears its label.
+const KEY_SEGMENT_WIDTH: f64 = 100.0;
+
+/// How far in from a segment's leading edge its sample point lies, clear of
+/// the label centred in the segment's width.
+const KEY_SEGMENT_SAMPLE_INSET: f64 = 12.0;
+
+/// A point of the content view no view covers: the window's own background.
+const KEY_BACKGROUND_POINT: NSPoint = NSPoint::new(390.0, 120.0);
+
+/// One step of the run-loop pump, in seconds.
+const PUMP_STEP: f64 = 0.05;
+
+/// The most steps the pump waits for the window to become key.
+const KEY_WAIT_STEPS: u32 = 100;
+
+/// The steps the pump runs after a change of appearance, so the window
+/// server holds the redrawn window before it is captured.
+const SETTLE_STEPS: u32 = 10;
+
+/// The most steps of `PUMP_STEP` a `screencapture` run is waited for.
+const CAPTURE_WAIT_STEPS: u32 = 200;
+
+/// A titled window made key in an activated, regular application: a
+/// sidebar material view, a table with a header and a segmented control
+/// with one segment selected, captured per appearance with `screencapture`
+/// and sampled in each region. `cacheDisplayInRect:`, which the control
+/// renders use, draws no material and no key-window state. Runs after every
+/// other section, so their output is unchanged; each step that fails is
+/// recorded as data.
+fn key_window_table(mtm: MainThreadMarker, app: &NSApplication, out_dir: &Path) -> Table {
+    let mut t = Table::new();
+    out::put(
+        &mut t,
+        "method",
+        out::text(format!(
+            "activation policy set to Regular, finishLaunching, activate; a titled NSWindow ({} x {} pt content, empty title) made key with makeKeyAndOrderFront:; the run loop pumped with nextEventMatchingMask:untilDate:inMode:dequeue: and sendEvent: in {PUMP_STEP} s steps, up to {KEY_WAIT_STEPS} steps until isKeyWindow; content: an NSVisualEffectView, material sidebar, blending behindWindow, at {}; an NSScrollView with an NSTableView of one {TABLE_COLUMN_WIDTH} pt column titled \"Column\" and its header, at {}; an NSSegmentedControl of two {KEY_SEGMENT_WIDTH} pt segments \"One\" \"Two\", segment 0 selected, sized to fit at {}; per appearance the window's appearance is set, the run loop pumped {SETTLE_STEPS} steps, and the window captured with screencapture -x -o -l <windowNumber>; each sample is the capture's pixel at a point given in points from the window frame's top left (sample_points_xy), converted to sRGB",
+            KEY_WINDOW_SIZE.width,
+            KEY_WINDOW_SIZE.height,
+            rect_text(KEY_SIDEBAR_FRAME),
+            rect_text(KEY_TABLE_FRAME),
+            point_text(KEY_SEGMENTED_ORIGIN),
+        )),
+    );
+
+    out::put(
+        &mut t,
+        "activationPolicy_regular_set",
+        out::boolean(app.setActivationPolicy(NSApplicationActivationPolicy::Regular)),
+    );
+    app.finishLaunching();
+    activate(app);
+
+    let frame = NSRect::new(NSPoint::new(200.0, 200.0), KEY_WINDOW_SIZE);
+    let window = match ffi::titled_window(mtm, frame) {
+        Ok(window) => window,
+        Err(reason) => {
+            out::put(&mut t, "error", out::unavailable(reason));
+            return t;
+        }
+    };
+    window.setTitle(&ns(""));
+    let Some(content) = window.contentView() else {
+        out::put(
+            &mut t,
+            "error",
+            out::unavailable("the titled window has no content view"),
+        );
+        return t;
+    };
+
+    let sidebar =
+        NSVisualEffectView::initWithFrame(NSVisualEffectView::alloc(mtm), KEY_SIDEBAR_FRAME);
+    sidebar.setMaterial(NSVisualEffectMaterial::Sidebar);
+    sidebar.setBlendingMode(NSVisualEffectBlendingMode::BehindWindow);
+    content.addSubview(&sidebar);
+
+    let scroll = NSScrollView::initWithFrame(NSScrollView::alloc(mtm), KEY_TABLE_FRAME);
+    let table_view = NSTableView::new(mtm);
+    let column = NSTableColumn::initWithIdentifier(NSTableColumn::alloc(mtm), &ns("column"));
+    column.setTitle(&ns("Column"));
+    column.setWidth(TABLE_COLUMN_WIDTH);
+    table_view.addTableColumn(&column);
+    scroll.setDocumentView(Some(&table_view));
+    content.addSubview(&scroll);
+    scroll.tile();
+    table_view.tile();
+
+    let segmented = NSSegmentedControl::new(mtm);
+    segmented.setSegmentCount(2);
+    segmented.setLabel_forSegment(&ns("One"), 0);
+    segmented.setLabel_forSegment(&ns("Two"), 1);
+    segmented.setWidth_forSegment(KEY_SEGMENT_WIDTH, 0);
+    segmented.setWidth_forSegment(KEY_SEGMENT_WIDTH, 1);
+    segmented.setSelectedSegment(0);
+    segmented.sizeToFit();
+    segmented.setFrameOrigin(KEY_SEGMENTED_ORIGIN);
+    content.addSubview(&segmented);
+
+    window.makeKeyAndOrderFront(None);
+    let steps = pump(app, KEY_WAIT_STEPS, || window.isKeyWindow());
+    out::put(&mut t, "isKeyWindow", out::boolean(window.isKeyWindow()));
+    out::put(&mut t, "isMainWindow", out::boolean(window.isMainWindow()));
+    out::put(&mut t, "NSApp_isActive", out::boolean(app.isActive()));
+    out::put(&mut t, "key_wait_steps", out::int(i64::from(steps)));
+    out::put(
+        &mut t,
+        "accessibilityDisplayShouldReduceTransparency",
+        out::boolean(NSWorkspace::sharedWorkspace().accessibilityDisplayShouldReduceTransparency()),
+    );
+    out::put(
+        &mut t,
+        "window_backingScaleFactor",
+        out::float(window.backingScaleFactor()),
+    );
+    let window_frame = window.frame();
+    out::put(&mut t, "window_frame_xywh", rect(window_frame));
+    let content_height = window.contentRectForFrameRect(window_frame).size.height;
+    let title_bar = window_frame.size.height - content_height;
+    out::put(&mut t, "titleBar_height", out::float(title_bar));
+
+    let header_height = table_view
+        .headerView()
+        .map(|header| header.frame().size.height);
+    match header_height {
+        Some(height) => out::put(&mut t, "headerView_height", out::float(height)),
+        None => out::put(
+            &mut t,
+            "headerView_height",
+            out::unavailable("headerView is nil"),
+        ),
+    }
+    let segmented_frame = segmented.frame();
+    out::put(&mut t, "segmentedControl_frame_xywh", rect(segmented_frame));
+
+    // A point of the content view (bottom-left origin) in points from the
+    // window frame's top left: the content view is the frame's bottom part.
+    let from_content = |p: NSPoint| NSPoint::new(p.x, window_frame.size.height - p.y);
+    let segment_y = segmented_frame.origin.y + segmented_frame.size.height / 2.0;
+    let mut points: Vec<(&str, NSPoint)> = vec![
+        (
+            "titleBar",
+            NSPoint::new(window_frame.size.width / 2.0, title_bar / 2.0),
+        ),
+        (
+            "sidebar",
+            from_content(NSPoint::new(
+                KEY_SIDEBAR_FRAME.origin.x + KEY_SIDEBAR_FRAME.size.width / 2.0,
+                KEY_SIDEBAR_FRAME.origin.y + KEY_SIDEBAR_FRAME.size.height / 2.0,
+            )),
+        ),
+        (
+            "segment_selected",
+            from_content(NSPoint::new(
+                segmented_frame.origin.x + KEY_SEGMENT_SAMPLE_INSET,
+                segment_y,
+            )),
+        ),
+        (
+            "segment_unselected",
+            from_content(NSPoint::new(
+                segmented_frame.origin.x + KEY_SEGMENT_WIDTH + KEY_SEGMENT_SAMPLE_INSET,
+                segment_y,
+            )),
+        ),
+        ("windowBackground", from_content(KEY_BACKGROUND_POINT)),
+    ];
+    if let Some(height) = header_height {
+        points.push((
+            "listHeader",
+            from_content(NSPoint::new(
+                KEY_TABLE_FRAME.origin.x + KEY_HEADER_SAMPLE_INSET,
+                KEY_TABLE_FRAME.origin.y + KEY_TABLE_FRAME.size.height - height / 2.0,
+            )),
+        ));
+    }
+    let mut sample_points = Table::new();
+    for (name, p) in &points {
+        out::put(&mut sample_points, name, out::floats(&[p.x, p.y]));
+    }
+    out::put_table(&mut t, "sample_points_xy", sample_points);
+
+    let dir = out_dir.join("renders").join("key_window");
+    let dir_made =
+        std::fs::create_dir_all(&dir).map_err(|e| format!("cannot create {}: {e}", dir.display()));
+    for (key, name) in APPEARANCES {
+        let Some(appearance) = NSAppearance::appearanceNamed(&ns(name)) else {
+            out::put(
+                &mut t,
+                key,
+                out::unavailable(format!("appearanceNamed({name}) is nil")),
+            );
+            continue;
+        };
+        window.setAppearance(Some(&appearance));
+        content.setNeedsDisplay(true);
+        window.displayIfNeeded();
+        pump(app, SETTLE_STEPS, || false);
+        let mut run = Table::new();
+        out::put(&mut run, "isKeyWindow", out::boolean(window.isKeyWindow()));
+        match &dir_made {
+            Ok(()) => capture(&mut run, &window, &dir, key, window_frame.size, &points),
+            Err(reason) => out::put(&mut run, "capture", out::unavailable(reason)),
+        }
+        out::put_table(&mut t, key, run);
+    }
+    window.setAppearance(None);
+    window.orderOut(None);
+    window.close();
+    t
+}
+
+/// `-[NSApplication activate]` where the OS has it (macOS 14), else
+/// `activateIgnoringOtherApps:`.
+fn activate(app: &NSApplication) {
+    let obj: &AnyObject = app.as_ref();
+    if obj.class().responds_to(sel!(activate)) {
+        app.activate();
+    } else {
+        #[allow(deprecated)]
+        app.activateIgnoringOtherApps(true);
+    }
+}
+
+/// Pump the run loop up to `steps` steps of `PUMP_STEP`, stopping early once
+/// `done` holds; the steps taken.
+fn pump(app: &NSApplication, steps: u32, done: impl Fn() -> bool) -> u32 {
+    let mode = ffi::default_run_loop_mode();
+    for step in 0..steps {
+        if done() {
+            return step;
+        }
+        let until = NSDate::dateWithTimeIntervalSinceNow(PUMP_STEP);
+        while let Some(event) = app.nextEventMatchingMask_untilDate_inMode_dequeue(
+            NSEventMask::Any,
+            Some(&until),
+            mode,
+            true,
+        ) {
+            app.sendEvent(&event);
+        }
+        app.updateWindows();
+    }
+    steps
+}
+
+/// Capture `window` to `<dir>/<key>.png` with `screencapture` and sample it
+/// at `points`, given in points from the window frame's top left.
+fn capture(
+    run: &mut Table,
+    window: &NSWindow,
+    dir: &Path,
+    key: &str,
+    frame_points: NSSize,
+    points: &[(&str, NSPoint)],
+) {
+    let path = dir.join(format!("{key}.png"));
+    let child = std::process::Command::new("screencapture")
+        .arg("-x")
+        .arg("-o")
+        .arg("-l")
+        .arg(window.windowNumber().to_string())
+        .arg(&path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    let failure = match child {
+        Ok(child) => wait_or_kill(child)
+            .err()
+            .map(|reason| format!("screencapture {reason}")),
+        Err(e) => Some(format!("cannot run screencapture: {e}")),
+    };
+    if let Some(reason) = failure {
+        out::put(run, "capture", out::unavailable(reason));
+        return;
+    }
+    let bytes = match std::fs::read(&path) {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            out::put(
+                run,
+                "capture",
+                out::unavailable(format!("cannot read {}: {e}", path.display())),
+            );
+            return;
+        }
+    };
+    out::put(
+        run,
+        "file",
+        out::text(format!("renders/key_window/{key}.png")),
+    );
+    let data = NSData::with_bytes(&bytes);
+    let Some(rep) = NSBitmapImageRep::imageRepWithData(&data) else {
+        out::put(
+            run,
+            "capture",
+            out::unavailable("the capture is not a bitmap image"),
+        );
+        return;
+    };
+    let (wide, high) = (rep.pixelsWide(), rep.pixelsHigh());
+    out::put(
+        run,
+        "pixels_wh",
+        out::array(vec![out::int_isize(wide), out::int_isize(high)]),
+    );
+    // Pixels per point, from the capture itself: without its shadow (-o)
+    // the window frame is the whole image.
+    let ratio = pixel_ratio(wide, frame_points.width);
+    let srgb = NSColorSpace::sRGBColorSpace();
+    let mut samples = Table::new();
+    for (name, p) in points {
+        let value = match (pixel_index(p.x, ratio, wide), pixel_index(p.y, ratio, high)) {
+            (Some(x), Some(y)) => match rep.colorAtX_y(x, y) {
+                Some(color) => color_value(&color, &srgb),
+                None => out::unavailable(format!("colorAtX:{x} y:{y} is nil")),
+            },
+            _ => out::unavailable(format!(
+                "{} x {} pt lies outside the {wide} x {high} px capture",
+                p.x, p.y
+            )),
+        };
+        out::put(&mut samples, name, value);
+    }
+    out::put_table(run, "samples", samples);
+}
+
+/// Wait for `child` up to `CAPTURE_WAIT_STEPS` steps of `PUMP_STEP`, then
+/// kill it: a capture the OS holds back, for a permission prompt no one
+/// answers on a runner, must not hold the probe. `Err` says why it failed.
+fn wait_or_kill(mut child: std::process::Child) -> Result<(), String> {
+    for _ in 0..CAPTURE_WAIT_STEPS {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => return Ok(()),
+            Ok(Some(status)) => return Err(format!("exited with {status}")),
+            Ok(None) => std::thread::sleep(std::time::Duration::from_secs_f64(PUMP_STEP)),
+            Err(e) => return Err(format!("could not be waited for: {e}")),
+        }
+    }
+    let killed = child.kill().map_or_else(
+        |e| format!(", and could not be killed: {e}"),
+        |()| String::new(),
+    );
+    // Reap it, so no zombie outlives the probe; its status says nothing more.
+    let _ = child.wait();
+    Err(format!(
+        "did not finish within {CAPTURE_WAIT_STEPS} steps of {PUMP_STEP} s{killed}"
+    ))
+}
+
+/// The capture's pixels per point across `points` of window width, `None`
+/// unless finite and positive.
+fn pixel_ratio(pixels: isize, points: f64) -> Option<f64> {
+    #[allow(clippy::cast_precision_loss)]
+    let ratio = pixels as f64 / points;
+    (ratio.is_finite() && ratio > 0.0).then_some(ratio)
+}
+
+/// The pixel holding the point `points` along an axis of `limit` pixels at
+/// `ratio` pixels per point, `None` outside the image.
+fn pixel_index(points: f64, ratio: Option<f64>, limit: isize) -> Option<isize> {
+    let px = (points * ratio?).floor();
+    #[allow(clippy::cast_precision_loss)]
+    let inside = px.is_finite() && px >= 0.0 && px < limit as f64;
+    if !inside {
+        return None;
+    }
+    // In 0.0..limit, so the cast is exact.
+    #[allow(clippy::cast_possible_truncation)]
+    let index = px as isize;
+    Some(index)
+}
+
+fn rect_text(r: NSRect) -> String {
+    format!(
+        "[{}, {}, {}, {}] (x, y, width, height)",
+        r.origin.x, r.origin.y, r.size.width, r.size.height
+    )
+}
+
+fn point_text(p: NSPoint) -> String {
+    format!("[{}, {}] (x, y)", p.x, p.y)
 }
