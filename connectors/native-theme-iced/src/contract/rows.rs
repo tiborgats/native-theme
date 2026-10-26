@@ -2032,6 +2032,39 @@ pub(super) const DIALOG_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::dialog(r)(t).border,
 }];
 
+/// A toolbar's container and its rule have no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_STATUSES: &[()] = &[()];
+
+/// The colour fields of `styles::toolbar`: its label, which the bar's texts
+/// inherit, and its fill. Its border is iced's: the edge is the rule under
+/// the bar.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::toolbar.text_color",
+        statuses: TOOLBAR_STATUSES,
+        native: |r, ()| to_color(r.toolbar.font.color),
+        get: |t, r, ()| stated(styles::toolbar(r)(t).text_color),
+    },
+    StyleRow {
+        field: "styles::toolbar.background",
+        statuses: TOOLBAR_STATUSES,
+        native: |r, ()| to_color(r.toolbar.background_color),
+        get: |t, r, ()| flat(styles::toolbar(r)(t).background),
+    },
+];
+
+/// The one colour field of `styles::toolbar_rule`, the toolbar's bottom
+/// edge; its other three are iced's, as `styles::rule`'s are.
+#[cfg(feature = "widgets")]
+pub(super) const TOOLBAR_RULE_ROWS: &[StyleRow<()>] = &[StyleRow {
+    field: "styles::toolbar_rule.color",
+    statuses: TOOLBAR_STATUSES,
+    native: |r, ()| to_color(r.toolbar.border.color),
+    get: |t, r, ()| Ok(styles::toolbar_rule(r)(t).color),
+}];
+
 /// An application's base style has no `Status` (shape B).
 #[cfg(feature = "widgets")]
 pub(super) const APPLICATION_STATUSES: &[()] = &[()];
@@ -2837,6 +2870,8 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(APPLICATION_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(DIALOG_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOOLBAR_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(TOOLBAR_RULE_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(
         SEGMENTED_CONTROL_ROWS

@@ -2031,6 +2031,69 @@ pub fn dialog(
     }
 }
 
+/// The platform's toolbar surface, for `container(..).style(..)` on the
+/// container a consumer draws its toolbar in: iced 0.14 and `iced_aw` 0.14.1
+/// have no toolbar widget (docs/platform-facts.md §2.13).
+///
+/// The fill is `toolbar.background_color` and the text colour
+/// `toolbar.font.color`, which the bar's texts inherit. The container draws
+/// no outline: the toolbar's edge is one rule under the bar,
+/// [`toolbar_rule`] at [`crate::toolbar_border_line_width`], as the gpui
+/// connector's `geometry::toolbar` draws it (`border_b`) and the egui
+/// connector strokes it as the top panel's separator. `border`, `shadow`
+/// and `snap` come from `container::Style::default()`: a frame round the
+/// bar is no platform's, the model carries a shadow colour but no offset or
+/// blur, and `snap` is a renderer setting. The padding, the gap between the
+/// items and the outer height are [`crate::toolbar_padding`],
+/// [`crate::toolbar_item_gap`] and [`crate::toolbar_bar_height`], whose doc
+/// shows the whole bar.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn toolbar(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
+
+    let t = &resolved.toolbar;
+
+    let bar = to_color(t.background_color);
+    let label = to_color(t.font.color);
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: Some(label),
+            background: Some(Background::Color(bar)),
+            border: iced.border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
+/// The toolbar's bottom edge, for `rule::horizontal(..).style(..)` under the
+/// bar [`toolbar`] styles: `toolbar.border.color`, at the height
+/// [`crate::toolbar_border_line_width`] gives `rule::horizontal`. A width of
+/// 0 draws none, as the theme states it. `radius`, `fill_mode` and `snap`
+/// are iced's, as [`rule`]'s are.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn toolbar_rule(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::rule::Style + Clone + use<> {
+    use iced_widget::rule::Style;
+
+    let line = to_color(resolved.toolbar.border.color);
+
+    move |theme| {
+        let iced = iced_widget::rule::default(theme);
+        Style {
+            color: line,
+            radius: iced.radius,
+            fill_mode: iced.fill_mode,
+            snap: iced.snap,
+        }
+    }
+}
+
 /// The application's own background and default text, for
 /// `iced::application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`).
 ///

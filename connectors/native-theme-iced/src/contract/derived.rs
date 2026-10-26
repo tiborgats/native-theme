@@ -647,6 +647,65 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "widgets")]
     (
+        "styles::toolbar.border.color",
+        "iced default: container::Style::default().border.color -- the bar draws no outline: its edge is the rule under it, styles::toolbar_rule",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.border.width",
+        "iced default: container::Style::default().border.width -- none, the same: the edge is the rule under the bar",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.border.radius.top_left",
+        "iced default: container::Style::default().border.radius.top_left -- the bar is square, as gpui's geometry::toolbar draws it",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.border.radius.top_right",
+        "iced default: container::Style::default().border.radius.top_right -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.border.radius.bottom_right",
+        "iced default: container::Style::default().border.radius.bottom_right -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.border.radius.bottom_left",
+        "iced default: container::Style::default().border.radius.bottom_left -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar_rule.radius",
+        "iced default: rule::default(theme).radius -- the toolbar's edge is a \
+         line color and a line width",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar_rule.fill_mode",
+        "iced default: rule::default(theme).fill_mode -- the rule spans the bar \
+         the consumer lays it under",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::toolbar_rule.snap",
+        "iced default: rule::default(theme).snap -- a renderer setting",
+    ),
+    #[cfg(feature = "widgets")]
+    (
         "styles::expander_frame.text_color",
         "iced default: container::Style::default().text_color -- ExpanderTheme \
          states no label for the frame, and iced's None inherits the label \
@@ -1429,14 +1488,6 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
             "iced 0.14 has no popover, nor has `iced_aw` 0.14.1: its \
              `context_menu::Style.background` is the backdrop of a modal \
              (`style/context_menu.rs:8-14`), not a surface",
-        ),
-    },
-    UnreadColour {
-        leaf: "toolbar",
-        why: Unread::NoWidget(
-            "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of \
-             the model's toolbar is a docs/todo.md item (\"The iced connector \
-             reads nothing of the model's toolbar\")",
         ),
     },
     UnreadColour {

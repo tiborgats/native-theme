@@ -229,20 +229,23 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
-//! | `styles` (30 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`) | Per-widget resolved fields |
+//! | `styles` (32 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), the toolbar's container and its bottom rule (`toolbar.background_color`, `.font.color`, `.border.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`), a toolbar's padding, item gap, outer height and rule width (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height`, `toolbar_border_line_width`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
 //! The theme values of the widgets neither iced 0.14 nor `iced_aw` 0.14.1
-//! has reach no receiver here: the popover's, the toolbar's and the status
-//! bar's; and the window frame's colours, which iced takes no colour for
+//! has reach no receiver here: the popover's and the status bar's; and
+//! the window frame's colours, which iced takes no colour for
 //! (`decorations: bool`, `iced_core` 0.14 `window/settings.rs:65-66`). A
 //! dialog, which neither has either, is the consumer's `container`, which
 //! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance` and
 //! `.icon_size` reach nothing: no iced widget animates a dialog's entrance,
-//! and iced has no dialog widget to draw a type icon. An `iced_aw` `Card` is
+//! and iced has no dialog widget to draw a type icon. A toolbar, which
+//! neither has either, is the consumer's `container` with a rule under it,
+//! which `styles::toolbar`, `styles::toolbar_rule` and the `toolbar_*`
+//! helpers style. An `iced_aw` `Card` is
 //! not the dialog's receiver: its head, body and foot take styles of their
 //! own, and only its maxima match a dialog's.
 //!
@@ -1572,6 +1575,63 @@ pub fn dialog_button_order(resolved: &native_theme::theme::ResolvedTheme) -> Dia
     resolved.dialog.button_order
 }
 
+/// Returns the padding of a toolbar's bar as an iced
+/// [`Padding`](iced_core::Padding), for the `container` a consumer draws its
+/// toolbar in (`styles::toolbar`, feature `widgets`): each side
+/// `toolbar.border.padding` states, and `default`'s side where it states
+/// none ([`padding_or()`]). The bar has no outline, its edge being the rule
+/// under it, so no line width is added. iced has no toolbar, so it has no
+/// default padding of its own; `default` is the caller's.
+#[must_use]
+pub fn toolbar_padding(
+    resolved: &native_theme::theme::ResolvedTheme,
+    default: iced_core::Padding,
+) -> iced_core::Padding {
+    padding_or(&resolved.toolbar.border.padding, default)
+}
+
+/// Returns `toolbar.item_gap`, the space between a toolbar's items in
+/// logical pixels, for `Row::spacing` on the row a consumer lays them out
+/// in, or `None` where the platform states none (docs/platform-facts.md
+/// §2.13).
+#[must_use]
+pub fn toolbar_item_gap(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
+    resolved.toolbar.item_gap
+}
+
+/// Returns `toolbar.bar_height`, a toolbar's outer height in logical pixels,
+/// the rule under the bar included, or `None` where the platform states
+/// none: KDE's and GNOME's toolbars size to their content
+/// (docs/platform-facts.md §2.13), so a consumer leaves the bar's height to
+/// its content there. The bar's own container is this less
+/// [`toolbar_border_line_width`]:
+///
+/// ```rust,ignore
+/// let line = native_theme_iced::toolbar_border_line_width(&resolved);
+/// let bar = container(items.spacing(native_theme_iced::toolbar_item_gap(&resolved).unwrap_or(gap)))
+///     .padding(native_theme_iced::toolbar_padding(&resolved, default))
+///     .width(Fill)
+///     .style(native_theme_iced::styles::toolbar(&resolved));
+/// let bar = match native_theme_iced::toolbar_bar_height(&resolved) {
+///     Some(h) => bar.height((h - line).max(0.0)),
+///     None => bar,
+/// };
+/// column![bar, iced::widget::rule::horizontal(line).style(native_theme_iced::styles::toolbar_rule(&resolved))]
+/// ```
+#[must_use]
+pub fn toolbar_bar_height(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
+    resolved.toolbar.bar_height
+}
+
+/// Returns `toolbar.border.line_width`, the height of the rule under a
+/// toolbar in logical pixels, for `rule::horizontal` (`styles::toolbar_rule`
+/// styles it): the toolbar's edge is this one line, not a frame. 0 draws
+/// none.
+#[must_use]
+pub fn toolbar_border_line_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.toolbar.border.line_width
+}
+
 /// Returns the primary UI font family name from the resolved theme: the
 /// stated name. To name the family iced's font database holds for it, use
 /// `system_font_family` (feature `system-fonts`).
@@ -2501,6 +2561,39 @@ mod tests {
         assert_eq!(
             dialog_title_font_color(&resolved),
             palette::to_color(resolved.dialog.title_font.color)
+        );
+    }
+
+    /// The toolbar helpers return the stated leaves (`windows-11.toml`
+    /// `[light.toolbar]`, `[light.toolbar.border]`): the outer height and the
+    /// gap as stated, each padding side as stated (0 at the top, right and
+    /// bottom, 4 at the left), the caller's default on a side the theme
+    /// leaves unstated, the rule's width as stated, and `None` for the height
+    /// adwaita does not state.
+    #[test]
+    fn the_toolbar_helpers_return_their_leaves() {
+        let resolved = make_resolved_preset("windows-11", false);
+        assert_eq!(toolbar_bar_height(&resolved), Some(48.0));
+        assert_eq!(toolbar_item_gap(&resolved), Some(0.0));
+        assert_eq!(toolbar_border_line_width(&resolved), 0.0);
+        let padding = toolbar_padding(&resolved, iced_core::Padding::new(7.0));
+        assert_eq!(
+            (padding.top, padding.right, padding.bottom, padding.left),
+            (0.0, 0.0, 0.0, 4.0)
+        );
+        let mut unstated = resolved.clone();
+        unstated.toolbar.border.padding.left = None;
+        assert_eq!(
+            toolbar_padding(&unstated, iced_core::Padding::new(7.0)).left,
+            7.0
+        );
+        assert_eq!(
+            toolbar_border_line_width(&make_resolved_preset("kde-breeze", false)),
+            1.0
+        );
+        assert_eq!(
+            toolbar_bar_height(&make_resolved_preset("adwaita", false)),
+            None
         );
     }
 

@@ -5185,15 +5185,13 @@ fn separator_line<'a>(resolved: &ResolvedTheme) -> Element<'a, Message> {
 enum Line {
     /// A menu's separator, `menu.separator_color`.
     MenuSeparator,
-    /// The toolbar's bottom edge, `toolbar.border.color`.
-    Toolbar,
     /// The status bar's top edge, `status_bar.border.color`.
     StatusBar,
 }
 
 impl Line {
     #[cfg(test)]
-    const ALL: [Self; 3] = [Self::MenuSeparator, Self::Toolbar, Self::StatusBar];
+    const ALL: [Self; 2] = [Self::MenuSeparator, Self::StatusBar];
 }
 
 /// The separator's style (`styles::rule`) in `line`'s colour.
@@ -5201,7 +5199,6 @@ fn line_style(resolved: &ResolvedTheme, line: Line) -> impl Fn(&Theme) -> rule::
     let separator = styles::rule(resolved);
     let color = to_color(match line {
         Line::MenuSeparator => resolved.menu.separator_color,
-        Line::Toolbar => resolved.toolbar.border.color,
         Line::StatusBar => resolved.status_bar.border.color,
     });
     move |theme| rule::Style {
@@ -5216,8 +5213,6 @@ fn line_style(resolved: &ResolvedTheme, line: Line) -> impl Fn(&Theme) -> rule::
 enum Surface {
     /// The window, `window.background_color` under `defaults.text_color`.
     Window,
-    /// The toolbar, `toolbar.background_color` under `toolbar.font.color`.
-    Toolbar,
     /// The side panel, `sidebar.background_color` under
     /// `sidebar.font.color`.
     SidePanel,
@@ -5230,9 +5225,8 @@ enum Surface {
 
 impl Surface {
     #[cfg(test)]
-    const ALL: [Self; 5] = [
+    const ALL: [Self; 4] = [
         Self::Window,
-        Self::Toolbar,
         Self::SidePanel,
         Self::TabStrip,
         Self::StatusBar,
@@ -5248,10 +5242,6 @@ fn surface(
         Surface::Window => (
             resolved.window.background_color,
             resolved.defaults.text_color,
-        ),
-        Surface::Toolbar => (
-            resolved.toolbar.background_color,
-            resolved.toolbar.font.color,
         ),
         Surface::SidePanel => (
             resolved.sidebar.background_color,
@@ -5630,14 +5620,16 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// The window's toolbar (spec §2.3, platform-facts §2.13): three flat
 /// buttons in the gpui showcase's order -- the command palette, Reload
 /// System Theme and Preferences -- their icons of the chosen icon theme at
-/// `toolbar.icon_size`, in a row filled with `toolbar.background_color`,
-/// padded by `toolbar.border.padding` where the theme states a side, by
+/// `toolbar.icon_size`, in the connector's toolbar (`styles::toolbar`,
+/// filled with `toolbar.background_color`), padded by
+/// `native_theme_iced::toolbar_padding` where the theme states a side, by
 /// `layout.container_margin` where it does not and by [`TOOLBAR_PADDING`]
-/// where that is unstated too, its items `toolbar.item_gap` apart, or
+/// where that is unstated too, its items `toolbar_item_gap` apart, or
 /// `layout.widget_gap` apart where that is unstated, or [`TOOLBAR_GAP`]
-/// where that is unstated too, as the gpui showcase's toolbar, at least
-/// `toolbar.bar_height` tall where the theme states one. Under its padding a
-/// `toolbar.border.line_width` line in `toolbar.border.color`, as the
+/// where that is unstated too, as the gpui showcase's toolbar,
+/// `toolbar_bar_height` tall where the theme states one. Under its padding
+/// the connector's rule (`styles::toolbar_rule`), a
+/// `toolbar_border_line_width` line in `toolbar.border.color`, as the
 /// resolved theme states it. §2.13 has no row for that border: on the
 /// presets it is `defaults.border`'s, which docs/inheritance-rules.toml hands
 /// the toolbar, where Breeze draws no toolbar frame (`ToolBar_FrameWidth` 0,
@@ -5697,26 +5689,31 @@ fn toolbar(state: &State) -> Element<'_, Message> {
             Message::Open(Overlay::Preferences),
         ),
     ]
-    .spacing(t.item_gap.or(layout.widget_gap).unwrap_or(TOOLBAR_GAP))
+    .spacing(
+        native_theme_iced::toolbar_item_gap(resolved)
+            .or(layout.widget_gap)
+            .unwrap_or(TOOLBAR_GAP),
+    )
     .align_y(iced::Center);
     let bar = container(items)
-        .padding(native_theme_iced::padding_or(
-            &t.border.padding,
+        .padding(native_theme_iced::toolbar_padding(
+            resolved,
             Padding::from(layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
         ))
         .width(Fill)
         .align_y(iced::Center)
-        .style(surface(resolved, Surface::Toolbar));
+        .style(styles::toolbar(resolved));
     // `toolbar.bar_height` is the outer height, the line included.
-    let bar = match t.bar_height {
-        Some(h) => bar.height(Length::Fixed((h - t.border.line_width).max(0.0))),
+    let line = native_theme_iced::toolbar_border_line_width(resolved);
+    let bar = match native_theme_iced::toolbar_bar_height(resolved) {
+        Some(h) => bar.height(Length::Fixed((h - line).max(0.0))),
         None => bar,
     };
     tagged(
         "chrome.toolbar",
         column![
             bar,
-            rule::horizontal(t.border.line_width).style(line_style(resolved, Line::Toolbar))
+            rule::horizontal(line).style(styles::toolbar_rule(resolved))
         ],
     )
     .into()
@@ -7461,6 +7458,8 @@ fn drawing(element: &ShowcaseElement, leaf: &str, shown: Shown<'_>) -> Option<Dr
         ]),
         _ if under("basic.card") => Drawing::of(&["styles::container_card."]),
         _ if under("basic.typography.link") => Drawing::enabled(&["styles::button_link."]),
+        // The toolbar's bar and its rule are the connector's.
+        _ if id == "chrome.toolbar" => Drawing::of(&["styles::toolbar.", "styles::toolbar_rule."]),
         _ if under("basic.separator")
             || id == "chrome.page_tabs.rule"
             || id == "chrome.side_panel.separator" =>
@@ -8054,21 +8053,26 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
                 .into()
         }
         // ---- toolbar ----
-        ("toolbar", "bar_height_px") => "the bar container's height, where stated".into(),
+        ("toolbar", "bar_height_px") => {
+            "native_theme_iced::toolbar_bar_height: the bar container's height, less the \
+             rule's, where stated"
+                .into()
+        }
         ("toolbar", "item_gap_px") => format!(
-            "the buttons' Row::spacing; layout.widget_gap where unstated, and \
-             TOOLBAR_GAP, {TOOLBAR_GAP}px, gpui's showcase constant, where that is unstated too"
+            "native_theme_iced::toolbar_item_gap: the buttons' Row::spacing; \
+             layout.widget_gap where unstated, and TOOLBAR_GAP, {TOOLBAR_GAP}px, gpui's \
+             showcase constant, where that is unstated too"
         )
         .into(),
-        ("toolbar", "background_color") => "surface: the bar container's background".into(),
-        ("toolbar", "border.color") => "line_style: the bar's bottom line's colour".into(),
         ("toolbar", "border.line_width_px") => {
-            "the bottom line rule's height, under the bar's padding".into()
+            "native_theme_iced::toolbar_border_line_width: the bottom rule's height, under \
+             the bar's padding"
+                .into()
         }
         ("toolbar", f) if side(f).is_some() => format!(
-            "the bar container's padding; layout.container_margin where unstated, and \
-             TOOLBAR_PADDING, {TOOLBAR_PADDING}px, gpui's showcase constant, where that is \
-             unstated too"
+            "native_theme_iced::toolbar_padding: the bar container's padding; \
+             layout.container_margin where unstated, and TOOLBAR_PADDING, \
+             {TOOLBAR_PADDING}px, gpui's showcase constant, where that is unstated too"
         )
         .into(),
         ("toolbar", "font") => "the button's text, where the icon set has no icon".into(),
@@ -20835,7 +20839,7 @@ mod tests {
         },
         Dressed {
             ctor: "rule::horizontal",
-            styles: &[&["styles::rule", "line_style"]],
+            styles: &[&["styles::rule", "styles::toolbar_rule", "line_style"]],
         },
         Dressed {
             ctor: "rule::vertical",

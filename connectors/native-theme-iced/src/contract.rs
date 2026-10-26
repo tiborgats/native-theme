@@ -1509,16 +1509,17 @@ fn progress_bar_style_fields(style: &progress_bar::Style) -> Vec<String> {
     out
 }
 
-/// Every field of the `rule::Style` the connector emits. Its `radius` is a
-/// whole `Radius` rather than part of a `Border`, and it is walked as the one
-/// leaf it is -- as `toggler::Style.border_radius` is.
+/// Every field of a `rule::Style` the connector emits under `prefix`
+/// (`styles::rule`, `styles::toolbar_rule`). Its `radius` is a whole
+/// `Radius` rather than part of a `Border`, and it is walked as the one leaf
+/// it is -- as `toggler::Style.border_radius` is.
 #[cfg(feature = "widgets")]
-fn rule_style_fields(style: &rule::Style) -> Vec<String> {
+fn rule_style_fields(style: &rule::Style, prefix: &str) -> Vec<String> {
     let mut out = Vec::new();
     leaves_under!(
         out,
         style,
-        "styles::rule",
+        prefix,
         rule::Style {
             color,
             radius,
@@ -1775,7 +1776,14 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         out.extend(progress_bar_style_fields(&styles::progress_bar(resolved)(
             theme,
         )));
-        out.extend(rule_style_fields(&styles::rule(resolved)(theme)));
+        out.extend(rule_style_fields(
+            &styles::rule(resolved)(theme),
+            "styles::rule",
+        ));
+        out.extend(rule_style_fields(
+            &styles::toolbar_rule(resolved)(theme),
+            "styles::toolbar_rule",
+        ));
         out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
         out.extend(application_style_fields(&styles::application(resolved)(
             theme,
@@ -1789,6 +1797,10 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         out.extend(container_fields(
             &styles::dialog(resolved)(theme),
             "styles::dialog",
+        ));
+        out.extend(container_fields(
+            &styles::toolbar(resolved)(theme),
+            "styles::toolbar",
         ));
         out.extend(container_fields(
             &styles::container_card(resolved)(theme),
@@ -2495,6 +2507,7 @@ fn every_status_list_names_each_status_once() {
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
         ("APPLICATION_STATUSES", APPLICATION_STATUSES),
         ("DIALOG_STATUSES", DIALOG_STATUSES),
+        ("TOOLBAR_STATUSES", TOOLBAR_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
         ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
         ("EXPANDER_FRAME_STATUSES", EXPANDER_FRAME_STATUSES),
@@ -3363,6 +3376,8 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_style_rows(TOOLTIP_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(APPLICATION_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(DIALOG_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TOOLBAR_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(TOOLBAR_RULE_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(DIALOG_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -4697,6 +4712,8 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::tooltip(r));
     assert_clone(&styles::application(r));
     assert_clone(&styles::dialog(r));
+    assert_clone(&styles::toolbar(r));
+    assert_clone(&styles::toolbar_rule(r));
     assert_clone(&styles::container_card(r));
     assert_clone(&styles::segmented_control(r));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
@@ -5036,6 +5053,8 @@ impl Reading {
         x.style(TOOLTIP_ROWS, t, r);
         x.style(APPLICATION_ROWS, t, r);
         x.style(DIALOG_ROWS, t, r);
+        x.style(TOOLBAR_ROWS, t, r);
+        x.style(TOOLBAR_RULE_ROWS, t, r);
         x.style(CONTAINER_CARD_ROWS, t, r);
         x.style(SEGMENTED_CONTROL_ROWS, t, r);
         x.style(SEGMENT_ROWS, t, r);

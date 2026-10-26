@@ -1039,9 +1039,9 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// docs/platform-facts.md §2.13 has no border row, and the other two
 /// connectors draw the toolbar's border as one line under the bar -- egui's
 /// toolbar role strokes it as the top panel's separator
-/// (native-theme-egui `src/style/roles.rs:128-141`), and the iced showcase
-/// draws a `toolbar.border.line_width` line under its toolbar
-/// (`examples/showcase-iced.rs:4550`).
+/// (native-theme-egui `src/style/roles.rs:128-141`), and the iced connector's
+/// `styles::toolbar_rule` is a `toolbar.border.line_width` rule under the
+/// bar (native-theme-iced `src/styles.rs`).
 ///
 /// The text colour displaces nothing: neither gpui-component's `Toolbar`
 /// nor gpui-base's sets a colour on the row (`toolbar.rs:243-257`). Today

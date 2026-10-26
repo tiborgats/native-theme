@@ -697,3 +697,15 @@ connector = ["iced", "gpui"]
 name = ["icons::spin_angle", "icons::animated_frame_index"]
 kind = "absent"
 reason = "egui repaints on demand, so these read the `Context`'s clock and schedule the next repaint at the next frame or every frame (the egui spec §9.4; connectors/native-theme-egui/src/icons.rs, both docs). iced's application keeps the time with a subscription and indexes the frames `animated_frames_to_svg_handles` built, or rotates by `spin_rotation_radians` (connectors/native-theme-iced/src/icons.rs, their docs); gpui's spins with `with_spin_animation` and indexes the frames `animated_frames_to_image_sources` built"
+
+[[exception]]
+connector = "gpui"
+name = ["toolbar_padding", "toolbar_item_gap", "toolbar_bar_height", "toolbar_border_line_width"]
+kind = "absent"
+reason = "the receiver is `geometry::toolbar` (`src/geometry.rs`), the refinement that gives the bar `toolbar.border.padding`, `gap(toolbar.item_gap)`, `min_h(toolbar.bar_height)` and its bottom edge at `toolbar.border.line_width`; iced has no toolbar, so its consumer draws the container and the rule with these accessors"
+
+[[exception]]
+connector = "egui"
+name = ["toolbar_padding", "toolbar_item_gap", "toolbar_bar_height", "toolbar_border_line_width"]
+kind = "absent"
+reason = "the atlas writes the toolbar's leaves to the toolbar role and the top panel (src/mapping.md, `toolbar.border.padding.*`: SCOPED to `[panel_top]` `inner_margin`, `toolbar.bar_height`: DERIVED to `spacing.interact_size.y`, `toolbar.border.line_width`: SCOPED to the separator's stroke), so no crate-root accessor is needed; iced has no toolbar, so its consumer reads them through these accessors"

@@ -1017,22 +1017,19 @@ moves = [
 ]
 
 [leaves."toolbar.background_color"]
-named = "UNREAD_COLOURS"
-entry = "toolbar"
-kind = "no widget"
-why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+moves = [
+  { row = "styles::toolbar.background" },
+]
 
 [leaves."toolbar.border.color"]
-named = "UNREAD_COLOURS"
-entry = "toolbar"
-kind = "no widget"
-why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+moves = [
+  { row = "styles::toolbar_rule.color" },
+]
 
 [leaves."toolbar.font.color"]
-named = "UNREAD_COLOURS"
-entry = "toolbar"
-kind = "no widget"
-why = "iced 0.14 and `iced_aw` 0.14.1 have no toolbar; an iced reader of the model's toolbar is a docs/todo.md item (\"The iced connector reads nothing of the model's toolbar\")"
+moves = [
+  { row = "styles::toolbar.text_color" },
+]
 
 [leaves."tooltip.background_color"]
 moves = [
@@ -1511,6 +1508,15 @@ leaves = ["defaults.background_color", "switch.disabled_thumb_color", "switch.th
 
 [rows."styles::toggler.foreground_border_color"]
 leaves = ["switch.thumb_border_color"]
+
+[rows."styles::toolbar.background"]
+leaves = ["toolbar.background_color"]
+
+[rows."styles::toolbar.text_color"]
+leaves = ["toolbar.font.color"]
+
+[rows."styles::toolbar_rule.color"]
+leaves = ["toolbar.border.color"]
 
 [rows."styles::tooltip.background"]
 leaves = ["tooltip.background_color"]
