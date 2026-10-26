@@ -53,8 +53,9 @@ jobs:
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
       # The image's own accessibility settings, read before any pass changes
-      # them: a value, `absent` where the image sets none, or what the read
-      # said where it failed otherwise (and the pass then restores nothing).
+      # them: a value, `absent` where the image sets none (macOS 14-26 say the
+      # pair "does not exist", xcode-27 "Could not find key"), or what the read
+      # said where it failed otherwise (and a pass then restores nothing).
       - name: Record the image's accessibility settings (macOS)
         if: runner.os == 'macOS'
         continue-on-error: true
@@ -65,7 +66,7 @@ jobs:
             value="$(defaults read com.apple.universalaccess "$key" 2>&1)"
             if [ $? -ne 0 ]; then
               case "$value" in
-                *"does not exist"*) value=absent ;;
+                *"does not exist"*|*"Could not find key"*) value=absent ;;
                 *) value="unreadable: $value" ;;
               esac
             fi
@@ -119,6 +120,60 @@ jobs:
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A last pass, whatever fails: the built probe wrapped in a minimal .app
+      # and started by LaunchServices (`open`), which an unbundled process
+      # started from a shell is not, to see whether that gives it a key
+      # window where activation alone does not (macOS 15 and later). The
+      # accessibility settings are the image's again first, so the pass
+      # compares with the main one; the app is ad-hoc signed and granted
+      # screen recording under its bundle id and its executable's path, as it,
+      # not the shell, starts screencapture. run.txt records each step's exit
+      # status and whether a probe.toml was written; the app's own output is
+      # in stdout.txt and stderr.txt.
+      - name: Run the probe as an app bundle (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out="$PWD/os-probe-out/app-bundle"
+          app="$RUNNER_TEMP/NativeThemeOsProbe.app"
+          id=org.native-theme.os-probe
+          mkdir -p "$out" "$app/Contents/MacOS"
+          {
+            for key in reduceTransparency increaseContrast; do
+              image="$(cat "$RUNNER_TEMP/universalaccess/$key" 2>/dev/null || echo 'not recorded')"
+              case "$image" in
+                1) defaults write com.apple.universalaccess "$key" -bool true ;;
+                0) defaults write com.apple.universalaccess "$key" -bool false ;;
+                absent) defaults delete com.apple.universalaccess "$key" ;;
+                *) false ;;
+              esac
+              echo "restore $key to the image's ($image): exit $?"
+            done
+            cp target/release/native-theme-os-probe "$app/Contents/MacOS/native-theme-os-probe"
+            echo "copy the probe: exit $?"
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+              '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+              '<plist version="1.0"><dict>' \
+              '<key>CFBundleExecutable</key><string>native-theme-os-probe</string>' \
+              "<key>CFBundleIdentifier</key><string>$id</string>" \
+              '<key>CFBundleName</key><string>NativeThemeOsProbe</string>' \
+              '<key>CFBundlePackageType</key><string>APPL</string>' \
+              '</dict></plist>' > "$app/Contents/Info.plist"
+            echo "write Info.plist: exit $?"
+            codesign --force --sign - "$app"
+            echo "codesign: exit $?"
+            for grant in "'$id', 0" "'$app/Contents/MacOS/native-theme-os-probe', 1"; do
+              sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+                "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+                 VALUES ('kTCCServiceScreenCapture', $grant, 2, 4, 1);"
+              echo "grant screen recording to $grant: exit $?"
+            done
+            open -W -n --stdout "$out/stdout.txt" --stderr "$out/stderr.txt" "$app" --args --out "$out"
+            echo "open -W -n: exit $?"
+            if [ -f "$out/probe.toml" ]; then echo "probe.toml written"; else echo "no probe.toml"; fi
+          } > "$out/run.txt" 2>&1
+          cat "$out/run.txt"
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
