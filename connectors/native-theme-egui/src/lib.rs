@@ -169,7 +169,7 @@ pub use accessors::{
 pub use atlas::Note;
 pub use atlas::{Builder, ThemeAtlas};
 pub use ext::{Loaded, SystemThemeExt, from_preset, from_system, to_theme};
-pub use ext::{NativeThemeUiExt, role_modifier, set_scope_style};
+pub use ext::{NativeThemeUiExt, role_modifier};
 pub use plugin::register_focus_shape;
 pub use roles::{PanelSide, Role, RoleVariant, Surface, TextRole};
 #[cfg(feature = "watch")]

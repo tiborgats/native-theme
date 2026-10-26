@@ -63,7 +63,9 @@ pub(crate) struct FocusEntry {
     pub(crate) viewport: egui::ViewportId,
     /// `Context::cumulative_pass_nr` of the pass the lists belong to.
     pub(crate) pass_nr: u64,
-    /// Each styled `Ui`'s `unique_id` with its role style's `widgets.active.corner_radius`.
+    /// Each styled `Ui`'s `unique_id` with its style's `widgets.active.corner_radius`: a role's
+    /// cell (`native_scope`, `native_set_style`) or a caller's own style
+    /// (`native_set_style_with_ring`).
     pub(crate) scopes: Vec<(Id, CornerRadius)>,
     /// `register_focus_shape`'s outlines: widget id, rect, radius.
     pub(crate) shapes: Vec<(Id, Rect, CornerRadius)>,
@@ -128,7 +130,9 @@ pub(crate) fn record_scope(ctx: &Context, ui_id: Id, radius: CornerRadius, repla
 /// it is not a rounded rectangle around the widget's own rect — a switch's track inside a
 /// widget that also holds its label, a composite whose focus belongs to one part. A widget
 /// whose outline is its rect needs no call: the ring takes the corner radius of the
-/// innermost role scope around it ([`NativeThemeUiExt::native_scope`](crate::NativeThemeUiExt::native_scope)), or outside any the
+/// innermost styled scope around it ([`NativeThemeUiExt::native_scope`](crate::NativeThemeUiExt::native_scope),
+/// [`NativeThemeUiExt::native_set_style`](crate::NativeThemeUiExt::native_set_style) or
+/// [`NativeThemeUiExt::native_set_style_with_ring`](crate::NativeThemeUiExt::native_set_style_with_ring)), or outside any the
 /// radius of the root `Ui`'s style at the end of the pass, normally the base style's (spec §6.18).
 /// `rect` is the shape the ring surrounds (the ring is still offset from it by
 /// `defaults.focus_ring_offset`) and `corner_radius` its radius. Call it after the

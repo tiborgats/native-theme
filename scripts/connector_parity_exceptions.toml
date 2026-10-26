@@ -592,12 +592,6 @@ reason = "the egui connector's install plugin paints every focus ring itself, ro
 
 [[exception]]
 connector = ["iced", "gpui"]
-name = "set_scope_style"
-kind = "absent"
-reason = "the egui connector's install plugin rings a focused widget at the radius recorded for the innermost scope round it (connectors/native-theme-egui/src/plugin.rs, `record_scope`; the egui spec §6.18), so a `Ui` that takes a style of the caller's own records it; iced draws its ring with `focus_ring` round the one field it wraps, at the radius the caller passes (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc), and gpui-component draws its own round the focused element (gpui-component 0.8.0 `src/styled.rs`, `focus_ring`), so neither records a scope"
-
-[[exception]]
-connector = ["iced", "gpui"]
 name = "role_modifier"
 kind = "absent"
 reason = "egui's popups and menus lay out in a `Ui` of their own, outside the role scope, and take their style as a `StyleModifier` (`Popup::style`, `MenuConfig::style`, `MenuBar::style`, `ComboBox::popup_style`); this one is the installed atlas's for a call site that holds a `Ui`, and a free function because it returns `None` without an atlas (the Step 6 ruling on `role_modifier`, docs/todo_code-review-findings.md:11133; connectors/native-theme-egui/src/ext.rs, its doc). iced styles a menu per widget (`styles::menu`), and gpui-component's popups read the global `Theme`"

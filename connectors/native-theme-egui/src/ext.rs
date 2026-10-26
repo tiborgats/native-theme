@@ -72,6 +72,25 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// line is painted from the parent's style (spec §4.4).
     fn native_set_style(&mut self, role: Role, variant: RoleVariant);
 
+    /// Replace this `Ui`'s own style with `style` for the remainder of the `Ui`
+    /// (`Ui::set_style`, `egui/src/ui.rs:387`), the focus ring following it: this `Ui` is
+    /// recorded with `style`'s `widgets.active.corner_radius`, a later call on the same `Ui`
+    /// replacing the record, as [`NativeThemeUiExt::native_set_style`] records a role's cell
+    /// (spec §6.18), so a widget focused in it is ringed at `style`'s corners and not at those
+    /// of a role scope round it. With no atlas installed it is `Ui::set_style` alone. The style
+    /// is set as given, with no `TextStyle::Name` keys carried and no text size lowered: a
+    /// caller's own style holds its own keys, and its sizes are the caller's to clamp.
+    /// The record covers the whole `Ui`, widgets drawn before the call included, while the
+    /// style applies from the call on; a style the application later sets on this `Ui` by other
+    /// means (`Ui::set_style`, `Ui::reset_style`) is not seen by the ring; and on the root `Ui`
+    /// that `Context::run_ui` hands over the record never matches, so the ring reads the root's
+    /// own style at the end of the pass, as for `native_set_style` (spec §6.18's residuals).
+    ///
+    /// The spelling for a `Ui` inside a role scope that draws in a style of the caller's own,
+    /// such as the body of the widgets crate's `Expander`, which draws in the style the
+    /// expander is shown in.
+    fn native_set_style_with_ring(&mut self, style: impl Into<std::sync::Arc<egui::Style>>);
+
     /// `surface`'s [`egui::Frame`] ([`ThemeAtlas::surface_frame`](crate::ThemeAtlas::surface_frame)). When nothing is installed
     /// it is the frame egui itself builds for that container from this `Ui`'s style, the
     /// same as passing no frame: `Frame::window` for [`Surface::Window`] and
@@ -122,30 +141,21 @@ impl NativeThemeUiExt for egui::Ui {
         self.set_style(style);
     }
 
+    fn native_set_style_with_ring(&mut self, style: impl Into<std::sync::Arc<egui::Style>>) {
+        let style = style.into();
+        if ThemeAtlas::from_ctx(self.ctx()).is_some() {
+            let radius = style.visuals.widgets.active.corner_radius;
+            record_scope(self.ctx(), self.unique_id(), radius, true);
+        }
+        self.set_style(style);
+    }
+
     fn native_frame(&self, surface: Surface) -> egui::Frame {
         match ThemeAtlas::from_ctx(self.ctx()) {
             Some(atlas) => atlas.surface_frame(self.ctx().theme(), surface),
             None => egui_preset(surface, self.style()),
         }
     }
-}
-
-/// Replace `ui`'s own style with `style` for the remainder of the `Ui` (`Ui::set_style`,
-/// `egui/src/ui.rs:387`) and record `ui` with `style`'s `widgets.active.corner_radius` for the
-/// focus ring, a later record for the same `Ui` replacing it, as
-/// [`NativeThemeUiExt::native_set_style`] does for a role's cell (spec §6.18): a widget focused in
-/// `ui` is then ringed at `style`'s corners, not at those of a role scope round it. The spelling
-/// for a `Ui` inside a role scope that draws in a style of the caller's own, such as the body of
-/// the widgets crate's `Expander`, which draws in the style the expander is shown in. With no
-/// atlas installed it is `Ui::set_style` alone. The style is set as given: a caller's own style
-/// carries its own `TextStyle::Name` keys, and its text sizes are the caller's to clamp.
-pub fn set_scope_style(ui: &mut egui::Ui, style: impl Into<std::sync::Arc<egui::Style>>) {
-    let style = style.into();
-    if ThemeAtlas::from_ctx(ui.ctx()).is_some() {
-        let radius = style.visuals.widgets.active.corner_radius;
-        record_scope(ui.ctx(), ui.unique_id(), radius, true);
-    }
-    ui.set_style(style);
 }
 
 /// `role`'s style in `variant` as an `egui::style::StyleModifier`, from the atlas installed in

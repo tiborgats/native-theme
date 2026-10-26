@@ -2422,6 +2422,18 @@ mod apply_tests {
                 cyan_light
             );
         });
+        // A token that no longer matches a colour that does is repaired too:
+        // the probe compares the tokens, not the colours alone.
+        cx.update(|cx| {
+            GpuiTheme::global_mut(cx).tokens.red = upstream;
+            assert_eq!(GpuiTheme::global(cx).colors.red, native.red);
+            repair_base_palette(cx);
+            assert_eq!(
+                GpuiTheme::global(cx).tokens.red,
+                gpui_component::theme::ThemeToken::from(native.red),
+                "a token that differs while its colour matches is not repaired"
+            );
+        });
     }
 
     /// The `reapplying` flag cannot tell the observer's own notification from a

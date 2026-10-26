@@ -13796,3 +13796,17 @@ moved lines; the README's keyboard-focus paragraph, the switch's doc and a CHANG
 say what is drawn. A paint change: kde-breeze, macOS and the community presets draw another ring
 round a focused control, adwaita a tinted border.
 **Status:** done, 753cda70.
+- *C-04 and C-05 review follow-up (2026-10-26):* C-04 M1: the token test also breaks a token
+  while its colour still matches and calls the repair, so a probe that compared the colours
+  alone turns it red (checked by mutation). C-05 M3: the hook is a `NativeThemeUiExt` method,
+  `native_set_style_with_ring(style)`, by the crate's rule that only an `Option`-returning helper
+  (`role_modifier`) is free; the name is on neither `egui::Ui` nor `egui::Context`, its parity
+  exception is gone (the script compares crate-root functions), and the Expander, the CHANGELOG
+  and the archive's closing line name it. M4: its doc states `native_set_style`'s residuals
+  (the record covers the whole `Ui`; a later style set by other means is not seen; on the root
+  `Ui` the record never matches). M5: `plugin.rs`'s `FocusEntry::scopes` and
+  `register_focus_shape` docs name it beside `native_scope` and `native_set_style`. M6: the test
+  also puts the expander in a `Role::Tab` scope, whose cell's radius differs from the base
+  style's (adwaita 0, windows-11 8, catppuccin-mocha 0 against 9, 4, 8), and holds the body's
+  ring to that scope's; a hook that recorded the base style turns it red (checked by mutation).
+  M2 (a read-only compare for the probe) is not taken: the clone is the existing pattern.

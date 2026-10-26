@@ -7,7 +7,7 @@ use native_theme_egui::native_theme::theme::{
     ArrowSide, ResolvedExpanderTheme, ResolvedPadding, ResolvedTheme,
 };
 use native_theme_egui::{
-    AccessibilityPreferences, Role, ThemeAtlas, expander_icon, set_scope_style,
+    AccessibilityPreferences, NativeThemeUiExt as _, Role, ThemeAtlas, expander_icon,
 };
 
 use crate::parts::Parts;
@@ -59,7 +59,7 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// in, not in the header's `Role::Expander` cell: a widget in it takes the caller's fills,
 /// outlines and text, and the focus ring a focused widget in it shows (the connector's install
 /// plugin) takes the caller's radius too, which the body records with
-/// `native_theme_egui::set_scope_style`.
+/// `NativeThemeUiExt::native_set_style_with_ring`.
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -157,11 +157,11 @@ impl Expander {
         // The body is drawn in the style the expander is shown in, not in the header's cell,
         // which `native_scope` puts in place of the whole style: a widget in the body is the
         // caller's. The disabled state lives on the `Ui`, so the body keeps it.
-        // `set_scope_style` also records the body's own radius for the focus ring, so a widget
-        // focused in it is ringed at the caller's corners, not at the expander scope's.
+        // `native_set_style_with_ring` also records the body's own radius for the focus ring, so
+        // a widget focused in it is ringed at the caller's corners, not at the expander scope's.
         let outer = std::sync::Arc::clone(ui.style());
         let add_body = move |ui: &mut egui::Ui| {
-            set_scope_style(ui, outer);
+            ui.native_set_style_with_ring(outer);
             add_body(ui)
         };
         if e.arrow_side.is_none()

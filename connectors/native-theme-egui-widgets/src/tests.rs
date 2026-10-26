@@ -815,12 +815,16 @@ fn a_widget_in_the_body_keeps_the_callers_style() {
     }
 }
 
+/// What lays out a test's button: the `Ui` it is laid out in, and the closure that adds the
+/// button to a `Ui`.
+type AddButton<'a> = dyn FnMut(&mut egui::Ui, &mut dyn FnMut(&mut egui::Ui)) + 'a;
+
 /// The corner radius of the focus ring `ctx` paints round the button `add` draws, once the
 /// button has the focus: it asks for it in the first pass, and the third pass paints the ring.
 fn ring_round_a_focused_button(
     ctx: &egui::Context,
     t: &ResolvedTheme,
-    mut add: impl FnMut(&mut egui::Ui, &mut dyn FnMut(&mut egui::Ui)),
+    add: &mut AddButton<'_>,
 ) -> Option<egui::CornerRadius> {
     let mut asked = false;
     let mut out = None;
@@ -845,37 +849,64 @@ fn ring_round_a_focused_button(
 }
 
 /// A widget focused in the body is ringed at the caller's corner radius, which the body records
-/// with `set_scope_style`, the radius a button outside any scope is ringed at, and not at the
-/// expander scope's, which a button in a plain `Role::Expander` scope is ringed at.
+/// with `native_set_style_with_ring`, not at the expander scope's: at the root, the radius a
+/// button outside any scope is ringed at; inside a `Role::Tab` scope, whose cell has another
+/// radius, the radius a button in that scope is ringed at. A plain `Role::Expander` scope and
+/// the `Role::Tab` scope each ring at another radius than the base style in at least one
+/// preset, or a body that recorded the expander's or the base style would pass.
 #[test]
 fn a_widget_focused_in_the_body_is_ringed_at_the_callers_radius() {
     use native_theme_egui::{NativeThemeUiExt, Role, RoleVariant};
     let prefs = AccessibilityPreferences::default();
-    let mut differs = 0;
+    let (mut expander_differs, mut role_differs) = (0, 0);
     for preset in ["kde-breeze", "adwaita", "windows-11", "catppuccin-mocha"] {
         let t = from_preset(preset, false, &prefs).unwrap().1;
-        let plain = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| add(ui));
-        let scoped = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| {
+        let ring =
+            |add: &mut AddButton<'_>| ring_round_a_focused_button(&installed(&t, &prefs), &t, add);
+        let plain = ring(&mut |ui, add| add(ui));
+        let scoped = ring(&mut |ui, add| {
             ui.native_scope(Role::Expander, RoleVariant::Normal, |ui| add(ui));
         });
-        let body = ring_round_a_focused_button(&installed(&t, &prefs), &t, |ui, add| {
+        let body = ring(&mut |ui, add| {
             let _ = Expander::new("Details")
                 .default_open(true)
                 .show(ui, |ui| add(ui));
+        });
+        let in_role = ring(&mut |ui, add| {
+            ui.native_scope(Role::Tab, RoleVariant::Normal, |ui| add(ui));
+        });
+        let body_in_role = ring(&mut |ui, add| {
+            ui.native_scope(Role::Tab, RoleVariant::Normal, |ui| {
+                let _ = Expander::new("Details")
+                    .default_open(true)
+                    .show(ui, |ui| add(ui));
+            });
         });
         assert!(plain.is_some(), "{preset}: no ring round a focused button");
         assert_eq!(
             body, plain,
             "{preset}: the ring in the body is not at the caller's radius"
         );
+        assert_eq!(
+            body_in_role, in_role,
+            "{preset}: in a Tab scope, the ring in the body is not at the scope's radius"
+        );
         if scoped != plain {
-            differs += 1;
+            expander_differs += 1;
+        }
+        if in_role != plain {
+            role_differs += 1;
         }
     }
     assert!(
-        differs > 0,
+        expander_differs > 0,
         "no preset gives the expander scope another ring radius than the base style, so this \
          test proves nothing"
+    );
+    assert!(
+        role_differs > 0,
+        "no preset gives the Tab scope another ring radius than the base style, so a body \
+         recording the base style would pass its case"
     );
 }
 
