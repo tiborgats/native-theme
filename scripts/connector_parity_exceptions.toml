@@ -708,4 +708,4 @@ reason = "the receiver is `geometry::toolbar` (`src/geometry.rs`), the refinemen
 connector = "egui"
 name = ["toolbar_padding", "toolbar_item_gap", "toolbar_bar_height", "toolbar_border_line_width"]
 kind = "absent"
-reason = "the atlas writes the toolbar's leaves to the toolbar role and the top panel (src/mapping.md, `toolbar.border.padding.*`: SCOPED to `[panel_top]` `inner_margin`, `toolbar.bar_height`: DERIVED to `spacing.interact_size.y`, `toolbar.border.line_width`: SCOPED to the separator's stroke), so no crate-root accessor is needed; iced has no toolbar, so its consumer reads them through these accessors"
+reason = "the atlas writes the toolbar's leaves to the toolbar role and the top panel (src/mapping.md, `toolbar.border.padding.*`: SCOPED to `[panel_top]` `inner_margin`, `toolbar.item_gap`: SCOPED to «toolbar» `spacing.item_spacing.x`, `toolbar.bar_height`: DERIVED to `spacing.interact_size.y`, `toolbar.border.line_width`: SCOPED to «toolbar» `visuals.widgets.noninteractive.bg_stroke.width`), so no crate-root accessor is needed; iced has no toolbar, so its consumer reads them through these accessors"

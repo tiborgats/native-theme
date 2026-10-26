@@ -13939,3 +13939,17 @@ toolbar role as the receivers.
   `geometry::dialog`'s doc says `min_w` holds in a window narrower than `dialog.min_width` plus
   twice the `lg` spacing (`dialog/dialog.rs:611-628`; gpui-base `src/positioner.rs:314-316`).
   Two showcase colour claims follow geometry.rs's new lines.
+- *D5 review follow-up (2026-10-26; it belongs to D5's entry above):* I1, the min-height
+  decision: `toolbar.bar_height` is a least height in iced as in gpui (`geometry::toolbar`'s
+  `min_h`), not a fixed one, so windows-11's 48 px bar grows with its items above a text scale
+  of 1 instead of squeezing them. A `Container` takes no minimum, so the showcase's bar and the
+  `toolbar_bar_height` doc example put a `space` of `bar_height` less the rule's width and the
+  vertical padding beside the items in a row, as `dialog_min_height`'s floor; at scale 1 the bar
+  is the height it was, the items centred in the same box, so the dump stays identical (the
+  controller's gate). The showcase doc says "at least `toolbar_bar_height` tall" again. I2:
+  `styles::toolbar`'s doc and the crate docs' paragraph say the items' text takes
+  `toolbar.font` through `font` (`system-fonts`) at `scaled_text_size` of its size; the
+  showcase's items already do (`Typeset::themed`). M3: the egui parity exception names
+  `toolbar.item_gap` (SCOPED «toolbar» `spacing.item_spacing.x`) and the line width's
+  `noninteractive.bg_stroke.width` (src/mapping.md). M4: gpui's `geometry::toolbar` doc anchors
+  the iced citation at `toolbar_rule`.

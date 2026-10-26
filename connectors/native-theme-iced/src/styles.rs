@@ -2046,7 +2046,10 @@ pub fn dialog(
 /// blur, and `snap` is a renderer setting. The padding, the gap between the
 /// items and the outer height are [`crate::toolbar_padding`],
 /// [`crate::toolbar_item_gap`] and [`crate::toolbar_bar_height`], whose doc
-/// shows the whole bar.
+/// shows the whole bar. The items' text is in `toolbar.font`, which a style
+/// cannot carry: `crate::font(&resolved.toolbar.font)` (feature
+/// `system-fonts`) at [`crate::scaled_text_size`]`(resolved.toolbar.font.size,
+/// &prefs)`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn toolbar(
     resolved: &ResolvedTheme,

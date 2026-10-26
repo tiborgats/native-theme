@@ -5626,8 +5626,9 @@ fn menu_bar(state: &State) -> Element<'_, Message> {
 /// `layout.container_margin` where it does not and by [`TOOLBAR_PADDING`]
 /// where that is unstated too, its items `toolbar_item_gap` apart, or
 /// `layout.widget_gap` apart where that is unstated, or [`TOOLBAR_GAP`]
-/// where that is unstated too, as the gpui showcase's toolbar,
-/// `toolbar_bar_height` tall where the theme states one. Under its padding
+/// where that is unstated too, as the gpui showcase's toolbar, at least
+/// `toolbar_bar_height` tall where the theme states one, growing with its
+/// items above it, as gpui's `geometry::toolbar` takes it as a `min_h`. Under its padding
 /// the connector's rule (`styles::toolbar_rule`), a
 /// `toolbar_border_line_width` line in `toolbar.border.color`, as the
 /// resolved theme states it. §2.13 has no row for that border: on the
@@ -5695,20 +5696,21 @@ fn toolbar(state: &State) -> Element<'_, Message> {
             .unwrap_or(TOOLBAR_GAP),
     )
     .align_y(iced::Center);
-    let bar = container(items)
-        .padding(native_theme_iced::toolbar_padding(
-            resolved,
-            Padding::from(layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
-        ))
-        .width(Fill)
-        .align_y(iced::Center)
-        .style(styles::toolbar(resolved));
-    // `toolbar.bar_height` is the outer height, the line included.
+    let padding = native_theme_iced::toolbar_padding(
+        resolved,
+        Padding::from(layout.container_margin.unwrap_or(TOOLBAR_PADDING)),
+    );
+    // `toolbar.bar_height` is the outer height, the line included, and a
+    // least height: a `space` that tall less the line and the padding stands
+    // beside the items, and the row is as tall as the taller of the two.
     let line = native_theme_iced::toolbar_border_line_width(resolved);
-    let bar = match native_theme_iced::toolbar_bar_height(resolved) {
-        Some(h) => bar.height(Length::Fixed((h - line).max(0.0))),
-        None => bar,
-    };
+    let floor = native_theme_iced::toolbar_bar_height(resolved)
+        .map(|h| (h - line - padding.y()).max(0.0))
+        .unwrap_or_default();
+    let bar = container(row![items, space().height(floor)].align_y(iced::Center))
+        .padding(padding)
+        .width(Fill)
+        .style(styles::toolbar(resolved));
     tagged(
         "chrome.toolbar",
         column![
@@ -8054,8 +8056,8 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
         }
         // ---- toolbar ----
         ("toolbar", "bar_height_px") => {
-            "native_theme_iced::toolbar_bar_height: the bar container's height, less the \
-             rule's, where stated"
+            "native_theme_iced::toolbar_bar_height: the bar container's least height, less \
+             the rule's, where stated: a space that tall beside the items, less the padding"
                 .into()
         }
         ("toolbar", "item_gap_px") => format!(

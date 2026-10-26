@@ -245,7 +245,9 @@
 //! and iced has no dialog widget to draw a type icon. A toolbar, which
 //! neither has either, is the consumer's `container` with a rule under it,
 //! which `styles::toolbar`, `styles::toolbar_rule` and the `toolbar_*`
-//! helpers style. An `iced_aw` `Card` is
+//! helpers style; its items' text takes `toolbar.font`, through [`font`]
+//! (`system-fonts`) at [`scaled_text_size`] of `toolbar.font.size`. An
+//! `iced_aw` `Card` is
 //! not the dialog's receiver: its head, body and foot take styles of their
 //! own, and only its maxima match a dialog's.
 //!
@@ -1599,23 +1601,29 @@ pub fn toolbar_item_gap(resolved: &native_theme::theme::ResolvedTheme) -> Option
     resolved.toolbar.item_gap
 }
 
-/// Returns `toolbar.bar_height`, a toolbar's outer height in logical pixels,
-/// the rule under the bar included, or `None` where the platform states
-/// none: KDE's and GNOME's toolbars size to their content
+/// Returns `toolbar.bar_height`, a toolbar's least outer height in logical
+/// pixels, the rule under the bar included, or `None` where the platform
+/// states none: KDE's and GNOME's toolbars size to their content
 /// (docs/platform-facts.md §2.13), so a consumer leaves the bar's height to
-/// its content there. The bar's own container is this less
-/// [`toolbar_border_line_width`]:
+/// its content there. It is a minimum, as the gpui connector's
+/// `geometry::toolbar` takes it (`min_h`): the bar grows with items taller
+/// than it, as at a text-scaling factor above 1. A `Container` takes no
+/// minimum (iced_widget 0.14.2 `src/container.rs`), so the floor goes in the
+/// content: beside the items, in a row, a `space` as tall as this less the
+/// rule's width ([`toolbar_border_line_width`]) and the container's vertical
+/// padding ([`toolbar_padding`]), which the row grows to:
 ///
 /// ```rust,ignore
 /// let line = native_theme_iced::toolbar_border_line_width(&resolved);
-/// let bar = container(items.spacing(native_theme_iced::toolbar_item_gap(&resolved).unwrap_or(gap)))
-///     .padding(native_theme_iced::toolbar_padding(&resolved, default))
+/// let padding = native_theme_iced::toolbar_padding(&resolved, default);
+/// let floor = native_theme_iced::toolbar_bar_height(&resolved)
+///     .map(|h| (h - line - padding.y()).max(0.0))
+///     .unwrap_or_default();
+/// let items = items.spacing(native_theme_iced::toolbar_item_gap(&resolved).unwrap_or(gap));
+/// let bar = container(row![items, space().height(floor)].align_y(Center))
+///     .padding(padding)
 ///     .width(Fill)
 ///     .style(native_theme_iced::styles::toolbar(&resolved));
-/// let bar = match native_theme_iced::toolbar_bar_height(&resolved) {
-///     Some(h) => bar.height((h - line).max(0.0)),
-///     None => bar,
-/// };
 /// column![bar, iced::widget::rule::horizontal(line).style(native_theme_iced::styles::toolbar_rule(&resolved))]
 /// ```
 #[must_use]
