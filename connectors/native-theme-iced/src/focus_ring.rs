@@ -109,17 +109,20 @@ impl Focus {
 }
 
 /// Whether `event` can move the keyboard focus, so [`FocusRing`] asks the
-/// field again after it: a mouse button, a key, a touch, or a window event.
-/// A pointer move or a scroll cannot, and asking on every one would have
-/// iced_aw's `NumberInput` rebuild its step elements on each (iced_aw 0.14.1
-/// `src/widget/number_input.rs:604-640`).
+/// field again after it: a mouse button, a key, a touch, or the window
+/// gaining or losing the OS's focus (`window::Event::Focused`, `Unfocused`).
+/// A pointer move, a scroll or any other window event cannot, and asking on
+/// every one would have iced_aw's `NumberInput` rebuild its step elements on
+/// each (iced_aw 0.14.1 `src/widget/number_input.rs:604-640`): iced hands
+/// `update` a `RedrawRequested` on every frame (iced_winit 0.14.0
+/// `src/lib.rs:814-833`).
 fn may_move_focus(event: &Event) -> bool {
     match event {
         Event::Mouse(mouse::Event::ButtonPressed(_) | mouse::Event::ButtonReleased(_))
         | Event::Keyboard(_)
         | Event::Touch(_)
-        | Event::Window(_) => true,
-        Event::Mouse(_) | Event::InputMethod(_) => false,
+        | Event::Window(window::Event::Focused | window::Event::Unfocused) => true,
+        Event::Mouse(_) | Event::Window(_) | Event::InputMethod(_) => false,
     }
 }
 
@@ -702,6 +705,72 @@ mod tests {
             Event::Window(window::Event::Focused),
         );
         assert_eq!(painted(&element, &tree, &node), 1, "the window has it back");
+    }
+
+    /// A 100 by 30 field that counts the operations it is handed, the
+    /// wrapper's [`Probe`] among them.
+    struct Asked(std::rc::Rc<std::cell::Cell<u32>>);
+
+    impl Widget<(), Theme, Recorder> for Asked {
+        fn size(&self) -> Size<Length> {
+            Size::new(Length::Fixed(100.0), Length::Fixed(30.0))
+        }
+
+        fn layout(&mut self, _: &mut Tree, _: &Recorder, _: &layout::Limits) -> layout::Node {
+            layout::Node::new(Size::new(100.0, 30.0))
+        }
+
+        fn draw(
+            &self,
+            _: &Tree,
+            _: &mut Recorder,
+            _: &Theme,
+            _: &renderer::Style,
+            _: Layout<'_>,
+            _: mouse::Cursor,
+            _: &Rectangle,
+        ) {
+        }
+
+        fn operate(
+            &mut self,
+            _: &mut Tree,
+            layout: Layout<'_>,
+            _: &Recorder,
+            operation: &mut dyn Operation,
+        ) {
+            self.0.set(self.0.get() + 1);
+            operation.focusable(None, layout.bounds(), &mut Held(false));
+        }
+    }
+
+    /// The field is asked again after the window events that move the OS's
+    /// focus, `Focused` and `Unfocused`, and after no other: iced hands
+    /// `update` a `RedrawRequested` on every frame (iced_winit 0.14.0
+    /// `src/lib.rs:814-833`), and a resize or a move changes no focus.
+    #[test]
+    fn only_the_windows_focus_events_ask_the_field_again() {
+        let r = resolved("windows-11", ColorMode::Light);
+        let asked = std::rc::Rc::new(std::cell::Cell::new(0));
+        let mut element: Element<'_, (), Theme, Recorder> =
+            crate::focus_ring(&r, 4.0, Element::new(Asked(asked.clone())));
+        let mut tree = Tree::new(&element);
+        let node = laid(&mut element, &mut tree);
+        let quiet = [
+            window::Event::RedrawRequested(iced_core::time::Instant::now()),
+            window::Event::Resized(Size::new(800.0, 600.0)),
+            window::Event::Moved(iced_core::Point::new(5.0, 5.0)),
+        ];
+        for event in quiet {
+            let before = asked.get();
+            send(&mut element, &mut tree, &node, Event::Window(event.clone()));
+            assert_eq!(asked.get(), before, "{event:?} asks the field");
+        }
+        for event in [window::Event::Unfocused, window::Event::Focused] {
+            let before = asked.get();
+            send(&mut element, &mut tree, &node, Event::Window(event.clone()));
+            assert_eq!(asked.get(), before + 1, "{event:?} does not ask the field");
+        }
     }
 
     /// Where the view replaces the field with another widget, the ring asks
