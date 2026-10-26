@@ -14109,3 +14109,28 @@ segmented control move.
   and its sidebar loses #ffffff on #f6f6f6 and #1e1e1e on #383838; the CHANGELOG line says so.
   The `list_alternate_row_background_not_derived` comment counts 11 field rules and the
   text_area.border block; the stated-hover test covers the sidebar too.
+
+#### D12 · macOS's disabled controls, the slider track and the accent-following segment (OS-probe run 40348854007)
+**Problem:** macos-monterey stated disabled fades no source gave (the switch's and slider's
+disabled colours, a disabled checkbox and push button fill), macos-tahoe the enabled colours;
+the slider's unfilled track inherited `secondaryLabelColor`, several times too dark; monterey's
+unchecked checkbox was `controlBackgroundColor` with an unmeasured outline; and macos-tahoe stated
+its selected segment as the default blue, unmeasured under another accent.
+**Fix:** W2's d-w1-d12-macos-disabled.patch (regenerated at 681f386d; facts and evidence ae57aceb,
+8973a684, 8503a404, 681f386d), applied and gated. Both presets state the disabled switch and
+slider parts as the key window and the renders draw them, the slider's `track_color` and the
+push button's `disabled_background`; monterey's unchecked checkbox is the render's (#ffffff with
+a #d6d6d6 edge / #ffffff37 with none) and its disabled checkbox fill is dropped; tahoe's
+`segmented_control.active_background` is dropped and inherits the accent, which the red-accent
+pass shows the segment follows. The macOS reader writes `switch.disabled_checked_background` as
+the read accent at 0x80 on macos-monterey's generation and 0x73 on macos-tahoe's
+(`disabled_checked_alpha`, `apply_accent_fades`; no panicking path: a variant without a read accent
+writes nothing over the preset's). `slider.track_color` is a wrong safety net naming macOS,
+Windows and Material. check_preset_citations drops two monterey exceptions that now hold. The
+iced `contract-leaves.toml` regenerated. Gates: the core tests (the two new macOS reader tests
+run on the host), strict-panic, `-D warnings` and clippy for x86_64-apple-darwin, the host's
+clippy and fmt, the doc gates with their self-tests, and every connector suite. The archive's
+segment entry carries the commit.
+**Status:** done, cd32a249 and the commit that files this entry. Visible in CI Screenshots only:
+the macOS presets' disabled controls, slider track, monterey's unchecked checkbox and tahoe's
+segment.
