@@ -9,8 +9,9 @@
 #   docs/evidence/os-probe/2026-10-11-run-38129819806.
 # Colours: what WinUI 3 draws. A brush with alpha is stated as the resource gives it (ARGB #E4000000
 #   is "#000000e4"); the defaults' comments give the composite over background_color. A hover or
-#   pressed fill that replaces the rest fill (button hover and pressed, segmented control, combo box,
-#   switch off track) is flattened over background_color: the connectors composite it over the rest fill.
+#   pressed fill that replaces the rest fill (button hover and pressed, combo box, switch off track) is
+#   flattened over background_color: the connectors composite it over the rest fill. One that replaces
+#   a transparent rest fill (a list row, a sidebar item, a segment) is stated as the brush, a layer.
 # Source: WinUI3 XAML theme resources, Fluent Design System
 name = "Windows 11"
 icon_set = "segoe-fluent"
@@ -541,6 +542,9 @@ disabled_text_color = "#0000005c"
 diameter_px = 32.0
 min_diameter_px = 16.0
 stroke_width_px = 4.0
+# platform-facts.md:1602 (§2.23): ProgressRingForegroundThemeBrush = AccentFillColorDefault, UISettings
+# AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2, probe.toml:755)
+fill_color = "#0067c0"
 
 [light.combo_box]
 # platform-facts.md:1611 (§2.24): ComboBoxBackground = ControlFillColorDefault #B3FFFFFF
@@ -572,16 +576,35 @@ shadow_enabled = false
 # platform-facts.md:1613 (§2.24): ComboBoxForeground = TextFillColorPrimary #E4000000
 color = "#000000e4"
 [light.segmented_control]
+# platform-facts.md:1633 (§2.25): the Windows Community Toolkit Segmented's group, ControlAltFillColorSecondary
+# #06000000 (Segmented.xaml:19-20 at v8.2.251219; Common_themeresources_any.xaml:234 at microsoft-ui-xaml 8463f45)
+background_color = "#00000006"
+# segment_height no source: platform-facts.md:1638 gives the Toolkit's item no height of its own, its
+# label's line in a 5 / 6 margin; 28 kept
 segment_height_px = 28.0
-separator_width_px = 1.0
-# Interactive state colors (Windows: no native segmented control, platform-facts.md §2.25)
-# active_background ← defaults.accent_color, active_text_color ← defaults.accent_text_color
-# soft_option: the button's hover fill, flattened as button.hover_background (platform-facts.md:1192)
-hover_background = "#f6f6f6"
+# platform-facts.md:1639 (§2.25): no separator line, the items 1 apart on the group's fill
+separator_width_px = 0.0
+# platform-facts.md:1636-1637 (§2.25): the selected item, ControlFillColorDefault lettered TextFillColorPrimary
+# #B3FFFFFF and #E4000000 (SegmentedItem.xaml:130-131, :154-155; Common_themeresources_any.xaml:219, :209); its accent pill has no field
+active_background = "#ffffffb3"
+active_text_color = "#000000e4"
+# platform-facts.md:1646 (§2.25): a disabled item fades to SegmentedItemDisabledOpacity
+disabled_opacity = 0.55
+# platform-facts.md:1647 (§2.25): SubtleFillColorSecondary laid over the group's fill, the item's rest fill
+# being transparent: a layer, as the list's and the sidebar's hovers (#09000000, SegmentedItem.xaml:128-129; Common_themeresources_any.xaml:230)
+hover_background = "#00000009"
 
 
 [light.segmented_control.border]
-# platform-facts.md:1644 (§2.25): Windows has no segmented control, so no shadow
+# platform-facts.md:1642 (§2.25): ControlStrokeColorDefault (#0F000000, Segmented.xaml:21-22; Common_themeresources_any.xaml:243); its width
+# and radius, 1 and 4, are the defaults' (platform-facts.md:1641, :1643)
+color = "#0000000f"
+# platform-facts.md:1640, :1645 (§2.25): an item's content margin, 11 across, 5 above and 6 below
+# (SegmentedItem.xaml:629, :649)
+padding_horizontal_px = 11.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
+# platform-facts.md:1644 (§2.25): no shadow
 shadow_enabled = false
 
 [light.card]
@@ -1159,6 +1182,9 @@ disabled_text_color = "#ffffff5d"
 diameter_px = 32.0
 min_diameter_px = 16.0
 stroke_width_px = 4.0
+# platform-facts.md:1602 (§2.23): ProgressRingForegroundThemeBrush = AccentFillColorDefault, UISettings
+# AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758)
+fill_color = "#4cc2ff"
 
 [dark.combo_box]
 # platform-facts.md:1611 (§2.24): ComboBoxBackground = ControlFillColorDefault #0FFFFFFF
@@ -1190,16 +1216,35 @@ shadow_enabled = false
 # platform-facts.md:1613 (§2.24): ComboBoxForeground = TextFillColorPrimary #FFFFFF
 color = "#ffffff"
 [dark.segmented_control]
+# platform-facts.md:1633 (§2.25): the Windows Community Toolkit Segmented's group, ControlAltFillColorSecondary
+# #19000000 (Segmented.xaml:12-13 at v8.2.251219; Common_themeresources_any.xaml:30 at microsoft-ui-xaml 8463f45)
+background_color = "#00000019"
+# segment_height no source: platform-facts.md:1638 gives the Toolkit's item no height of its own, its
+# label's line in a 5 / 6 margin; 28 kept
 segment_height_px = 28.0
-separator_width_px = 1.0
-# Interactive state colors (Windows: no native segmented control, platform-facts.md §2.25)
-# active_background ← defaults.accent_color, active_text_color ← defaults.accent_text_color
-# soft_option: the button's hover fill, flattened as button.hover_background (platform-facts.md:1192)
-hover_background = "#323232"
+# platform-facts.md:1639 (§2.25): no separator line, the items 1 apart on the group's fill
+separator_width_px = 0.0
+# platform-facts.md:1636-1637 (§2.25): the selected item, ControlFillColorDefault lettered TextFillColorPrimary
+# #0FFFFFFF and #FFFFFF (SegmentedItem.xaml:13-14, :36-37; Common_themeresources_any.xaml:15, :5); its accent pill has no field
+active_background = "#ffffff0f"
+active_text_color = "#ffffff"
+# platform-facts.md:1646 (§2.25): a disabled item fades to SegmentedItemDisabledOpacity
+disabled_opacity = 0.55
+# platform-facts.md:1647 (§2.25): SubtleFillColorSecondary laid over the group's fill, the item's rest fill
+# being transparent: a layer, as the list's and the sidebar's hovers (#0FFFFFFF, SegmentedItem.xaml:11-12; Common_themeresources_any.xaml:26)
+hover_background = "#ffffff0f"
 
 
 [dark.segmented_control.border]
-# platform-facts.md:1644 (§2.25): Windows has no segmented control, so no shadow
+# platform-facts.md:1642 (§2.25): ControlStrokeColorDefault (#12FFFFFF, Segmented.xaml:14-15; Common_themeresources_any.xaml:39); its width
+# and radius, 1 and 4, are the defaults' (platform-facts.md:1641, :1643)
+color = "#ffffff12"
+# platform-facts.md:1640, :1645 (§2.25): an item's content margin, 11 across, 5 above and 6 below
+# (SegmentedItem.xaml:629, :649)
+padding_horizontal_px = 11.0
+padding_top_px = 5.0
+padding_bottom_px = 6.0
+# platform-facts.md:1644 (§2.25): no shadow
 shadow_enabled = false
 
 [dark.card]

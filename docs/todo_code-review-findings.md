@@ -14073,3 +14073,24 @@ rows; the two rules leaving the derive make it 65. The connectors' tests pass an
 `contract-leaves.toml` is unchanged (no iced row moves on the macOS presets' hovers).
 **Status:** done, the commit that files this entry. The controller's Linux gate: the macOS
 presets' hovered list and sidebar rows.
+
+#### D11 · windows-11: the spinner and the segmented control
+**Problem:** windows-11's spinner inherited the accent itself where a WinUI 3 ProgressRing takes
+`AccentFillColorDefault`, and its segmented control was the accent pill under the accent's text,
+with the button's flattened hover, where the Windows Community Toolkit's `Segmented` (the
+platform's segmented control, facts §2.25's Windows cells, 64848ada, 840e00ba) is neutral
+throughout.
+**Fix:** W2's d-w1-d11-windows.patch (facts 820c9f96, 64848ada, 840e00ba), applied and gated:
+windows-11 states the spinner #0067c0 / #4cc2ff and the Toolkit's selected item, group, edge,
+layered hover, no separator, 11 / 5 / 6 content margin and 0.55 disabled fade; the spinner's
+per-platform rule is `preset` on Windows and the `segmented_control.active_background` wrong
+safety net names Windows; the Windows reader writes the spinner from the accent shade the four
+accent fills take and, under high contrast, the spinner and the segmented control from the
+Toolkit's high-contrast brushes, leaving the segmented control unwritten outside it. Review fix
+on the patch: `native_themes_state_documented_sizes` held windows-11's segmented-control padding
+to the facts' old "(none)"; its row now gives the cells' 5 / 11 / 6 / 11
+(`documented_sizes.rs`). `contract-leaves.toml` regenerated (two `styles::segment.background`
+exceptions lose windows-11). The Windows code checks on x86_64-pc-windows-msvc (strict-panic,
+`-D warnings`, clippy all targets), and the reader's tests run on the host.
+**Status:** done, the commit that files this entry. The Windows capture: windows-11's spinner and
+segmented control move.

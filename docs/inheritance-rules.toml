@@ -324,7 +324,7 @@ gnome    = "preset"
 [per_platform."spinner.fill_color"]
 fallback = "defaults.accent_color"
 macos    = "preset"
-windows  = "defaults.accent_color"
+windows  = "preset"               # AccentFillColorDefault, the reader's shade (platform-facts.md:1602)
 kde      = "defaults.text_color"
 gnome    = "defaults.text_color"
 
@@ -644,7 +644,7 @@ why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the acc
 
 [wrong_safety_nets."segmented_control.active_background"]
 inherits_from = "defaults.accent_color"
-why_wrong     = "GNOME's AdwToggleGroup draws a checked toggle in --active-toggle-bg-color, white in light and white at 20 % in dark (libadwaita 1.10.0 _toggle-group.scss:79-80, _colors.scss:238, :245-247), and macOS 14 and 15 draw the selected segment raised and neutral, #ffffff / #666666 measured (platform-facts.md:1636, §2.25): a neutral pill, not the accent"
+why_wrong     = "GNOME's AdwToggleGroup draws a checked toggle in --active-toggle-bg-color, white in light and white at 20 % in dark (libadwaita 1.10.0 _toggle-group.scss:79-80, _colors.scss:238, :245-247), and macOS 14 and 15 draw the selected segment raised and neutral, #ffffff / #666666 measured (platform-facts.md:1636, §2.25), and the Windows Community Toolkit's Segmented fills a selected item with ControlFillColorDefault, #B3FFFFFF / #0FFFFFFF (SegmentedItem.xaml:130-131, v8.2.251219; platform-facts.md:1636): a neutral pill, not the accent"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #

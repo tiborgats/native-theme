@@ -331,7 +331,7 @@ const ROWS: &[Row] = &[
     row(Windows11, "dialog", all(24.0), &[1556, 1557], "ContentDialogPadding=24"),
     row(Windows11, "combo_box", trbl(5.0, 0.0, 7.0, 12.0), &[1618, 1623], "ComboBoxPadding=12,5,0,7: 0 right, to the 38px arrow column")
         .with(&[("arrow_area_width", Some(38.0), 1620)]),
-    row(Windows11, "segmented_control", NONE, &[1640, 1645], "(none)"),
+    row(Windows11, "segmented_control", [Some(5.0), Some(11.0), Some(6.0), Some(11.0)], &[1640, 1645], "Toolkit Segmented: the item content's 11,0,11,0 margin, the label's 0,5,0,6"),
     row(Windows11, "card", all(12.0), &[1662, 1663], "12 (convention)"),
     row(Windows11, "expander", trbl(0.0, 0.0, 0.0, 16.0), &[1677, 1678], "header context: ExpanderHeaderPadding=16,0,0,0")
         .with(&[("arrow_gap", Some(30.0), 1684), ("content_indent", Some(16.0), 1685)]),

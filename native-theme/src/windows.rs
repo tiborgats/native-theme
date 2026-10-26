@@ -411,6 +411,25 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     variant.switch.checked_background = Some(colors.highlight);
     variant.slider.fill_color = Some(colors.highlight);
     variant.progress_bar.fill_color = Some(colors.highlight);
+    // A ProgressRing, `SystemControlHighlightAccentBrush` (ProgressRing_themeresources.xaml:13;
+    // generic.xaml:2055), the highlight.
+    variant.spinner.fill_color = Some(colors.highlight);
+    // The segmented control, the Windows Community Toolkit Segmented's
+    // (docs/platform-facts.md §2.25, v8.2.251219): the group the button face, edged in
+    // the highlight (Segmented.xaml:26-29); an item lettered in the button text, hovered
+    // in the highlight and, selected, the highlight lettered in its text
+    // (SegmentedItem.xaml:269-270, :247-248, :249-250, :273-274). Outside high contrast
+    // these are WinUI's fixed brushes, which no user setting moves: the preset's stand.
+    variant.segmented_control.background_color = Some(colors.btn_face);
+    variant
+        .segmented_control
+        .border
+        .get_or_insert_default()
+        .color = Some(colors.highlight);
+    variant.segmented_control.font.get_or_insert_default().color = Some(colors.btn_text);
+    variant.segmented_control.hover_background = Some(colors.highlight);
+    variant.segmented_control.active_background = Some(colors.highlight);
+    variant.segmented_control.active_text_color = Some(colors.highlight_text);
     // A hovered on switch, `ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColor`
     // (ToggleSwitch_themeresources.xaml:88), a replacing fill.
     variant.switch.hover_checked_background = Some(colors.btn_face);
@@ -537,6 +556,10 @@ fn build_theme(
     variant.switch.checked_background = Some(primary_bg);
     variant.slider.fill_color = Some(primary_bg);
     variant.progress_bar.fill_color = Some(primary_bg);
+    // A ProgressRing too: `ProgressRingForegroundThemeBrush` =
+    // `AccentFillColorDefaultBrush` (ProgressRing_themeresources.xaml:5, :9;
+    // docs/platform-facts.md:1602).
+    variant.spinner.fill_color = Some(primary_bg);
     // `HyperlinkForeground` = `AccentTextFillColorPrimary`: AccentDark2 light,
     // AccentLight3 dark (docs/platform-facts.md:1058).
     variant.defaults.link_color = if dark { light3 } else { dark2 };
@@ -895,14 +918,15 @@ mod tests {
         Some(crate::Rgba::rgb(0, 0, 6)),
     ];
 
-    /// The fields the accent fill reaches beside the buttons: the four accent
-    /// controls' fills and the focused text box's line.
-    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 5] {
+    /// The fields the accent fill reaches beside the buttons: the five accent
+    /// controls' fills, the spinner's among them, and the focused text box's line.
+    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 6] {
         [
             ("checkbox.checked_background", v.checkbox.checked_background),
             ("switch.checked_background", v.switch.checked_background),
             ("slider.fill_color", v.slider.fill_color),
             ("progress_bar.fill_color", v.progress_bar.fill_color),
+            ("spinner.fill_color", v.spinner.fill_color),
             ("input.focus_border_color", v.input.focus_border_color),
         ]
     }
@@ -1198,6 +1222,14 @@ mod tests {
             assert_eq!(font_color(&v.window.title_bar_font), None);
             assert_eq!(v.window.inactive_title_bar_background, None);
             assert_eq!(v.window.inactive_title_bar_text_color, None);
+            // The segmented control is WinUI's fixed brushes outside high
+            // contrast, which no user setting moves: the preset's stand.
+            assert_eq!(v.segmented_control.background_color, None);
+            assert_eq!(v.segmented_control.border, None);
+            assert_eq!(v.segmented_control.font, None);
+            assert_eq!(v.segmented_control.hover_background, None);
+            assert_eq!(v.segmented_control.active_background, None);
+            assert_eq!(v.segmented_control.active_text_color, None);
         }
     }
 
@@ -1228,6 +1260,13 @@ mod tests {
             assert_eq!(value, Some(c.highlight), "{field}");
         }
         assert_eq!(v.switch.hover_checked_background, Some(c.btn_face));
+        let seg = &v.segmented_control;
+        assert_eq!(seg.background_color, Some(c.btn_face));
+        assert_eq!(seg.border.as_ref().and_then(|b| b.color), Some(c.highlight));
+        assert_eq!(font_color(&seg.font), Some(c.btn_text));
+        assert_eq!(seg.hover_background, Some(c.highlight));
+        assert_eq!(seg.active_background, Some(c.highlight));
+        assert_eq!(seg.active_text_color, Some(c.highlight_text));
         assert_eq!(v.defaults.info_color, Some(c.window_text));
         assert_eq!(
             v.progress_bar.border.as_ref().and_then(|b| b.line_width),

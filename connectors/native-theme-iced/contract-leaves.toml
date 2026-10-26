@@ -740,8 +740,8 @@ moves = [
 [leaves."segmented_control.background_color"]
 moves = [
   { row = "styles::segment.background", statuses = ["(false, Active)", "(false, Disabled)"] },
-  { row = "styles::segment.background", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
-  { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segment.background", statuses = ["(false, Hovered)", "(false, Pressed)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
 ]
 
 [leaves."segmented_control.border.color"]
