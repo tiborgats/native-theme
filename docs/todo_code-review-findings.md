@@ -14174,3 +14174,15 @@ comment restated from facts :1227 / :1247, the T15 list's checkbox items moved t
 the CHANGELOG lines say the overlay holds as for the D2 fills, and the dark comment gives the
 measured #1f4e81 (probe 14 :3816).
 **Status:** done, the commit that files this entry.
+
+#### D14 · macOS's radio dot (OS-probe run 40348854007)
+**Problem:** facts §2.5 said Apple publishes no radio dot size, so macos-monterey and macos-tahoe
+stated none and each connector drew its toolkit's own mark (gpui-component's check glyph in
+gpui).
+**Fix:** W2's d-w1-d14-radio.patch (facts ef4e4868), applied and gated: both presets state
+`checkbox.radio_dot_diameter_px`, 6 on macos-monterey and 5 on macos-tahoe, measured from the
+run's renders; documented_sizes holds the rows, gpui's `Radio` doc and the showcase exceptions'
+reason drop the macOS presets from the silent ones, and the CHANGELOG has the line. The core and
+connector suites pass; `contract-leaves.toml` is unchanged.
+**Status:** done, the commit that files this entry. Visible in the macOS presets' selected
+radios (CI Screenshots).

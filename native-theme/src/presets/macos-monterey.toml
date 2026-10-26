@@ -153,6 +153,9 @@ color = "#000000"
 # starts 6 after it (probe :1106)
 indicator_width_px = 14.0
 label_gap_px = 6.0
+# platform-facts.md:1241 (§2.5): the selected radio's dot, 6 (measured, os-probe run 40348854007,
+# os-probe-macos-14/renders/aqua/radio-regular-on@2x.png, in a window that is not key)
+radio_dot_diameter_px = 6.0
 # Interactive state colors (platform-facts.md section 2.5 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: checkbox hover state -- subtle highlight
@@ -643,6 +646,9 @@ color = "#ffffff"
 # starts 6 after it (probe :1106)
 indicator_width_px = 14.0
 label_gap_px = 6.0
+# platform-facts.md:1241 (§2.5): the selected radio's dot, 6 (measured, os-probe run 40348854007,
+# os-probe-macos-14/renders/aqua/radio-regular-on@2x.png, in a window that is not key)
+radio_dot_diameter_px = 6.0
 # Interactive state colors (platform-facts.md section 2.5 macOS)
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: checkbox hover state -- subtle highlight

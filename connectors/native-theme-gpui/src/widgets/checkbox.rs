@@ -670,8 +670,9 @@ impl RenderOnce for Checkbox {
 /// §2.5, :1249), on gpui-base's headless `Radio`. Activating an unchecked
 /// one requests `true`; a checked one does nothing. The mark is a dot
 /// `checkbox.radio_dot_diameter` across in `indicator_color`, centred in the
-/// circle (:1241); where the theme states no dot size (macOS publishes none),
-/// it is gpui-component's own check glyph (radio.rs:247). Its `Styled` style
+/// circle (:1241); where the theme states no dot size (ios-13 and the
+/// colour-scheme presets), it is gpui-component's own check glyph
+/// (radio.rs:247). Its `Styled` style
 /// refines the row, as [`Checkbox`]'s does.
 pub struct Radio {
     parts: Parts,

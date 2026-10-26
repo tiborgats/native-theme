@@ -779,7 +779,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "the theme states no checkbox.radio_dot_diameter_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: half the circle, iced_widget 0.14.2 src/radio.rs:409-433) | theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size | theme silence: material-3 and catppuccin-mocha state no checkbox.radio_dot_diameter_px (None), so the selected radio button's dot is each toolkit's own size (egui-widgets RadioButton: egui's own radio dot, egui-0.36.2/src/widgets/radio_button.rs)"
+reason = "the theme states no checkbox.radio_dot_diameter_px on catppuccin-mocha: each toolkit keeps its own default (iced: half the circle, iced_widget 0.14.2 src/radio.rs:409-433) | theme silence, catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size | theme silence: catppuccin-mocha states no checkbox.radio_dot_diameter_px (None), so the selected radio button's dot is each toolkit's own size (egui-widgets RadioButton: egui's own radio dot, egui-0.36.2/src/widgets/radio_button.rs)"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.x",
     "catppuccin-mocha:basic.radios.option_a.dot.y",
@@ -788,7 +788,7 @@ keys = [
 ]
 
 [[parity.group]]
-reason = "theme silence, material-3 and catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size"
+reason = "theme silence, catppuccin-mocha: checkbox.radio_dot_diameter is unstated there; gpui's radio then draws gpui-component's own mark (native_theme_gpui::widgets::Radio, gpui-component src/radio.rs:247), a check glyph whose centre pixel is its stroke's antialiased edge, where iced and egui draw a dot of their own size"
 keys = [
     "catppuccin-mocha:basic.radios.option_a.dot.mark",
 ]
