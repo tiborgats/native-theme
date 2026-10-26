@@ -37,12 +37,14 @@ missing from the metadata is a hard error, never a silently skipped toolkit,
 and so is a toolkit in which the rules below discover no widget: an upstream
 layout they no longer match would otherwise pass as `missing 0`.
 
-gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`
-or a `#[derive(IntoElement)]`, outside `#[cfg(test)]` modules, that the crate
-also declares as a `pub struct`. The `pub struct` gate is the crate's own
-public-widget line: it discards private helpers (`ShimmerGlyphs`,
-`MenuItemElement`) and the enums that are widget *arguments* rather than
-widgets (`DescriptionText`, `IconName`).
+gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`,
+a `#[derive(IntoElement)]` or a `#[derive(IntoPlot)]`, outside `#[cfg(test)]`
+modules, that the crate also declares as a `pub struct`. `IntoPlot` is how
+the charts become elements: the derive writes their `impl IntoElement`
+(gpui-component-macros 0.8.0, derive_into_plot.rs:20). The `pub struct`
+gate is the crate's own public-widget line: it discards private helpers
+(`ShimmerGlyphs`, `MenuItemElement`) and the enums that are widget
+*arguments* rather than widgets (`DescriptionText`, `IconName`).
 
 iced (`iced_widget`): every source module under `src/` that declares a
 crate-level `impl ... Widget<...>` or a `pub trait Catalog`. That rule
@@ -198,6 +200,7 @@ RENDER_IMPL = re.compile(
     r"^\s*impl(?:\s*<[^>]*>)?\s+(?:RenderOnce|IntoElement)\s+for\s+([A-Za-z_]\w*)"
 )
 DERIVE = re.compile(r"#\[derive\(([^)]*)\)\]")
+RENDER_DERIVES = {"IntoElement", "IntoPlot"}
 STRUCT = re.compile(r"^\s*(?:pub(?:\([^)]*\))?\s+)?struct\s+([A-Za-z_]\w*)")
 PUB_STRUCT = re.compile(r"^\s*pub\s+struct\s+([A-Za-z_]\w*)", re.M)
 CFG_TEST_MOD = re.compile(r"#\[cfg\(test\)\]\s*(?:pub\s+)?mod\s+\w+\s*\{")
@@ -498,7 +501,8 @@ def rust_files(root):
 
 
 def gpui_widgets(src):
-    """Public types that render themselves: `RenderOnce` / `IntoElement`."""
+    """Public types that render themselves: `RenderOnce` / `IntoElement` /
+    `IntoPlot`."""
     found, public = set(), set()
     for path in sorted(rust_files(src)):
         with open(path, encoding="utf-8", errors="replace") as f:
@@ -509,7 +513,7 @@ def gpui_widgets(src):
             if m := RENDER_IMPL.match(line):
                 found.add(m.group(1))
             d = DERIVE.search(line)
-            if d and "IntoElement" in [x.strip() for x in d.group(1).split(",")]:
+            if d and RENDER_DERIVES & {x.strip() for x in d.group(1).split(",")}:
                 for follow in lines[i + 1 : i + 8]:
                     if s := STRUCT.match(follow):
                         found.add(s.group(1))
@@ -829,6 +833,12 @@ def self_test():
         os.makedirs(os.path.join(crate, "containers"))
         with open(os.path.join(crate, "label.rs"), "w", encoding="utf-8") as f:
             f.write("pub struct Label;\nimpl Widget for Label {\n}\n")
+        with open(os.path.join(crate, "chart.rs"), "w", encoding="utf-8") as f:
+            f.write(
+                "#[derive(IntoPlot)]\npub struct BarChart<T>\nwhere\n    T: 'static,\n{\n}\n"
+                "#[derive(Clone, IntoElement)]\npub struct Badge;\n"
+                "#[derive(IntoPlot)]\nstruct PrivatePlot;\n"
+            )
 
         # M8-30: a section whose discovery finds nothing fails, every section
         for section, discover in (
@@ -846,6 +856,10 @@ def self_test():
         # a file the rules read that upstream moved: a Failure, not a traceback
         fails("iced_aw: no src/widget.rs", lambda: aw_modules(empty))
         fails("egui_ui: no src/ui.rs", lambda: egui_ui_methods(empty))
+
+        # an `IntoPlot` chart is discovered as an `IntoElement` type is, public only
+        expect("gpui: the `IntoPlot` and `IntoElement` derives are discovered",
+               gpui_widgets(crate), ["Badge", "BarChart"])
 
         # one widget discovered and shown passes; not shown, it is missing
         found = {w: [w] for w in egui_widgets(crate)}
