@@ -150,6 +150,12 @@ pub(super) const ACCESSOR_ROWS: &[AccessorRow] = &[
         get: |r| Some(crate::expander_arrow_color(r)),
     },
     AccessorRow {
+        // A dialog's title is the consumer's text: iced has no dialog.
+        accessor: "crate::dialog_title_font_color",
+        native: |r| Some(to_color(r.dialog.title_font.color)),
+        get: |r| Some(crate::dialog_title_font_color(r)),
+    },
+    AccessorRow {
         accessor: "crate::selection_background",
         native: |r| Some(to_color(r.defaults.selection_background)),
         get: |r| Some(crate::selection_background(r)),
@@ -1992,6 +1998,40 @@ pub(super) const TOOLTIP_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::tooltip(r)(t).border,
 }];
 
+/// A dialog's container has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const DIALOG_STATUSES: &[()] = &[()];
+
+/// The colour fields of `styles::dialog`: its label, which the body's texts
+/// inherit, and its fill.
+#[cfg(feature = "widgets")]
+pub(super) const DIALOG_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::dialog.text_color",
+        statuses: DIALOG_STATUSES,
+        native: |r, ()| to_color(r.dialog.body_font.color),
+        get: |t, r, ()| stated(styles::dialog(r)(t).text_color),
+    },
+    StyleRow {
+        field: "styles::dialog.background",
+        statuses: DIALOG_STATUSES,
+        native: |r, ()| to_color(r.dialog.background_color),
+        get: |t, r, ()| flat(styles::dialog(r)(t).background),
+    },
+];
+
+#[cfg(feature = "widgets")]
+pub(super) const DIALOG_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+    field: "styles::dialog",
+    statuses: DIALOG_STATUSES,
+    native: |r, ()| NativeBorder {
+        color: to_color(r.dialog.border.color),
+        width: r.dialog.border.line_width,
+        radius: r.dialog.border.corner_radius,
+    },
+    get: |t, r, ()| styles::dialog(r)(t).border,
+}];
+
 /// An application's base style has no `Status` (shape B).
 #[cfg(feature = "widgets")]
 pub(super) const APPLICATION_STATUSES: &[()] = &[()];
@@ -2796,6 +2836,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     );
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(APPLICATION_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(DIALOG_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(
         SEGMENTED_CONTROL_ROWS
@@ -2820,6 +2861,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(border_row_fields(MENU_BORDER_ROWS));
     out.extend(border_row_fields(PROGRESS_BAR_BORDER_ROWS));
     out.extend(border_row_fields(TOOLTIP_BORDER_ROWS));
+    out.extend(border_row_fields(DIALOG_BORDER_ROWS));
     out.extend(border_row_fields(CONTAINER_CARD_BORDER_ROWS));
     out.extend(border_row_fields(SEGMENTED_CONTROL_BORDER_ROWS));
     out.extend(border_row_fields(EXPANDER_BORDER_ROWS));

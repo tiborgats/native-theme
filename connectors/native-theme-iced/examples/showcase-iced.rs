@@ -8900,20 +8900,13 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     let head = row![
         text(title)
             .themed(&d.title_font, resolved, a11y)
-            .color(to_color(d.title_font.color)),
+            .color(native_theme_iced::dialog_title_font_color(resolved)),
         space().width(Fill),
         close,
     ]
     .align_y(iced::Center);
     let padding = dialog_padding(state);
-    let min_height = (d.min_height - padding.y()).max(0.0);
-    let border = iced::Border {
-        color: to_color(d.border.color),
-        width: d.border.line_width,
-        radius: d.border.corner_radius.into(),
-    };
-    let fill = to_color(d.background_color);
-    let body_color = to_color(d.body_font.color);
+    let min_height = (native_theme_iced::dialog_min_height(resolved) - padding.y()).max(0.0);
     // A row is as tall as its tallest child, and keeps the content at its
     // top: the space beside the content is the dialog's minimum height.
     container(row![
@@ -8922,14 +8915,9 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     ])
     .padding(padding)
     .width(Fill)
-    .max_width(d.max_width)
-    .max_height(d.max_height)
-    .style(move |_theme: &Theme| container::Style {
-        text_color: Some(body_color),
-        background: Some(iced::Background::Color(fill)),
-        border,
-        ..container::Style::default()
-    })
+    .max_width(native_theme_iced::dialog_max_width(resolved))
+    .max_height(native_theme_iced::dialog_max_height(resolved))
+    .style(styles::dialog(resolved))
     .into()
 }
 
@@ -8939,10 +8927,10 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
 /// from the bounds, so each side is the line width more
 /// (`padding_inside_border`).
 fn dialog_padding(state: &State) -> Padding {
-    let border = &state.current_resolved.dialog.border;
-    native_theme_iced::padding_inside_border(
-        border,
-        Padding::from(DIALOG_PADDING_PX + border.line_width),
+    let resolved = &state.current_resolved;
+    native_theme_iced::dialog_padding(
+        resolved,
+        Padding::from(DIALOG_PADDING_PX + resolved.dialog.border.line_width),
     )
 }
 

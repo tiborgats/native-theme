@@ -143,6 +143,18 @@ name = "list_header_height"
 kind = "absent"
 reason = "the crate root has none: the receiver is `geometry::list_header_height(Native<'_>) -> Option<Pixels>` (src/geometry.rs), a style builder for `DataTable::header_row_height`, beside `data_table_size`, which the script does not scan"
 
+[[exception]]
+connector = "gpui"
+name = ["dialog_max_width", "dialog_max_height", "dialog_min_height", "dialog_padding"]
+kind = "absent"
+reason = "gpui-component has a `Dialog`, so the receivers are its style builders, not crate-root accessors: `geometry::dialog` refines the dialog with `dialog.border.padding`, `min_h(dialog.min_height)` and `max_h(dialog.max_height)`, and `geometry::dialog_max_width` (`src/geometry.rs`) is for `Dialog::max_w`; iced has no dialog, so its consumer draws the container with these accessors"
+
+[[exception]]
+connector = "gpui"
+name = "dialog_title_font_color"
+kind = "absent"
+reason = "the receiver is `geometry::dialog_title` (`src/geometry.rs`), the `DialogTitle` refinement that colours the title with `dialog.title_font.color`; iced has no dialog title, so its consumer colours its own text with the accessor"
+
 # ── absent: iced ────────────────────────────────────────────────────────────
 
 [[exception]]
@@ -162,18 +174,6 @@ connector = "iced"
 name = "border_shadow_enabled"
 kind = "absent"
 reason = "the model states a shadow colour but no offset or blur, so every iced style keeps iced's own `shadow` (src/styles.rs, `button`'s and `menu`'s docs) and nothing reads the flag"
-
-[[exception]]
-connector = "iced"
-name = "dialog_button_order"
-kind = "absent"
-reason = "iced has no dialog widget (iced_widget 0.14.2 and iced_aw 0.14.1 offer none), so the connector styles none; an application laying out its own button row reads `resolved.dialog.button_order`"
-
-[[exception]]
-connector = "iced"
-name = "dialog_button_gap"
-kind = "absent"
-reason = "iced has no dialog widget (iced_widget 0.14.2 and iced_aw 0.14.1 offer none), so the connector styles none; an application laying out its own button row reads `resolved.dialog.button_gap`"
 
 [[exception]]
 connector = "iced"
@@ -256,6 +256,18 @@ reason = "the atlas writes it to `visuals.selection.stroke.color` (src/style/bas
 # The other functions: present in one connector and absent from a sibling, or
 # present under another signature (M8 Step 6 ruling on M8-04 and M8-05).
 # ════════════════════════════════════════════════════════════════════════════
+
+[[exception]]
+connector = "egui"
+name = ["dialog_max_width", "dialog_max_height", "dialog_min_height", "dialog_title_font_color"]
+kind = "absent"
+reason = "an egui application reads these leaves itself from `ThemeAtlas::resolved_for` (src/mapping.md, `dialog.max_width`, `dialog.max_height`, `dialog.min_height`, `dialog.title_font.color`: DERIVED, → T18(a)), sizing its `Modal` or `Window` and colouring its title with them; no egui `Style` field takes them"
+
+[[exception]]
+connector = "egui"
+name = "dialog_padding"
+kind = "absent"
+reason = "the atlas writes `dialog.border.padding` to the dialog surface's `inner_margin` (src/mapping.md, `dialog.border.padding.*`: SCOPED), the frame `native_frame(Surface::Dialog)` returns"
 
 # ── installing a theme, and watching the OS ─────────────────────────────────
 

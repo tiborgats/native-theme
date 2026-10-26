@@ -229,18 +229,23 @@
 //! |--------|--------|--------|
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
-//! | `styles` (29 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame, and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`) | Per-widget resolved fields |
+//! | `styles` (30 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
-//! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color` | `defaults.*` |
+//! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
 //! The theme values of the widgets neither iced 0.14 nor `iced_aw` 0.14.1
-//! has reach no receiver here: the dialog's, `dialog.entrance` among them
-//! (whether an `iced_aw` `Card` is a dialog's receiver is a docs/todo.md
-//! item), the popover's, the toolbar's and the status bar's; and the window
-//! frame's colours, which iced takes no colour for (`decorations: bool`,
-//! `iced_core` 0.14 `window/settings.rs:65-66`).
+//! has reach no receiver here: the popover's, the toolbar's and the status
+//! bar's; and the window frame's colours, which iced takes no colour for
+//! (`decorations: bool`, `iced_core` 0.14 `window/settings.rs:65-66`). A
+//! dialog, which neither has either, is the consumer's `container`, which
+//! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance`,
+//! `.min_width` and `.icon_size` reach nothing: no iced widget animates a
+//! dialog's entrance, a `Container` takes no minimum width, and no dialog
+//! draws a type icon. An `iced_aw` `Card` is not the dialog's receiver: its
+//! head, body and foot take styles of their own, and only its maxima match
+//! a dialog's.
 //!
 //! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
 //! scaled by the text-scaling factor, is named after the leaf's path, without
@@ -1485,6 +1490,75 @@ pub fn list_header_height(resolved: &native_theme::theme::ResolvedTheme) -> Opti
     resolved.list.header_height
 }
 
+/// Returns the padding inside a dialog's border as an iced
+/// [`Padding`](iced_core::Padding), for the `container` a consumer draws a
+/// dialog in (`styles::dialog`, feature `widgets`): [`padding_inside_border()`] of
+/// `dialog.border`, each side the stated side plus
+/// `dialog.border.line_width` where the theme states it, and `default`'s side
+/// where it does not. iced has no dialog widget, so it has no default
+/// padding of its own; `default` is the caller's, measured from the bounds
+/// as iced measures a padding.
+#[must_use]
+pub fn dialog_padding(
+    resolved: &native_theme::theme::ResolvedTheme,
+    default: iced_core::Padding,
+) -> iced_core::Padding {
+    padding_inside_border(&resolved.dialog.border, default)
+}
+
+/// Returns `dialog.max_width`, a dialog's greatest width in logical pixels,
+/// for `Container::max_width` (iced_widget 0.14.2 `src/container.rs:133`) on
+/// the container a consumer draws a dialog in.
+#[must_use]
+pub fn dialog_max_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.dialog.max_width
+}
+
+/// Returns `dialog.max_height`, a dialog's greatest height in logical
+/// pixels, for `Container::max_height` (iced_widget 0.14.2
+/// `src/container.rs:139`).
+#[must_use]
+pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.dialog.max_height
+}
+
+/// Returns `dialog.min_height`, a dialog's least height in logical pixels.
+/// A `Container` takes no minimum (iced_widget 0.14.2 `src/container.rs`,
+/// `max_width` and `max_height` its only bounds), so the floor goes in the
+/// content: beside it, in a row, a `space` as tall as this less the
+/// container's vertical padding ([`dialog_padding`]), which the row grows
+/// to:
+///
+/// ```rust,ignore
+/// let padding = native_theme_iced::dialog_padding(&resolved, default);
+/// let floor = (native_theme_iced::dialog_min_height(&resolved) - padding.y()).max(0.0);
+/// container(row![content, space().height(floor)])
+///     .padding(padding)
+///     .max_width(native_theme_iced::dialog_max_width(&resolved))
+///     .max_height(native_theme_iced::dialog_max_height(&resolved))
+///     .style(styles::dialog(&resolved))
+/// ```
+#[must_use]
+pub fn dialog_min_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.dialog.min_height
+}
+
+/// Returns `dialog.button_gap`, the space between a dialog's buttons in
+/// logical pixels, for the row a consumer lays them out in: iced has no
+/// dialog, so the button row is the consumer's.
+#[must_use]
+pub fn dialog_button_gap(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.dialog.button_gap
+}
+
+/// Returns `dialog.button_order`, the order in which to add a dialog's
+/// buttons to the row a consumer lays them out in: whether the affirmative
+/// button leads or trails.
+#[must_use]
+pub fn dialog_button_order(resolved: &native_theme::theme::ResolvedTheme) -> DialogButtonOrder {
+    resolved.dialog.button_order
+}
+
 /// Returns the primary UI font family name from the resolved theme: the
 /// stated name. To name the family iced's font database holds for it, use
 /// `system_font_family` (feature `system-fonts`).
@@ -1752,6 +1826,17 @@ pub fn link_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::C
 pub fn expander_arrow_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
     let x = &resolved.expander;
     palette::to_color(x.arrow_color.unwrap_or(x.font.color))
+}
+
+/// Returns the colour of a dialog's title from the resolved theme:
+/// `dialog.title_font.color`.
+///
+/// For the title text a consumer puts in the dialog it draws: the container
+/// `styles::dialog` styles gives its text `dialog.body_font.color`, and
+/// the title is a text of the consumer's own, coloured with `Text::color`.
+#[must_use]
+pub fn dialog_title_font_color(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::Color {
+    palette::to_color(resolved.dialog.title_font.color)
 }
 
 /// Returns the selection highlight background color from the resolved theme.
@@ -2369,6 +2454,40 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// The dialog helpers return adwaita's dialog leaves (`adwaita.toml`
+    /// `[light.dialog]`, `[light.dialog.border]`): the bounds and the button
+    /// gap and order as stated, the padding each stated side plus the border's
+    /// line width, the unstated ones the caller's default, and the title's
+    /// colour `dialog.title_font.color`.
+    #[test]
+    fn the_dialog_helpers_return_their_leaves() {
+        let resolved = make_resolved_preset("adwaita", false);
+        assert_eq!(dialog_max_width(&resolved), 372.0);
+        assert_eq!(dialog_max_height(&resolved), 600.0);
+        assert_eq!(dialog_min_height(&resolved), 140.0);
+        assert_eq!(dialog_button_gap(&resolved), 12.0);
+        assert_eq!(
+            dialog_button_order(&resolved),
+            DialogButtonOrder::PrimaryRight
+        );
+        let line = resolved.dialog.border.line_width;
+        let padding = dialog_padding(&resolved, iced_core::Padding::new(7.0));
+        assert_eq!(
+            (padding.top, padding.right, padding.bottom, padding.left),
+            (32.0 + line, 24.0 + line, 24.0 + line, 24.0 + line)
+        );
+        let mut unstated = resolved.clone();
+        unstated.dialog.border.padding.top = None;
+        assert_eq!(
+            dialog_padding(&unstated, iced_core::Padding::new(7.0)).top,
+            7.0
+        );
+        assert_eq!(
+            dialog_title_font_color(&resolved),
+            palette::to_color(resolved.dialog.title_font.color)
+        );
     }
 
     /// A padding stated on two sides and not on the other two.

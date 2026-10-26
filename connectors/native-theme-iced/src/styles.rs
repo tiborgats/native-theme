@@ -1993,6 +1993,44 @@ pub fn expander_frame(
     }
 }
 
+/// The platform's dialog surface, for `container(..).style(..)` on the
+/// container a consumer draws a dialog in: iced 0.14 and `iced_aw` 0.14.1
+/// have no dialog widget.
+///
+/// The fill is `dialog.background_color`, the outline `dialog.border.*`
+/// and the text colour `dialog.body_font.color`, which the body's texts
+/// inherit; the title's colour is [`crate::dialog_title_font_color`], for
+/// the consumer's title text. `shadow` and `snap` come from
+/// `container::Style::default()`: the model carries a shadow colour but no
+/// offset or blur, and `snap` is a renderer setting. The padding and the
+/// bounds are [`crate::dialog_padding`], [`crate::dialog_max_width`],
+/// [`crate::dialog_max_height`] and [`crate::dialog_min_height`], whose doc
+/// shows the whole container.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn dialog(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
+
+    let d = &resolved.dialog;
+
+    let panel = to_color(d.background_color);
+    let label = to_color(d.body_font.color);
+
+    let border = border_of(&d.border);
+
+    move |_theme| {
+        let iced = Style::default();
+        Style {
+            text_color: Some(label),
+            background: Some(Background::Color(panel)),
+            border,
+            shadow: iced.shadow,
+            snap: iced.snap,
+        }
+    }
+}
+
 /// The application's own background and default text, for
 /// `iced::application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`).
 ///

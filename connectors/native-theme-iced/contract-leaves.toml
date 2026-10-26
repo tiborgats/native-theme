@@ -407,28 +407,24 @@ moves = [
 ]
 
 [leaves."dialog.background_color"]
-named = "UNREAD_COLOURS"
-entry = "dialog"
-kind = "no widget"
-why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+moves = [
+  { row = "styles::dialog.background" },
+]
 
 [leaves."dialog.body_font.color"]
-named = "UNREAD_COLOURS"
-entry = "dialog"
-kind = "no widget"
-why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+moves = [
+  { row = "styles::dialog.text_color" },
+]
 
 [leaves."dialog.border.color"]
-named = "UNREAD_COLOURS"
-entry = "dialog"
-kind = "no widget"
-why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+moves = [
+  { row = "styles::dialog.border" },
+]
 
 [leaves."dialog.title_font.color"]
-named = "UNREAD_COLOURS"
-entry = "dialog"
-kind = "no widget"
-why = "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether an `iced_aw` `Card` is its receiver is a docs/todo.md item (\"iced: dialog is unmapped\")"
+moves = [
+  { row = "crate::dialog_title_font_color" },
+]
 
 [leaves."expander.arrow_color"]
 moves = [
@@ -1099,6 +1095,9 @@ leaves = ["defaults.text_color"]
 [rows."crate::border_color"]
 leaves = ["defaults.border.color"]
 
+[rows."crate::dialog_title_font_color"]
+leaves = ["dialog.title_font.color"]
+
 [rows."crate::expander_arrow_color"]
 leaves = ["expander.arrow_color", "expander.font.color"]
 
@@ -1353,6 +1352,15 @@ leaves = ["card.background_color"]
 
 [rows."styles::container_card.border"]
 leaves = ["card.border.color"]
+
+[rows."styles::dialog.background"]
+leaves = ["dialog.background_color"]
+
+[rows."styles::dialog.border"]
+leaves = ["dialog.border.color"]
+
+[rows."styles::dialog.text_color"]
+leaves = ["dialog.body_font.color"]
 
 [rows."styles::expander.background"]
 leaves = ["expander.hover_background"]

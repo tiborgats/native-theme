@@ -635,6 +635,18 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "widgets")]
     (
+        "styles::dialog.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::dialog.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
         "styles::expander_frame.text_color",
         "iced default: container::Style::default().text_color -- ExpanderTheme \
          states no label for the frame, and iced's None inherits the label \
@@ -956,6 +968,61 @@ fn lost_color(color: native_theme::color::Rgba) -> Option<String> {
 /// `scrollbar.min_thumb_length` is listed for another reason: iced sizes the
 /// scroller itself and takes no length for it at all.
 pub(super) const UNREACHABLE: &[Unreachable] = &[
+    Unreachable {
+        field: "dialog.entrance",
+        evidence: "iced 0.14 and `iced_aw` 0.14.1 have no dialog widget, and no \
+             iced widget animates its own appearance: a dialog is the \
+             consumer's `container`, drawn at once in the frame its state \
+             first holds it, so there is no entrance to give a scale or a rise",
+        lost: |_, r| r.dialog.entrance.map(|e| format!("{e:?}")),
+        exceptions: &[
+            (
+                "macos-monterey/light",
+                "the preset states no entrance, a soft option, so there is none to lose",
+            ),
+            ("macos-monterey/dark", "the same"),
+            ("macos-tahoe/light", "the same"),
+            ("macos-tahoe/dark", "the same"),
+            ("ios-13/light", "the same"),
+            ("ios-13/dark", "the same"),
+            ("catppuccin-latte/light", "the same"),
+            ("catppuccin-latte/dark", "the same"),
+            ("catppuccin-frappe/light", "the same"),
+            ("catppuccin-frappe/dark", "the same"),
+            ("catppuccin-macchiato/light", "the same"),
+            ("catppuccin-macchiato/dark", "the same"),
+            ("catppuccin-mocha/light", "the same"),
+            ("catppuccin-mocha/dark", "the same"),
+            ("nord/light", "the same"),
+            ("nord/dark", "the same"),
+            ("dracula/light", "the same"),
+            ("dracula/dark", "the same"),
+            ("gruvbox/light", "the same"),
+            ("gruvbox/dark", "the same"),
+            ("solarized/light", "the same"),
+            ("solarized/dark", "the same"),
+            ("tokyo-night/light", "the same"),
+            ("tokyo-night/dark", "the same"),
+            ("one-dark/light", "the same"),
+            ("one-dark/dark", "the same"),
+        ],
+    },
+    Unreachable {
+        field: "dialog.min_width",
+        evidence: "a dialog is the consumer's `container`, and a `Container` \
+             takes a width and a `max_width` and `max_height` \
+             (`container.rs:121`, `:133`, `:139`) and no minimum; neither \
+             sibling connector offers a dialog minimum width either",
+        lost: |_, r| lost_length(r.dialog.min_width),
+        exceptions: &[],
+    },
+    Unreachable {
+        field: "dialog.icon_size",
+        evidence: "iced 0.14 and `iced_aw` 0.14.1 have no dialog, so nothing \
+             draws a dialog's type icon (warning, error) at a size of its own",
+        lost: |_, r| lost_length(r.dialog.icon_size),
+        exceptions: &[],
+    },
     Unreachable {
         field: "scrollbar.min_thumb_length",
         evidence: "iced sizes the scroller itself and exposes no minimum: \
@@ -1363,14 +1430,6 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
     UnreadColour {
         leaf: "window.inactive_title_bar_text_color",
         why: Unread::NoReceiver(WINDOW_FRAME),
-    },
-    UnreadColour {
-        leaf: "dialog",
-        why: Unread::NoWidget(
-            "iced 0.14 has no dialog widget, nor has `iced_aw` 0.14.1; whether \
-             an `iced_aw` `Card` is its receiver is a docs/todo.md item \
-             (\"iced: dialog is unmapped\")",
-        ),
     },
     UnreadColour {
         leaf: "popover",
