@@ -242,9 +242,9 @@
 //! dialog, which neither has either, is the consumer's `container`, which
 //! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance` and
 //! `.icon_size` reach nothing: no iced widget animates a dialog's entrance,
-//! and iced has no dialog widget to draw a type icon. An `iced_aw` `Card` is not the dialog's receiver: its
-//! head, body and foot take styles of their own, and only its maxima match
-//! a dialog's.
+//! and iced has no dialog widget to draw a type icon. An `iced_aw` `Card` is
+//! not the dialog's receiver: its head, body and foot take styles of their
+//! own, and only its maxima match a dialog's.
 //!
 //! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
 //! scaled by the text-scaling factor, is named after the leaf's path, without
@@ -1547,7 +1547,10 @@ pub fn dialog_min_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 /// A `Container` takes no minimum, so the floor goes in the content, as
 /// [`dialog_min_height`]'s does: below it, in a column, a `space` as wide
 /// as this less the container's horizontal padding ([`dialog_padding`]),
-/// which the column grows to (the example at [`dialog_min_height`]).
+/// which the column grows to (the example at [`dialog_min_height`]). A
+/// column that holds a `Fill` child is `Fill` itself (iced_widget 0.14.2
+/// `src/column.rs:148`), as wide as the container lets it be, and the floor
+/// then widens nothing: it holds for content that shrinks to fit.
 #[must_use]
 pub fn dialog_min_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.dialog.min_width

@@ -8909,9 +8909,11 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     let min_height = (native_theme_iced::dialog_min_height(resolved) - padding.y()).max(0.0);
     let min_width = (native_theme_iced::dialog_min_width(resolved) - padding.x()).max(0.0);
     // A row is as tall as its tallest child, and keeps the content at its
-    // top: the space beside the content is the dialog's minimum height. A
-    // column is as wide as its widest child: the space below the row, no
-    // height, is its minimum width.
+    // top: the space beside the content is the dialog's minimum height. The
+    // space below the row, no height, is the minimum width's floor; the
+    // content is `Fill`, so the column is too (iced_widget 0.14.2
+    // `src/column.rs:148`) and the dialog is as wide as `dialog.max_width`
+    // and the window let it be, which the floor does not change.
     container(column![
         row![
             column![head, body].spacing(gap.widget).width(Fill),

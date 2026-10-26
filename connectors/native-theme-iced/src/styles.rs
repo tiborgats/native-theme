@@ -2004,8 +2004,8 @@ pub fn expander_frame(
 /// `container::Style::default()`: the model carries a shadow colour but no
 /// offset or blur, and `snap` is a renderer setting. The padding and the
 /// bounds are [`crate::dialog_padding`], [`crate::dialog_max_width`],
-/// [`crate::dialog_max_height`] and [`crate::dialog_min_height`], whose doc
-/// shows the whole container.
+/// [`crate::dialog_max_height`], [`crate::dialog_min_width`] and
+/// [`crate::dialog_min_height`], whose doc shows the whole container.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn dialog(
     resolved: &ResolvedTheme,
