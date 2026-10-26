@@ -509,7 +509,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   single-line text" (gpui-pre `src/text_system.rs:721`, gpui-fast `:718`), and its body
   holds `shape_line`'s `debug_assert!` on a newline (gpui-pre `:760-763`). It is listed
   under `shape_line`'s doc line (`:668-670`), which it refers to, and the planted count
-  covers it: 12 entries, 14 after the fix round below.
+  covers it: 12 entries, 15 after the fix rounds below.
 - **Task 4, a panic no gpui function documents.** gpui-base and gpui-component comment that
   the platform text system panics on a run that splits a multi-byte character (gpui-base
   `src/input/base/element.rs:373`, `:3666`; gpui-component
@@ -525,8 +525,14 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   clips to each line and the other three do not. The `&text[range.clone()]` at `:666`
   slices at paragraph separators found by `char_indices`, so runs do not reach it. The
   fix round lists `shape_text` and `layout_line` (14 entries), and the reasons of
-  `shape_line` and `shape_line_by_hash` add this path. The macOS and Windows text systems
-  were not examined.
+  `shape_line` and `shape_line_by_hash` add this path. A second ruling adds
+  `layout_line_by_hash` (gpui-pre `src/text_system.rs:1061`, gpui-fast `:1058`), which on a
+  cache miss reaches the same slice (gpui-pre `text_system/line_layout.rs:851-853`;
+  gpui-fast `:848`, then `src/fast/text.rs:798`): 15 entries. `try_layout_line_by_hash`
+  (gpui-pre `src/text_system.rs:1000`, gpui-fast `:997`) only probes the cache
+  (`text_system/line_layout.rs:730-777`, gpui-fast `:727-774`), returning a cached layout or
+  `None`, and never reaches the text system, so it is not listed. The macOS and Windows text
+  systems were not examined.
 - **Task 4, no `allow-invalid`.** Every entry drew its error at its planted line on gpui-pre,
   GPUI Fast and without default features; none is in a crate that a Linux configuration
   lacks.
