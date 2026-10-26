@@ -30,8 +30,33 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: os-probe
+      # The probe's window section captures its window with `screencapture -l`,
+      # which needs kTCCServiceScreenCapture on macOS 14+: granted to the
+      # shells that start the probe, as screenshots.yml grants it.
+      - name: Grant screen recording permission (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+             VALUES ('kTCCServiceScreenCapture', '/bin/bash', 1, 2, 4, 1);"
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+             VALUES ('kTCCServiceScreenCapture', '/bin/zsh', 1, 2, 4, 1);"
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
+      # A second pass with Reduce Transparency off, which the runner images
+      # turn on (probe.toml's accessibilityDisplayShouldReduceTransparency),
+      # so the window section also renders the materials translucent. Writing
+      # com.apple.universalaccess may be refused on a runner; the pass's own
+      # probe.toml records whether the setting took, and a failure here fails
+      # nothing.
+      - name: Run the probe with Reduce Transparency off (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          defaults write com.apple.universalaccess reduceTransparency -bool false
+          defaults read com.apple.universalaccess reduceTransparency
+          cargo run -p native-theme-os-probe --release -- --out os-probe-out/reduce-transparency-off
       - name: Upload the probe's output
         if: always()
         uses: actions/upload-artifact@v7
