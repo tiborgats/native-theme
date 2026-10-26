@@ -1,5 +1,5 @@
 //! Basic: the controls the three showcases all draw, in the same order, with the same labels,
-//! values and states, packed onto one screen in three to five columns, so the gpui, iced and egui
+//! values and states, packed onto one screen in one to five columns, so the gpui, iced and egui
 //! captures compare control by control. Each control goes through the seam its palette page
 //! gives it; what egui leaves to the call site is applied per call from the theme. Every
 //! element of `docs/showcase-elements.toml` the page draws is placed where it is drawn, its

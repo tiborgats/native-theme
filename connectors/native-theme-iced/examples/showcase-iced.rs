@@ -21441,6 +21441,95 @@ mod tests {
         found
     }
 
+    /// The Basic page's arrangements, five columns to one, and the Segmented
+    /// control's group are one in the three showcases and in
+    /// `docs/showcase-elements.toml`: the gpui and egui tables, read from
+    /// their sources, are iced's, their `SEGMENTED_GROUP` is iced's
+    /// [`BASIC_SEGMENTED_GROUP`], which names the Segmented control, and the
+    /// element list's `n = ..` lines name each column's groups in order
+    /// (round 4 review, item 17 minor 6).
+    #[test]
+    fn the_basic_arrangements_agree_across_the_showcases() {
+        const GPUI: &str =
+            include_str!("../../native-theme-gpui/examples/showcase-gpui/pages/basic.rs");
+        const EGUI: &str =
+            include_str!("../../native-theme-egui/examples/showcase-egui/pages/basic.rs");
+        const LIST: &str = include_str!("../../../docs/showcase-elements.toml");
+        // The table `const {name}: [&[usize]; N] = [..];` in `source`.
+        let table = |source: &str, name: &str| -> Option<Vec<Vec<usize>>> {
+            let at = source.find(&format!("const {name}: [&[usize]; "))?;
+            let rest = &source[at..];
+            let open = rest.find("= [")? + 3;
+            let body = rest.get(open..open + rest.get(open..)?.find("];")?)?;
+            body.split("&[")
+                .skip(1)
+                .map(|column| {
+                    column
+                        .split(']')
+                        .next()?
+                        .split(',')
+                        .map(str::trim)
+                        .filter(|n| !n.is_empty())
+                        .map(|n| n.parse().ok())
+                        .collect()
+                })
+                .collect()
+        };
+        let ours: Vec<Vec<Vec<usize>>> = (1..=BASIC_MAX_COLUMNS)
+            .map(|n| basic_arrangement(n).iter().map(|c| c.to_vec()).collect())
+            .collect();
+        for (n, ours) in (1..=BASIC_MAX_COLUMNS).zip(&ours) {
+            let word = ["ONE", "TWO", "THREE", "FOUR", "FIVE"][n - 1];
+            assert_eq!(
+                table(GPUI, &format!("BASIC_{word}")).as_ref(),
+                Some(ours),
+                "gpui's {n} columns"
+            );
+            assert_eq!(table(EGUI, word).as_ref(), Some(ours), "egui's {n} columns");
+        }
+        for (who, source) in [("gpui", GPUI), ("egui", EGUI)] {
+            assert!(
+                source.contains(&format!(
+                    "const SEGMENTED_GROUP: usize = {BASIC_SEGMENTED_GROUP};"
+                )),
+                "{who}'s SEGMENTED_GROUP is not {BASIC_SEGMENTED_GROUP}"
+            );
+        }
+        assert_eq!(BASIC_GROUPS[BASIC_SEGMENTED_GROUP], "Segmented control");
+        // The element list's comment, `# n = 5: Column 1: a, b. Column 2: ..`.
+        let comment: String = LIST
+            .lines()
+            .skip_while(|line| !line.starts_with("# n = 5:"))
+            .take_while(|line| line.starts_with("# n = ") || !line.starts_with("# Each"))
+            .map(|line| line.trim_start_matches('#').trim())
+            .collect::<Vec<_>>()
+            .join(" ");
+        for (n, ours) in (1..=BASIC_MAX_COLUMNS).zip(&ours) {
+            let at = comment.find(&format!("n = {n}:"));
+            assert!(at.is_some(), "the element list has no n = {n} line");
+            let text = comment
+                .get(at.unwrap_or_default() + 4..)
+                .unwrap_or_default();
+            let text = text.split(" n = ").next().unwrap_or_default();
+            let listed: Vec<Vec<usize>> = if text.contains("every group in reading order") {
+                vec![(0..BASIC_GROUPS.len()).collect()]
+            } else {
+                text.split("Column ")
+                    .skip(1)
+                    .map(|column| {
+                        let names = column.split_once(": ").map_or("", |(_, names)| names);
+                        names
+                            .trim_end_matches(|c: char| c == '.' || c.is_whitespace())
+                            .split(", ")
+                            .filter_map(|name| BASIC_GROUPS.iter().position(|g| *g == name))
+                            .collect()
+                    })
+                    .collect()
+            };
+            assert_eq!(&listed, ours, "the element list's n = {n} line");
+        }
+    }
+
     /// Each constant of the iced showcase that names the same distance as a
     /// gpui showcase constant has gpui's value, the chrome-parity rule, read
     /// from the gpui showcase's source (`showcase-gpui/demo.rs` and

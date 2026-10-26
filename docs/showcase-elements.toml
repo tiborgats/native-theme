@@ -654,18 +654,21 @@ sample = { text = "glyph" }
 # n = 5: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text
 # area, Slider. Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4:
 # Typography, Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
-# n = 4: column 5's groups end the other four: Expander after Drop-down, Icons after Slider,
-# Tabs after Card, Table after List.
-# n = 3: column 4's groups end the other three: Column 1: Buttons, Checkboxes, Radio buttons,
+# n = 4: column 5's groups join the other four: Column 1: Buttons, Checkboxes, Radio buttons,
+# Drop-down, Expander. Column 2: Text inputs, Text area, Slider, Icons. Column 3: Switches,
+# Number input, Spinner, Segmented control, Card, Tabs. Column 4: Typography, Separator, Progress
+# bar, List, Table.
+# n = 3: column 4's groups join the other three: Column 1: Buttons, Checkboxes, Radio buttons,
 # Drop-down, List, Expander. Column 2: Text inputs, Text area, Slider, Separator, Progress bar,
 # Icons, Table. Column 3: Switches, Number input, Spinner, Segmented control, Card, Typography,
 # Tabs.
-# n = 2: column 3's groups end the other two: Column 1: Buttons, Checkboxes, Radio buttons,
+# n = 2: column 3's groups join the other two: Column 1: Buttons, Checkboxes, Radio buttons,
 # Drop-down, Switches, Typography, List, Tabs, Expander. Column 2: Text inputs, Text area,
 # Slider, Number input, Spinner, Segmented control, Card, Separator, Progress bar, Icons, Table.
 # n = 1: every group in reading order.
 # Each column's groups are in reading order; fewer columns are balanced by the groups' heights
-# under material-3, the tallest.
+# under material-3, the tallest. The three showcases' tables and this list agree (the iced
+# showcase's `the_basic_arrangements_agree_across_the_showcases`).
 # A heading is measured against the element above it in its five-column column (the column for
 # the first), wherever fewer columns put it; a control against its heading or the control
 # before it.
