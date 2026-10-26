@@ -80,13 +80,14 @@
 //! `.backdrop(..)` names another ([`fade::fade_as_one`]): its thumb or dot
 //! keeps its colour on the track or circle, a knob its own over the backdrop,
 //! and the whole fades, as libadwaita's `filter: Opacity(..)` does, where
-//! egui's per-shape fade would show the thumb through the faded track. A
+//! egui's per-shape fade would show the thumb through the faded track. Under
+//! a disabled `Ui` the fade is that `Ui`'s `disabled_alpha`, the one level of
+//! fade egui gave the painter taken back; a `Ui` disabled twice, or restyled
+//! after it was disabled, keeps the rest. A
 //! [`segmented_control::SegmentedControl`] (which has no `.enabled(..)`) added
-//! to a disabled `Ui` fades its segments alone, over its group fill, which
-//! does not fade (`docs/platform-facts.md` §2.25). Under a disabled `Ui`
-//! the fade is that `Ui`'s `disabled_alpha`, the one level of fade egui gave
-//! the painter taken back; a `Ui` disabled twice, or restyled after it was
-//! disabled, keeps the rest. A checked radio button opens the connector's
+//! to a disabled `Ui` is faded as one widget the same way, over its backdrop,
+//! but by its own `segmented_control.disabled_opacity`, the `Ui`'s fade taken
+//! back. A checked radio button opens the connector's
 //! `SelectedDisabled` scope: where
 //! the theme states no `checkbox.disabled_background` it is its checked self,
 //! the checked fill and its dot, faded.

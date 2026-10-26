@@ -1667,65 +1667,93 @@ fn a_disabled_translucent_knob_fades_over_the_backdrop() {
     );
 }
 
-/// D13: a segmented control under a disabled `Ui` fades its segments alone, over the group,
-/// which does not fade (`docs/platform-facts.md` §2.25 `disabled_opacity`): the group fill,
-/// the outline and the labels' ground as stated, the selected segment's fill and both labels
-/// at `disabled_alpha` times their own alpha, the unselected segment laying nothing over the
-/// group, all painted at opacity 1.
+/// D13b: a segmented control under a disabled `Ui` is faded as one widget by the segmented
+/// control's own `disabled_opacity` (the scope's `disabled_alpha`) over its backdrop, as the
+/// model defines the opacity, for the entire widget (`docs/platform-facts.md` §2.1.6): the group
+/// fill over the backdrop, the outline over the group, the selected segment's fill over the
+/// group, each label over its segment, each faded over the backdrop, painted at opacity 1. On
+/// adwaita (0.5) and on windows-11 (0.55, which the calling `Ui`'s own `disabled_alpha` of 1
+/// would not have applied), on the window and on a backdrop of the caller's.
 #[test]
-fn a_disabled_segmented_control_fades_its_segments_over_the_group() {
-    let t = adwaita();
-    let ctx = installed(&t, &AccessibilityPreferences::default());
-    let mut cell = None;
-    let (out, control) = response(&ctx, at(0.0), |ui| {
-        use native_theme_egui::NativeThemeUiExt as _;
-        cell = Some(
-            ui.native_scope(
-                native_theme_egui::Role::SegmentedControl,
-                native_theme_egui::RoleVariant::Normal,
-                |ui| ui.visuals().clone(),
-            )
-            .inner,
-        );
-        ui.add_enabled(false, SegmentedControl::new(&mut 0, ["Day", "Week"]))
-    });
-    let v = cell.unwrap();
-    let alpha = v.disabled_alpha();
-    assert!(alpha < 1.0);
-    let group = v.widgets.inactive.weak_bg_fill;
-    let line = v.widgets.inactive.bg_stroke.color;
-    let all = rects(&out);
-    let at_rect = |rect: egui::Rect| all.iter().filter(move |s| s.rect == rect);
-    assert!(
-        at_rect(control.rect).any(|s| s.fill == group && s.stroke.color == line),
-        "the group fill and the outline, unfaded: {all:#?}"
-    );
-    let parts = Parts::of(&control).unwrap();
-    let fill_of = |name: &str| {
-        let rect = parts.get(name).unwrap();
-        at_rect(rect).map(|s| s.fill).next().unwrap()
-    };
-    assert_eq!(
-        fill_of("segment_0"),
-        v.selection.bg_fill.gamma_multiply(alpha)
-    );
-    assert_eq!(fill_of("segment_1"), egui::Color32::TRANSPARENT);
-    // The labels, each at the alpha: the unselected one in the scope's text colour, the
-    // selected one in the selection's.
-    let label = |text: &str| {
-        flat(&out.shapes)
-            .into_iter()
-            .find_map(|s| match s {
-                egui::Shape::Text(t) if t.galley.text() == text => Some(t.fallback_color),
-                _ => None,
-            })
+fn a_disabled_segmented_control_fades_as_one() {
+    for (preset, opacity) in [("adwaita", 0.5), ("windows-11", 0.55)] {
+        let t = from_preset(preset, false, &AccessibilityPreferences::default())
             .unwrap()
-    };
-    let text = v
-        .override_text_color
-        .unwrap_or(v.widgets.inactive.fg_stroke.color);
-    assert_eq!(label("Week"), text.gamma_multiply(alpha));
-    assert_eq!(label("Day"), v.selection.stroke.color.gamma_multiply(alpha));
+            .1;
+        assert_eq!(t.segmented_control.disabled_opacity, opacity, "{preset}");
+        let ctx = installed(&t, &AccessibilityPreferences::default());
+        let window = to_color32(t.defaults.background_color);
+        let card = to_color32(t.card.background_color);
+        for (ground, backdrop) in [(window, None), (card, Some(card))] {
+            let mut cell = None;
+            let (out, control) = response(&ctx, at(0.0), |ui| {
+                use native_theme_egui::NativeThemeUiExt as _;
+                cell = Some(
+                    ui.native_scope(
+                        native_theme_egui::Role::SegmentedControl,
+                        native_theme_egui::RoleVariant::Normal,
+                        |ui| ui.visuals().clone(),
+                    )
+                    .inner,
+                );
+                let mut chosen = 0;
+                let control = SegmentedControl::new(&mut chosen, ["Day", "Week"]);
+                let control = match backdrop {
+                    Some(b) => control.backdrop(b),
+                    None => control,
+                };
+                ui.add_enabled(false, control)
+            });
+            let at_name = format!("{preset} on {ground:?}");
+            let v = cell.unwrap();
+            let alpha = v.disabled_alpha();
+            assert!((alpha - opacity).abs() < 1e-6, "{at_name}: {alpha}");
+            let fade = |c: egui::Color32| ground.lerp_to_gamma(c, alpha);
+            let group = ground.blend(v.widgets.inactive.weak_bg_fill);
+            let line = group.blend(v.widgets.inactive.bg_stroke.color);
+            let all = rects(&out);
+            let frame = all
+                .iter()
+                .find(|s| s.rect == control.rect)
+                .unwrap_or_else(|| panic!("{at_name}: no frame in {all:#?}"));
+            assert_eq!(frame.fill, fade(group), "{at_name}: the group");
+            assert_eq!(frame.stroke.color, fade(line), "{at_name}: the outline");
+            let parts = Parts::of(&control).unwrap();
+            let fill_of = |name: &str| {
+                let rect = parts.get(name).unwrap();
+                all.iter().find(|s| s.rect == rect).map(|s| s.fill).unwrap()
+            };
+            let selected = group.blend(v.selection.bg_fill);
+            assert_eq!(
+                fill_of("segment_0"),
+                fade(selected),
+                "{at_name}: the selected one"
+            );
+            assert_eq!(
+                fill_of("segment_1"),
+                egui::Color32::TRANSPARENT,
+                "{at_name}"
+            );
+            let label = |text: &str| {
+                flat(&out.shapes)
+                    .into_iter()
+                    .find_map(|s| match s {
+                        egui::Shape::Text(t) if t.galley.text() == text => Some(t.fallback_color),
+                        _ => None,
+                    })
+                    .unwrap()
+            };
+            let text = v
+                .override_text_color
+                .unwrap_or(v.widgets.inactive.fg_stroke.color);
+            assert_eq!(label("Week"), fade(group.blend(text)), "{at_name}");
+            assert_eq!(
+                label("Day"),
+                fade(selected.blend(v.selection.stroke.color)),
+                "{at_name}"
+            );
+        }
+    }
 }
 
 /// The progress bar is outlined as `progress_bar.border` states: kde-breeze's 1px in the
@@ -2085,7 +2113,7 @@ fn the_segmented_control_is_composed() {
         1,
         "one painter, the dividers'"
     );
-    assert!(code.contains("outline.paint_dividers(ui.painter(), &rects);"));
+    assert!(code.contains("outline.paint_lines(ui.painter(), inside, &rects);"));
     assert!(code.contains("egui::Button::new(label).selected("));
 }
 
@@ -2265,6 +2293,100 @@ fn the_windows_11_segments_lie_on_the_group_fill() {
             "dark {dark}"
         );
     }
+}
+
+/// D13b: a hovered unselected segment lays `segmented_control.hover_background` over the group
+/// as given (`lay_over_group`), not composited over the group a second time; kde-breeze states
+/// one.
+#[test]
+fn a_hovered_segment_lays_the_hover_over_the_group() {
+    let t = kde();
+    let hover = t
+        .segmented_control
+        .hover_background
+        .expect("kde-breeze states a segment hover");
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let add = |ui: &mut egui::Ui| ui.add(SegmentedControl::new(&mut 0, ["Day", "Week", "Month"]));
+    let (_, control) = response(&ctx, at(0.0), add);
+    let week = Parts::of(&control).unwrap().get("segment_1").unwrap();
+    let input = egui::RawInput {
+        events: vec![egui::Event::PointerMoved(week.center())],
+        focused: true,
+        ..Default::default()
+    };
+    let _ = response(&ctx, input.clone(), add);
+    let (out, _) = response(&ctx, input, add);
+    let fill = rects(&out)
+        .into_iter()
+        .find(|s| s.rect == week)
+        .map(|s| s.fill)
+        .unwrap();
+    assert_eq!(fill, to_color32(hover));
+}
+
+/// D13b: wrapped rows on an opaque preset draw as before: every point of the frame's inside that
+/// no segment covers -- the gap between the rows, the room the shorter second row leaves, the
+/// dividers -- is the border colour, as the frame filled with it showed there.
+#[test]
+fn a_wrapped_controls_uncovered_inside_is_the_line_colour() {
+    let t = from_preset("adwaita", false, &AccessibilityPreferences::default())
+        .unwrap()
+        .1;
+    let labels = ["Monday", "Tuesday", "Wed", "Thu"];
+    let ctx = installed(&t, &AccessibilityPreferences::default());
+    let (_, unwrapped) = response(&ctx, at(0.0), |ui| {
+        ui.add(SegmentedControl::new(&mut 0, labels))
+    });
+    let parts = Parts::of(&unwrapped).unwrap();
+    let (first, second) = (
+        parts.get("segment_1").unwrap(),
+        parts.get("segment_2").unwrap(),
+    );
+    let width = first.right() - unwrapped.rect.left() + 0.5 * second.width();
+    let add = |ui: &mut egui::Ui| {
+        ui.allocate_ui(egui::vec2(width, f32::INFINITY), |ui| {
+            ui.add(SegmentedControl::new(&mut 0, labels).wrap())
+        })
+        .inner
+    };
+    let _ = response(&ctx, at(0.0), add);
+    let (out, control) = response(&ctx, at(0.0), add);
+    let line = to_color32(t.segmented_control.border.color);
+    assert_eq!(line.a(), 255, "adwaita's line colour is opaque");
+    let inset = f32::from(native_theme_egui::convert::u8_from_f32_saturating(
+        t.segmented_control.border.line_width,
+    ));
+    let inside = control.rect.shrink(inset);
+    let parts = Parts::of(&control).unwrap();
+    let segments: Vec<egui::Rect> = (0..labels.len())
+        .map(|i| parts.get(&format!("segment_{i}")).unwrap())
+        .collect();
+    assert!(
+        segments[2].top() > segments[0].top(),
+        "the control did not wrap"
+    );
+    let lines: Vec<egui::Rect> = rects(&out)
+        .into_iter()
+        .filter(|s| s.fill == line)
+        .map(|s| s.rect)
+        .collect();
+    let steps = 24;
+    let mut missed = Vec::new();
+    for i in 0..steps {
+        for j in 0..steps {
+            let p = egui::pos2(
+                inside.left() + inside.width() * (i as f32 + 0.5) / steps as f32,
+                inside.top() + inside.height() * (j as f32 + 0.5) / steps as f32,
+            );
+            if !segments.iter().chain(&lines).any(|r| r.contains(p)) {
+                missed.push(p);
+            }
+        }
+    }
+    assert!(
+        missed.is_empty(),
+        "uncovered and not the line colour: {missed:?}"
+    );
 }
 
 /// Two segments of different heights in one centred row are one row: a divider between them.
@@ -2958,7 +3080,13 @@ const WIDGET_READS: &[(&str, &[&str])] = &[
     ),
     ("ProgressBar", &["progress_bar.border.color"]),
     ("RadioButton", &["defaults.background_color"]),
-    ("SegmentedControl", &["segmented_control.hover_background"]),
+    (
+        "SegmentedControl",
+        &[
+            "defaults.background_color",
+            "segmented_control.hover_background",
+        ],
+    ),
     ("Expander", &["expander.arrow_color"]),
 ];
 

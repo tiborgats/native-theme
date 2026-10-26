@@ -1785,7 +1785,7 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             "styles::toolbar_rule",
         ));
         out.extend(container_fields(
-            &styles::segment_separator(resolved)(theme),
+            &styles::segment_separator(resolved, false)(theme),
             "styles::segment_separator",
         ));
         out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
@@ -1811,7 +1811,7 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             "styles::container_card",
         ));
         out.extend(container_fields(
-            &styles::segmented_control(resolved)(theme),
+            &styles::segmented_control(resolved, false)(theme),
             "styles::segmented_control",
         ));
         out.extend(segment_style_fields(&styles::segment(
@@ -2513,7 +2513,6 @@ fn every_status_list_names_each_status_once() {
         ("DIALOG_STATUSES", DIALOG_STATUSES),
         ("TOOLBAR_STATUSES", TOOLBAR_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
-        ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
         ("EXPANDER_FRAME_STATUSES", EXPANDER_FRAME_STATUSES),
     ] {
         assert_eq!(
@@ -2523,6 +2522,14 @@ fn every_status_list_names_each_status_once() {
              value exactly once"
         );
     }
+    // The segmented control's container and separators take no status, but
+    // a `disabled` flag: their rows hold both values, once each.
+    assert_eq!(
+        SEGMENTED_CONTROL_STATUSES,
+        &[false, true],
+        "SEGMENTED_CONTROL_STATUSES: the styles take `disabled`, so its rows hold \
+         both values exactly once"
+    );
 
     // A segment is a button that is selected or not, and a toggle button one
     // that is checked or not: every button status, once for each.
@@ -4352,7 +4359,7 @@ fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
              the segment at rest"
         );
         assert_eq!(
-            styles::segmented_control(&resolved)(&theme).background,
+            styles::segmented_control(&resolved, false)(&theme).background,
             Some(Background::Color(idle)),
             "macos-tahoe ({mode:?}): the group under the segments is the \
              control's fill"
@@ -4727,9 +4734,9 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::dialog(r));
     assert_clone(&styles::toolbar(r));
     assert_clone(&styles::toolbar_rule(r));
-    assert_clone(&styles::segment_separator(r));
+    assert_clone(&styles::segment_separator(r, false));
     assert_clone(&styles::container_card(r));
-    assert_clone(&styles::segmented_control(r));
+    assert_clone(&styles::segmented_control(r, false));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
     assert_clone(&styles::expander(r));
     assert_clone(&styles::expander_frame(r));

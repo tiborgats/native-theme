@@ -1740,13 +1740,13 @@ impl SegmentPosition {
 /// for (i, segment) in segments.into_iter().enumerate() {
 ///     if i > 0 && sc.separator_width > 0.0 {
 ///         let line = container(space()).width(sc.separator_width).height(Fill);
-///         parts.push(line.style(styles::segment_separator(&resolved)).into());
+///         parts.push(line.style(styles::segment_separator(&resolved, disabled)).into());
 ///     }
 ///     parts.push(segment);
 /// }
 /// container(row(parts).height(Shrink))
 ///     .padding(sc.border.line_width)
-///     .style(styles::segmented_control(&resolved))
+///     .style(styles::segmented_control(&resolved, disabled))
 /// ```
 ///
 /// Its fill is `segmented_control.background_color`, the group every
@@ -1762,21 +1762,34 @@ impl SegmentPosition {
 /// source and come from `container::Style::default()`: the model carries a
 /// shadow color but no offset or blur, and `snap` is a renderer setting.
 ///
+/// `disabled` is whether the control is disabled, its segments built with no
+/// `on_press`: a disabled control is faded as one widget by
+/// `segmented_control.disabled_opacity` over the window,
+/// `defaults.background_color`, as the model defines the opacity, for the
+/// entire widget (`docs/platform-facts.md` §2.1.6): the group fill, the
+/// outline, the separators ([`segment_separator`] with the same `disabled`),
+/// the segments and their labels ([`segment`], `Status::Disabled`), each
+/// composited over what it lies on and faded over the window. Where the
+/// opacity is 1 the colours are as stated.
+///
 /// The control's height is not a `Style` field: `segmented_control.segment_height`
 /// is the control's outer height, which a consumer gives the segments less
 /// the outline above and below them.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn segmented_control(
     resolved: &ResolvedTheme,
+    disabled: bool,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
     let s = &resolved.segmented_control;
+    let fade = SegmentedFade::of(resolved, disabled);
 
-    let group = to_color(s.background_color);
-    let label = to_color(s.font.color);
+    let group = fade.over_ground(to_color(s.background_color));
+    let label = fade.over_group(to_color(s.font.color));
 
-    let border = border_of(&s.border);
+    let mut border = border_of(&s.border);
+    border.color = fade.over_ground(border.color);
 
     move |_theme| {
         let iced = Style::default();
@@ -1790,6 +1803,49 @@ pub fn segmented_control(
     }
 }
 
+/// How a segmented control fades as one widget, disabled: by
+/// `segmented_control.disabled_opacity` over the window, each colour
+/// composited over what it lies on first ([`segmented_control`]). Enabled, an
+/// opacity of 1, which leaves every colour as stated.
+#[derive(Clone, Copy)]
+struct SegmentedFade {
+    /// The window under the control.
+    ground: Color,
+    /// The group fill over the window, what a segment lies on.
+    group: Color,
+    /// The opacity the control is faded by.
+    opacity: f32,
+}
+
+impl SegmentedFade {
+    fn of(resolved: &ResolvedTheme, disabled: bool) -> Self {
+        let s = &resolved.segmented_control;
+        let ground = to_color(resolved.defaults.background_color);
+        Self {
+            ground,
+            group: composite_over(to_color(s.background_color), ground),
+            opacity: if disabled { s.disabled_opacity } else { 1.0 },
+        }
+    }
+
+    /// `color` laid on `under`, faded with the control.
+    fn over(self, under: Color, color: Color) -> Color {
+        faded_as_one(self.ground, under, color, self.opacity)
+    }
+
+    /// `color` laid on the window, faded with the control: the group fill and
+    /// the outline.
+    fn over_ground(self, color: Color) -> Color {
+        self.over(self.ground, color)
+    }
+
+    /// `color` laid on the group, faded with the control: a separator, a
+    /// segment's fill, an unselected segment's label.
+    fn over_group(self, color: Color) -> Color {
+        self.over(self.group, color)
+    }
+}
+
 /// The line between two segments of the platform's own segmented control,
 /// for `container(space()).width(separator_width).height(Fill).style(..)`
 /// between them in the row [`segmented_control`] holds: a fill of
@@ -1799,14 +1855,17 @@ pub fn segmented_control(
 /// a whole point (iced_widget 0.14.2 `src/rule.rs`, `draw`), off the
 /// segments' edges. `text_color`, `border`, `shadow` and `snap` are
 /// `container::Style::default()`'s. A `separator_width` of 0 is no line: the
-/// consumer adds none.
+/// consumer adds none. `disabled` fades it with the control, as
+/// [`segmented_control`] says.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn segment_separator(
     resolved: &ResolvedTheme,
+    disabled: bool,
 ) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
     use iced_widget::container::Style;
 
-    let line = to_color(resolved.segmented_control.border.color);
+    let line = SegmentedFade::of(resolved, disabled)
+        .over_group(to_color(resolved.segmented_control.border.color));
 
     move |_theme| Style {
         background: Some(Background::Color(line)),
@@ -1830,9 +1889,9 @@ pub fn segment_separator(
 /// selected segment is exactly the selected one. The model states no pressed
 /// segment either: a pressed segment is the hovered one.
 ///
-/// A disabled segment is its enabled self at `segmented_control.disabled_opacity`
-/// (docs/platform-facts.md §2.25): its fill's alpha and its label's are
-/// multiplied by it, over the group fill, which is not faded.
+/// A disabled segment is its enabled self faded as one with the control, as
+/// [`segmented_control`] says: its fill over the group, its label over its
+/// fill, each faded by `segmented_control.disabled_opacity` over the window.
 ///
 /// Each segment rounds the corners it shares with the control's outline, to
 /// the outline's inner radius -- `border.corner_radius` less
@@ -1862,8 +1921,12 @@ pub fn segment(
             to_color(s.font.color),
         )
     };
-    let disabled = idle.map(|fill| faded(fill, s.disabled_opacity));
-    let disabled_label = faded(label, s.disabled_opacity);
+    let fade = SegmentedFade::of(resolved, true);
+    let disabled = idle.map(|fill| fade.over_group(fill));
+    let disabled_label = match idle {
+        Some(fill) => fade.over(composite_over(fill, fade.group), label),
+        None => fade.over_group(label),
+    };
 
     let inner_radius = (s.border.corner_radius - s.border.line_width).max(0.0);
     let radius = match position {

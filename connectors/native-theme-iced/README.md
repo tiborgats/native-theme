@@ -207,13 +207,13 @@ use native_theme_iced::styles;
 
 # #[derive(Debug, Clone)]
 # enum Message {}
-# fn f(resolved: native_theme_iced::ResolvedTheme, labels: &[&str], chosen: usize) {
+# fn f(resolved: native_theme_iced::ResolvedTheme, labels: &[&str], chosen: usize, disabled: bool) {
 let sc = &resolved.segmented_control;
 let mut parts: Vec<Element<'_, Message>> = Vec::new();
 for (i, label) in labels.iter().enumerate() {
     if i > 0 && sc.separator_width > 0.0 {
         let line = container(space()).width(sc.separator_width).height(Fill);
-        parts.push(line.style(styles::segment_separator(&resolved)).into());
+        parts.push(line.style(styles::segment_separator(&resolved, disabled)).into());
     }
     let position = styles::SegmentPosition::of(i, labels.len());
     parts.push(
@@ -224,7 +224,7 @@ for (i, label) in labels.iter().enumerate() {
 }
 let control: Container<'_, Message> = container(row(parts).height(Shrink))
     .padding(sc.border.line_width)
-    .style(styles::segmented_control(&resolved));
+    .style(styles::segmented_control(&resolved, disabled));
 # }
 ```
 

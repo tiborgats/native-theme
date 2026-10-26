@@ -2113,49 +2113,93 @@ pub(super) const CONTAINER_CARD_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::container_card(r)(t).border,
 }];
 
-/// A segmented control's frame has no `Status` (shape B).
+/// A segmented control's frame has no `Status`: whether the control is
+/// disabled, the flag its styles take, is its one state.
 #[cfg(feature = "widgets")]
-pub(super) const SEGMENTED_CONTROL_STATUSES: &[()] = &[()];
+pub(super) const SEGMENTED_CONTROL_STATUSES: &[bool] = &[false, true];
+
+/// The opacity a segmented control is faded by: `disabled_opacity` when
+/// disabled, 1 otherwise.
+#[cfg(feature = "widgets")]
+fn segmented_opacity(r: &ResolvedTheme, disabled: bool) -> f32 {
+    if disabled {
+        r.segmented_control.disabled_opacity
+    } else {
+        1.0
+    }
+}
+
+/// The group fill over the window, what a segment lies on.
+#[cfg(feature = "widgets")]
+fn segmented_group(r: &ResolvedTheme) -> Color {
+    over(to_color(r.segmented_control.background_color), window(r))
+}
 
 /// Every color field of `styles::segmented_control`: the frame's fill is the
 /// group every segment lies on, the control's own fill, and its label is the
-/// control's own.
+/// control's own; disabled, each faded as one over the window.
 #[cfg(feature = "widgets")]
-pub(super) const SEGMENTED_CONTROL_ROWS: &[StyleRow<()>] = &[
+pub(super) const SEGMENTED_CONTROL_ROWS: &[StyleRow<bool>] = &[
     StyleRow {
         field: "styles::segmented_control.text_color",
         statuses: SEGMENTED_CONTROL_STATUSES,
-        native: |r, ()| to_color(r.segmented_control.font.color),
-        get: |t, r, ()| stated(styles::segmented_control(r)(t).text_color),
+        native: |r, d| {
+            as_one(
+                r,
+                segmented_group(r),
+                to_color(r.segmented_control.font.color),
+                segmented_opacity(r, d),
+            )
+        },
+        get: |t, r, d| stated(styles::segmented_control(r, d)(t).text_color),
     },
     StyleRow {
         field: "styles::segmented_control.background",
         statuses: SEGMENTED_CONTROL_STATUSES,
-        native: |r, ()| to_color(r.segmented_control.background_color),
-        get: |t, r, ()| flat(styles::segmented_control(r)(t).background),
+        native: |r, d| {
+            as_one(
+                r,
+                window(r),
+                to_color(r.segmented_control.background_color),
+                segmented_opacity(r, d),
+            )
+        },
+        get: |t, r, d| flat(styles::segmented_control(r, d)(t).background),
     },
 ];
 
 #[cfg(feature = "widgets")]
-pub(super) const SEGMENTED_CONTROL_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
+pub(super) const SEGMENTED_CONTROL_BORDER_ROWS: &[BorderRow<bool>] = &[BorderRow {
     field: "styles::segmented_control",
     statuses: SEGMENTED_CONTROL_STATUSES,
-    native: |r, ()| NativeBorder {
-        color: to_color(r.segmented_control.border.color),
+    native: |r, d| NativeBorder {
+        color: as_one(
+            r,
+            window(r),
+            to_color(r.segmented_control.border.color),
+            segmented_opacity(r, d),
+        ),
         width: r.segmented_control.border.line_width,
         radius: r.segmented_control.border.corner_radius,
     },
-    get: |t, r, ()| styles::segmented_control(r)(t).border,
+    get: |t, r, d| styles::segmented_control(r, d)(t).border,
 }];
 
 /// The one colour field of `styles::segment_separator`, the line between
 /// two segments, its fill; its others are iced's container defaults.
 #[cfg(feature = "widgets")]
-pub(super) const SEGMENT_SEPARATOR_ROWS: &[StyleRow<()>] = &[StyleRow {
+pub(super) const SEGMENT_SEPARATOR_ROWS: &[StyleRow<bool>] = &[StyleRow {
     field: "styles::segment_separator.background",
     statuses: SEGMENTED_CONTROL_STATUSES,
-    native: |r, ()| to_color(r.segmented_control.border.color),
-    get: |t, r, ()| flat(styles::segment_separator(r)(t).background),
+    native: |r, d| {
+        as_one(
+            r,
+            segmented_group(r),
+            to_color(r.segmented_control.border.color),
+            segmented_opacity(r, d),
+        )
+    },
+    get: |t, r, d| flat(styles::segment_separator(r, d)(t).background),
 }];
 
 /// Every state of a segment: whether it is the selected one, and its
@@ -2189,9 +2233,9 @@ pub(super) const SEGMENT_POSITIONS: &[styles::SegmentPosition] = &[
 /// soft option is `None`); selected, the active pair in every enabled
 /// status, since the model states no hover of its own for it; pressed, the
 /// hovered look, since the model states no pressed segment. Disabled, the
-/// enabled pair at `segmented_control.disabled_opacity`, over the group,
-/// which is not faded. "None" is fully transparent here, the colour a `None`
-/// background paints.
+/// resting pair faded as one with the control over the window: the fill over
+/// the group, the label over the fill. "None" is fully transparent here, the
+/// colour a `None` background paints.
 #[cfg(feature = "widgets")]
 pub(super) fn native_segment(
     r: &ResolvedTheme,
@@ -2205,14 +2249,16 @@ pub(super) fn native_segment(
         let hovered = s.hover_background.map_or(Color::TRANSPARENT, to_color);
         (Color::TRANSPARENT, hovered, to_color(s.font.color))
     };
-    let fade = |c: Color| Color {
-        a: c.a * s.disabled_opacity,
-        ..c
-    };
+    let group = segmented_group(r);
+    let op = s.disabled_opacity;
     match status {
         button::Status::Active => (idle, label),
         button::Status::Hovered | button::Status::Pressed => (hovered, label),
-        button::Status::Disabled => (fade(idle), fade(label)),
+        button::Status::Disabled if selected => (
+            as_one(r, group, idle, op),
+            as_one(r, over(idle, group), label, op),
+        ),
+        button::Status::Disabled => (Color::TRANSPARENT, as_one(r, group, label, op)),
     }
 }
 

@@ -254,6 +254,12 @@ moves = [
   { row = "styles::checkbox.border", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::checkbox.icon_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::checkbox.text_color", statuses = ["Disabled { is_checked: false }", "Disabled { is_checked: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segment.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segment_separator.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segmented_control.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segmented_control.border", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
+  { row = "styles::segmented_control.text_color", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::toggler.background", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
   { row = "styles::toggler.foreground", statuses = ["Disabled { is_toggled: false }", "Disabled { is_toggled: true }"], except = ["kde-breeze/light", "kde-breeze/dark", "windows-11/light", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark"] },
 ]
@@ -726,6 +732,7 @@ moves = [
 [leaves."segmented_control.active_background"]
 moves = [
   { row = "styles::segment.background", statuses = ["(true, Active)", "(true, Disabled)", "(true, Hovered)", "(true, Pressed)"] },
+  { row = "styles::segment.text_color", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."segmented_control.active_text_color"]
@@ -735,19 +742,23 @@ moves = [
 
 [leaves."segmented_control.background_color"]
 moves = [
-  { row = "styles::segmented_control.background" },
+  { row = "styles::segment.background", statuses = ["(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::segment.text_color", statuses = ["(false, Disabled)", "(true, Disabled)"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::segment_separator.background", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
+  { row = "styles::segmented_control.background", statuses = ["false", "true"] },
+  { row = "styles::segmented_control.text_color", statuses = ["true"], except = ["kde-breeze/light", "kde-breeze/dark", "adwaita/light", "adwaita/dark", "windows-11/dark", "macos-monterey/light", "macos-monterey/dark", "macos-tahoe/light", "macos-tahoe/dark", "material-3/light", "material-3/dark", "ios-13/light", "ios-13/dark", "catppuccin-latte/light", "catppuccin-latte/dark", "catppuccin-frappe/light", "catppuccin-frappe/dark", "catppuccin-macchiato/light", "catppuccin-macchiato/dark", "catppuccin-mocha/light", "catppuccin-mocha/dark", "nord/light", "nord/dark", "dracula/light", "dracula/dark", "gruvbox/light", "gruvbox/dark", "solarized/light", "solarized/dark", "tokyo-night/light", "tokyo-night/dark", "one-dark/light", "one-dark/dark"] },
 ]
 
 [leaves."segmented_control.border.color"]
 moves = [
-  { row = "styles::segment_separator.background" },
-  { row = "styles::segmented_control.border" },
+  { row = "styles::segment_separator.background", statuses = ["false", "true"] },
+  { row = "styles::segmented_control.border", statuses = ["false", "true"] },
 ]
 
 [leaves."segmented_control.font.color"]
 moves = [
   { row = "styles::segment.text_color", statuses = ["(false, Active)", "(false, Disabled)", "(false, Hovered)", "(false, Pressed)"] },
-  { row = "styles::segmented_control.text_color" },
+  { row = "styles::segmented_control.text_color", statuses = ["false", "true"] },
 ]
 
 [leaves."segmented_control.hover_background"]
@@ -1435,22 +1446,22 @@ leaves = ["scrollbar.track_color"]
 leaves = ["scrollbar.thumb_active_color", "scrollbar.thumb_color", "scrollbar.thumb_hover_color"]
 
 [rows."styles::segment.background"]
-leaves = ["segmented_control.active_background", "segmented_control.hover_background"]
+leaves = ["defaults.background_color", "segmented_control.active_background", "segmented_control.background_color", "segmented_control.hover_background"]
 
 [rows."styles::segment.text_color"]
-leaves = ["segmented_control.active_text_color", "segmented_control.font.color"]
+leaves = ["defaults.background_color", "segmented_control.active_background", "segmented_control.active_text_color", "segmented_control.background_color", "segmented_control.font.color"]
 
 [rows."styles::segment_separator.background"]
-leaves = ["segmented_control.border.color"]
+leaves = ["defaults.background_color", "segmented_control.background_color", "segmented_control.border.color"]
 
 [rows."styles::segmented_control.background"]
-leaves = ["segmented_control.background_color"]
+leaves = ["defaults.background_color", "segmented_control.background_color"]
 
 [rows."styles::segmented_control.border"]
-leaves = ["segmented_control.border.color"]
+leaves = ["defaults.background_color", "segmented_control.border.color"]
 
 [rows."styles::segmented_control.text_color"]
-leaves = ["segmented_control.font.color"]
+leaves = ["defaults.background_color", "segmented_control.background_color", "segmented_control.font.color"]
 
 [rows."styles::slider.handle.background"]
 leaves = ["slider.thumb_color", "slider.thumb_hover_color"]

@@ -11134,7 +11134,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 container(space())
                     .width(sc.separator_width)
                     .height(Fill)
-                    .style(styles::segment_separator(resolved))
+                    .style(styles::segment_separator(resolved, false))
                     .into(),
             );
         }
@@ -11187,7 +11187,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
                 // span the segments' height.
                 container(row(segments).height(Length::Shrink))
                     .padding(sc.border.line_width)
-                    .style(styles::segmented_control(resolved)),
+                    .style(styles::segmented_control(resolved, false)),
             )
             .loose()
             .part("basic.segmented.day", segment_at(0))
@@ -26012,6 +26012,45 @@ mod tests {
         assert!(
             ys.iter().all(|y| y.is_some() && *y == ys[0]),
             "the segments are not on one row: {ys:?}"
+        );
+    }
+
+    /// D13b: a separator spans the segments' height: under kde-breeze, which
+    /// states a `separator_width`, the line between Day and Week is the
+    /// border colour a point below the segments' top and a point above their
+    /// bottom, the row's `Shrink` height giving the separator's `Fill` the
+    /// segments' height and not the page's.
+    #[test]
+    fn the_separators_span_the_segments_height() {
+        let state = page_state("kde-breeze", Tab::Basic);
+        let sc = state.current_resolved.segmented_control.clone();
+        assert!(
+            sc.separator_width > 0.0,
+            "kde-breeze states no separator width"
+        );
+        assert_eq!(sc.border.color.a, 255, "kde-breeze's line colour is opaque");
+        let (image, rects, scale) = basic_frame(&state);
+        let rect = |id: &str| match rects.get(id) {
+            Some(rect) => *rect,
+            None => panic!("{id} is not drawn"),
+        };
+        let (day, week) = (rect("basic.segmented.day"), rect("basic.segmented.week"));
+        let x = (day.x + day.width + week.x) / 2.0;
+        let want = to_color(sc.border.color).into_rgba8();
+        for y in [day.y + 1.0, day.y + day.height - 1.0] {
+            let got = image.get_pixel((x * scale) as u32, (y * scale) as u32).0;
+            assert!(
+                got.iter()
+                    .zip(want)
+                    .take(3)
+                    .all(|(a, b)| a.abs_diff(b) <= 1),
+                "at y {y}: {got:?}, where the separator is {want:?}"
+            );
+        }
+        assert!(
+            rect("basic.segmented.control").height
+                < day.height + 4.0 * sc.border.line_width.max(1.0),
+            "the control grew past its segments"
         );
     }
 

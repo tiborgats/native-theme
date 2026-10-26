@@ -25,9 +25,11 @@ use crate::parts::Parts;
 /// decoration of a composed widget — filled with the group fill,
 /// `segmented_control.background_color`, rounded to the scope's `border.corner_radius` and
 /// stroked inside its edge with the outline, the border's colour as wide as the border in
-/// whole points, which insets the row by as much; over the group the widget paints a divider
-/// of that colour in each `separator_width` gap between two segments of one row, the one thing
-/// it paints itself: the model states the dividers' width and no colour of
+/// whole points, which insets the row by as much; over the group the widget paints the line
+/// colour wherever no segment covers the inside -- a divider in each `separator_width` gap
+/// between two segments of one row, and, wrapped, the gap between the rows and the room a
+/// shorter row leaves, as the frame filled with that colour showed there -- the one thing it
+/// paints itself: the model states the dividers' width and no colour of
 /// their own, so they are the one line colour the control states. A segment lays only its own
 /// fill over the group: none at rest, `hover_background` as given under the pointer and
 /// pressed, `active_background` while selected, so a translucent group fill, as windows-11
@@ -53,16 +55,16 @@ use crate::parts::Parts;
 /// a `RadioButton`, toggled when selected.
 ///
 /// It has no `enabled`: `segmented_control` states no disabled colour, so under
-/// `ui.add_enabled(false, ..)` its segments are their enabled selves faded by the calling
-/// `Ui`'s `disabled_alpha` over the group, which does not fade
-/// (`docs/platform-facts.md` §2.25 `disabled_opacity`): the selected segment's fill and each
-/// label at that alpha times
-/// its own, the group fill, the outline and the dividers as stated, all painted at the opacity
-/// the calling `Ui` had before egui faded it (`Ui::disable` multiplies the painter's opacity by
-/// `disabled_alpha`, `egui/src/ui.rs:497-502`, `:1588-1592`). Only that one level of disabling
-/// is taken back: a `Ui` disabled twice (a nested `add_enabled_ui(false, ..)`), or restyled
-/// after it was disabled, keeps the rest of its fade. Where `disabled_alpha` is 1 the colours
-/// are as stated.
+/// `ui.add_enabled(false, ..)` it is its enabled self faded as one widget by its own
+/// `segmented_control.disabled_opacity` (the scope's `disabled_alpha`) over its backdrop
+/// ([`Self::backdrop`]), as the model defines the opacity, for the entire widget
+/// (`docs/platform-facts.md` §2.1.6): the group fill over the backdrop, the outline and the
+/// lines over the group, the selected segment's fill over the group, each label over its
+/// segment, each faded over the backdrop and painted at the opacity the calling `Ui` had before
+/// egui faded it by its own `disabled_alpha` (`Ui::disable` multiplies the painter's opacity by
+/// it, `egui/src/ui.rs:497-502`, `:1588-1592`). Only that one level of disabling is taken back:
+/// a `Ui` disabled twice (a nested `add_enabled_ui(false, ..)`), or restyled after it was
+/// disabled, keeps the rest of its fade. Where the opacity is 1 the colours are as stated.
 ///
 /// With no atlas installed, it adds the same buttons in the calling `Ui`'s style, in a row
 /// with no outline.
@@ -71,6 +73,7 @@ pub struct SegmentedControl<'a> {
     selected: &'a mut usize,
     segments: Vec<egui::WidgetText>,
     wrap: bool,
+    backdrop: Option<egui::Color32>,
 }
 
 impl<'a> SegmentedControl<'a> {
@@ -84,6 +87,7 @@ impl<'a> SegmentedControl<'a> {
             selected,
             segments: segments.into_iter().map(Into::into).collect(),
             wrap: false,
+            backdrop: None,
         }
     }
 
@@ -102,12 +106,21 @@ impl<'a> SegmentedControl<'a> {
         self.wrap = true;
         self
     }
+
+    /// The colour under the control, which a disabled one is faded over as one widget; the
+    /// window's, `defaults.background_color`, where not given.
+    pub fn backdrop(mut self, backdrop: egui::Color32) -> Self {
+        self.backdrop = Some(backdrop);
+        self
+    }
 }
 
 /// The colours a segmented control reads of a theme, every colour read in one place, so the crate's
 /// colour-leaf coverage test sees the widget's reads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Look {
+    /// `defaults.background_color`: the colour faded over where no backdrop is given.
+    pub(crate) background: Rgba,
     /// `segmented_control.hover_background`: what a hovered unselected segment lays over the
     /// group fill, as given; `None`, nothing.
     pub(crate) hover: Option<Rgba>,
@@ -116,6 +129,7 @@ pub(crate) struct Look {
 impl Look {
     pub(crate) fn of(t: &ResolvedTheme) -> Self {
         Self {
+            background: t.defaults.background_color,
             hover: t.segmented_control.hover_background,
         }
     }
@@ -127,24 +141,34 @@ impl egui::Widget for SegmentedControl<'_> {
             selected,
             segments,
             wrap,
+            backdrop,
         } = self;
         if let Some(atlas) = ThemeAtlas::from_ctx(ui.ctx()) {
             let t = atlas.resolved_for(ui.ctx().theme());
             let padding = &t.segmented_control.border.padding;
             let unstated = padding.top.is_none() && padding.bottom.is_none();
-            let hover = Look::of(t).hover.map(to_color32);
-            // The fade a disabled calling `Ui` gave the painter, which the control takes back to
-            // fade its segments alone.
-            let fade = crate::fade::outer_fade(ui);
+            let look = Look::of(t);
+            let hover = look.hover.map(to_color32);
+            // A disabled calling `Ui`: the opacity its painter had before egui faded it by that
+            // `Ui`'s `disabled_alpha`, which the control takes back to fade itself as one by its
+            // own `disabled_opacity`, over the backdrop.
+            let disabled = (!ui.is_enabled()).then(|| {
+                let before = crate::fade::outer_fade(ui).map_or(ui.opacity(), |(_, before)| before);
+                let ground = backdrop.unwrap_or_else(|| to_color32(look.background));
+                (ground, before)
+            });
             ui.native_scope(Role::SegmentedControl, RoleVariant::Normal, |ui| {
                 if unstated {
                     fit_height(ui, &segments);
                 }
-                let outline = Outline::of(ui);
+                let mut outline = Outline::of(ui);
                 lay_over_group(ui.visuals_mut(), hover);
-                if let Some((alpha, opacity)) = fade {
-                    fade_segments(ui.visuals_mut(), alpha);
-                    ui.set_opacity(opacity);
+                if let Some((ground, before)) = disabled {
+                    let alpha = ui.visuals().disabled_alpha();
+                    if alpha < 1.0 {
+                        fade_as_one(&mut outline, ui.visuals_mut(), ground, alpha);
+                    }
+                    ui.set_opacity(before);
                 }
                 let contents = |ui: &mut egui::Ui| {
                     let count = segments.len();
@@ -161,7 +185,8 @@ impl egui::Widget for SegmentedControl<'_> {
                         row(ui, selected, segments, Some((&outline, shared.as_slice())))
                     });
                     let (changed, rects) = framed.inner;
-                    outline.paint_dividers(ui.painter(), &rects);
+                    let inside = framed.response.rect.shrink(f32::from(outline.inset()));
+                    outline.paint_lines(ui.painter(), inside, &rects);
                     // egui's way with a guess that layout proves wrong, as its `Grid` does it:
                     // run the pass again where it is shown (`egui/src/grid.rs:466-468`,
                     // `egui/src/context.rs:1980-1992`), and repaint (`egui/src/grid.rs:290-294`),
@@ -239,10 +264,13 @@ fn dividers(segments: &[egui::Rect]) -> Vec<(usize, egui::Rect)> {
 }
 
 /// The joined control, from the segmented control scope's own resting cell: its group fill,
-/// `segmented_control.background_color`, its outline's colour and width, and its corner radius.
+/// `segmented_control.background_color`, its outline's colour and width, the colour of its
+/// dividers and of whatever of the frame's inside no segment covers (the outline's, at rest),
+/// and its corner radius.
 struct Outline {
     group: egui::Color32,
     stroke: egui::Stroke,
+    lines: egui::Color32,
     radius: egui::CornerRadius,
 }
 
@@ -252,6 +280,7 @@ impl Outline {
         Self {
             group: idle.weak_bg_fill,
             stroke: idle.bg_stroke,
+            lines: idle.bg_stroke.color,
             radius: idle.corner_radius,
         }
     }
@@ -276,12 +305,15 @@ impl Outline {
             .corner_radius(self.radius)
     }
 
-    /// The dividers, over the group fill: the border's colour between each two neighbouring
-    /// segments of one row (`rects`), the `separator_width` gap the row leaves. The one thing
-    /// the control paints itself: egui's `Button` has no stroke on one side.
-    fn paint_dividers(&self, painter: &egui::Painter, rects: &[egui::Rect]) {
-        for (_, divider) in dividers(rects) {
-            painter.rect_filled(divider, egui::CornerRadius::ZERO, self.stroke.color);
+    /// The lines, over the group fill: the border's colour wherever no segment covers the
+    /// frame's inside, `inside` ([`uncovered`]): the `separator_width` gap between two
+    /// neighbouring segments of one row (`rects`), the gap between two wrapped rows, the room a
+    /// shorter row or segment leaves; the line colour the outline is, as the model states no
+    /// colour of its own for the dividers. The one thing the control paints itself: egui's
+    /// `Button` has no stroke on one side.
+    fn paint_lines(&self, painter: &egui::Painter, inside: egui::Rect, rects: &[egui::Rect]) {
+        for line in uncovered(inside, rects) {
+            painter.rect_filled(line, egui::CornerRadius::ZERO, self.lines);
         }
     }
 
@@ -392,18 +424,75 @@ fn lay_over_group(v: &mut egui::Visuals, hover: Option<egui::Color32>) {
     w.active.weak_bg_fill = hovered;
 }
 
-/// A disabled control's segments faded by `alpha` over the group fill, which does not fade
-/// (`docs/platform-facts.md` §2.25 `disabled_opacity`): the selected segment's fill and its
-/// label, and an unselected one's label, each at `alpha` times its own alpha. A disabled
-/// segment is in its `inactive` state, as egui hovers no disabled widget
-/// (`egui/src/context.rs:1496-1500`).
-fn fade_segments(v: &mut egui::Visuals, alpha: f32) {
-    let fade = |colour: egui::Color32| colour.gamma_multiply(alpha);
+/// A disabled control faded as one widget by `alpha`, the scope's `disabled_alpha`
+/// (`segmented_control.disabled_opacity`), over `ground`, as the model defines the opacity, for
+/// the entire widget (`docs/platform-facts.md` §2.1.6): each colour composited over what it lies
+/// on and faded over `ground` -- the group fill over `ground`, the outline and the lines over the
+/// group, the selected segment's fill over the group, each label over its segment -- so a part
+/// keeps its colour on the part under it and the whole fades. A disabled segment is in its
+/// `inactive` state, as egui hovers no disabled widget (`egui/src/context.rs:1496-1500`).
+fn fade_as_one(outline: &mut Outline, v: &mut egui::Visuals, ground: egui::Color32, alpha: f32) {
+    let fade = |colour: egui::Color32| crate::fade::faded(ground, colour, alpha);
+    let group = ground.blend(outline.group);
+    let line = group.blend(outline.stroke.color);
+    outline.group = fade(group);
+    outline.stroke.color = fade(line);
+    outline.lines = fade(line);
     let idle = &mut v.widgets.inactive;
-    idle.fg_stroke.color = fade(idle.fg_stroke.color);
-    v.override_text_color = v.override_text_color.map(fade);
-    v.selection.bg_fill = fade(v.selection.bg_fill);
-    v.selection.stroke.color = fade(v.selection.stroke.color);
+    let label = v.override_text_color.unwrap_or(idle.fg_stroke.color);
+    idle.fg_stroke.color = fade(group.blend(idle.fg_stroke.color));
+    v.override_text_color = v.override_text_color.map(|_| fade(group.blend(label)));
+    let selected = group.blend(v.selection.bg_fill);
+    v.selection.bg_fill = fade(selected);
+    v.selection.stroke.color = fade(selected.blend(v.selection.stroke.color));
+}
+
+/// What of `inside`, the frame's inside, the segments at `rects` leave uncovered, in rows as
+/// they lie (a row's next segment lies right of the one before it and overlaps its height):
+/// between two neighbours of a row, the `separator_width` gap, across the row's height; above or
+/// below a segment shorter than its row; before a row's first segment and after its last; and
+/// between the rows, and above the first and below the last, across `inside`'s width. Empty
+/// rectangles are left out. With the segments of one height on one row, it is the dividers.
+fn uncovered(inside: egui::Rect, rects: &[egui::Rect]) -> Vec<egui::Rect> {
+    let mut rows: Vec<Vec<egui::Rect>> = Vec::new();
+    for rect in rects {
+        match rows.last_mut() {
+            Some(row)
+                if row.last().is_some_and(|last| {
+                    rect.left() >= last.right()
+                        && rect.top() < last.bottom()
+                        && last.top() < rect.bottom()
+                }) =>
+            {
+                row.push(*rect);
+            }
+            _ => rows.push(vec![*rect]),
+        }
+    }
+    let mut out = Vec::new();
+    let mut push = |x: egui::Rangef, y: egui::Rangef| {
+        if x.min < x.max && y.min < y.max {
+            out.push(egui::Rect::from_x_y_ranges(x, y));
+        }
+    };
+    let mut top = inside.top();
+    for row in &rows {
+        let band = row.iter().fold(egui::Rangef::NOTHING, |band, r| {
+            egui::Rangef::new(band.min.min(r.top()), band.max.max(r.bottom()))
+        });
+        push(inside.x_range(), egui::Rangef::new(top, band.min));
+        let mut left = inside.left();
+        for r in row {
+            push(egui::Rangef::new(left, r.left()), band);
+            push(r.x_range(), egui::Rangef::new(band.min, r.top()));
+            push(r.x_range(), egui::Rangef::new(r.bottom(), band.max));
+            left = r.right();
+        }
+        push(egui::Rangef::new(left, inside.right()), band);
+        top = band.max;
+    }
+    push(inside.x_range(), egui::Rangef::new(top, inside.bottom()));
+    out
 }
 
 /// Narrow the scope's vertical button padding until the tallest one-line segment is the

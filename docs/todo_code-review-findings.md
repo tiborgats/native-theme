@@ -14186,3 +14186,37 @@ reason drop the macOS presets from the silent ones, and the CHANGELOG has the li
 connector suites pass; `contract-leaves.toml` is unchanged.
 **Status:** done, the commit that files this entry. Visible in the macOS presets' selected
 radios (CI Screenshots).
+
+#### D13b · the D13 review: the segmented control fades as one widget
+**Problem:** I2: D13 faded a disabled segmented control's segments alone over an unfaded group,
+from facts :1646's Windows note ("the group's fill does not fade"); but §2.1.6 (:996) defines
+`disabled_opacity` as applied to the entire widget, GNOME's §2.25 cell is "(none)", and the
+iced connector's segments-only fade before D13 was wrong for adwaita too. I1: the egui widget
+faded by the calling `Ui`'s `disabled_alpha` (1 by default), not by the segmented control's
+own, so windows-11's 0.55 never applied (`fade::outer_fade`, read before the scope opened).
+M1: on an opaque preset a wrapped egui control lost the border-coloured band between its rows
+and the room its shorter row left, which the frame filled with that colour had shown. M4: no
+test held the egui hover layer or the iced separators' height. M5: the iced CHANGELOG line did
+not say that a consumer who kept `row(..).spacing(separator_width)` loses the separators.
+**Fix:** the controller's ruling for I2: both connectors fade the whole control by
+`segmented_control.disabled_opacity` over the window or backdrop, the model's defined
+semantics: the group fill, the outline, the separators or lines, the segments and their labels,
+each composited over what it lies on (iced: `styles::segmented_control(&resolved, disabled)`,
+`styles::segment_separator(&resolved, disabled)` and `styles::segment`'s `Status::Disabled`
+through one `SegmentedFade`; the contract's segmented rows hold both `disabled` values;
+egui: `fade_as_one` over the backdrop, `SegmentedControl::backdrop` back, the painter's
+opacity restored from before the calling `Ui`'s fade). Windows' exception, a group of
+#00000006 and an edge of #0000000f, is not modelled: it would move a few levels at most; W2 is
+asked to add that note to facts :1646. I1: the egui fade's alpha is the scope's
+`disabled_alpha`; `a_disabled_segmented_control_fades_as_one` holds it on adwaita (0.5) and
+windows-11 (0.55), on the window and on a backdrop. M1: the egui widget paints the line colour
+wherever no segment covers the frame's inside (`uncovered`: the dividers, the gaps between rows,
+the room a shorter row or segment leaves), so an opaque preset draws as its border-filled frame
+did; `a_wrapped_controls_uncovered_inside_is_the_line_colour` samples a grid of the inside. M4:
+`a_hovered_segment_lays_the_hover_over_the_group` (egui) and
+`the_separators_span_the_segments_height` (iced, kde-breeze pixels). M5: the CHANGELOG line
+says so. M2 (a note): windows-11's outline composite differs from WinUI's by about 5 levels,
+as it did before D13 (iced's border replaces the fill under it, gpui's and egui's lie over it).
+M3 (a note): gpui's `demo::segmented` clips its segments' ends square to the rounded frame
+(`overflow_hidden`), where iced and egui round the segments' own outer corners.
+**Status:** done, the commit that files this entry.
