@@ -709,6 +709,13 @@ model, the platform presets and the three connectors
       (Medium: 10 across, 8 down). `geometry::text_area` pads the root by the
       rest of a stated side; a smaller side — KDE's 5, GNOME's 0 — stays 10 / 8.
       Needs an upstream seam (a size or editor padding on `Textarea`).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. The multi-line editor's padding is
+      gpui-component 0.8.1 `input/input.rs:573-588` (0.8.0 `:596-611`), by the field's
+      `Size`. A `Textarea` does take a `Size` (`input/textarea.rs:172-177`, handed to
+      its `Input` at `:205`, the file unchanged since 0.8.0, so "a `Textarea` offers
+      no size" above was already untrue at 0.8.0), but a `Size` gives one of four
+      paddings (`sizing.rs:147-166`: 12, 10, 8 or 4 across, 10, 8, 2 or 0 down), so a
+      stated side none of them gives, such as KDE's 5, still has no receiver.
 - [ ] [1.0] **macOS text area padding.** NSTextView's `lineFragmentPadding` is 5, but
       `textContainerInset`'s default is not stated on its documentation page, so
       the total is not sourced and macos-monterey states none.
@@ -1841,6 +1848,9 @@ model, the platform presets and the three connectors
       check the lockfile is back on 0.1.4.
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* gpui-fast-web 0.1.10 still pins
       `unicode-properties = "=0.1.3"`, so the lockfile stays on 0.1.3.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* gpui-fast-web 0.1.12 still pins
+      `unicode-properties = "=0.1.3"` (`Cargo.toml:53-54`), so the lockfile stays on
+      0.1.3.
 
 - [ ] [upstream] **File the gpui-fast issue: `Window::painted_quads()` omits
       what a rounded clip and a scroll layer paint.** For the maintainer to
@@ -1863,6 +1873,10 @@ model, the platform presets and the three connectors
       Once `painted_quads()` and `painted_underlines()` include what the clip
       groups and the scroll layers paint, the descent can go. Found
       2026-10-21 (G3 Task 1).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-fast 0.1.12's
+      `painted_quads()` (`src/window.rs:2925-2927`) and `painted_underlines()`
+      (`:2931-2933`) return the rendered scene's own primitives only, and
+      `src/fast/rounded_clip_scene.rs` is unchanged from 0.1.10.
 
 - [ ] [1.0] **The layout dump on GPUI Fast is stale inside a scrolled,
       composited scroll layer.** The showcase's Widget Info registry
@@ -1920,49 +1934,6 @@ model, the platform presets and the three connectors
       observation, and the `Showcase` is no longer built again for its own
       records.
 
-- [ ] [upstream] **File the gpui-kit issue: on gpui-pre a labelled `Separator`
-      draws its label at the line's end.** For the maintainer to file on
-      longbridge/gpui-kit (an agent files nothing). gpui-component 0.8.0's
-      `Separator` lays its label out in a `justify_center` row, the label
-      `mx_auto` and the line an absolute child (`src/separator.rs:79-80`,
-      `:136`, `:147`). gpui-pre 0.3.9 takes taffy `0.13.0`, whose
-      `distribute_remaining_free_space` gives the free space to the auto
-      margins (`src/compute/flexbox.rs:1721`) and then offsets the item by the
-      same free space for `justify-content` (`:1750`), so the label moves by
-      the free space twice. taffy 0.14.0, which gpui-fast 0.1.10 pins
-      (`=0.14.0`), sets the free space to zero once the margins have taken it
-      (`:2140`), as CSS does, so GPUI Fast centres the label. gpui-component
-      pins `gpui-pre = "=0.3.9"`, so no gpui-pre build can take taffy 0.14.
-      Our repro: the gpui showcase's Layout page, at rest on gpui-pre, draws
-      "Section Break" at content x 1169–1249 on a 938 px line that starts at
-      311, where GPUI Fast draws it at 740–820 (G3 Task 9's captures,
-      `docs/archive/todo_v0.7.0_code-review-findings.md`, *G3*). The screenshot scripts
-      build the showcase on gpui-pre, so its screenshots show the label at
-      the end. Found 2026-10-22 (G3 Task 9). The issue, ready to paste:
-
-      > **Title:** Separator: on gpui-pre the label is drawn at the line's
-      > end, not centred
-      >
-      > gpui-component 0.8.0 on its default core, gpui-pre 0.3.9 (taffy
-      > 0.13.0), Linux.
-      >
-      > `Separator::horizontal().label("Section Break")` draws the label
-      > flush with the line's right end. With the `gpui-fast` feature
-      > (gpui-fast 0.1.10, taffy `=0.14.0`) the same separator centres it.
-      >
-      > The separator's row is `justify_center()` and the label `mx_auto()`
-      > (`src/separator.rs:136`, `:147`). taffy 0.13.0's
-      > `distribute_remaining_free_space` (`src/compute/flexbox.rs`) gives
-      > the line's free space to the auto margins (`:1721`) and then, for
-      > `justify-content`, offsets the item by the same free space again
-      > (`:1750`): on a 938 px line with an 80 px label the label starts
-      > 858 px in, where centred it starts 429 px in. taffy 0.14.0 sets the
-      > free space to zero once auto margins have taken it (`:2140`), as CSS
-      > does.
-      >
-      > Either change fixes it on gpui-pre: gpui-pre on taffy 0.14, or the
-      > label without `mx_auto()`, which `justify_center()` centres on both
-      > cores.
 - [ ] [upstream] **File the gpui-kit issue: gpui-pre clips a rounded box's
       children to a rectangle.** For the maintainer to file on
       longbridge/gpui-kit (an agent files nothing). gpui-pre 0.3.9's content
@@ -2007,6 +1978,12 @@ model, the platform presets and the three connectors
       Progress fill, the List frame's right corners, the segmented control and
       the Expander still do, and the issue text above, which describes
       gpui-pre's clip, stands.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still holds. gpui-pre 0.3.10's `ContentMask`
+      still says "only rectangular content masks are supported"
+      (`src/window.rs:2238-2246`, the words at `:2239`; 0.3.9 `:2226-2234`). gpui-fast
+      0.1.12's `src/fast/rounded_clip.rs` and `src/style.rs` are unchanged from
+      0.1.10, so its lines hold (`src/style.rs:743`,
+      `src/fast/rounded_clip.rs:68-70`). The issue text's numbers are 0.3.9's.
 - [ ] [upstream] **File the gpui-kit issue: a non-panicking
       `TextSystem::try_resolve_font`.** For the maintainer to file on
       longbridge/gpui-kit (an agent files nothing); gpui-pre is a snapshot of
@@ -2048,6 +2025,16 @@ model, the platform presets and the three connectors
       > resolves, or a public `font_id(&self, font: &Font) -> Result<FontId>`
       > and the fallback stack as a read-only accessor? `resolve_font` could
       > then be written over it.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still holds. gpui-pre 0.3.10's
+      `TextSystem::resolve_font` (`src/text_system.rs:352-359`) now reads a cache
+      first and otherwise calls the private `resolve_font_uncached` (`:570`), which
+      panics where nothing resolves (`:621-628`). gpui-fast 0.1.12's
+      (`src/text_system.rs:354-356`) goes through `src/fast/text.rs:1086-1113` and
+      `:1125-1155` to its `pub(crate)` `resolve_font_uncached`
+      (`src/text_system.rs:567`), the `panic!` at `:618-625`. Neither has
+      `TextSystem::font_id` any more, and the fallback stack stays private (gpui-pre
+      `:237`) and `pub(crate)` (gpui-fast `:238`). The issue text's numbers are
+      0.3.9's and 0.1.10's.
 
 #### Upstream PR candidates from v0.5.8 (Tier U)
 
@@ -2056,6 +2043,10 @@ model, the platform presets and the three connectors
       accent pair, which native themes map to the platform's selection
       colours, so a hovered ghost button becomes a selection-coloured pill;
       `button/button.rs:1125-1132, 1141`)
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: a hovered Ghost button is filled
+      with `tokens.accent` (at half alpha in a dark theme) and labelled
+      `accent_foreground`, gpui-component 0.8.1 `button/button.rs:1205-1212`, `:1221`
+      (0.8.0 `:1191-1198`, `:1207`).
 - [ ] [upstream] a menu-surface token. `PopupMenu` renders with `.popover_style(cx)`, i.e.
       `bg(theme.popover)` (`menu/popup_menu.rs:1476`, `styled.rs:193-199`), and
       there is no seam to override it. native-theme records
@@ -2098,9 +2089,18 @@ model, the platform presets and the three connectors
       wrapper is `checkbox.rs:336-343` and the disabled colour before the
       caller's refinement `:253-259` (the refinement at `:265`);
       `combobox.rs:990-997` and `input/input.rs:99-103` are unchanged.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. `checkbox.rs` changed in its tests
+      only (the label wrapper `:336-343`, the disabled colour `:253-259`, the
+      refinement `:265`), `combobox.rs:990-997` is unchanged, and `input/input.rs`'s
+      `input_style` gives the disabled colours at `:97-101` (0.8.0 `:99-103`).
 - [ ] [upstream] `WindowBorder`'s frame colour is a literal (`window_border.rs:152-166`)
       and so is the shadow it draws below it in the same `render`; no theme
       value reaches either.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. gpui-component 0.8.1's `render`
+      picks the frame colour from two literals by `is_dark()` at
+      `window_border.rs:172-186` and draws the two-layer black shadow at `:244-276`
+      (0.8.0 `:158-172`, `:230-262`; the `:152-166` above named other lines at 0.8.0);
+      the file's only change is the new `window_safe_insets`.
 - [ ] [upstream] a placeholder colour for `Input`. `Input::render` rebuilds the editor
       style from the theme on every frame and hands it `muted_foreground`
       (`input/input.rs:496-499`), which gpui-base paints the placeholder with
@@ -2111,6 +2111,11 @@ model, the platform presets and the three connectors
       wrong safety net -- macOS's placeholder is about half the alpha of its
       secondary label. A `placeholder` token, or a setter on `Input`. Found
       2026-09-22 from a panel that said the placeholder read no theme field.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: `Input::render` hands the editor
+      style `muted_foreground` (gpui-component 0.8.1 `input/input.rs:541`, 0.8.0
+      `:564`), gpui-base 0.8.1 paints an empty field's placeholder in it
+      (`input/base/element.rs:2718-2722`, 0.8.0 `:2634-2638`), and neither crate has a
+      setter.
 - [ ] [upstream] the focus ring's width. `focus_ring_style` draws the ring 3px wide at
       half the `ring` colour's alpha from two module consts
       (`styled.rs:11-12`), so the platform's `focus_ring_width` -- modelled,
@@ -2160,6 +2165,11 @@ model, the platform presets and the three connectors
       (`button/button.rs:593-595`), where a platform records one radius per
       widget whatever its size. `geometry::button` and
       `geometry::input_group_button` restore it per call site.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. `Button`'s `ButtonRounded::Small`
+      and `Large` are `radius * 0.5` and `radius * 2.0` at gpui-component 0.8.1
+      `button/button.rs:660-665` (0.8.0 `:646-651`); an `XSmall` `InputGroupButton` is
+      rounded `radius_tokens().sm` (`input/group.rs:602-603`, unchanged since 0.8.0),
+      which is `radius / 2.` (`theme/mod.rs:580`).
 - [ ] [upstream] `Toggle` needs a token of its own for the pressed state: it reads
       `tokens.accent` (`button/toggle.rs:155, 202`), the item highlight of
       menus and lists. Since v0.5.9 the connector feeds that token the
@@ -2191,6 +2201,10 @@ model, the platform presets and the three connectors
       clamps the dialog to the viewport after `refine_style`
       (`dialog/dialog.rs:631`), so a themed `dialog.max_height` cannot reach
       it, while the width already has `Dialog::max_w`
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-component 0.8.1 computes the
+      viewport's height limit (`dialog/dialog.rs:689`) and sets it with `max_h` after
+      the caller's `refine_style` (`:787`, `:792`; 0.8.0 `:630`, `:730`, `:735`), and
+      the Dialog has `max_w` (`:519`) and no `max_h`.
 - [ ] [upstream] a styled `Theme` scrollbar-style override honoured by `base_theme()`
       (would make the connector's re-apply observer unnecessary)
 - [ ] [upstream] a scrollbar thumb inset per axis. gpui-base takes one inset for both
@@ -2206,6 +2220,8 @@ model, the platform presets and the three connectors
       drawn `2 × inset` shorter (`scrollbar.rs:1225`) than its length, now
       `viewport / content × track` clamped to `min_length` and the track
       (`:1219-1220`).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-base 0.8.1's `scrollbar.rs`
+      keeps the lines above (`:1219-1220`, `:1225`).
 - [ ] [upstream] `Tab` keeping the caller's height, radius and text size (its render writes its own into the style bag the caller's setters fill, `tab/tab.rs:801-808`)
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so; the lines are `tab/tab.rs:958-966`
       in gpui-component 0.8.0 (`.h(height)` … `.rounded(radius)`).
@@ -2220,6 +2236,9 @@ model, the platform presets and the three connectors
       outside `theme/`. So the platform's shadow preference reaches nothing
       an application builds by default. Found 2026-09-22 from eleven panels
       that listed it as theme config.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: `Theme::shadow`'s one reader
+      outside `theme/` is gpui-component 0.8.1 `button/button.rs:680` (0.8.0 `:666`),
+      and neither gpui-component nor gpui-base reads `tokens.shadow` outside `theme/`.
 - [ ] [upstream] `Size::Size` honoured by `Checkbox` and `Switch`
 - [ ] [upstream] a disabled `Button` should read the platform's disabled colours.
       `ButtonVariant::disabled` (`button/button.rs:1273-1284`) derives the
@@ -2238,6 +2257,9 @@ model, the platform presets and the three connectors
       opacity, so on adwaita (0.5) a disabled gpui-component control is not
       faded as libadwaita fades it. The connector's `widgets::Checkbox`,
       `Radio`, `Switch` and `Slider` apply both.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: `ButtonVariant::disabled` is
+      gpui-component 0.8.1 `button/button.rs:1353-1364` (0.8.0 `:1339-1350`), the fill
+      the variant's own token at 0.15 and the text `muted_foreground` at 0.5.
 - [ ] [upstream] the `Link` widget should read `link_hover` and `link_active`. It computes
       both from the one token instead — `link.opacity(0.8)` hovered,
       `link.opacity(0.6)` pressed (`link.rs:80, 85`) — while the two tokens
@@ -2259,6 +2281,10 @@ model, the platform presets and the three connectors
       gpui showcase's Link info now says so (`ios-13.toml`
       `[light.link] underline_enabled`, false). The `link_hover` and
       `link_active` half stays.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* the `link_hover` and `link_active` half still
+      so: gpui-component's `link.rs` is unchanged, and a `Button::link()` reads the
+      two tokens at 0.8.1 `button/button.rs:1219`, `:1295` and `:1337` (0.8.0 `:1205`,
+      `:1281`, `:1323`).
 - [ ] [upstream] a `PopupMenu` item style hook; a `Button::tooltip` style hook
 - [ ] [upstream] button label text size independent of rem
       M8 T21 fix round 1 (2026-10-17): the same label is "PR: Button: let the
@@ -2293,6 +2319,11 @@ model, the platform presets and the three connectors
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still so. The Settings page body's padded
       row is `setting/page.rs:241-245`, its scrollbar `:257`; the `Tree` lays
       its bar over its rows at `tree.rs:132`, the rows now in a `ScrollBounce`.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. `scroll/scrollable.rs:19-29` is
+      unchanged, the `Dialog` attaches its bar at `dialog/dialog.rs:830` and the
+      `Sheet` at `sheet.rs:222` (0.8.0 `:773`, `:215`), and 0.8.1's `Scrollable`, now
+      a flex column (`scroll/scrollable.rs:203-207`), still lays the bar over the area
+      (`:221`).
 - [ ] [upstream] a right-clicked `Tree` row shows the hover text colour without the
       hover fill: gpui-component 0.7.3 marks the row right-clicked after the
       application's `render_item` closure built it
@@ -2341,6 +2372,12 @@ model, the platform presets and the three connectors
       `SettingGroup` is `setting/page.rs:239-253`; a `Dialog`'s surface is
       built at `dialog/dialog.rs:718-804` and wrapped for its entrance at
       `:805-843`; `sheet.rs` and `setting/group.rs` are unchanged.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still no hook. A `Dialog`'s surface is built
+      at gpui-component 0.8.1 `dialog/dialog.rs:775-861` and then given the closing
+      shield (`:862-891`), its opacity and shadow (`:892-893`) and the FadeSlide
+      wrapper (`:895-907`), no longer a gpui animation; a `Sheet`'s title row, padding
+      and close button are `sheet.rs:174-252` (0.8.0 `:167-245`); `setting/page.rs`
+      and `setting/group.rs` are unchanged.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -3491,6 +3528,9 @@ the gap — closing it is a change, and each wants its own decision.
       Windows and through `scripts/capture_window.sh` (spectacle) on Linux,
       so the blade-graphics and `BitBlt` wording above is history. The ask
       stands (handed to G3 by M9b T2).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: the test-support `render_to_image`
+      is gpui-pre 0.3.10 `src/window.rs:2888` and gpui-fast 0.1.12
+      `src/window.rs:2915`, and neither has a public screenshot call.
 - [ ] [upstream] PR: let an application drop the SVGs a window has drawn, so the icons
       gpui-component's widgets build for themselves can follow a theme
       switch. Measured in the v0.5.9 pre-merge fixes (Task 6's spike,
@@ -3527,6 +3567,13 @@ the gap — closing it is a change, and each wants its own decision.
       Widget Info says which of its icons are gpui-component's own
       (`info::own_icons`); the icon-provider hook in "Upstream PRs to
       gpui-component" below is the other way in.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so at gpui-pre 0.3.10 (the numbers
+      above are 0.3.6's): `Window::paint_svg` (`src/window.rs:5001`) keys the atlas by
+      `RenderSvgParams { path, size }` (`:5015-5020`),
+      `AtlasState::get_or_insert_with` returns an occupied key without calling the
+      build closure (`src/platform.rs:1832-1838`), the atlas is a private field of
+      `Window` (`src/window.rs:1233`), and `Window::drop_image` removes image keys
+      only (`:5193-5204`); no call drops an SVG.
 
 #### Upstream PRs to gpui-component
 
@@ -3613,6 +3660,23 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       every scroller under the pointer, so a nested one still needs
       `.occlude()` (the test failed, on both cores, when tried on 2026-10-22
       with the Scrollable Area's viewport made such a div and not occluded).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still open as G3 T5 left it. gpui-component
+      0.8.1 wraps its scrolling widgets in gpui-base's `ScrollBounce` at
+      `src/scroll/scrollable.rs:209`, `src/list/list.rs:611`,
+      `src/table/state.rs:2799`, `src/diff/mod.rs:573` and `src/command/state.rs:1034`
+      (0.8.0 `:188`, `:603`, `:2727`, `:557`, `:1033`; `tree.rs`,
+      `message_scroller.rs`, `setting/page.rs` and `sidebar/mod.rs` keep their lines).
+      gpui-base 0.8.1's claim is `src/scroll_bounce.rs:248-270` and `:556-617`, its
+      bounce default `:170-178` and upstream's test
+      `the_innermost_area_takes_the_whole_gesture` `:1006`; the editor claims the
+      wheel at `src/input/base/element.rs:496-513` and scrolls and stops it at
+      `src/input/base/state.rs:2842-2912`. gpui-pre 0.3.10 calls the wheel event
+      `ScrollEvent`; its `overflow_*_scroll` listener (`src/elements/div.rs:3383`, the
+      bubble-phase listener `:3398-3399`) still moves every scroller under the pointer
+      and stops none (`HitboxId::should_handle_scroll`, `src/window.rs:829`). The
+      overlays' `occlude`s are gpui-component 0.8.1 `src/popover.rs:306`, `:353` and
+      `src/dialog/dialog.rs:725`, `:789`, `:881`; the `:282` and `:572` above named
+      other lines at 0.8.0.
 - [ ] [upstream] Additional PRs as gaps are discovered during connector implementation
 - [ ] [upstream] Report: a single-select `Combobox` misses a change after a search.
       It decides that the selection changed by comparing the selection's
@@ -3662,6 +3726,13 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* `Diff`'s icons are at `src/diff/mod.rs:998`,
       `:1005`, `:1011-1015` (the folded hunk's buttons), `:1199-1203` (the
       file's collapse button) and `:1551` (Plus), the same icons.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; gpui-component 0.8.1 has no hook
+      (its `theme/` is unchanged). Of the files that changed, the `Dialog`'s close
+      button is `src/dialog/dialog.rs:859` and the `Sheet`'s `src/sheet.rs:211` (0.8.0
+      `:802`, `:204`), the `Command` palette's search icon and check mark stay at
+      `src/command/state.rs:953`, `:869`, and `Diff`'s icons are at
+      `src/diff/mod.rs:1014`, `:1021`, `:1027-1031`, `:1215-1219` and `:1567` (0.8.0
+      `:998`, `:1005`, `:1011-1015`, `:1199-1203`, `:1551`).
 - [ ] [1.0] Left open by the v0.5.9 showcase-layout work
       ([archive](archive/todo_v0.5.9_showcase-layout.md)):
       - `info::title_bar` (`examples/showcase-gpui/info/chrome.rs`) keeps
@@ -3693,6 +3764,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       shadows a size set on the button; honouring the instance style's text
       size there, or a public `content_style`, would retire the child-label
       pattern of `geometry::button_label`.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: the content element's
+      `button_text_size` is gpui-component 0.8.1 `button/button.rs:780` (0.8.0
+      `:766`).
 - [ ] [upstream] PR: ColorSelect: apply the caller's refinement to the framed field
       (`color_picker.rs:488` lands on the wrapper; the field is
       `render_field`, `:762-813`).
@@ -3725,6 +3799,9 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       2026-10-25). A `Button`'s children follow its label
       (`src/button/button.rs:773-789`), so an image child cannot stand where its
       icon stands beside an upstream label.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; of the files cited, only
+      `src/button/button.rs` changed outside its tests: `Button::icon` is `:401` and
+      the children after the label `:787-803` (0.8.0 `:399`, `:773-789`).
 - [ ] [upstream] PR: let an application set the window's appearance on Windows,
       as `App::set_window_appearance` sets `NSApplication.appearance` on macOS
       (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`). On Windows the call is the
@@ -3743,6 +3820,14 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `Platform::set_window_appearance` by calling `configure_dwm_dark_mode` on
       each window with the appearance given, and keep it over the system's
       `ImmersiveColorSet` changes while one is set.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so. gpui-pre-macos 0.3.10 sets
+      `NSApplication.appearance` at `src/platform.rs:784-800`; the trait's no-op is
+      gpui-pre 0.3.10 `src/platform.rs:439` and gpui-fast 0.1.12 `:440`, which neither
+      Windows platform overrides; `configure_dwm_dark_mode` (`src/util.rs:134-148`,
+      unchanged) is still called from the system's appearance alone, when the window
+      opens (gpui-pre-windows 0.3.10 `src/window.rs:574`, gpui-fast-windows 0.1.12
+      `:579`) and when the system's changes (`src/events.rs:1229-1240`;
+      gpui-fast-windows `:1245`).
 
 ### gpui: a tab scrolled into view loses its outer flare
 
@@ -3780,6 +3865,18 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       get. G4 measures it once, in its plan's Task 6. For the maintainer to
       raise upstream (an agent files nothing); re-check it at the next GPUI Kit
       upgrade.
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* not measured: the gap stands (rationale P11's
+      (a)). With the connector's `gpui-fast` feature emptied in the working tree,
+      `cargo tree --workspace --all-features --target all -e normal,build,dev -i
+      gpui-fast` prints nothing, but Cargo.lock keeps gpui-fast and
+      gpui-fast-platform, the two that an enabled feature names weakly: gpui-kit
+      0.8.1's `test-support`, which the connector's dev-dependency turns on
+      (`connectors/native-theme-gpui/Cargo.toml:104`), names `gpui-fast?/test-support`
+      and `gpui-fast-platform?/test-support` (gpui-kit `Cargo.toml:76-83`);
+      gpui-fast-web, which no enabled feature names, left the lock. So `cargo update
+      -p taffy` locked nothing, and `cargo update -p taffy --precise 0.15.1` failed to
+      select a version for the requirement `taffy = "=0.15.0"` of gpui-fast 0.1.12,
+      which gpui-kit 0.8.1 requires. The manifest and the lock were restored.
 
 ### Showcases: a gate for one showcase's citations of another's lines
 
@@ -3851,6 +3948,7 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 - [ ] [1.0] Unverified: do the Linux readers' `font_dpi` sources (`Xft.dpi`, KDE `forceFontDPI`) have the same logical-versus-physical question as Windows under Wayland fractional scaling? The Windows reader now reads its fonts at 96 DPI and reports a `font_dpi` of 96, because the model's sizes are logical pixels (`native-theme/src/windows.rs`, `LOGICAL_DPI`). If a Linux session at, say, 150 % sets `Xft.dpi` to 144 while the toolkit also applies the 1.5 scale factor, a 10pt font would resolve to device pixels and be scaled again. Not checked on a KDE or GNOME Wayland session. M2e (2026-10-11) answered it from source. GNOME: gnome-settings-daemon 51.0 sets `Xft.dpi` to 96 × `text-scaling-factor` × the X11 UI scale (`plugins/xsettings/gsd-xsettings-manager.c:583-595`, `:665-668`, `:797-798`), so it carried the text scale and the display scale; since M2e Step 7 the GNOME reader and `ResolutionContext::from_system()` on GNOME use 96, which applies the factor once on Wayland; X11 and Xwayland clients also get it through the toolkit's `Xft.dpi` scale factor (`docs/archive/todo_closed.md`, *Closed items from Font DPI*, "For M4 (connectors): on GNOME and Budgie X11"; its Xwayland half is the next entry). KDE: Plasma 6.7.5's krdb sets `Xft.dpi` on Wayland to `kwinrc [Xwayland] Scale` × 96 (`kcms/krdb/krdb.cpp:333-337`), and Plasma 6.8 always does (`startkde/plasma-setup-xwayland/main.cpp:47-58` at v6.7.91), so the KDE reader's `Xft.dpi` fallback on Wayland is the display scale: open, for M4, with Plasma 6.8's removal of `forceFontDPI`, which the KDE reader and `detect.rs` read first (ledger M2e-01 to M2e-03).
   M4 (2026-10-12/13): one font-DPI chain in `detect`, cached in `DetectionContext` and shared by the KDE reader (9ed0ca92); `forceFontDPI` is read on X11 only (the plan's ruling) and from `kcmfonts`, the file Plasma opens (49e0067a, b42b1568), so on a Wayland session the chain starts at `Xft.dpi`. The Wayland question above is still unverified; re-check at Plasma 6.8.0 with M2e-01.
 - [ ] [upstream] An X11 client through Xwayland on a GNOME or Budgie Wayland session draws the text-scaling factor twice: it gets the `Xft.dpi` gnome-settings-daemon writes as 96 × `text-scaling-factor` × the window scale (gnome-settings-daemon 51.0 `plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`, `:797-798`), winit 0.30.13 and gpui-pre-linux 0.3.9 take their X11 scale factor from it (`src/platform_impl/linux/x11/util/randr.rs:41-53`, `:145-146`; `src/linux/x11/client.rs:2671-2678`), and the GNOME reader, which sees a `wayland` session, reports the factor, which the connectors apply again. Core cannot see a client's backend, and the connectors' entry points take no window (M8 Step 6 ruling, 2026-10-16). The lengths winit and gpui scale by the factor on X11, which GTK does not, are theirs, not ours. The same holds for an X11 session started with `startx` from a text login: it runs in the text login's session, whose `XDG_SESSION_TYPE` is `tty` (one of pam_systemd's session types, `pam_systemd(8)` `type=`, systemd 262), so the reader reports the factor and the X11 toolkit's `Xft.dpi` scale carries it too. The rule stays `x11` exactly (Step 6 ruling); `DISPLAY` or `WAYLAND_DISPLAY` would guess the backend, not know it. Waits on a way for the reader to learn the backend the client actually uses (Xwayland, `startx`), which no toolkit exposes to a theme reader today.
+  *GPUI Kit 0.8.1 (2026-10-27, G4):* still so: gpui-pre-linux 0.3.10 takes its X11 scale factor from `Xft.dpi` at `src/linux/x11/client.rs:2674-2681` (0.3.9 `:2671-2678`), and gpui-fast-linux 0.1.12 does the same (`:2711-2718`).
 
 ### docs.rs feature badges
 - [ ] [1.0] docs.rs `doc(cfg)` badges: mark each feature-gated item on docs.rs with the feature it needs. It needs nightly's `doc_cfg` (`#![cfg_attr(docsrs, feature(doc_cfg))]` and `--cfg docsrs` in `[package.metadata.docs.rs]`); until then the item's rustdoc names the feature in prose (the v0.5.9 second pre-merge review's Task 6).
@@ -3874,6 +3972,9 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       `resize_handle_appearance` (`resizable.rs:30`); the dock's edge handle is
       gpui-component's `resize_handle` (`dock/dock.rs:144`, `resizable.rs:46`)
       and its splits draw `render_resize_handle` (`dock/dock.rs:58`).
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* still so; `setting/settings.rs` and
+      `resizable.rs` are unchanged, the dock's edge handle is `dock/dock.rs:142`
+      (0.8.0 `:144`) and its splits' `render_resize_handle` still `:58`.
 
 ### Popover arrow
 - [ ] [1.0] Record per platform whether a popover draws an arrow (`docs/platform-facts.md`, sources first), then model it.

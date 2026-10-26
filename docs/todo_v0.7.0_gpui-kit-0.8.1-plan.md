@@ -553,3 +553,59 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   arm and three `.tooltip` lines) and the two functions that changed since (`panel_toggle`,
   `icon_size_cell`) were placed by their enclosing function. A `docs/todo.md` entry, *Showcases: a gate for one showcase's citations
   of another's lines*, asks for a gate.
+- **Task 6, the Separator.** On both cores the test finds one quad inside the labelled
+  Separator filled with `tokens.background` and narrower than it, the label's box, centred on
+  the Separator: in the test window, at scale 2, the Separator spans x 311–1270 and the label
+  745–836, both centred at 790.5. The entry closed and moved to the archive; rationale §1.8
+  stands as written.
+- **Task 6, both cores' layouts.** `--dump-layout` from release builds of the default core
+  and of `--features gpui-fast`, for kde-breeze and adwaita, light and dark, on the Basic page
+  (spec §7's four) and, as G3 did, on the Layout page: all eight pairs are byte-identical
+  (Basic 175 elements, Layout 39, the Layout page's dump the chrome alone). G3's one
+  difference between the cores, the labelled Separator's label, was seen in its captures, not
+  in its dumps, which record the Separator's wrapper (rationale P11 (c)); the Separator test
+  shows it gone.
+- **Task 6, taffy 0.15.1 not measured** (rationale P11's (a)). With `gpui-fast = []` in the
+  working tree, `cargo tree --workspace --all-features --target all -e normal,build,dev -i
+  gpui-fast` printed nothing, but Cargo.lock kept gpui-fast and gpui-fast-platform, the two an
+  enabled feature names weakly (gpui-kit 0.8.1's `test-support`, which the connector's
+  dev-dependency turns on, names `gpui-fast?/test-support` and
+  `gpui-fast-platform?/test-support`); gpui-fast-web, which no enabled feature names, left the
+  lock. `cargo update -p taffy` then locked nothing, and with `--precise 0.15.1` it failed on
+  gpui-fast 0.1.12's `taffy = "=0.15.0"`. So the suite and the four dumps were not run on
+  0.15.1. The manifest and the lock were restored; the todo entry on gpui-fast's pin records
+  it.
+- **Task 6, parity.** The Linux parity run (the three screenshot scripts with a dump
+  directory, then `check_showcase_parity.py`): 887 differences, 887 excepted, 0 not. Six keys
+  matched no difference, and the three kinds' dumps agree there, so they were dropped in their
+  own commit: material-3's status bar y and height and its toggle's x and y, and
+  catppuccin-mocha's toggle x and y. M9x's run found no rest-run key matching nothing; which
+  change since made these six agree was not traced. The other 34 keys the check lists as
+  matching nothing are of elements drawn only in the hover and menu runs, which the release
+  run does not make. The three asset directories were restored.
+- **Task 6, 0.8.1's `Scrollable`.** Nothing the dumps or the parity run read moved. The
+  showcase's page scroller is its own (`support::gutter_scroll`, without the flex column);
+  gpui-component's `Scrollable` draws the Layout page's Scrollable Area (`demo::scroll_area`),
+  which neither the Layout page's dump nor the parity run reaches; the showcase tests that
+  scroll it pass on both cores.
+- **Task 6, the upstream entries.** `lookup.py` (beside the copied script) reproduces ten
+  numbers Task 2's run moved, both bounds of each range (14 lines, none failed). Besides the
+  Separator entry, 25 open `[upstream]` gpui entries cite a file 0.8.1, gpui-pre 0.3.10 or
+  gpui-fast 0.1.12 changed outside its tests (test-only changes read from the diffs: hunks
+  inside the file's test module); none is resolved, so each got a dated line, as did the
+  `unicode-properties` entry and gpui-fast's taffy pin, which wait for a release. The
+  entries citing only unchanged files (gpui-component's `combobox.rs`, `color_picker.rs`,
+  `menu/popup_menu.rs`, `status_bar.rs`, `tab/tab.rs`, `tree.rs`, gpui-base's
+  `a11y_disabled.rs`, `questionnaire/state.rs`, among others) got none. Some cited numbers already named other
+  lines at the old version, and their dated lines say so: `window_border.rs:152-166`, the
+  wheel entry's `popover.rs:282` and `dialog/dialog.rs:572`, and the Textarea entry's "a
+  `Textarea` offers no size" (it has had a `Size` since at least 0.8.0). One lookup result
+  was not taken: gpui-fast 0.1.10's `src/fast/text.rs:1029-1058`, a function 0.1.12 split in
+  two, maps by rule (ii) to `:1125-1190`, where the function now ends at `:1155`; the dated
+  line cites what 0.1.12 holds, read from the diff.
+- **Task 6, the parity script's R-snap rule.** Its docstring cited gpui-pre 0.3.6; each line
+  was found at 0.3.10 by its content: the snapping design `src/taffy.rs:281-356` (0.3.6
+  `:270-345`), the edge rounding `:382-385` (`:371-374`), the measured text size rounded up
+  `:423-425` (`:412-414`, where Task 3b found it), the glyph quantising
+  `src/window.rs:4853-4858` (`:4661-4666`); `src/util.rs:128-132` and
+  `src/text_system.rs:52` did not move.

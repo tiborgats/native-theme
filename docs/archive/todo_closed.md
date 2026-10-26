@@ -1076,6 +1076,64 @@ and many have since drifted, as the archive's [README](README.md) warns.
       `a_target_a_recordless_frame_took_away_does_not_win_when_drawn_again` draws the full
       frame spec §2.4 asks for with its own `window.refresh()`.
 
+- [x] [upstream] **File the gpui-kit issue: on gpui-pre a labelled `Separator`
+      draws its label at the line's end.** For the maintainer to file on
+      longbridge/gpui-kit (an agent files nothing). gpui-component 0.8.0's
+      `Separator` lays its label out in a `justify_center` row, the label
+      `mx_auto` and the line an absolute child (`src/separator.rs:79-80`,
+      `:136`, `:147`). gpui-pre 0.3.9 takes taffy `0.13.0`, whose
+      `distribute_remaining_free_space` gives the free space to the auto
+      margins (`src/compute/flexbox.rs:1721`) and then offsets the item by the
+      same free space for `justify-content` (`:1750`), so the label moves by
+      the free space twice. taffy 0.14.0, which gpui-fast 0.1.10 pins
+      (`=0.14.0`), sets the free space to zero once the margins have taken it
+      (`:2140`), as CSS does, so GPUI Fast centres the label. gpui-component
+      pins `gpui-pre = "=0.3.9"`, so no gpui-pre build can take taffy 0.14.
+      Our repro: the gpui showcase's Layout page, at rest on gpui-pre, draws
+      "Section Break" at content x 1169–1249 on a 938 px line that starts at
+      311, where GPUI Fast draws it at 740–820 (G3 Task 9's captures,
+      `docs/archive/todo_v0.7.0_code-review-findings.md`, *G3*). The screenshot scripts
+      build the showcase on gpui-pre, so its screenshots show the label at
+      the end. Found 2026-10-22 (G3 Task 9). The issue, ready to paste:
+
+      > **Title:** Separator: on gpui-pre the label is drawn at the line's
+      > end, not centred
+      >
+      > gpui-component 0.8.0 on its default core, gpui-pre 0.3.9 (taffy
+      > 0.13.0), Linux.
+      >
+      > `Separator::horizontal().label("Section Break")` draws the label
+      > flush with the line's right end. With the `gpui-fast` feature
+      > (gpui-fast 0.1.10, taffy `=0.14.0`) the same separator centres it.
+      >
+      > The separator's row is `justify_center()` and the label `mx_auto()`
+      > (`src/separator.rs:136`, `:147`). taffy 0.13.0's
+      > `distribute_remaining_free_space` (`src/compute/flexbox.rs`) gives
+      > the line's free space to the auto margins (`:1721`) and then, for
+      > `justify-content`, offsets the item by the same free space again
+      > (`:1750`): on a 938 px line with an 80 px label the label starts
+      > 858 px in, where centred it starts 429 px in. taffy 0.14.0 sets the
+      > free space to zero once auto margins have taken it (`:2140`), as CSS
+      > does.
+      >
+      > Either change fixes it on gpui-pre: gpui-pre on taffy 0.14, or the
+      > label without `mx_auto()`, which `justify_center()` centres on both
+      > cores.
+
+      *Closed by G4 T6 (2026-10-27, 26186e33), not filed:* gpui-pre 0.3.10 lays out on
+      taffy 0.15.0, whose `distribute_remaining_free_space` leaves no free space for
+      `justify-content` once the auto margins have taken it ("The auto margins have
+      absorbed all of the free space, leaving none for `justify-content`", taffy
+      0.15.0 `src/compute/flexbox.rs:2274-2275`, 0.15.1 `:2320-2321`), so gpui-pre
+      centres the label as GPUI Fast does. The showcase test
+      `the_labelled_separator_centres_its_label` finds the label's box, the one quad
+      inside the Separator filled with `tokens.background` and narrower than it
+      (gpui-component 0.8.1 `separator.rs:149`), and holds its centre within a pixel
+      of the Separator's on both cores: in the test window, at scale 2, the Separator
+      spans x 311–1270 and the label 745–836, both centred at 790.5, on gpui-pre and
+      on GPUI Fast. The Linux screenshot scripts capture the Basic page, so none of
+      them showed the label.
+
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
 - [x] ~~a determinate `ProgressCircle` has no size receiver the theme can
