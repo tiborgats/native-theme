@@ -8,7 +8,8 @@ use gpui_component::{Colorize as _, theme::Theme};
 use super::{WidgetInfo, claim, percent_text, px_text};
 use crate::demo::{
     AREA_FILL_OPACITY, PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES,
-    SAMPLE_MONTHS, SAMPLE_MONTHS_AREA, SAMPLE_OHLC,
+    RADAR_DIMENSIONS, RADAR_FILL_OPACITY, RADAR_MAX_VALUE, RADAR_SERIES, SAMPLE_MONTHS,
+    SAMPLE_MONTHS_AREA, SAMPLE_OHLC, SANKEY_LINKS, SANKEY_NODES,
 };
 
 /// `months` as the text of a "data" note: each month with its value.
@@ -364,4 +365,148 @@ pub fn candlestick_chart(t: &Theme) -> WidgetInfo {
             "0.8 of the band, the default (chart/candlestick_chart.rs, CandlestickChart::body_width_ratio)",
         );
     hover(info, t, Guide::Band)
+}
+
+/// The Charts page's RadarChart: two series, their lines in `chart_1` and
+/// `chart_2` over fills of the same at `RADAR_FILL_OPACITY`.
+pub fn radar_chart(t: &Theme) -> WidgetInfo {
+    let fill = percent_text(RADAR_FILL_OPACITY);
+    let [first, second] = RADAR_SERIES;
+    let dimensions: Vec<String> = RADAR_DIMENSIONS
+        .iter()
+        .map(|(dimension, a, b)| format!("{dimension} {a} / {b}"))
+        .collect();
+    let info = WidgetInfo::new("RadarChart")
+        .color(claim("first series", "chart_1", t.chart_1, "showcase"))
+        .color(claim(
+            "first series fill, faded",
+            "chart_1",
+            t.chart_1.opacity(RADAR_FILL_OPACITY),
+            "showcase",
+        ))
+        .color(claim("second series", "chart_2", t.chart_2, "showcase"))
+        .color(claim(
+            "second series fill, faded",
+            "chart_2",
+            t.chart_2.opacity(RADAR_FILL_OPACITY),
+            "showcase",
+        ))
+        .color(claim(
+            "dimension labels",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/chart/radar_chart.rs:563",
+        ))
+        .color(claim(
+            "grid rings and spokes",
+            "chart_grid",
+            t.chart_grid,
+            "gpui-component/chart/radar_chart.rs:507",
+        ))
+        .color(claim(
+            "hovered vertices' rings",
+            "background",
+            t.background,
+            "gpui-component/chart/radar_chart.rs:656",
+        ))
+        .not_themeable(
+            "colour source",
+            format!("this demo picks chart_1 and chart_2, each with itself at {fill} for its fill, through RadarChart::stroke and fill; without them the n-th series is the n-th of chart_1 to chart_5 over itself at 30% (chart/radar_chart.rs, RadarChart::series_stroke_from and RadarChart::paint)"),
+        );
+    let info = series_colours(info)
+        .not_themeable(
+            "label text",
+            "10px, a literal: the platform's font size does not reach a chart's labels (plot/label.rs, TEXT_SIZE)",
+        )
+        .not_themeable(
+            "line widths",
+            "each series 2px (chart/radar_chart.rs, RadarChart::paint), each grid ring 1px (plot/shape/radial_line.rs, RadialLine::new) and each spoke 1px (gpui-base/plot/mod.rs, polygon): literals",
+        )
+        .instance(
+            "data",
+            format!(
+                "{}, clockwise from 12 o'clock, one spoke each; {first} / {second}",
+                dimensions.join(", ")
+            ),
+        )
+        .instance(
+            "series",
+            format!("two, {first} and {second}; each RadarChart::value adds another (chart/radar_chart.rs, RadarChart::value)"),
+        )
+        .instance(
+            "outer ring",
+            format!(
+                "{RADAR_MAX_VALUE}, through RadarChart::max_value; without it the largest value of any series (chart/radar_chart.rs, RadarChart::scale)"
+            ),
+        )
+        .instance(
+            "grid",
+            "4 rings, the default (chart/radar_chart.rs, DEFAULT_GRID_LEVELS); the outer one 40% of the chart's height from the centre, the default (chart/radar_chart.rs, RadarChart::resolve_outer_radius)",
+        )
+        .instance(
+            "dots",
+            "off: RadarChart::dot would draw one on each vertex (chart/radar_chart.rs, RadarChart::dot)",
+        );
+    hover(info, t, Guide::None).not_themeable(
+        "hover emphasis",
+        "no guide: each series gets a dot in its colour on the hovered spoke, ringed in background (chart/radar_chart.rs, RadarChart::tooltip)",
+    )
+}
+
+/// The Charts page's SankeyChart, its nodes `chart_1` to `chart_5` in
+/// `SANKEY_NODES`' order.
+pub fn sankey_chart(t: &Theme) -> WidgetInfo {
+    let links: Vec<String> = SANKEY_LINKS
+        .iter()
+        .filter_map(|&(source, target, value)| {
+            let source = SANKEY_NODES.get(source)?;
+            let target = SANKEY_NODES.get(target)?;
+            Some(format!("{source} to {target} {value}"))
+        })
+        .collect();
+    let info = WidgetInfo::new("SankeyChart")
+        .color(claim("first node", "chart_1", t.chart_1, "showcase"))
+        .color(claim("second node", "chart_2", t.chart_2, "showcase"))
+        .color(claim("third node", "chart_3", t.chart_3, "showcase"))
+        .color(claim("fourth node", "chart_4", t.chart_4, "showcase"))
+        .color(claim("fifth node", "chart_5", t.chart_5, "showcase"))
+        .color(claim(
+            "node labels",
+            "muted_foreground",
+            t.muted_foreground,
+            "gpui-component/chart/sankey_chart.rs:391",
+        ))
+        .not_themeable(
+            "colour source",
+            "this demo picks each node's colour through SankeyChart::node_color; without it the n-th node is the n-th of chart_1 to chart_5 (chart/sankey_chart.rs, SankeyChart::paint), so the same colours",
+        )
+        .not_themeable(
+            "links",
+            "each a gradient from its source node's colour to its target's, at 0.3 of their opacity, the default (chart/sankey_chart.rs, DEFAULT_LINK_OPACITY)",
+        );
+    let info = series_colours(info)
+        .not_themeable(
+            "label text",
+            "10px, a literal: the platform's font size does not reach a chart's labels (plot/label.rs, TEXT_SIZE)",
+        )
+        .not_themeable(
+            "node corners",
+            "square: no radius unless SankeyChart::node_corner_radius sets one, so the theme radius does not reach them (chart/sankey_chart.rs, SankeyChart::node_corner_radius)",
+        )
+        .instance(
+            "data",
+            format!("{} nodes, {}; links {}", SANKEY_NODES.len(), SANKEY_NODES.join(", "), links.join(", ")),
+        )
+        .instance(
+            "nodes",
+            "10px wide and 16px apart in a column, the defaults (chart/sankey_chart.rs, DEFAULT_NODE_WIDTH and DEFAULT_NODE_PADDING), each as tall as its larger flow, in or out",
+        )
+        .instance(
+            "labels",
+            "each node's name through SankeyChart::node_label, beside the first and last columns and above the middle one; SankeyChart::value_label would add its flow above it (chart/sankey_chart.rs, SankeyChart::node_labels)",
+        );
+    hover(info, t, Guide::None).not_themeable(
+        "hover emphasis",
+        "no guide: the links away from the hovered node fade by HOVER_DIM, 0.7, of their opacity -- a literal (chart/sankey_chart.rs, HOVER_DIM)",
+    )
 }

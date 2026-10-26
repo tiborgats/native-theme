@@ -577,13 +577,15 @@ pub(crate) const OVERLAYS_SHEET_BOTTOM: &str = "overlays-sheet-bottom";
 pub(crate) const OVERLAYS_SHEET_RIGHT_TITLE: &str = "overlays-sheet-right-title";
 pub(crate) const OVERLAYS_SHEET_BOTTOM_TITLE: &str = "overlays-sheet-bottom-title";
 
-/// The ids and debug selectors of the Charts page's five charts, which
+/// The ids and debug selectors of the Charts page's seven charts, which
 /// `every_chart_shows_its_own_info` hovers.
 pub(crate) const CHARTS_BAR_CHART: &str = "charts-bar-chart";
 pub(crate) const CHARTS_LINE_CHART: &str = "charts-line-chart";
 pub(crate) const CHARTS_AREA_CHART: &str = "charts-area-chart";
 pub(crate) const CHARTS_PIE_CHART: &str = "charts-pie-chart";
 pub(crate) const CHARTS_CANDLESTICK_CHART: &str = "charts-candlestick-chart";
+pub(crate) const CHARTS_RADAR_CHART: &str = "charts-radar-chart";
+pub(crate) const CHARTS_SANKEY_CHART: &str = "charts-sankey-chart";
 
 // ---------------------------------------------------------------------------
 // Debug selectors for the interactive controls

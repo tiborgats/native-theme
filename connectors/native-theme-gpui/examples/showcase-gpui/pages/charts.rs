@@ -7,7 +7,7 @@ use crate::demo;
 use crate::pages::page_root;
 use crate::{
     CHARTS_AREA_CHART, CHARTS_BAR_CHART, CHARTS_CANDLESTICK_CHART, CHARTS_LINE_CHART,
-    CHARTS_PIE_CHART,
+    CHARTS_PIE_CHART, CHARTS_RADAR_CHART, CHARTS_SANKEY_CHART,
 };
 
 impl Showcase {
@@ -56,5 +56,19 @@ impl Showcase {
                 "CandlestickChart",
             ))
             .child(demo::candlestick_chart(ui, cx, CHARTS_CANDLESTICK_CHART))
+            .child(demo::heading(
+                ui,
+                cx,
+                "charts-heading-radar-chart",
+                "RadarChart",
+            ))
+            .child(demo::radar_chart(ui, cx, CHARTS_RADAR_CHART))
+            .child(demo::heading(
+                ui,
+                cx,
+                "charts-heading-sankey-chart",
+                "SankeyChart",
+            ))
+            .child(demo::sankey_chart(ui, cx, CHARTS_SANKEY_CHART))
     }
 }

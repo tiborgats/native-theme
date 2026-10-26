@@ -31,7 +31,7 @@ use gpui_component::{
         Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPagination,
         CarouselPaginationItem, CarouselPrevious, CarouselState,
     },
-    chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
+    chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart, RadarChart, SankeyChart},
     checkbox::Checkbox,
     clipboard::Clipboard,
     color_picker::{ColorPicker, ColorPickerState, ColorSelect},
@@ -67,6 +67,7 @@ use gpui_component::{
     message_scroller::{MessageScroller, MessageScrollerState},
     notification::Notification,
     pagination::Pagination,
+    plot::shape::SankeyLink,
     popover::Popover,
     progress::{Progress, ProgressCircle},
     radio::{Radio, RadioGroup},
@@ -8195,6 +8196,37 @@ pub(crate) const SAMPLE_OHLC: [(&str, f64, f64, f64, f64); 5] = [
 pub(crate) const PIE_SLICES: [(&str, f32); 3] =
     [("Desktop", 55.), ("Mobile", 30.), ("Tablet", 15.)];
 
+/// The dimensions the RadarChart plots, as `(dimension, first series,
+/// second series)`, clockwise from 12 o'clock.
+pub(crate) const RADAR_DIMENSIONS: [(&str, f64, f64); 6] = [
+    ("Speed", 80., 60.),
+    ("Power", 65., 85.),
+    ("Range", 90., 70.),
+    ("Comfort", 55., 75.),
+    ("Safety", 85., 80.),
+    ("Price", 70., 50.),
+];
+
+/// The names of the RadarChart's two series, in the order they are added.
+pub(crate) const RADAR_SERIES: [&str; 2] = ["Model A", "Model B"];
+
+/// The value at the RadarChart's outer ring: the showcase's own, as the
+/// model states no chart.
+pub(crate) const RADAR_MAX_VALUE: f64 = 100.;
+
+/// The strength the RadarChart's fills take their series colours at: the
+/// showcase's own, as the model states no chart.
+pub(crate) const RADAR_FILL_OPACITY: f32 = 0.3;
+
+/// The SankeyChart's nodes, which take `chart_1` to `chart_5` in this
+/// order.
+pub(crate) const SANKEY_NODES: [&str; 5] = ["Solar", "Wind", "Grid", "Homes", "Industry"];
+
+/// The SankeyChart's links, as `(source, target, value)`, the nodes by
+/// their place in `SANKEY_NODES`.
+pub(crate) const SANKEY_LINKS: [(usize, usize, f64); 4] =
+    [(0, 2, 40.), (1, 2, 60.), (2, 3, 45.), (2, 4, 55.)];
+
 /// The height of every chart on the Charts page but the PieChart: the
 /// showcase's own, as the model states no chart size.
 const CHART_HEIGHT: Pixels = px(220.);
@@ -8288,6 +8320,47 @@ pub(crate) fn candlestick_chart(
         .low(|d: &Day| d.3)
         .close(|d: &Day| d.4)
         .info(ui, id, info::charts::candlestick_chart(cx.theme()))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
+}
+
+/// A `RadarChart` of `RADAR_DIMENSIONS`: two series, their lines in
+/// `chart_1` and `chart_2` over fills of the same at `RADAR_FILL_OPACITY`.
+pub(crate) fn radar_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    type Dimension = (&'static str, f64, f64);
+    let t = cx.theme();
+    let [first, second] = RADAR_SERIES;
+    RadarChart::new(RADAR_DIMENSIONS)
+        .label(|d: &Dimension| d.0)
+        .value(|d: &Dimension| d.1)
+        .stroke(t.chart_1)
+        .fill(t.chart_1.opacity(RADAR_FILL_OPACITY))
+        .name(first)
+        .value(|d: &Dimension| d.2)
+        .stroke(t.chart_2)
+        .fill(t.chart_2.opacity(RADAR_FILL_OPACITY))
+        .name(second)
+        .max_value(RADAR_MAX_VALUE)
+        .info(ui, id, info::charts::radar_chart(t))
+        .h(CHART_HEIGHT)
+        .w_full()
+        .debug_selector(move || id.into())
+}
+
+/// A `SankeyChart` of `SANKEY_NODES` and `SANKEY_LINKS`, its nodes in
+/// `chart_1` to `chart_5`.
+pub(crate) fn sankey_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -> Stateful<Div> {
+    let t = cx.theme();
+    let nodes: Vec<(&'static str, Hsla)> = SANKEY_NODES
+        .into_iter()
+        .zip([t.chart_1, t.chart_2, t.chart_3, t.chart_4, t.chart_5])
+        .collect();
+    let links = SANKEY_LINKS.map(|(source, target, value)| SankeyLink::new(source, target, value));
+    SankeyChart::new(nodes, links)
+        .node_color(|d: &(&'static str, Hsla)| d.1)
+        .node_label(|d: &(&'static str, Hsla)| d.0.into())
+        .info(ui, id, info::charts::sankey_chart(t))
         .h(CHART_HEIGHT)
         .w_full()
         .debug_selector(move || id.into())
