@@ -13662,3 +13662,62 @@ The `UNREAD_COLOURS` "dialog" entry is gone, `contract-leaves.toml` regenerated,
 docs' *Theme Field Coverage* and the README's style table name the dialog. The showcase calls the
 new API with the same values, so its dump is unchanged (the controller's Linux gate checks it).
 **Status:** done, fad5f7f7.
+
+### D round: the other v0.7.0 todo items (2026-10-26)
+
+The other open `[v0.7.0]` items of `docs/todo.md`, done at the maintainer's request ("All 13 in
+0.7.0"), planned in `.superpowers/sdd/todo_code-review-plan/d-round-plan.md` with the
+controller's rulings (its §8). W1 writes the Rust and applies the value-moving preset hunks; W2
+the facts, the evidence, the workflow and the closure texts, which W1 applies while the C queue
+holds the backlog files. Each entry names its commits; entries are added as items land.
+
+#### D-1045 · platform-facts: the Plasma 6.8 rows cite the beta
+**Problem:** facts :717, :718 and :1127 and kde-breeze.toml's header stated Plasma 6.8 from its
+Beta 2 (v6.7.91, `40cde89a`), with a re-check owed at v6.8.0.
+**Fix:** re-read at plasma-workspace v6.8.1 (`fb9b679a`) and Breeze v6.8.1 (`23c317d0`); every
+cited line holds; the four facts cells and the header cite v6.8.1. Gate: `grep -nE
+'v6\.7\.91|Beta 2|40cde89a'` over the facts and kde-breeze.toml finds nothing;
+check_todo_citations.py and check_preset_citations.py pass; kde-breeze.toml parses to the same
+TOML.
+**Status:** done, cb74515d (W2).
+
+#### D-797 · Hover fills: a layer or a replacement
+**Problem:** the entry stayed open after all three connectors had ruled "a layer"; it lacked the
+egui line, and "the other pressed fills have no source yet" no longer held.
+**Fix:** the egui ruling added, the stale phrase replaced by what the model's pressed and selected
+fills are, and the entry closed on the three rulings (98b522f7, 0c69f9bd, 467d54e6). Gate:
+check_todo_citations.py passes; the heading is gone from docs/todo.md and present in
+todo_closed.md.
+**Status:** done, in the commit that applies W2's text (W2's text, W1's commit).
+
+#### D-986 · Presets: adwaita's list header
+**Problem:** adwaita left `list.header_background` to inheritance, against the wrong safety net's
+rule that the preset states it, and facts :1429's GNOME cell named no colour.
+**Fix:** the cell gives libadwaita 1.10.0's `--view-bg-color` under the transparent header buttons;
+adwaita states #ffffff / #1d1d20 with that citation; the rule's `why_wrong` is corrected. The value
+is neutral: the rest of adwaita.toml parses identically, and the stated value equals the
+inherited `surface_color` in both variants. Gates: check_wrong_safety_nets.py,
+check_preset_citations.py (adwaita 131 citations, 131 hold), check_platform_facts_rows.py,
+check_section_refs.py and check_todo_citations.py pass.
+**Status:** done, 48df37e9 (W2). The preset-validator pass on adwaita's list rows was run on W2's
+three hunks (its notes in `d-w2-text-for-w1.md`): every value matches its row.
+
+#### D1 · the macOS OS-probe key window (todo :1009, :1018, :1028; in progress)
+**Problem:** the control renders (`cacheDisplayInRect:`) draw no material and no key-window state,
+so facts :1160, :1370, :1429 and :1636 and the macOS presets' sidebar, title bar, list header and
+selected segment had no measured source.
+**Fix (so far):** 855cea3a adds the probe's last section, `[macos.key_window]`: a titled window
+made key in a regular, active application, captured per appearance with `screencapture` and
+sampled per region; the earlier sections are unchanged. Probe run 40317706382 gave a key window on
+macos-14 only and a sample transfer that did not match the NSColor values; D1b follows.
+`.github/workflows/os-probe.yml` (5371d7d8, af261965, aad007ea): on the macOS images a
+continue-on-error step grants kTCCServiceScreenCapture (as screenshots.yml does) and
+kTCCServiceSystemPolicyAllFiles to `/bin/bash` and `/bin/zsh`, each insert reporting its own
+failure, so the probe's window section can run `screencapture -l`; the image's
+`reduceTransparency` and `increaseContrast` are recorded after the main pass; two more passes,
+each continue-on-error and each running the probe whatever its write does, with Reduce
+Transparency off (`os-probe-out/reduce-transparency-off`) and with Increase Contrast on after
+restoring the image's Reduce Transparency (`os-probe-out/increase-contrast-on`), each with a
+`settings.txt` (the image's value, the write's exit status, the value read back) beside a
+probe.toml that records whether the setting took.
+**Status:** in progress.

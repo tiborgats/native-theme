@@ -2020,3 +2020,116 @@ platform (`native-theme/src/watch/`).
       (`detect::accessibility_preferences()`).
       `the_startup_fallback_is_the_platform_preset_in_every_mode` computes the preset from
       `platform_preset_name` itself and holds it to a preset the platform offers.
+
+### Hover fills: a layer or a replacement
+
+- [x] [v0.7.0] The connectors composite `hover_background` and
+      `active_background` over the widget's rest fill, by rule C17, which
+      says "the platform layers where the toolkits replace"
+      (`docs/archive/todo_v0.5.9_theme-contracts-rationale.md:535`; egui
+      `connectors/native-theme-egui/src/style/states.rs:125`, gpui
+      `connectors/native-theme-gpui/src/colors.rs:354`, iced
+      `styles::composite_over`, `connectors/native-theme-iced/src/styles.rs:79`).
+      WinUI 3 replaces instead: `ButtonBackgroundPointerOver` =
+      `ControlFillColorSecondary` takes the place of `ButtonBackground`
+      (`docs/platform-facts.md:1192`), and so do `ButtonBackgroundPressed`
+      and `ComboBoxBackgroundPointerOver` (Button_themeresources.xaml:130,
+      ComboBox_themeresources.xaml:243, microsoft-ui-xaml 8463f45). M2b
+      Step 7b (`docs/todo_code-review-findings.md`, M2b) has windows-11
+      state the button's and the segmented control's hover flattened over
+      the window colour, `#f6f6f6` (dark `#323232`), which composites to
+      itself, and the button's pressed fill too, `#f5f5f5` (dark `#272727`).
+      Fix round 2 flattens the combo box's hover the same way,
+      `ComboBoxBackgroundPointerOver` = `ControlFillColorSecondary`, `#f6f6f6`
+      (dark `#323232`), and the switch's off-track hover,
+      `ToggleSwitchFillOffPointerOver` = `ControlAltFillColorTertiary`,
+      `#e5e5e5` (dark `#2a2a2a`, ToggleSwitch_themeresources.xaml:136, :16);
+      The model's only pressed fill is
+      `button.active_background`: `tab.active_background` and
+      `segmented_control.active_background` are the selected state
+      (docs/property-registry.toml:191, :325, :528), and
+      `scrollbar.thumb_active_color` is the dragged thumb, which facts §2.8
+      sources for Windows. For M5–M7: decide whether
+      the model's
+      `hover_background` is a layer (C17 stays, and a preset for a replacing
+      platform states the flattened result, as windows-11 now does) or a
+      replacement (the connectors write it as given, and the presets for
+      layering platforms state composites). For M6 as well: gpui's
+      `Hsla::blend` keeps the base's alpha (`colors.rs:347-353`), which is
+      not source-over once a preset states a translucent
+      `button.background_color` (windows-11 does since Step 7b, WinUI's
+      `ControlFillColorDefault`).
+      iced (M5 T6, 98b522f7): a layer (C17 stays); an unset soft hover is
+      the idle fill.
+      gpui (M6 T9, 2026-10-15): a layer (C17 stays), composited
+      source-over: one `colors::over` (straight alpha in sRGB) in place of
+      `Hsla::blend` for the button states and the widgets' hover states, so
+      a translucent layer over a translucent fill covers both (the
+      macos-tahoe entry under *For M6: two defects*, defect (1)). Over an
+      opaque base or under an opaque layer it is `blend` bit for bit; what
+      moved is macos-tahoe's derived pressed fill, material-3's checkbox
+      hover (a state layer over a transparent box, which `blend` hid) and
+      windows-11's checkbox hover (`#0000000a` over `#00000006`, dark
+      `#ffffff0f` over `#00000019`: the preset's "Fluent checkbox hover
+      fill", which cites no source, now laid over the translucent fill
+      where `blend` showed the fill alone). The switch and the
+      slider leave an unset hover at rest; the checkbox's is M6-22 (M6 T11).
+      gpui (M6 T11, 2026-10-15): the checkbox's and the radio's unset hover
+      is the box at rest too (M6-22).
+      Fix round 1 (2026-10-15): over the window that composite lands within
+      one 8-bit level of `ControlAltFillColorTertiary`, the brush
+      *Checkbox: a checked checkbox's hover appearance* names for
+      `CheckBoxCheckBackgroundFillUncheckedPointerOver`, laid over the
+      window: light 228.0 against 228.7 (`#0F000000` over
+      `#f3f3f3`), dark 42.2 against 41.6 (`#0BFFFFFF` over `#202020`); the
+      brush's values as `windows-11.toml`'s comments above
+      `[light.switch] hover_unchecked_background` and
+      `[dark.switch] hover_unchecked_background` cite them
+      (Common_themeresources_any.xaml:235, :31 at microsoft-ui-xaml 8463f45).
+      The gpui connector also exports the composite, `layer_over`.
+      M8 T3 (2026-10-16): both f32 composites are native-theme's `color::composite_over`, and the iced connector exports it too, as `styles::composite_over`.
+      egui (M7, docs/todo_code-review-findings.md:10138, ruled in 467d54e6): a layer (C17 stays),
+      settled with nothing to change: ecolor's own `Color32::blend` composites source-over
+      (`connectors/native-theme-egui/src/convert.rs:330-340`, `composite_over`), right for a
+      translucent layer over a translucent fill, and an unset soft hover copies `inactive`, so M5-07's
+      and M6-22's twin does not exist.
+  *Closed 2026-10-26:* all three connectors keep the hover and pressed fills a layer (C17), and a preset for a replacing platform states the flattened result, as windows-11 does. iced: 98b522f7 (M5 T6, an unset hover is the widget at rest). gpui: 0c69f9bd (M6 T9, source-over in place of `Hsla::blend`, since M8 T3 core's `color::composite_over`). egui: the M7 ruling (docs/todo_code-review-findings.md:10138, 467d54e6), nothing to change. The windows-11 checkbox hover's unsourced value stays the separate `[1.0]` entry (*Checkbox: a checked checkbox's hover appearance*).
+
+### platform-facts: the Plasma 6.8 rows cite the beta
+
+- [x] [v0.7.0] `docs/platform-facts.md:717`, `:718` and `:1127` state Plasma
+      6.8 from its Beta 2 (plasma-workspace `v6.7.91`, `40cde89a`): no
+      `forceFontDPI`, no krdb, and `Xft.dpi` from the Xwayland scale; the
+      `kde-breeze.toml` header says Breeze's values are unchanged at Breeze
+      `v6.7.91`. `v6.8.0` was not tagged on 2026-10-11 (`git ls-remote
+      https://invent.kde.org/plasma/plasma-workspace.git refs/tags/v6.8.0`;
+      due 2026-10-14). Once it is, re-read the cited lines
+      (`c675077b` and `fe367323` in the release,
+      `startkde/plasma-setup-xwayland/main.cpp:47-58`) and Breeze's colour
+      files and kstyle at `v6.8.0`, then re-pin the three rows and the
+      header (found in M2e Step 7, 2026-10-11).
+  *Closed 2026-10-26 in cb74515d:* re-pinned to Plasma 6.8.1. The cited lines were re-read at plasma-workspace v6.8.1 (`fb9b679a`): `c675077b` and `fe367323` are in the release (first in v6.7.90), no source reads `forceFontDPI` (only the `plasma6.0-remove-dpi-settings` migration names `forceFontDPIWayland`, to delete it), krdb is gone, and `startkde/plasma-setup-xwayland/main.cpp:47-58` is byte-identical to v6.7.91's. Breeze v6.8.1 (`23c317d0`): no kstyle source changed since v6.7.5 (only `CMakeLists.txt`, `breeze.themerc` and `config/breezestyleconfig.json`), and the colour files gained translation lines only. facts :717, :718, :1127 and the appendix's forceFontDPI row (:1850) cite v6.8.1; the `kde-breeze.toml` header says the kstyle and colour values are unchanged at Plasma 6.8.1.
+
+### Presets: adwaita's list header and slider thumb
+
+- [x] [v0.7.0] Since M2e fix round 2 adwaita leaves `list.header_background`
+      and `slider.thumb_color` to inheritance (`defaults.surface_color`,
+      `#ffffff` / `#1d1d20`). `list.header_background`: the GNOME cell of
+      `docs/platform-facts.md:1429` names "columnview header" but no colour;
+      at libadwaita 1.10.0 the header's buttons are transparent
+      (`_column-view.scss:12-13`) over the column view's `.view` fill,
+      `--view-bg-color` (`_column-view.scss:72-76`, `_views.scss:1-4`).
+      State that in the cell, then decide whether the preset states it.
+      `slider.thumb_color`: the GNOME cell of `docs/platform-facts.md:1319`
+      says ← `defaults.surface_color`, but libadwaita 1.10.0 fills the slider
+      with `$slider_color` = `color-mix(in srgb, white 80%,
+      var(--view-bg-color))` (`_scale.scss:50`, `_colors.scss:288`), a light
+      grey on the dark `#1d1d20` where the preset resolves `#1d1d20`.
+      Correct the cell, then the preset follows.
+      M8 T21 fix round 1 (2026-10-17): the slider half is closed: §2.9's GNOME
+      cell gives `$slider_color` since cbab21c4 (M8 T15), and adwaita states
+      it since 859bf526 (M8 T16), `#ffffff` / `#d2d2d2`
+      (`adwaita.toml` `[light.slider] thumb_color`, `[dark.slider] thumb_color`); *Presets: values the M8 T15
+      platform-facts rows disagree with* records it among the values T16
+      stated. The list-header half stays.
+  *Closed 2026-10-26 in 48df37e9:* the list-header half. facts :1429's GNOME cell states the colour: the header's buttons are transparent (`_column-view.scss:12-13`) over the column view's `.view` fill, `--view-bg-color` (`_column-view.scss:72-76`, `_views.scss:1-4`), #ffffff / #1d1d20 (`_colors.scss:36`, `:99`, libadwaita 1.10.0). `adwaita.toml` states it (`[light.list] header_background`, `[dark.list] header_background`), as the `list.header_background` wrong safety net requires a preset to (docs/inheritance-rules.toml:488-489, :529-531); kde-breeze and windows-11 already did. The resolved value is unchanged: it equals `surface_color`, which the field inherited. The rule's reason now says GNOME equals surface and KDE is distinct. The slider half closed in M8 (cbab21c4, 859bf526).
