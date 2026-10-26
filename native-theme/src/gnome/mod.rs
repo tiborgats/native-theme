@@ -20,7 +20,9 @@
 //!   portal gives none.
 //! - `org.gnome.desktop.interface enable-animations`: reduced motion, where
 //!   the portal gives none.
-//! - `org.gnome.desktop.interface font-name`: the UI font.
+//! - `org.gnome.desktop.interface font-name`: the UI font, and from its size
+//!   the type scale libadwaita sizes as a share of it (`text_scale.caption`,
+//!   `.dialog_title`, `.display` and `dialog.title_font`).
 //! - `org.gnome.desktop.interface monospace-font-name`: the monospace font.
 //! - `org.gnome.desktop.interface text-scaling-factor`: the text scale.
 //! - `org.gnome.desktop.interface overlay-scrolling`: overlay scroll bars.
@@ -448,6 +450,49 @@ fn accessibility_from_gnome_data(data: &GnomePortalData) -> crate::Accessibility
     acc
 }
 
+/// libadwaita's `.caption`: 82% of the base font (`docs/platform-facts.md:748`),
+/// the preset's `text_scale.caption` (`:1485`).
+const CAPTION_FACTOR: f32 = 0.82;
+
+/// libadwaita's `.title-2`: 136% of the base font (`docs/platform-facts.md:754`),
+/// the preset's `text_scale.dialog_title` and `dialog.title_font` (`:1487`,
+/// `:1561`).
+const TITLE_2_FACTOR: f32 = 1.36;
+
+/// libadwaita's `.title-1`: 181% of the base font (`docs/platform-facts.md:755`),
+/// the preset's `text_scale.display` (`:1488`).
+const TITLE_1_FACTOR: f32 = 1.81;
+
+/// `body` times `factor`, in `body`'s unit.
+fn scaled_size(body: FontSize, factor: f32) -> FontSize {
+    match body {
+        FontSize::Pt(v) => FontSize::Pt(v * factor),
+        FontSize::Px(v) => FontSize::Px(v * factor),
+    }
+}
+
+/// The sizes libadwaita gives as a share of the base font, from the size of
+/// the UI font `body` (`docs/platform-facts.md:746-755`): `text_scale.caption`
+/// (`.caption`), `text_scale.dialog_title` and `dialog.title_font`
+/// (`.title-2`), and `text_scale.display` (`.title-1`). Sizes only: the
+/// weights, and `text_scale.section_heading`, whose `.heading` inherits the
+/// base size, stay the preset's. The font size gsettings states carries no
+/// text-scaling factor, which the reader reports apart, so the factor reaches
+/// these sizes once, where the connectors apply it.
+fn apply_type_scale(variant: &mut crate::ThemeMode, body: FontSize) {
+    let entry = |factor| crate::TextScaleEntry {
+        size: Some(scaled_size(body, factor)),
+        ..Default::default()
+    };
+    variant.text_scale.caption = Some(entry(CAPTION_FACTOR));
+    variant.text_scale.dialog_title = Some(entry(TITLE_2_FACTOR));
+    variant.text_scale.display = Some(entry(TITLE_1_FACTOR));
+    variant.dialog.title_font = Some(FontSpec {
+        size: Some(scaled_size(body, TITLE_2_FACTOR)),
+        ..Default::default()
+    });
+}
+
 /// Build a sparse ThemeMode from pre-read portal + gsettings data.
 /// Zero I/O -- all values are pre-read by the caller.
 fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
@@ -477,6 +522,9 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     if let Some(ref font_str) = data.font_name
         && let Some(fs) = parse_gnome_font_to_fontspec(font_str)
     {
+        if let Some(body) = fs.size {
+            apply_type_scale(&mut variant, body);
+        }
         variant.defaults.font = fs;
     }
 
@@ -1504,6 +1552,143 @@ mod tests {
         data.high_contrast = true;
         let result = build_gnome_spec_pure(&data);
         assert!(result.accessibility.high_contrast);
+    }
+
+    /// `size` in points, `None` for a pixel size or none.
+    fn pt(size: Option<FontSize>) -> Option<f32> {
+        match size {
+            Some(FontSize::Pt(v)) => Some(v),
+            _ => None,
+        }
+    }
+
+    /// The text-scale entries and the dialog title a font name of `font`
+    /// gives, merged over the adwaita preset: `(caption, dialog_title,
+    /// display, dialog.title_font)` in points.
+    fn type_scale_over_adwaita(font: &str) -> [Option<FontSize>; 4] {
+        let mut data = default_gnome_data();
+        data.font_name = Some(font.to_string());
+        let reader = build_gnome_spec_pure(&data);
+        let mut mode = crate::Theme::preset("adwaita")
+            .ok()
+            .and_then(|t| t.light)
+            .unwrap_or_default();
+        mode.merge(reader_mode(&reader));
+        let size = |e: &Option<crate::TextScaleEntry>| e.as_ref().and_then(|e| e.size);
+        [
+            size(&mode.text_scale.caption),
+            size(&mode.text_scale.dialog_title),
+            size(&mode.text_scale.display),
+            mode.dialog.title_font.as_ref().and_then(|f| f.size),
+        ]
+    }
+
+    /// At GNOME's default 11pt the derived sizes are adwaita.toml's stated
+    /// ones (caption 9, dialog title 15, display 20, the dialog's title 15),
+    /// which the facts round to the whole point (≈, `docs/platform-facts.md:748-755`).
+    #[test]
+    fn the_default_font_gives_the_presets_type_scale() {
+        let preset = crate::Theme::preset("adwaita")
+            .ok()
+            .and_then(|t| t.light)
+            .unwrap_or_default();
+        let size = |e: &Option<crate::TextScaleEntry>| e.as_ref().and_then(|e| e.size);
+        let stated = [
+            size(&preset.text_scale.caption),
+            size(&preset.text_scale.dialog_title),
+            size(&preset.text_scale.display),
+            preset.dialog.title_font.as_ref().and_then(|f| f.size),
+        ];
+        assert_eq!(
+            stated,
+            [
+                Some(FontSize::Pt(9.0)),
+                Some(FontSize::Pt(15.0)),
+                Some(FontSize::Pt(20.0)),
+                Some(FontSize::Pt(15.0)),
+            ]
+        );
+        let derived = type_scale_over_adwaita("Adwaita Sans 11");
+        for (derived, stated) in derived.into_iter().zip(stated) {
+            assert!(pt(derived).is_some(), "not a point size: {derived:?}");
+            assert_eq!(
+                pt(derived).map(f32::round),
+                pt(stated),
+                "{derived:?} does not round to {stated:?}"
+            );
+        }
+    }
+
+    /// Another font scales them by libadwaita's shares, and the preset's
+    /// weights and `section_heading` stay.
+    #[test]
+    fn another_font_scales_the_type_scale() {
+        let derived = type_scale_over_adwaita("Adwaita Sans 14");
+        let expected = [14.0 * 0.82, 14.0 * 1.36, 14.0 * 1.81, 14.0 * 1.36];
+        for (derived, expected) in derived.into_iter().zip(expected) {
+            assert!(
+                pt(derived).is_some_and(|d| (d - expected).abs() < 1e-4),
+                "{derived:?} is not {expected}pt"
+            );
+        }
+        let mut data = default_gnome_data();
+        data.font_name = Some("Adwaita Sans 14px".to_string());
+        let reader = build_gnome_spec_pure(&data);
+        let caption = reader_mode(&reader)
+            .text_scale
+            .caption
+            .as_ref()
+            .and_then(|e| e.size);
+        assert!(
+            matches!(caption, Some(FontSize::Px(v)) if (v - 14.0 * 0.82).abs() < 1e-4),
+            "a pixel font scales in pixels: {caption:?}"
+        );
+        let mut mode = crate::Theme::preset("adwaita")
+            .ok()
+            .and_then(|t| t.light)
+            .unwrap_or_default();
+        let section = mode.text_scale.section_heading.clone();
+        data.font_name = Some("Adwaita Sans 14".to_string());
+        mode.merge(reader_mode(&build_gnome_spec_pure(&data)));
+        assert_eq!(mode.text_scale.section_heading, section);
+        assert_eq!(
+            mode.text_scale.dialog_title.and_then(|e| e.weight),
+            Some(800)
+        );
+        assert_eq!(mode.text_scale.display.and_then(|e| e.weight), Some(800));
+        assert_eq!(mode.dialog.title_font.and_then(|f| f.weight), Some(800));
+    }
+
+    /// The text-scaling factor is not folded into the derived sizes: it is
+    /// reported apart and applied once by the connectors (M2e).
+    #[test]
+    fn the_text_scaling_factor_does_not_reach_the_type_scale() {
+        let mut data = default_gnome_data();
+        data.font_name = Some("Adwaita Sans 11".to_string());
+        let plain = build_gnome_spec_pure(&data);
+        data.text_scaling_factor = Some(1.5);
+        data.session_type = Some("wayland".to_string());
+        let scaled = build_gnome_spec_pure(&data);
+        assert_eq!(
+            reader_mode(&plain).text_scale,
+            reader_mode(&scaled).text_scale
+        );
+        assert_eq!(
+            reader_mode(&plain).dialog.title_font,
+            reader_mode(&scaled).dialog.title_font
+        );
+        assert_eq!(scaled.accessibility.text_scaling_factor, 1.5);
+    }
+
+    /// Without a size in the font name the reader states no type scale, and
+    /// the preset's stands.
+    #[test]
+    fn a_font_without_a_size_leaves_the_type_scale() {
+        let mut data = default_gnome_data();
+        data.font_name = Some("Adwaita Sans".to_string());
+        let reader = build_gnome_spec_pure(&data);
+        assert_eq!(reader_mode(&reader).text_scale, crate::TextScale::default());
+        assert_eq!(reader_mode(&reader).dialog.title_font, None);
     }
 
     #[test]

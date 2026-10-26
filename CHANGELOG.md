@@ -277,6 +277,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **native-theme**: the GNOME reader sizes the type scale from the user's font as libadwaita does, a share of the base font (`docs/platform-facts.md:746-755`): `text_scale.caption` 82% (`.caption`), `text_scale.dialog_title` and `dialog.title_font` 136% (`.title-2`) and `text_scale.display` 181% (`.title-1`), where it kept `adwaita.toml`'s sizes at the default 11pt (9, 15, 15 and 20pt) whatever font the user set. The weights stay the preset's; the text-scaling factor still reaches each size once, in the connectors.
 - **native-theme**: a `[layout]` value that is negative, NaN or infinite (`widget_gap_px`, `container_margin_px`, `window_margin_px`, `section_gap_px`) fails `Theme::resolve`, `SystemTheme::from_system()` and `SystemTheme::with_overlay` with `Error::ResolutionInvalid` naming its key, `layout.widget_gap_px`; it reached `SystemTheme::layout` unchecked, although the four fields declare a non-negative range.
 - **native-theme**: validation range-checks the card, so a negative, NaN or infinite `card.border` padding side fails with `ResolutionInvalid` (it reached `ResolvedTheme::card`), and a widget border's `corner_radius_px` and `line_width_px` must be finite and non-negative, as `defaults.border`'s already were (`[light.button.border] corner_radius_px = -4.0` resolved).
 - **native-theme**: a NaN or infinite `defaults.focus_ring_offset_px` fails validation; a negative offset, an inset ring, stays valid.
