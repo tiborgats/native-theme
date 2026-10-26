@@ -673,7 +673,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.danger_color")),
         ),
         ThemeToken::Red => (
-            claim("value", "red", t.red, "native-theme-gpui/colors.rs:681"),
+            claim("value", "red", t.red, "native-theme-gpui/colors.rs:691"),
             |i| i.config("model", "defaults.danger_color"),
         ),
         ThemeToken::RedLight => (
@@ -681,7 +681,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "red_light",
                 t.red_light,
-                "native-theme-gpui/colors.rs:682",
+                "native-theme-gpui/colors.rs:692",
             ),
             |i| light(i.config("model", "defaults.danger_color, window.background_color")),
         ),
@@ -722,7 +722,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.success_color")),
         ),
         ThemeToken::Green => (
-            claim("value", "green", t.green, "native-theme-gpui/colors.rs:683"),
+            claim("value", "green", t.green, "native-theme-gpui/colors.rs:693"),
             |i| i.config("model", "defaults.success_color"),
         ),
         ThemeToken::GreenLight => (
@@ -730,7 +730,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "green_light",
                 t.green_light,
-                "native-theme-gpui/colors.rs:684",
+                "native-theme-gpui/colors.rs:694",
             ),
             |i| light(i.config("model", "defaults.success_color, window.background_color")),
         ),
@@ -775,7 +775,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow",
                 t.yellow,
-                "native-theme-gpui/colors.rs:687",
+                "native-theme-gpui/colors.rs:697",
             ),
             |i| i.config("model", "defaults.warning_color"),
         ),
@@ -784,7 +784,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "yellow_light",
                 t.yellow_light,
-                "native-theme-gpui/colors.rs:688",
+                "native-theme-gpui/colors.rs:698",
             ),
             |i| light(i.config("model", "defaults.warning_color, window.background_color")),
         ),
@@ -820,7 +820,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
             |i| active(i.config("model", "defaults.info_color")),
         ),
         ThemeToken::Blue => (
-            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:685"),
+            claim("value", "blue", t.blue, "native-theme-gpui/colors.rs:695"),
             |i| i.config("model", "defaults.info_color"),
         ),
         ThemeToken::BlueLight => (
@@ -828,7 +828,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "blue_light",
                 t.blue_light,
-                "native-theme-gpui/colors.rs:686",
+                "native-theme-gpui/colors.rs:696",
             ),
             |i| light(i.config("model", "defaults.info_color, window.background_color")),
         ),
@@ -1411,7 +1411,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta",
                 t.magenta,
-                "native-theme-gpui/colors.rs:691",
+                "native-theme-gpui/colors.rs:701",
             ),
             |i| {
                 i.config("model", "defaults.accent_color").config("derived", "hue 0.833, a literal, with defaults.accent_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
@@ -1422,14 +1422,14 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "magenta_light",
                 t.magenta_light,
-                "native-theme-gpui/colors.rs:698",
+                "native-theme-gpui/colors.rs:708",
             ),
             |i| {
                 light(i.config("model", "defaults.accent_color, window.background_color").config("derived", "magenta as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))
             },
         ),
         ThemeToken::Cyan => (
-            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:701"),
+            claim("value", "cyan", t.cyan, "native-theme-gpui/colors.rs:711"),
             |i| {
                 i.config("model", "defaults.info_color").config("derived", "hue 0.5, a literal, with defaults.info_color's lightness and its saturation capped at 0.85, opaque (native-theme-gpui/colors.rs, assign_base_colors)")
             },
@@ -1439,7 +1439,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "value",
                 "cyan_light",
                 t.cyan_light,
-                "native-theme-gpui/colors.rs:708",
+                "native-theme-gpui/colors.rs:718",
             ),
             |i| {
                 light(i.config("model", "defaults.info_color, window.background_color").config("derived", "cyan as its own swatch states it, through light_variant (native-theme-gpui/colors.rs, assign_base_colors)"))

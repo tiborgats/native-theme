@@ -642,7 +642,7 @@ const ROWS: &[Row] = &[
         exceptions: &[],
     },
     // The four base-palette colours the connector maps directly
-    // (`colors.rs:681-688`); their `_light` siblings are derived.
+    // (`colors.rs:691-698`); their `_light` siblings are derived.
     Row {
         slot: "red",
         native: |r| r.defaults.danger_color,

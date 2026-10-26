@@ -1370,7 +1370,8 @@ fn handles_hold_native_values(cx: &App) -> bool {
 }
 
 /// Restore the 12 base-palette colours (`red` … `cyan_light`) of the styled
-/// theme from the stored variant for the current mode (D43).
+/// theme, and their tokens, from the stored variant for the current mode
+/// (D43).
 ///
 /// `ThemeConfigColors` keeps them private (gpui-component
 /// `src/theme/schema.rs:643-677`), so the config `apply` installs for a variant
@@ -1393,7 +1394,7 @@ fn repair_base_palette(cx: &mut App) {
     let native = colors::base_palette(resolved, is_dark);
     // Probe a copy first so an unchanged palette causes no notification.
     let differs = cx.try_global::<GpuiTheme>().is_some_and(|styled| {
-        let mut probe: gpui_component::theme::ThemeColor = **styled;
+        let mut probe = styled.clone();
         colors::copy_base_palette(&native, &mut probe)
     });
     if differs {
@@ -2371,6 +2372,55 @@ mod apply_tests {
             let red = GpuiTheme::global(cx).red;
             assert_ne!(red, upstream_red, "the repair replaced upstream's constant");
             assert_eq!(red, native_palette.red);
+        });
+    }
+
+    /// D43 with the tokens: after `apply` and an upstream rebuild, each of the
+    /// 12 base-palette tokens is its plain field's solid colour, the native
+    /// one; without the repair the rebuild leaves upstream's constants in
+    /// both, which the precondition shows for `red`.
+    #[gpui::test]
+    fn the_base_palette_repair_keeps_the_tokens_with_the_colours(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let native = colors::base_palette(&resolved, true);
+        let upstream = cx.update(|cx| {
+            gpui_component::init(cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+            GpuiTheme::global(cx).tokens.red
+        });
+        assert_ne!(
+            upstream.color, native.red,
+            "upstream's red token must differ from the preset's for this test to mean anything"
+        );
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+        cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Dark, None, cx));
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            macro_rules! check {
+                ($($f:ident),*) => {$(
+                    assert_eq!(
+                        styled.tokens.$f,
+                        gpui_component::theme::ThemeToken::from(native.$f),
+                        concat!("tokens.", stringify!($f), " is not the native solid colour")
+                    );
+                    assert_eq!(styled.colors.$f, native.$f);
+                )*};
+            }
+            check!(
+                red,
+                red_light,
+                green,
+                green_light,
+                blue,
+                blue_light,
+                yellow,
+                yellow_light,
+                magenta,
+                magenta_light,
+                cyan,
+                cyan_light
+            );
         });
     }
 

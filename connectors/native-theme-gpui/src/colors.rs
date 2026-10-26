@@ -9,7 +9,7 @@
 //! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::Hsla;
-use gpui_component::theme::ThemeColor;
+use gpui_component::theme::{Theme, ThemeColor, ThemeToken};
 use native_theme::theme::ResolvedTheme;
 
 use crate::derive::{active_color, hover_color, light_variant};
@@ -646,13 +646,23 @@ pub(crate) fn base_palette(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColo
     tc
 }
 
-/// Copy the 12 base-palette fields of `from` onto `to`; `true` when any differed.
-pub(crate) fn copy_base_palette(from: &ThemeColor, to: &mut ThemeColor) -> bool {
+/// Copy the 12 base-palette fields of `from` onto the styled theme `to`,
+/// each with its token, so `to.tokens.red` … `to.tokens.cyan_light` stay the
+/// plain fields' solid colours; `true` when any differed.
+///
+/// gpui-component 0.8.0 keeps a token beside each of the 12
+/// (`Theme::tokens`, `src/theme/mod.rs:154`; `ThemeTokens`' fields `red` …
+/// `cyan_light`, `src/theme/theme_color.rs:533-544`), and a rebuild resets
+/// both to its constants; a token is a colour's solid form
+/// (`From<Hsla> for ThemeToken`, `src/theme/theme_color.rs:30-37`).
+pub(crate) fn copy_base_palette(from: &ThemeColor, to: &mut Theme) -> bool {
     let mut changed = false;
     macro_rules! copy {
         ($($f:ident),*) => {$(
-            if to.$f != from.$f {
-                to.$f = from.$f;
+            let token = ThemeToken::from(from.$f);
+            if to.colors.$f != from.$f || to.tokens.$f != token {
+                to.colors.$f = from.$f;
+                to.tokens.$f = token;
                 changed = true;
             }
         )*};
