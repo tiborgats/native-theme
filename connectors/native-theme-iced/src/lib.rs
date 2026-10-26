@@ -1536,7 +1536,7 @@ pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 ///     .padding(padding)
 ///     .max_width(native_theme_iced::dialog_max_width(&resolved))
 ///     .max_height(native_theme_iced::dialog_max_height(&resolved))
-///     .style(styles::dialog(&resolved))
+///     .style(native_theme_iced::styles::dialog(&resolved))
 /// ```
 #[must_use]
 pub fn dialog_min_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
