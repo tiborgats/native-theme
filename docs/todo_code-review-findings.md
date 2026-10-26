@@ -13980,3 +13980,34 @@ question. The core, iced, gpui and egui tests pass over the new values; `contrac
 unchanged.
 **Status:** done, 2245393c, dc1be6bd, 8c219626. The controller's Linux gate: the macOS presets'
 screenshots move (the sidebar, the selected segment, monterey's dark and not-key title bar).
+
+#### D7 · preset values equal to the default accent that the live readers left stated (W2-j)
+**Problem:** W1's mechanical check listed preset fields that equal the preset's default accent
+while the live reader does not write them, so a desktop with another accent or scheme kept the
+default blue there. W2 triaged them against the facts and upstream (d-w2j-accent-derived.md):
+some were accent-derived and unwritten, some the wrong value as well, some invented tints.
+**Fix:** W2-j's patch (facts §2.3, §2.6, §2.8, §2.25 cells; the `segmented_control.active_background`
+[uniform] rule marked and its `[wrong_safety_nets]` entry naming GNOME and macOS 14 and 15; the
+kde-breeze, adwaita and macos-monterey hunks; the T15 and §2.8 todo notes) and the reader patch,
+applied together and gated. The KDE reader writes `button.active_background`
+(`mix(Button, Selection, 0.3)`, Qt-exact: Breeze Dark's blue channel, 103.5 before rounding,
+gives #2f5368 as KColorUtils does), `input.hover_border_color` and `focus_border_color`
+(`DecorationHover`, `DecorationFocus`), `tab.hover_background` (`DecorationHover` at 0x33),
+`segmented_control.active_background` (Selection) and the scroll-bar handle's hover and drag
+colours (`DecorationHover` at half alpha over the window, #96cfed / #2f6888); the GNOME reader
+`defaults.info_color` from the portal accent (in `apply_gnome_accent`, not the shared
+`apply_accent`); the macOS reader `input.caret_color` from `textInsertionPointColor`, read on
+macOS 14 and later only. kde-breeze states the new values and drops `button.active_text_color`,
+`menu.hover_background`, `menu.hover_text_color` and `segmented_control.active_text_color`,
+which inheritance gives; adwaita's selected segment is the checked toggle; macos-monterey drops
+seven unsourced accent tints. Review fixes on the patches: two connector tests pinned
+kde-breeze light's old #ffffff pressed text: gpui's
+`the_copy_box_takes_the_buttons_hover_and_pressed_text_colours` now sets the pressed text to the
+theme's selection text, and egui's
+`strong_text_is_the_panel_text_and_the_button_cell_keeps_its_pressed_pair` reads windows-11,
+whose pressed text (#0000009e) differs from its window text. `platform_presets_no_derived_fields`
+holds the menu hover to adwaita and windows-11. `contract-leaves.toml` regenerated (the
+`text_input`, `text_editor` and `toggler` exceptions lose macos-monterey). The macOS code checks
+on x86_64-apple-darwin (strict-panic, `-D warnings`).
+**Status:** done, 0618906f. The controller's Linux gate: kde-breeze's pressed button and
+scroll-bar handle, adwaita's selected segment and monterey's field frames move.

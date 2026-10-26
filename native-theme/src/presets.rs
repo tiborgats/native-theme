@@ -466,6 +466,16 @@ accent_color = "#00ff00"
                     "preset '{name}' {label}.switch.checked_background: stated only where \
                      platform-facts does not derive it from the accent"
                 );
+                // menu.hover_background is the selection on macOS and KDE
+                // ([Colors:Selection]), which it inherits; Windows and GNOME
+                // paint a hover fill of their own (docs/platform-facts.md:1269,
+                // §2.6)
+                assert_eq!(
+                    variant.menu.hover_background.is_some(),
+                    matches!(*name, "adwaita" | "windows-11"),
+                    "preset '{name}' {label}.menu.hover_background: stated only where \
+                     platform-facts does not give it the selection"
+                );
             }
         }
     }
