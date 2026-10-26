@@ -54,7 +54,10 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// connector fits the scope's vertical padding to it, and above 1 grown by the same rule. The
 /// open state lives in egui's `CollapsingState` under the header's id, so it animates and
 /// persists as egui's does. Either way the body is drawn in the style the expander is shown
-/// in, not in the header's `Role::Expander` cell, so a widget in it is the caller's.
+/// in, not in the header's `Role::Expander` cell: a widget in it takes the caller's fills,
+/// outlines and text. The focus ring a focused widget in it shows (the connector's install
+/// plugin) still takes `expander.border.corner_radius`, the radius the expander's scope records
+/// for the `Ui` it opens, which holds the body (`docs/todo.md`).
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -126,9 +129,10 @@ impl Expander {
         self
     }
 
-    /// Where `false`, the expander is disabled: the header cannot be clicked, and header and
-    /// body are drawn in the expander scope's `Disabled` variant, as `CollapsingHeader::enabled`
-    /// greys the header out by `Ui::disable`.
+    /// Where `false`, the expander is disabled: the header cannot be clicked and is drawn in
+    /// the expander scope's `Disabled` variant, as `CollapsingHeader::enabled` greys the header
+    /// out by `Ui::disable`; the body, in the caller's style, is disabled through the `Ui` and
+    /// faded by that `Disabled` cell's `disabled_alpha` (`scope::open`).
     pub fn enabled(mut self, enabled: bool) -> Self {
         self.enabled = enabled;
         self

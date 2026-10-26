@@ -3924,6 +3924,9 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       (`grep -rnE 'tokens\.(red|green|blue|yellow|magenta|cyan)'` over both
       crates' `src` finds none).
 
+### egui: the focus ring inside an Expander's body takes the expander's radius
+- [ ] [v0.7.x] The companion crate's `Expander` draws its body in the caller's style (round 4 review, item 17 I1), but the connector's install plugin rings a focused widget there with `expander.border.corner_radius`: `native_scope` records the scope's `Ui` with `Role::Expander`'s radius (`connectors/native-theme-egui/src/ext.rs:103-106`), and the ring takes the innermost recorded scope round the widget (`src/plugin.rs:595-613`, `:646-651`); the body's `Ui` records none. Add a public hook to native-theme-egui that sets a style on a `Ui` and records that `Ui`'s radius from it with `replace = true`, as `native_set_style` does for a role's cell, and call it in the `Expander`'s body wrapper (`connectors/native-theme-egui-widgets/src/expander.rs`, `Expander::show`) with the caller's style. Predates the round.
+
 ### gpui: the theme-drawn widgets' focus ring
 - [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
 
