@@ -3930,28 +3930,6 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
 ### gpui: the theme-drawn widgets' focus ring
 - [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
 
-### check_widget_coverage.py discovers no chart
-- [ ] [v0.7.0] gpui-component's charts derive `IntoPlot`, not `IntoElement`, so `scripts/check_widget_coverage.py` discovers none of them. Teach it `IntoPlot`, then show what it finds — today `RadarChart` and `SankeyChart`, which no showcase shows.
-
-### Presets: material-3's platform-facts citations have drifted
-- [ ] [v0.7.0] For M2d (found 2026-10-14 in G2 Task 10's preset audit). About 60 comment lines in each variant of `native-theme/src/presets/material-3.toml` cite a `docs/platform-facts.md:N` line 1–4 lines away from the row they describe: for example, the tooltip's `font.color` cites `:1280` (`font.weight`) where the row is `:1282`, and the list's `header_font` cites `:1425-1426` (the selection rows) where the rows are `:1427-1428`. G2 Task 10 fixed the four pairs beside its new fields (`a440e812`). The values are not affected; only the line numbers are. The other native presets have no such drift: their remaining mismatches are deliberate cross-row citations, such as a disabled colour citing `disabled_opacity` or an unchecked background citing the widget's `background_color`. Method: for each `# platform-facts.md:N` comment, compare the property name of row N (and of each row in a range) with the key on the next line, as `<sub-table>.<key>` without `_px`/`_ms`/`_pt`. M2d re-cites material-3 against the Compose release it pins anyway; a gate doing this check in `check_release.sh` would stop the drift from coming back.
-      M8 T16 (2026-10-17): material-3's four §2.20 layout values
-      (`material-3.toml` `[layout] widget_gap_px, container_margin_px, window_margin_px, section_gap_px`:
-      6, 6, 10, 18) have no source: the
-      Material cells are "(none)" (`docs/platform-facts.md` §2.20), and the
-      preset-validator check found none. They join the four `layout.*` rows
-      of *Follow-up plan: the other sizing fields a platform leaves
-      unstated*; the preset keeps them, as they pad all three showcases'
-      chrome.
-      G3 T12 (2026-10-22): two pairs re-pointed by content, from the G3 Task 11
-      review: the toolbar's `font.size` comments (`[light.toolbar.font]`,
-      `[dark.toolbar.font]`) cited `:1384`, §2.13's table rule, and now cite
-      `:1386`, the `font.size` row; the toolbar's `border` comments
-      (`[light.toolbar.border]`, `[dark.toolbar.border]`) cited `:1394`,
-      `background_color`, and now cite `:1397-1399`, the
-      `border.corner_radius`, `border.line_width` and `border.shadow_enabled`
-      rows. The rest of the entry stays open.
-
 ---
 
 ## Post-1.0

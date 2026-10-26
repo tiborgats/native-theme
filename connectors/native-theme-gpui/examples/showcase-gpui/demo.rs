@@ -8172,6 +8172,9 @@ pub(crate) const SAMPLE_MONTHS: [(&str, f64); 6] = [
     ("Jun", 90.),
 ];
 
+/// The name of the BarChart's series, its tooltip row's label.
+pub(crate) const BAR_SERIES: &str = "Visitors";
+
 /// The months the AreaChart plots, with their values.
 pub(crate) const SAMPLE_MONTHS_AREA: [(&str, f64); 6] = [
     ("Jan", 30.),
@@ -8252,6 +8255,7 @@ pub(crate) fn bar_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) -
         .band(|d: &(&'static str, f64)| d.0)
         .value(|d: &(&'static str, f64)| d.1)
         .fill(move |_: &(&'static str, f64), _, _, _| fill)
+        .name(BAR_SERIES)
         .info(ui, id, info::charts::bar_chart(cx.theme()))
         .h(CHART_HEIGHT)
         .w_full()
@@ -8278,7 +8282,7 @@ pub(crate) fn area_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str) 
     AreaChart::new(SAMPLE_MONTHS_AREA)
         .x(|d: &(&'static str, f64)| d.0)
         .y(|d: &(&'static str, f64)| d.1)
-        .stroke(t.chart_3)
+        .stroke(t.chart_1)
         .fill(t.chart_3.opacity(AREA_FILL_OPACITY))
         .info(ui, id, info::charts::area_chart(t))
         .h(CHART_HEIGHT)
@@ -8360,6 +8364,7 @@ pub(crate) fn sankey_chart(ui: &Entity<InfoRegistry>, cx: &App, id: &'static str
     SankeyChart::new(nodes, links)
         .node_color(|d: &(&'static str, Hsla)| d.1)
         .node_label(|d: &(&'static str, Hsla)| d.0.into())
+        .tooltip_name(|d: &(&'static str, Hsla)| d.0.into())
         .info(ui, id, info::charts::sankey_chart(t))
         .h(CHART_HEIGHT)
         .w_full()

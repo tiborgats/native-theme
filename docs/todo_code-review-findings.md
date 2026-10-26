@@ -13583,3 +13583,37 @@ sankey node labels `muted_foreground` `sankey_chart.rs:391`) and notes the liter
 2px, rings and spokes 1px, label text 10px, the link opacity, `HOVER_DIM`).
 `every_chart_shows_its_own_info` hovers all seven. The coverage script's half is C-07a.
 **Status:** done, b1b8f095.
+- *Review follow-up (2026-10-26, the controller's review of b1b8f095, four minors):* the
+  radar's hover claims name the 8px dot's 1px edge in `background` and its halo, the series
+  colour at 20% growing to 20px (`HOVER_DOT_SIZE`, `HOVER_HALO_SIZE`, gpui-component
+  `src/chart/mod.rs:128`, `:134`; `Dot`, `src/plot/tooltip.rs:241-268`); the grid ring's 1px
+  cites `RadialLine`'s `Default` (gpui-base `src/plot/shape/radial_line.rs:40-52`); the
+  BarChart's series and the SankeyChart's nodes are named (`BarChart::name`,
+  `SankeyChart::tooltip_name`), so the tooltip row's label the claims name is drawn; and three
+  tests tie the swatches to what is painted: the radar's fill swatches
+  (`the_radar_charts_fill_swatches_are_the_series_at_the_fill_opacity`), its hover dots' fill
+  and edge quads (`the_radar_charts_hover_dots_are_its_series_colours`) and the sankey's node
+  quads (`the_sankey_charts_nodes_are_the_chart_palette`); a demo series or node in another
+  colour turns the last two red (checked by mutation).
+
+#### C-07a · check_widget_coverage.py learns `IntoPlot`
+**Problem:** `check_widget_coverage.py` read only `impl RenderOnce/IntoElement` and
+`#[derive(IntoElement)]`, so gpui-component's seven charts, which derive `IntoPlot`, were
+never discovered and two went unshown unnoticed.
+**Fix:** `IntoPlot` joins the derives it reads (the derive writes the charts'
+`impl IntoElement`, gpui-component-macros 0.8.0 `derive_into_plot.rs:20`), with a self-test
+case; gpui discovered 158, missing 0.
+**Status:** done, d2d4a3af (W2).
+
+#### C-08 · material-3's citation drift, and a gate
+**Problem:** ~52 citation comments per variant in material-3 cited a platform-facts line 1–14
+rows from the row they describe; nothing checked it.
+**Fix:** `scripts/check_preset_citations.py` compares each citation's row name and section with
+the value below, with stated cross-row rules and reasoned exceptions; wired into
+check_release.sh and CI with its self-test; material-3's 104 comment lines re-pointed, parsed
+TOML identical. Counts at 7bea7d81: adwaita 105/105, kde-breeze 237 (233 hold, 4 not
+compared), macos-monterey 147 (145, 2), macos-tahoe 155 (151, 4), material-3 234/234,
+windows-11 206 (195, 3 excepted, 8). Since d296edf7, which re-points windows-11's two
+`active_background` comments to their own row (`docs/platform-facts.md:1196`) and drops their
+exceptions, windows-11 reads 206 (197 hold, 1 excepted, 8 not compared).
+**Status:** done, 7bea7d81 and d296edf7 (W2).

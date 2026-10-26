@@ -7,7 +7,7 @@ use gpui_component::{Colorize as _, theme::Theme};
 
 use super::{WidgetInfo, claim, percent_text, px_text};
 use crate::demo::{
-    AREA_FILL_OPACITY, PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES,
+    AREA_FILL_OPACITY, BAR_SERIES, PIE_INNER_RADIUS, PIE_OUTER_RADIUS, PIE_PAD_ANGLE, PIE_SLICES,
     RADAR_DIMENSIONS, RADAR_FILL_OPACITY, RADAR_MAX_VALUE, RADAR_SERIES, SAMPLE_MONTHS,
     SAMPLE_MONTHS_AREA, SAMPLE_OHLC, SANKEY_LINKS, SANKEY_NODES,
 };
@@ -124,6 +124,10 @@ pub fn bar_chart(t: &Theme) -> WidgetInfo {
             "square: Corners::all(px(0.)) unless BarChart::corner_radii sets others, so the theme radius does not reach them (chart/bar_chart.rs, BarChart::new)",
         )
         .instance("data", months(&SAMPLE_MONTHS))
+        .instance(
+            "series name",
+            format!("{BAR_SERIES}, through BarChart::name: the label of the tooltip's row, which has none without it (chart/bar_chart.rs, BarChart::name)"),
+        )
         .instance(
             "bar width",
             "the band's, the bands padded 0.4 between and 0.2 at the ends, so the bars widen with the chart (chart/bar_chart.rs, BarChart::band_scale)",
@@ -404,10 +408,24 @@ pub fn radar_chart(t: &Theme) -> WidgetInfo {
             "gpui-component/chart/radar_chart.rs:507",
         ))
         .color(claim(
-            "hovered vertices' rings",
+            "hovered dots' 1px edge",
             "background",
             t.background,
             "gpui-component/chart/radar_chart.rs:656",
+        ))
+        // The halo is the dot's fill, the series colour, at 20%
+        // (gpui-component/plot/tooltip.rs:264).
+        .color(claim(
+            "first series' hover halo, faded",
+            "chart_1",
+            t.chart_1.opacity(0.2),
+            "showcase",
+        ))
+        .color(claim(
+            "second series' hover halo, faded",
+            "chart_2",
+            t.chart_2.opacity(0.2),
+            "showcase",
         ))
         .not_themeable(
             "colour source",
@@ -420,7 +438,7 @@ pub fn radar_chart(t: &Theme) -> WidgetInfo {
         )
         .not_themeable(
             "line widths",
-            "each series 2px (chart/radar_chart.rs, RadarChart::paint), each grid ring 1px (plot/shape/radial_line.rs, RadialLine::new) and each spoke 1px (gpui-base/plot/mod.rs, polygon): literals",
+            "each series 2px (chart/radar_chart.rs, RadarChart::paint), each grid ring 1px, the stroke width RadialLine's Default sets (gpui-base/plot/shape/radial_line.rs:40-52, Default) and each spoke 1px (gpui-base/plot/mod.rs, polygon): literals",
         )
         .instance(
             "data",
@@ -449,7 +467,7 @@ pub fn radar_chart(t: &Theme) -> WidgetInfo {
         );
     hover(info, t, Guide::None).not_themeable(
         "hover emphasis",
-        "no guide: each series gets a dot in its colour on the hovered spoke, ringed in background (chart/radar_chart.rs, RadarChart::tooltip)",
+        "no guide: each series marks the hovered spoke with an 8px dot in its colour (chart/mod.rs, HOVER_DOT_SIZE), edged 1px in background, over a halo of its colour at 20% that grows out of the dot to 20px as the hover fades in (chart/mod.rs, HOVER_HALO_SIZE; plot/tooltip.rs, Dot)",
     )
 }
 
@@ -504,6 +522,10 @@ pub fn sankey_chart(t: &Theme) -> WidgetInfo {
         .instance(
             "labels",
             "each node's name through SankeyChart::node_label, beside the first and last columns and above the middle one; SankeyChart::value_label would add its flow above it (chart/sankey_chart.rs, SankeyChart::node_labels)",
+        )
+        .instance(
+            "tooltip",
+            "the hovered node's name as its title (node_label) and as the label of its row (SankeyChart::tooltip_name), beside the node's flow, the larger of what flows in and out; without tooltip_name the row has no label (chart/sankey_chart.rs, SankeyChart::tooltip)",
         );
     hover(info, t, Guide::None).not_themeable(
         "hover emphasis",

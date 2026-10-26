@@ -21,7 +21,7 @@ use crate::app::{
     ShowPage, Showcase, ToggleSidePanel,
 };
 use crate::chrome::menus;
-use crate::demo::{AREA_FILL_OPACITY, IconSizeContext};
+use crate::demo::{AREA_FILL_OPACITY, IconSizeContext, RADAR_FILL_OPACITY};
 use crate::info::{
     GEOMETRY_NOTES, INFO_SETTLE, InfoExt as _, InfoRegistry, WidgetInfo, as_rgba, claim,
     native_info, percent_text,
@@ -7982,6 +7982,146 @@ fn the_area_charts_fill_swatch_is_the_series_at_the_fill_opacity(cx: &mut TestAp
         "the AreaChart's fill swatch is not chart_3 at {}: {info:?}",
         percent_text(AREA_FILL_OPACITY)
     );
+}
+
+/// The RadarChart's fill swatches are the colours the showcase asks upstream
+/// to paint: each series colour at `RADAR_FILL_OPACITY`. The fills are paths,
+/// so they are checked against what the showcase passes, as the AreaChart's
+/// is.
+#[gpui::test]
+fn the_radar_charts_fill_swatches_are_the_series_at_the_fill_opacity(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Charts);
+    let info = settle_on(&mut cx, &showcase, CHARTS_RADAR_CHART);
+    let painted = cx.update(|_window, cx| {
+        let t = Theme::global(cx);
+        vec![
+            t.chart_1.opacity(RADAR_FILL_OPACITY),
+            t.chart_2.opacity(RADAR_FILL_OPACITY),
+        ]
+    });
+    let fills: Vec<gpui::Hsla> = info
+        .as_ref()
+        .map(|info| {
+            info.colors
+                .iter()
+                .filter(|c| c.role.contains("series fill"))
+                .map(|c| c.value)
+                .collect()
+        })
+        .unwrap_or_default();
+    assert_eq!(
+        fills,
+        painted,
+        "the RadarChart's fill swatches are not chart_1 and chart_2 at {}: {info:?}",
+        percent_text(RADAR_FILL_OPACITY)
+    );
+}
+
+/// The side of the dot a chart marks a hovered point with:
+/// gpui-component's `HOVER_DOT_SIZE` (src/chart/mod.rs:128), crate-private.
+const HOVER_DOT_SIDE: f32 = 8.;
+
+/// The RadarChart marks the hovered spoke with one dot per series, filled in
+/// the colour the showcase strokes the series with, `chart_1` and `chart_2`,
+/// and edged in `background`: gpui paints each dot as a filled quad and an
+/// edge quad over the same bounds. They are quads, so a series the showcase
+/// paints in another colour turns this red.
+#[gpui::test]
+fn the_radar_charts_hover_dots_are_its_series_colours(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    show(&mut cx, &showcase, Page::Charts);
+    settle_on(&mut cx, &showcase, CHARTS_RADAR_CHART);
+    let bounds = bounds_of(&mut cx, CHARTS_RADAR_CHART);
+    let (fills, edges, series, background) = cx.update(|window, cx| {
+        let t = Theme::global(cx);
+        let scale = window.scale_factor();
+        let bounds = bounds.scale(scale);
+        let side = HOVER_DOT_SIDE * scale;
+        let quads: Vec<gpui::Quad> = scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                (q.bounds.size.width.0 - side).abs() < 0.5
+                    && (q.bounds.size.height.0 - side).abs() < 0.5
+                    && q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+            })
+            .collect();
+        let fills: Vec<Option<gpui::Hsla>> = quads
+            .iter()
+            .filter(|q| !q.background.is_transparent())
+            .map(|q| q.background.as_solid())
+            .collect();
+        let edges: Vec<gpui::Hsla> = quads
+            .iter()
+            .filter(|q| q.border_widths.top.0 > 0.)
+            .map(|q| q.border_color)
+            .collect();
+        (fills, edges, [t.chart_1, t.chart_2], t.background)
+    });
+    assert_eq!(
+        edges,
+        [background, background],
+        "not two dots edged in background"
+    );
+    for colour in series {
+        assert!(
+            fills.contains(&Some(colour)),
+            "no hover dot is {colour:?}: {fills:?}"
+        );
+    }
+    assert!(
+        fills
+            .iter()
+            .all(|fill| fill.is_some_and(|f| series.contains(&f))),
+        "an 8px quad is not a series colour: {fills:?}"
+    );
+}
+
+/// The SankeyChart's node quads are `chart_1` to `chart_5`, one node each in
+/// `SANKEY_NODES`' order, and nothing else it paints is a filled quad: a
+/// node the showcase colours otherwise turns this red.
+#[gpui::test]
+fn the_sankey_charts_nodes_are_the_chart_palette(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    without_motion(&mut cx);
+    show(&mut cx, &showcase, Page::Charts);
+    hover(&mut cx, point(px(4.), px(4.)));
+    draw(&mut cx);
+    let bounds = bounds_of(&mut cx, CHARTS_SANKEY_CHART);
+    let (fills, palette) = cx.update(|window, cx| {
+        let t = Theme::global(cx);
+        let bounds = bounds.scale(window.scale_factor());
+        let fills: Vec<Option<gpui::Hsla>> = scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                !q.background.is_transparent()
+                    && q.bounds.left() >= bounds.left()
+                    && q.bounds.top() >= bounds.top()
+                    && q.bounds.right() <= bounds.right()
+                    && q.bounds.bottom() <= bounds.bottom()
+            })
+            .map(|q| q.background.as_solid())
+            .collect();
+        (
+            fills,
+            [t.chart_1, t.chart_2, t.chart_3, t.chart_4, t.chart_5],
+        )
+    });
+    assert_eq!(
+        fills.len(),
+        palette.len(),
+        "not one quad per node: {fills:?}"
+    );
+    for colour in palette {
+        assert!(
+            fills.contains(&Some(colour)),
+            "no node is {colour:?}: {fills:?}"
+        );
+    }
 }
 
 /// The ids and debug selectors of three of the Icons page's icons, one from
