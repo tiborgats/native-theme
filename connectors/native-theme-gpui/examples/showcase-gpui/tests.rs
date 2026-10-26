@@ -18193,6 +18193,53 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
     assert!(faults.is_empty(), "{faults:#?}");
 }
 
+/// The width the Basic page's column count holds for the Segmented control,
+/// `demo::segmented_width`, is the width gpui lays the control out at: each
+/// label's shaped width rounded up, as gpui's text element rounds a line's
+/// width up (gpui-pre 0.3.9 `src/elements/text.rs:772`), with its padding,
+/// the lines between the segments and the frame's two edges (round 2-3
+/// review, item 15(3)).
+#[cfg(feature = "widgets")]
+#[gpui::test]
+fn the_segmented_width_is_the_drawn_controls(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    let mut faults = Vec::new();
+    for preset in [
+        "macos-monterey",
+        "kde-breeze",
+        "catppuccin-mocha",
+        "windows-11",
+    ] {
+        for scale in [1.0, 2.25] {
+            use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
+            draw(&mut cx);
+            let drawn = read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).layout_drawn()
+            });
+            let Some(control) = drawn.get("basic.segmented.control").copied() else {
+                faults.push(format!("{preset} at {scale}: no segmented control"));
+                continue;
+            };
+            let counted = cx.update(|window, cx| {
+                native_value(cx, |n| {
+                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS)
+                })
+            });
+            let Some(counted) = counted else {
+                faults.push(format!("{preset} at {scale}: no native theme"));
+                continue;
+            };
+            let laid = control.size.width.as_f32();
+            if (laid - counted).abs() > 0.01 {
+                faults.push(format!(
+                    "{preset} at {scale}: the control is {laid} wide, the count holds {counted}"
+                ));
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
+}
+
 /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on
 /// one row, as the platforms' segmented controls do (NSSegmentedControl,
 /// libadwaita's `AdwToggleGroup`), where its column is narrower than they

@@ -2346,7 +2346,8 @@ pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 /// The width [`segmented`] lays its control over `labels` out at under `n`:
 /// each label as gpui's text system shapes it in `segmented_control.font`
 /// (its family, weight, style and scaled size, as [`text_in`] sets them),
-/// inside the segment's stated side padding ([`SEGMENT_PADDING`] on a side
+/// its width rounded up, as gpui's text element rounds a line's width up
+/// (gpui-pre 0.3.9 `src/elements/text.rs:772`), inside the segment's stated side padding ([`SEGMENT_PADDING`] on a side
 /// left unstated), the `separator_width` line before each segment after the
 /// first, and the frame's `border.line_width` at both ends. The Basic page's
 /// column count holds it (M9-166): the segments stay on one row.
@@ -2378,7 +2379,8 @@ pub(crate) fn segmented_width(window: &Window, n: &Native<'_>, labels: &[&str]) 
             window
                 .text_system()
                 .shape_line(SharedString::from(label.to_owned()), size, &[run], None)
-                .width,
+                .width
+                .ceil(),
         )
     };
     let segments: f32 = labels.iter().map(|label| shaped(label) + padding).sum();
