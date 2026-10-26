@@ -1,0 +1,1 @@
+wrote /Users/runner/work/native-theme/native-theme/os-probe-out/app-bundle/probe.toml

@@ -1,0 +1,3959 @@
+[os]
+platform = "macOS"
+version = "27.0.1"
+major = 27
+minor = 0
+patch = 1
+operatingSystemVersionString = "Version 27.0.1 (Build 26A434)"
+
+[probe]
+tool = "native-theme-os-probe"
+arch = "aarch64"
+runner_image = "macos27"
+runner_image_version = "20261023.0307.1"
+
+[macos.fonts.sizes]
+systemFontSize = 13.0
+smallSystemFontSize = 11.0
+labelFontSize = 10.0
+
+[macos.fonts.sizes.systemFontSizeForControlSize]
+mini = 9.0
+small = 11.0
+regular = 13.0
+large = 13.0
+
+[macos.fonts.named]
+arguments = "size 0.0 (the default size); the monospaced fonts at systemFontSize and NSFontWeightRegular"
+
+[macos.fonts.named.systemFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.named.boldSystemFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFontBold"
+pointSize = 13.0
+weightTrait = 0.4000000059604645
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.98876953125
+
+[macos.fonts.named.labelFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 10.0
+weightTrait = 0.0
+ascender = 9.66796875
+descender = -2.109375
+leading = 0.0
+capHeight = 7.0458984375
+xHeight = 5.263671875
+
+[macos.fonts.named.messageFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.named.menuFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.named.menuBarFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.named.toolTipsFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 11.0
+weightTrait = 0.0
+ascender = 10.634765625
+descender = -2.3203125
+leading = 0.0
+capHeight = 7.75048828125
+xHeight = 5.7900390625
+
+[macos.fonts.named.controlContentFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 12.0
+weightTrait = 0.0
+ascender = 11.6015625
+descender = -2.53125
+leading = 0.0
+capHeight = 8.455078125
+xHeight = 6.31640625
+
+[macos.fonts.named.titleBarFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFaceHeadline"
+pointSize = 13.0
+weightTrait = 0.4000000059604645
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.6894531250000009
+capHeight = 9.15966796875
+xHeight = 6.98876953125
+
+[macos.fonts.named.paletteFontOfSize]
+familyName = ".AppleSystemUIFont"
+fontName = ".AppleSystemUIFont"
+pointSize = 11.0
+weightTrait = 0.0
+ascender = 10.634765625
+descender = -2.3203125
+leading = 0.0
+capHeight = 7.75048828125
+xHeight = 5.7900390625
+
+[macos.fonts.named.userFontOfSize]
+familyName = "Helvetica"
+fontName = "Helvetica"
+pointSize = 12.0
+weightTrait = 0.0
+ascender = 9.240234375
+descender = -2.759765625
+leading = 0.0
+capHeight = 8.607421875
+xHeight = 6.275390625
+
+[macos.fonts.named.userFixedPitchFontOfSize]
+familyName = "Menlo"
+fontName = "Menlo-Regular"
+pointSize = 11.0
+weightTrait = 0.0
+ascender = 10.21044921875
+descender = -2.59423828125
+leading = 0.0
+capHeight = 8.01904296875
+xHeight = 6.015625
+
+[macos.fonts.named.monospacedSystemFontOfSize_weight]
+familyName = ".AppleSystemUIFontMonospaced"
+fontName = ".AppleSystemUIFontMonospaced-Regular"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.87451171875
+
+[macos.fonts.named.monospacedDigitSystemFontOfSize_weight]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.0
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.preferredFontForTextStyle.largeTitle]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 26.0
+weightTrait = 0.0
+ascender = 25.13671875
+descender = -5.484375
+leading = 1.3789062500000018
+capHeight = 18.3193359375
+xHeight = 13.2412109375
+
+[macos.fonts.preferredFontForTextStyle.title1]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 22.0
+weightTrait = 0.0
+ascender = 21.26953125
+descender = -4.640625
+leading = 0.08984375000000133
+capHeight = 15.5009765625
+xHeight = 11.365234375
+
+[macos.fonts.preferredFontForTextStyle.title2]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 17.0
+weightTrait = 0.0
+ascender = 16.435546875
+descender = -3.5859375
+leading = 1.978515625000001
+capHeight = 11.97802734375
+xHeight = 8.9482421875
+
+[macos.fonts.preferredFontForTextStyle.title3]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 15.0
+weightTrait = 0.0
+ascender = 14.501953125
+descender = -3.1640625
+leading = 2.333984374999999
+capHeight = 10.56884765625
+xHeight = 7.8955078125
+
+[macos.fonts.preferredFontForTextStyle.headline]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Bold"
+pointSize = 13.0
+weightTrait = 0.4000000059604645
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.6894531250000009
+capHeight = 9.15966796875
+xHeight = 6.98876953125
+
+[macos.fonts.preferredFontForTextStyle.subheadline]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 11.0
+weightTrait = 0.0
+ascender = 10.634765625
+descender = -2.3203125
+leading = 1.0449218749999998
+capHeight = 7.75048828125
+xHeight = 5.7900390625
+
+[macos.fonts.preferredFontForTextStyle.body]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 13.0
+weightTrait = 0.0
+ascender = 12.568359375
+descender = -2.7421875
+leading = 0.6894531250000009
+capHeight = 9.15966796875
+xHeight = 6.8427734375
+
+[macos.fonts.preferredFontForTextStyle.callout]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 12.0
+weightTrait = 0.0
+ascender = 11.6015625
+descender = -2.53125
+leading = 0.8671875
+capHeight = 8.455078125
+xHeight = 6.31640625
+
+[macos.fonts.preferredFontForTextStyle.footnote]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 10.0
+weightTrait = 0.0
+ascender = 9.66796875
+descender = -2.109375
+leading = 1.2226562500000004
+capHeight = 7.0458984375
+xHeight = 5.263671875
+
+[macos.fonts.preferredFontForTextStyle.caption1]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Regular"
+pointSize = 10.0
+weightTrait = 0.0
+ascender = 9.66796875
+descender = -2.109375
+leading = 1.2226562500000004
+capHeight = 7.0458984375
+xHeight = 5.263671875
+
+[macos.fonts.preferredFontForTextStyle.caption2]
+familyName = ".AppleSystemUIFont"
+fontName = ".SFNS-Medium"
+pointSize = 10.0
+weightTrait = 0.0
+ascender = 9.66796875
+descender = -2.109375
+leading = 1.2226562500000004
+capHeight = 7.0458984375
+xHeight = 5.302734375
+
+[macos.colors]
+format = "#rrggbbaa in sRGB (colorUsingColorSpace: sRGBColorSpace), resolved inside NSAppearance performAsCurrentDrawingAppearance:; each selector checked with respondsToSelector: first"
+
+[macos.colors.aqua]
+labelColor = "#000000d8"
+secondaryLabelColor = "#0000007f"
+tertiaryLabelColor = "#00000042"
+quaternaryLabelColor = "#00000019"
+quinaryLabelColor = "#0000000c"
+linkColor = "#0068daff"
+placeholderTextColor = "#0000007f"
+windowFrameTextColor = "#000000d8"
+selectedMenuItemTextColor = "#ffffffff"
+alternateSelectedControlTextColor = "#ffffffff"
+headerTextColor = "#000000d8"
+separatorColor = "#00000019"
+gridColor = "#e6e6e6ff"
+windowBackgroundColor = "#ffffffff"
+underPageBackgroundColor = "#f6f6f6ff"
+controlBackgroundColor = "#ffffffff"
+selectedContentBackgroundColor = "#0064e1ff"
+unemphasizedSelectedContentBackgroundColor = "#dcdcdcff"
+findHighlightColor = "#ffff00ff"
+textColor = "#000000ff"
+textBackgroundColor = "#ffffffff"
+textInsertionPointColor = "#007affff"
+selectedTextColor = "#000000ff"
+selectedTextBackgroundColor = "#b3d7ffff"
+unemphasizedSelectedTextBackgroundColor = "#dcdcdcff"
+unemphasizedSelectedTextColor = "#000000ff"
+controlColor = "#ffffffff"
+controlTextColor = "#000000d8"
+selectedControlColor = "#b3d7ffff"
+selectedControlTextColor = "#000000d8"
+disabledControlTextColor = "#0000003f"
+keyboardFocusIndicatorColor = "#0067f47f"
+scrubberTexturedBackgroundColor = """
+not convertible: NSColorType 1 (Pattern color: <NSImage 0x79ff198460 Size={4, 1} RepProvider=<NSImageArrayRepProvider: 0x79ff119480, reps:(
+    "NSCustomImageRep 0x79ff0e1bd0 Size={4, 1} ColorSpace=Generic RGB colorspace BPS=0 Pixels=0x0 Alpha=NO AppearanceName=(null)"
+)>>)"""
+systemRedColor = "#ff383cff"
+systemGreenColor = "#34c759ff"
+systemBlueColor = "#0088ffff"
+systemOrangeColor = "#ff8d28ff"
+systemYellowColor = "#ffcc00ff"
+systemBrownColor = "#ac7f5eff"
+systemPinkColor = "#ff2d55ff"
+systemPurpleColor = "#cb30e0ff"
+systemGrayColor = "#8e8e93ff"
+systemTealColor = "#00c3d0ff"
+systemIndigoColor = "#6155f5ff"
+systemMintColor = "#00c8b3ff"
+systemCyanColor = "#00c0e8ff"
+systemFillColor = "#00000019"
+secondarySystemFillColor = "#00000014"
+tertiarySystemFillColor = "#0000000c"
+quaternarySystemFillColor = "#00000007"
+quinarySystemFillColor = "#00000002"
+controlAccentColor = "#007affff"
+highlightColor = "#ffffffff"
+shadowColor = "#000000ff"
+controlHighlightColor = "#ffffffff"
+controlLightHighlightColor = "#ffffffff"
+controlShadowColor = "#00000044"
+controlDarkShadowColor = "#000000ff"
+scrollBarColor = "#aaaaaaff"
+knobColor = "#9999bbff"
+selectedKnobColor = "#666699ff"
+windowFrameColor = "#aaaaaaff"
+selectedMenuItemColor = "#4277f4ff"
+headerColor = "#aaaaaaff"
+secondarySelectedControlColor = "#dcdcdcff"
+alternateSelectedControlColor = "#0064e1ff"
+alternatingContentBackgroundColors = ["#ffffffff", "#f4f5f5ff"]
+controlAlternatingRowBackgroundColors = ["#ffffffff", "#f4f5f5ff"]
+NSTextView_insertionPointColor = "#007affff"
+
+[macos.colors.darkAqua]
+labelColor = "#ffffffd8"
+secondaryLabelColor = "#ffffff8c"
+tertiaryLabelColor = "#ffffff3f"
+quaternaryLabelColor = "#ffffff19"
+quinaryLabelColor = "#ffffff0c"
+linkColor = "#419cffff"
+placeholderTextColor = "#ffffff8c"
+windowFrameTextColor = "#ffffffd8"
+selectedMenuItemTextColor = "#ffffffff"
+alternateSelectedControlTextColor = "#ffffffff"
+headerTextColor = "#ffffffff"
+separatorColor = "#ffffff19"
+gridColor = "#1a1a1aff"
+windowBackgroundColor = "#1e1e1eff"
+underPageBackgroundColor = "#282828ff"
+controlBackgroundColor = "#1e1e1eff"
+selectedContentBackgroundColor = "#0059d1ff"
+unemphasizedSelectedContentBackgroundColor = "#464646ff"
+findHighlightColor = "#ffff00ff"
+textColor = "#ffffffff"
+textBackgroundColor = "#1e1e1eff"
+textInsertionPointColor = "#007affff"
+selectedTextColor = "#ffffffff"
+selectedTextBackgroundColor = "#3f638bff"
+unemphasizedSelectedTextBackgroundColor = "#464646ff"
+unemphasizedSelectedTextColor = "#ffffffff"
+controlColor = "#ffffff3f"
+controlTextColor = "#ffffffd8"
+selectedControlColor = "#3f638bff"
+selectedControlTextColor = "#ffffffd8"
+disabledControlTextColor = "#ffffff3f"
+keyboardFocusIndicatorColor = "#1aa9ff7f"
+scrubberTexturedBackgroundColor = """
+not convertible: NSColorType 1 (Pattern color: <NSImage 0x79ff198460 Size={4, 1} RepProvider=<NSImageArrayRepProvider: 0x79ff119480, reps:(
+    "NSCustomImageRep 0x79ff0e1bd0 Size={4, 1} ColorSpace=Generic RGB colorspace BPS=0 Pixels=0x0 Alpha=NO AppearanceName=(null)"
+)>>)"""
+systemRedColor = "#ff4245ff"
+systemGreenColor = "#30d158ff"
+systemBlueColor = "#0091ffff"
+systemOrangeColor = "#ff9230ff"
+systemYellowColor = "#ffd600ff"
+systemBrownColor = "#b78a66ff"
+systemPinkColor = "#ff375fff"
+systemPurpleColor = "#db34f2ff"
+systemGrayColor = "#98989dff"
+systemTealColor = "#00d2e0ff"
+systemIndigoColor = "#6d7cffff"
+systemMintColor = "#00dac3ff"
+systemCyanColor = "#3cd3feff"
+systemFillColor = "#ffffff19"
+secondarySystemFillColor = "#ffffff14"
+tertiarySystemFillColor = "#ffffff0c"
+quaternarySystemFillColor = "#ffffff07"
+quinarySystemFillColor = "#ffffff02"
+controlAccentColor = "#007affff"
+highlightColor = "#b4b4b4ff"
+shadowColor = "#000000ff"
+controlHighlightColor = "#ffffff19"
+controlLightHighlightColor = "#ffffff19"
+controlShadowColor = "#00000044"
+controlDarkShadowColor = "#000000ff"
+scrollBarColor = "#aaaaaaff"
+knobColor = "#9999bbff"
+selectedKnobColor = "#666699ff"
+windowFrameColor = "#aaaaaaff"
+selectedMenuItemColor = "#4277f4ff"
+headerColor = "#ffffffff"
+secondarySelectedControlColor = "#464646ff"
+alternateSelectedControlColor = "#0059d1ff"
+alternatingContentBackgroundColors = ["#1e1e1eff", "#ffffff0c"]
+controlAlternatingRowBackgroundColors = ["#1e1e1eff", "#ffffff0c"]
+NSTextView_insertionPointColor = "#007affff"
+
+[macos.environment]
+activationPolicy_prohibited_set = false
+effectiveAppearance = "NSAppearanceNameAqua"
+
+[macos.environment.mainScreen]
+backingScaleFactor = 1.0
+frame_xywh = [0.0, 0.0, 1024.0, 768.0]
+
+[macos.environment.accessibility]
+accessibilityDisplayShouldIncreaseContrast = false
+accessibilityDisplayShouldReduceTransparency = false
+accessibilityDisplayShouldReduceMotion = true
+accessibilityDisplayShouldDifferentiateWithoutColor = false
+
+[macos.metrics.NSScroller]
+preferredScrollerStyle = "overlay"
+
+[macos.metrics.NSScroller.scrollerWidthForControlSize_scrollerStyle.mini]
+legacy = 13.0
+overlay = 15.0
+
+[macos.metrics.NSScroller.scrollerWidthForControlSize_scrollerStyle.small]
+legacy = 13.0
+overlay = 15.0
+
+[macos.metrics.NSScroller.scrollerWidthForControlSize_scrollerStyle.regular]
+legacy = 17.0
+overlay = 17.0
+
+[macos.metrics.NSScroller.scrollerWidthForControlSize_scrollerStyle.large]
+legacy = 17.0
+overlay = 17.0
+
+[macos.metrics.NSSplitView]
+default_dividerStyle = "thick"
+default_dividerThickness = 9.0
+
+[macos.metrics.NSSplitView.dividerThickness]
+thick = 9.0
+thin = 1.0
+paneSplitter = 10.0
+
+[macos.metrics.NSTableView]
+rowHeight = 24.0
+intercellSpacing_wh = [17.0, 0.0]
+style = "automatic"
+effectiveStyle = "inset"
+
+[macos.metrics.NSTableView.header]
+method = "a new NSTableView with one 120 pt NSTableColumn, made the document view of a new 400 x 300 pt NSScrollView whose appearance is set per run, all inside NSAppearance performAsCurrentDrawingAppearance:; setStyle: before setDocumentView: (none for default); windowless: the scroll view in no window; inWindow: the scroll view added to the content view of an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run, removed after the reading; then tile on the scroll view and the table; heights in points"
+
+[macos.metrics.NSTableView.header.aqua.default.windowless]
+style = "automatic"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.aqua.default.inWindow]
+style = "automatic"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.aqua.inset.windowless]
+style = "inset"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.aqua.inset.inWindow]
+style = "inset"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.aqua.fullWidth.windowless]
+style = "fullWidth"
+effectiveStyle = "fullWidth"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [0.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.aqua.fullWidth.inWindow]
+style = "fullWidth"
+effectiveStyle = "fullWidth"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [0.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.default.windowless]
+style = "automatic"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.default.inWindow]
+style = "automatic"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.inset.windowless]
+style = "inset"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.inset.inWindow]
+style = "inset"
+effectiveStyle = "inset"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [10.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.fullWidth.windowless]
+style = "fullWidth"
+effectiveStyle = "fullWidth"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [0.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSTableView.header.darkAqua.fullWidth.inWindow]
+style = "fullWidth"
+effectiveStyle = "fullWidth"
+headerView_height = 28.0
+headerView_frame_xywh = [0.0, 0.0, 400.0, 28.0]
+headerRectOfColumn_0_xywh = [0.0, 0.0, 132.0, 28.0]
+
+[macos.metrics.NSOutlineView]
+indentationPerLevel = 13.0
+rowHeight = 24.0
+
+[macos.metrics.NSMenu]
+numberOfItems = 3
+size_wh = [108.0, 82.0]
+menuBarHeight = 0.0
+item_height = "not probed: NSMenuItem has no height or frame outside a displayed menu; size_wh is the three-item menu's"
+
+[macos.controls]
+method = "each control alone in an offscreen borderless NSWindow (buffered, never ordered front) whose appearance is set per run; NSControls get setControlSize: and the systemFontOfSize: of systemFontSizeForControlSize:; measured before and after sizeToFit; controls that stretch are widened to 160 pt after sizeToFit when narrower; cell rects are for the control's bounds after that"
+keys = "_wh = [width, height]; _xywh = [x, y, width, height]; _tlbr = [top, left, bottom, right]; all in points"
+method_disabled = "at the regular size the push button, checkbox, radio, switch and slider are also rendered disabled (setEnabled: NO), each at its enabled render's size: render_disabled (<kind>-regular-disabled, or -disabled-off for a control with a state) and render_disabled_on (-disabled-on)"
+extraLarge = "not probed: NSControlSizeExtraLarge is outside the review's sizes (mini, small, regular, large)"
+window_backingScaleFactor = 1.0
+
+[macos.controls.setup]
+push_button = 'NSButton, buttonType momentaryPushIn, bezelStyle push (rounded), title "Button"'
+checkbox = 'NSButton, buttonType switch, title "Checkbox"'
+radio = 'NSButton, buttonType radio, title "Radio"'
+switch = "NSSwitch"
+pop_up_button = 'NSPopUpButton, items "Option", "Other"'
+combo_box = 'NSComboBox, stringValue "Option"'
+text_field = 'NSTextField, bezeled, editable, stringValue "Text"'
+search_field = "NSSearchField, empty"
+segmented_control = 'NSSegmentedControl, 2 segments "One" "Two", segment 0 selected'
+slider = "NSSlider, horizontal, 0..100 at 50, no tick marks"
+slider_ticks = "NSSlider, horizontal, 0..100 at 50, 5 tick marks"
+progress_bar = "NSProgressIndicator, style bar, determinate, 0..100 at 50"
+progress_spinning = "NSProgressIndicator, style spinning"
+stepper = "NSStepper"
+
+[macos.controls.aqua.mini.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [46.0, 16.0]
+fittingSize_wh = [46.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 46.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 46.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 46.0, 16.0]
+cellSize_wh = [46.0, 16.0]
+cellSizeForBounds_wh = [46.0, 16.0]
+drawingRectForBounds_xywh = [8.0, 1.0, 30.0, 16.0]
+titleRectForBounds_xywh = [8.0, 3.0, 30.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.mini.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [60.0, 12.0]
+fittingSize_wh = [60.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 60.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [60.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 60.0, 12.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 60.0, 12.0]
+cellSize_wh = [60.0, 12.0]
+cellSizeForBounds_wh = [60.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 60.0, 12.0]
+titleRectForBounds_xywh = [16.0, 0.0, 44.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+
+[macos.controls.aqua.mini.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [41.0, 12.0]
+fittingSize_wh = [41.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 41.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [41.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 41.0, 12.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 41.0, 12.0]
+cellSize_wh = [41.0, 12.0]
+cellSizeForBounds_wh = [41.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 41.0, 12.0]
+titleRectForBounds_xywh = [16.0, 0.0, 25.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+
+[macos.controls.aqua.mini.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [36.0, 16.0]
+fittingSize_wh = [36.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 36.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [36.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 36.0, 16.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.aqua.mini.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [62.0, 16.0]
+fittingSize_wh = [62.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 62.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [62.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 62.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 62.0, 16.0]
+cellSize_wh = [62.0, 16.0]
+cellSizeForBounds_wh = [62.0, 16.0]
+drawingRectForBounds_xywh = [8.0, 0.0, 31.0, 16.0]
+titleRectForBounds_xywh = [8.0, 3.0, 30.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.mini.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 58.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [58.0, 16.0]
+cellSizeForBounds_wh = [58.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 11.0]
+titleRectForBounds_xywh = [4.0, 3.0, 136.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+
+[macos.controls.aqua.mini.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 19.0]
+fittingSize_wh = [0.0, 19.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 31.0, 19.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 19.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 19.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 19.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 19.0]
+cellSize_wh = [31.0, 19.0]
+cellSizeForBounds_wh = [31.0, 19.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 11.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 19.0]
+
+[macos.controls.aqua.mini.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 55.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [55.0, 16.0]
+cellSizeForBounds_wh = [55.0, 16.0]
+drawingRectForBounds_xywh = [14.0, 2.0, 140.0, 12.0]
+titleRectForBounds_xywh = [14.0, 2.0, 140.0, 12.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+
+[macos.controls.aqua.mini.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [68.0, 16.0]
+fittingSize_wh = [68.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 68.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [68.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 68.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 68.0, 16.0]
+cellSize_wh = [68.0, 16.0]
+cellSizeForBounds_wh = [68.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+
+[macos.controls.aqua.mini.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 16.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+knobThickness = 16.0
+
+[macos.controls.aqua.mini.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 12.0]
+cellSize_wh = [40000.0, 12.0]
+cellSizeForBounds_wh = [160.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+knobThickness = 16.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 12.0]
+barRectFlipped_xywh = [0.0, 4.0, 160.0, 4.0]
+knobRectFlipped_xywh = [72.0, 0.0, 16.0, 12.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.aqua.mini.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 8.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 8.0
+
+[macos.controls.aqua.mini.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 8.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 6.0, 160.0, 4.0]
+knobRectFlipped_xywh = [76.0, 0.0, 8.0, 16.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 7.0, 2.0, 2.0]
+
+[macos.controls.aqua.mini.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [10.0, 10.0]
+fittingSize_wh = [10.0, 10.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 10.0, 10.0]
+intrinsicContentSize_after_sizeToFit_wh = [10.0, 10.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 10.0, 10.0]
+isFlipped = true
+
+[macos.controls.aqua.mini.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [13.0, 16.0]
+fittingSize_wh = [13.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 13.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [13.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 13.0, 16.0]
+isFlipped = false
+
+[macos.controls.aqua.mini.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 13.0, 16.0]
+cellSize_wh = [13.0, 16.0]
+cellSizeForBounds_wh = [13.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+
+[macos.controls.aqua.small.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [55.0, 20.0]
+fittingSize_wh = [55.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 55.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 55.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.small.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 55.0, 20.0]
+cellSize_wh = [55.0, 20.0]
+cellSizeForBounds_wh = [55.0, 20.0]
+drawingRectForBounds_xywh = [10.0, 0.0, 35.0, 20.0]
+titleRectForBounds_xywh = [10.0, 3.0, 35.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.small.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [71.0, 14.0]
+fittingSize_wh = [71.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 71.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [71.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 71.0, 14.0]
+isFlipped = true
+
+[macos.controls.aqua.small.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 71.0, 14.0]
+cellSize_wh = [71.0, 14.0]
+cellSizeForBounds_wh = [71.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 71.0, 14.0]
+titleRectForBounds_xywh = [18.0, 0.0, 53.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+
+[macos.controls.aqua.small.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [48.0, 14.0]
+fittingSize_wh = [48.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 48.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [48.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 48.0, 14.0]
+isFlipped = true
+
+[macos.controls.aqua.small.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 48.0, 14.0]
+cellSize_wh = [48.0, 14.0]
+cellSizeForBounds_wh = [48.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 48.0, 14.0]
+titleRectForBounds_xywh = [18.0, 0.0, 30.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+
+[macos.controls.aqua.small.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [44.0, 20.0]
+fittingSize_wh = [44.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 44.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [44.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 44.0, 20.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.aqua.small.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [76.0, 20.0]
+fittingSize_wh = [76.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 76.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [76.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 76.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.small.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 76.0, 20.0]
+cellSize_wh = [76.0, 20.0]
+cellSizeForBounds_wh = [76.0, 20.0]
+drawingRectForBounds_xywh = [10.0, 0.0, 37.0, 20.0]
+titleRectForBounds_xywh = [10.0, 3.0, 36.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.small.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 68.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.small.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [68.0, 20.0]
+cellSizeForBounds_wh = [68.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+titleRectForBounds_xywh = [4.0, 3.0, 132.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+
+[macos.controls.aqua.small.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 22.0]
+fittingSize_wh = [0.0, 22.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 34.0, 22.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 22.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 22.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 22.0]
+isFlipped = true
+
+[macos.controls.aqua.small.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 22.0]
+cellSize_wh = [34.0, 22.0]
+cellSizeForBounds_wh = [34.0, 22.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 14.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 22.0]
+
+[macos.controls.aqua.small.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 63.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.small.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [63.0, 20.0]
+cellSizeForBounds_wh = [63.0, 20.0]
+drawingRectForBounds_xywh = [16.0, 3.0, 138.0, 14.0]
+titleRectForBounds_xywh = [16.0, 3.0, 138.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+
+[macos.controls.aqua.small.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [84.0, 20.0]
+fittingSize_wh = [84.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 84.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [84.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 84.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.small.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 84.0, 20.0]
+cellSize_wh = [84.0, 20.0]
+cellSizeForBounds_wh = [84.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+
+[macos.controls.aqua.small.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 14.0]
+fittingSize_wh = [0.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 18.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 14.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 14.0]
+isFlipped = true
+knobThickness = 18.0
+
+[macos.controls.aqua.small.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 14.0]
+cellSize_wh = [40000.0, 14.0]
+cellSizeForBounds_wh = [160.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+knobThickness = 18.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 14.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 4.0]
+knobRectFlipped_xywh = [71.0, 0.0, 18.0, 14.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.aqua.small.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 18.0]
+fittingSize_wh = [0.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 10.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 18.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 18.0]
+isFlipped = true
+knobThickness = 10.0
+
+[macos.controls.aqua.small.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 18.0]
+cellSize_wh = [40000.0, 18.0]
+cellSizeForBounds_wh = [160.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+knobThickness = 10.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 18.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 4.0]
+knobRectFlipped_xywh = [75.0, 0.0, 10.0, 18.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 8.0, 2.0, 2.0]
+
+[macos.controls.aqua.small.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+
+[macos.controls.aqua.small.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [16.0, 16.0]
+fittingSize_wh = [16.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 16.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [16.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 16.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.small.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [17.0, 20.0]
+fittingSize_wh = [17.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 17.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [17.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 17.0, 20.0]
+isFlipped = false
+
+[macos.controls.aqua.small.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 17.0, 20.0]
+cellSize_wh = [17.0, 20.0]
+cellSizeForBounds_wh = [17.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+
+[macos.controls.aqua.regular.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [65.0, 24.0]
+fittingSize_wh = [65.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 65.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 65.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 65.0, 24.0]
+cellSize_wh = [65.0, 24.0]
+cellSizeForBounds_wh = [65.0, 24.0]
+drawingRectForBounds_xywh = [12.0, 0.0, 41.0, 24.0]
+titleRectForBounds_xywh = [12.0, 4.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.regular.push_button.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [81.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.push_button.render.backing_scale]
+file = "renders/aqua/push_button-regular.png"
+pixels_wh = [81, 40]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.aqua.regular.push_button.render.scale_2]
+file = "renders/aqua/push_button-regular@2x.png"
+pixels_wh = [162, 80]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.aqua.regular.push_button.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [81.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.push_button.render_disabled.backing_scale]
+file = "renders/aqua/push_button-regular-disabled.png"
+pixels_wh = [81, 40]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.aqua.regular.push_button.render_disabled.scale_2]
+file = "renders/aqua/push_button-regular-disabled@2x.png"
+pixels_wh = [162, 80]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.aqua.regular.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [83.0, 16.0]
+fittingSize_wh = [83.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 83.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [83.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 83.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 83.0, 16.0]
+cellSize_wh = [83.0, 16.0]
+cellSizeForBounds_wh = [83.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 83.0, 16.0]
+titleRectForBounds_xywh = [22.0, 0.0, 61.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+
+[macos.controls.aqua.regular.checkbox.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.checkbox.render.backing_scale]
+file = "renders/aqua/checkbox-regular-off.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render.scale_2]
+file = "renders/aqua/checkbox-regular-off@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.checkbox.render_on.backing_scale]
+file = "renders/aqua/checkbox-regular-on.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_on.scale_2]
+file = "renders/aqua/checkbox-regular-on@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.checkbox.render_disabled.backing_scale]
+file = "renders/aqua/checkbox-regular-disabled-off.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_disabled.scale_2]
+file = "renders/aqua/checkbox-regular-disabled-off@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.checkbox.render_disabled_on.backing_scale]
+file = "renders/aqua/checkbox-regular-disabled-on.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.checkbox.render_disabled_on.scale_2]
+file = "renders/aqua/checkbox-regular-disabled-on@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.aqua.regular.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [57.0, 16.0]
+fittingSize_wh = [57.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 57.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [57.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 57.0, 16.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 57.0, 16.0]
+cellSize_wh = [57.0, 16.0]
+cellSizeForBounds_wh = [57.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 57.0, 16.0]
+titleRectForBounds_xywh = [22.0, 0.0, 35.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+
+[macos.controls.aqua.regular.radio.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.radio.render.backing_scale]
+file = "renders/aqua/radio-regular-off.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render.scale_2]
+file = "renders/aqua/radio-regular-off@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.radio.render_on.backing_scale]
+file = "renders/aqua/radio-regular-on.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_on.scale_2]
+file = "renders/aqua/radio-regular-on@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.radio.render_disabled.backing_scale]
+file = "renders/aqua/radio-regular-disabled-off.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_disabled.scale_2]
+file = "renders/aqua/radio-regular-disabled-off@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.radio.render_disabled_on.backing_scale]
+file = "renders/aqua/radio-regular-disabled-on.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.radio.render_disabled_on.scale_2]
+file = "renders/aqua/radio-regular-disabled-on@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.aqua.regular.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [54.0, 24.0]
+fittingSize_wh = [54.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 54.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [54.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 54.0, 24.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.aqua.regular.switch.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.switch.render.backing_scale]
+file = "renders/aqua/switch-regular-off.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render.scale_2]
+file = "renders/aqua/switch-regular-off@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.switch.render_on.backing_scale]
+file = "renders/aqua/switch-regular-on.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_on.scale_2]
+file = "renders/aqua/switch-regular-on@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.switch.render_disabled.backing_scale]
+file = "renders/aqua/switch-regular-disabled-off.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_disabled.scale_2]
+file = "renders/aqua/switch-regular-disabled-off@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.switch.render_disabled_on.backing_scale]
+file = "renders/aqua/switch-regular-disabled-on.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.switch.render_disabled_on.scale_2]
+file = "renders/aqua/switch-regular-disabled-on@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.aqua.regular.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [89.0, 24.0]
+fittingSize_wh = [89.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 89.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [89.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 89.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 89.0, 24.0]
+cellSize_wh = [89.0, 24.0]
+cellSizeForBounds_wh = [89.0, 24.0]
+drawingRectForBounds_xywh = [12.0, 0.0, 42.0, 24.0]
+titleRectForBounds_xywh = [12.0, 4.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.regular.pop_up_button.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [105.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.pop_up_button.render.backing_scale]
+file = "renders/aqua/pop_up_button-regular.png"
+pixels_wh = [105, 40]
+rep_size_wh = [105.0, 40.0]
+
+[macos.controls.aqua.regular.pop_up_button.render.scale_2]
+file = "renders/aqua/pop_up_button-regular@2x.png"
+pixels_wh = [210, 80]
+rep_size_wh = [105.0, 40.0]
+
+[macos.controls.aqua.regular.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 83.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [83.0, 24.0]
+cellSizeForBounds_wh = [83.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 122.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.aqua.regular.combo_box.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.combo_box.render.backing_scale]
+file = "renders/aqua/combo_box-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.combo_box.render.scale_2]
+file = "renders/aqua/combo_box-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 38.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [38.0, 24.0]
+cellSizeForBounds_wh = [38.0, 24.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.aqua.regular.text_field.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.text_field.render.backing_scale]
+file = "renders/aqua/text_field-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.text_field.render.scale_2]
+file = "renders/aqua/text_field-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 75.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [75.0, 24.0]
+cellSizeForBounds_wh = [75.0, 24.0]
+drawingRectForBounds_xywh = [22.0, 4.0, 132.0, 16.0]
+titleRectForBounds_xywh = [22.0, 4.0, 132.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.aqua.regular.search_field.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.search_field.render.backing_scale]
+file = "renders/aqua/search_field-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.search_field.render.scale_2]
+file = "renders/aqua/search_field-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.aqua.regular.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [98.0, 24.0]
+fittingSize_wh = [98.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 98.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [98.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 98.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 98.0, 24.0]
+cellSize_wh = [98.0, 24.0]
+cellSizeForBounds_wh = [98.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+titleRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+imageRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+
+[macos.controls.aqua.regular.segmented_control.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [114.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.segmented_control.render.backing_scale]
+file = "renders/aqua/segmented_control-regular.png"
+pixels_wh = [114, 40]
+rep_size_wh = [114.0, 40.0]
+
+[macos.controls.aqua.regular.segmented_control.render.scale_2]
+file = "renders/aqua/segmented_control-regular@2x.png"
+pixels_wh = [228, 80]
+rep_size_wh = [114.0, 40.0]
+
+[macos.controls.aqua.regular.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 20.0
+
+[macos.controls.aqua.regular.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 20.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 6.0]
+knobRectFlipped_xywh = [70.0, 0.0, 20.0, 16.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.aqua.regular.slider.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.slider.render.backing_scale]
+file = "renders/aqua/slider-regular.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.slider.render.scale_2]
+file = "renders/aqua/slider-regular@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.slider.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.slider.render_disabled.backing_scale]
+file = "renders/aqua/slider-regular-disabled.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.slider.render_disabled.scale_2]
+file = "renders/aqua/slider-regular-disabled@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 20.0
+
+[macos.controls.aqua.regular.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 20.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 6.0]
+knobRectFlipped_xywh = [70.0, 0.0, 20.0, 16.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 7.0, 2.0, 2.0]
+
+[macos.controls.aqua.regular.slider_ticks.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.slider_ticks.render.backing_scale]
+file = "renders/aqua/slider_ticks-regular.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.slider_ticks.render.scale_2]
+file = "renders/aqua/slider_ticks-regular@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.aqua.regular.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.progress_bar.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 36.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.progress_bar.render.backing_scale]
+file = "renders/aqua/progress_bar-regular.png"
+pixels_wh = [176, 36]
+rep_size_wh = [176.0, 36.0]
+
+[macos.controls.aqua.regular.progress_bar.render.scale_2]
+file = "renders/aqua/progress_bar-regular@2x.png"
+pixels_wh = [352, 72]
+rep_size_wh = [176.0, 36.0]
+
+[macos.controls.aqua.regular.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [32.0, 32.0]
+fittingSize_wh = [32.0, 32.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 32.0, 32.0]
+intrinsicContentSize_after_sizeToFit_wh = [32.0, 32.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 32.0, 32.0]
+isFlipped = true
+
+[macos.controls.aqua.regular.progress_spinning.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [48.0, 48.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.progress_spinning.render.backing_scale]
+file = "renders/aqua/progress_spinning-regular.png"
+pixels_wh = [48, 48]
+rep_size_wh = [48.0, 48.0]
+
+[macos.controls.aqua.regular.progress_spinning.render.scale_2]
+file = "renders/aqua/progress_spinning-regular@2x.png"
+pixels_wh = [96, 96]
+rep_size_wh = [48.0, 48.0]
+
+[macos.controls.aqua.regular.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [20.0, 24.0]
+fittingSize_wh = [20.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [20.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 20.0, 24.0]
+isFlipped = false
+
+[macos.controls.aqua.regular.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 20.0, 24.0]
+cellSize_wh = [20.0, 24.0]
+cellSizeForBounds_wh = [20.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+titleRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+imageRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+
+[macos.controls.aqua.regular.stepper.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [36.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.aqua.regular.stepper.render.backing_scale]
+file = "renders/aqua/stepper-regular.png"
+pixels_wh = [36, 40]
+rep_size_wh = [36.0, 40.0]
+
+[macos.controls.aqua.regular.stepper.render.scale_2]
+file = "renders/aqua/stepper-regular@2x.png"
+pixels_wh = [72, 80]
+rep_size_wh = [36.0, 40.0]
+
+[macos.controls.aqua.large.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [69.0, 28.0]
+fittingSize_wh = [69.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 69.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 69.0, 28.0]
+isFlipped = true
+
+[macos.controls.aqua.large.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 69.0, 28.0]
+cellSize_wh = [69.0, 28.0]
+cellSizeForBounds_wh = [69.0, 28.0]
+drawingRectForBounds_xywh = [14.0, 0.0, 41.0, 28.0]
+titleRectForBounds_xywh = [14.0, 6.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.large.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [85.0, 18.0]
+fittingSize_wh = [85.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 85.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [85.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 85.0, 18.0]
+isFlipped = true
+
+[macos.controls.aqua.large.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 85.0, 18.0]
+cellSize_wh = [85.0, 18.0]
+cellSizeForBounds_wh = [85.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 85.0, 18.0]
+titleRectForBounds_xywh = [24.0, 1.0, 61.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+
+[macos.controls.aqua.large.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [59.0, 18.0]
+fittingSize_wh = [59.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 59.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [59.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 59.0, 18.0]
+isFlipped = true
+
+[macos.controls.aqua.large.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 59.0, 18.0]
+cellSize_wh = [59.0, 18.0]
+cellSizeForBounds_wh = [59.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 59.0, 18.0]
+titleRectForBounds_xywh = [24.0, 1.0, 35.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+
+[macos.controls.aqua.large.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [64.0, 28.0]
+fittingSize_wh = [64.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 64.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [64.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 64.0, 28.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.aqua.large.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [97.0, 28.0]
+fittingSize_wh = [97.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 97.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [97.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 97.0, 28.0]
+isFlipped = true
+
+[macos.controls.aqua.large.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 97.0, 28.0]
+cellSize_wh = [97.0, 28.0]
+cellSizeForBounds_wh = [97.0, 28.0]
+drawingRectForBounds_xywh = [14.0, 0.0, 42.0, 28.0]
+titleRectForBounds_xywh = [14.0, 6.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.aqua.large.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 28.0]
+fittingSize_wh = [0.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 82.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 28.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 28.0]
+isFlipped = true
+
+[macos.controls.aqua.large.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 28.0]
+cellSize_wh = [82.0, 28.0]
+cellSizeForBounds_wh = [82.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [4.0, 6.0, 123.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 28.0]
+
+[macos.controls.aqua.large.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 38.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.aqua.large.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [38.0, 24.0]
+cellSizeForBounds_wh = [38.0, 24.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.aqua.large.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 28.0]
+fittingSize_wh = [0.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 79.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 28.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 28.0]
+isFlipped = true
+
+[macos.controls.aqua.large.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 28.0]
+cellSize_wh = [79.0, 28.0]
+cellSizeForBounds_wh = [79.0, 28.0]
+drawingRectForBounds_xywh = [26.0, 6.0, 128.0, 20.0]
+titleRectForBounds_xywh = [26.0, 6.0, 128.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 28.0]
+
+[macos.controls.aqua.large.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [106.0, 28.0]
+fittingSize_wh = [106.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 106.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [106.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 106.0, 28.0]
+isFlipped = true
+
+[macos.controls.aqua.large.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 106.0, 28.0]
+cellSize_wh = [106.0, 28.0]
+cellSizeForBounds_wh = [106.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+titleRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+imageRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+
+[macos.controls.aqua.large.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 24.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+knobThickness = 24.0
+
+[macos.controls.aqua.large.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [40000.0, 20.0]
+cellSizeForBounds_wh = [160.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+knobThickness = 24.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 20.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 6.0]
+knobRectFlipped_xywh = [68.0, 0.0, 24.0, 20.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.aqua.large.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 24.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+knobThickness = 24.0
+
+[macos.controls.aqua.large.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [40000.0, 20.0]
+cellSizeForBounds_wh = [160.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+knobThickness = 24.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 20.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 6.0]
+knobRectFlipped_xywh = [68.0, 0.0, 24.0, 20.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 9.0, 2.0, 2.0]
+
+[macos.controls.aqua.large.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.aqua.large.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [32.0, 32.0]
+fittingSize_wh = [32.0, 32.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 32.0, 32.0]
+intrinsicContentSize_after_sizeToFit_wh = [32.0, 32.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 32.0, 32.0]
+isFlipped = true
+
+[macos.controls.aqua.large.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [23.0, 28.0]
+fittingSize_wh = [23.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 23.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [23.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 23.0, 28.0]
+isFlipped = false
+
+[macos.controls.aqua.large.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 23.0, 28.0]
+cellSize_wh = [23.0, 28.0]
+cellSizeForBounds_wh = [23.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+titleRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+imageRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+
+[macos.controls.darkAqua.mini.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [46.0, 16.0]
+fittingSize_wh = [46.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 46.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [46.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 46.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 46.0, 16.0]
+cellSize_wh = [46.0, 16.0]
+cellSizeForBounds_wh = [46.0, 16.0]
+drawingRectForBounds_xywh = [8.0, 1.0, 30.0, 16.0]
+titleRectForBounds_xywh = [8.0, 3.0, 30.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.mini.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [60.0, 12.0]
+fittingSize_wh = [60.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 60.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [60.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 60.0, 12.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 60.0, 12.0]
+cellSize_wh = [60.0, 12.0]
+cellSizeForBounds_wh = [60.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 60.0, 12.0]
+titleRectForBounds_xywh = [16.0, 0.0, 44.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+
+[macos.controls.darkAqua.mini.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [41.0, 12.0]
+fittingSize_wh = [41.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 41.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [41.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 41.0, 12.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 41.0, 12.0]
+cellSize_wh = [41.0, 12.0]
+cellSizeForBounds_wh = [41.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 41.0, 12.0]
+titleRectForBounds_xywh = [16.0, 0.0, 25.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 12.0, 12.0]
+
+[macos.controls.darkAqua.mini.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [36.0, 16.0]
+fittingSize_wh = [36.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 36.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [36.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 36.0, 16.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.darkAqua.mini.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [62.0, 16.0]
+fittingSize_wh = [62.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 62.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [62.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 62.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 62.0, 16.0]
+cellSize_wh = [62.0, 16.0]
+cellSizeForBounds_wh = [62.0, 16.0]
+drawingRectForBounds_xywh = [8.0, 0.0, 31.0, 16.0]
+titleRectForBounds_xywh = [8.0, 3.0, 30.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.mini.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 58.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [58.0, 16.0]
+cellSizeForBounds_wh = [58.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 11.0]
+titleRectForBounds_xywh = [4.0, 3.0, 136.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+
+[macos.controls.darkAqua.mini.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 19.0]
+fittingSize_wh = [0.0, 19.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 31.0, 19.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 19.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 19.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 19.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 19.0]
+cellSize_wh = [31.0, 19.0]
+cellSizeForBounds_wh = [31.0, 19.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 11.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 11.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 19.0]
+
+[macos.controls.darkAqua.mini.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 55.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [55.0, 16.0]
+cellSizeForBounds_wh = [55.0, 16.0]
+drawingRectForBounds_xywh = [14.0, 2.0, 140.0, 12.0]
+titleRectForBounds_xywh = [14.0, 2.0, 140.0, 12.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+
+[macos.controls.darkAqua.mini.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [68.0, 16.0]
+fittingSize_wh = [68.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 68.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [68.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 68.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 68.0, 16.0]
+cellSize_wh = [68.0, 16.0]
+cellSizeForBounds_wh = [68.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 68.0, 16.0]
+
+[macos.controls.darkAqua.mini.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 16.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+knobThickness = 16.0
+
+[macos.controls.darkAqua.mini.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 12.0]
+cellSize_wh = [40000.0, 12.0]
+cellSizeForBounds_wh = [160.0, 12.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 12.0]
+knobThickness = 16.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 12.0]
+barRectFlipped_xywh = [0.0, 4.0, 160.0, 4.0]
+knobRectFlipped_xywh = [72.0, 0.0, 16.0, 12.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.darkAqua.mini.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 8.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 8.0
+
+[macos.controls.darkAqua.mini.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 8.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 6.0, 160.0, 4.0]
+knobRectFlipped_xywh = [76.0, 0.0, 8.0, 16.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 7.0, 2.0, 2.0]
+
+[macos.controls.darkAqua.mini.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [10.0, 10.0]
+fittingSize_wh = [10.0, 10.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 10.0, 10.0]
+intrinsicContentSize_after_sizeToFit_wh = [10.0, 10.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 10.0, 10.0]
+isFlipped = true
+
+[macos.controls.darkAqua.mini.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [13.0, 16.0]
+fittingSize_wh = [13.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 13.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [13.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 13.0, 16.0]
+isFlipped = false
+
+[macos.controls.darkAqua.mini.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 13.0, 16.0]
+cellSize_wh = [13.0, 16.0]
+cellSizeForBounds_wh = [13.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 13.0, 16.0]
+
+[macos.controls.darkAqua.small.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [55.0, 20.0]
+fittingSize_wh = [55.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 55.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [55.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 55.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 55.0, 20.0]
+cellSize_wh = [55.0, 20.0]
+cellSizeForBounds_wh = [55.0, 20.0]
+drawingRectForBounds_xywh = [10.0, 0.0, 35.0, 20.0]
+titleRectForBounds_xywh = [10.0, 3.0, 35.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.small.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [71.0, 14.0]
+fittingSize_wh = [71.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 71.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [71.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 71.0, 14.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 71.0, 14.0]
+cellSize_wh = [71.0, 14.0]
+cellSizeForBounds_wh = [71.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 71.0, 14.0]
+titleRectForBounds_xywh = [18.0, 0.0, 53.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+
+[macos.controls.darkAqua.small.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [48.0, 14.0]
+fittingSize_wh = [48.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 48.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [48.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 48.0, 14.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 48.0, 14.0]
+cellSize_wh = [48.0, 14.0]
+cellSizeForBounds_wh = [48.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 48.0, 14.0]
+titleRectForBounds_xywh = [18.0, 0.0, 30.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 14.0, 14.0]
+
+[macos.controls.darkAqua.small.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [44.0, 20.0]
+fittingSize_wh = [44.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 44.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [44.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 44.0, 20.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.darkAqua.small.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [76.0, 20.0]
+fittingSize_wh = [76.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 76.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [76.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 76.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 76.0, 20.0]
+cellSize_wh = [76.0, 20.0]
+cellSizeForBounds_wh = [76.0, 20.0]
+drawingRectForBounds_xywh = [10.0, 0.0, 37.0, 20.0]
+titleRectForBounds_xywh = [10.0, 3.0, 36.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.small.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 68.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [68.0, 20.0]
+cellSizeForBounds_wh = [68.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+titleRectForBounds_xywh = [4.0, 3.0, 132.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+
+[macos.controls.darkAqua.small.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 22.0]
+fittingSize_wh = [0.0, 22.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 34.0, 22.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 22.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 22.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 22.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 22.0]
+cellSize_wh = [34.0, 22.0]
+cellSizeForBounds_wh = [34.0, 22.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 14.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 22.0]
+
+[macos.controls.darkAqua.small.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 63.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [63.0, 20.0]
+cellSizeForBounds_wh = [63.0, 20.0]
+drawingRectForBounds_xywh = [16.0, 3.0, 138.0, 14.0]
+titleRectForBounds_xywh = [16.0, 3.0, 138.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+
+[macos.controls.darkAqua.small.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [84.0, 20.0]
+fittingSize_wh = [84.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 84.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [84.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 84.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 84.0, 20.0]
+cellSize_wh = [84.0, 20.0]
+cellSizeForBounds_wh = [84.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 84.0, 20.0]
+
+[macos.controls.darkAqua.small.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 14.0]
+fittingSize_wh = [0.0, 14.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 18.0, 14.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 14.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 14.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 14.0]
+isFlipped = true
+knobThickness = 18.0
+
+[macos.controls.darkAqua.small.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 14.0]
+cellSize_wh = [40000.0, 14.0]
+cellSizeForBounds_wh = [160.0, 14.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 14.0]
+knobThickness = 18.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 14.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 4.0]
+knobRectFlipped_xywh = [71.0, 0.0, 18.0, 14.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.darkAqua.small.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 18.0]
+fittingSize_wh = [0.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 10.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 18.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 18.0]
+isFlipped = true
+knobThickness = 10.0
+
+[macos.controls.darkAqua.small.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 18.0]
+cellSize_wh = [40000.0, 18.0]
+cellSizeForBounds_wh = [160.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 18.0]
+knobThickness = 10.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 18.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 4.0]
+knobRectFlipped_xywh = [75.0, 0.0, 10.0, 18.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 8.0, 2.0, 2.0]
+
+[macos.controls.darkAqua.small.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 12.0]
+fittingSize_wh = [0.0, 12.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 12.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 12.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 12.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 12.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [16.0, 16.0]
+fittingSize_wh = [16.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 16.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [16.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 16.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.small.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [17.0, 20.0]
+fittingSize_wh = [17.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 17.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [17.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 17.0, 20.0]
+isFlipped = false
+
+[macos.controls.darkAqua.small.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 17.0, 20.0]
+cellSize_wh = [17.0, 20.0]
+cellSizeForBounds_wh = [17.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 17.0, 20.0]
+
+[macos.controls.darkAqua.regular.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [65.0, 24.0]
+fittingSize_wh = [65.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 65.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [65.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 65.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 65.0, 24.0]
+cellSize_wh = [65.0, 24.0]
+cellSizeForBounds_wh = [65.0, 24.0]
+drawingRectForBounds_xywh = [12.0, 0.0, 41.0, 24.0]
+titleRectForBounds_xywh = [12.0, 4.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.regular.push_button.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [81.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.push_button.render.backing_scale]
+file = "renders/darkAqua/push_button-regular.png"
+pixels_wh = [81, 40]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.darkAqua.regular.push_button.render.scale_2]
+file = "renders/darkAqua/push_button-regular@2x.png"
+pixels_wh = [162, 80]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.darkAqua.regular.push_button.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [81.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.push_button.render_disabled.backing_scale]
+file = "renders/darkAqua/push_button-regular-disabled.png"
+pixels_wh = [81, 40]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.darkAqua.regular.push_button.render_disabled.scale_2]
+file = "renders/darkAqua/push_button-regular-disabled@2x.png"
+pixels_wh = [162, 80]
+rep_size_wh = [81.0, 40.0]
+
+[macos.controls.darkAqua.regular.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [83.0, 16.0]
+fittingSize_wh = [83.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 83.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [83.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 83.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 83.0, 16.0]
+cellSize_wh = [83.0, 16.0]
+cellSizeForBounds_wh = [83.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 83.0, 16.0]
+titleRectForBounds_xywh = [22.0, 0.0, 61.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+
+[macos.controls.darkAqua.regular.checkbox.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.checkbox.render.backing_scale]
+file = "renders/darkAqua/checkbox-regular-off.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render.scale_2]
+file = "renders/darkAqua/checkbox-regular-off@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.checkbox.render_on.backing_scale]
+file = "renders/darkAqua/checkbox-regular-on.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_on.scale_2]
+file = "renders/darkAqua/checkbox-regular-on@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled.backing_scale]
+file = "renders/darkAqua/checkbox-regular-disabled-off.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled.scale_2]
+file = "renders/darkAqua/checkbox-regular-disabled-off@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [99.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled_on.backing_scale]
+file = "renders/darkAqua/checkbox-regular-disabled-on.png"
+pixels_wh = [99, 32]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.checkbox.render_disabled_on.scale_2]
+file = "renders/darkAqua/checkbox-regular-disabled-on@2x.png"
+pixels_wh = [198, 64]
+rep_size_wh = [99.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [57.0, 16.0]
+fittingSize_wh = [57.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 57.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [57.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 57.0, 16.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 57.0, 16.0]
+cellSize_wh = [57.0, 16.0]
+cellSizeForBounds_wh = [57.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 57.0, 16.0]
+titleRectForBounds_xywh = [22.0, 0.0, 35.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 16.0, 16.0]
+
+[macos.controls.darkAqua.regular.radio.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.radio.render.backing_scale]
+file = "renders/darkAqua/radio-regular-off.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render.scale_2]
+file = "renders/darkAqua/radio-regular-off@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.radio.render_on.backing_scale]
+file = "renders/darkAqua/radio-regular-on.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_on.scale_2]
+file = "renders/darkAqua/radio-regular-on@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.radio.render_disabled.backing_scale]
+file = "renders/darkAqua/radio-regular-disabled-off.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_disabled.scale_2]
+file = "renders/darkAqua/radio-regular-disabled-off@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [73.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.radio.render_disabled_on.backing_scale]
+file = "renders/darkAqua/radio-regular-disabled-on.png"
+pixels_wh = [73, 32]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.radio.render_disabled_on.scale_2]
+file = "renders/darkAqua/radio-regular-disabled-on@2x.png"
+pixels_wh = [146, 64]
+rep_size_wh = [73.0, 32.0]
+
+[macos.controls.darkAqua.regular.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [54.0, 24.0]
+fittingSize_wh = [54.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 54.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [54.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 54.0, 24.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.darkAqua.regular.switch.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.switch.render.backing_scale]
+file = "renders/darkAqua/switch-regular-off.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render.scale_2]
+file = "renders/darkAqua/switch-regular-off@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.switch.render_on.backing_scale]
+file = "renders/darkAqua/switch-regular-on.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_on.scale_2]
+file = "renders/darkAqua/switch-regular-on@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.switch.render_disabled.backing_scale]
+file = "renders/darkAqua/switch-regular-disabled-off.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_disabled.scale_2]
+file = "renders/darkAqua/switch-regular-disabled-off@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_disabled_on]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [70.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.switch.render_disabled_on.backing_scale]
+file = "renders/darkAqua/switch-regular-disabled-on.png"
+pixels_wh = [70, 40]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.switch.render_disabled_on.scale_2]
+file = "renders/darkAqua/switch-regular-disabled-on@2x.png"
+pixels_wh = [140, 80]
+rep_size_wh = [70.0, 40.0]
+
+[macos.controls.darkAqua.regular.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [89.0, 24.0]
+fittingSize_wh = [89.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 89.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [89.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 89.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 89.0, 24.0]
+cellSize_wh = [89.0, 24.0]
+cellSizeForBounds_wh = [89.0, 24.0]
+drawingRectForBounds_xywh = [12.0, 0.0, 42.0, 24.0]
+titleRectForBounds_xywh = [12.0, 4.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.regular.pop_up_button.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [105.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.pop_up_button.render.backing_scale]
+file = "renders/darkAqua/pop_up_button-regular.png"
+pixels_wh = [105, 40]
+rep_size_wh = [105.0, 40.0]
+
+[macos.controls.darkAqua.regular.pop_up_button.render.scale_2]
+file = "renders/darkAqua/pop_up_button-regular@2x.png"
+pixels_wh = [210, 80]
+rep_size_wh = [105.0, 40.0]
+
+[macos.controls.darkAqua.regular.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 83.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [83.0, 24.0]
+cellSizeForBounds_wh = [83.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 122.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.darkAqua.regular.combo_box.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.combo_box.render.backing_scale]
+file = "renders/darkAqua/combo_box-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.combo_box.render.scale_2]
+file = "renders/darkAqua/combo_box-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 38.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [38.0, 24.0]
+cellSizeForBounds_wh = [38.0, 24.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.darkAqua.regular.text_field.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.text_field.render.backing_scale]
+file = "renders/darkAqua/text_field-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.text_field.render.scale_2]
+file = "renders/darkAqua/text_field-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 75.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [75.0, 24.0]
+cellSizeForBounds_wh = [75.0, 24.0]
+drawingRectForBounds_xywh = [22.0, 4.0, 132.0, 16.0]
+titleRectForBounds_xywh = [22.0, 4.0, 132.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.darkAqua.regular.search_field.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.search_field.render.backing_scale]
+file = "renders/darkAqua/search_field-regular.png"
+pixels_wh = [176, 40]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.search_field.render.scale_2]
+file = "renders/darkAqua/search_field-regular@2x.png"
+pixels_wh = [352, 80]
+rep_size_wh = [176.0, 40.0]
+
+[macos.controls.darkAqua.regular.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [98.0, 24.0]
+fittingSize_wh = [98.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 98.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [98.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 98.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 98.0, 24.0]
+cellSize_wh = [98.0, 24.0]
+cellSizeForBounds_wh = [98.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+titleRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+imageRectForBounds_xywh = [0.0, 0.0, 98.0, 24.0]
+
+[macos.controls.darkAqua.regular.segmented_control.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [114.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.segmented_control.render.backing_scale]
+file = "renders/darkAqua/segmented_control-regular.png"
+pixels_wh = [114, 40]
+rep_size_wh = [114.0, 40.0]
+
+[macos.controls.darkAqua.regular.segmented_control.render.scale_2]
+file = "renders/darkAqua/segmented_control-regular@2x.png"
+pixels_wh = [228, 80]
+rep_size_wh = [114.0, 40.0]
+
+[macos.controls.darkAqua.regular.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 20.0
+
+[macos.controls.darkAqua.regular.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 20.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 6.0]
+knobRectFlipped_xywh = [70.0, 0.0, 20.0, 16.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.darkAqua.regular.slider.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.slider.render.backing_scale]
+file = "renders/darkAqua/slider-regular.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.slider.render.scale_2]
+file = "renders/darkAqua/slider-regular@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.slider.render_disabled]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.slider.render_disabled.backing_scale]
+file = "renders/darkAqua/slider-regular-disabled.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.slider.render_disabled.scale_2]
+file = "renders/darkAqua/slider-regular-disabled@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 16.0]
+fittingSize_wh = [0.0, 16.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 16.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 16.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 16.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 16.0]
+isFlipped = true
+knobThickness = 20.0
+
+[macos.controls.darkAqua.regular.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 16.0]
+cellSize_wh = [40000.0, 16.0]
+cellSizeForBounds_wh = [160.0, 16.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+knobThickness = 20.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 16.0]
+barRectFlipped_xywh = [0.0, 5.0, 160.0, 6.0]
+knobRectFlipped_xywh = [70.0, 0.0, 20.0, 16.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 7.0, 2.0, 2.0]
+
+[macos.controls.darkAqua.regular.slider_ticks.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 32.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.slider_ticks.render.backing_scale]
+file = "renders/darkAqua/slider_ticks-regular.png"
+pixels_wh = [176, 32]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.slider_ticks.render.scale_2]
+file = "renders/darkAqua/slider_ticks-regular@2x.png"
+pixels_wh = [352, 64]
+rep_size_wh = [176.0, 32.0]
+
+[macos.controls.darkAqua.regular.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.progress_bar.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [176.0, 36.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.progress_bar.render.backing_scale]
+file = "renders/darkAqua/progress_bar-regular.png"
+pixels_wh = [176, 36]
+rep_size_wh = [176.0, 36.0]
+
+[macos.controls.darkAqua.regular.progress_bar.render.scale_2]
+file = "renders/darkAqua/progress_bar-regular@2x.png"
+pixels_wh = [352, 72]
+rep_size_wh = [176.0, 36.0]
+
+[macos.controls.darkAqua.regular.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [32.0, 32.0]
+fittingSize_wh = [32.0, 32.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 32.0, 32.0]
+intrinsicContentSize_after_sizeToFit_wh = [32.0, 32.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 32.0, 32.0]
+isFlipped = true
+
+[macos.controls.darkAqua.regular.progress_spinning.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [48.0, 48.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.progress_spinning.render.backing_scale]
+file = "renders/darkAqua/progress_spinning-regular.png"
+pixels_wh = [48, 48]
+rep_size_wh = [48.0, 48.0]
+
+[macos.controls.darkAqua.regular.progress_spinning.render.scale_2]
+file = "renders/darkAqua/progress_spinning-regular@2x.png"
+pixels_wh = [96, 96]
+rep_size_wh = [48.0, 48.0]
+
+[macos.controls.darkAqua.regular.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [20.0, 24.0]
+fittingSize_wh = [20.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 20.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [20.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 20.0, 24.0]
+isFlipped = false
+
+[macos.controls.darkAqua.regular.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 20.0, 24.0]
+cellSize_wh = [20.0, 24.0]
+cellSizeForBounds_wh = [20.0, 24.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+titleRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+imageRectForBounds_xywh = [0.0, 0.0, 20.0, 24.0]
+
+[macos.controls.darkAqua.regular.stepper.render]
+background = "transparent (only the control and its container are drawn)"
+margin = 8.0
+points_wh = [36.0, 40.0]
+window_backingScaleFactor = 1.0
+
+[macos.controls.darkAqua.regular.stepper.render.backing_scale]
+file = "renders/darkAqua/stepper-regular.png"
+pixels_wh = [36, 40]
+rep_size_wh = [36.0, 40.0]
+
+[macos.controls.darkAqua.regular.stepper.render.scale_2]
+file = "renders/darkAqua/stepper-regular@2x.png"
+pixels_wh = [72, 80]
+rep_size_wh = [36.0, 40.0]
+
+[macos.controls.darkAqua.large.push_button]
+class = "NSButton"
+intrinsicContentSize_wh = [69.0, 28.0]
+fittingSize_wh = [69.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 69.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [69.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 69.0, 28.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.push_button.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 69.0, 28.0]
+cellSize_wh = [69.0, 28.0]
+cellSizeForBounds_wh = [69.0, 28.0]
+drawingRectForBounds_xywh = [14.0, 0.0, 41.0, 28.0]
+titleRectForBounds_xywh = [14.0, 6.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.large.checkbox]
+class = "NSButton"
+intrinsicContentSize_wh = [85.0, 18.0]
+fittingSize_wh = [85.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 85.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [85.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 85.0, 18.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.checkbox.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 85.0, 18.0]
+cellSize_wh = [85.0, 18.0]
+cellSizeForBounds_wh = [85.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 85.0, 18.0]
+titleRectForBounds_xywh = [24.0, 1.0, 61.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+
+[macos.controls.darkAqua.large.radio]
+class = "NSButton"
+intrinsicContentSize_wh = [59.0, 18.0]
+fittingSize_wh = [59.0, 18.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 59.0, 18.0]
+intrinsicContentSize_after_sizeToFit_wh = [59.0, 18.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 59.0, 18.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.radio.cell]
+class = "NSButtonCell"
+bounds_xywh = [0.0, 0.0, 59.0, 18.0]
+cellSize_wh = [59.0, 18.0]
+cellSizeForBounds_wh = [59.0, 18.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 59.0, 18.0]
+titleRectForBounds_xywh = [24.0, 1.0, 35.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 18.0, 18.0]
+
+[macos.controls.darkAqua.large.switch]
+class = "NSKVONotifying_NSSwitch"
+intrinsicContentSize_wh = [64.0, 28.0]
+fittingSize_wh = [64.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 64.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [64.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 64.0, 28.0]
+isFlipped = false
+cell = "unavailable: no cell (not cell-based)"
+
+[macos.controls.darkAqua.large.pop_up_button]
+class = "NSPopUpButton"
+intrinsicContentSize_wh = [97.0, 28.0]
+fittingSize_wh = [97.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 97.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [97.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 97.0, 28.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.pop_up_button.cell]
+class = "NSPopUpButtonCell"
+bounds_xywh = [0.0, 0.0, 97.0, 28.0]
+cellSize_wh = [97.0, 28.0]
+cellSizeForBounds_wh = [97.0, 28.0]
+drawingRectForBounds_xywh = [14.0, 0.0, 42.0, 28.0]
+titleRectForBounds_xywh = [14.0, 6.0, 41.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 0.0, 0.0]
+
+[macos.controls.darkAqua.large.combo_box]
+class = "NSComboBox"
+intrinsicContentSize_wh = [-1.0, 28.0]
+fittingSize_wh = [0.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 82.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 28.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 28.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.combo_box.cell]
+class = "NSComboBoxCell"
+bounds_xywh = [0.0, 0.0, 160.0, 28.0]
+cellSize_wh = [82.0, 28.0]
+cellSizeForBounds_wh = [82.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 16.0]
+titleRectForBounds_xywh = [4.0, 6.0, 123.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 28.0]
+
+[macos.controls.darkAqua.large.text_field]
+class = "NSTextField"
+intrinsicContentSize_wh = [-1.0, 24.0]
+fittingSize_wh = [0.0, 24.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 38.0, 24.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 24.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 24.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 24.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.text_field.cell]
+class = "NSTextFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 24.0]
+cellSize_wh = [38.0, 24.0]
+cellSizeForBounds_wh = [38.0, 24.0]
+drawingRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+titleRectForBounds_xywh = [4.0, 4.0, 152.0, 16.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 24.0]
+
+[macos.controls.darkAqua.large.search_field]
+class = "NSKVONotifying_NSSearchField"
+intrinsicContentSize_wh = [-1.0, 28.0]
+fittingSize_wh = [0.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 79.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 28.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 28.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.search_field.cell]
+class = "NSSearchFieldCell"
+bounds_xywh = [0.0, 0.0, 160.0, 28.0]
+cellSize_wh = [79.0, 28.0]
+cellSizeForBounds_wh = [79.0, 28.0]
+drawingRectForBounds_xywh = [26.0, 6.0, 128.0, 20.0]
+titleRectForBounds_xywh = [26.0, 6.0, 128.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 28.0]
+
+[macos.controls.darkAqua.large.segmented_control]
+class = "NSKVONotifying_NSSegmentedControl"
+intrinsicContentSize_wh = [106.0, 28.0]
+fittingSize_wh = [106.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 106.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [106.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 106.0, 28.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.segmented_control.cell]
+class = "NSSegmentedCell"
+bounds_xywh = [0.0, 0.0, 106.0, 28.0]
+cellSize_wh = [106.0, 28.0]
+cellSizeForBounds_wh = [106.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+titleRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+imageRectForBounds_xywh = [0.0, 0.0, 106.0, 28.0]
+
+[macos.controls.darkAqua.large.slider]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 24.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+knobThickness = 24.0
+
+[macos.controls.darkAqua.large.slider.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [40000.0, 20.0]
+cellSizeForBounds_wh = [160.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+knobThickness = 24.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 20.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 6.0]
+knobRectFlipped_xywh = [68.0, 0.0, 24.0, 20.0]
+numberOfTickMarks = 0
+rectOfTickMarkAtIndex_0_xywh = "not probed: no tick marks"
+
+[macos.controls.darkAqua.large.slider_ticks]
+class = "NSSlider"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 24.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+knobThickness = 24.0
+
+[macos.controls.darkAqua.large.slider_ticks.cell]
+class = "NSSliderCell"
+bounds_xywh = [0.0, 0.0, 160.0, 20.0]
+cellSize_wh = [40000.0, 20.0]
+cellSizeForBounds_wh = [160.0, 20.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+titleRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+imageRectForBounds_xywh = [0.0, 0.0, 160.0, 20.0]
+knobThickness = 24.0
+trackRect_xywh = [0.0, 0.0, 40000.0, 20.0]
+barRectFlipped_xywh = [0.0, 7.0, 160.0, 6.0]
+knobRectFlipped_xywh = [68.0, 0.0, 24.0, 20.0]
+numberOfTickMarks = 5
+rectOfTickMarkAtIndex_0_xywh = [-1.0, 9.0, 2.0, 2.0]
+
+[macos.controls.darkAqua.large.progress_bar]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [-1.0, 20.0]
+fittingSize_wh = [0.0, 20.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 0.0, 20.0]
+intrinsicContentSize_after_sizeToFit_wh = [-1.0, 20.0]
+frame_widened_xywh = [0.0, 0.0, 160.0, 20.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 160.0, 20.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.progress_spinning]
+class = "NSProgressIndicator"
+intrinsicContentSize_wh = [32.0, 32.0]
+fittingSize_wh = [32.0, 32.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 32.0, 32.0]
+intrinsicContentSize_after_sizeToFit_wh = [32.0, 32.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 32.0, 32.0]
+isFlipped = true
+
+[macos.controls.darkAqua.large.stepper]
+class = "NSStepper"
+intrinsicContentSize_wh = [23.0, 28.0]
+fittingSize_wh = [23.0, 28.0]
+frame_after_sizeToFit_xywh = [0.0, 0.0, 23.0, 28.0]
+intrinsicContentSize_after_sizeToFit_wh = [23.0, 28.0]
+alignmentRectInsets_tlbr = [0.0, 0.0, 0.0, 0.0]
+alignmentRectForFrame_xywh = [0.0, 0.0, 23.0, 28.0]
+isFlipped = false
+
+[macos.controls.darkAqua.large.stepper.cell]
+class = "NSStepperCell"
+bounds_xywh = [0.0, 0.0, 23.0, 28.0]
+cellSize_wh = [23.0, 28.0]
+cellSizeForBounds_wh = [23.0, 28.0]
+drawingRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+titleRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+imageRectForBounds_xywh = [0.0, 0.0, 23.0, 28.0]
+
+[macos.key_window]
+method = """activation policy set to Regular, finishLaunching, activateIgnoringOtherApps: YES, then -activate where the OS has it, each followed by a pump until NSApp isActive (up to 20 steps); a titled, closable, miniaturizable, resizable NSWindow (600 x 400 pt content, empty title) made key with makeKeyAndOrderFront: and makeFirstResponder: nil; the run loop pumped with nextEventMatchingMask:untilDate:inMode:dequeue: and sendEvent: in 50 ms steps, up to 100 steps until isKeyWindow, activateIgnoringOtherApps: YES again at each step NSApp is not active; content: an NSVisualEffectView, material sidebar, blending behindWindow, state active, at [0, 0, 180, 400] (x, y, width, height); an NSScrollView with an NSTableView of one 120 pt column titled "Column" and its header, at [200, 160, 380, 220] (x, y, width, height); an NSSegmentedControl of two 100 pt segments "One" "Two", segment 0 selected, sized to fit at [200, 60] (x, y); a calibration strip of 24 x 20 pt NSBox patches (custom, no border, no title) from [200, 20] (x, y) every 30 pt, filled with colorWithSRGBRed:green:blue:alpha: of the srgb_ patches' bytes and with the dynamic system colours; per appearance the window's appearance is set, the run loop pumped 10 steps, and the window captured with screencapture -x -o -l <windowNumber>; each sample is the capture's pixel at a point given in points from the window frame's top left (sample_points_xy): raw, the PNG's own bytes from bitmapData as #rrggbbaa (alpha ff where the rep has none), and colorAtXY_sRGB, colorAtX:y: converted with colorUsingColorSpace: sRGB"""
+activationPolicy_regular_set = true
+makeFirstResponder_nil = true
+isKeyWindow = true
+isMainWindow = true
+NSApp_isActive = true
+key_wait_steps = 1
+key_wait_reactivations = 1
+accessibilityDisplayShouldReduceTransparency = false
+sidebar_state = "active"
+window_backingScaleFactor = 1.0
+window_frame_xywh = [200.0, 200.0, 600.0, 432.0]
+titleBar_height = 32.0
+headerView_height = 28.0
+column_width = 120.0
+segmentedControl_frame_xywh = [200.0, 60.0, 200.0, 24.0]
+method_controls = "in the band between the segmented control and the table: a row of disabled controls (setEnabled: NO) with its bottom edge at y 96 and a row of the same controls enabled at y 128, each an NSSwitch on at x 200, an NSSwitch off at x 250 (both sized to fit) and an NSSlider, horizontal, 0..1 at 0.5, 80 pt wide at x 300 (sized to fit in height); a switch's track is sampled at 0.16666666666666666 of its width in from the end away from the knob, and its knob half the frame's height in from the end it rests at (the right end when on), both at the frame's vertical centre; a slider's fill at 0.25 and its track at 0.75 of the bar's width (barRectFlipped: of its NSSliderCell, in the content view; the frame where the cell is not one), at the bar's vertical centre, and its knob at the centre of knobRectFlipped: (the bar's centre where the cell is not an NSSliderCell)"
+switch_on_disabled_frame_xywh = [200.0, 96.0, 54.0, 24.0]
+switch_off_disabled_frame_xywh = [250.0, 96.0, 54.0, 24.0]
+switch_on_frame_xywh = [200.0, 128.0, 54.0, 24.0]
+switch_off_frame_xywh = [250.0, 128.0, 54.0, 24.0]
+slider_disabled_frame_xywh = [300.0, 96.0, 80.0, 16.0]
+slider_disabled_barRect_xywh = [300.0, 101.0, 80.0, 6.0]
+slider_disabled_knobRect_xywh = [330.0, 96.0, 20.0, 16.0]
+slider_frame_xywh = [300.0, 128.0, 80.0, 16.0]
+slider_barRect_xywh = [300.0, 133.0, 80.0, 6.0]
+slider_knobRect_xywh = [330.0, 128.0, 20.0, 16.0]
+
+[macos.key_window.activation]
+activateIgnoringOtherApps_isActive = false
+activateIgnoringOtherApps_steps = 20
+activate_available = true
+activate_steps = 20
+activate_isActive = false
+activated_by = "none"
+
+[macos.key_window.sample_points_xy]
+titleBar = [300.0, 16.0]
+sidebar = [90.0, 232.0]
+segment_selected = [212.0, 360.0]
+segment_unselected = [312.0, 360.0]
+windowBackground = [390.0, 312.0]
+listHeader = [460.0, 66.0]
+switch_on_disabled = [209.0, 324.0]
+switch_on_disabled_knob = [242.0, 324.0]
+switch_off_disabled = [295.0, 324.0]
+switch_off_disabled_knob = [262.0, 324.0]
+switch_on = [209.0, 292.0]
+switch_on_knob = [242.0, 292.0]
+switch_off = [295.0, 292.0]
+switch_off_knob = [262.0, 292.0]
+slider_disabled_fill = [320.0, 328.0]
+slider_disabled_track = [360.0, 328.0]
+slider_disabled_knob = [340.0, 328.0]
+slider_fill = [320.0, 296.0]
+slider_track = [360.0, 296.0]
+slider_knob = [340.0, 296.0]
+srgb_000000 = [212.0, 402.0]
+srgb_404040 = [242.0, 402.0]
+srgb_808080 = [272.0, 402.0]
+srgb_c0c0c0 = [302.0, 402.0]
+srgb_ececec = [332.0, 402.0]
+srgb_ffffff = [362.0, 402.0]
+srgb_ff0000 = [392.0, 402.0]
+srgb_00ff00 = [422.0, 402.0]
+srgb_0000ff = [452.0, 402.0]
+windowBackgroundColor = [482.0, 402.0]
+controlBackgroundColor = [512.0, 402.0]
+
+[macos.key_window.aqua]
+isKeyWindow = true
+NSApp_isActive = true
+file = "renders/key_window/aqua.png"
+pixels_wh = [600, 432]
+
+[macos.key_window.aqua.pixel_format]
+colorSpace_localizedName = "Apple Virtual"
+colorSpaceName = "NSCalibratedRGBColorSpace"
+bitmapFormat_flags = ["alphaNonpremultiplied"]
+bitsPerSample = 8
+samplesPerPixel = 4
+bitsPerPixel = 32
+bytesPerRow = 2400
+hasAlpha = true
+isPlanar = false
+
+[macos.key_window.aqua.samples.titleBar]
+pixel_xy = [300, 16]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.sidebar]
+pixel_xy = [90, 232]
+raw = "#ddddddff"
+colorAtXY_sRGB = "#e4e4e4ff"
+
+[macos.key_window.aqua.samples.segment_selected]
+pixel_xy = [212, 360]
+raw = "#0077f9ff"
+colorAtXY_sRGB = "#008efbff"
+
+[macos.key_window.aqua.samples.segment_unselected]
+pixel_xy = [312, 360]
+raw = "#ecececff"
+colorAtXY_sRGB = "#f0f0f0ff"
+
+[macos.key_window.aqua.samples.windowBackground]
+pixel_xy = [390, 312]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.listHeader]
+pixel_xy = [460, 66]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.switch_on_disabled]
+pixel_xy = [209, 324]
+raw = "#4b9df5ff"
+colorAtXY_sRGB = "#5aaff7ff"
+
+[macos.key_window.aqua.samples.switch_on_disabled_knob]
+pixel_xy = [242, 324]
+raw = "#fdfdfdff"
+colorAtXY_sRGB = "#fdfdfdff"
+
+[macos.key_window.aqua.samples.switch_off_disabled]
+pixel_xy = [295, 324]
+raw = "#efefefff"
+colorAtXY_sRGB = "#f2f2f2ff"
+
+[macos.key_window.aqua.samples.switch_off_disabled_knob]
+pixel_xy = [262, 324]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.switch_on]
+pixel_xy = [209, 292]
+raw = "#0076f7ff"
+colorAtXY_sRGB = "#008df9ff"
+
+[macos.key_window.aqua.samples.switch_on_knob]
+pixel_xy = [242, 292]
+raw = "#fdfdfdff"
+colorAtXY_sRGB = "#fdfdfdff"
+
+[macos.key_window.aqua.samples.switch_off]
+pixel_xy = [295, 292]
+raw = "#e3e3e3ff"
+colorAtXY_sRGB = "#e9e9e9ff"
+
+[macos.key_window.aqua.samples.switch_off_knob]
+pixel_xy = [262, 292]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.slider_disabled_fill]
+pixel_xy = [320, 328]
+raw = "#d9d9d9ff"
+colorAtXY_sRGB = "#e0e0e0ff"
+
+[macos.key_window.aqua.samples.slider_disabled_track]
+pixel_xy = [360, 328]
+raw = "#e3e3e3ff"
+colorAtXY_sRGB = "#e9e9e9ff"
+
+[macos.key_window.aqua.samples.slider_disabled_knob]
+pixel_xy = [340, 328]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.samples.slider_fill]
+pixel_xy = [320, 296]
+raw = "#0076f7ff"
+colorAtXY_sRGB = "#008df9ff"
+
+[macos.key_window.aqua.samples.slider_track]
+pixel_xy = [360, 296]
+raw = "#e4e4e4ff"
+colorAtXY_sRGB = "#e9e9e9ff"
+
+[macos.key_window.aqua.samples.slider_knob]
+pixel_xy = [340, 296]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+
+[macos.key_window.aqua.calibration.srgb_000000]
+pixel_xy = [212, 402]
+raw = "#000000ff"
+colorAtXY_sRGB = "#000000ff"
+exact = true
+expected = "#000000ff"
+
+[macos.key_window.aqua.calibration.srgb_404040]
+pixel_xy = [242, 402]
+raw = "#404040ff"
+colorAtXY_sRGB = "#515151ff"
+exact = true
+expected = "#404040ff"
+
+[macos.key_window.aqua.calibration.srgb_808080]
+pixel_xy = [272, 402]
+raw = "#808080ff"
+colorAtXY_sRGB = "#929292ff"
+exact = true
+expected = "#808080ff"
+
+[macos.key_window.aqua.calibration.srgb_c0c0c0]
+pixel_xy = [302, 402]
+raw = "#c0c0c0ff"
+colorAtXY_sRGB = "#cbcbcbff"
+exact = true
+expected = "#c0c0c0ff"
+
+[macos.key_window.aqua.calibration.srgb_ececec]
+pixel_xy = [332, 402]
+raw = "#ecececff"
+colorAtXY_sRGB = "#f0f0f0ff"
+exact = true
+expected = "#ecececff"
+
+[macos.key_window.aqua.calibration.srgb_ffffff]
+pixel_xy = [362, 402]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+exact = true
+expected = "#ffffffff"
+
+[macos.key_window.aqua.calibration.srgb_ff0000]
+pixel_xy = [392, 402]
+raw = "#ff0000ff"
+colorAtXY_sRGB = "#ff2600ff"
+exact = true
+expected = "#ff0000ff"
+
+[macos.key_window.aqua.calibration.srgb_00ff00]
+pixel_xy = [422, 402]
+raw = "#00ff00ff"
+colorAtXY_sRGB = "#00f900ff"
+exact = true
+expected = "#00ff00ff"
+
+[macos.key_window.aqua.calibration.srgb_0000ff]
+pixel_xy = [452, 402]
+raw = "#0000ffff"
+colorAtXY_sRGB = "#0433ffff"
+exact = true
+expected = "#0000ffff"
+
+[macos.key_window.aqua.calibration.windowBackgroundColor]
+pixel_xy = [482, 402]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+exact = true
+expected = "#ffffffff"
+
+[macos.key_window.aqua.calibration.controlBackgroundColor]
+pixel_xy = [512, 402]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+exact = true
+expected = "#ffffffff"
+
+[macos.key_window.darkAqua]
+isKeyWindow = true
+NSApp_isActive = true
+file = "renders/key_window/darkAqua.png"
+pixels_wh = [600, 432]
+
+[macos.key_window.darkAqua.pixel_format]
+colorSpace_localizedName = "Apple Virtual"
+colorSpaceName = "NSCalibratedRGBColorSpace"
+bitmapFormat_flags = ["alphaNonpremultiplied"]
+bitsPerSample = 8
+samplesPerPixel = 4
+bitsPerPixel = 32
+bytesPerRow = 2400
+hasAlpha = true
+isPlanar = false
+
+[macos.key_window.darkAqua.samples.titleBar]
+pixel_xy = [300, 16]
+raw = "#232323ff"
+colorAtXY_sRGB = "#2f2f2fff"
+
+[macos.key_window.darkAqua.samples.sidebar]
+pixel_xy = [90, 232]
+raw = "#424242ff"
+colorAtXY_sRGB = "#545454ff"
+
+[macos.key_window.darkAqua.samples.segment_selected]
+pixel_xy = [212, 360]
+raw = "#067dffff"
+colorAtXY_sRGB = "#0094ffff"
+
+[macos.key_window.darkAqua.samples.segment_unselected]
+pixel_xy = [312, 360]
+raw = "#2d2d2dff"
+colorAtXY_sRGB = "#3b3b3bff"
+
+[macos.key_window.darkAqua.samples.windowBackground]
+pixel_xy = [390, 312]
+raw = "#1b1b1bff"
+colorAtXY_sRGB = "#242424ff"
+
+[macos.key_window.darkAqua.samples.listHeader]
+pixel_xy = [460, 66]
+raw = "#232323ff"
+colorAtXY_sRGB = "#2f2f2fff"
+
+[macos.key_window.darkAqua.samples.switch_on_disabled]
+pixel_xy = [209, 324]
+raw = "#1061baff"
+colorAtXY_sRGB = "#0a77c7ff"
+
+[macos.key_window.darkAqua.samples.switch_on_disabled_knob]
+pixel_xy = [242, 324]
+raw = "#d7e3f0ff"
+colorAtXY_sRGB = "#dee9f3ff"
+
+[macos.key_window.darkAqua.samples.switch_off_disabled]
+pixel_xy = [295, 324]
+raw = "#262626ff"
+colorAtXY_sRGB = "#323232ff"
+
+[macos.key_window.darkAqua.samples.switch_off_disabled_knob]
+pixel_xy = [262, 324]
+raw = "#dededeff"
+colorAtXY_sRGB = "#e4e4e4ff"
+
+[macos.key_window.darkAqua.samples.switch_on]
+pixel_xy = [209, 292]
+raw = "#067cfcff"
+colorAtXY_sRGB = "#0093fdff"
+
+[macos.key_window.darkAqua.samples.switch_on_knob]
+pixel_xy = [242, 292]
+raw = "#d7e8fbff"
+colorAtXY_sRGB = "#deedfcff"
+
+[macos.key_window.darkAqua.samples.switch_off]
+pixel_xy = [295, 292]
+raw = "#303030ff"
+colorAtXY_sRGB = "#3f3f3fff"
+
+[macos.key_window.darkAqua.samples.switch_off_knob]
+pixel_xy = [262, 292]
+raw = "#e0e0e0ff"
+colorAtXY_sRGB = "#e6e6e6ff"
+
+[macos.key_window.darkAqua.samples.slider_disabled_fill]
+pixel_xy = [320, 328]
+raw = "#3a3a3aff"
+colorAtXY_sRGB = "#4b4b4bff"
+
+[macos.key_window.darkAqua.samples.slider_disabled_track]
+pixel_xy = [360, 328]
+raw = "#303030ff"
+colorAtXY_sRGB = "#3f3f3fff"
+
+[macos.key_window.darkAqua.samples.slider_disabled_knob]
+pixel_xy = [340, 328]
+raw = "#ddddddff"
+colorAtXY_sRGB = "#e4e4e4ff"
+
+[macos.key_window.darkAqua.samples.slider_fill]
+pixel_xy = [320, 296]
+raw = "#067cfcff"
+colorAtXY_sRGB = "#0093fdff"
+
+[macos.key_window.darkAqua.samples.slider_track]
+pixel_xy = [360, 296]
+raw = "#303030ff"
+colorAtXY_sRGB = "#3f3f3fff"
+
+[macos.key_window.darkAqua.samples.slider_knob]
+pixel_xy = [340, 296]
+raw = "#ddddddff"
+colorAtXY_sRGB = "#e4e4e4ff"
+
+[macos.key_window.darkAqua.calibration.srgb_000000]
+pixel_xy = [212, 402]
+raw = "#000000ff"
+colorAtXY_sRGB = "#000000ff"
+exact = true
+expected = "#000000ff"
+
+[macos.key_window.darkAqua.calibration.srgb_404040]
+pixel_xy = [242, 402]
+raw = "#404040ff"
+colorAtXY_sRGB = "#515151ff"
+exact = true
+expected = "#404040ff"
+
+[macos.key_window.darkAqua.calibration.srgb_808080]
+pixel_xy = [272, 402]
+raw = "#808080ff"
+colorAtXY_sRGB = "#929292ff"
+exact = true
+expected = "#808080ff"
+
+[macos.key_window.darkAqua.calibration.srgb_c0c0c0]
+pixel_xy = [302, 402]
+raw = "#c0c0c0ff"
+colorAtXY_sRGB = "#cbcbcbff"
+exact = true
+expected = "#c0c0c0ff"
+
+[macos.key_window.darkAqua.calibration.srgb_ececec]
+pixel_xy = [332, 402]
+raw = "#ecececff"
+colorAtXY_sRGB = "#f0f0f0ff"
+exact = true
+expected = "#ecececff"
+
+[macos.key_window.darkAqua.calibration.srgb_ffffff]
+pixel_xy = [362, 402]
+raw = "#ffffffff"
+colorAtXY_sRGB = "#ffffffff"
+exact = true
+expected = "#ffffffff"
+
+[macos.key_window.darkAqua.calibration.srgb_ff0000]
+pixel_xy = [392, 402]
+raw = "#ff0000ff"
+colorAtXY_sRGB = "#ff2600ff"
+exact = true
+expected = "#ff0000ff"
+
+[macos.key_window.darkAqua.calibration.srgb_00ff00]
+pixel_xy = [422, 402]
+raw = "#00ff00ff"
+colorAtXY_sRGB = "#00f900ff"
+exact = true
+expected = "#00ff00ff"
+
+[macos.key_window.darkAqua.calibration.srgb_0000ff]
+pixel_xy = [452, 402]
+raw = "#0000ffff"
+colorAtXY_sRGB = "#0433ffff"
+exact = true
+expected = "#0000ffff"
+
+[macos.key_window.darkAqua.calibration.windowBackgroundColor]
+pixel_xy = [482, 402]
+raw = "#1b1b1bff"
+colorAtXY_sRGB = "#242424ff"
+exact = false
+expected = "#1e1e1eff"
+
+[macos.key_window.darkAqua.calibration.controlBackgroundColor]
+pixel_xy = [512, 402]
+raw = "#1b1b1bff"
+colorAtXY_sRGB = "#242424ff"
+exact = false
+expected = "#1e1e1eff"

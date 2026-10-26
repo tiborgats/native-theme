@@ -1,0 +1,10 @@
+restore reduceTransparency to the image's (1): exit 0
+read back: 1
+Error: Could not find key 'increaseContrast' in domain 'com.apple.universalaccess'.
+Defaults have not been changed.
+restore increaseContrast to the image's (absent): exit 1
+read back: Error: Could not find key 'increaseContrast' in domain 'com.apple.universalaccess'.
+Error: Could not find key 'AppleReduceDesktopTinting' in domain 'kCFPreferencesAnyApplication'.
+Defaults have not been changed.
+restore AppleReduceDesktopTinting to the image's (absent): exit 1
+read back: Error: Could not find key 'AppleReduceDesktopTinting' in domain 'kCFPreferencesAnyApplication'.

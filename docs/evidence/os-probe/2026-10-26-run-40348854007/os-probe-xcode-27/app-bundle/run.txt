@@ -1,0 +1,15 @@
+restore reduceTransparency to the image's (1): exit 0
+Error: Could not find key 'increaseContrast' in domain 'com.apple.universalaccess'.
+Defaults have not been changed.
+restore increaseContrast to the image's (absent): exit 1
+Error: Could not find key 'AppleReduceDesktopTinting' in domain 'kCFPreferencesAnyApplication'.
+Defaults have not been changed.
+restore AppleReduceDesktopTinting to the image's (absent): exit 1
+copy the probe: exit 0
+write Info.plist: exit 0
+/Users/runner/work/_temp/NativeThemeOsProbe.app: replacing existing signature
+codesign: exit 0
+grant screen recording to 'org.native-theme.os-probe', 0: exit 0
+grant screen recording to '/Users/runner/work/_temp/NativeThemeOsProbe.app/Contents/MacOS/native-theme-os-probe', 1: exit 0
+open -W -n: exit 0
+probe.toml written

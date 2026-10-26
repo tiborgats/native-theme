@@ -1,0 +1,8 @@
+restore reduceTransparency to the image's (1): exit 0
+read back: 1
+restore increaseContrast to the image's (absent): exit 0
+read back: 2026-10-26 15:30:55.779 defaults[1984:9389] 
+The domain/default pair of (com.apple.universalaccess, increaseContrast) does not exist
+image's AppleReduceDesktopTinting: absent
+write AppleReduceDesktopTinting true: exit 0
+read back: 1
