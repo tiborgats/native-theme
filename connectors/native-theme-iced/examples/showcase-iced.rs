@@ -11126,7 +11126,7 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // `segmented_control.separator_width` wide, where the theme states one:
     // the row's children are then a segment at every even index.
     let separated = sc.separator_width > 0.0;
-    let at = move |i: usize| if separated { 2 * i } else { i };
+    let at = move |i: usize| if separated { i.saturating_mul(2) } else { i };
     let mut segments: Vec<Element<'_, Message>> = Vec::new();
     for (i, label) in BASIC_SEGMENTS.iter().enumerate() {
         if i > 0 && separated {
