@@ -1,6 +1,6 @@
 //! The Feedback page.
 
-use gpui::{Context, IntoElement, Keystroke, ParentElement, Styled, Window, prelude::*, px};
+use gpui::{App, Context, IntoElement, Keystroke, ParentElement, Styled, Window, prelude::*, px};
 use gpui_component::{IconName, h_flex, kbd::Kbd, v_flex};
 
 use native_theme_gpui::geometry;
@@ -133,14 +133,23 @@ pub(crate) fn markers_heading() -> String {
 /// The keystroke the shortcut tooltip names, a sample and no binding of the
 /// showcase's: on gpui's `secondary` modifier, the one the showcase's
 /// bindings take (`app::init`), Ctrl off macOS and Cmd on it.
+///
+/// `secondary` is resolved with gpui's runtime OS (`save_tooltip`), and
+/// `Kbd::format` draws the keystroke by the compile target (gpui-component
+/// kbd.rs:105-223); the two agree on every native target.
 pub(crate) const SAVE_KEYS: &str = "secondary-s";
 
 /// The shortcut tooltip's text: [`SAVE_KEYS`] as a `Kbd` draws it on this
 /// platform (gpui-component kbd.rs, Kbd::format), "Ctrl+S" off macOS. The
-/// keys as written where gpui cannot parse them.
-pub(crate) fn save_tooltip() -> String {
-    let keys = Keystroke::parse(SAVE_KEYS)
-        .map_or_else(|_| SAVE_KEYS.to_string(), |stroke| Kbd::format(&stroke));
+/// keys as written, with one stderr line, where gpui cannot parse them.
+pub(crate) fn save_tooltip(cx: &App) -> String {
+    let keys = match Keystroke::parse_with_os(SAVE_KEYS, cx.platform_info().os) {
+        Ok(stroke) => Kbd::format(&stroke),
+        Err(error) => {
+            eprintln!("showcase: the keys {SAVE_KEYS:?} did not parse: {error:?}");
+            SAVE_KEYS.to_string()
+        }
+    };
     format!("Save file ({keys})")
 }
 
@@ -451,7 +460,7 @@ impl Showcase {
                         cx,
                         "feedback-tooltip-shortcut",
                         "With tooltip",
-                        save_tooltip(),
+                        save_tooltip(cx),
                     ))
                     .child(demo::built_tooltip_button(
                         ui,

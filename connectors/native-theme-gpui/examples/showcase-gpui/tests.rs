@@ -259,16 +259,33 @@ fn every_page_lays_out(cx: &mut TestAppContext) {
 }
 
 /// Install a bundled preset, so a measurement does not depend on the
-/// desktop the test runs on.
+/// desktop the test runs on. A preset that does not install fails the test,
+/// which would otherwise measure the theme installed before.
 fn use_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
-    cx.update(|window, cx| {
+    let installed = install_by_name(cx, showcase, preset);
+    assert!(installed, "the preset {preset:?} did not install");
+}
+
+/// Ask for a preset that does not exist, to provoke a theme error: the
+/// install must fail.
+fn use_missing_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, preset: &str) {
+    let installed = install_by_name(cx, showcase, preset);
+    assert!(!installed, "the missing preset {preset:?} installed");
+}
+
+/// Install the preset of `name` through `apply_theme_by_name`, draw the
+/// frame it produced, and return whether it installed.
+fn install_by_name(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, name: &str) -> bool {
+    let installed = cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
-            this.apply_theme_by_name(preset, window, cx);
+            let installed = this.apply_theme_by_name(name, window, cx);
             cx.notify();
-        });
+            installed
+        })
     });
     cx.run_until_parked();
     draw(cx);
+    installed
 }
 
 /// The installed theme's scrollbar groove width, and whether the platform
@@ -413,11 +430,12 @@ fn a_settings_row_keeps_off_the_page_scrollbar(cx: &mut TestAppContext) {
 /// Turn the wheel by `delta` pixels over `at`, and draw the frame it
 /// produced. A negative delta is a scroll towards the end of the content.
 fn scroll_at(cx: &mut VisualTestContext, at: Point<Pixels>, delta: Pixels) {
-    cx.simulate_event(gpui::ScrollWheelEvent {
+    cx.simulate_event(gpui::ScrollEvent {
         position: at,
         delta: gpui::ScrollDelta::Pixels(point(px(0.), delta)),
         modifiers: Modifiers::default(),
         touch_phase: gpui::TouchPhase::Moved,
+        source: gpui::ScrollSource::Pointer,
     });
     cx.run_until_parked();
     draw(cx);
@@ -2220,13 +2238,13 @@ fn the_macos_menus_are_the_hig_list() {
 /// The keys the macOS menus' rows show are the HIG's: ⌘H Hide, ⌥⌘H Hide
 /// Others, ⌘M Minimize and ⌘W Close, beside the bindings every platform
 /// takes (⌘Q Quit, ⌘, Settings…).
-#[test]
-fn the_macos_menus_keys_are_the_higs() {
+#[gpui::test]
+fn the_macos_menus_keys_are_the_higs(cx: &mut TestAppContext) {
     use crate::app::{CloseWindow, Hide, HideOthers, Minimize};
 
-    let bindings = crate::app::macos_bindings();
+    let (bindings, os) = cx.update(|cx| (crate::app::macos_bindings(cx), cx.platform_info().os));
     let bound = |keys: &str, action: &dyn gpui::Action| {
-        let typed = [gpui::Keystroke::parse(keys).expect("a keystroke")];
+        let typed = [gpui::Keystroke::parse_with_os(keys, os).expect("a keystroke")];
         bindings.iter().any(|binding| {
             binding.match_keystrokes(&typed) == Some(false) && binding.action().partial_eq(action)
         })
@@ -2347,11 +2365,41 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
         "Theme > {item} did not reach Theme::mode"
     );
 
+    let os = cx.update(|_window, cx| cx.platform_info().os);
+    assert_the_bindings_take(&mut cx, os);
+}
+
+/// Under gpui's macOS identity, `app::init`'s four bindings take Cmd, as
+/// they do on a Mac: `KeyBinding::load` resolves `secondary` with gpui's
+/// runtime OS, which the test platform reports as set here.
+///
+/// It does not cover what is drawn: `Kbd::format` draws by the compile
+/// target, not by gpui's OS (gpui-component kbd.rs:105-223), and the macOS
+/// menu bar's own bindings are bound only under `cfg!(target_os = "macos")`
+/// (`app::init`, `the_macos_menus_keys_are_the_higs`).
+#[gpui::test]
+fn the_bindings_take_cmd_under_macos(cx: &mut TestAppContext) {
+    cx.set_platform_info(gpui::PlatformInfo {
+        os: gpui::OperatingSystem::Mac,
+        target: gpui::PlatformTarget::Native,
+    });
+    let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
+    assert_eq!(
+        secondary("q", gpui::OperatingSystem::Mac),
+        "cmd-q",
+        "secondary does not resolve to Cmd under macOS"
+    );
+    assert_the_bindings_take(&mut cx, gpui::OperatingSystem::Mac);
+}
+
+/// `app::init`'s four bindings, each the highest-precedence binding of its
+/// action, on the `secondary` modifier of `os`.
+fn assert_the_bindings_take(cx: &mut VisualTestContext, os: gpui::OperatingSystem) {
     let bound: [(String, &dyn gpui::Action); 4] = [
-        (secondary("q"), &Quit),
-        (secondary("b"), &ToggleSidePanel),
-        (secondary("k"), &OpenCommandPalette),
-        (secondary(","), &OpenPreferences),
+        (secondary("q", os), &Quit),
+        (secondary("b", os), &ToggleSidePanel),
+        (secondary("k", os), &OpenCommandPalette),
+        (secondary(",", os), &OpenPreferences),
     ];
     for (keys, action) in bound {
         let got = cx.update(|window, _cx| {
@@ -2360,7 +2408,7 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
                 .map(|b| {
                     b.keystrokes()
                         .iter()
-                        .map(|k| k.unparse())
+                        .map(|k| k.unparse(os))
                         .collect::<Vec<_>>()
                         .join(" ")
                 })
@@ -2374,13 +2422,14 @@ fn the_menus_run_actions(cx: &mut TestAppContext) {
     }
 }
 
-/// `key` with gpui's `secondary` modifier, as a binding of it unparses:
-/// `ctrl-` here, `cmd-` on macOS (gpui-pre keystroke.rs:143-150). Empty
-/// where gpui cannot parse it, which no binding then equals.
-fn secondary(key: &str) -> String {
-    gpui::Keystroke::parse(&format!("secondary-{key}"))
-        .map(|k| k.unparse())
-        .unwrap_or_default()
+/// `key` with gpui's `secondary` modifier under `os`, as a binding of it
+/// unparses: `ctrl-` off macOS, `cmd-` on it (gpui-pre keystroke.rs:158-168).
+/// A key gpui cannot parse fails the test.
+fn secondary(key: &str, os: gpui::OperatingSystem) -> String {
+    let keys = format!("secondary-{key}");
+    let parsed = gpui::Keystroke::parse_with_os(&keys, os);
+    assert!(parsed.is_ok(), "{keys:?} does not parse: {parsed:?}");
+    parsed.map(|k| k.unparse(os)).unwrap_or_default()
 }
 
 /// Every item of `items` and of the submenus among them, depth first.
@@ -2403,6 +2452,8 @@ fn all_menu_items(items: Vec<gpui::MenuItem>) -> Vec<gpui::MenuItem> {
 fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
     let (_showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let (names, ctrl_i) = cx.update(|_window, cx| {
+        let os = cx.platform_info().os;
+        let secondary_i = secondary("i", os);
         let names: Vec<&'static str> = cx.all_action_names().to_vec();
         let ctrl_i: Vec<&'static str> = cx
             .key_bindings()
@@ -2411,10 +2462,10 @@ fn no_inspector_toggle_remains(cx: &mut TestAppContext) {
             .filter(|b| {
                 b.keystrokes()
                     .iter()
-                    .map(|k| k.unparse())
+                    .map(|k| k.unparse(os))
                     .collect::<Vec<_>>()
                     .join(" ")
-                    == secondary("i")
+                    == secondary_i
             })
             .map(|b| b.action().name())
             .collect();
@@ -3944,10 +3995,10 @@ fn the_kept_panel_look_follows_every_install(cx: &mut TestAppContext) {
         );
         kept
     };
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let breeze = kept(&mut cx, "a preset install");
 
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     let shown = read(&mut cx, &showcase, |this, _| this.is_dark);
     let mut looks = Vec::new();
     for mode in [!shown, shown] {
@@ -3984,7 +4035,7 @@ fn the_kept_panel_look_follows_every_install(cx: &mut TestAppContext) {
     cx.update(|window, cx| showcase.update(cx, |this, cx| this.on_os_theme_change(window, cx)));
     kept(&mut cx, "the theme watcher's re-read");
 
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let mut r = resolved_theme(&mut cx, &showcase);
     let is_dark = read(&mut cx, &showcase, |this, _| this.is_dark);
     assert_ne!(r.sidebar.font.color, r.defaults.accent_color);
@@ -5332,10 +5383,11 @@ fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
     // A tooltip fades in (tooltip.rs:183-186); without motion it is drawn
     // in full at once.
     without_motion(&mut cx);
+    let os = cx.update(|_window, cx| cx.platform_info().os);
     let cases: [(&'static str, Box<dyn gpui::Action>, String); 1] = [(
         CHROME_SIDE_PANEL_TOGGLE,
         Box::new(ToggleSidePanel),
-        secondary("b"),
+        secondary("b", os),
     )];
     let mut bound = Vec::new();
     for (selector, action, keys) in &cases {
@@ -5345,7 +5397,7 @@ fn the_side_panel_toggles_tooltip_names_its_key(cx: &mut TestAppContext) {
                 .map(|b| {
                     b.keystrokes()
                         .iter()
-                        .map(|k| k.unparse())
+                        .map(|k| k.unparse(os))
                         .collect::<Vec<_>>()
                         .join(" ")
                 })
@@ -8629,7 +8681,7 @@ fn the_theme_error_alerts_icon_follows_the_chosen_set(cx: &mut TestAppContext) {
             this.select_icon_set("Material (bundled)", window, cx)
         });
     });
-    use_preset(&mut cx, &showcase, "no-such-preset");
+    use_missing_preset(&mut cx, &showcase, "no-such-preset");
     let expected = read(&mut cx, &showcase, |this, _| {
         this.chrome_icon(&IconName::CircleX)
     });
@@ -11109,8 +11161,32 @@ fn a_swatchs_painted_fill_is_its_value_claim(cx: &mut TestAppContext) {
 }
 
 /// Install the preset of `key` as the theme settings' preset switch and the
-/// command palette do, through `SetPreset`, and draw the frame after.
-fn set_preset(cx: &mut VisualTestContext, key: &str) {
+/// command palette do, through `SetPreset`, and draw the frame after. A
+/// preset that does not install fails the test (`current_theme_name` is set
+/// only on a successful install, `apply_theme_by_name`); `"default"`, the
+/// OS theme, is not asserted, since the OS read may fail on a runner.
+fn set_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, key: &str) {
+    dispatch_preset(cx, key);
+    if key != "default" {
+        let installed = read(cx, showcase, |this, _| this.current_theme_name.clone());
+        assert_eq!(installed, key, "the preset {key:?} did not install");
+    }
+}
+
+/// Ask for a preset that does not exist through `SetPreset`, to provoke a
+/// theme error: the installed theme's name must not change.
+fn set_missing_preset(cx: &mut VisualTestContext, showcase: &Entity<Showcase>, key: &str) {
+    let before = read(cx, showcase, |this, _| this.current_theme_name.clone());
+    dispatch_preset(cx, key);
+    let after = read(cx, showcase, |this, _| this.current_theme_name.clone());
+    assert_eq!(
+        after, before,
+        "the missing preset {key:?} changed the installed theme's name"
+    );
+}
+
+/// Dispatch `SetPreset(key)` and draw the frame after.
+fn dispatch_preset(cx: &mut VisualTestContext, key: &str) {
     let action = SetPreset(key.to_string().into());
     cx.update(|window, cx| window.dispatch_action(Box::new(action), cx));
     cx.run_until_parked();
@@ -11136,7 +11212,7 @@ fn installed_preferences(
 #[gpui::test]
 fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let mut os = native_theme_gpui::AccessibilityPreferences::default();
     os.text_scaling_factor = 1.25;
     os.reduce_motion = false;
@@ -11168,7 +11244,7 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
         Some((1.75, true, false)),
         "the chosen preferences were not installed, so keeping them proves nothing"
     );
-    set_preset(&mut cx, "adwaita");
+    set_preset(&mut cx, &showcase, "adwaita");
     assert_eq!(
         installed_preferences(&mut cx, &showcase).as_ref(),
         Some(&chosen),
@@ -11206,7 +11282,7 @@ fn a_theme_install_keeps_the_installed_preferences(cx: &mut TestAppContext) {
 #[gpui::test]
 fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let mut changed = native_theme_gpui::AccessibilityPreferences::default();
     changed.text_scaling_factor = 1.5;
     changed.reduce_motion = true;
@@ -11226,7 +11302,7 @@ fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) 
         });
     };
     os_has(&mut cx, &changed);
-    set_preset(&mut cx, "adwaita");
+    set_preset(&mut cx, &showcase, "adwaita");
     assert_eq!(
         installed_preferences(&mut cx, &showcase).as_ref(),
         Some(&changed),
@@ -11249,7 +11325,7 @@ fn an_untouched_preference_follows_the_os_on_reinstall(cx: &mut TestAppContext) 
 #[gpui::test]
 fn a_variant_alone_reinstalls_the_theme_in_its_mode(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
     let (variant, wanted) = match was_dark {
         true => ("light", AppColorMode::Light),
@@ -11318,11 +11394,11 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
     };
     // A choice that followed the preset onto `system`, as it does where the
     // preset's own icon theme is not installed.
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| this.icon_set_choice = IconSetChoice::System)
     });
-    set_preset(&mut cx, "nord");
+    set_preset(&mut cx, &showcase, "nord");
     assert_eq!(
         choice(&mut cx),
         (
@@ -11337,7 +11413,7 @@ fn the_icon_theme_select_follows_the_preset(cx: &mut TestAppContext) {
             this.select_icon_set("Material (bundled)", window, cx)
         })
     });
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     assert_eq!(
         choice(&mut cx),
         (IconSetChoice::Material, Some("Material (bundled)".into())),
@@ -11505,7 +11581,7 @@ fn the_default_row_and_the_status_bar_name_one_preset(cx: &mut TestAppContext) {
         "adwaita"
     };
     system.preset = settled.to_string();
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     cx.update(|window, cx| showcase.update(cx, |this, cx| this.install_system(system, window, cx)));
     cx.run_until_parked();
     draw(&mut cx);
@@ -11585,7 +11661,7 @@ fn a_mode_switch_under_default_reads_the_os_only_on_reload(cx: &mut TestAppConte
     let Ok(system) = system_theme() else {
         return;
     };
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     let (reads, _) = reads_and_loads();
     for mode in three_switches(&mut cx, &showcase) {
         switch_mode(&mut cx, mode);
@@ -11626,7 +11702,7 @@ fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
     if system_theme().is_err() {
         return;
     }
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     for (mode, dark) in [(AppColorMode::Dark, true), (AppColorMode::Light, false)] {
         switch_mode(&mut cx, mode);
         let stale = "the read before the OS theme changed";
@@ -11677,7 +11753,7 @@ fn an_os_theme_change_is_read_in_every_colour_mode(cx: &mut TestAppContext) {
 fn a_bundled_preset_stays_installed_through_an_os_theme_change(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let preset = "material-3";
-    set_preset(&mut cx, preset);
+    set_preset(&mut cx, &showcase, preset);
     let set = read(&mut cx, &showcase, |this, _| {
         this.icon_set_choice
             .effective_icon_set(this.current_icon_set)
@@ -11720,7 +11796,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
     if system_theme().is_err() {
         return;
     }
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     cx.update(|window, cx| {
         showcase.update(cx, |this, cx| {
             this.select_icon_set(&IconSetChoice::Material.to_string(), window, cx)
@@ -11789,7 +11865,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
         );
     }
 
-    set_preset(&mut cx, "material-3");
+    set_preset(&mut cx, &showcase, "material-3");
     assert_eq!(
         read(&mut cx, &showcase, |this, _| this.icon_set_enum),
         Some(native_theme::theme::IconSet::Material),
@@ -11797,7 +11873,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
          start from a bundled set"
     );
     let (_, loads) = reads_and_loads();
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     assert!(
         read(&mut cx, &showcase, |this, _| this
             .icon_set_enum
@@ -11821,7 +11897,7 @@ fn icons_load_only_where_what_they_load_as_changed(cx: &mut TestAppContext) {
 #[ignore = "timing probe; run with --ignored --nocapture"]
 fn timing_a_mode_switch_under_default(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "default");
+    set_preset(&mut cx, &showcase, "default");
     for (label, icons) in [
         ("the theme's own icon set", None),
         ("Material chosen", Some(IconSetChoice::Material)),
@@ -11887,7 +11963,7 @@ fn icons_take_no_tint_without_a_native_theme() {
 #[gpui::test]
 fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "nord");
+    set_preset(&mut cx, &showcase, "nord");
     let nord_layout = native_theme::theme::Theme::preset("nord")
         .map(|t| t.layout)
         .ok();
@@ -11927,7 +12003,7 @@ fn a_failed_theme_leaves_the_installed_one_named(cx: &mut TestAppContext) {
             "{how}: the layout is no longer nord's"
         );
     };
-    set_preset(&mut cx, "no-such-preset");
+    set_missing_preset(&mut cx, &showcase, "no-such-preset");
     assert!(
         read(&mut cx, &showcase, |this, _| this.error_message.is_some()),
         "no-such-preset loaded, so nothing failed"
@@ -11969,10 +12045,10 @@ fn drawn_state(
 #[gpui::test]
 fn a_failed_install_leaves_the_window_as_the_installed_theme_drew_it(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let before = drawn_state(&mut cx, &showcase);
 
-    set_preset(&mut cx, "no-such-preset");
+    set_missing_preset(&mut cx, &showcase, "no-such-preset");
     let after = drawn_state(&mut cx, &showcase);
     assert!(
         after == before,
@@ -12027,7 +12103,7 @@ fn color_mode_shown(cx: &mut VisualTestContext, showcase: &Entity<Showcase>) -> 
 #[gpui::test]
 fn a_rejected_cli_theme_leaves_the_variant_to_apply(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let was_dark = cx.update(|_w, cx| Theme::global(cx).mode.is_dark());
     let (variant, wanted) = if was_dark {
         ("light", AppColorMode::Light)
@@ -12074,7 +12150,7 @@ fn a_rejected_cli_theme_leaves_the_variant_to_apply(cx: &mut TestAppContext) {
 #[gpui::test]
 fn a_cli_variant_whose_install_fails_keeps_the_colour_mode_shown(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
-    set_preset(&mut cx, "kde-breeze");
+    set_preset(&mut cx, &showcase, "kde-breeze");
     let before = drawn_state(&mut cx, &showcase);
     let variant = if before.0 { "light" } else { "dark" };
     cx.update(|_window, cx| {
@@ -12116,7 +12192,7 @@ fn the_command_line_rejects_what_it_cannot_honour(cx: &mut TestAppContext) {
     let Some(home) = offered.first().map(|info| info.key.to_string()) else {
         panic!("no preset is offered on this platform");
     };
-    set_preset(&mut cx, &home);
+    set_preset(&mut cx, &showcase, &home);
     let state = |cx: &mut VisualTestContext| {
         read(cx, &showcase, |this, cx| {
             (
@@ -12407,7 +12483,7 @@ fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
         })
     };
     // A bundled set's icon theme is always available: its `default` row.
-    set_preset(&mut cx, "catppuccin-mocha");
+    set_preset(&mut cx, &showcase, "catppuccin-mocha");
     icon_set(&mut cx, "material");
     let (choice, state) = (following(&mut cx).0, icon_set(&mut cx, "default"));
     assert!(
@@ -12425,7 +12501,7 @@ fn the_icon_set_flag_takes_what_the_select_offers(cx: &mut TestAppContext) {
     );
     // A freedesktop theme naming an icon theme that is not installed: the
     // Select has no `default` row, and `default` is `system`.
-    set_preset(&mut cx, "adwaita");
+    set_preset(&mut cx, &showcase, "adwaita");
     cx.update(|_window, cx| {
         showcase.update(cx, |this, _| {
             this.current_icon_theme = Some("no-such-icon-theme".to_string())
@@ -13175,7 +13251,7 @@ fn a_theme_error_is_an_alert(cx: &mut TestAppContext) {
         "an Alert shows before any theme failed"
     );
     let tabs_before = bounds_of(&mut cx, CHROME_PAGE_TABS);
-    use_preset(&mut cx, &showcase, "no-such-preset");
+    use_missing_preset(&mut cx, &showcase, "no-such-preset");
     let alert = bounds_of(&mut cx, CONTENT_ALERT);
     let tabs = bounds_of(&mut cx, CHROME_PAGE_TABS);
     let scroll = bounds_of(&mut cx, CONTENT_SCROLL);
@@ -17756,10 +17832,11 @@ fn the_markers_heading_counts_the_markers() {
 /// showcase's own bindings do (`app::init`): Ctrl off macOS and Cmd on it.
 /// A `cmd-` keystroke is the platform key everywhere, which gpui-component
 /// draws as Win off macOS (kbd.rs, Kbd::format).
-#[test]
-fn the_kbds_take_the_showcases_modifier() {
+#[gpui::test]
+fn the_kbds_take_the_showcases_modifier(cx: &mut TestAppContext) {
+    let os = cx.update(|cx| cx.platform_info().os);
     for &(id, keys) in &crate::pages::typography::KBDS {
-        let stroke = gpui::Keystroke::parse(keys)
+        let stroke = gpui::Keystroke::parse_with_os(keys, os)
             .unwrap_or_else(|e| panic!("{id}: {keys:?} is no keystroke: {e}"));
         assert!(
             keys.starts_with("secondary-"),
@@ -17781,23 +17858,43 @@ fn the_kbds_take_the_showcases_modifier() {
     }
 }
 
+/// The Typography page draws its four Kbds: each of `KBDS` is laid out, so
+/// a `demo::kbd` whose keys do not parse, and which is then left out, fails
+/// here. `the_kbds_take_the_showcases_modifier` parses `KBDS` itself and
+/// would not see that.
+#[gpui::test]
+fn the_typography_page_draws_its_kbds(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Typography);
+    let missing: Vec<&str> = crate::pages::typography::KBDS
+        .iter()
+        .map(|&(id, _)| id)
+        .filter(|&id| cx.debug_bounds(id).is_none())
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "the Typography page did not lay out these Kbds: {missing:?}"
+    );
+}
+
 /// The Feedback page's shortcut tooltip names its keystroke as a Kbd draws
 /// it on this platform, on the showcase's modifier: "Ctrl+S" off macOS,
 /// "⌘S", Cmd's glyph, on it.
-#[test]
-fn the_shortcut_tooltip_names_its_keystroke() {
+#[gpui::test]
+fn the_shortcut_tooltip_names_its_keystroke(cx: &mut TestAppContext) {
     use crate::pages::feedback::{SAVE_KEYS, save_tooltip};
-    let stroke = gpui::Keystroke::parse(SAVE_KEYS).expect("SAVE_KEYS is a keystroke");
+    let (os, tooltip) = cx.update(|cx| (cx.platform_info().os, save_tooltip(cx)));
+    let stroke = gpui::Keystroke::parse_with_os(SAVE_KEYS, os).expect("SAVE_KEYS is a keystroke");
     assert!(
         SAVE_KEYS.starts_with("secondary-"),
         "{SAVE_KEYS:?} is not on the showcase's modifier, secondary"
     );
     let drawn = gpui_component::kbd::Kbd::format(&stroke);
-    assert_eq!(save_tooltip(), format!("Save file ({drawn})"));
+    assert_eq!(tooltip, format!("Save file ({drawn})"));
     if cfg!(target_os = "macos") {
-        assert_eq!(save_tooltip(), "Save file (⌘S)");
+        assert_eq!(tooltip, "Save file (⌘S)");
     } else {
-        assert_eq!(save_tooltip(), "Save file (Ctrl+S)");
+        assert_eq!(tooltip, "Save file (Ctrl+S)");
     }
 }
 

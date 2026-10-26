@@ -163,8 +163,17 @@ pub(crate) struct SetPreset(pub SharedString);
 /// Bind the showcase's keys (spec §2.2) and quit on [`Quit`].
 ///
 /// The bindings take gpui's `secondary` modifier, Cmd on macOS and Ctrl
-/// elsewhere (gpui-pre keystroke.rs:143-150), as gpui-component's own do,
+/// elsewhere (gpui-pre keystroke.rs:158-168), as gpui-component's own do,
 /// so the menus show each platform's own shortcut.
+///
+/// Each is built by [`load`], through `KeyBinding::load`, which resolves
+/// `secondary` with gpui's runtime OS (gpui-pre keymap/binding.rs:51-68)
+/// and returns a parse error, where gpui-pre 0.3.10's `KeyBinding::new`
+/// panics on one (keymap/binding.rs:32-47): a binding that does not parse
+/// is left out, and no binding can panic. `load` also maps each key
+/// through the platform's keyboard mapper, which on Windows round-trips the
+/// key through the current keyboard layout (gpui-pre-windows
+/// keyboard.rs:39-86, :139-145).
 ///
 /// `Quit` is handled here, for the whole application, so it quits whatever
 /// has the focus; the actions that change the showcase are handled around
@@ -174,15 +183,20 @@ pub(crate) struct SetPreset(pub SharedString);
 /// On macOS it also binds and handles the rows the system menu bar's app,
 /// File and Window menus add (`chrome::macos_menus`, [`macos_bindings`]).
 pub(crate) fn init(cx: &mut App) {
-    cx.bind_keys([
-        KeyBinding::new("secondary-q", Quit, None),
-        KeyBinding::new("secondary-b", ToggleSidePanel, None),
-        KeyBinding::new("secondary-k", OpenCommandPalette, None),
-        KeyBinding::new("secondary-,", OpenPreferences, None),
-    ]);
+    let bindings: Vec<KeyBinding> = [
+        load("secondary-q", Box::new(Quit), cx),
+        load("secondary-b", Box::new(ToggleSidePanel), cx),
+        load("secondary-k", Box::new(OpenCommandPalette), cx),
+        load("secondary-,", Box::new(OpenPreferences), cx),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
+    cx.bind_keys(bindings);
     cx.on_action(|_: &Quit, cx| quit(cx));
     if cfg!(target_os = "macos") {
-        cx.bind_keys(macos_bindings());
+        let mac = macos_bindings(cx);
+        cx.bind_keys(mac);
         cx.on_action(|_: &Hide, cx| cx.hide());
         cx.on_action(|_: &HideOthers, cx| cx.hide_other_apps());
         cx.on_action(|_: &ShowAll, cx| cx.unhide_other_apps());
@@ -198,13 +212,32 @@ pub(crate) fn init(cx: &mut App) {
 /// The keys of the macOS menu bar's own rows (Apple's HIG, *The menu bar*):
 /// ⌘H Hide, ⌥⌘H Hide Others, ⌘M Minimize and ⌘W Close, which the rows show
 /// beside their titles. Show All and Zoom have none.
-pub(crate) fn macos_bindings() -> [KeyBinding; 4] {
+///
+/// Built by [`load`], as [`init`]'s are, so a key that does not parse is
+/// left out rather than panicking in `KeyBinding::new`.
+pub(crate) fn macos_bindings(cx: &App) -> Vec<KeyBinding> {
     [
-        KeyBinding::new("cmd-h", Hide, None),
-        KeyBinding::new("alt-cmd-h", HideOthers, None),
-        KeyBinding::new("cmd-m", Minimize, None),
-        KeyBinding::new("cmd-w", CloseWindow, None),
+        load("cmd-h", Box::new(Hide), cx),
+        load("alt-cmd-h", Box::new(HideOthers), cx),
+        load("cmd-m", Box::new(Minimize), cx),
+        load("cmd-w", Box::new(CloseWindow), cx),
     ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+/// The binding of `keys` to `action` in every context, or `None`, with one
+/// stderr line, where `keys` does not parse: the binding is left out, with
+/// no fallback key.
+fn load(keys: &str, action: Box<dyn Action>, cx: &App) -> Option<KeyBinding> {
+    match KeyBinding::load(keys, action, None, false, None, cx) {
+        Ok(binding) => Some(binding),
+        Err(error) => {
+            eprintln!("showcase: the key binding {keys:?} did not parse: {error:?}");
+            None
+        }
+    }
 }
 
 /// Run `act` on the active window, where there is one: the Window menu acts

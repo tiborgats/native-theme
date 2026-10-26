@@ -1711,7 +1711,9 @@ fn redraw(cx: &mut VisualTestContext) {
 /// control (checkbox.rs, `activate_key`).
 #[allow(clippy::unwrap_used)]
 fn activate_key(cx: &mut VisualTestContext, key: &str) {
-    let keystroke = gpui::Keystroke::parse(key).unwrap();
+    let keystroke = cx
+        .update(|_, cx| gpui::Keystroke::parse_with_os(key, cx.platform_info().os))
+        .unwrap();
     cx.simulate_event(gpui::KeyDownEvent {
         keystroke: keystroke.clone(),
         is_held: false,

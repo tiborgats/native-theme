@@ -6473,15 +6473,22 @@ pub(crate) fn link(
     .debug_selector(move || id.into())
 }
 
-/// A `Kbd` for `keys`, in gpui's keystroke syntax; `None` where they do not
-/// parse.
+/// A `Kbd` for `keys`, in gpui's keystroke syntax, `secondary` resolved
+/// with gpui's runtime OS (gpui-pre keystroke.rs:124-130); `None`, with one
+/// stderr line, where they do not parse.
 pub(crate) fn kbd(
     ui: &Entity<InfoRegistry>,
     cx: &App,
     id: &'static str,
     keys: &'static str,
 ) -> Option<Stateful<Div>> {
-    let stroke = Keystroke::parse(keys).ok()?;
+    let stroke = match Keystroke::parse_with_os(keys, cx.platform_info().os) {
+        Ok(stroke) => stroke,
+        Err(error) => {
+            eprintln!("showcase: the keys {keys:?} did not parse: {error:?}");
+            return None;
+        }
+    };
     let drawn = Kbd::format(&stroke);
     Some(
         Kbd::new(stroke)

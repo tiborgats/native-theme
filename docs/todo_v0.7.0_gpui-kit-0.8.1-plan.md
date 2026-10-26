@@ -396,3 +396,16 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   `60fa77fd`, the branch pushed at `7f011f00`, the review session's writers stopped. The
   maintainer approved P1 and P3 (rationale §3) and started G4 on 2026-10-26.
 - **The inputs** (Task 0): all seven are in `.superpowers/sdd/todo_code-review-plan/g4/`.
+- **Task 1, the colour-claim gate's list.** On the bumped lock it lists 127 of 826 claims,
+  where the trial listed 125 of 821. The two more are the code Editor's `[fill]` and `[gutter]`
+  claims (`SC/info/typography.rs:313`, `:322`, citing gpui-component `input/input.rs:722` and
+  `:578`), which the D round's D4 added after the trial. They moved like the others, so Task 2's
+  run takes them. The prose-citation gate's 14 are the trial's 14.
+- **Task 1, two ranges wider than the spec's.** The Windows mapper's round trip is cited as
+  gpui-pre-windows `src/keyboard.rs:39-86` (the whole `map_key_equivalent`, the key written
+  back at `:66-78`), where spec §2.1 wrote `:39-60`. `Kbd::format` is cited as gpui-component
+  `kbd.rs:105-223` (the whole function, which draws by `cfg(target_os)` throughout), where
+  §2.2 wrote `:105-151`, which ends inside the function's key `match`.
+- **Task 1, the `KeyBinding::new` grep.** In the showcase's non-test code it finds two lines,
+  both doc comments (`init`'s and `macos_bindings`'), which name the constructor that panics,
+  as spec §2.1 asks the docs to. It finds no call.

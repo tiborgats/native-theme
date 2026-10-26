@@ -9,13 +9,13 @@
 [advisories]
 ignore = [
     # instant 0.1.13, unmaintained, no patched release; reached through
-    # gpui-base and gpui-component 0.8.0 (native-theme-gpui's GPUI Kit).
+    # gpui-base and gpui-component 0.8.1 (native-theme-gpui's GPUI Kit).
     "RUSTSEC-2024-0384",
     # paste 1.0.15, unmaintained, no patched release; reached through
-    # gpui-component 0.8.0, metal 0.33.0 and pulp 0.22.3 (native-theme-gpui).
+    # gpui-component 0.8.1, metal 0.33.0 and pulp 0.22.3 (native-theme-gpui).
     "RUSTSEC-2024-0436",
     # rustls-pemfile 2.2.0, unmaintained, no patched release; reached through
-    # gpui-pre-reqwest 0.12.15, which gpui-kit-assets 0.8.0 (native-theme-gpui's
+    # gpui-pre-reqwest 0.12.15, which gpui-kit-assets 0.8.1 (native-theme-gpui's
     # GPUI Kit) depends on only under `cfg(target_family = "wasm")`, so no
     # target the workspace builds compiles it.
     "RUSTSEC-2025-0134",
@@ -23,7 +23,7 @@ ignore = [
     # usvg 0.45.1 and 0.46.0 (native-theme-gpui's resvg).
     "RUSTSEC-2026-0206",
     # ttf-parser 0.25.1, unmaintained, no patched release; reached through
-    # gpui-pre 0.3.9, rustybuzz 0.20.1 and fontdb 0.23.0. fontdb 0.24.0 no
+    # gpui-pre 0.3.10, rustybuzz 0.20.1 and fontdb 0.23.0. fontdb 0.24.0 no
     # longer depends on it, but cosmic-text 0.15 and 0.19 (iced's and GPUI's
     # text stacks) require fontdb 0.23, and native-theme stays on 0.23 by its
     # own choice (native-theme/Cargo.toml, `fontdb`) to share their copy.
