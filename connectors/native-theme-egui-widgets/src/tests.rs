@@ -10,7 +10,7 @@
 
 use std::path::{Path, PathBuf};
 
-use native_theme_egui::convert::{composite_over, to_color32};
+use native_theme_egui::convert::{composite_over, to_color32, u8_from_f32_saturating};
 use native_theme_egui::egui::{self, accesskit};
 use native_theme_egui::native_theme::theme::IconSet;
 use native_theme_egui::{
@@ -1670,8 +1670,8 @@ fn a_disabled_translucent_knob_fades_over_the_backdrop() {
 /// D13b: a segmented control under a disabled `Ui` is faded as one widget by the segmented
 /// control's own `disabled_opacity` (the scope's `disabled_alpha`) over its backdrop, as the
 /// model defines the opacity, for the entire widget (`docs/platform-facts.md` §2.1.6): the group
-/// fill over the backdrop, the outline over the group, the selected segment's fill over the
-/// group, each label over its segment, each faded over the backdrop, painted at opacity 1. On
+/// fill and the outline over the backdrop, the dividers and the selected segment's fill over
+/// the group, each label over its segment, each faded over the backdrop, painted at opacity 1. On
 /// adwaita (0.5) and on windows-11 (0.55, which the calling `Ui`'s own `disabled_alpha` of 1
 /// would not have applied), on the window and on a backdrop of the caller's.
 #[test]
@@ -1710,14 +1710,29 @@ fn a_disabled_segmented_control_fades_as_one() {
             assert!((alpha - opacity).abs() < 1e-6, "{at_name}: {alpha}");
             let fade = |c: egui::Color32| ground.lerp_to_gamma(c, alpha);
             let group = ground.blend(v.widgets.inactive.weak_bg_fill);
-            let line = group.blend(v.widgets.inactive.bg_stroke.color);
+            let stroke = v.widgets.inactive.bg_stroke.color;
             let all = rects(&out);
             let frame = all
                 .iter()
                 .find(|s| s.rect == control.rect)
                 .unwrap_or_else(|| panic!("{at_name}: no frame in {all:#?}"));
             assert_eq!(frame.fill, fade(group), "{at_name}: the group");
-            assert_eq!(frame.stroke.color, fade(line), "{at_name}: the outline");
+            assert_eq!(
+                frame.stroke.color,
+                fade(ground.blend(stroke)),
+                "{at_name}: the outline, over the backdrop"
+            );
+            let divider = Parts::of(&control).unwrap().get("divider_0").unwrap();
+            let painted = all.iter().find(|s| s.rect == divider).map(|s| s.fill);
+            if t.segmented_control.separator_width > 0.0 {
+                assert_eq!(
+                    painted,
+                    Some(fade(group.blend(stroke))),
+                    "{at_name}: the divider, over the group"
+                );
+            } else {
+                assert_eq!(painted, None, "{at_name}: a divider 0 wide is not painted");
+            }
             let parts = Parts::of(&control).unwrap();
             let fill_of = |name: &str| {
                 let rect = parts.get(name).unwrap();
@@ -2365,11 +2380,54 @@ fn a_wrapped_controls_uncovered_inside_is_the_line_colour() {
         segments[2].top() > segments[0].top(),
         "the control did not wrap"
     );
-    let lines: Vec<egui::Rect> = rects(&out)
-        .into_iter()
-        .filter(|s| s.fill == line)
-        .map(|s| s.rect)
-        .collect();
+    let line_shapes: Vec<egui::epaint::RectShape> =
+        rects(&out).into_iter().filter(|s| s.fill == line).collect();
+    let lines: Vec<egui::Rect> = line_shapes.iter().map(|s| s.rect).collect();
+    // Nothing spills outside the rounded outline: a line that reaches a corner of the inside
+    // rounds that corner to the outline's inner radius, as a segment there does.
+    let radius = u8_from_f32_saturating(t.segmented_control.border.corner_radius);
+    let inner = radius.saturating_sub(u8_from_f32_saturating(
+        t.segmented_control.border.line_width,
+    ));
+    assert!(
+        inner > 0,
+        "adwaita's outline has no inner radius, so this proves nothing"
+    );
+    let on = |a: f32, b: f32| (a - b).abs() <= 1.0;
+    let mut cornered = 0;
+    for s in &line_shapes {
+        let r = s.rect;
+        for (here, got) in [
+            (
+                on(r.left(), inside.left()) && on(r.top(), inside.top()),
+                s.corner_radius.nw,
+            ),
+            (
+                on(r.right(), inside.right()) && on(r.top(), inside.top()),
+                s.corner_radius.ne,
+            ),
+            (
+                on(r.left(), inside.left()) && on(r.bottom(), inside.bottom()),
+                s.corner_radius.sw,
+            ),
+            (
+                on(r.right(), inside.right()) && on(r.bottom(), inside.bottom()),
+                s.corner_radius.se,
+            ),
+        ] {
+            if here {
+                cornered += 1;
+                assert_eq!(
+                    got, inner,
+                    "a line at the inside's corner, {r:?}, is not rounded"
+                );
+            }
+        }
+    }
+    assert!(
+        cornered > 0,
+        "no line reaches a corner of the inside, so this proves nothing"
+    );
     let steps = 24;
     let mut missed = Vec::new();
     for i in 0..steps {

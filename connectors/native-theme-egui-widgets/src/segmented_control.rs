@@ -312,8 +312,14 @@ impl Outline {
     /// colour of its own for the dividers. The one thing the control paints itself: egui's
     /// `Button` has no stroke on one side.
     fn paint_lines(&self, painter: &egui::Painter, inside: egui::Rect, rects: &[egui::Rect]) {
+        let inner = self.corners(Shared {
+            nw: true,
+            ne: true,
+            sw: true,
+            se: true,
+        });
         for line in uncovered(inside, rects) {
-            painter.rect_filled(line, egui::CornerRadius::ZERO, self.lines);
+            painter.rect_filled(line, on_corners(line, inside, inner), self.lines);
         }
     }
 
@@ -427,17 +433,17 @@ fn lay_over_group(v: &mut egui::Visuals, hover: Option<egui::Color32>) {
 /// A disabled control faded as one widget by `alpha`, the scope's `disabled_alpha`
 /// (`segmented_control.disabled_opacity`), over `ground`, as the model defines the opacity, for
 /// the entire widget (`docs/platform-facts.md` §2.1.6): each colour composited over what it lies
-/// on and faded over `ground` -- the group fill over `ground`, the outline and the lines over the
-/// group, the selected segment's fill over the group, each label over its segment -- so a part
+/// on and faded over `ground` -- the group fill and the outline over `ground`, as the iced
+/// connector lays them and `docs/platform-facts.md` §2.25 composites them, the lines and the
+/// selected segment's fill over the group, each label over its segment -- so a part
 /// keeps its colour on the part under it and the whole fades. A disabled segment is in its
 /// `inactive` state, as egui hovers no disabled widget (`egui/src/context.rs:1496-1500`).
 fn fade_as_one(outline: &mut Outline, v: &mut egui::Visuals, ground: egui::Color32, alpha: f32) {
     let fade = |colour: egui::Color32| crate::fade::faded(ground, colour, alpha);
     let group = ground.blend(outline.group);
-    let line = group.blend(outline.stroke.color);
+    outline.stroke.color = fade(ground.blend(outline.stroke.color));
+    outline.lines = fade(group.blend(outline.lines));
     outline.group = fade(group);
-    outline.stroke.color = fade(line);
-    outline.lines = fade(line);
     let idle = &mut v.widgets.inactive;
     let label = v.override_text_color.unwrap_or(idle.fg_stroke.color);
     idle.fg_stroke.color = fade(group.blend(idle.fg_stroke.color));
@@ -445,6 +451,32 @@ fn fade_as_one(outline: &mut Outline, v: &mut egui::Visuals, ground: egui::Color
     let selected = group.blend(v.selection.bg_fill);
     v.selection.bg_fill = fade(selected);
     v.selection.stroke.color = fade(selected.blend(v.selection.stroke.color));
+}
+
+/// The corners of `rect`, a part of `inside`, that lie on `inside`'s own corners, rounded to
+/// `inner`, the outline's inner radius, as a segment there rounds them, so nothing of `rect`
+/// lies outside the rounded outline; its other corners square.
+fn on_corners(
+    rect: egui::Rect,
+    inside: egui::Rect,
+    inner: egui::CornerRadius,
+) -> egui::CornerRadius {
+    let on = |a: f32, b: f32| (a - b).abs() <= ON_CORNER;
+    let (left, right) = (
+        on(rect.left(), inside.left()),
+        on(rect.right(), inside.right()),
+    );
+    let (top, bottom) = (
+        on(rect.top(), inside.top()),
+        on(rect.bottom(), inside.bottom()),
+    );
+    let at = |here: bool, r: u8| if here { r } else { 0 };
+    egui::CornerRadius {
+        nw: at(left && top, inner.nw),
+        ne: at(right && top, inner.ne),
+        sw: at(left && bottom, inner.sw),
+        se: at(right && bottom, inner.se),
+    }
 }
 
 /// What of `inside`, the frame's inside, the segments at `rects` leave uncovered, in rows as

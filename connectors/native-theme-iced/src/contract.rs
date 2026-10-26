@@ -4368,6 +4368,36 @@ fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
     Ok(())
 }
 
+/// D15: a disabled windows-11 segmented control's group and edge, faded as
+/// one by 0.55 over the window, are the values `docs/platform-facts.md:1646`
+/// composites: the group #f0f0f0 / #1e1e1e and the edge #ebebeb / #292929.
+#[cfg(feature = "widgets")]
+#[test]
+fn a_disabled_windows_11_segmented_control_fades_as_the_facts_compose() -> native_theme::Result<()>
+{
+    for (mode, group, edge) in [
+        (ColorMode::Light, [0xf0, 0xf0, 0xf0], [0xeb, 0xeb, 0xeb]),
+        (ColorMode::Dark, [0x1e, 0x1e, 0x1e], [0x29, 0x29, 0x29]),
+    ] {
+        let resolved = native_theme::theme::Theme::preset("windows-11")?
+            .into_variant(mode)?
+            .into_resolved(&native_theme::ResolutionContext::for_tests())?;
+        let theme = crate::to_theme(&resolved, "windows-11");
+        let style = styles::segmented_control(&resolved, true)(&theme);
+        let rgb = |c: Color| {
+            let [r, g, b, _] = c.into_rgba8();
+            [r, g, b]
+        };
+        assert_eq!(
+            flat(style.background).map(rgb),
+            Ok(group),
+            "{mode:?}: the group"
+        );
+        assert_eq!(rgb(style.border.color), edge, "{mode:?}: the edge");
+    }
+    Ok(())
+}
+
 #[cfg(feature = "iced_aw")]
 #[test]
 fn a_cleared_tab_soft_option_copies_the_idle_fill() -> native_theme::Result<()> {

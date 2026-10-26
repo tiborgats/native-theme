@@ -48,7 +48,7 @@ rules are there (*The finding ledger*). Branch `v0.7.0-rc1` (named `v0.6.2-rc1` 
 | M9x | done (2026-10-26; *M9x: the CI captures of 2026-10-25*: M9-163..M9-178, fixes `40a0580f..5d5cc4ba`, the Linux parity run and the full `check_release.sh` on `5d5cc4ba`, Screenshots runs 40242556708 and 40257501694; closing commit `294ff9ad`) |
 | G3 | closed 2026-10-23 (D11, docs/archive/todo_v0.7.0_gpui-kit-0.8.0-plan.md; *G3* below) |
 | C | done (2026-10-26; *C round: the v0.7.0 todo items*, `b1b8f095..5df404c6`: C-01 `fad5f7f7`, C-02 `b3591c62`, C-03 `67aa7b4b`, C-04 `e92c288a`, C-05 `64bd92be`, C-06 `753cda70`, C-07 `b1b8f095` (the showcase) and `d2d4a3af` (the script), C-08 `7bea7d81` and `d296edf7`, each with its review follow-ups and ledger commit) |
-| D | done (2026-10-26; *D round: the other v0.7.0 todo items*, `5371d7d8..e3bd270c`, interleaved with the C round: D-1045 `cb74515d`, D-797 `a7dc6f0c`, D-986 `48df37e9`, D1 `855cea3a`, `96199f83`, `891e66dd`, D2 `c7989e7b`, D3 `2caad225`, D4 `c77b6f77`, D5 `2eca456a`, D6 `8c219626`, D7 `0618906f`, D8 `29634cfd`, D9 `7800d2d6`, D10 `d14ce711`, D11 `49e9703e`, D12 `cd32a249`, D13 `201a5132` and `79ff4499`, D14 `2b2b322d`, D13b `e3bd270c`; os-probe evidence `docs/evidence/os-probe/2026-10-26-run-40320895749/`, `-40324458365/` and `-40348854007/`) |
+| D | done (2026-10-26; *D round: the other v0.7.0 todo items*, `5371d7d8..e3bd270c` and, after the close, D15, interleaved with the C round: D-1045 `cb74515d`, D-797 `a7dc6f0c`, D-986 `48df37e9`, D1 `855cea3a`, `96199f83`, `891e66dd`, D2 `c7989e7b`, D3 `2caad225`, D4 `c77b6f77`, D5 `2eca456a`, D6 `8c219626`, D7 `0618906f`, D8 `29634cfd`, D9 `7800d2d6`, D10 `d14ce711`, D11 `49e9703e`, D12 `cd32a249`, D13 `201a5132` and `79ff4499`, D14 `2b2b322d`, D13b `e3bd270c`, D15 (its entry, after the close); os-probe evidence `docs/evidence/os-probe/2026-10-26-run-40320895749/`, `-40324458365/` and `-40348854007/`) |
 
 ## Baseline (M0, 2026-10-11)
 
@@ -14246,4 +14246,28 @@ says so. M2 (a note): windows-11's outline composite differs from WinUI's by abo
 as it did before D13 (iced's border replaces the fill under it, gpui's and egui's lie over it).
 M3 (a note): gpui's `demo::segmented` clips its segments' ends square to the rounded frame
 (`overflow_hidden`), where iced and egui round the segments' own outer corners.
+**Status:** done, the commit that files this entry.
+
+#### D15 · the D13b/D14 review: the disabled outline over the window, the wrapped corners, docs
+**Problem:** I1: the egui widget laid a disabled control's outline over the group before fading
+it, where the iced connector (`SegmentedFade::over_ground`) and `docs/platform-facts.md:1646`
+lay it over the window. I2: a wrapped egui control's last row painted a square line-colour
+corner outside the rounded outline (adwaita, radius 9). M3: the iced docs did not say that the
+container's `disabled` flag must agree with the segments' status. M4: no test held the egui
+dividers' disabled colour, nor iced's windows-11 disabled group and edge to the facts. M5, M6:
+the iced `radio` doc and the egui widgets' `RadioButton` doc still said macOS publishes no dot
+(D14 states it).
+**Fix:** I1: egui's `fade_as_one` lays the outline over the backdrop and the lines over the
+group; on windows-11 the iced outline is facts :1646's #ebebeb / #292929. The enabled split
+stays and is recorded: an enabled outline replaces the fill under it in iced (its quad draws the
+border in place of the background) and lies over the group in gpui and egui, which differ by a
+few levels on windows-11's translucent group, as before D13. I2: each line the widget paints that
+reaches a corner of the inside rounds it to the outline's inner radius (`on_corners`);
+`a_wrapped_controls_uncovered_inside_is_the_line_colour` asserts it, so nothing spills outside
+the outline. M3: `styles::segmented_control` and `styles::segment` say so. M4:
+`a_disabled_segmented_control_fades_as_one` asserts the divider's colour (adwaita) and that a
+divider 0 wide is not painted (windows-11);
+`a_disabled_windows_11_segmented_control_fades_as_the_facts_compose` pins the iced group
+#f0f0f0 / #1e1e1e and edge #ebebeb / #292929. M5, M6: both docs name the presets that state no
+dot. The CHANGELOG's egui line follows.
 **Status:** done, the commit that files this entry.

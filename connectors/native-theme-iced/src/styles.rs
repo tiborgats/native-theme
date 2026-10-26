@@ -1770,7 +1770,10 @@ impl SegmentPosition {
 /// outline, the separators ([`segment_separator`] with the same `disabled`),
 /// the segments and their labels ([`segment`], `Status::Disabled`), each
 /// composited over what it lies on and faded over the window. Where the
-/// opacity is 1 the colours are as stated.
+/// opacity is 1 the colours are as stated. The flag must agree with the
+/// segments' status: a container styled enabled round segments built with
+/// no `on_press` draws an unfaded group under faded segments, and one
+/// styled disabled round enabled segments the reverse.
 ///
 /// The control's height is not a `Style` field: `segmented_control.segment_height`
 /// is the control's outer height, which a consumer gives the segments less
@@ -1892,6 +1895,9 @@ pub fn segment_separator(
 /// A disabled segment is its enabled self faded as one with the control, as
 /// [`segmented_control`] says: its fill over the group, its label over its
 /// fill, each faded by `segmented_control.disabled_opacity` over the window.
+/// iced gives a button `Status::Disabled` when it has no `on_press`, so a
+/// disabled control's segments are built without one, and its container and
+/// separators are styled with `disabled` true to agree.
 ///
 /// Each segment rounds the corners it shares with the control's outline, to
 /// the outline's inner radius -- `border.corner_radius` less
