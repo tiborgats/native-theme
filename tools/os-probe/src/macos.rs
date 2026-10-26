@@ -1513,18 +1513,18 @@ const KEY_DISABLED_ROW_Y: f64 = 96.0;
 /// The bottom edge of the row of their enabled twins.
 const KEY_ENABLED_ROW_Y: f64 = 128.0;
 
-/// The left edge of each row's switch that is on.
-const KEY_SWITCH_ON_X: f64 = 200.0;
+/// The left edge of each row's first control, the switch that is on; each
+/// next control starts `KEY_CONTROL_GAP` right of the one before's fitted
+/// frame (an `NSSwitch` fits to 42 pt on macOS 14 and 15 and 54 pt on 26
+/// and 27, OS-probe run 40348854007, `switch_on_disabled_frame_xywh`).
+const KEY_CONTROLS_X: f64 = 200.0;
 
-/// The left edge of each row's switch that is off.
-const KEY_SWITCH_OFF_X: f64 = 250.0;
+/// The space between two controls of a row, in points.
+const KEY_CONTROL_GAP: f64 = 8.0;
 
-/// The left edge of each row's slider.
-const KEY_SLIDER_X: f64 = 300.0;
-
-/// Each row's slider's width, in points: it ends left of
-/// `KEY_BACKGROUND_POINT`.
-const KEY_SLIDER_WIDTH: f64 = 80.0;
+/// Where each row's slider ends, its width what is left of the row: left of
+/// `KEY_BACKGROUND_POINT`, so no control covers it.
+const KEY_CONTROLS_END_X: f64 = 380.0;
 
 /// The slider's value, in its 0..1 range: the knob in the middle, the fill
 /// left of it.
@@ -1685,16 +1685,15 @@ fn key_window_table(
     let mut switches: Vec<(String, bool, Retained<NSSwitch>)> = Vec::new();
     let mut sliders: Vec<(String, Retained<NSSlider>)> = Vec::new();
     for (y, enabled, suffix) in rows {
-        for (on, x, name) in [
-            (true, KEY_SWITCH_ON_X, "switch_on"),
-            (false, KEY_SWITCH_OFF_X, "switch_off"),
-        ] {
+        let mut x = KEY_CONTROLS_X;
+        for (on, name) in [(true, "switch_on"), (false, "switch_off")] {
             let switch = NSSwitch::new(mtm);
             switch.setState(state_value(on));
             switch.setEnabled(enabled);
             switch.sizeToFit();
             switch.setFrameOrigin(NSPoint::new(x, y));
             content.addSubview(&switch);
+            x += switch.frame().size.width + KEY_CONTROL_GAP;
             switches.push((format!("{name}{suffix}"), on, switch));
         }
         let slider = NSSlider::new(mtm);
@@ -1706,8 +1705,8 @@ fn key_window_table(
         slider.sizeToFit();
         let height = slider.frame().size.height;
         slider.setFrame(NSRect::new(
-            NSPoint::new(KEY_SLIDER_X, y),
-            NSSize::new(KEY_SLIDER_WIDTH, height),
+            NSPoint::new(x, y),
+            NSSize::new((KEY_CONTROLS_END_X - x).max(0.0), height),
         ));
         content.addSubview(&slider);
         sliders.push((format!("slider{suffix}"), slider));
@@ -1813,7 +1812,7 @@ fn key_window_table(
         &mut t,
         "method_controls",
         out::text(format!(
-            "in the band between the segmented control and the table: a row of disabled controls (setEnabled: NO) with its bottom edge at y {KEY_DISABLED_ROW_Y} and a row of the same controls enabled at y {KEY_ENABLED_ROW_Y}, each an NSSwitch on at x {KEY_SWITCH_ON_X}, an NSSwitch off at x {KEY_SWITCH_OFF_X} (both sized to fit) and an NSSlider, horizontal, 0..1 at {KEY_SLIDER_VALUE}, {KEY_SLIDER_WIDTH} pt wide at x {KEY_SLIDER_X} (sized to fit in height); a switch's track is sampled at {KEY_SWITCH_TRACK_AT} of its width in from the end away from the knob, and its knob half the frame's height in from the end it rests at (the right end when on), both at the frame's vertical centre; a slider's fill at {KEY_SLIDER_FILL_AT} and its track at {KEY_SLIDER_TRACK_AT} of the bar's width (barRectFlipped: of its NSSliderCell, in the content view; the frame where the cell is not one), at the bar's vertical centre, and its knob at the centre of knobRectFlipped: (the bar's centre where the cell is not an NSSliderCell)"
+            "in the band between the segmented control and the table: a row of disabled controls (setEnabled: NO) with its bottom edge at y {KEY_DISABLED_ROW_Y} and a row of the same controls enabled at y {KEY_ENABLED_ROW_Y}, from x {KEY_CONTROLS_X}, each control {KEY_CONTROL_GAP} pt right of the one before's fitted frame: an NSSwitch on and an NSSwitch off (both sized to fit) and an NSSlider, horizontal, 0..1 at {KEY_SLIDER_VALUE}, sized to fit in height and as wide as the row leaves up to x {KEY_CONTROLS_END_X}; a switch's track is sampled at {KEY_SWITCH_TRACK_AT} of its width in from the end away from the knob, and its knob at a point inside the knob, half the frame's height in from the end it rests at (the right end when on; the knob's centre only where it is round), both at the frame's vertical centre; a slider's fill at {KEY_SLIDER_FILL_AT} and its track at {KEY_SLIDER_TRACK_AT} of the bar's width (barRectFlipped: of its NSSliderCell, in the content view; the frame where the cell is not one), at the bar's vertical centre, and its knob at the centre of knobRectFlipped: (the bar's centre where the cell is not an NSSliderCell); where a disabled slider draws no value fill (macOS 14, 15 and 26 in run 40348854007), slider_disabled_fill samples the bar"
         )),
     );
     let mut control_points: Vec<(String, NSPoint)> = Vec::new();

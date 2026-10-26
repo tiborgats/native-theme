@@ -590,10 +590,12 @@ mod tests {
     fn list_alternate_row_background_not_derived() {
         let src = include_str!("../resolve/inheritance.rs");
         // Count occurrences of "alternate_row_background" INSIDE the
-        // resolve_widget_to_widget function body. Expected: zero — the 9
-        // widget-to-widget rules are: 2 window, 2 button, 1 tab, 1 list
-        // hover_text_color, 1 splitter, 2 link. None touch
-        // alternate_row_background.
+        // resolve_widget_to_widget function body. Expected: zero — the
+        // widget-to-widget rules are 11 field rules (2 window, 2 button,
+        // 1 tab, 1 list hover_background, 1 sidebar hover_background, 1 list
+        // hover_text_color, 1 splitter, 2 link) and the text_area.border
+        // block, which takes its 4 unstated fields from input.border. None
+        // touch alternate_row_background.
         //
         // Zero-panic: the split chain can return None if the function
         // signature is renamed — in which case the assertion should FAIL

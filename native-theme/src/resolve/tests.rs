@@ -2013,8 +2013,11 @@ fn an_unstated_list_or_sidebar_hover_is_the_widgets_own_background() {
     let mut stated = variant_with_defaults();
     stated.list.background_color = Some(Rgba::rgb(255, 255, 255));
     stated.list.hover_background = Some(Rgba::rgb(1, 2, 3));
+    stated.sidebar.background_color = Some(Rgba::rgb(246, 246, 246));
+    stated.sidebar.hover_background = Some(Rgba::rgb(4, 5, 6));
     stated.resolve();
     assert_eq!(stated.list.hover_background, Some(Rgba::rgb(1, 2, 3)));
+    assert_eq!(stated.sidebar.hover_background, Some(Rgba::rgb(4, 5, 6)));
 }
 
 /// D9: the two macOS presets, which state neither hover (no source gives

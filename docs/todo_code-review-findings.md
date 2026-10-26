@@ -14094,3 +14094,18 @@ exceptions lose windows-11). The Windows code checks on x86_64-pc-windows-msvc (
 `-D warnings`, clippy all targets), and the reader's tests run on the host.
 **Status:** done, the commit that files this entry. The Windows capture: windows-11's spinner and
 segmented control move.
+- *D8–D10 review follow-up (2026-10-26; it belongs to the D9 and D10 entries above):* D10 I:
+  macOS 26 and 27 fit an `NSSwitch` to 54 × 24 (14 and 15: 42 × 25, run 40348854007), so the
+  fixed x 200 / 250 / 300 overlapped by 4 pt there; each row's controls now start at x 200, each
+  8 pt right of the one before's fitted frame, and the slider takes the row up to x 380, left of
+  `KEY_BACKGROUND_POINT`. Run 40348854007's samples stand, as the review checked against its PNGs;
+  no re-dispatch. D10 M: `method_controls` calls the knob sample a point inside the knob, half the
+  frame's height in from its resting end (macOS 26's knob is a pill, not round), and says that
+  where a disabled slider draws no value fill (14, 15 and 26 in that run) `slider_disabled_fill`
+  samples the bar. D9 M, a correction to the D9 entry, which states the change for both presets
+  alike: macos-monterey's hovered list row loses its window grey (#ececec on #ffffff, #323232 on
+  #1e1e1e) and its hovered sidebar row the same grey on the sidebar (#ececec on #f6f6f6,
+  #323232 on #383838); macos-tahoe's list does not change (its window and its list are equal),
+  and its sidebar loses #ffffff on #f6f6f6 and #1e1e1e on #383838; the CHANGELOG line says so.
+  The `list_alternate_row_background_not_derived` comment counts 11 field rules and the
+  text_area.border block; the stated-hover test covers the sidebar too.
