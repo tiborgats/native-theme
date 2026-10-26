@@ -53,7 +53,7 @@ pub(crate) const WINDOW_SIZE: egui::Vec2 =
 /// The weight the showcase draws its inspector's headings in (a page's section headings take
 /// `text_scale.section_heading.weight`). The model states no inspector heading weight; this is
 /// gpui's `FontWeight::SEMIBOLD`
-/// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.9/src/text_system.rs:1202`),
+/// (`~/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/gpui-pre-0.3.10/src/text_system.rs:1202`),
 /// which the gpui showcase's inspector headings take (`font_semibold()`,
 /// `connectors/native-theme-gpui/examples/showcase-gpui/inspector.rs:156`, `:538`). Without
 /// `system-fonts` no face is looked up, and the headings keep the regular one.

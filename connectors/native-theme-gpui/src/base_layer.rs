@@ -10,8 +10,8 @@
 //! rebuild also carries 0.7.0's plot theme (`:455`), which this module leaves
 //! as upstream projects it.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.0,
-//! gpui-base 0.8.0 and gpui-pre 0.3.9.
+//! Upstream citations in this module are verified against gpui-component 0.8.1,
+//! gpui-base 0.8.1 and gpui-pre 0.3.10.
 
 use gpui::{App, Hsla, Pixels, px};
 use gpui_base::{ResizableTheme, Theme as BaseTheme};
@@ -143,7 +143,7 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// `gpui_kit::base::h_resizable` / `v_resizable`), which install no renderer
 /// (gpui-base `src/resizable/resize_handle.rs:357-384`) — the splitter's
 /// colours at that 1 px width, not `splitter.divider_width`, the hover colour
-/// only while the handle is dragged. They do not reach gpui-component 0.8.0's
+/// only while the handle is dragged. They do not reach gpui-component 0.8.1's
 /// `h_resizable` / `v_resizable`, which install gpui-component's own
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:28-31, 108, 119-126`), nor `Settings`'

@@ -488,7 +488,7 @@ reason = "iced's wrapper draws the selected tab's outward corners over a row of 
 connector = "gpui"
 name = "focus_ring"
 kind = "absent"
-reason = "a `text_input::Style` has one border and no outline, and iced draws nothing outside a widget's bounds but in a widget of its own, so the connector wraps the application's field to ring it where the theme's ring is not inset at its edge (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc); gpui-component draws a focused Input's ring itself, its own 3px ring outside the edge, which no geometry refinement reaches (gpui-component 0.8.0 src/styled.rs:257-262, called at src/input/input.rs:787; docs/showcase-exceptions.toml records it)"
+reason = "a `text_input::Style` has one border and no outline, and iced draws nothing outside a widget's bounds but in a widget of its own, so the connector wraps the application's field to ring it where the theme's ring is not inset at its edge (connectors/native-theme-iced/src/lib.rs, `focus_ring`'s doc); gpui-component draws a focused Input's ring itself, its own 3px ring outside the edge, which no geometry refinement reaches (gpui-component 0.8.1 src/styled.rs:257-262, called at src/input/input.rs:787; docs/showcase-exceptions.toml records it)"
 
 [[exception]]
 connector = "egui"

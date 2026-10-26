@@ -44,8 +44,8 @@
 //! * a size the theme does not state keeps gpui-component's own value, named
 //!   as a constant with its upstream line.
 //!
-//! Upstream citations are verified against gpui-component 0.8.0, gpui-base
-//! 0.8.0 and gpui-pre 0.3.9.
+//! Upstream citations are verified against gpui-component 0.8.1, gpui-base
+//! 0.8.1 and gpui-pre 0.3.10.
 
 /// `IntoElement` for a `RenderOnce` widget, as gpui's `#[derive(IntoElement)]`
 /// writes it (gpui-pre-macros `derive_into_element.rs`). Written out, so the
@@ -142,7 +142,7 @@ pub enum Part {
 /// not call it: the parts are where they were. Nor does a frame in which
 /// GPUI Fast composites a scroll area the control is in while it scrolls:
 /// it draws the area's content moved by the scroll, without laying it out
-/// (gpui-fast 0.1.10 src/fast/layers/paint.rs:233-235,
+/// (gpui-fast 0.1.12 src/fast/layers/paint.rs:233-235,
 /// src/fast/layers/reuse.rs:39), so there the parts have moved by the
 /// scroll since the last call.
 pub type PartBounds = Rc<dyn Fn(Part, Bounds<Pixels>, &mut Window, &mut App)>;
@@ -301,7 +301,7 @@ fn color(rgba: Rgba) -> Hsla {
 /// The theme's focus ring, which [`FocusRing::draw`] puts round a theme-drawn
 /// control that has the focus, in place of gpui-component's `focus_ring_style`, which draws a
 /// 3 px ring at half `ThemeColor::ring`'s alpha whatever the model states
-/// (gpui-component 0.8.0 `src/styled.rs:11-12`, `:301-327`).
+/// (gpui-component 0.8.1 `src/styled.rs:11-12`, `:301-327`).
 ///
 /// The ring is `defaults.focus_ring_color` as stated, alpha included, a band
 /// `defaults.focus_ring_width` wide whose outer edge is the element's bounds

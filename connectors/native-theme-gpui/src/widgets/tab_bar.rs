@@ -120,7 +120,7 @@ pub(crate) struct FlareQuad {
 /// At the square's top the band covers the side edge's own column, so the
 /// two are one line; below it, the fill covers the side edge's foot. Each
 /// square is the quads' content mask, which gpui widens to whole device
-/// pixels (`snapped_content_mask`, `cover_bounds`, `:3312-3331`). The fills
+/// pixels (`snapped_content_mask`, `cover_bounds`, `:3329-3348`). The fills
 /// come first, then the outlines.
 pub(crate) fn flare_quads(tab: Bounds<Pixels>, look: &TabLook) -> Vec<FlareQuad> {
     let Some(r) = look.outward_radius else {
@@ -341,7 +341,7 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them. A vertical
 /// mouse wheel scrolls them sideways too: gpui turns it so on a row that
 /// scrolls on one axis alone (gpui-pre `src/elements/div.rs:3413-3421`), as
-/// gpui-component 0.8.0's `TabBar`, whose row locks its axis, does by a wheel
+/// gpui-component 0.8.1's `TabBar`, whose row locks its axis, does by a wheel
 /// mask (`tab/tab_bar.rs:691`, `:697`).
 ///
 /// The bar's own style (`Styled`) is the caller's: a rule under it, its

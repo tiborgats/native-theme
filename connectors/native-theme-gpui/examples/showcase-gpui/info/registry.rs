@@ -4,7 +4,7 @@
 //!
 //! A frame need not run the code of everything it draws. GPUI Fast draws a
 //! view nothing changed for from what it drew in the last frame, copying
-//! its prepaint and paint (gpui-fast 0.1.10 src/fast/retained.rs:738-825,
+//! its prepaint and paint (gpui-fast 0.1.12 src/fast/retained.rs:738-825,
 //! `reuse_retained_prepaint`; src/fast/splice.rs:608-757, `splice_prepaint`,
 //! for a view drawn around views built again), and gpui-pre does the same
 //! for a cached view (src/view.rs:546-562). A target inside such a view

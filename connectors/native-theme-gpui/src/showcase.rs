@@ -2025,7 +2025,7 @@ fn the_theme_token_readers_do_their_jobs() {
 // A line and not a symbol, although `file.rs, Symbol` is the form the prose
 // notes use. `ButtonVariant::text_color` holds `Self::Link => link` and
 // `Self::Text => foreground.opacity(0.9)` two lines apart
-// (`button.rs:1059-1060`), so a symbol-scoped check finds `foreground` inside
+// (`button.rs:1073-1074`), so a symbol-scoped check finds `foreground` inside
 // that function and passes Button (Link)'s claim of it. Only a line separates
 // variants that share a function. The cost is drift -- an insertion earlier
 // in a file moves every later line -- so a failure prints what the cited line

@@ -89,16 +89,16 @@ impl RenderOnce for Separator {
         };
         // The line is a box filled in its colour, at least one device pixel
         // thick. gpui rounds a box's stated size to the device-pixel grid half
-        // toward zero (gpui-pre 0.3.9 `src/taffy.rs:522-526`,
+        // toward zero (gpui-pre 0.3.10 `src/taffy.rs:534-538`,
         // `src/util.rs:140-142`), so a box `separator.line_width` 0.5 thick
         // (the macOS presets) takes no room on a 1x display; and a line drawn
         // as a border of a box one device pixel thick is drawn by no gpui
         // renderer: the Metal, wgpu and DirectX quad shaders take a pixel's
         // border by the half of the quad its centre lies in, and the one row
         // of such a quad lies on its middle, which takes the opposite, zero,
-        // border (gpui-pre-apple 0.3.9 `src/shaders.metal:133-137`,
-        // gpui-pre-wgpu 0.3.9 `src/shaders.wgsl:603-611`, gpui-pre-windows
-        // 0.3.9 `src/shaders.hlsl:590-593`). A filled box is drawn by them all.
+        // border (gpui-pre-apple 0.3.10 `src/shaders.metal:133-137`,
+        // gpui-pre-wgpu 0.3.10 `src/shaders.wgsl:603-611`, gpui-pre-windows
+        // 0.3.10 `src/shaders.hlsl:590-593`). A filled box is drawn by them all.
         let device_pixel = px(1.0 / window.scale_factor());
         let thickness = look.width.max(device_pixel);
         let line = div().flex_none().bg(look.color);

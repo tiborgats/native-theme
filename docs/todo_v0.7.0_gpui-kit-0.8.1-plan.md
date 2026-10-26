@@ -439,9 +439,11 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - **Task 3, set-aside numbers that hold.** Of the 35 set-aside chains and five gate (4) entries
   in `SC/info/`, 21 chains cite lines that did not move, in files unchanged between the
   versions (gpui-component `styled.rs`, `radio.rs`, `accordion.rs`, `link.rs`, `label.rs`,
-  gpui-base `tooltip.rs`, gpui-fast `src/fast/retained.rs`, `src/fast/splice.rs`, gpui-kit
-  `src/test.rs`) or in the unchanged parts of changed ones (both `switch.rs`, whose only change
-  is in their tests, gpui-fast `src/window.rs` and `src/fast/dependencies.rs`). They keep their
+  gpui-base `tooltip.rs`, gpui-fast `src/fast/retained.rs`, `src/fast/splice.rs`) or in the
+  unchanged parts of changed ones (both `switch.rs`, whose only change is in their tests,
+  gpui-kit `src/test.rs`, whose changes are `ScrollEvent` and the keystroke parsing, gpui-fast
+  `src/window.rs` and `src/fast/dependencies.rs`). Task 3b moved gpui-kit `src/test.rs` here
+  from the unchanged files, where Task 3 had listed it. They keep their
   numbers and, in the comments, their unqualified file names, so a later run of the script
   sets them aside again. The five gate (4) entries are no citation (a 0, a 75%) or a citation
   of an unchanged gpui-component file, and stay as they are.
@@ -449,3 +451,37 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   "gpui-fast 0.1.10" before `src/fast/retained.rs:738-825`, which Task 2 judged unchanged.
   The version grep corrects it. The re-pointed lines that named a version name the new one
   (`SC/info/registry.rs`'s "gpui-kit 0.8.1's `click`", the fallback-stack doc and test).
+- **Task 3b, numbers already wrong at the old version.** Besides the chain review's four,
+  now set right (gpui-base `element.rs:2718-2722`, gpui-pre `window.rs:6058-6059`), the
+  hand-read found `docs/showcase-exceptions.toml`'s `window.rs:4907-4924` (three copies),
+  which at 0.3.9 began 8 lines inside `should_use_subpixel_rendering` (`:4899-4916`), and
+  its `:4768-4771 paint_path`, which at 0.3.9 was `paint_underline`'s doc. They now cite
+  0.3.10's function (`:4917-4934`) and `paint_path`'s opacity (`:4778-4781`). Two more
+  ranges began or ended on a blank line and now hold their code alone: `separator.rs`'s
+  `taffy.rs` range (`:534-538`, as the egui and iced showcases cite it) and `SC/main.rs`'s
+  `test/platform.rs` range (`:131-137`).
+- **Task 3b, a citation of gpui-pre 0.3.6.** The sub-pixel line box reason (five copies in
+  `docs/showcase-exceptions.toml`) cited "gpui-pre 0.3.6 src/taffy.rs:412-414" for a
+  present-tense claim; it now cites 0.3.10 `:423-425`, where the measured size is still
+  rounded up. Every copy took the same text, so the parity check's merge groups keep their
+  members. The iced showcase's `PANEL_MIN_SIZE` (gpui-base 0.7.0 `:14`) now cites 0.8.1 `:16`.
+- **Task 3b, left to Task 5.** `CN/src/geometry.rs`'s `toolbar` doc still says the builder
+  replaces "the `h_8`" a Small `Toolbar` sets (`toolbar.rs:252-256`); gpui-component 0.8.1
+  sets `min_h_8` there (`:254`). The numbers hold, and spec §6 rewrites that doc with the fix.
+- **Task 3b, what 0.8.1's `Scrollable` adds.** It lays its root out as a flex column
+  (`scroll/scrollable.rs:203-207`) and takes the caller's maximum size off the content
+  (`:162-170`); upstream's comments say that without these an area held to a maximum height
+  did not scroll (on GPUI Fast, in a content-high column inside a row). `SC/support.rs`'s
+  `gutter_scroll` doc now says it leaves the flex column out, as it leaves out `ScrollBounce`;
+  whether the showcase's scroller needs either was not examined.
+- **Task 3b, line counts kept.** Every rewritten doc keeps its file's line count, so the
+  citations of the showcases' own lines (the egui showcase's of `SC/inspector.rs` and
+  `SC/support.rs`, Widget Info's of `CN/src/geometry.rs`) still hold.
+- **Task 3b, set-aside citations that hold.** 146 of the 259 set-aside chains outside
+  `SC/info/` cite lines that did not move. As in Task 3, they keep their numbers and their
+  unqualified file names, so a later run of the script sets them aside again.
+- **Task 3b, the second version grep.** It finds 11 lines, none present-tense of this
+  task's: `CN/README.md:29`, `:57`, `:95`, `:144`, `:832`, `:835`, `:847` (Task 8's) and
+  `:366` (Task 5's); history at `CN/src/widgets/scene_read.rs:9` ("since 0.1.10"),
+  `SC/tests.rs:7583` (the Folder TabBar 0.8.0 added) and `docs/showcase-exceptions.toml:22`
+  (the re-read dates).

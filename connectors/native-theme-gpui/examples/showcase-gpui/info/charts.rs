@@ -53,7 +53,7 @@ enum Guide {
     None,
 }
 
-/// What a chart paints under the pointer: gpui-component 0.8.0's charts are
+/// What a chart paints under the pointer: gpui-component 0.8.1's charts are
 /// interactive by default (chart/bar_chart.rs, BarChart::interactive), so the
 /// hovered point gets a tooltip on the popover surface and the `guide`.
 fn hover(info: WidgetInfo, t: &Theme, guide: Guide) -> WidgetInfo {

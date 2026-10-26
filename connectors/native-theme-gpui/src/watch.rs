@@ -135,7 +135,7 @@ mod tests {
     /// Send one event from another thread, as the watcher does. Only before
     /// the task first waits: gpui's test scheduler fails a test whose task is
     /// woken from a thread other than the test's, as nondeterministic
-    /// (gpui-pre-scheduler 0.3.9 `test_scheduler.rs:194`); a real dispatcher
+    /// (gpui-pre-scheduler 0.3.10 `test_scheduler.rs:194`); a real dispatcher
     /// takes the wake-up from any thread.
     fn send_from_another_thread(slot: &Arc<Mutex<Option<Callback>>>) {
         let slot = slot.clone();

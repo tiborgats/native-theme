@@ -269,7 +269,7 @@ pub fn native_spinner(
             ))
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
-            // (gpui-pre 0.3.9 src/svg_renderer.rs:241-250,
+            // (gpui-pre 0.3.10 src/svg_renderer.rs:241-250,
             // src/window.rs:5025, :5050), the only element gpui turns.
             info.color(claim(
                 "indicator",

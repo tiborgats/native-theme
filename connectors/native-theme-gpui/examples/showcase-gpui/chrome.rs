@@ -70,20 +70,20 @@ pub(crate) const APP_NAME: &str = env!("CARGO_BIN_NAME");
 ///
 /// - the app menu, under [`APP_NAME`]: About, then Settings… ⌘, (the
 ///   Preferences sheet, the in-window Theme menu's Preferences…), the OS's
-///   Services menu (gpui-pre 0.3.9 `MenuItem::os_submenu`,
+///   Services menu (gpui-pre 0.3.10 `MenuItem::os_submenu`,
 ///   `src/platform/app_menu.rs:118`, which the macOS platform makes AppKit's
-///   `servicesMenu`, gpui-pre-macos 0.3.9 `src/platform.rs:491-493`),
+///   `servicesMenu`, gpui-pre-macos 0.3.10 `src/platform.rs:460-463`),
 ///   Hide ⌘H, Hide Others ⌥⌘H, Show All, and Quit ⌘Q, with the HIG's
 ///   separators;
 /// - File: Close ⌘W;
 /// - View: the in-window View menu's rows;
 /// - Theme: the in-window Theme menu's rows, less Preferences…;
 /// - Window: Minimize ⌘M and Zoom. gpui's macOS platform makes the menu
-///   titled `Window` AppKit's windows menu (gpui-pre-macos 0.3.9
-///   `src/platform.rs:313-316`, in `create_menu_bar`), to which AppKit adds
+///   titled `Window` AppKit's windows menu (gpui-pre-macos 0.3.10
+///   `src/platform.rs:295-298`, in `create_menu_bar`), to which AppKit adds
 ///   its window-switching items. Bring All to Front, which the HIG and the
 ///   iced and egui showcases' Window menus hold, is left out: gpui offers
-///   neither a call for it nor an `OsAction` (gpui-pre 0.3.9
+///   neither a call for it nor an `OsAction` (gpui-pre 0.3.10
 ///   `src/platform/app_menu.rs:311-329`, `OsAction`: cut, copy, paste, select
 ///   all, undo and redo only).
 ///
@@ -413,8 +413,8 @@ pub(crate) const COMPATIBILITY_URL: &str = concat!(
 /// such width either (spec §1.3): this is the showcase's own layout default.
 /// It overrides upstream's 350px (sheet.rs:63) because the Settings inside
 /// starts its sidebar at 250px (setting/settings.rs:54): a 350px sheet, less
-/// its 1px left border (sheet.rs:186) and the body's 16px padding on each
-/// side (sheet.rs:147, 216-217), holds 317px, which would leave the
+/// its 1px left border (sheet.rs:193) and the body's 16px padding on each
+/// side (sheet.rs:154, 223-224), holds 317px, which would leave the
 /// preferences at most 67px beside the sidebar.
 const PREFERENCES_WIDTH: Pixels = px(600.);
 

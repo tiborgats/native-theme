@@ -395,7 +395,7 @@ pub(crate) struct Showcase {
     /// Takes the focus back to the view when the focused element stops being
     /// drawn -- a page's widget whose page was left keeps its handle, and
     /// gpui would dispatch from the window's root instead (gpui-pre
-    /// window.rs:6463-6471), out of the view's handlers' reach.
+    /// window.rs:6507-6515), out of the view's handlers' reach.
     _refocus: Subscription,
 
     /// `geometry::widget_gap` of `layout`, set as each frame starts, for the
@@ -427,13 +427,13 @@ pub(crate) struct Showcase {
     /// dump (`--dump-layout`), which record the run as it started
     /// (`CliArgs::shields_keyboard`). An interceptor runs before the keymap,
     /// the key listeners and the input handler, and a stopped keystroke
-    /// reaches none of them (gpui-pre 0.3.9 `src/app.rs`,
+    /// reaches none of them (gpui-pre 0.3.10 `src/app.rs`,
     /// `App::intercept_keystrokes`; `src/window.rs`, `dispatch_key_event` and
     /// `dispatch_keystroke`).
     ///
     /// Its limit: an input method's commit of more than one character is no
     /// keystroke. gpui hands it straight to the focused field's input handler
-    /// (gpui-pre-linux 0.3.9 `src/linux/wayland/client.rs:2298-2320`,
+    /// (gpui-pre-linux 0.3.10 `src/linux/wayland/client.rs:2298-2320`,
     /// `CommitString`; `src/linux/wayland/window.rs:1469-1479`, `handle_ime`),
     /// with no hook ahead of the handler, so where an input method runs, the
     /// Basic page's focused field, which keeps the focus for its focus border,
@@ -1931,16 +1931,16 @@ impl Showcase {
     /// first install (`Showcase::new`).
     ///
     /// gpui's `App::set_window_appearance` sets `NSApplication.appearance` on
-    /// macOS (gpui-pre-macos 0.3.9 `src/platform.rs:808-829`, gpui-fast-macos
-    /// 0.1.10 the same lines), which the system's own dark-mode reading does
+    /// macOS (gpui-pre-macos 0.3.10 `src/platform.rs:784-800`, gpui-fast-macos
+    /// 0.1.12 the same lines), which the system's own dark-mode reading does
     /// not follow: `native_theme::detect::system_is_dark` reads the global
     /// `AppleInterfaceStyle` default. It is a no-op on every other platform
-    /// (the trait's default, gpui-pre 0.3.9 `src/platform.rs:433`, gpui-fast
-    /// 0.1.10 `:434`). On Windows gpui gives the title bar the system's mode
+    /// (the trait's default, gpui-pre 0.3.10 `src/platform.rs:439`, gpui-fast
+    /// 0.1.12 `:440`). On Windows gpui gives the title bar the system's mode
     /// alone, when the window opens and when the system's changes
-    /// (gpui-pre-windows 0.3.9 `src/window.rs:574`, `src/events.rs:1229-1240`;
-    /// gpui-fast-windows 0.1.10 `src/window.rs:575`, the same `events.rs`
-    /// lines), so a Windows title bar stays in the system's mode:
+    /// (gpui-pre-windows 0.3.10 `src/window.rs:574`, `src/events.rs:1229-1240`;
+    /// gpui-fast-windows 0.1.12 `src/window.rs:579`, `src/events.rs:1234-1245`),
+    /// so a Windows title bar stays in the system's mode:
     /// docs/todo.md, *native-theme-gpui connector*, "PR: let an application
     /// set the window's appearance on Windows".
     fn show_window_appearance(&mut self, cx: &App) {

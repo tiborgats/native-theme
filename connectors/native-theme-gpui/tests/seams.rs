@@ -461,7 +461,7 @@ seam!(
 /// (`src/tooltip.rs:131-137`), so it is a flex item with an automatic minimum
 /// size, and gpui measures text under `AvailableSpace::MinContent` without
 /// wrapping it — the wrap width is taken only from a *definite* available
-/// width (`gpui-pre-0.3.9/src/elements/text.rs:656-663`). The item's minimum is
+/// width (`gpui-pre-0.3.10/src/elements/text.rs:656-663`). The item's minimum is
 /// therefore the whole unwrapped line: a max width on the bubble alone clamps
 /// the bubble and not the text, and the text runs out of it.
 #[gpui::test]
@@ -942,7 +942,7 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 /// size with every side 0. The height the rule sets is removed, as the
 /// showcase replaces it with its own, so the height is the content's.
 ///
-/// Left in, the refinement's padding would reach the root (`:816`): at least
+/// Left in, the refinement's padding would reach the root (`:784`): at least
 /// one preset states sides that then add to the width, or the sweep proves
 /// nothing about the clearing.
 #[gpui::test]

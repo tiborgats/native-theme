@@ -41,7 +41,7 @@ gpui (`gpui-component`): every type with an `impl RenderOnce`/`IntoElement`,
 a `#[derive(IntoElement)]` or a `#[derive(IntoPlot)]`, outside `#[cfg(test)]`
 modules, that the crate also declares as a `pub struct`. `IntoPlot` is how
 the charts become elements: the derive writes their `impl IntoElement`
-(gpui-component-macros 0.8.0, derive_into_plot.rs:20). The `pub struct`
+(gpui-component-macros 0.8.1, derive_into_plot.rs:20). The `pub struct`
 gate is the crate's own public-widget line: it discards private helpers
 (`ShimmerGlyphs`, `MenuItemElement`) and the enums that are widget
 *arguments* rather than widgets (`DescriptionText`, `IconName`).

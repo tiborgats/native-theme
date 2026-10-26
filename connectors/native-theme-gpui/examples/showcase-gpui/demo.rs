@@ -376,7 +376,7 @@ const MENU_SEPARATOR: Pixels = px(2.);
 /// `popover.border.shadow_enabled` holds, as (y offset, blur radius, spread
 /// radius), drawn in `defaults.shadow_color`: the model states no shadow
 /// geometry, so these are gpui-component's popup surface shadow's
-/// (gpui-component 0.8.0 src/styled.rs:68-73, `popover_shadow`), without its
+/// (gpui-component 0.8.1 src/styled.rs:68-73, `popover_shadow`), without its
 /// ring (:65-67), whose place the frame in `popover.border` takes.
 const MENU_POPUP_SHADOW: [(Pixels, Pixels, Pixels); 2] =
     [(px(4.), px(3.), px(-1.)), (px(2.), px(2.), px(-2.))];
@@ -1393,7 +1393,7 @@ pub(crate) struct ToolItem {
 }
 
 /// The Buttons page's component `Toolbar` (spec §8.2): gpui-component
-/// 0.8.0's own, refined by `geometry::toolbar` alone -- the height, fill,
+/// 0.8.1's own, refined by `geometry::toolbar` alone -- the height, fill,
 /// font, gap, padding sides and bottom edge the theme states, and no
 /// fallback, since the section shows the widget and not the chrome's row -- holding
 /// the `edit` and `view` Buttons in two labelled `ToolbarGroup`s with a
@@ -2351,7 +2351,7 @@ pub(crate) const SEGMENT_PADDING: Pixels = px(12.);
 /// each label as gpui's text system shapes it in `segmented_control.font`
 /// (its family, weight, style and scaled size, as [`text_in`] sets them),
 /// its width rounded up, as gpui's text element rounds a line's width up
-/// (gpui-pre 0.3.9 `src/elements/text.rs:772`), inside the segment's stated
+/// (gpui-pre 0.3.10 `src/elements/text.rs:772`), inside the segment's stated
 /// side padding ([`SEGMENT_PADDING`] on a side left unstated), the
 /// `separator_width` line before each segment after the first, and the
 /// frame's `border.line_width` at both ends. The Basic page's
@@ -4939,9 +4939,9 @@ impl ListRow {
     /// on its bottom ones where it is the last, where it meets
     /// `geometry::list`'s frame, as the egui and iced Basic lists round
     /// theirs. GPUI Fast clips the frame's children to its curved padding
-    /// edge (gpui-fast 0.1.10 src/fast/rounded_clip.rs:68-104), so a square
+    /// edge (gpui-fast 0.1.12 src/fast/rounded_clip.rs:68-104), so a square
     /// fill would be cut at the curve; gpui-pre clips them to its rectangle
-    /// (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a square
+    /// (gpui-pre 0.3.10 src/window.rs:2238-2246, ContentMask), so a square
     /// fill would show past the curve there. The List does not tell a row
     /// where its view is scrolled to, so a row cut by the view's edge
     /// mid-scroll keeps its square corners.
@@ -9409,9 +9409,9 @@ pub(crate) fn files_table(
     // radius (`list_inner_radius`) on the corners it meets: the header's top
     // ones and the last row's bottom ones, as the egui and iced Basic tables
     // round theirs. GPUI Fast clips the frame's children to its curved
-    // padding edge (gpui-fast 0.1.10 src/fast/rounded_clip.rs:68-104), so a
+    // padding edge (gpui-fast 0.1.12 src/fast/rounded_clip.rs:68-104), so a
     // square fill would be cut at the curve; gpui-pre clips them to its
-    // rectangle (gpui-pre 0.3.9 src/window.rs:2226-2234, ContentMask), so a
+    // rectangle (gpui-pre 0.3.10 src/window.rs:2238-2246, ContentMask), so a
     // square fill would show past the curve there.
     let inner = list_inner_radius(&l.border);
     let [first, second] = head;

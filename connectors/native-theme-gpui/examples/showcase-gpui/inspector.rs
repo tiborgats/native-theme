@@ -294,16 +294,16 @@ pub(crate) const GPUI_FALLBACK_STACK: [&str; 10] = [
 /// crate's `status::DrawnFamily`): the family gpui's text system resolves it
 /// to, which is the family itself where the text system finds a face of it
 /// and otherwise the first family of gpui's fallback stack it finds
-/// (`TextSystem::resolve_font`: gpui-pre 0.3.9 `src/text_system.rs:370-388`
-/// over the stack of `:255-266`; gpui-fast 0.1.10 `src/text_system.rs:372-374`,
-/// `src/fast/text.rs:990-1058`, over `:256-267`), read back from the face's
-/// id (`TextSystem::get_font_for_id`, gpui-pre `:354-362`, gpui-fast
-/// `:356-364`): each face gpui's platform text systems load gets an id of its
-/// own for each family it is asked for under (gpui-pre-wgpu 0.3.9 and
-/// gpui-fast-wgpu 0.1.10 `src/cosmic_text_system.rs:44-47`, `:400-443`;
-/// gpui-pre-apple `src/text_system.rs:382`, gpui-fast-apple `:385`;
-/// gpui-pre-windows and gpui-fast-windows `src/direct_write.rs:332`), so the
-/// id names that family.
+/// (`TextSystem::resolve_font`: gpui-pre 0.3.10 `src/text_system.rs:352-359` and `:570-630`, over
+/// the stack of `:262-273`; gpui-fast 0.1.12 `src/text_system.rs:354-356`, over `:263-274`, and
+/// `src/fast/text.rs:1086-1156`), read back from the face's id (`TextSystem::get_font_for_id`,
+/// gpui-pre `src/text_system.rs:336-344`, gpui-fast `:338-346`). It caches a family it finds a
+/// face of as `CachedFont::Direct` and one it finds none of as `Fallback`, holding the id of the
+/// stack family drawn, itself `Direct` (gpui-pre `:244-248`, gpui-fast `:245-249`, there with the
+/// features asked for); `get_font_for_id` reads `Direct` alone. The platform text systems give a
+/// face an id of its own per family asked for (gpui-pre-wgpu 0.3.10, gpui-fast-wgpu 0.1.12
+/// `src/cosmic_text_system.rs:44-47`, `:400-443`; gpui-pre-apple `src/text_system.rs:382`,
+/// gpui-fast-apple `:385`; both windows crates' `src/direct_write.rs:332`), so it names the family.
 /// Built once an install, with the panel's look (`PanelLook::of`), as the
 /// text system is read through the app.
 #[derive(Clone, Debug, PartialEq)]
@@ -314,17 +314,17 @@ impl DrawnFamilies {
     /// asked once. It is asked only where it lists a family of gpui's
     /// fallback stack ([`GPUI_FALLBACK_STACK`], each by the family its
     /// platform loads for it, `gpui::font_name_with_fallbacks`), in
-    /// `TextSystem::all_font_names` (gpui-pre `:284-289`, gpui-fast
-    /// `:285-290`); elsewhere the answer is `None`, so the test platform's
+    /// `TextSystem::all_font_names` (gpui-pre `:291-296`, gpui-fast
+    /// `:292-297`); elsewhere the answer is `None`, so the test platform's
     /// `NoopTextSystem`, which lists none and resolves every family to one
-    /// face (gpui-pre `src/platform.rs:1547-1553`), is not asked.
+    /// face (gpui-pre `src/platform.rs:1578-1584`), is not asked.
     /// `resolve_font` panics where its text system finds no face of the
     /// family asked for nor of any stack family (gpui-pre
-    /// `src/text_system.rs:380-387`, gpui-fast `src/fast/text.rs:1048-1057`),
+    /// `src/text_system.rs:621-628`, gpui-fast `:618-625`, reached from `src/fast/text.rs:1155`),
     /// so the one case where this call panics is a family the text system
     /// finds no face of where every stack family it lists has no face it
     /// loads; there gpui's own layout of text in that family panics too,
-    /// through the same call (gpui-pre `src/text_system.rs:797`, `:911`).
+    /// through the same call (gpui-pre `src/text_system.rs:830`, `:944`).
     pub(crate) fn of(asked: impl IntoIterator<Item = SharedString>, cx: &gpui::App) -> Self {
         let text_system = cx.text_system();
         let names = text_system.all_font_names();

@@ -1329,7 +1329,7 @@ fn open_palette(harness: &mut Harness<'_, App>) {
     );
 }
 
-/// The palette's keys, as gpui-component 0.8.0's `Command` binds them
+/// The palette's keys, as gpui-component 0.8.1's `Command` binds them
 /// (`src/command/state.rs:65-68`): the first row is highlighted when the palette opens and again
 /// whenever the query changes (`reset_selection`, `:441-450`), Up and Down move the highlight,
 /// wrapping at either end (`select_by`, `:553-579`), and Enter runs the highlighted row
@@ -1418,7 +1418,7 @@ fn the_palettes_keys_highlight_and_run_a_row() {
     );
 }
 
-/// The palette's highlight as gpui-component 0.8.0's `Command` moves it: Down from the last row
+/// The palette's highlight as gpui-component 0.8.1's `Command` moves it: Down from the last row
 /// and Up from the first wrap (`select_by`, `src/command/state.rs:553-579`), presses in one pass
 /// add up, a changed query starts again from the first row (`reset_selection`, `:441-450`), and
 /// with no row there is none.
@@ -1460,7 +1460,7 @@ fn the_palette_highlight_wraps_resets_and_needs_a_row() {
 }
 
 /// A changed query highlights the first row it keeps and scrolls the list to it, as
-/// gpui-component 0.8.0's `reset_selection` scrolls to it (`src/command/state.rs:441-450`, its
+/// gpui-component 0.8.1's `reset_selection` scrolls to it (`src/command/state.rs:441-450`, its
 /// `pending_scroll`). At a text-scaling factor of 2.25 the rows a space keeps (each preset's,
 /// "Theme Map", "System (…)") are more than the list shows, so the list stays scrolled where the
 /// query changes.
@@ -2533,7 +2533,7 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
 /// The status bar's padding on a side the theme leaves unstated, `(vertical, horizontal)`, as
 /// the gpui showcase's bar draws it at a scale of 1: gpui-component's `py_1`/`px_2`, a quarter
 /// and a half of the scaled `defaults.font.size`, each rounded to a whole pixel with a half
-/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.9 `src/taffy.rs:534-538`,
+/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.10 `src/taffy.rs:534-538`,
 /// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`).
 fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> (f32, f32) {
     let atlas = &harness.state().atlas;

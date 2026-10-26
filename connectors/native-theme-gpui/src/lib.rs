@@ -100,7 +100,7 @@
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
 //! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.8.0); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.8.1); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
@@ -723,10 +723,10 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
 /// system UI font's stated family — "SF Pro" caselessly,
 /// `native_theme::fonts::is_macos_system_ui_family` — becomes gpui's own
 /// alias `.SystemUIFont`, "used to identify the system UI font, which varies
-/// based on platform" (gpui-pre 0.3.9 `src/text_system.rs` line 1295): gpui's
+/// based on platform" (gpui-pre 0.3.10 `src/text_system.rs` line 1328): gpui's
 /// macOS text system maps it to `.AppleSystemUIFont` through
-/// `font_name_with_fallbacks` (gpui-pre 0.3.9 `src/text_system.rs` lines 1420–1430,
-/// gpui-pre-apple 0.3.9 `src/text_system.rs` line 290) and looks that up among
+/// `font_name_with_fallbacks` (gpui-pre 0.3.10 `src/text_system.rs` lines 1453–1463,
+/// gpui-pre-apple 0.3.10 `src/text_system.rs` line 290) and looks that up among
 /// its memory fonts first, then in the system source (lines 294–297), so Core
 /// Text supplies its own system UI font. Its twin, the system monospaced
 /// font's stated family — "SF Mono" caselessly,
@@ -736,7 +736,7 @@ pub fn layer_over(base: Hsla, layer: Hsla) -> Hsla {
 /// `docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-macos-26/probe.toml:162`),
 /// which the same lookup takes as it takes `.AppleSystemUIFont`: font-kit's
 /// `select_family_by_name`, memory fonts first, then the system source
-/// (gpui-pre-apple 0.3.9 `src/text_system.rs` lines 290–297), a Core Text
+/// (gpui-pre-apple 0.3.10 `src/text_system.rs` lines 290–297), a Core Text
 /// query by `NSFontFamilyAttribute` (zed-font-kit 0.14.1-zed
 /// `src/sources/core_text.rs` lines 69–80); "SF Mono" is in no font database
 /// of the runners (M9-167). Every other family, and every
@@ -761,8 +761,8 @@ pub(crate) fn ui_font_family(family: &std::sync::Arc<str>, macos: bool) -> Share
 /// Linux and the other non-Apple, non-Android unix systems, the font every
 /// native application of the system gets); else `family` as
 /// stated. gpui's own answer to a family its text system cannot find is a
-/// list of its own, `.ZedMono` first (gpui-pre 0.3.9 `src/text_system.rs`
-/// lines 255-266, 370-379), not the platform's. The platform is asked once
+/// list of its own, `.ZedMono` first (gpui-pre 0.3.10 `src/text_system.rs`
+/// lines 262-273, 605-615), not the platform's. The platform is asked once
 /// per family and the answer kept for the process, so a caller may ask
 /// every frame. The first ask for a family runs on the calling thread: on
 /// Linux and the other non-Apple, non-Android unix systems one `fc-match`

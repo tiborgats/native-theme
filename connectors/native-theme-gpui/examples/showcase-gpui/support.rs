@@ -221,9 +221,9 @@ pub(crate) trait NativeStyled: Styled + Sized {
     /// `defaults.border.corner_radius`), and the line width is the platform's
     /// `defaults.border.line_width` — 0.5 px on macOS and iOS, 1 px
     /// elsewhere. It clips a child that paints its own background to the
-    /// edge: on GPUI Fast to the rounded inside (gpui-fast 0.1.10
+    /// edge: on GPUI Fast to the rounded inside (gpui-fast 0.1.12
     /// `src/fast/rounded_clip.rs:68-104`), on gpui-pre to the box's rectangle
-    /// (gpui-pre 0.3.9 `src/window.rs:2226-2234`, `ContentMask`), where such a
+    /// (gpui-pre 0.3.10 `src/window.rs:2238-2246`, `ContentMask`), where such a
     /// child's square corner shows past the rounded ones.
     ///
     /// A box that stands for a widget takes that widget's border instead —
@@ -310,11 +310,11 @@ pub(crate) fn with_gap<W: Styled>(widget: W, gap: Option<Pixels>) -> W {
 }
 
 /// A box `id` that scrolls `content` vertically: the structure
-/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:153-206, a
+/// gpui-component's `Scrollable` builds (scroll/scrollable.rs:153-227, a
 /// root the caller sizes, a scroll area filling it, the content at least the
-/// area's height, the scrollbar laid over the root; this one leaves out the
-/// `gpui_base::ScrollBounce` 0.8.0 wraps the area in, :187-194), on the application's
-/// own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
+/// area's height, the scrollbar laid over the root; this one leaves out the root's flex
+/// column, :203-207, and the `gpui_base::ScrollBounce` 0.8.1 wraps the area in, :209-215),
+/// on the application's own `handle`, so the content keeps `geometry::scrollbar_gutter`'s strip
 /// free only while it overflows the area. gpui-base hides the bar while the
 /// content fits (gpui-base src/scrollbar.rs:1416-1419), and the platform's
 /// bar then takes no room either. The strip follows the last layout's
@@ -525,7 +525,7 @@ pub(crate) fn role_for_gpui_icon(icon: &IconName) -> Option<IconRole> {
     })
 }
 
-/// The 106 gpui-component 0.8.0 IconName variants shown in the gallery.
+/// The 106 gpui-component 0.8.1 IconName variants shown in the gallery.
 pub(crate) const GPUI_ICONS: &[(&str, IconName)] = &[
     ("ALargeSmall", IconName::ALargeSmall),
     ("ArrowDown", IconName::ArrowDown),

@@ -149,15 +149,15 @@ the dialogs, sheets and notifications. A window opened before
 `gpui_kit::init` gets no `WindowState` — the root plugin `init` registers,
 which hosts them and sets the window's rem — so its first `open_dialog`,
 `open_sheet` or `notifications` call panics with upstream's "component window
-state is missing" (gpui-component `src/root.rs:121, 139`), and text scaling
-fails silently, the rem staying gpui's default (`src/root.rs:22, 535-538`;
-gpui-base `src/root.rs:67-68`).
+state is missing" (gpui-component `src/root.rs:149, 167`), and text scaling
+fails silently, the rem staying gpui's default (`src/root.rs:22, 711-714`;
+gpui-base `src/root.rs:72-73`).
 
 gpui-base's `Root` paints no background of its own (gpui-base
-`src/root.rs:241-271`). The root plugin `gpui_kit::init` registers fills the
+`src/root.rs:246-276`). The root plugin `gpui_kit::init` registers fills the
 root of every window `gpui_kit::open_window` opens with the theme's
 `background`, the theme's `window.background_color`, and draws its text in
-the theme's font and `foreground` (gpui-component `src/root.rs:542-550`). A
+the theme's font and `foreground` (gpui-component `src/root.rs:718-726`). A
 view opened with gpui's own `cx.open_window`, outside that root, has no
 background until the application paints `cx.theme().background` on it. A
 surface the theme states translucent, such as windows-11's sidebar

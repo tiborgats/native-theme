@@ -269,12 +269,12 @@ impl Registry {
 /// What a button drawn in a `ghost` scope notes under *Not themeable*.
 pub(crate) const GHOST_NOTE: (&str, &str) = (
     "fill and border at rest",
-    "transparent, the border's width kept: a Ghost button, as gpui-component's (gpui-component 0.8.0 src/button/button.rs:1022, :1112)",
+    "transparent, the border's width kept: a Ghost button, as gpui-component's (gpui-component 0.8.1 src/button/button.rs:1022, :1112)",
 );
 
 /// Make the rest of `ui` Ghost: the resting entry's fill and border colour transparent, the
 /// border's width kept, so a button in it is transparent at rest, as gpui-component's ghost
-/// button is (gpui-component 0.8.0 `src/button/button.rs:1022`, `bg_color`'s `Ghost` arm, and
+/// button is (gpui-component 0.8.1 `src/button/button.rs:1022`, `bg_color`'s `Ghost` arm, and
 /// `:1112`, `border_color`'s), and filled and bordered hovered and pressed
 /// as its role states. It keeps its full frame, and so its size, in every state, where
 /// `frame_when_inactive(false)` lays it out at rest without the frame's border, which the

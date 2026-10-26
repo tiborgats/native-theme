@@ -569,10 +569,10 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// (`plugins/xsettings/gsd-xsettings-manager.c:666-668`, `:742`,
 /// `:797-798`), and on X11 winit 0.30.13 takes its scale factor from that
 /// DPI over 96, XSETTINGS first (`src/platform_impl/linux/x11/util/randr.rs:41-53`,
-/// `:145-146`), as gpui-pre-linux 0.3.9 does from `Xft.dpi`
-/// (`src/linux/x11/client.rs:2671-2678`). Each does so only while its
+/// `:145-146`), as gpui-pre-linux 0.3.10 does from `Xft.dpi`
+/// (`src/linux/x11/client.rs:2674-2681`). Each does so only while its
 /// override is unset: winit's `WINIT_X11_SCALE_FACTOR` (`randr.rs:112-154`)
-/// and gpui's `GPUI_X11_SCALE_FACTOR` (`client.rs:2620-2666`) set the scale
+/// and gpui's `GPUI_X11_SCALE_FACTOR` (`client.rs:2623-2669`) set the scale
 /// factor instead, and then the application owns the scale and the
 /// text-scaling factor is applied nowhere. Neither crate's Wayland backend
 /// reads `Xft.dpi` or XSETTINGS (only their `x11` modules do), so a native

@@ -29,14 +29,14 @@ use crate::{ActiveNativeTheme, NativeTheme};
 
 /// gpui-component's spinner sizes its icon `size_3`, `size_3p5`, `size_4`
 /// and `size_6` for XSmall, Small, Medium and Large: 0.75, 0.875, 1 and 1.5
-/// rem (gpui-component 0.8.0 `src/icon.rs:188-192`, `Icon::with_size`). A
+/// rem (gpui-component 0.8.1 `src/icon.rs:188-192`, `Icon::with_size`). A
 /// size other than Medium keeps that ratio to Medium, anchored at
 /// `spinner.diameter`.
 const XSMALL_RATIO: f32 = 0.75;
-/// Small to Medium: `size_3p5` to `size_4` (gpui-component 0.8.0
+/// Small to Medium: `size_3p5` to `size_4` (gpui-component 0.8.1
 /// `src/icon.rs:190-191`).
 const SMALL_RATIO: f32 = 0.875;
-/// Large to Medium: `size_6` to `size_4` (gpui-component 0.8.0
+/// Large to Medium: `size_6` to `size_4` (gpui-component 0.8.1
 /// `src/icon.rs:191-192`).
 const LARGE_RATIO: f32 = 1.5;
 
@@ -46,7 +46,7 @@ const LARGE_RATIO: f32 = 1.5;
 /// The diameter depends on the [`Size`]: Medium is `spinner.diameter`, the
 /// platform's spinner; XSmall, Small and Large are `spinner.diameter` × 0.75,
 /// × 0.875 and × 1.5, gpui-component's own spinner ladder (`size_3`,
-/// `size_3p5`, `size_4`, `size_6`; gpui-component 0.8.0 `src/icon.rs:188-192`)
+/// `size_3p5`, `size_4`, `size_6`; gpui-component 0.8.1 `src/icon.rs:188-192`)
 /// re-anchored at the platform's Medium, so the sizes keep upstream's
 /// proportions and the platform's size; `Size::Size(px)` is `px`. None is
 /// less than `spinner.min_diameter`. The stroke is `spinner.stroke_width` at
@@ -154,7 +154,7 @@ enum Indicator {
     /// element but not an image (gpui-pre elements/svg.rs,
     /// `Svg::with_transformation`), and an SVG element paints every shape in
     /// its text colour: it rasterizes the SVG to an alpha mask and draws that
-    /// in the colour (gpui-pre 0.3.9 `src/window.rs:5025`, `:5050`).
+    /// in the colour (gpui-pre 0.3.10 `src/window.rs:5025`, `:5050`).
     Spin {
         svg: Rc<[u8]>,
         duration_ms: NonZeroU32,
@@ -354,7 +354,7 @@ enum IconChoice {
 /// **Every size is the platform's.** The spinner is [`Sizable`]: Medium, the
 /// default, is `spinner.diameter`; XSmall, Small and Large are
 /// `spinner.diameter` × 0.75, × 0.875 and × 1.5, the ratios of
-/// gpui-component's own spinner sizes to its Medium (gpui-component 0.8.0
+/// gpui-component's own spinner sizes to its Medium (gpui-component 0.8.1
 /// `src/icon.rs:188-192`, `Icon::with_size`), so `.small()` and `.large()`
 /// draw the same indicator smaller and larger; `Size::Size(px)` is `px`.
 /// None is less than `spinner.min_diameter` ([`SpinnerLook::of_size`]). The
@@ -370,7 +370,7 @@ enum IconChoice {
 /// it sets no colour of its own, `defaults.text_color`); a freedesktop icon
 /// that spins (a theme whose indicator is only `process-working-symbolic`)
 /// in `defaults.text_color` alone. gpui turns an SVG element but not an
-/// image, whose sprite carries no transformation (gpui-pre 0.3.9
+/// image, whose sprite carries no transformation (gpui-pre 0.3.10
 /// `src/scene.rs:749-758`), and the SVG element draws the icon's alpha
 /// mask in its text colour (`src/svg_renderer.rs:241-250`,
 /// `src/window.rs:5025`, `:5050`), so a spinning icon's own colours are

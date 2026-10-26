@@ -142,13 +142,13 @@ pub(crate) struct PaletteState {
     pub query: String,
     /// The highlighted row, counted across the groups among the rows the query keeps: the
     /// first when the palette opens and whenever the query changes, as gpui-component's
-    /// `Command` (gpui-component 0.8.0 `src/command/state.rs:441-450`).
+    /// `Command` (gpui-component 0.8.1 `src/command/state.rs:441-450`).
     pub selected: usize,
 }
 
 /// The highlighted row after `down` presses of Down and `up` of Up, among `len` rows, from
 /// `selected`, or from the first row where the query has changed (`reset_selection`,
-/// gpui-component 0.8.0 `src/command/state.rs:441-450`), wrapping at either end as its `Command`
+/// gpui-component 0.8.1 `src/command/state.rs:441-450`), wrapping at either end as its `Command`
 /// does (`select_by`, `:553-579`); `None` where there are no rows.
 pub(crate) fn palette_highlight(
     selected: usize,
@@ -828,14 +828,14 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
     }
 }
 
-/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component 0.8.0
+/// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component 0.8.1
 /// `src/status_bar.rs:89-90`, `StatusBar`'s `render`): `rems(0.25)` above and below and
 /// `rems(0.5)` at the sides, at the rem gpui-component sets to the theme's font size
 /// (`src/root.rs:714`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
 /// fills with the scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding
 /// the gpui showcase's status bar keeps where the theme states none, as `(vertical, horizontal)`
 /// in logical pixels. egui's frame margin is whole points, so each side is rounded to one as gpui
-/// rounds a padding before layout, a half toward zero (gpui-pre 0.3.9 `src/taffy.rs:534-538`,
+/// rounds a padding before layout, a half toward zero (gpui-pre 0.3.10 `src/taffy.rs:534-538`,
 /// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`): at a scale of 1
 /// the two bars are padded alike, 3 px above and below a 14 px font, a quarter of it 3.5.
 fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
@@ -1343,7 +1343,7 @@ fn inspector_content(app: &mut App, ui: &mut egui::Ui) {
 /// underline tabs of `demo::tab_bar` in one `Role::Tab` scope (§10.4), padded by
 /// `container_margin`, scrolling sideways where the content is too narrow for them, and at the
 /// row's right end a Ghost menu button listing every page, the current one selected, as
-/// gpui-component's tab-bar menu does (gpui-component 0.8.0 `src/tab/tab_bar.rs:699-732`,
+/// gpui-component's tab-bar menu does (gpui-component 0.8.1 `src/tab/tab_bar.rs:699-732`,
 /// `TabBar::render`'s Ghost `menu` button, the selected tab's item `checked`). Its caret is the
 /// chosen icon theme's `NavDown` at `defaults.icon_sizes.small`; where the theme has none, the
 /// button reads "Pages" (§10.4's icon rule).
@@ -1542,7 +1542,7 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
     );
 }
 
-/// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.0
+/// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.1
 /// `src/dialog/dialog.rs:806-813`, the `DialogTitle`, and `:846-861`, the Ghost close button) and
 /// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2540`, `:2582`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
@@ -1643,7 +1643,7 @@ fn palette_groups(app: &App, ctx: &egui::Context) -> [(&'static str, Vec<Palette
 /// The command palette (§10.4), as the gpui showcase's (`showcase-gpui/demo.rs:2523-2560`): a
 /// `Modal` in the dialog surface, its body in `Role::Dialog`, titled "Command Palette" with a
 /// close button, a focused field, then rows in `Role::List` grouped under small weak headers.
-/// Its keys are those of gpui-component 0.8.0's `Command` (`src/command/state.rs:65-68`): Up and
+/// Its keys are those of gpui-component 0.8.1's `Command` (`src/command/state.rs:65-68`): Up and
 /// Down move the highlighted row, Enter runs it, and Escape clears, then closes. They are the
 /// palette's while its field has the focus or nothing has; a row or the close button that has it
 /// keeps egui's own keys. They are matched as egui matches `Modifiers::NONE`, logically, extra

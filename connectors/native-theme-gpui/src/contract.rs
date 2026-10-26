@@ -374,7 +374,7 @@ const ROWS: &[Row] = &[
     // differs from the window background in nearly every preset. Upstream
     // paints `table_head` as the header row (`table/column.rs:287`,
     // `table/state.rs:1785, :2039`, `table/table.rs:199`); `list_head` has no
-    // reader in 0.8.0 beyond a schema fallback (`theme/schema.rs:972, 1010`),
+    // reader in 0.8.1 beyond a schema fallback (`theme/schema.rs:972, 1010`),
     // but the mapping is the truth for the day it gets one.
     Row {
         slot: "list_head",
@@ -896,7 +896,7 @@ struct NoReceiver {
     stated_none: &'static [(&'static str, &'static str)],
 }
 
-/// The contract rows whose `ThemeColor` slot gpui-component 0.8.0 reads
+/// The contract rows whose `ThemeColor` slot gpui-component 0.8.1 reads
 /// nowhere outside `theme/`, each with the evidence.
 ///
 /// The rows stay: they are the true mapping, and the day upstream reads a
@@ -1042,7 +1042,7 @@ const NO_RECEIVER: &[NoReceiver] = &[
 /// (`native-theme-iced/src/contract/derived.rs`) has the same shape.
 #[cfg(feature = "widgets")]
 enum Unread {
-    /// gpui-component and gpui-base 0.8.0 have nowhere to draw the value as
+    /// gpui-component and gpui-base 0.8.1 have nowhere to draw the value as
     /// the model states it, or only a receiver that would also paint a
     /// variant upstream leaves bare. The evidence cites the upstream source,
     /// `file.rs:line`.
@@ -1245,7 +1245,7 @@ const UNREAD_COLOURS: &[UnreadColour] = &[
         leaf: "input.hover_border_color",
         why: Unread::NoReceiver(
             "an `Input` has no hover style: its render \
-             (`input/input.rs:720-816`) sets no `.hover(`",
+             (`input/input.rs:691-784`) sets no `.hover(`",
         ),
     },
     UnreadColour {
@@ -1751,7 +1751,7 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
     let rows = ROWS.len() + COMPUTED_ROWS.len();
     println!(
         "--- gpui coverage: {rows} contract rows + {} derived = {} of 139 fields; \
-         {} of the rows map a slot 0.8.0 reads nowhere, not counted: {} fields \
+         {} of the rows map a slot 0.8.1 reads nowhere, not counted: {} fields \
          covered ---\n{}",
         DERIVED.len(),
         rows + DERIVED.len(),
@@ -1847,7 +1847,7 @@ struct Pair {
 }
 
 /// Upstream paints an idle tab `transparent` in every variant
-/// (`gpui-component-0.8.0/src/tab/tab.rs:173, 184, 191, 196, 201, 212`), so its
+/// (`gpui-component-0.8.1/src/tab/tab.rs:173, 184, 191, 196, 201, 212`), so its
 /// label lands on the bar, and `tokens.tab` has no reader to carry the
 /// platform's idle-tab fill. Breeze fills an unselected tab with
 /// `Window.darker(120)` (`docs/platform-facts.md:1346`, §2.11), which under
@@ -1906,7 +1906,7 @@ fn active_tab_drawn(tc: &ThemeColor, _: &ResolvedTheme) -> (Hsla, Hsla, Hsla) {
 /// tokens -- a label that lands on a fill other than its own, a fill upstream
 /// composes itself -- the pair carries a comment with the upstream line; not
 /// every pair can, because some tokens have many readers (`muted_foreground`
-/// alone has 96 sites outside `theme/` in 0.8.0) and the surfaces
+/// alone has 96 sites outside `theme/` in 0.8.1) and the surfaces
 /// `INERT_SURFACES` names have no reader at all. The two need not read the
 /// same native fields -- `hovered button label` keeps `button_foreground` on
 /// `button_hover` where the platform states `hover_text_color` on
@@ -2105,7 +2105,7 @@ const PAIRS: &[Pair] = &[
     // (`tab/tab_bar.rs:388`, `tab/tab.rs:367`), which is what the emitted
     // side measures then. The platform puts the same label on its own tab
     // fill, and the two surfaces differing is exactly what this pair is for.
-    // `tokens.tab`, which nothing in 0.8.0 reads, keeps its row but takes no
+    // `tokens.tab`, which nothing in 0.8.1 reads, keeps its row but takes no
     // part here.
     Pair {
         what: "tab label",
@@ -2219,7 +2219,7 @@ const PAIRS: &[Pair] = &[
 /// Geometry a theme states that gpui-component draws its own way where no
 /// `geometry` refinement reaches, with the upstream lines. A documented limit:
 /// no test can observe it, as gpui's test support exposes laid-out bounds
-/// (`TestAppContext::debug_bounds`) and no painted scene (gpui-pre 0.3.9
+/// (`TestAppContext::debug_bounds`) and no painted scene (gpui-pre 0.3.10
 /// `src/window.rs:1258`, `rendered_frame` is crate-private), so neither a
 /// painted edge nor the ring outside it can be asserted. Recheck it on every
 /// gpui-component bump.
@@ -2238,7 +2238,7 @@ struct UpstreamLimit {
 )]
 const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
     what: "a focused text field's edge and focus ring",
-    evidence: "gpui-component 0.8.0 draws a focused Input in its own way: \
+    evidence: "gpui-component 0.8.1 draws a focused Input in its own way: \
                `border_1()` in the `ring` colour as a focus-state style \
                (`src/input/input.rs:751-755`), which a `StyleRefinement` such \
                as `geometry::input` cannot reach, so a field the theme leaves \
@@ -2247,9 +2247,9 @@ const UPSTREAM_LIMITS: &[UpstreamLimit] = &[UpstreamLimit {
                edge (`src/styled.rs:11`, `:257-262`, `:301-327`, called at \
                `src/input/input.rs:787`). It cannot draw the theme's inset ring \
                in a focus state. The 1px edge is not forced: \
-               `Input::focus_bordered(false)` (`src/input/input.rs:311-314`, \
-               also `FocusableExt::focus_ring(false)`, `:164-167`) turns off \
-               both the edge (`:773`) and the ring (`:818`), but leaves a \
+               `Input::focus_bordered(false)` (`src/input/input.rs:309-312`, \
+               also `FocusableExt::focus_ring(false)`, `:162-165`) turns off \
+               both the edge (`:753`) and the ring (`:786`), but leaves a \
                focused field with no focus display at all; the connector keeps \
                upstream's display and the 1px edge with it",
 }];
@@ -2390,7 +2390,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
     }
 }
 
-/// Asserted pairs whose emitted side rests on a token 0.8.0 paints nowhere.
+/// Asserted pairs whose emitted side rests on a token 0.8.1 paints nowhere.
 ///
 /// The row that maps such a token stays -- it is the truth about the mapping
 /// for the day upstream reads it -- but a contrast pair over it is a claim
@@ -2401,7 +2401,7 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
 const INERT_SURFACES: &[(&str, &str)] = &[(
     "sidebar primary button label",
     "neither sidebar_primary nor sidebar_primary_foreground has a reader \
-         outside theme/ in 0.8.0",
+         outside theme/ in 0.8.1",
 )];
 
 /// Contrast of `fg` on `bg`, with every layer composited first: `bg` over the
@@ -2563,7 +2563,7 @@ fn no_pair_contrasts_worse_than_the_platforms_own() -> crate::Result<()> {
     }
 
     println!(
-        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.8.0 \
+        "--- gpui contrast: {} asserted pairs ({} of them over a token 0.8.1 \
          paints nowhere, not counted as coverage: {} surfaces covered) x {} \
          combinations = {} comparisons, {} below AA ---\n{}\n--- of the \
          asserted pairs, {} emit the platform's own ratio in all {} \

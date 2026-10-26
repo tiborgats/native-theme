@@ -25,7 +25,7 @@
 //! `ThemeColor` has no checked-switch field the connector could fill, so
 //! [`switch_color`] reads the platform's from the model.
 //!
-//! Upstream citations in this module are verified against gpui-component 0.8.0.
+//! Upstream citations in this module are verified against gpui-component 0.8.1.
 
 use gpui::{App, Hsla};
 use gpui_component::ActiveTheme as _;
