@@ -13810,3 +13810,31 @@ round a focused control, adwaita a tinted border.
   style's (adwaita 0, windows-11 8, catppuccin-mocha 0 against 9, 4, 8), and holds the body's
   ring to that scope's; a hook that recorded the base style turns it red (checked by mutation).
   M2 (a read-only compare for the probe) is not taken: the clone is the existing pattern.
+
+#### D2 · windows-11: accent-derived values, and the four accent fills as wrong safety nets (todo 860)
+**Problem:** WinUI 3 fills every accent control with `AccentFillColorDefault` (Dark1 / Light2); the
+model's four accent fills inherited `defaults.accent_color`, so windows-11 dark drew them #0078d4
+under a black mark, the switch's hover contradicted its rest fill, and on a live system the focus
+line and the switch hover stayed the default accent's. The four [uniform] rules (← the accent)
+give Windows and KDE a wrong value but carried no `# see wrong_safety_nets` mark and no entry,
+against docs/inheritance-rules.toml:147-149.
+**Fix:** the facts cells (56407e2d, W2); windows-11 states the four as #0067c0 / #4cc2ff and the
+hover as the window at alpha 25 over the track (W2's d-w2c patch); the Windows reader writes the
+four and `input.focus_border_color` from the shade the accent buttons take (the focus line not
+under high contrast, whose TextBox dictionary leaves the key out), and under high contrast the
+four from the highlight and the hovered on switch from the button face. The four rules are
+marked and recorded (W2's d-w2h marks and entries). The controller's ruling (2): the MUST binds
+the presets of the platforms an entry's `why_wrong` names (its header reworded, no line moved),
+so W2-h's statements in adwaita, macos-monterey, macos-tahoe, material-3, ios-13 and
+kde-breeze's slider were not applied: there the inheritance gives the platform's value, and an
+accent overlay re-derives the controls (`overlay_accent_change_re_derives_widget_fields`, kept;
+its twin `overlay_accent_change_keeps_a_stated_fill` on windows-11). A first draft had the GNOME,
+macOS and KDE readers write the four too, which the ruling dropped; each reader instead has a test
+that a non-default accent reaches the four through inheritance (`a_portal_accent_reaches_the_accent_fills`,
+macOS and KDE `a_custom_accent_reaches_the_accent_fills`), and Windows' accent-shade and
+high-contrast tests cover its writes; `the_windows_11_switch_hover_composites_to_winuis` holds the
+hover to #1875c5 / #48b2e9 within one level. `platform_presets_no_derived_fields` names windows-11
+among the presets that state them. The iced `contract-leaves.toml` was regenerated (windows-11's
+toggler hover now moves with the checked colour). The new `[1.0]` entry *windows-11: values WinUI
+3 states no source for* holds the parts no Microsoft source gives.
+**Status:** done, c7989e7b (facts 56407e2d).

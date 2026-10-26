@@ -2157,3 +2157,33 @@ platform (`native-theme/src/watch/`).
       platform-facts rows disagree with* records it among the values T16
       stated. The list-header half stays.
   *Closed 2026-10-26 in 48df37e9:* the list-header half. facts :1429's GNOME cell states the colour: the header's buttons are transparent (`_column-view.scss:12-13`) over the column view's `.view` fill, `--view-bg-color` (`_column-view.scss:72-76`, `_views.scss:1-4`), #ffffff / #1d1d20 (`_colors.scss:36`, `:99`, libadwaita 1.10.0). `adwaita.toml` states it (`[light.list] header_background`, `[dark.list] header_background`), as the `list.header_background` wrong safety net requires a preset to (docs/inheritance-rules.toml:488-489, :529-531); kde-breeze and windows-11 already did. The resolved value is unchanged: it equals `surface_color`, which the field inherited. The rule's reason now says GNOME equals surface and KDE is distinct. The slider half closed in M8 (cbab21c4, 859bf526).
+
+### windows-11: accent-derived values stated for the default accent
+
+- [x] [v0.7.0] M4 T35 (2026-10-13) gave windows-11 WinUI 3's brushes where a
+      value derives from the accent and no inheritance carries it: the text
+      box's focused bottom line `SystemAccentColorDark1` / `Light2` (`#0067c0`
+      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml`
+      `[light.input] focus_border_color`, `[dark.input] focus_border_color`) and
+      the on switch's hover `AccentFillColorSecondary`, those shades at 0.9,
+      flattened (`#1875c5` / `#48b2e9`, `[light.switch] hover_checked_background`,
+      `[dark.switch] hover_checked_background`), each the UISettings
+      shade of the default accent `#0078d4` on the OS probe. On a live system
+      with another accent they stay the default accent's: the reader writes
+      the shades only into the accent and checked buttons' fills
+      (`native-theme/src/windows.rs`, `build_theme`). Decide whether the
+      reader writes these two from the same shades (cited as the preset
+      cites them). The text selection now inherits the accent
+      (`TextControlSelectionHighlightColor` = `SystemAccentColor`), so it
+      follows the user's. Still without a source: the dark
+      `defaults.selection_text_color` (`#ffffff`, `[dark.defaults] selection_text_color`; `COLOR_HIGHLIGHTTEXT`
+      was read in light mode only, and WinUI 3 states no selected-text
+      foreground) and the menu's background (`[light.menu]`, `[dark.menu]`): WinUI 3 draws the
+      menu on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does
+      not publish; the preset states the fallback of the acrylic brush of the
+      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1253`). Under
+      high contrast the preset's stated strokes and fills that the reader
+      does not map (`input.hover_border_color`, the check box's and switch's
+      off colours, the slider's track and disabled colours) keep
+      their light or dark values.
+  *Closed 2026-10-26 in c7989e7b (facts 56407e2d):* the reader writes `input.focus_border_color` and the four accent fills (`checkbox.checked_background`, `switch.checked_background`, `slider.fill_color`, `progress_bar.fill_color`) from the UISettings shade the accent and checked buttons take, SystemAccentColorDark1 in light and Light2 in dark, and under high contrast the four from Highlight (CheckBox :145, ToggleSwitch :87, ProgressBar :14; the slider's SystemControlHighlightAccentBrush, generic.xaml:2055) and the switch hover from ButtonFace (ToggleSwitch :88); the focused text box's line is not written under high contrast, whose TextBox dictionary leaves the key out. WinUI 3 fills every accent control with `AccentFillColorDefault` (CheckBox_themeresources.xaml:233, :57; RadioButton :146, :30; Slider :128, :24; ProgressBar :22, :6; ToggleSwitch :143, :23 at microsoft-ui-xaml 8463f45), not `SystemAccentColor`; windows-11 states the four as #0067c0 / #4cc2ff. The checked switch's hover is the window at alpha 25/255 laid over the track (#f3f3f319 / #20202019), which composites to WinUI's #1875c5 / #48b2e9 for the default accent and follows any other (`the_windows_11_switch_hover_composites_to_winuis`). The four [uniform] rules are `# see wrong_safety_nets` for Windows and KDE (the controller's ruling: the MUST binds the presets of the platforms an entry's why_wrong names; GNOME, macOS, iOS and Material keep inheriting the accent). The notes that have no Microsoft source move to the `[1.0]` entry *windows-11: values WinUI 3 states no source for*.

@@ -792,35 +792,6 @@ model, the platform presets and the three connectors
       sentence went (Step 6 ruling, M8-40), so the run leaves that header as
       it is.
 
-### windows-11: accent-derived values stated for the default accent
-
-- [ ] [v0.7.0] M4 T35 (2026-10-13) gave windows-11 WinUI 3's brushes where a
-      value derives from the accent and no inheritance carries it: the text
-      box's focused bottom line `SystemAccentColorDark1` / `Light2` (`#0067c0`
-      / `#4cc2ff`, `native-theme/src/presets/windows-11.toml`
-      `[light.input] focus_border_color`, `[dark.input] focus_border_color`) and
-      the on switch's hover `AccentFillColorSecondary`, those shades at 0.9,
-      flattened (`#1875c5` / `#48b2e9`, `[light.switch] hover_checked_background`,
-      `[dark.switch] hover_checked_background`), each the UISettings
-      shade of the default accent `#0078d4` on the OS probe. On a live system
-      with another accent they stay the default accent's: the reader writes
-      the shades only into the accent and checked buttons' fills
-      (`native-theme/src/windows.rs`, `build_theme`). Decide whether the
-      reader writes these two from the same shades (cited as the preset
-      cites them). The text selection now inherits the accent
-      (`TextControlSelectionHighlightColor` = `SystemAccentColor`), so it
-      follows the user's. Still without a source: the dark
-      `defaults.selection_text_color` (`#ffffff`, `[dark.defaults] selection_text_color`; `COLOR_HIGHLIGHTTEXT`
-      was read in light mode only, and WinUI 3 states no selected-text
-      foreground) and the menu's background (`[light.menu]`, `[dark.menu]`): WinUI 3 draws the
-      menu on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does
-      not publish; the preset states the fallback of the acrylic brush of the
-      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md:1253`). Under
-      high contrast the preset's stated strokes and fills that the reader
-      does not map (`input.hover_border_color`, the check box's and switch's
-      off colours, the slider's track and disabled colours) keep
-      their light or dark values.
-
 ### ios-26: 38 required fields have no iOS 26 source
 
 - [ ] [v0.7.0] Step 17 of the code-review plan (`docs/todo_code-review-plan.md`,
@@ -1507,6 +1478,26 @@ model, the platform presets and the three connectors
       colour whatever the user set. Read kwinrc's border size, as Breeze
       does, and give the toolbar the window colour where it is another
       size.
+
+### windows-11: values WinUI 3 states no source for
+
+- [ ] [1.0] From the v0.7.0 entry *windows-11: accent-derived values stated for
+      the default accent* (closed 2026-10-26), the parts no Microsoft source
+      gives: the dark `defaults.selection_text_color` (`#ffffff`,
+      `windows-11.toml` `[dark.defaults] selection_text_color`: `COLOR_HIGHLIGHTTEXT` was read in
+      light mode only, and WinUI 3 states no selected-text foreground); the
+      menu's background (`[light.menu]`, `[dark.menu]`): WinUI 3 draws the menu
+      on a `DesktopAcrylicBackdrop` whose fallback colour Microsoft does not
+      publish, and the preset states the fallback of the acrylic brush of the
+      same name, `#F9F9F9` / `#2C2C2C` (`docs/platform-facts.md` §2.6
+      `background_color`); and under high contrast the stated strokes and fills
+      the reader does not map (`input.hover_border_color`,
+      `input.focus_border_color`, whose TextBox HighContrast dictionary leaves
+      the key out, the check box's and the switch's off colours, the slider's
+      track and disabled colours), which keep their light or dark values. Each
+      needs a measured or published source first: an OS-probe read in dark mode
+      for the selected text, a render of the menu's backdrop, and the
+      high-contrast dictionaries of the control resources for the rest.
 
 ### windows-11: the validator's findings after T35 left open
 
