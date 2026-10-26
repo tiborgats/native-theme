@@ -93,7 +93,7 @@
 //! | `text_scaling_factor` | every text size in the styles, and the font accessors' sizes, times [`AccessibilityPreferences::text_scale_factor`]; no other length | a size it reads from the `ResolvedTheme` itself, through [`scaled_text_size`] |
 //! | `reduce_motion` | `Style::animation_time = 0.0` and `ScrollAnimation::none()` in every style | animations of its own |
 //! | `reduce_transparency` | nothing: egui's `Modal` backdrop is a per-call `Modal::backdrop_color`, not a `Style` field; [`is_reduced_transparency`] reads it | the backdrop colour and its own translucent surfaces |
-//! | `high_contrast` | nothing; [`is_high_contrast`] reads it | its own colours, if they should change |
+//! | `high_contrast` | nothing, by design: high contrast belongs in the theme data, which a reader fills with what the platform draws under it (the Windows reader writes the high-contrast system colours, the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast, `docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`), so the theme carries it already; [`is_high_contrast`] reads the flag | its own colours, if they should change |
 //!
 //! # Semver
 //!

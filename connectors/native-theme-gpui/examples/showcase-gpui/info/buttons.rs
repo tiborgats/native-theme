@@ -118,7 +118,7 @@ fn at_rest(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
             "text",
             "secondary_foreground",
             t.secondary_foreground,
-            "native-theme-gpui/variants.rs:54",
+            "native-theme-gpui/variants.rs:62",
         )],
         ButtonKind::Link => vec![claim(
             "text",
@@ -264,13 +264,13 @@ fn under_the_pointer(t: &Theme, kind: ButtonKind) -> Vec<ColorClaim> {
                 "hover bg",
                 "secondary_hover",
                 t.secondary_hover,
-                "native-theme-gpui/variants.rs:55",
+                "native-theme-gpui/variants.rs:63",
             ),
             claim(
                 "active bg",
                 "secondary_active",
                 t.secondary_active,
-                "native-theme-gpui/variants.rs:56",
+                "native-theme-gpui/variants.rs:64",
             ),
         ],
         ButtonKind::Link => vec![
@@ -640,13 +640,13 @@ pub(super) fn native_ghost_selected(info: WidgetInfo, t: &Theme) -> WidgetInfo {
             "selected bg",
             "secondary_active",
             t.secondary_active,
-            "native-theme-gpui/variants.rs:56",
+            "native-theme-gpui/variants.rs:64",
         ))
         .color(claim(
             "text",
             "secondary_foreground",
             t.secondary_foreground,
-            "native-theme-gpui/variants.rs:54",
+            "native-theme-gpui/variants.rs:62",
         )),
     )
 }

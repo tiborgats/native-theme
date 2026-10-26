@@ -13144,7 +13144,8 @@ fn the_reduce_motion_texts_say_that_off_is_no_request() {
     );
     let t = Theme::from(&gpui_component::theme::ThemeColor::default());
     for checked in [false, true] {
-        let info = crate::info::chrome::preference_switch(&t, "reduce_motion", checked, false);
+        let info =
+            crate::info::chrome::preference_switch(&t, "reduce_motion", checked, false, None);
         let line = info
             .instance
             .iter()
@@ -13561,6 +13562,47 @@ fn native_info_records_the_builder_only_when_it_applies_it(cx: &mut TestAppConte
     assert!(expected.is_some(), "no native theme is installed");
     assert_eq!(Some(styled.style().clone()), expected);
     assert_eq!(info, WidgetInfo::new("Button").geometry("button"));
+}
+
+/// The Typography page's code Editor takes the platform's line height
+/// through `geometry::editor` under a native theme, as `demo::editor`
+/// refines it, and its info names the builder (`native_info` records it only
+/// where it applies it, which
+/// `native_info_records_the_builder_only_when_it_applies_it` holds). Its
+/// fill claim is the platform's field fill, which the connector's highlight
+/// theme gives the editor.
+#[gpui::test]
+fn the_code_editor_is_refined_by_geometry_editor(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    use_preset(&mut cx, &showcase, "kde-breeze");
+    let r = resolved_theme(&mut cx, &showcase);
+    let (line_height, fill) = read(&mut cx, &showcase, |this, cx| {
+        let mut info = WidgetInfo::new("Editor");
+        let mut editor = native_info(
+            gpui_component::input::Editor::new(&this.editor_state),
+            cx,
+            geometry::editor,
+            "editor",
+            &mut info,
+        );
+        let fill = crate::info::typography::editor(Theme::global(cx))
+            .colors
+            .iter()
+            .find(|c| c.field == "editor_background")
+            .map(|c| c.value);
+        (editor.style().text.line_height, fill)
+    });
+    assert_eq!(line_height, Some(gpui::relative(r.defaults.line_height)));
+    assert_eq!(fill, Some(crate::info::stated(r.input.background_color)));
+    show(&mut cx, &showcase, Page::Typography);
+    let shown = settle_on(&mut cx, &showcase, "typography-editor");
+    assert!(
+        shown
+            .as_ref()
+            .and_then(|info| note_of(&info.config, "geometry"))
+            .is_some_and(|line| line.starts_with("geometry::editor")),
+        "the page's Editor info does not name geometry::editor: {shown:?}"
+    );
 }
 
 /// Two targets for the registry's tests, one inside the other: an outer

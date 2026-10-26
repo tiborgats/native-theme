@@ -494,7 +494,7 @@ fn chrome_button_image(
 /// for a `Ui` made Ghost with `demo::ghost`: transparent at rest and filled on hover; while
 /// `selected`, filled with the pressed fill of that `Ui` — in `Role::Button`,
 /// `button.active_background` (§6.4) — as native-theme-gpui's `ghost_button` fills with its
-/// `active` colour (`connectors/native-theme-gpui/src/variants.rs:51-57`), not with the
+/// `active` colour (`connectors/native-theme-gpui/src/variants.rs:59-65`), not with the
 /// selected button's accent. Its icon where the set has one, else its tooltip's text as its
 /// label, as gpui's (`showcase-gpui/demo.rs:1217-1220`).
 fn ghost_button(

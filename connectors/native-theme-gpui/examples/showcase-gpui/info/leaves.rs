@@ -1380,11 +1380,7 @@ pub const HOW: &[(&str, &str, &str)] = &[
         "list.border.line_width_px",
         "gpui: geometry::list's line, which the rows lie inside; taken off the frame's radius for the inner radius of the first and last rows' corners (demo::ListRow)",
     ),
-    (
-        "",
-        "list.background_color",
-        "gpui: the List box's fill (demo::list)",
-    ),
+    ("", "list.background_color", "gpui: geometry::list's fill"),
     (
         "",
         "list.border.color",

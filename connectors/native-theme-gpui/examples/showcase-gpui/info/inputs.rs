@@ -279,7 +279,7 @@ pub fn input_groups(t: &Theme) -> WidgetInfo {
             "addon button hover",
             "secondary_hover",
             t.secondary_hover,
-            "native-theme-gpui/variants.rs:55",
+            "native-theme-gpui/variants.rs:63",
         ))
         .not_themeable("addon padding", "inner (Tier U)")
         .not_themeable("addon button", "native_theme_gpui::variants::ghost_button: flat idle, hover = secondary_hover (the platform's button.hover_background). Upstream's own in-group ghost would hover with muted (input/group.rs, InputGroupButton::render_in_group)")

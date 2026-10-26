@@ -1326,7 +1326,7 @@ pub(super) fn dialog_surface(
     ))
     .not_themeable(
         "width",
-        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog_max_width caps it",
+        "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.min_width and geometry::dialog_max_width caps it",
     )
     .not_themeable(
         "animation",
@@ -1648,30 +1648,38 @@ pub fn preferences_settings(t: &Theme) -> WidgetInfo {
 }
 
 /// One of the Preferences sheet's switches, `checked` or not, `disabled`
-/// while no native theme is installed.
+/// while no native theme is installed, its checked track handed `native`'s
+/// `switch.checked_background` where one is.
 pub fn preference_switch(
     t: &Theme,
     field: &'static str,
     checked: bool,
     disabled: bool,
+    native: Option<&ResolvedTheme>,
 ) -> WidgetInfo {
     let info = WidgetInfo::new("Switch").variant(match (checked, disabled) {
         (_, true) => "disabled",
         (true, false) => "on",
         (false, false) => "off",
     });
-    let info = match (checked, disabled) {
-        (_, true) => info.not_themeable(
+    let info = match (checked, disabled, native) {
+        (_, true, _) => info.not_themeable(
             "disabled",
             "the row at half opacity (setting/item.rs, SettingItem), and the track at half alpha within it (gpui-component/switch.rs, Switch)",
         ),
-        (true, false) => info.color(claim(
+        (true, false, Some(r)) => info.color(claim(
+            "track",
+            "checked_background",
+            stated(r.switch.checked_background),
+            "showcase",
+        )),
+        (true, false, None) => info.color(claim(
             "track",
             "primary",
             t.primary,
             "gpui-component/switch.rs:184",
         )),
-        (false, false) => info.color(claim(
+        (false, false, _) => info.color(claim(
             "track",
             "switch",
             t.switch,
@@ -1690,7 +1698,7 @@ pub fn preference_switch(
     )
     .not_themeable(
         "on track",
-        "primary by default; Switch::color would replace it, a receiver for the model's switch.checked_background that nothing in the connector feeds (gpui-component/switch.rs, Switch)",
+        "primary by default; Switch::color replaces it, and the showcase hands it variants::switch_color, the model's switch.checked_background, where a native theme is installed (gpui-component/switch.rs, Switch; native-theme-gpui variants.rs, switch_color)",
     )
     .instance(
         "preference",

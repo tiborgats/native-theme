@@ -77,14 +77,14 @@
 //! | `text_scaling_factor` | `font_size` and `mono_font_size` times [`AccessibilityPreferences::text_scale_factor`], through [`AccessibilityPreferences::scaled`] (a size the factor would make infinite, subnormal or zero stays as stated); `font_size` is the window rem, so every rem-relative size in gpui-component follows; the [`geometry`] builders scale the widget fonts they set | a size it sets itself, through [`scaled_text_size()`] |
 //! | `reduce_motion` | [`apply`] and [`apply_accessibility`] switch gpui's `App::reduce_motion` on, which the `widgets` spinner reads | its own animations read `cx.reduce_motion()` |
 //! | `reduce_transparency` | no dialog or sheet scrim: `ThemeColor::overlay` is transparent | translucent surfaces of its own |
-//! | `high_contrast` | nothing: the theme is the same with it set or unset (`docs/todo.md`, the item "the gpui connector reads `AccessibilityPreferences::high_contrast`"); [`is_high_contrast`] reads it | its own colours, if they should change |
+//! | `high_contrast` | nothing, by design: high contrast belongs in the theme data, which a reader fills with what the platform draws under it (the Windows reader writes the high-contrast system colours, the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast, `docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`), so the theme carries it already; [`is_high_contrast`] reads the flag | its own colours, if they should change |
 //!
 //! # Theme Field Coverage
 //!
 //! The connector maps [`ResolvedTheme`] onto gpui-component's `ThemeColor`
 //! (all 139 colour fields), `ThemeConfig` (fonts, radii, shadow, highlighter),
-//! the styled `Theme`'s `focus_ring` and `scrollbar_mode`, and gpui-base's
-//! scrollbar and resize-handle styles.
+//! the styled `Theme`'s `focus_ring`, `scrollbar_mode` and `highlight_theme`,
+//! and gpui-base's scrollbar and resize-handle styles.
 //!
 //! | Category | Mapped | Notes |
 //! |----------|--------|-------|
@@ -94,20 +94,20 @@
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill` |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and its gutter's over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme), and its line height via `geometry::editor` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
-//! | `slider`, `switch` | 2 colours each | fill/thumb colours; geometry upstream |
+//! | `slider`, `switch` | 2 colours each | fill/thumb colours; a checked switch's track, `switch.checked_background`, via [`variants::switch_color`] for `Switch::color`; geometry upstream |
 //! | `progress_bar` | fill + geometry | height, radius, min width via `geometry::progress` |
-//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
+//! | `list` | 7 of 14 + geometry | background, alternate row, selection, hover, grid, header background and header font colour; the background and the frame via `geometry::list`, the receiver of the fill (the `list` token has no reader in gpui-component 0.8.0); row height, padding, font via `geometry::list_item`; a selected row's text colour via `geometry::list_item_selected`; header height via `geometry::list_header_height` for `DataTable::header_row_height` |
 //! | `menu` | 2 colours + geometry | hover_background, hover_text_color → `accent`, `accent_foreground` (upstream's item highlight); row height, padding, icon gap, font via `geometry::menu_item` on an application-drawn row |
 //! | `segmented_control` | 1 of 9 | background → `tab_bar_segmented`, the track of a segmented `TabBar` |
 //! | `popover` | 2 of 3 + geometry | background, font.color; padding, radius and edge (`border.color` at `border.line_width`) via `geometry::popover` |
 //! | `combo_box` | geometry | height, width, padding, radius, font via `geometry::select` and `geometry::combobox`; the fill, and a disabled trigger's fill and text colour, via `geometry::combo_box_fill` |
 //! | `card`, `expander` | geometry | the card's padding, radius, edge and fill via `geometry::group_box_content`; the expander's title height and colour via `geometry::accordion_title`, its edge colour via `geometry::accordion`, its hover fill via `geometry::accordion_hover` |
 //! | `tooltip` | show delay + geometry | `show_delay` installed by [`apply`] as gpui-base's `TooltipDefaults` show delay, and [`tooltip_show_delay`] for GPUI's own `.tooltip()` on an element; background, font, padding, border, radius via `geometry::tooltip`, max width via `geometry::tooltip_content` |
-//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
+//! | `dialog` | entrance + geometry | `entrance` via `geometry::dialog_entrance`, both styles as `DialogEntrance::Fade` (gpui-component draws neither a scaling nor a rising entrance); padding, min width, min height, radius, fill and edge colour via `geometry::dialog`, max width via `geometry::dialog_max_width`, button gap via `geometry::dialog_footer`, fonts via `geometry::dialog_title` and `geometry::dialog_description` |
 //! | `link` | 3 of 8 + geometry | font.color, hover_text_color, active_text_color; background_color via `geometry::link`, where the `Link` widget paints no background of its own (`link.rs:73-90`); `link.hover_background` has no receiver — the `Link` widget paints no background in any state, a `ButtonVariant::Link` button paints `Theme::transparent` in every state, and that field is not one of the 139 `ThemeColor` colours |
 //! | `splitter` | colours | divider/hover colours via `base_layer::resizable_theme`, drawn by gpui-base's resizables at their 1 px width (not gpui-component's, `Settings` or dock edges) |
 //!
@@ -342,13 +342,19 @@ pub fn to_theme(
         ScrollbarMode::Always
     };
 
-    // Issue 43/44: set highlight_theme based on is_dark so syntax highlighting
-    // uses appropriate colors (dark themes get dark highlight, light themes get light).
-    theme.highlight_theme = if is_dark {
+    // Issue 43/44: the highlight theme follows is_dark, so syntax highlighting
+    // takes the mode's colours. Its style is config::highlight_style's, the one
+    // the config below carries, which fills the code editor and its gutter
+    // from the platform's field fill.
+    let highlight = if is_dark {
         gpui_component::highlighter::HighlightTheme::default_dark()
     } else {
         gpui_component::highlighter::HighlightTheme::default_light()
     };
+    theme.highlight_theme = std::sync::Arc::new(gpui_component::highlighter::HighlightTheme {
+        style: config::highlight_style(resolved, mode),
+        ..(*highlight).clone()
+    });
 
     // Store config for gpui-component's theme switching
     let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode, prefs));
@@ -1700,6 +1706,44 @@ mod tests {
             light_theme.highlight_theme.appearance,
             GpuiThemeMode::Light,
             "light theme should use light highlight"
+        );
+    }
+
+    /// The code editor takes the platform's field fill, `input.background_color`,
+    /// in every preset and mode, and its gutter that fill over the window,
+    /// opaque wherever the window is, so text scrolling under the gutter
+    /// cannot show through it.
+    #[test]
+    fn the_code_editor_takes_the_platforms_field_fill() {
+        let prefs = AccessibilityPreferences::default();
+        let mut translucent = Vec::new();
+        for info in Theme::list_presets() {
+            for is_dark in [false, true] {
+                let (theme, r) =
+                    from_preset(info.key, is_dark, &prefs).expect("preset should load");
+                let at = format!("{}/{is_dark}", info.key);
+                let fill = colors::rgba_to_hsla(r.input.background_color);
+                let window = colors::rgba_to_hsla(r.window.background_color);
+                let style = &theme.highlight_theme.style;
+                assert_eq!(
+                    style.editor_background,
+                    Some(fill),
+                    "{at}: the editor's fill"
+                );
+                let gutter = style.editor_gutter_background;
+                assert_eq!(gutter, Some(colors::over(window, fill)), "{at}: the gutter");
+                if window.a >= 1.0 {
+                    assert_eq!(gutter.map(|g| g.a), Some(1.0), "{at}: a translucent gutter");
+                }
+                if fill.a < 1.0 {
+                    translucent.push(at);
+                }
+            }
+        }
+        assert!(
+            !translucent.is_empty(),
+            "no preset states a translucent field fill any more, so the gutter's \
+             composite is tested over opaque fills alone"
         );
     }
 

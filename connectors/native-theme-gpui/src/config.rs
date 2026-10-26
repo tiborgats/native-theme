@@ -9,10 +9,11 @@
 //! gpui-base 0.8.0 and gpui-pre 0.3.9.
 
 use gpui::SharedString;
+use gpui_component::highlighter::{HighlightTheme, HighlightThemeStyle};
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
 use native_theme::theme::ResolvedTheme;
 
-use crate::colors::{hsla_to_hex, to_theme_color};
+use crate::colors::{hsla_to_hex, over, rgba_to_hsla, to_theme_color};
 
 /// Build a [`ThemeConfig`] from a [`ResolvedTheme`].
 ///
@@ -42,16 +43,12 @@ pub fn to_theme_config(
     let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let colors = theme_color_to_config_colors(&tc);
 
-    // D41: upstream's own default highlighter style for this mode. Theme::change
-    // installs a config's highlight as highlight_theme only when it is Some
+    // D41: the highlighter style for this mode. Theme::change installs a
+    // config's highlight as highlight_theme only when it is Some
     // (gpui-component src/theme/schema.rs:1070-1077) and otherwise keeps
-    // the previous mode's; to_theme sets Theme.highlight_theme to this same
-    // default directly, so both paths agree.
-    let highlight = if is_dark {
-        gpui_component::highlighter::HighlightTheme::default_dark()
-    } else {
-        gpui_component::highlighter::HighlightTheme::default_light()
-    };
+    // the previous mode's; to_theme installs this same style directly, so
+    // both paths agree.
+    let highlight = highlight_style(resolved, mode);
 
     ThemeConfig {
         name: SharedString::from(name.to_string()),
@@ -71,13 +68,49 @@ pub fn to_theme_config(
 
         colors,
 
-        highlight: Some(highlight.style.clone()),
+        highlight: Some(highlight),
 
         // is_default: false (via ThemeConfig::default()) — this is intentional.
         // Connector-created themes are never the "default" theme; the application
         // decides which theme is its default.
         ..ThemeConfig::default()
     }
+}
+
+/// The highlighter style for `mode` that [`crate::to_theme`] installs and
+/// [`to_theme_config`] carries: upstream's default for the mode, with the
+/// code editor's fill and its gutter's taken from the theme.
+///
+/// A code editor is an `Input` in code mode, whose root upstream fills with
+/// `Theme::editor_background` (gpui-component `src/input/input.rs:720-722`):
+/// the highlight theme's `editor_background`, a fixed `#ffffff` or `#0a0a0a`
+/// in the defaults, else `input_background()`, which is not the platform's
+/// field fill (`src/theme/mod.rs:485-499`). The fill is the field's,
+/// `input.background_color`, as
+/// [`geometry::input_fill`](crate::geometry::input_fill) gives a text field.
+/// gpui-base paints the gutter as an opaque overlay above text that scrolls
+/// under it, in `editor_gutter_background` or else the editor's fill
+/// (gpui-base `src/input/base/element.rs:3352-3358`); a translucent field
+/// fill, as windows-11 states, would show the text through, so the gutter is
+/// that fill composited over `window.background_color`.
+///
+/// The current line, the line numbers, the invisibles and the syntax colours
+/// stay upstream's scheme: the model states none of them.
+pub(crate) fn highlight_style(
+    resolved: &ResolvedTheme,
+    mode: GpuiThemeMode,
+) -> HighlightThemeStyle {
+    let default = if mode.is_dark() {
+        HighlightTheme::default_dark()
+    } else {
+        HighlightTheme::default_light()
+    };
+    let fill = rgba_to_hsla(resolved.input.background_color);
+    let mut style = default.style.clone();
+    style.editor_background = Some(fill);
+    style.editor_gutter_background =
+        Some(over(rgba_to_hsla(resolved.window.background_color), fill));
+    style
 }
 
 /// Convert the [`gpui_component::theme::ThemeColor`] fields to hex strings in a
@@ -241,7 +274,6 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 mod tests {
     use super::*;
     use crate::{AccessibilityPreferences, ColorMode};
-    use gpui_component::highlighter::HighlightTheme;
     use native_theme::theme::Theme;
 
     /// Issue 1: fixed to use `into_variant(true)` for catppuccin-mocha (dark theme).
@@ -255,22 +287,29 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
-    /// D41: the config carries upstream's default highlighter style for its
-    /// mode, so `Theme::change` to this mode switches code highlighting too.
+    /// D41: the config carries the highlighter style `to_theme` installs for
+    /// its mode, so `Theme::change` to this mode switches code highlighting
+    /// and the editor's fill too; the style is upstream's default for the
+    /// mode but for the editor's two fills.
     #[test]
-    fn to_theme_config_carries_the_default_highlight_style_for_its_mode() {
+    fn to_theme_config_carries_the_installed_highlight_style_for_its_mode() {
         let resolved = test_resolved();
         let prefs = AccessibilityPreferences::default();
-        let dark = to_theme_config(&resolved, "H", GpuiThemeMode::Dark, &prefs);
-        let light = to_theme_config(&resolved, "H", GpuiThemeMode::Light, &prefs);
-        assert_eq!(
-            dark.highlight.as_ref(),
-            Some(&HighlightTheme::default_dark().style)
-        );
-        assert_eq!(
-            light.highlight.as_ref(),
-            Some(&HighlightTheme::default_light().style)
-        );
+        for (mode, default) in [
+            (GpuiThemeMode::Dark, HighlightTheme::default_dark()),
+            (GpuiThemeMode::Light, HighlightTheme::default_light()),
+        ] {
+            let config = to_theme_config(&resolved, "H", mode, &prefs);
+            let style = highlight_style(&resolved, mode);
+            assert_eq!(config.highlight.as_ref(), Some(&style), "{mode:?}");
+            let mut rest = style.clone();
+            rest.editor_background = default.style.editor_background;
+            rest.editor_gutter_background = default.style.editor_gutter_background;
+            assert_eq!(
+                rest, default.style,
+                "{mode:?}: more than the editor's fills"
+            );
+        }
     }
 
     #[test]

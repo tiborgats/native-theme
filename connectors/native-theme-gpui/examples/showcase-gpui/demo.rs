@@ -2990,17 +2990,28 @@ fn preference_item(
                 .info(&ui, selector, switch_info)
                 .debug_selector(move || selector.into());
         }
+        let native = cx.native();
+        let resolved = native.as_ref().map(|n| n.resolved);
         Switch::new(selector)
             .checked(checked)
             .disabled(options.is_disabled())
             .with_size(options.size())
+            .when_some(native.map(variants::switch_color), |switch, color| {
+                switch.color(color)
+            })
             .on_click(move |on: &bool, _window, cx| {
                 change_preferences(&clicked, cx, |overrides| pref.set(overrides, *on));
             })
             .info(
                 &ui,
                 selector,
-                info::preference_switch(cx.theme(), pref.field(), checked, options.is_disabled()),
+                info::preference_switch(
+                    cx.theme(),
+                    pref.field(),
+                    checked,
+                    options.is_disabled(),
+                    resolved,
+                ),
             )
             .debug_selector(move || selector.into())
     });
@@ -4286,8 +4297,8 @@ pub(crate) fn radio_column(
 }
 
 /// A `Switch` reading `label`, `checked` or not, its checked track in the
-/// platform's `switch.checked_background` through `Switch::color`. A
-/// disabled one takes no `on_click`.
+/// platform's `switch.checked_background` through `Switch::color` and
+/// `variants::switch_color`. A disabled one takes no `on_click`.
 pub(crate) fn switch(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -4313,7 +4324,7 @@ pub(crate) fn switch(
     }
     let native = cx.native();
     let resolved = native.as_ref().map(|n| n.resolved);
-    let checked_background = native_color(cx, |n| n.resolved.switch.checked_background);
+    let checked_background = native.map(variants::switch_color);
     Switch::new(id)
         .label(label)
         .checked(checked)
@@ -4827,11 +4838,11 @@ pub(crate) fn pagination(
         .debug_selector(move || id.into())
 }
 
-/// A box `width` by `height`, refined by `geometry::list` and filled with
-/// `list.background_color`, around the List over `state`; `selector` is its
-/// debug selector. A List paints no frame and no fill of its own
-/// (list/list.rs, `RenderOnce for List`), so the box is its frame and its
-/// fill; the rows report themselves (`ListRow`).
+/// A box `width` by `height` around the List over `state`, refined by
+/// `geometry::list`, which frames it and fills it with
+/// `list.background_color`; `selector` is its debug selector. A List paints
+/// no frame and no fill of its own (list/list.rs, `RenderOnce for List`), so
+/// the box is its frame and its fill; the rows report themselves (`ListRow`).
 pub(crate) fn list(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -4846,12 +4857,8 @@ pub(crate) fn list(
         state.read(cx).delegate().items.len(),
         native.as_ref().map(|n| n.resolved),
     );
-    let fill = native_color(cx, |n| n.resolved.list.background_color);
     native_info(
-        div()
-            .w(width)
-            .h(height)
-            .when_some(fill, |list, fill| list.bg(fill)),
+        div().w(width).h(height),
         cx,
         geometry::list,
         "list",
@@ -5094,10 +5101,11 @@ impl RenderOnce for ListRow {
     }
 }
 
-/// A box `width` by `height`, refined by `geometry::list` and filled with
-/// `list.background_color`, around the Tree over `state`. A tree is a list
-/// view and the model gives it no theme of its own, so its frame and fill
-/// are the list's; the rows report themselves (`tree_row`).
+/// A box `width` by `height` around the Tree over `state`, refined by
+/// `geometry::list`, which frames it and fills it with
+/// `list.background_color`. A tree is a list view and the model gives it no
+/// theme of its own, so its frame and fill are the list's; the rows report
+/// themselves (`tree_row`).
 pub(crate) fn tree(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -5108,13 +5116,9 @@ pub(crate) fn tree(
 ) -> Stateful<Div> {
     let native = cx.native();
     let mut tree_info = info::data::tree(native.as_ref().map(|n| n.resolved));
-    let fill = native_color(cx, |n| n.resolved.list.background_color);
     let rows = ui.clone();
     native_info(
-        div()
-            .w(width)
-            .h(height)
-            .when_some(fill, |tree, fill| tree.bg(fill)),
+        div().w(width).h(height),
         cx,
         geometry::list,
         "list",
@@ -6492,10 +6496,19 @@ pub(crate) fn editor(
     state: &Entity<EditorState>,
     height: Pixels,
 ) -> Stateful<Div> {
-    Editor::new(state)
-        .h(height)
-        .info(ui, id, info::typography::editor(cx.theme()))
-        .debug_selector(move || id.into())
+    // Refined by `geometry::editor`, the platform's line height, where a native
+    // theme is installed, the info then given the builder's line.
+    let mut editor_info = info::typography::editor(cx.theme());
+    native_info(
+        Editor::new(state),
+        cx,
+        geometry::editor,
+        "editor",
+        &mut editor_info,
+    )
+    .h(height)
+    .info(ui, id, editor_info)
+    .debug_selector(move || id.into())
 }
 
 /// A Markdown `TextView` of `source`, selectable.

@@ -594,16 +594,16 @@ pub fn pagination(t: &Theme, compact: bool, page: usize, pages: usize, gap: bool
 const NO_LIST_FILL: &str = "none: a ListItem paints no idle background (list/list_item.rs, ListItem::render), so the fill of the box around the rows shows through";
 
 /// The fill of the box around a List's or a Tree's rows: `list.background_color`,
-/// which the showcase paints on it, where a native theme is installed.
+/// which `geometry::list` paints on it, where a native theme is installed.
 fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
     match native {
         Some(r) => info.color(claim(
             "fill",
             "background_color",
             stated(r.list.background_color),
-            "showcase",
+            "native-theme-gpui/geometry.rs:732",
         )),
-        None => info.not_themeable("fill", "none: no native theme is installed, so the showcase has no list.background_color for the box around the rows, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
+        None => info.not_themeable("fill", "none: no native theme is installed, so geometry::list, which paints list.background_color on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }
 }
 

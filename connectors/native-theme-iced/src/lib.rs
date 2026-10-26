@@ -129,7 +129,7 @@
 //! | `text_scaling_factor` | nothing on its own: a `Theme` is a palette, with no text size | each text size, through [`font_size()`], [`mono_font_size()`] or [`scaled_text_size()`] ([`AccessibilityPreferences::scaled`]) |
 //! | `reduce_motion` | `Spinner::view` (feature `spinner`) holds the spinner still when passed `true` | the flag to `Spinner::view` and to its own animations |
 //! | `reduce_transparency` | nothing: a palette has nothing for it to act on (`docs/archive/todo_closed.md`, the item "`to_theme` takes no `AccessibilityPreferences`") | the flag where it draws translucent surfaces |
-//! | `high_contrast` | nothing | its own colours, if they should change |
+//! | `high_contrast` | nothing, by design: high contrast belongs in the theme data, which a reader fills with what the platform draws under it (the Windows reader writes the high-contrast system colours, the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast, `docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`), so the theme carries it already; [`is_high_contrast`] reads the flag | its own colours, if they should change |
 //!
 //! # Runtime theme change
 //!

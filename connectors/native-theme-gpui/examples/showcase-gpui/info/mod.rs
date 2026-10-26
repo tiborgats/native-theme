@@ -233,6 +233,10 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
         "the multi-line field's own text_area.border padding (docs/platform-facts.md §2.29): the root padded by the rest of each stated side past the Size::Medium editor padding upstream gives a Textarea in render (input/input.rs, Input::render), none below it, an unstated side upstream's; text_area.border.corner_radius and line_width, which inherit the input's, input.font including its colour at defaults.line_height; no height: the rows its state holds size it",
     ),
     (
+        "editor",
+        "defaults.line_height as the line height, over the relative(1.5) upstream's Editor sets on its Input first: the Editor refines the caller's style last (input/editor.rs, Editor::render). Its font is the mono font the theme sets, mono_font_family at mono_font_size",
+    ),
+    (
         "menu_item",
         "menu.row_height, where the theme states one, by the control-height rule (defaults.line_height as the line height; the stated height at a text scale of 1 or less, a minimum with an automatic height above 1), the menu.border.padding sides the theme states, menu.icon_text_gap, menu.font",
     ),
@@ -258,7 +262,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "dialog",
-        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
+        "the dialog.border.padding sides the theme states (an unstated side keeps upstream's 16px; upstream also spaces the sections by max(top, 8px) and a DialogContent by the bottom padding), min_width as the least width, which the width upstream sets after the refinement keeps, min_height, max_height, border.corner_radius, and background_color and border.color over the window's background and border upstream paints the surface with first; the max_height does not reach upstream's Dialog, which sets its own max_h after the refinement (dialog/dialog.rs, RenderOnce for Dialog)",
     ),
     (
         "dialog_entrance",
@@ -282,7 +286,7 @@ pub const GEOMETRY_NOTES: &[(&str, &str)] = &[
     ),
     (
         "list",
-        "list.border line width, colour and corner radius, and a clip to that radius",
+        "list.border line width, colour and corner radius, a clip to that radius, and list.background_color as the fill: neither List nor Tree paints one, nor a ListItem at rest (list/list_item.rs, ListItem::render)",
     ),
     (
         "table",

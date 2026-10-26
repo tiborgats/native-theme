@@ -303,6 +303,30 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             t.foreground,
             "gpui-component/input/input.rs:563",
         ))
+        // The root's fill (input/input.rs:720-722, Theme::editor_background)
+        // and the gutter's, painted over the text that scrolls under it
+        // (gpui-base/input/base/element.rs:3356-3358, the root's fill where
+        // it is unset): the connector's highlight theme gives both the
+        // platform's field fill (native-theme-gpui config.rs, highlight_style).
+        .color(claim(
+            "fill",
+            "editor_background",
+            t.highlight_theme
+                .style
+                .editor_background
+                .unwrap_or_else(|| t.input_background()),
+            "gpui-component/input/input.rs:722",
+        ))
+        .color(claim(
+            "gutter",
+            "editor_gutter_background",
+            t.highlight_theme
+                .style
+                .editor_gutter_background
+                .or(t.highlight_theme.style.editor_background)
+                .unwrap_or_else(|| t.input_background()),
+            "gpui-component/input/input.rs:578",
+        ))
         .config(
             "mono font",
             format!("mono_font_family: {}", t.mono_font_family),
@@ -311,11 +335,10 @@ pub fn editor(t: &Theme) -> WidgetInfo {
             "mono size",
             format!("mono_font_size: {}px (gpui renders)", px_text(t.mono_font_size.as_f32())),
         )
-        .not_themeable("bg", "#0a0a0a in dark and #ffffff in light, whatever the platform: the connector installs upstream's default highlight themes, and their editor.background wins over the input_background() fallback (theme/mod.rs, editor_background; native-theme-gpui/lib.rs, to_theme). The current line is filled from the same theme, #171717 or #F5F5F5. The fields are public, so this one is ours")
+        .not_themeable("current line", "#171717 in dark and #F5F5F5 in light, whatever the platform: the connector keeps upstream's default highlight themes but for the editor's fill and its gutter's, and the model states no current-line colour (native-theme-gpui config.rs, highlight_style)")
         .not_themeable("syntax colors", "highlight_theme: default_light / default_dark per color mode; the grammar comes from the tree-sitter-rust dev feature")
         .not_themeable("style block", "the editor takes one InputEditorStyle built in a single place (input/input.rs, set_editor_style), so its colours cite the same block. Its border paints the indent guides; the edge is the bordered Input's own input token (input/editor.rs, Editor::render)")
         .not_themeable("text colour", "none of its own: the block's foreground reaches only the current line's number, and unhighlighted text takes the colour it inherits (gpui-base/input/base/element.rs, prepaint), which is the one the showcase sets on its window. A syntax-highlighted run takes its colour from highlight_theme instead")
-        .not_themeable("line height", "1.5 is only what the widget sets first: Editor is Styled and applies the caller's refinement last, on purpose (input/editor.rs, Editor::render -- the comment there says a text style set on the editor refines over them). defaults.line_height is modelled (1.4 on the bundled defaults) and no builder carries it yet")
         .not_themeable("line numbers / search", "on by default (gpui-base/input/base/state.rs, EditorMode)")
         .not_themeable("own icons", super::own_icons("ChevronDown and ChevronRight on the fold buttons in its gutter (input/input.rs, fold_icon_renderer), and the icons of the search panel it opens (input/search.rs, SearchPanel)"))
 }

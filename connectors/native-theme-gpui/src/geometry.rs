@@ -143,9 +143,9 @@ fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> Styl
     r
 }
 
-/// The platform's `defaults.line_height` alone: [`with_text`]'s, for the two
-/// builders that set a control's line height and no text size, [`button`]
-/// and [`input_height`].
+/// The platform's `defaults.line_height` alone: [`with_text`]'s, for the
+/// builders that set a control's line height and no text size, [`button`],
+/// [`input_height`] and [`editor`].
 fn with_line_height(r: StyleRefinement, n: Native<'_>) -> StyleRefinement {
     r.line_height(relative(n.resolved.defaults.line_height))
 }
@@ -392,6 +392,21 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
     )
 }
 
+/// The code `Editor`'s line height: the platform's `defaults.line_height`,
+/// over the `relative(1.5)` upstream sets on the editor's `Input` first
+/// (`src/input/editor.rs:157`); the `Editor` refines the caller's style last
+/// (`:174`), so this one wins.
+///
+/// The font is upstream's choice and already the platform's: the editor is
+/// lettered in `Theme::mono_font_family` at `mono_font_size` (`:155-156`),
+/// which [`to_theme`](crate::to_theme) fills from `defaults.mono_font`,
+/// scaled. Its fill and its gutter's are the highlight theme's, which
+/// `to_theme` gives `input.background_color`.
+#[must_use]
+pub fn editor(n: Native<'_>) -> StyleRefinement {
+    with_line_height(StyleRefinement::default(), n)
+}
+
 /// A menu row the application draws with its own elements
 /// (`src/menu/menu_item.rs:100-102` → `:108`).
 ///
@@ -587,6 +602,10 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// upstream takes a `max_h` prop
 /// (`docs/archive/todo_v0.5.9_gpui-kit-0.6.4-spec.md` §4).
 ///
+/// `min_w` arrives too: upstream sets the dialog's width after the
+/// refinement (`w` at `:733`), a property apart, so the dialog keeps
+/// upstream's width and is at least `dialog.min_width` wide.
+///
 /// Upstream reads the four padding sides back out of this style
 /// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so
 /// an unstated side keeps that 16px. It also reuses them as gaps: the gap
@@ -598,6 +617,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 pub fn dialog(n: Native<'_>) -> StyleRefinement {
     let d = &n.resolved.dialog;
     with_padding(StyleRefinement::default(), &d.border.padding)
+        .min_w(px(d.min_width))
         .min_h(px(d.min_height))
         .max_h(px(d.max_height))
         .rounded(px(d.border.corner_radius))
@@ -673,18 +693,24 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
     with_coloured_text(StyleRefinement::default(), &n.resolved.dialog.body_font, n)
 }
 
-/// The frame of a list view: `list.border`'s line width, colour and radius,
-/// and a clip to that radius.
+/// The frame and the fill of a list view: `list.border`'s line width, colour
+/// and radius, a clip to that radius, and `list.background_color`.
 ///
 /// Neither `List` (`src/list/list.rs`, `RenderOnce for List<D>`) nor `Tree`
-/// (`src/tree.rs`, `RenderOnce for Tree`) paints a border of its own: each
-/// refines a plain `div()` and leaves the frame to the application, where
+/// (`src/tree.rs`, `RenderOnce for Tree`) paints a border or a fill of its
+/// own: each refines a plain `div()` and leaves both to the application, where
 /// `DataTable` draws one from `Theme::radius` and `Theme::border` when it is
 /// `bordered` (`src/table/data_table.rs:221-225`). Apply this to a `List` or a
 /// `Tree` — both are `Styled` and the refinement lands on that outer `div` —
 /// or to the box an application draws around one, and the three agree. There
 /// is no tree theme in the model: a tree is a list view, and reads
 /// `resolved.list`.
+///
+/// The fill is this builder's because nothing upstream paints one: a
+/// `ListItem` fills only a hovered and a selected row
+/// (`src/list/list_item.rs:225-233`, `:257-265`), and `ThemeColor::list`,
+/// which the connector fills with the same colour, has no reader outside the
+/// theme schema's fallbacks (`src/theme/schema.rs:971-972`, `:1006`).
 ///
 /// The clip keeps the rows inside the frame; how it meets the rounded corners
 /// depends on the core. GPUI Fast clips the children of a rounded box that
@@ -697,11 +723,13 @@ pub fn dialog_description(n: Native<'_>) -> StyleRefinement {
 /// `corner_radius` less `line_width`: [`list_item`] sets no radius.
 #[must_use]
 pub fn list(n: Native<'_>) -> StyleRefinement {
-    let b = &n.resolved.list.border;
+    let l = &n.resolved.list;
+    let b = &l.border;
     StyleRefinement::default()
         .border(px(b.line_width))
         .border_color(rgba_to_hsla(b.color))
         .rounded(px(b.corner_radius))
+        .bg(rgba_to_hsla(l.background_color))
         .overflow_hidden()
 }
 
@@ -2598,6 +2626,7 @@ mod tests {
             let d = &r.dialog;
             let out = dialog(n);
             stated.padding(&out, &d.border.padding, "dialog");
+            assert_eq!(out.min_size.width, len(d.min_width));
             assert_eq!(out.min_size.height, len(d.min_height));
             assert_eq!(out.max_size.height, len(d.max_height));
             assert_eq!(
@@ -2622,6 +2651,48 @@ mod tests {
             assert_text(&title_bar(n), r, &r.window.title_bar_font, s);
         });
         stated.assert_each_compared();
+    }
+
+    /// `list` fills the list view with `list.background_color` in every
+    /// preset and mode: nothing upstream paints a list's fill.
+    #[test]
+    fn list_paints_the_list_background() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                assert_eq!(
+                    list(Native::unscaled(&r)).background,
+                    Some(rgba_to_hsla(r.list.background_color).into()),
+                    "{}/{mode:?}",
+                    info.key
+                );
+            }
+        }
+    }
+
+    /// `editor` is the platform's line height and nothing else, in every
+    /// preset and mode: the Editor's font is the theme's mono font already.
+    #[test]
+    fn editor_carries_the_platforms_line_height_alone() {
+        for info in Theme::list_presets() {
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                let r = resolved(info.key, mode);
+                let out = editor(Native::unscaled(&r));
+                let at = format!("{}/{mode:?}", info.key);
+                assert_eq!(
+                    out.text.line_height,
+                    Some(relative(r.defaults.line_height)),
+                    "{at}"
+                );
+                let mut rest = out.clone();
+                rest.text.line_height = None;
+                assert_eq!(
+                    rest,
+                    StyleRefinement::default(),
+                    "{at}: more than the line height"
+                );
+            }
+        }
     }
 
     /// The dialog's radius is its own field, not `radius_lg`: adwaita is where

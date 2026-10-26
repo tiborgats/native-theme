@@ -896,6 +896,61 @@ struct NoReceiver {
     stated_none: &'static [(&'static str, &'static str)],
 }
 
+/// The contract rows whose `ThemeColor` slot gpui-component 0.8.0 reads
+/// nowhere outside `theme/`, each with the evidence.
+///
+/// The rows stay: they are the true mapping, and the day upstream reads a
+/// slot it carries the theme's colour rather than upstream's. But a row over
+/// a token nothing paints proves nothing drawn, so each is named here,
+/// checked against the rows, printed by the coverage tripwire and left out of
+/// the coverage it counts ([`covered_fields`]). The schema fallbacks cited
+/// are `ThemeConfig`'s, which never fire for the connector's config: it
+/// states every colour they would fill.
+const WRITE_ONLY: &[(&str, &str)] = &[
+    (
+        "tab",
+        "an idle tab is painted `transparent` in every variant \
+         (`tab/tab.rs:173, 184, 191, 196, 201, 212`), and no schema \
+         fallback reads `tokens.tab`",
+    ),
+    (
+        "list",
+        "neither a `List` nor a `Tree` paints a fill, and a `ListItem` fills \
+         only a hovered and a selected row (`list/list_item.rs:225-233, \
+         257-265`); the token is read only as the schema fallback of \
+         `list_even`, `list_head` and `table` (`theme/schema.rs:971-972, \
+         1006`). `geometry::list` paints `list.background_color` instead",
+    ),
+    (
+        "list_even",
+        "read only as `table_even`'s schema fallback \
+         (`theme/schema.rs:1009`); the connector writes `table_even` itself \
+         from the same colour (`colors.rs`), which a `DataTable` paints",
+    ),
+    (
+        "sidebar_primary",
+        "no reader outside `theme/`, and no schema fallback reads it \
+         (its own falls back to `primary`, `theme/schema.rs:990`)",
+    ),
+    (
+        "sidebar_primary_foreground",
+        "no reader outside `theme/`, and no schema fallback reads it \
+         (its own falls back to `primary_foreground`, \
+         `theme/schema.rs:991-994`)",
+    ),
+];
+
+/// The `ThemeColor` fields the contract counts as coverage: every row's and
+/// every `DERIVED` entry's slot but the [`WRITE_ONLY`] ones.
+fn covered_fields() -> Vec<&'static str> {
+    ROWS.iter()
+        .map(|row| row.slot)
+        .chain(COMPUTED_ROWS.iter().map(|row| row.slot))
+        .chain(DERIVED.iter().map(|(name, _)| *name))
+        .filter(|slot| !WRITE_ONLY.iter().any(|(name, _)| name == slot))
+        .collect()
+}
+
 /// Why kde-breeze, adwaita, macos-monterey, macos-tahoe and windows-11 leave
 /// `link.hover_background` transparent.
 const LINK_HOVER_NONE: &str = "docs/platform-facts.md:1698 (§2.28) states no \
@@ -976,8 +1031,9 @@ const NO_RECEIVER: &[NoReceiver] = &[
                    only `switch` and `switch_thumb` -- and upstream paints a \
                    checked one with `tokens.primary` (`switch.rs:181-184`). \
                    `Switch::color` is a per-instance receiver (`switch.rs:103`), \
-                   which an application can feed and the connector does not. \
-                   Recorded at `colors.rs`'s Issue 51 note as well.",
+                   which an application feeds with `variants::switch_color` \
+                   and a Switch built without it drops the value. Recorded at \
+                   `colors.rs`'s Issue 51 note as well.",
     },
 ];
 
@@ -1694,9 +1750,18 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
 
     let rows = ROWS.len() + COMPUTED_ROWS.len();
     println!(
-        "--- gpui coverage: {rows} contract rows + {} derived = {} of 139 fields ---",
+        "--- gpui coverage: {rows} contract rows + {} derived = {} of 139 fields; \
+         {} of the rows map a slot 0.8.0 reads nowhere, not counted: {} fields \
+         covered ---\n{}",
         DERIVED.len(),
-        rows + DERIVED.len()
+        rows + DERIVED.len(),
+        WRITE_ONLY.len(),
+        covered_fields().len(),
+        WRITE_ONLY
+            .iter()
+            .map(|(slot, why)| format!("  {slot} -- {why}"))
+            .collect::<Vec<_>>()
+            .join("\n")
     );
     assert_eq!(
         rows + DERIVED.len(),
@@ -1707,6 +1772,49 @@ fn every_theme_color_field_has_a_declared_source() -> crate::Result<()> {
         fields.len()
     );
     Ok(())
+}
+
+/// Every [`WRITE_ONLY`] slot is the slot of exactly one plain row -- not a
+/// computed row's, not a `DERIVED` entry's -- named once, with its evidence,
+/// and none is counted as coverage.
+#[test]
+fn every_write_only_slot_is_a_row_and_not_coverage() {
+    let mut failures = Vec::new();
+    for (ix, (slot, why)) in WRITE_ONLY.iter().enumerate() {
+        let rows = ROWS.iter().filter(|row| row.slot == *slot).count();
+        let computed = COMPUTED_ROWS.iter().filter(|row| row.slot == *slot).count();
+        let derived = DERIVED.iter().filter(|(name, _)| name == slot).count();
+        if (rows, computed, derived) != (1, 0, 0) {
+            failures.push(format!(
+                "{slot}: {rows} row(s), {computed} computed row(s), {derived} DERIVED \
+                 entries; a write-only slot is one plain row"
+            ));
+        }
+        if WRITE_ONLY
+            .iter()
+            .take(ix)
+            .any(|(earlier, _)| earlier == slot)
+        {
+            failures.push(format!("{slot}: named twice"));
+        }
+        if why.trim().is_empty() {
+            failures.push(format!("{slot}: no evidence"));
+        }
+        if covered_fields().contains(slot) {
+            failures.push(format!("{slot}: counted as coverage"));
+        }
+    }
+    assert_eq!(
+        covered_fields().len() + WRITE_ONLY.len(),
+        ROWS.len() + COMPUTED_ROWS.len() + DERIVED.len(),
+        "the coverage leaves out something other than the write-only slots"
+    );
+    assert!(
+        failures.is_empty(),
+        "{} WRITE_ONLY entries are wrong:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }
 
 // ---------- Layer 3: the contrast invariant (spec section 7) ----------
@@ -2041,13 +2149,21 @@ const PAIRS: &[Pair] = &[
     // A list row sets `foreground` and no state changes it
     // (`list/list_item.rs:205`; the hover and selected branches set only a
     // fill, `:227-233, 257-265`), so the emitted foreground is the window's; for an idle and a hovered row the platform agrees.
+    // An idle row stands on the list's fill, which `geometry::list` paints
+    // over the window (no widget paints `tokens.list`).
     Pair {
         what: "list row text",
         native: |r, _| {
             let bg = rgba_to_hsla(r.list.background_color);
             (rgba_to_hsla(r.list.item_font.color), bg, bg)
         },
-        emitted: |tc, _| (tc.foreground, tc.list, tc.background),
+        emitted: |tc, r| {
+            (
+                tc.foreground,
+                rgba_to_hsla(r.list.background_color),
+                tc.background,
+            )
+        },
         exceptions: &[],
     },
     Pair {
@@ -2059,7 +2175,13 @@ const PAIRS: &[Pair] = &[
                 rgba_to_hsla(r.list.background_color),
             )
         },
-        emitted: |tc, _| (tc.foreground, tc.list_hover, tc.list),
+        emitted: |tc, r| {
+            (
+                tc.foreground,
+                tc.list_hover,
+                rgba_to_hsla(r.list.background_color),
+            )
+        },
         exceptions: &[],
     },
     Pair {
@@ -2276,24 +2398,11 @@ fn worse_title_bar_end(fg: Hsla, title_bar: Hsla, background: Hsla) -> Hsla {
 /// printed, and left out of the coverage the summary counts. The names are
 /// checked against the pair list, so a renamed pair cannot leave a note
 /// pointing at nothing.
-const INERT_SURFACES: &[(&str, &str)] = &[
-    (
-        "list row text",
-        "nothing reads tokens.list: a ListItem paints no idle background \
-         (list/list_item.rs:227-233, 257-275) and the token survives only as a \
-         schema fallback (theme/schema.rs:971-972, 1006)",
-    ),
-    (
-        "hovered list row",
-        "the hover fill itself is painted (list/list_item.rs:231), but the \
-         surface under it is tokens.list, which nothing paints",
-    ),
-    (
-        "sidebar primary button label",
-        "neither sidebar_primary nor sidebar_primary_foreground has a reader \
+const INERT_SURFACES: &[(&str, &str)] = &[(
+    "sidebar primary button label",
+    "neither sidebar_primary nor sidebar_primary_foreground has a reader \
          outside theme/ in 0.8.0",
-    ),
-];
+)];
 
 /// Contrast of `fg` on `bg`, with every layer composited first: `bg` over the
 /// `surface` it is painted on, `fg` over the result.

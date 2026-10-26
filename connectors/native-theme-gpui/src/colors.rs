@@ -568,9 +568,9 @@ fn assign_misc(
     tc.switch = c.switch_unchecked;
     // Issue 51: switch.checked_background is not mapped because gpui-component's
     // ThemeColor has no checked-state field for switches. The unchecked background
-    // is the only mappable slot. Callers needing checked-state styling should read
-    // resolved.switch.checked_background directly and pass it to `Switch::color`,
-    // the per-instance receiver upstream offers.
+    // is the only mappable slot. Callers needing checked-state styling pass
+    // `variants::switch_color(n)`, resolved.switch.checked_background, to
+    // `Switch::color`, the per-instance receiver upstream offers.
     tc.switch_thumb = c.switch_thumb;
 
     // Per-widget resolved progress bar color (Issue 20: via ResolvedColors cache)
