@@ -603,7 +603,10 @@ fn the_chrome_is_where_the_layout_puts_it() {
 #[test]
 fn the_column_count_holds_the_segmented_control() {
     let mut faults = Vec::new();
-    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+    for preset in native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|p| p.key)
+    {
         for scale in [1.0, 2.25] {
             let harness = open_scaled(preset, "basic", scale);
             let gap = harness
@@ -697,7 +700,11 @@ fn every_arrangement_holds_every_group_once_in_reading_order() {
         }
         let mut all: Vec<usize> = laid.iter().flat_map(|c| c.iter().copied()).collect();
         all.sort_unstable();
-        assert_eq!(all, (0..GROUPS.len()).collect::<Vec<_>>(), "{count} columns");
+        assert_eq!(
+            all,
+            (0..GROUPS.len()).collect::<Vec<_>>(),
+            "{count} columns"
+        );
     }
 }
 
@@ -5703,7 +5710,10 @@ fn the_basic_page_fits_the_window_across() {
         }
     }
     // Every bundled preset at the largest text scale (item 15(1) of the round 2-3 review).
-    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+    for preset in native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|p| p.key)
+    {
         let harness = open_scaled_in(egui::Theme::Light, preset, "basic", 2.25);
         fits_across(&harness, egui::Theme::Light, &format!("{preset} at 2.25"));
     }

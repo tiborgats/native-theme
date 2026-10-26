@@ -6072,7 +6072,10 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
         }
     }
     let mut faults = Vec::new();
-    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+    for preset in native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|p| p.key)
+    {
         use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), 2.25);
         show(&mut cx, &showcase, Page::Basic);
         let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
@@ -6080,11 +6083,8 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
         let count = cx.update(|window, cx| {
             let layout = showcase.read(cx).layout.clone();
             native_value(cx, |n| {
-                let segmented = crate::demo::segmented_width(
-                    window,
-                    &n,
-                    &crate::pages::basic::BASIC_SEGMENTS,
-                );
+                let segmented =
+                    crate::demo::segmented_width(window, &n, &crate::pages::basic::BASIC_SEGMENTS);
                 basic_column_count(n.resolved, &layout, content.size.width.as_f32(), segmented)
             })
         });
@@ -18239,7 +18239,10 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
         ("catppuccin-mocha", 5),
         ("material-3", 4),
     ];
-    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+    for preset in native_theme::theme::Theme::list_presets()
+        .iter()
+        .map(|p| p.key)
+    {
         for scale in [1.0, 2.25] {
             use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
             show(&mut cx, &showcase, Page::Basic);
