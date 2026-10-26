@@ -2,9 +2,9 @@
 # BreezeLight.colors and BreezeDark.colors
 # Style: Breeze v6.7.5 (ca217f12, Plasma 6.7), with KDE Frameworks 6.31.0.
 # Covers: Plasma 6.7; the kstyle sources and colour values are unchanged in
-# Plasma 6.8 Beta 2 (v6.7.91). Plasma 6.6 LTS differs (one item-view margin of 3,
-# breezemetrics.h v6.6.6:156; a checked box's highlight alpha 0.33,
-# breezehelper.cpp v6.6.6:39).
+# Plasma 6.8.1 (Breeze v6.8.1, 23c317d0). Plasma 6.6 LTS differs (one
+# item-view margin of 3, breezemetrics.h v6.6.6:156; a checked box's
+# highlight alpha 0.33, breezehelper.cpp v6.6.6:39).
 # Verified on: Breeze v6.7.5 and KF 6.31.0, 2026-10-11 (code review M2e), for
 # every value that cites docs/platform-facts.md; an uncited value is unchecked.
 name = "KDE Breeze"
