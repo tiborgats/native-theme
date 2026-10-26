@@ -298,6 +298,100 @@ impl<E: Element> Element for A11yDisabled<E> {
 fn color(rgba: Rgba) -> Hsla {
     crate::colors::rgba_to_hsla(rgba)
 }
+/// The theme's focus ring, which [`FocusRing::draw`] puts round a theme-drawn
+/// control that has the focus, in place of gpui-component's `focus_ring_style`, which draws a
+/// 3 px ring at half `ThemeColor::ring`'s alpha whatever the model states
+/// (gpui-component 0.8.0 `src/styled.rs:11-12`, `:301-327`).
+///
+/// The ring is `defaults.focus_ring_color` as stated, alpha included, a band
+/// `defaults.focus_ring_width` wide whose outer edge is the element's bounds
+/// grown by `defaults.focus_ring_offset + focus_ring_width` (the offset from
+/// the element's edge to the ring's inner edge, outward where positive), its
+/// corners the element's grown as much, floored at 0. It is an absolute
+/// child laid out against the element's padding box, so it moves nothing
+/// (as upstream's `focus_ring`), which puts its edges at the border widths
+/// the element states, plus the growth, outside; an unstated border width or
+/// radius is none, as gpui lays it out (upstream reads them the same way,
+/// `src/styled.rs:197-221`). The same geometry as the iced connector's
+/// `focus_ring::RingLook::quad` and the egui connector's `paint_focus_ring`
+/// (`connectors/native-theme-iced/src/focus_ring.rs`,
+/// `connectors/native-theme-egui/src/plugin.rs`).
+///
+/// No ring where the width is not positive or the width or the offset is not
+/// finite. Where the ring lies inset at the element's edge (`offset` is
+/// minus `width`, libadwaita's), the element's border takes
+/// `focus_ring_color` instead, as the iced connector's focused field draws
+/// its ring as its border.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct FocusRing {
+    /// `defaults.focus_ring_color`, as stated.
+    color: Hsla,
+    /// `defaults.focus_ring_width`: positive and finite.
+    width: f32,
+    /// `defaults.focus_ring_offset`: finite.
+    offset: f32,
+}
+
+impl FocusRing {
+    /// The ring `resolved` states, or `None` where it states none.
+    fn of(resolved: &native_theme::theme::ResolvedTheme) -> Option<Self> {
+        let d = &resolved.defaults;
+        let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+        (width.is_finite() && offset.is_finite() && width > 0.0).then(|| Self {
+            color: color(d.focus_ring_color),
+            width,
+            offset,
+        })
+    }
+
+    /// `element` with the ring round it, or with its border in the ring's
+    /// colour where the ring lies inset at its edge.
+    fn draw<E: gpui::Styled + gpui::ParentElement>(self, mut element: E, window: &Window) -> E {
+        use gpui_component::StyledExt as _;
+        let Self {
+            color: ring,
+            width,
+            offset,
+        } = self;
+        if offset == -width {
+            return element.border_color(ring);
+        }
+        let rem = window.rem_size();
+        let length = |l: Option<gpui::AbsoluteLength>| {
+            l.map(|l| f32::from(l.to_pixels(rem))).unwrap_or_default()
+        };
+        let style = element.style();
+        let (top, right, bottom, left) = (
+            length(style.border_widths.top),
+            length(style.border_widths.right),
+            length(style.border_widths.bottom),
+            length(style.border_widths.left),
+        );
+        let grow = offset + width;
+        let corner = |l: Option<gpui::AbsoluteLength>| Some(px((length(l) + grow).max(0.0)).into());
+        let mut band = gpui::StyleRefinement::default();
+        band.corner_radii.top_left = corner(style.corner_radii.top_left);
+        band.corner_radii.top_right = corner(style.corner_radii.top_right);
+        band.corner_radii.bottom_right = corner(style.corner_radii.bottom_right);
+        band.corner_radii.bottom_left = corner(style.corner_radii.bottom_left);
+        element.child(
+            div()
+                .debug_selector(|| FOCUS_RING_SELECTOR.into())
+                .flex_none()
+                .absolute()
+                .top(px(-(grow + top)))
+                .right(px(-(grow + right)))
+                .bottom(px(-(grow + bottom)))
+                .left(px(-(grow + left)))
+                .border(px(width))
+                .border_color(ring)
+                .refine_style(&band),
+        )
+    }
+}
+
+/// The debug selector of the ring [`FocusRing::draw`] draws.
+const FOCUS_RING_SELECTOR: &str = "native-focus-ring";
 
 /// One colour of a control faded as one widget over `ground`, the colour
 /// under the control: `colour` composited over `under`, the part it is

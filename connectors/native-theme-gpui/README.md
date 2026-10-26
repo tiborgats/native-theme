@@ -568,8 +568,11 @@ argument has no effect. `icons::to_image_source` documents it.
 Non-finite or non-positive scaling factors count as 1.0.
 
 Keyboard focus: the theme-drawn `Checkbox`, `Radio`, `Slider` and `Switch` draw the
-focus ring in `defaults.focus_ring_color` while focused (the `Switch` since
-gpui-component 0.7.0, whose own switch gained one).
+theme's focus ring while focused: `defaults.focus_ring_color` as stated, a band
+`defaults.focus_ring_width` wide whose outer edge lies `focus_ring_offset` plus the
+width outside the control, or, where the ring lies inset at the edge
+(libadwaita's), the control's border in that colour; gpui-component's own widgets
+draw its 3 px ring at half the colour's alpha.
 
 Assistive technology: the theme-drawn `Slider` takes an `accessibility_label`,
 the name a screen reader announces, since a slider draws no text of its own,

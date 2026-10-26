@@ -2602,33 +2602,133 @@ fn without_a_native_theme_a_slider_passes_on_its_label_and_disabled_state(cx: &m
 }
 
 /// M6-27: `focus_ring(false)` keeps a focused switch's track free of the
-/// ring: with the theme's focus ring on, gpui-component's
-/// `focus_ring_style` tints the track's border in `ThemeColor::ring`
-/// (styled.rs:257-262), and the track sets no border colour of its own (its
-/// outline is a box of its own, under the thumb).
+/// ring: told to, the focused track draws the theme's ring
+/// ([`FocusRing::draw`], kde-breeze's outside the track), and told not to,
+/// none.
 #[gpui::test]
 fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
+    let r = resolved("kde-breeze", ColorMode::Light);
+    let look = SwitchLook::of(&r, false, false).expect("finite");
+    for (focus_ring, drawn) in [(true, true), (false, false)] {
+        let cx = window_with(
+            cx,
+            Some(("kde-breeze", ColorMode::Light)),
+            Box::new(move |window, cx| {
+                Switch::new("s")
+                    .focus_ring(focus_ring)
+                    .track(&look, true, look.thumb_left(false), window, cx)
+                    .into_any_element()
+            }),
+        );
+        redraw(cx);
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+            drawn,
+            "focus_ring({focus_ring})"
+        );
+    }
+}
+
+/// A theme's stated ring, `width` wide `offset` off the element's edge,
+/// drawn round a 40 px square with a 1 px border and 4 px corners.
+fn ringed(
+    cx: &mut TestAppContext,
+    width: f32,
+    offset: f32,
+) -> (&mut VisualTestContext, ResolvedTheme) {
+    let mut r = resolved("kde-breeze", ColorMode::Light);
+    r.defaults.focus_ring_width = width;
+    r.defaults.focus_ring_offset = offset;
+    let ring = FocusRing::of(&r);
     let cx = window_with(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
-        Box::new(|_, _| div().into_any_element()),
+        Box::new(move |window, _| {
+            let square = div()
+                .debug_selector(|| "ringed".into())
+                .relative()
+                .size(px(40.))
+                .border(px(1.))
+                .rounded(px(4.));
+            match ring {
+                Some(ring) => ring.draw(square, window).into_any_element(),
+                None => square.into_any_element(),
+            }
+        }),
     );
-    let r = resolved("kde-breeze", ColorMode::Light);
-    let look = SwitchLook::of(&r, false, false).expect("finite");
-    let border = |cx: &mut VisualTestContext, focus_ring: bool| {
-        cx.update(|window, cx| {
-            let switch = Switch::new("s").focus_ring(focus_ring);
-            let mut track = switch.track(&look, true, look.thumb_left(false), window, cx);
-            track.style().border_color
-        })
-    };
-    let ring = cx.update(|_, cx| {
-        use gpui_component::ActiveTheme as _;
-        assert!(cx.theme().focus_ring, "the theme draws focus rings");
-        cx.theme().ring
-    });
-    assert_eq!(border(cx, true), Some(ring));
-    assert_eq!(border(cx, false), None);
+    redraw(cx);
+    (cx, r)
+}
+
+/// The quads painted over `b` grown by `grow` on every side, scaled.
+fn quads_round(cx: &mut VisualTestContext, b: Bounds<Pixels>, grow: f32) -> Vec<gpui::Quad> {
+    cx.update(|window, _| {
+        let scale = window.scale_factor();
+        let want = b.dilate(px(grow)).scale(scale);
+        scene_quads(window)
+            .into_iter()
+            .filter(|q| q.bounds == want)
+            .collect()
+    })
+}
+
+/// The ring is the theme's (C-06): `defaults.focus_ring_color` as stated, a
+/// band `focus_ring_width` wide whose outer edge is the element's bounds
+/// grown by `offset + width`, its corners the element's grown as much --
+/// for a ring outside the edge and for one that straddles it; where it lies
+/// inset at the edge the element's border takes the colour; where the width
+/// is not positive there is none.
+#[gpui::test]
+fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
+    for (width, offset) in [(1.0_f32, 2.0_f32), (3.0, -1.0)] {
+        let (cx, r) = ringed(cx, width, offset);
+        let ring = color(r.defaults.focus_ring_color);
+        let square = bounds(cx, "ringed");
+        let grow = offset + width;
+        let band = quads_round(cx, square, grow);
+        let scale = cx.update(|window, _| window.scale_factor());
+        assert!(
+            band.iter().any(|q| q.border_color == ring
+                && (q.border_widths.top.0 - width * scale).abs() < 0.01
+                && (q.corner_radii.top_left.0 - (4.0 + grow) * scale).abs() < 0.01),
+            "width {width}, offset {offset}: no ring at {square:?} grown by {grow}: {band:?}"
+        );
+        assert_eq!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).map(|b| b.size),
+            Some(square.dilate(px(grow)).size),
+            "width {width}, offset {offset}"
+        );
+    }
+    // Inset at the edge: the square's own border is the ring.
+    let (cx, r) = ringed(cx, 2.0, -2.0);
+    let ring = color(r.defaults.focus_ring_color);
+    let square = bounds(cx, "ringed");
+    assert!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+        "an inset ring adds no band"
+    );
+    assert!(
+        quads_round(cx, square, 0.0)
+            .iter()
+            .any(|q| q.border_color == ring && q.border_widths.top.0 > 0.0),
+        "an inset ring is not the square's border"
+    );
+    // No ring at all.
+    for (width, offset) in [(0.0_f32, 1.0_f32), (f32::NAN, 1.0), (1.0, f32::INFINITY)] {
+        let (cx, r) = ringed(cx, width, offset);
+        let ring = color(r.defaults.focus_ring_color);
+        let square = bounds(cx, "ringed");
+        assert!(
+            cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+            "{width}, {offset}"
+        );
+        assert!(
+            !quads_round(cx, square, 0.0)
+                .iter()
+                .any(|q| q.border_color == ring),
+            "{width}, {offset}: the square's border took the ring's colour"
+        );
+    }
 }
 
 #[derive(Clone, Copy)]

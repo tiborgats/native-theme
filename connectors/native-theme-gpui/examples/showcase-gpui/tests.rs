@@ -15675,7 +15675,7 @@ fn checkbox_leaves(
 
 /// The leaf each colour of a switch's look is read from, `checked` or not,
 /// `disabled` or not, as `SwitchLook::of` reads them
-/// (widgets/switch.rs:95-146): the track `checked_background` (:96) or
+/// (widgets/switch.rs:93-144): the track `checked_background` (:96) or
 /// `unchecked_background` (:98), disabled `disabled_checked_background`
 /// (:101) or `disabled_unchecked_background` (:102) where stated; the hover
 /// `hover_checked_background` (:106) or `hover_unchecked_background` (:108)
@@ -15696,76 +15696,76 @@ fn switch_leaves(
     let base = if checked {
         (
             "checked_background",
-            "native-theme-gpui/widgets/switch.rs:96",
+            "native-theme-gpui/widgets/switch.rs:94",
         )
     } else {
         (
             "unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:98",
+            "native-theme-gpui/widgets/switch.rs:96",
         )
     };
     let track = match (checked, disabled) {
         (true, true) if s.disabled_checked_background.is_some() => (
             "disabled_checked_background",
-            "native-theme-gpui/widgets/switch.rs:101",
+            "native-theme-gpui/widgets/switch.rs:99",
         ),
         (false, true) if s.disabled_unchecked_background.is_some() => (
             "disabled_unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:102",
+            "native-theme-gpui/widgets/switch.rs:100",
         ),
         _ => base,
     };
     let hover = match checked {
         true if s.hover_checked_background.is_some() => (
             "hover_checked_background",
-            "native-theme-gpui/widgets/switch.rs:106",
+            "native-theme-gpui/widgets/switch.rs:104",
         ),
         false if s.hover_unchecked_background.is_some() => (
             "hover_unchecked_background",
-            "native-theme-gpui/widgets/switch.rs:108",
+            "native-theme-gpui/widgets/switch.rs:106",
         ),
         _ => base,
     };
     let rest_edge = if checked {
         (
             "checked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:123",
+            "native-theme-gpui/widgets/switch.rs:121",
         )
     } else {
         (
             "unchecked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:125",
+            "native-theme-gpui/widgets/switch.rs:123",
         )
     };
     let track_outline = match (checked, disabled) {
         (true, true) if s.disabled_checked_track_border_color.is_some() => (
             "disabled_checked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:128",
+            "native-theme-gpui/widgets/switch.rs:126",
         ),
         (false, true) if s.disabled_unchecked_track_border_color.is_some() => (
             "disabled_unchecked_track_border_color",
-            "native-theme-gpui/widgets/switch.rs:130",
+            "native-theme-gpui/widgets/switch.rs:128",
         ),
         _ => rest_edge,
     };
     let rest_thumb = match (checked, s.unchecked_thumb_background.is_some()) {
         (true, _) => (
             "thumb_background",
-            "native-theme-gpui/widgets/switch.rs:113",
+            "native-theme-gpui/widgets/switch.rs:111",
         ),
         (false, true) => (
             "unchecked_thumb_background",
-            "native-theme-gpui/widgets/switch.rs:115",
+            "native-theme-gpui/widgets/switch.rs:113",
         ),
         (false, false) => (
             "thumb_background",
-            "native-theme-gpui/widgets/switch.rs:115",
+            "native-theme-gpui/widgets/switch.rs:113",
         ),
     };
     let thumb = if disabled && s.disabled_thumb_color.is_some() {
         (
             "disabled_thumb_color",
-            "native-theme-gpui/widgets/switch.rs:118",
+            "native-theme-gpui/widgets/switch.rs:116",
         )
     } else {
         rest_thumb
@@ -15773,10 +15773,10 @@ fn switch_leaves(
     let label = if disabled {
         (
             "disabled_text_color",
-            "native-theme-gpui/widgets/switch.rs:144",
+            "native-theme-gpui/widgets/switch.rs:142",
         )
     } else {
-        ("text_color", "native-theme-gpui/widgets/switch.rs:146")
+        ("text_color", "native-theme-gpui/widgets/switch.rs:144")
     };
     [
         track,
@@ -15784,7 +15784,7 @@ fn switch_leaves(
         track_outline,
         (
             "thumb_border_color",
-            "native-theme-gpui/widgets/switch.rs:142",
+            "native-theme-gpui/widgets/switch.rs:140",
         ),
         thumb,
         label,

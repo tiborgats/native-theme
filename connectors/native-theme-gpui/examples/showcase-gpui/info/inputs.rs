@@ -1163,25 +1163,25 @@ pub fn native_switch(
             "track",
             "disabled_checked_background",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:101",
+            "native-theme-gpui/widgets/switch.rs:99",
         ),
         (false, true, true) => claim(
             "track",
             "disabled_unchecked_background",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:102",
+            "native-theme-gpui/widgets/switch.rs:100",
         ),
         (true, _, _) => claim(
             "track",
             "checked_background",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:96",
+            "native-theme-gpui/widgets/switch.rs:94",
         ),
         (false, _, _) => claim(
             "track",
             "unchecked_background",
             look.track,
-            "native-theme-gpui/widgets/switch.rs:98",
+            "native-theme-gpui/widgets/switch.rs:96",
         ),
     });
     // An unset hover is the track at rest (SwitchLook::of); the swatch is
@@ -1196,25 +1196,25 @@ pub fn native_switch(
             "hover, hover_checked_background over the track",
             "hover_checked_background",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:106",
+            "native-theme-gpui/widgets/switch.rs:104",
         )),
         (true, None, _) => info.colors(stated_claim(
             "hover, none stated: the track at rest",
             "checked_background",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:96",
+            "native-theme-gpui/widgets/switch.rs:94",
         )),
         (false, _, Some(_)) => info.colors(stated_claim(
             "hover, hover_unchecked_background over the track",
             "hover_unchecked_background",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:108",
+            "native-theme-gpui/widgets/switch.rs:106",
         )),
         (false, _, None) => info.colors(stated_claim(
             "hover, none stated: the track at rest",
             "unchecked_background",
             look.hover_track,
-            "native-theme-gpui/widgets/switch.rs:98",
+            "native-theme-gpui/widgets/switch.rs:96",
         )),
     };
     // The track's outline and the thumb's, where the theme states the colour
@@ -1232,28 +1232,28 @@ pub fn native_switch(
             "disabled_checked_track_border_color",
             look.track_border,
             track,
-            "native-theme-gpui/widgets/switch.rs:128",
+            "native-theme-gpui/widgets/switch.rs:126",
         ),
         (false, true, true) => edge_claim(
             "track outline",
             "disabled_unchecked_track_border_color",
             look.track_border,
             track,
-            "native-theme-gpui/widgets/switch.rs:130",
+            "native-theme-gpui/widgets/switch.rs:128",
         ),
         (true, _, _) => edge_claim(
             "track outline",
             "checked_track_border_color",
             look.track_border,
             track,
-            "native-theme-gpui/widgets/switch.rs:123",
+            "native-theme-gpui/widgets/switch.rs:121",
         ),
         (false, _, _) => edge_claim(
             "track outline",
             "unchecked_track_border_color",
             look.track_border,
             track,
-            "native-theme-gpui/widgets/switch.rs:125",
+            "native-theme-gpui/widgets/switch.rs:123",
         ),
     };
     let info = info.colors(track_edge).colors(edge_claim(
@@ -1261,7 +1261,7 @@ pub fn native_switch(
         "thumb_border_color",
         look.thumb_border,
         Some(f32::from(look.thumb_border_width)),
-        "native-theme-gpui/widgets/switch.rs:142",
+        "native-theme-gpui/widgets/switch.rs:140",
     ));
     // While focused the track draws the focus ring in `ring` at 50% alpha
     // (gpui-component/styled.rs:261), `ring` being the connector's
@@ -1287,25 +1287,25 @@ pub fn native_switch(
                 "thumb",
                 "disabled_thumb_color",
                 look.thumb_color,
-                "native-theme-gpui/widgets/switch.rs:118",
+                "native-theme-gpui/widgets/switch.rs:116",
             ),
             (false, true, _) => claim(
                 "thumb",
                 "thumb_background",
                 look.thumb_color,
-                "native-theme-gpui/widgets/switch.rs:113",
+                "native-theme-gpui/widgets/switch.rs:111",
             ),
             (false, false, true) => claim(
                 "thumb",
                 "unchecked_thumb_background",
                 look.thumb_color,
-                "native-theme-gpui/widgets/switch.rs:115",
+                "native-theme-gpui/widgets/switch.rs:113",
             ),
             (false, false, false) => claim(
                 "thumb",
                 "thumb_background",
                 look.thumb_color,
-                "native-theme-gpui/widgets/switch.rs:115",
+                "native-theme-gpui/widgets/switch.rs:113",
             ),
         },
     );
@@ -1314,14 +1314,14 @@ pub fn native_switch(
             "label",
             "disabled_text_color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:144",
+            "native-theme-gpui/widgets/switch.rs:142",
         )
     } else {
         claim(
             "label",
             "text_color",
             look.label,
-            "native-theme-gpui/widgets/switch.rs:146",
+            "native-theme-gpui/widgets/switch.rs:144",
         )
     });
     let thumb = if !checked && s.unchecked_thumb_diameter.is_some() {

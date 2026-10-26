@@ -9,10 +9,10 @@ use gpui::{
 };
 use gpui_base::slider::{SliderEvent, SliderState, SliderValue};
 use gpui_base::{SliderIndicator, SliderThumb, SliderTrack, TestSupportExt as _};
-use gpui_component::{ActiveTheme as _, StyledExt as _, ThemeStyled as _};
+use gpui_component::{ActiveTheme as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{A11yDisabled, Part, PartBounds, color, faded, length, over, part_bounds};
+use super::{A11yDisabled, FocusRing, Part, PartBounds, color, faded, length, over, part_bounds};
 use crate::ActiveNativeTheme;
 
 /// The alpha of the thumb's outline, which `SliderTheme` does not state:
@@ -329,6 +329,7 @@ impl RenderOnce for Slider {
         let Some(look) = SliderLook::of(n.resolved, self.disabled) else {
             return self.fallback();
         };
+        let ring = FocusRing::of(n.resolved);
         let look = look.faded_over(
             self.backdrop
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
@@ -370,7 +371,9 @@ impl RenderOnce for Slider {
         // The end thumb, the one the keys move, draws the focus ring.
         let end_thumb = thumb(&state, &look, axis, end, false, disabled)
             .debug_selector(|| "native-slider-thumb".into())
-            .when(focused, |thumb| thumb.focus_ring_style(window, cx))
+            .when_some(ring.filter(|_| focused), |thumb, ring| {
+                ring.draw(thumb, window)
+            })
             .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))));
         let start_thumb = range.then(|| {
             thumb(&state, &look, axis, start, true, disabled)

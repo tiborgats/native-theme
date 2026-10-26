@@ -9,12 +9,10 @@ use gpui::{
     prelude::FluentBuilder as _, px, rems,
 };
 use gpui_base::{Switch as BaseSwitch, SwitchThumb, SwitchTrack, spring};
-use gpui_component::{
-    ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _, ThemeStyled as _,
-};
+use gpui_component::{ActiveTheme as _, Disableable as _, FocusableExt as _, StyledExt as _};
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, length, over, part_bounds, text_size};
+use super::{FocusRing, Part, PartBounds, color, faded, length, over, part_bounds, text_size};
 use crate::ActiveNativeTheme;
 
 /// The space between the track and the label, which `SwitchTheme` does not
@@ -214,9 +212,10 @@ impl SwitchLook {
 /// on gpui-base's headless `Switch`: click, Enter and Space toggle it, a
 /// disabled one is inert, and it reports itself as a switch with its toggled
 /// state. The thumb travels on gpui-component's spring (switch.rs:216-225).
-/// While focused, the track draws the focus ring in `ThemeColor::ring`
-/// (`defaults.focus_ring_color`), as gpui-component's switch does
-/// (switch.rs:280-283).
+/// While focused, the track draws the theme's focus ring
+/// (`defaults.focus_ring_color`, `focus_ring_width` and `focus_ring_offset`,
+/// as the other theme-drawn controls draw it), where gpui-component's switch
+/// draws its own (switch.rs:280-283).
 ///
 /// Controlled: [`Switch::on_change`] receives the requested value. Its
 /// `Styled` style refines the row, after the widget's own: the row's layout,
@@ -463,9 +462,12 @@ impl Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
-            .when(focused && !self.disabled && self.focus_ring, |track| {
-                track.focus_ring_style(window, cx)
-            })
+            .when_some(
+                (focused && !self.disabled && self.focus_ring)
+                    .then(|| cx.native().and_then(|n| FocusRing::of(n.resolved)))
+                    .flatten(),
+                |track, ring| ring.draw(track, window),
+            )
             .when_some(look.hover_track, |track, hover| {
                 track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
             })

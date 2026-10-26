@@ -662,17 +662,17 @@ pub const HOW: &[(&str, &str, &str)] = &[
     (
         "",
         "defaults.focus_ring_color",
-        "gpui: ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style)",
+        "gpui: the ring the theme-drawn Checkbox, Radio, Slider and Switch draw, as stated (widgets/mod.rs, FocusRing::of); and ThemeColor ring (colors.rs): a focused Input's edge and ring, which focus_ring_style hands to focus_style (gpui-component/styled.rs:179-184, focus_ring_style; :250-298, focus_style)",
     ),
     (
         "",
         "defaults.focus_ring_offset_px",
-        "not reachable: upstream's ring lies against the border, no offset (styled.rs, focus_ring)",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, offset + width outside the control's edge, the control's border tinted where the ring lies inset at it (widgets/mod.rs, FocusRing::draw); upstream's own widgets' ring lies against the border, no offset (styled.rs, focus_ring)",
     ),
     (
         "",
         "defaults.focus_ring_width_px",
-        "not reachable: the ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH); a width > 0 turns it on",
+        "gpui: the theme-drawn Checkbox, Radio, Slider and Switch's ring, this wide, none where it is not positive (widgets/mod.rs, FocusRing::of); upstream's own widgets' ring is FOCUS_RING_WIDTH, 3px (gpui-component/styled.rs:11, FOCUS_RING_WIDTH), and a width > 0 turns it on",
     ),
     (
         "basic.typography.body",

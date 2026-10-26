@@ -12,11 +12,11 @@ use gpui_base::{
     Checkbox as BaseCheckbox, Radio as BaseRadio, RadioGroup as BaseRadioGroup, spring,
 };
 use gpui_component::{
-    ActiveTheme as _, Disableable as _, IconName, IconNamed as _, StyledExt as _, ThemeStyled as _,
+    ActiveTheme as _, Disableable as _, IconName, IconNamed as _, StyledExt as _,
 };
 use native_theme::theme::ResolvedTheme;
 
-use super::{Part, PartBounds, color, faded, font_text, length, over, part_bounds};
+use super::{FocusRing, Part, PartBounds, color, faded, font_text, length, over, part_bounds};
 use crate::ActiveNativeTheme;
 
 /// The group name the indicator's hover style listens to: the whole row
@@ -270,6 +270,7 @@ impl Parts {
                 .unwrap_or_else(|| color(n.resolved.defaults.background_color)),
         );
         let text = font_text(&n.resolved.checkbox.font, n);
+        let ring = FocusRing::of(n.resolved);
         let (indicator, label) = indicator_and_label(&self, &look, round, text, window, cx);
         let focus_handle = window
             .use_keyed_state(self.id.clone(), cx, |_, cx| cx.focus_handle())
@@ -287,7 +288,7 @@ impl Parts {
             // The row the focus ring follows, as gpui-component rounds it
             // (checkbox.rs:289).
             .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when(focused, |row| row.focus_ring_style(window, cx))
+            .when_some(ring.filter(|_| focused), |row, ring| ring.draw(row, window))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .opacity(look.opacity)
             .child(indicator)
