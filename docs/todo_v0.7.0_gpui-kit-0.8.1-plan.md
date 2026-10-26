@@ -16,8 +16,11 @@
 
 **Architecture:**
 
-- **What changes:** the gpui connector, its tests and its showcase, plus the documents. No
-  other crate changes.
+- **What changes:**
+  - the gpui connector, its tests and its showcase, plus the documents;
+  - in the egui and iced showcases, only their citations of gpui sources (Task 2, Task 3b);
+  - in native-theme, nothing in its code, but its property tests run on proptest 1.12 after
+    the lock update (spec §1).
 - **The unit:** Tasks 1–3 — the bump with the migration, the renumbering, and the hand-read.
 - **After the unit:** Tasks 3b, 4, 5 and 7, each independent of the others, and Task 6 after
   3b and 5, so that its parity run reads the final layout. Documents and the stamp close
@@ -31,11 +34,14 @@ gpui-component, gpui-base and gpui-kit 0.8.1, gpui-pre 0.3.10, gpui-fast 0.1.12.
 **Spec:** [`todo_v0.7.0_gpui-kit-0.8.1-spec.md`](todo_v0.7.0_gpui-kit-0.8.1-spec.md).
 **Reasons:** [`todo_v0.7.0_gpui-kit-0.8.1-rationale.md`](todo_v0.7.0_gpui-kit-0.8.1-rationale.md).
 
-**When:** on `v0.7.0-rc1`, after the C round has closed (its ledger section's closing line),
-and before the v0.7.0 close-out (rationale P15).
-
-- If the maintainer wants G4 earlier, it runs at C-round task boundaries instead, under the
-  *Global Constraints*' shared-file rule.
+**When:** on `v0.7.0-rc1`, before the v0.7.0 close-out (rationale P15), and only once the
+review session running the C and D rounds in this tree has said that the D round is closed.
+- That session asked for this on 2026-10-26. Its writers edit the connector, the showcase, the
+  presets, `docs/todo.md`, `CHANGELOG.md` and the ledger, and run `check_release.sh` and cargo
+  continuously.
+- A dependency bump under a running writer would break its builds and gates, so task
+  boundaries are not enough here.
+- Until then, G4 commits only its three documents, by explicit path.
 - An Opus session orchestrates. Code tasks run in `implement` agents (Opus), with a fresh
   reviewer per task.
 
@@ -49,7 +55,8 @@ and before the v0.7.0 close-out (rationale P15).
 
 - **No panic paths.** No `unwrap`, `expect`, `panic!`, `unreachable!`, slice indexing or
   unchecked arithmetic outside tests, and no `unsafe`. The strict panic lints run on the
-  library and on the showcase example, on both cores. From Task 4 on, §5's gate holds too.
+  library and on the showcase example, on both cores. Once Task 4 has landed, §5's gate holds too, whatever the order of the tasks after the
+  unit.
 - **No invented values.** A number in a claim, comment or document is read from the cited
   source or measured.
 - **Both cores.** Every gpui change is tested on both: `--features native,watch` and
@@ -109,12 +116,15 @@ and before the v0.7.0 close-out (rationale P15).
 5. **The Dialog says what 0.8.1 does** (Task 3): an entrance and an exit, on the same curve and
    duration, and no `AnimationExt`.
 6. **The gate catches** (Task 4).
-   - The planted call fails clippy on both cores.
+   - Every entry is shown to resolve, not only one; the planted call fails clippy on both
+     cores.
    - Every listed function's group is argued from its doc line.
    - Every existing call is guarded or allowed with its reason.
-7. **The toolbar test fails before the fix** (Task 5), on the 14 presets that state no bar
-   height, in both modes.
-8. **The Separator is closed only on a capture** (Task 6).
+7. **The toolbar test fails before the fix** (Task 5), at a preset that states no bar height.
+8. **The Separator is closed only on a measurement** (Task 6): the test on both cores, or the
+   captures if the test cannot find the label's box.
+9. **Both cores lay the showcase out alike** (Task 6): the four dump pairs compared, each
+   difference fixed or explained.
 
 ---
 
@@ -122,18 +132,19 @@ and before the v0.7.0 close-out (rationale P15).
 
 - [ ] **The three documents** are committed at
   `docs/todo_v0.7.0_gpui-kit-0.8.1-{rationale,spec,plan}.md`: the rationale in `8086a20e`, the
-  spec and the plan in the commit after it. Task 0 checks that they are there.
+  spec and the plan in `02095604`, and the check passes after them (`git log -- <path>`).
+  Task 0 checks that they are there.
 - [ ] **`docs/todo_code-review-plan.md`** (re-read first):
   - a G4 row in the milestone table;
   - a decision line, D12: GPUI Kit 0.8.1 as milestone G4. It points at these documents,
     records the maintainer's approval of P1 and P3 (2026-10-26), and says that G4 runs after
-    the C round as the one writer;
+    the D round's close, as the one writer;
   - the *Resuming* rule names G4.
 - [ ] **`docs/todo_code-review-findings.md`** (re-read first): a *G4* status row and section.
 - [ ] **The inputs** the spec names are in `.superpowers/sdd/todo_code-review-plan/g4/`:
   `gk081-trial-check.log`, `gk081-trial-tests.log`, `gk081-lockdiff.txt`,
   `gk081-diff-review.md`, `trial.sh` and `trial2.sh`. If one is missing, the ledger says so.
-- **Commit:** `docs(review): GPUI Kit 0.8.1 as milestone G4, after the C round (G4 T0)`.
+- **Commit:** `docs(review): GPUI Kit 0.8.1 as milestone G4, after the D round (G4 T0)`.
 
 ## Task 1: The bump, the keys and the test migration (the unit opens)
 
@@ -144,7 +155,8 @@ and before the v0.7.0 close-out (rationale P15).
 - `SC/app.rs`, `SC/demo.rs`, `SC/pages/feedback.rs`, and `SC/pages/typography.rs` (doc only);
 - `SC/tests.rs`, `CN/src/widgets/tests.rs`.
 
-**Depends on:** Task 0, and a clean tree after the C round's last task.
+**Depends on:** Task 0, and the review session's message that the D round is closed, on a
+clean tree.
 
 - [ ] **Spec §1:** the four floors and the alias, and the comments re-verified; the scoped
   `cargo update` with the lock-diff gate; `cargo tree` before and after; the MSRV lines
@@ -160,7 +172,8 @@ and before the v0.7.0 close-out (rationale P15).
   - the migration of every listed site;
   - `secondary(key, os)` strict;
   - the two plain tests made `#[gpui::test]`;
-  - `use_preset` asserting the install, with any call it exposes fixed and listed.
+  - `use_preset` asserting the install, `use_missing_preset` for the two error tests, and any
+    call the assertion exposes fixed and listed.
 - [ ] **Every suite on both cores:** `cargo test -p native-theme-gpui --all-targets` with
   `--features native,watch` and with `--features gpui-fast,native,watch`.
   - Expected red: the two showcase citation gates and `the_fallback_stack_copy_is_gpuis`.
@@ -206,6 +219,9 @@ and before the v0.7.0 close-out (rationale P15).
 - **Commit:** `docs(gpui): the claims GPUI Kit 0.8.1 changed are rewritten to what its code does, the Dialog's exit among them (G4 T3)`.
 - [ ] **Push** `v0.7.0-rc1`, then CI green, including *Test the gpui connector on GPUI Fast*.
   A failure is fixed in G4 before Task 3b.
+- [ ] **The dependency canary dispatched on the branch** (`gh workflow run
+  dependency-canary.yml --ref v0.7.0-rc1`). It is green, or each failure is read and found
+  outside the gpui stack (spec §10).
 
 ## Task 3b: The citations no gate reads, and the version-stating prose
 
@@ -230,16 +246,17 @@ Task 2 commit that states it.
 `SC/inspector.rs`, `SC/demo.rs`, `SC/tests.rs` (the allows), and whatever further call sites
 the inventory finds. **Depends on:** Task 1.
 
-- [ ] **Spec §5's inventory:** the 84 doc lines' functions, each assigned to a group with the
-  reason, in the commit body.
+- [ ] **Spec §5's inventory:** the 172 candidate lines, each function assigned to a group with
+  the reason, and each set-aside line with its reason, in the commit body.
 - [ ] **`CN/clippy.toml`:** one entry per listed function, with a reason citing its doc line,
   and the header line about the upgrade sweep.
 - [ ] **The two `#![deny(clippy::disallowed_methods)]`.**
 - [ ] **Today's calls:** `resolve_font` allowed with its reason. `shape_line` in `demo.rs` made
   unable to panic, or else allowed with its test. Test code allowed. Any other call decided.
-- [ ] **The done-criterion:** the planted `KeyBinding::new`, and one gpui-base entry, fail
-  `cargo clippy -p native-theme-gpui --all-targets` on both cores and pass once removed.
-  Recorded in the body.
+- [ ] **Spec §5's done-criterion, for every entry:**
+  - whether clippy reports an unresolvable path, recorded;
+  - then either the clean run plus one planted call, or one planted call per entry, on both
+    cores.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests and clippy.
 - **Commit:** `build(gpui): clippy's disallowed-methods gate lists the upstream functions that panic on their input; the inspector's guarded resolve_font and the remaining calls are allowed or made unable to panic (G4 T4)`.
 
@@ -249,8 +266,8 @@ the inventory finds. **Depends on:** Task 1.
 `SC/tests.rs` (the comment). **Depends on:** Task 1.
 
 - [ ] **Red first:** `toolbar_carries_the_models_toolbar`'s bar-height expectation changed to
-  `Some(gpui::Length::Auto)` where unstated. It fails, on the 14 presets that state no bar
-  height, in both modes; the output is kept for the body.
+  `Some(gpui::Length::Auto)` where unstated. It fails at the first preset that states no bar
+  height; the output is kept for the body.
 - [ ] **Spec §6:**
   - `None => r.min_h_auto()`;
   - the doc;
@@ -259,37 +276,49 @@ the inventory finds. **Depends on:** Task 1.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests.
 - **Commit:** `fix(gpui): geometry::toolbar resets the minimum height to auto where the theme states no bar height, since gpui-component 0.8.1's Toolbar sets min_h_8 where 0.8.0 set h_8, so such a bar sizes to its content again (G4 T5)`.
 
-## Task 6: The Separator, the issue drafts, parity, the dated lines
+## Task 6: The Separator, both cores' layouts, parity, and the upstream entries
 
-**Files:** `docs/todo.md`, `docs/archive/todo_closed.md` (for any entry that closes),
-`ROADMAP.md` (its upstream list), the exception files (if parity says so). **Depends on:** Tasks 3b and 5, so that parity reads
-the final layout.
+**Files:**
 
-- [ ] **Announce the desktop capture.** Then spec §7's two Layout-page captures, on gpui-pre and
-  on GPUI Fast, with the label's x-range on each.
+- `SC/tests.rs` (the Separator test);
+- `docs/todo.md`, `docs/archive/todo_closed.md` (for any entry that closes), `ROADMAP.md`
+  (its upstream list);
+- the exception files and any code a parity or layout difference needs;
+- `.superpowers/sdd/todo_code-review-plan/g4/t2/lookup.py` (new, untracked).
+
+**Depends on:** Tasks 3b and 5, so that the comparisons read the final layout.
+
+- [ ] **Spec §7's Separator test**, passing on both cores, or the capture fallback with its
+  reason.
 - [ ] **The Separator entry** closes with its dated line and moves to the archive, or stays open
   with the measured positions (and the rationale's §1.8 corrected in its own commit).
-- [ ] **The two drafts' dated lines, and their texts updated** (spec §7).
-- [ ] **The parity run** (spec §7): a new difference is fixed or excepted with its measured
-  reason; a stale exception is removed. The three asset directories are restored afterwards,
-  and `git status` shows none of them changed.
+- [ ] **The two drafts' dated lines** (spec §7). Their texts are not rewritten.
+- [ ] **Announce the desktop runs.** Then:
+  - spec §7's dumps on both cores, compared pair by pair, each difference fixed or explained in
+    the ledger;
+  - the Linux parity run against iced and egui: a new difference is fixed or excepted with its
+    measured reason, and a stale exception is removed. The three asset directories are restored
+    afterwards, and `git status` shows none of them changed.
 - [ ] **Spec §7's re-check of the upstream entries:**
-  - each open `[upstream]` gpui entry whose cited file changed in 0.8.1's non-test code is
-    closed or given its dated line, its 0.8.1 lines from the script's line map;
+  - `lookup.py` written, with its own check against Task 2's moved numbers;
+  - each open `[upstream]` gpui entry whose cited file changed in 0.8.1's non-test code
+    closed, or given its dated line with its 0.8.1 lines from `lookup.py`;
   - the two gpui-fast entries' dated lines;
   - ROADMAP's upstream list re-cited in place.
   The commit body lists each entry re-read and its outcome.
-- **Commit(s):**
-  - `docs(todo): GPUI Kit 0.8.1 — the Separator entry <closes on the captures | stays open>, the issue drafts re-cited, the upstream entries and ROADMAP's list re-checked (G4 T6)`;
-  - a parity change, if any, in its own commit.
+- [ ] **Gates:** `--commit` green, and the GPUI Fast tests (the Separator test is code).
+- **Commits:**
+  - `test(gpui showcase): the labelled Separator's label is centred on its line on both cores, since gpui-pre 0.3.10 lays out on taffy 0.15 (G4 T6)`;
+  - `docs(todo): GPUI Kit 0.8.1 — the Separator entry <closes | stays open>, the issue drafts and the upstream entries re-checked, ROADMAP's list re-cited (G4 T6)`;
+  - a layout or parity change, if any, each in its own commit.
 
 ## Task 7: The new upstream API recorded
 
 **Files:** `docs/todo.md`, `SC/info/chrome.rs` (the Dialog's placement row) and
 `SC/info/typography.rs` (the inline-code row). **Depends on:** Task 3.
 
-- [ ] **Spec §8:** the two todo entries, with their tags and reasons, and the two Widget Info
-  rows.
+- [ ] **Spec §8:** the three todo entries (the Dialog's placement, Markdown, and the iced and
+  egui gate), with their tags and reasons, and the two Widget Info rows.
 - [ ] **Gates:** `--commit` green.
 - **Commit:** `docs(gpui): Dialog::centered and TextView's text styles are recorded as model questions, and the Dialog and TextView panels say what the theme cannot reach yet (G4 T7)`.
 
@@ -303,11 +332,14 @@ the final layout.
   - ROADMAP;
   - the full-theme note;
   - the review plan and the ledger.
-- [ ] **`scripts/update_compatibility.sh run gpui`**, after the connector's last source change.
+- [ ] **`scripts/update_compatibility.sh run gpui`, `run iced` and `run egui`**, each after that
+  connector's last source change (the iced and egui stamps for their showcases' re-cited
+  lines).
   Its own commit.
 - [ ] **The full `./scripts/check_release.sh`**, with spec §10's expected items only. Right
   after it, the packaging check with `--features gpui-fast`.
-- [ ] **Push**, then CI green (spec §10).
+- [ ] **Push**, then CI green, and the dependency canary dispatched on the branch again
+  (spec §10).
 - [ ] **Close:**
   - the three documents to `docs/archive/`, with an *As built* note at the top of the spec;
   - the archive index row;

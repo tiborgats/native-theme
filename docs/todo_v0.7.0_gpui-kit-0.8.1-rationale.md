@@ -60,8 +60,9 @@ Two parts of the release are not compatible:
   them: `Keystroke::parse` and `KeyBinding::new` take `&'static str`, a `secondary-` modifier
   needs the OS, `unparse` takes an `OperatingSystem`, and `ScrollWheelEvent` is renamed
   `ScrollEvent` and gains a `source` field.
-- **gpui-pre 0.3.10 moves from taffy 0.13.0 to taffy 0.15.0**, the layout engine
-  (gpui-pre `Cargo.toml`: `[dependencies.taffy] version = "0.15.0"`, was `"0.13.0"`).
+- **Both GPUI cores move to taffy 0.15.0**, the layout engine:
+  - gpui-pre 0.3.10 from 0.13.0 (`[dependencies.taffy] version = "0.15.0"`, was `"0.13.0"`);
+  - gpui-fast 0.1.12 from `=0.14.0` (`Cargo.toml:344-345`: `version = "=0.15.0"`).
 
 The theme schema is untouched:
 
@@ -101,15 +102,21 @@ application gets.
   - wgpu 29.0.4 and its eight sub-crates, plus naga 29.0.4: `gpui-pre-wgpu` 0.3.9's copy
     (`cargo tree -i wgpu@29.0.4`). gpui-pre now shares gpui-fast's copy.
   - taffy 0.13.0 (gpui-pre 0.3.9's) and 0.14.0. One taffy remains, 0.15.0.
-- proptest 1.11 → 1.12, with new lock entries `bit-vec` 0.10.1, `core_detect` and `borsh`.
-  These are optional gpui-pre dependencies (`proptest`'s `attr-macro`, per `cargo tree -i
-  proptest -e all`). Nothing in a normal build compiles them.
+- cocoa 0.26.0 and cocoa-foundation 0.2.1 are removed, and bit-set 0.9.1 becomes 0.11.1
+  (`gk081-lockdiff.txt`).
+- **proptest 1.11 → 1.12**, with proptest-macro 0.6, rand_xorshift 0.5, bit-vec 0.10.1,
+  core_detect and a `borsh` entry.
+  - gpui-pre 0.3.10 asks for proptest optionally (`attr-macro`, `cargo tree -i proptest
+    -e all`).
+  - native-theme also has `proptest = "1.11"` as a dev-dependency (`native-theme/Cargo.toml:140`).
+    So **native-theme's property tests run on proptest 1.12** after the update: the one change
+    outside the gpui connector's build, and a test-build one.
 - `image` stays one copy, 0.25.10.
 
 **Compile results:**
 
-- `cargo check -p native-theme-gpui --all-targets`, on gpui-pre and with `--features
-  gpui-fast,native,watch`:
+- `cargo check -p native-theme-gpui --all-targets`, on gpui-pre with the default features and
+  on GPUI Fast with `--features gpui-fast,native,watch` (`trial.sh`):
   - **The library and the showcase binary compile with no error and no warning on both
     cores.**
   - **The test code does not compile**: one error in the library's test module and six in the
@@ -134,6 +141,8 @@ move. None is a behaviour failure.
 - 1.95.0 checks the library on both cores.
 - 1.94.0 fails in gpui-pre 0.3.10 on `std::hint::cold_path` (`GP/profiler.rs:473`, `:494`),
   the same failure `CN/Cargo.toml:6-11` records for 0.3.9.
+  - This was run by hand with `--ignore-rust-version`, since `trial2.sh`'s own line stopped at
+    the `rust-version` check. The command and its output are in `gk081-msrv-1.94.txt`.
 - **So the MSRV stays 1.95.0.**
 
 **Not run in the trial:**
@@ -182,8 +191,8 @@ What it does to the branch, by site:
 |---|---|---|
 | `SC/app.rs:178-181`, `KeyBinding::new("secondary-q" / "-b" / "-k" / "-,", …)` in `app::init` | compiles (the literals are `'static`), **panics at start-up** inside gpui (`binding.rs:47`) | measured: with only this file unmigrated, **240 of 323 showcase tests panic** at `gpui-pre-0.3.10/src/keymap/binding.rs:47:10`, since the test harness calls `app::init` (`SC/tests.rs:125`) |
 | `SC/pages/typography.rs:97` `KBDS` (`"secondary-c"` …) through `SC/demo.rs:6478` `Keystroke::parse(keys).ok()?` | compiles, every parse fails, `filter_map` drops all four Kbds (`SC/pages/typography.rs:196`) | **the Typography page's Kbd row is silently empty**; `the_kbds_take_the_showcases_modifier` (`SC/tests.rs:17424`) fails on it |
-| `SC/pages/feedback.rs:136` `SAVE_KEYS = "secondary-s"` through `:142` | compiles, the parse fails, the fallback prints the raw literal | **the Save tooltip reads "Save file (secondary-s)"**; the tooltip test (`SC/tests.rs:17453`) fails on it |
-| `SC/tests.rs:2380` `fn secondary(key)`, `Keystroke::parse(&format!(..))` | does not compile (not `'static`) | fixed naively with an OS argument, it compiles. But its `unwrap_or_default()` returns `""` on a parse failure, so **`no_inspector_toggle_remains` (`:2403`) would pass while checking nothing**: it compares every binding with an empty string |
+| `SC/pages/feedback.rs:136` `SAVE_KEYS = "secondary-s"` through `:142` | compiles, the parse fails, the fallback prints the raw literal | **the Save tooltip reads "Save file (secondary-s)"**; the tooltip test (`SC/tests.rs:17452`) fails on it |
+| `SC/tests.rs:2380` `fn secondary(key)`, `Keystroke::parse(&format!(..))` | does not compile: its `unparse()` now takes the OS (the error at `:2382`) | fixed naively with an OS argument, it compiles. But its `unwrap_or_default()` returns `""` on a parse failure, so **`no_inspector_toggle_remains` (`:2403`) would pass while checking nothing**: it compares every binding with an empty string |
 | `SC/tests.rs:416` (`ScrollWheelEvent`), `:2229` (`parse(keys)`), `:2363`, `:2382`, `:2414`, `:5345` (`unparse()`); `CN/src/widgets/tests.rs:1714` (`parse(key)`) | 7 compile errors, 1 deprecation warning | `cargo check --all-targets` fails on both cores |
 
 The library's own code calls none of these outside its tests: `CN/src` compiles unchanged.
@@ -364,8 +373,9 @@ numbers moved.
 
 - **Each font now maps to a `CachedFont`**: `Direct(id)`, `Fallback(id)` or `Missing`
   (`GP/text_system.rs:244`).
-- **`resolve_font_uncached` stores fonts by role** (`:570`): the fallback family as `Direct`,
-  and the font asked for as `Fallback`.
+- **`resolve_font_uncached` stores fonts by role** (`:570`). A font that loads is cached as
+  `Direct`. A font that does not load is cached as `Fallback`, with the id of the first
+  stack family that does, and that family is cached as `Direct`.
 - **`get_font_for_id` reads only `Direct` entries** (`:336`).
 
 Two consequences for the showcase:
@@ -374,8 +384,9 @@ Two consequences for the showcase:
   `get_font_for_id` to name the family gpui draws a theme font in. Its reasoning holds:
   - 0.3.9 cached each family under its own name, the fallback family as `Ok(id)` and a missing
     family as an error (0.3.9 `resolve_font`, `font_id`).
-  - 0.3.10 caches the fallback family as `Direct(id)` and the asked family as `Fallback(id)`,
-    and `get_font_for_id` reads `Direct` only.
+  - 0.3.10 caches a family that loads as `Direct(id)`. A family that does not load is cached
+    as `Fallback(id)` of the stack family drawn instead, which is `Direct` under its own name.
+    `get_font_for_id` reads `Direct` only.
   - Either way the id reads back as the family that was drawn.
   What changes is its doc (`:292-306`): the cited lines, and its description of the cache's
   type (`Result` → `CachedFont`).
@@ -415,7 +426,9 @@ two claims whose **text**, not just line, is false: §1.5 and §1.6.
 
 - G3's K3 left gpui-pre's as they were, since it did not change then.
 - The cited gpui-pre files that changed: `elements/div.rs`, `window.rs`, `text_system.rs`,
-  `platform/keystroke.rs` and `platform.rs`. Among them is `SC/tests.rs:2377-2379`'s "gpui-pre
+  `platform/keystroke.rs`, `platform.rs` and `taffy.rs`. `taffy.rs` is cited at
+  `CN/src/widgets/separator.rs:92` and `docs/showcase-exceptions.toml:580`; its lines move by
+  +11 after `:264`. Among them is `SC/tests.rs:2377-2379`'s "gpui-pre
   keystroke.rs:143-150", which is now false: `secondary` needs the OS.
 - `elements/animation.rs`, `styled.rs` and `text_system/line.rs` did not change.
 
@@ -459,8 +472,9 @@ measurement: 0.3.10's `profiler.rs:473`.
 After P1's manifest change, run `cargo update -p gpui-kit -p gpui-component -p gpui-base`,
 which changes exactly the packages of §1.2.
 
-- **`cargo audit` on the new lock is the gate.** Its non-GPUI closure gains only optional
-  lock entries (proptest's), but the run, not the expectation, decides.
+- **`cargo audit` on the new lock is the gate.** Outside the GPUI crates, the lock changes only
+  proptest and its dependencies (native-theme's test build, §1.2), and loses cocoa,
+  cocoa-foundation, a wgpu copy and two taffy copies. The run, not the expectation, decides.
 - **`.cargo/audit.toml`'s ignore comments are re-checked against the new lock**: they name
   the crates that reach each advisory ("gpui-component 0.8.0", "gpui-pre 0.3.9"). The
   comments are re-pointed with `cargo tree -i`. An entry the new lock no longer reaches is
@@ -550,6 +564,11 @@ Both run on every host. With all eight on `load`, the showcase's non-test code c
 **The visible result is unchanged:** "Ctrl+S" off macOS, "⌘S" on it, and four Kbds again on
 the Typography page.
 
+**A parse failure is reported, not only absorbed.** Today `demo::kbd` drops a Kbd that does
+not parse (`.ok()?`), and the tooltip prints the raw literal. That is how 0.3.10's change
+would have gone unseen but for a test. Both keep their fallback, since a showcase must still
+draw, and each writes one stderr line naming the keys, as P3's `load` helper does.
+
 ### P5 — Test code: migrated as upstream migrated its own, and the one test that would go vacuous made strict
 
 **The mechanical part:**
@@ -561,7 +580,7 @@ the Typography page.
   ScrollSource::Pointer`, a wheel. It is named in full, not through `..Default::default()`,
   so the event says what it simulates.
 - The `unparse()` calls take the test platform's OS, from the `cx` each test already has.
-- The Kbd and tooltip tests (`SC/tests.rs:17424`, `:17453`) parse their `secondary-`
+- The Kbd and tooltip tests (`SC/tests.rs:17424`, `:17452`) parse their `secondary-`
   constants with `parse_with_os`. They become `#[gpui::test]`s where they need a `cx` for the
   OS or for `save_tooltip(&App)`.
 
@@ -571,23 +590,21 @@ pass vacuously (§1.3). A helper whose failure silently satisfies an assertion i
 safety net.
 
 **`use_preset` fails the test where the preset does not install.** Found during this work:
-the showcase's test helper ignores `apply_theme_by_name`'s `bool`
-(`SC/app.rs:1861-1866`), so a test that names a preset that does not exist runs, unnoticed,
-against the theme installed before. That is how the §1.5 probe measured "macos-sonoma" and
-"ios-26".
-- 103 calls go through it, `use_preset_scaled` among them. Each passes a literal or a name
-  from a preset list, and none passes `"default"`, whose OS read may legitimately fail on a
-  runner.
-- An assertion on the returned value therefore costs nothing where the names are right, and
-  shows any test that has been checking the wrong theme.
-- This is the same wrong-safety-net class as `secondary`, in the file this change already
-  edits, so it is done here rather than recorded for later.
+the showcase's test helper ignores `apply_theme_by_name`'s `bool` (`SC/app.rs:1861-1866`).
+So a test that names a preset that does not exist runs, unnoticed, against the theme installed
+before. That is how the §1.5 probe measured "macos-sonoma" and "ios-26".
 
-**No new cross-OS test.** `set_platform_info` (§1.3) could run the bindings under Mac on a
-Linux host. But that half would test gpui's parser rather than our code. The drawn half cannot
-follow: `Kbd::format` draws by the compile target (`GC/kbd.rs:105-151`), so under a Mac
-platform on Linux the tooltip is not "⌘S". Each host's own tests keep checking that host's
-half, as today.
+- **The calls:** 96 calls of `use_preset` and 4 of `use_preset_scaled`, which calls it.
+- **Two of them fail on purpose:** `the_theme_error_alerts_icon_follows_the_chosen_set` and
+  `a_theme_error_is_an_alert` pass `"no-such-preset"` to provoke a theme error
+  (`SC/tests.rs:8383`, `:12934`).
+- **The fix:** `use_preset` asserts the install, and a second helper, `use_missing_preset`,
+  asserts that the install failed. The two error tests call it. Every other call passes a
+  literal or a name from a preset list, and none passes `"default"`, whose OS read may
+  legitimately fail on a runner.
+- **Why here:** an assertion costs nothing where the names are right, and shows any test that
+  has been checking the wrong theme. It is the same wrong-safety-net class as `secondary`, in
+  the file this change already edits, so it is done here rather than recorded for later.
 
 ### P6 — A gate for dependency functions that panic on their input
 
@@ -611,24 +628,32 @@ paths name nothing.
   from another type's `new`.
 - **(c)** is type-aware, and the ordinary clippy runs that deny warnings already lint every
   target on both cores: CI's clippy job (`RUSTFLAGS: -Dwarnings`, `--all-targets`, once per
-  core) and `check_release.sh`'s *clippy (-D warnings)* section. The canary's clippy does not
-  deny warnings, and it runs on `main` anyway (§0).
+  core) and `check_release.sh`'s *clippy (-D warnings)* section. The canary's clippy denies
+  warnings too (`dependency-canary.yml:92`), but its schedule runs it on `main` (§0).
   - It names the method and the reason in the error: "panics on a parse error; use
     `KeyBinding::load`".
   - A deliberate, guarded call stays possible: `#[allow(clippy::disallowed_methods)]` at that
-    site, with its reason. One case is the inspector's `resolve_font`, behind its own guard
-    (§1.9). The allow is visible in review.
+    site, with its reason. The lint flags every call, guarded or not, so a guarded site needs
+    the allow too. One case is the inspector's `resolve_font`, behind its own guard (§1.9). The
+    allow is visible in review.
 
-**The list is an inventory, not a guess.** The candidates are every public function of
-gpui-pre, gpui-fast, gpui-base, gpui-component and gpui-kit whose documentation says it
-panics (`# Panics`, "Panics on/if/when", "will panic"): 84 such doc lines in 0.8.1 / 0.3.10 /
-0.1.12. The sweep sorts them into two groups:
+**The list is an inventory, not a guess.** The candidates are the doc and comment lines that
+mention a panic (`\b[Pp]anic`) in the `src/` of gpui-base, gpui-component, gpui-kit,
+gpui-pre, gpui-fast, and the gpui-pre and gpui-fast sub-crates.
+- There are 172 such lines at 0.8.1 / 0.3.10 / 0.1.12.
+- A narrower pattern (`# Panics`, "Panics if") finds 84 and misses forms such as "may panic
+  if" (`Bounds::inset`, `GP/geometry.rs:1101`) and the sub-crates' docs (gpui-pre-sum-tree
+  `cursor.rs:418`).
+
+The sweep sorts each public function the lines document into two groups, and sets aside the
+lines that are not a function's panic (a "does not panic" remark):
 
 - **Listed: a panic that depends on an argument's value**, whether or not we call the
   function today, since a future call is what the gate is for. Examples:
   - `KeyBinding::new`'s parse error (`GP/keymap/binding.rs:32`);
   - `TextSystem::resolve_font`'s missing font (`GP/text_system.rs:351`);
-  - `shape_line` on a text with a newline (`:668-670`);
+  - `WindowTextSystem::shape_line` on a text with a newline (`:668-670`, the `impl` at `:641`;
+    a `debug_assert!`, so debug builds only);
   - a line boundary out of range (`GP/text_system/line.rs:280-281`);
   - gpui-base's non-finite or non-positive scroll-bounce parameters
     (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio (`GB/motion.rs:484`).
@@ -645,12 +670,25 @@ panics (`# Panics`, "Panics on/if/when", "will panic"): 84 such doc lines in 0.8
 The sweep is repeated at each GPUI Kit upgrade, as one step of the upgrade's plan: a new
 panicking function only enters through an upgrade.
 
-**Done-criterion, mechanical:** a planted `gpui::KeyBinding::new("a", …)` in a non-test
-showcase function fails `cargo clippy -p native-theme-gpui --all-targets -- -D warnings` on
-both cores, and removing it passes. This proves that the configured paths resolve through the
-`gpui_kit as gpui` alias and on GPUI Fast. That is not assumed, because clippy resolves a
-disallowed path by its definition, and the two cores define it in different crates under the
-same library name.
+**The iced and egui connectors have the same gap.** A call into iced, iced_aw or egui that
+panics on its input is invisible to the same three gates. That is a `docs/todo.md` entry,
+`[1.0]` (P13's Task records it): the same inventory and a `clippy.toml` per connector. It is
+not done here, because this change is the gpui connector's, and those crates' upgrades are
+where their sweep belongs.
+
+**Done-criterion, mechanical, for every entry, not only one.** A wrong path in the list would
+flag nothing and pass every run, so each entry's resolution is shown on both cores.
+
+- **First:** whether clippy reports a path it cannot resolve. A deliberately wrong entry is
+  added and clippy run.
+- **If clippy reports it**, a clean `cargo clippy -p native-theme-gpui --all-targets -- -D
+  warnings` on both cores shows every entry resolves, and one planted call (`KeyBinding::new`)
+  shows the alias and GPUI Fast are reached.
+- **If clippy does not report it**, each entry gets its own planted call, each failing on both
+  cores and passing once removed.
+
+Either way this is measured, not assumed: clippy resolves a disallowed path by its definition,
+and the two cores define it in different crates under the same library name.
 
 **Tests stay out of scope**, as for the other panic gates: a test may panic on purpose. clippy
 applies the config to test code too, so the test modules that call such functions with literals
@@ -697,8 +735,8 @@ measured and does not matter: no screenshot is taken in between.
 
 - **The Dialog's Widget Info animation lines** (`SC/info/chrome.rs:1334-1337`):
   - drop the `AnimationExt` citation;
-  - cite `Dialog::motion_transition` for the curve and the 0–1 clamp, and `exit_duration` for
-    the duration;
+  - cite `Dialog::motion_transition` for the curve and the 0–1 clamp, `exit_duration` for the
+    duration, and `GC/root.rs:264-269`, where the root applies the transition to the dialog;
   - say the dialog slides or fades *in and out* on the same curve and duration;
   - say that reduced motion shows and removes it at once.
 - **The connector's dialog doc citations** (`CN/src/geometry.rs:572-624`, `:1176`, `:1400`)
@@ -719,20 +757,37 @@ passes on both cores.
 3. else set aside and read by hand.
 
 It is the measured method (M8 T17: 1 961 numbers, 0 to fix after its fix round), and G3 used
-it. The files in scope are K3's:
+it. The files in scope are K3's, plus three more:
 
-- `CN/`: sources, tests, examples, README and manifest comments;
-- `docs/showcase-exceptions.toml`, which cites lines of `root.rs`, `input/input.rs`,
-  `button/button.rs` and `scroll/scrollable.rs`, four files 0.8.1 changed;
-- `scripts/connector_parity_exceptions.toml`;
-- `tools/showcase-support/src`.
+- K3's: `CN/` (sources, tests, examples, README and manifest comments),
+  `docs/showcase-exceptions.toml` and `tools/showcase-support/src`.
+  `docs/showcase-exceptions.toml` cites lines of `root.rs`, `input/input.rs`,
+  `button/button.rs` and `scroll/scrollable.rs`, four files 0.8.1 changed.
+- **`scripts/connector_parity_exceptions.toml`**, which G3 read by hand. One script run is
+  simpler and checks more.
+- **The egui and iced showcases**
+  (`connectors/native-theme-egui/examples/`, `connectors/native-theme-iced/examples/`).
+  - They cite gpui-component and gpui-pre lines to say what the gpui showcase draws: 67
+    mentions. Examples: egui `demo.rs:272` `button.rs:1008`, now `:1022`; egui `chrome.rs:838`
+    gpui-pre 0.3.9 `taffy.rs:523-527`.
+  - G3 left the egui showcase's to its own milestone, which has since closed.
+  - Their own crates' citations (iced, egui) are out of scope by the crate rule.
+  - Their compatibility stamps hash their examples, so the iced and egui stamps are re-taken
+    (P14).
 
 What changes is which upstream crates are in scope:
 
 - **Both GPUI cores changed** (0.3.9 → 0.3.10, 0.1.10 → 0.1.12), so their cited files are in
   scope, along with gpui-component and gpui-base.
-- So are the gpui-pre platform crates the inspector doc cites (`gpui-pre-wgpu`,
-  `gpui-pre-apple`, `gpui-pre-windows` and their GPUI Fast twins), where their files changed.
+- **So are their sub-crates**, all 19 of gpui-pre's at 0.3.9 → 0.3.10 and gpui-fast's eight at
+  0.1.10 → 0.1.12. Our files cite them, often without a version:
+  - gpui-pre-wgpu at `CN/src/widgets/checkbox.rs:483`;
+  - gpui-pre-macros 0.3.9 at `CN/src/geometry.rs:488`;
+  - gpui-pre-linux `client.rs` at `SC/app.rs:403`;
+  - gpui-pre-windows `events.rs` at `:1908`;
+  - and the inspector's platform crates.
+  Without them in the family, the script would skip these citations, and the version grep
+  would swap the versioned ones' versions with no line check.
 
 **Read by hand, beyond what the script sets aside:**
 
@@ -749,37 +804,65 @@ What changes is which upstream crates are in scope:
 
 **Gate:** the two citation gates and `the_fallback_stack_copy_is_gpuis` pass on both cores.
 
-### P10 — The other two issue drafts: re-cited, still to be filed
+### P10 — The other two issue drafts: re-checked, still to be filed
 
 - **Rounded clip:** `GP/window.rs:2239-2246`, gpui-fast's `rounded_clip.rs` as re-read.
 - **`try_resolve_font`:** `GP/text_system.rs:352`, the panic at `:621`, gpui-fast's as
   re-read.
 
-The texts gain "0.8.1, gpui-pre 0.3.10, gpui-fast 0.1.12" and keep their substance. They stay
-for the maintainer to file (an agent files nothing).
+**How the drafts change.** `docs/todo.md` is append-only, so neither draft's text is
+rewritten.
+- Each draft's text names its versions ("gpui-component 0.8.0 on gpui-pre 0.3.9"), so it stays
+  true.
+- Each gets a dated line, *GPUI Kit 0.8.1 (2026-10-26, G4):*, which says the issue still
+  holds and gives its 0.8.1 / 0.3.10 / 0.1.12 lines.
+- The maintainer files from the text and that line.
 
-### P11 — taffy 0.15: the Separator entry closes once a capture shows it; parity and screenshots re-run
+Rewriting the text in place would keep the draft paste-ready in one piece, but against the
+file's rule, for no gain the dated line does not give. The drafts stay for the maintainer to
+file (an agent files nothing).
 
-**Before the Separator draft is dropped:** on gpui-pre, the Layout page's "Section Break" has
-to be centred on its line at rest, in a capture of the page on each core (spec §7 gives the
-procedure), and the GPUI Fast capture has to agree. Then the `todo.md` entry closes with a dated line naming
-taffy 0.15.0's `flexbox.rs:2274-2275` and moves to `docs/archive/todo_closed.md`.
+### P11 — taffy 0.15: the Separator checked by a test; both cores' layouts compared; parity re-run
+
+**The Separator.** The draft's cause is gone from taffy 0.15.0 (§1.8). What is not yet seen is
+the label centred in the showcase. The options for seeing it:
+
+- **(a) A desktop capture of the Layout page on each core**, the label's x-range read from the
+  PNGs. It is a one-off, it takes the desktop's focus, and it leaves no guard behind.
+- **(b) A showcase test**, on both cores.
+  - It finds the labelled Separator by its selector (`layout-separator-labelled`).
+  - It finds the label's box among the painted quads inside it: the label paints a fill of its
+    own (`GC/separator.rs:149`, `.bg(cx.theme().tokens.background)`), and G3 added the scene
+    reader (`scene_quads`, `CN/src/widgets/scene_read.rs:22`), which the showcase tests
+    already use.
+  - It asserts that the box's centre is within a pixel of the line's.
+  This is mechanical, it runs in CI on every push, and it would have caught the gpui-pre defect
+  the draft describes.
+- **(c) The layout dump.** The dump records the Separator's wrapper, not upstream's label
+  inside it, so it cannot answer.
+
+**(b), with (a) only if (b) cannot find the label's box.** Then the `docs/todo.md` entry closes
+with a dated line naming taffy 0.15.0's `flexbox.rs:2274-2275` and the test, and moves to
+`docs/archive/todo_closed.md`. If the test shows the label is not centred, the entry stays
+open, the draft is re-cited to taffy 0.15.0, and this document's §1.8 is corrected.
 
 **No exception or claim names the label's position today.** The two exception files and
-`SC/info/layout.rs` were checked, so nothing else changes for the label. Any exception the
-parity run below shows to be unnecessary goes.
+`SC/info/layout.rs` were checked, so nothing else changes for the label.
 
-**A layout-engine bump can move other things too**, as can 0.8.1's scroll-area flex change
-(§1.7):
+**Both cores' layouts are compared**, as G3's run-time comparison did (archived G3 spec §9).
+Both layout engines moved (§1.1), so a layout difference between the cores can appear or
+vanish. The comparison:
+- `--dump-layout` for kde-breeze and adwaita, light and dark, from a gpui-pre build and a GPUI
+  Fast build;
+- each pair compared element by element.
+A difference is fixed, or explained in the ledger. It takes the desktop's focus, so it is
+announced.
 
-- **the Linux parity run** (`scripts/check_showcase_parity.py`, `check_connector_parity.py`)
-  runs on the new lock;
-- **the gpui screenshots are regenerated** through the release scripts. That was a release
-  gate already (`generate_assets_release.sh`, the PROVENANCE stamp), and it now also has to
-  show the centred label.
-
-**If the label is still at the end:** the entry stays open, the draft is re-cited to taffy
-0.15.0, and this document's §1.8 is corrected.
+**The Linux parity run** (`scripts/check_showcase_parity.py`) runs on the final layout, against
+the iced and egui showcases: a layout-engine bump and 0.8.1's scroll-area flex change (§1.7)
+can move elements. Any exception it shows to be unnecessary goes. The gpui screenshots are then
+regenerated by the release scripts, a release gate already (`generate_assets_release.sh`, the
+PROVENANCE stamp).
 
 ### P12 — The upstream entries are re-checked at 0.8.1
 
@@ -810,8 +893,10 @@ from.
 - (c) is bounded. About 20 open gpui entries cite files 0.8.1 changed, and fewer cite files it
   changed outside tests (`checkbox.rs`, `button/toggle.rs`, `tab/tab_bar.rs`, `link.rs` and
   `message_scroller.rs` changed in tests only). Four ROADMAP bullets are affected.
-- §4.1's script, run in its `--plan` mode over those two files, gives each cited number's
-  0.8.1 line without writing anything, so only the claims are read by hand.
+- Each cited number's 0.8.1 line comes from §4.1's line rule, through a small read-only lookup
+  beside the script (`lookup.py`: crate, file, line in; the new line or "set aside" out). Only
+  the claims are read by hand. The script itself cannot do it: its scope is the code, not
+  these two documents.
 
 **Entries that wait for a release** get their dated line under the same rule:
 
@@ -838,10 +923,14 @@ The one partial answer, inline code's seam, is P13's.
   That is a model change, not a dependency update, so it is not for the last step of v0.7.0.
 - **What happens now:**
   - a `docs/todo.md` entry, *Dialog: the platform's vertical placement*, `[1.0]`, with the
-    seam (`GC/dialog/dialog.rs:495`) and the facts it needs. The tag is `[1.0]`, not
-    `[v0.7.x]`: `DialogTheme` is not `#[non_exhaustive]`
-    (`native-theme/src/model/widgets/mod.rs:810-815`), so a new public field breaks struct
-    literals and cannot go in a patch release;
+    seam (`GC/dialog/dialog.rs:495`) and the facts it needs. The tag is `[1.0]`, settled
+    before 1.0:
+    - the placement is a native-look fact on every platform, so 1.0 should not ship without
+      it;
+    - it needs platform research first;
+    - it cannot be a `[v0.7.x]` patch, because `DialogTheme` is not `#[non_exhaustive]`
+      (`native-theme/src/model/widgets/mod.rs:810-815`), so a new public field breaks struct
+      literals. A later minor release may carry it;
   - the Dialog's Widget Info states placement as not themeable: upstream's default, anchored at
     its top a tenth of the viewport down unless the caller sets `margin_top`
     (`GC/dialog/dialog.rs:667-673`).
@@ -867,7 +956,9 @@ The one partial answer, inline code's seam, is P13's.
   (`:95`, with the new date), the quick start (`:109`), the alias comment (`:144`), the
   *Backends* section (`:822-837`), and the 0.8.0 mentions in rows (`:29`, `:57`, `:365`).
   `compat::` checks the table and the quick start.
-- **`docs/COMPATIBILITY.toml`:** through `scripts/update_compatibility.sh`.
+- **`docs/COMPATIBILITY.toml`:** through `scripts/update_compatibility.sh`, for gpui, and for
+  iced and egui too, since P9 changes their showcases' citations and their stamps hash their
+  examples.
 - **`ROADMAP.md:72-73`.**
 - **`docs/todo_gpui-full-theme.md`:** an appended "gpui-component 0.8.1" note, as G3 appended
   one for 0.8.0. That file records which upstream version its theme map was checked against.
@@ -890,11 +981,15 @@ The one partial answer, inline code's seam, is P13's.
 
 The `secondary` change is upstream's. The connector's public API does not change.
 
-### P15 — Where G4 sits: after the C round, before the close-out, as one writer
+### P15 — Where G4 sits: after the C and D rounds, before the close-out, as one writer
 
 `v0.7.0-rc1` is being written by the C round (`docs/todo_code-review-findings.md`, *C round*,
-2026-10-26). G4 enters at a task boundary on a clean tree, as G3 entered between M9b's tasks
-(K13).
+2026-10-26) and then the D round.
+- G3 entered between M9b's tasks (K13). G4 cannot: the review session asked, on 2026-10-26,
+  that G4 not start in this tree until it says the D round is closed.
+- Its writers run cargo and `check_release.sh` continuously, so a dependency bump under one
+  would break its builds and gates.
+- G4 therefore starts after the D round, on a clean tree.
 
 **The shared files:** `Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`,
 `docs/todo_code-review-findings.md`, `docs/showcase-exceptions.toml`, the showcase. One writer
@@ -915,6 +1010,16 @@ runs them.
 
 **Until the unit lands, nothing is red**: the branch's lock holds 0.8.0, and the canary
 tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass with it.
+
+**The fresh resolve is tested on the branch too.**
+- P2's scoped update deliberately does not take the rest of the newest dependencies, but an
+  application's fresh resolve does (§1.2).
+- The dependency canary has `workflow_dispatch` (`dependency-canary.yml:25`). Dispatched on
+  `v0.7.0-rc1` after the unit's push and again after the close
+  (`gh workflow run dependency-canary.yml --ref v0.7.0-rc1`), it builds and tests the branch
+  on exactly that resolve.
+- It is one command each time. A failure there is read like any canary failure: an upstream
+  release, not this change, unless it touches the gpui stack.
 
 ---
 

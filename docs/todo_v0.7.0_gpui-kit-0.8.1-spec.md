@@ -17,9 +17,11 @@
 
 **Line numbers.**
 
-- Ours are of `v0.7.0-rc1` at `8086a20e`. The C round still commits to the branch, so every
-  task locates its regions by content and re-reads what this spec describes before it writes
-  (§0.2).
+- Ours are of `v0.7.0-rc1` at `8086a20e`. The C and D rounds still commit to the branch, so
+  every task locates its regions by content and re-reads what this spec describes before it
+  writes (§0.2). The D round's D4 is known to move lines this spec cites in
+  `CN/src/geometry.rs` (the dialog docs, `toolbar` and its test), `CN/src/config.rs:65` and
+  `SC/demo.rs:6478`.
 - `docs/todo.md` entries are cited by section, heading and opening words, as its header
   requires. `CHANGELOG.md` entries are cited by their text.
 
@@ -61,7 +63,7 @@ Nothing a task needs is only there: every count and finding used here is restate
   cited source or measured.
 - **Both cores.** Every gpui change is tested on gpui-pre (`--features native,watch`) and on
   GPUI Fast (`--features gpui-fast,native,watch`).
-- **Shared files are located by content.** A task that edits a file the C round also writes
+- **Shared files are located by content.** A task that edits a file the review rounds also write
   re-reads, before writing, the code this spec describes there. Those files are `Cargo.lock`,
   `CHANGELOG.md`, `docs/todo.md`, the ledger, `docs/showcase-exceptions.toml`, the showcase
   and the connector. Where the description no longer holds, the task stops and reports.
@@ -101,10 +103,14 @@ taken at the task's own start.
   - gpui-kit, gpui-kit-assets, gpui-component, gpui-component-macros and gpui-base go to 0.8.1;
   - the 20 `gpui-pre*` crates go to 0.3.10;
   - gpui-fast and its eight sub-crates go to 0.1.12;
-  - wgpu 29.0.4 (with its eight sub-crates and naga 29.0.4), taffy 0.13.0 and taffy 0.14.0
-    are removed, and taffy 0.15.0 is added;
-  - proptest 1.12 and proptest-macro 0.6, rand_xorshift 0.5, bit-vec 0.10.1, core_detect and
-    borsh are optional lock entries.
+  - wgpu 29.0.4 (with its eight sub-crates and naga 29.0.4), taffy 0.13.0, taffy 0.14.0,
+    cocoa 0.26.0 and cocoa-foundation 0.2.1 are removed, and taffy 0.15.0 is added;
+  - bit-set 0.9.1 becomes 0.11.1;
+  - proptest 1.11 → 1.12, with proptest-macro 0.6, rand_xorshift 0.5, bit-vec 0.10.1,
+    core_detect and a `borsh` entry.
+- **native-theme's property tests then run on proptest 1.12**: its dev-dependency
+  `proptest = "1.11"` (`native-theme/Cargo.toml:140`) resolves to the new version. Its test
+  suite is part of the task's gate (`check_release.sh --commit` runs it).
 - `cargo tree -p native-theme-gpui -e normal` before and after goes in the commit body.
 
 **MSRV**, measured with the lines of CI's `msrv` job, under `RUSTFLAGS=-Dwarnings`:
@@ -145,11 +151,14 @@ warning, once §2 and §3 are in.
 **`SC/app.rs`, `init` (`:176-196`) and `macos_bindings` (`:198-208`):**
 
 - **A private helper** `fn load(keys: &str, action: Box<dyn Action>, cx: &App) -> Option<KeyBinding>`
-  returns `KeyBinding::load(keys, action, None, false, None, cx).ok()` (`GP/keymap/binding.rs:51-68`;
+  calls `KeyBinding::load(keys, action, None, false, None, cx)` (`GP/keymap/binding.rs:51-68`;
   gpui-fast 0.1.12's has the same signature, `GF/keymap/binding.rs:51-58`).
-  - On `Err` it returns `None`: the binding is left out, with no panic and no fallback key.
-  - It writes one `eprintln!("showcase: the key binding {keys:?} did not parse: {error:?}")`
-    line first. That is the showcase's existing pattern for a refused input (`SC/app.rs:1416`).
+  - `Ok(binding)` becomes `Some(binding)`.
+  - `Err(error)` writes one `eprintln!("showcase: the key binding {keys:?} did not parse:
+    {error:?}")` line and returns `None`: the binding is left out, with no panic and no
+    fallback key. That is the showcase's existing pattern for a refused input
+    (`SC/app.rs:1416`).
+  - A `match` does both. `.ok()` alone would discard the error before it is printed.
 - **`init` builds its four bindings** — `"secondary-q"` `Quit`, `"secondary-b"`
   `ToggleSidePanel`, `"secondary-k"` `OpenCommandPalette`, `"secondary-,"` `OpenPreferences`
   — through `load`, collects the `Some`s, and passes them to `cx.bind_keys`.
@@ -181,6 +190,9 @@ Windows round-trips the key through the current layout (`gpui-pre-windows`
   (`SC/pages/feedback.rs:133-136`)** say the `secondary-` modifier is resolved with gpui's
   runtime OS. They also say `Kbd::format` draws by the compile target (`GC/kbd.rs:105-151`),
   and that the two agree on every native target.
+- **A parse failure writes one stderr line in both** (`eprintln!("showcase: the keys {keys:?}
+  did not parse: {error:?}")`), and each keeps its fallback: the Kbd is left out, and the
+  tooltip shows the raw keys (rationale P4).
 - **Result:** four Kbds again on the Typography page, and "Save file (Ctrl+S)" off macOS,
   "⌘S" on it.
 
@@ -219,9 +231,13 @@ Each of these sites failed to compile in the trial, or would assert nothing:
   OS, and the tooltip test also for `save_tooltip(cx)`. Their expected strings are unchanged.
 - **`use_preset` (`SC/tests.rs:263-272`)** asserts that `apply_theme_by_name` returned `true`
   (`SC/app.rs:1861-1866`), with the preset's name in the message. `use_preset_scaled` calls
-  it, so the assertion covers all 103 calls. A call that fails it was testing the theme
-  installed before. It is fixed in this task, by its right preset name, and listed in the
-  commit body.
+  it, so the assertion covers its 96 calls and `use_preset_scaled`'s 4.
+- **A new helper, `use_missing_preset`, asserts that the install failed.** It is for the two
+  tests that pass `"no-such-preset"` on purpose to provoke a theme error:
+  `the_theme_error_alerts_icon_follows_the_chosen_set` (`:8613`) and
+  `a_theme_error_is_an_alert` (`:13164`). Both call it instead of `use_preset`.
+- **Any other call that fails the assertion** was testing the theme installed before. It is
+  fixed in this task by its right preset name, and listed in the commit body.
 - **No cross-OS test is added** (rationale P5).
 
 **Gates:**
@@ -248,6 +264,10 @@ and every G3-specific constant and branch is changed. These are all of them, as 
     gpui-fast `("0.1.10", "0.1.12")`;
   - **gpui-pre joins it** as `("0.3.9", "0.3.10")`: it changed this time, so its citations are
     in scope (rationale §1.11);
+  - **so do the sub-crates** (rationale P9): the 19 `gpui-pre-*` crates at `("0.3.9",
+    "0.3.10")` and the eight `gpui-fast-*` crates at `("0.1.10", "0.1.12")`. All 54 source
+    directories are in the registry (checked 2026-10-26; `cargo fetch` restores any that is
+    missing). Their names match `remap.py`'s `NAME_RE` and `LEAD_RE` as written;
   - `PRE` and `ALSO_OLD` go, with their uses (`:46`, `:82-83`).
 - **`remap.py`:**
   - its imports and `FAMILY_NAMES` (`:20`, `:40`) and the candidate loop (`:108`) without
@@ -258,7 +278,10 @@ and every G3-specific constant and branch is changed. These are all of them, as 
     (grep, 2026-10-26), so a citation naming a version other than the old or the new one is
     set aside by the generic rule (`:372-379`).
   - `T1_COMMITS` (`:33`): see "Task 1's lines" below;
-  - `SCOPE` (`:23-31`) gains `scripts/connector_parity_exceptions.toml`, which G3 read by hand;
+  - `SCOPE` (`:23-31`) gains `scripts/connector_parity_exceptions.toml`, which G3 read by hand,
+    and the egui and iced showcases, `connectors/native-theme-egui/examples` and
+    `connectors/native-theme-iced/examples` (rationale P9). Their own crates' citations stay
+    out of scope by the crate rule;
   - the docstring and the messages (`:2-3`, `:468`) name G4 and these versions.
 - **`gates.py`**, which keeps its own copy of the versions on purpose, so that its attribution
   stays independent of `remap.py`'s:
@@ -275,8 +298,15 @@ the new versions. The script leaves them alone and lists every upstream citation
 there, for the review to read at the new versions.
 
 **The check of the copy:** before the run, `grep -n '0\.7\.3\|0\.1\.7\|0\.1\.8\|c8d89e75\|62ac5935'`
-over the four files finds nothing. A remaining constant would map numbers against the wrong
+over the five files finds nothing. A remaining constant would map numbers against the wrong
 versions with every gate passing.
+
+**`lookup.py`, new beside the copy, read-only**, for §7's re-check:
+
+- it takes `crate file line` triples and prints each line's 0.8.1 number by the line rule
+  below (`upstream.py`'s `Crates.line_map`), or "set aside" with the rule's reason;
+- it writes nothing;
+- its own check: for ten numbers §4.1's run moved, it gives the same lines.
 
 **Everything else is G3 spec §3.1's rule, unchanged:**
 
@@ -325,7 +355,8 @@ not move:
     - they drop "gpui-pre/elements/animation.rs, AnimationExt" (the Dialog no longer uses it,
       `GC/dialog/dialog.rs:558-580`);
     - they cite `Dialog::motion_transition` for the curve and the 0–1 clamp (`:570-580`, the
-      clamp at `:578`) and `Dialog::exit_duration` for the duration (`:558-568`);
+      clamp at `:578`), `Dialog::exit_duration` for the duration (`:558-568`), and
+      `GC/root.rs:264-269`, where the root applies the transition to the dialog;
     - they say the dialog slides and fades (or fades) **in and out** on the same curve and
       duration;
     - the reduced-motion texts say it appears **and leaves** at once (`exit_duration` returns
@@ -351,7 +382,8 @@ cores, and `scripts/check_release.sh --commit` is green. This closes the unit.
   lines: `root.rs:552`, `input/input.rs:311`, `:596`, `:771`, `:819`, `button/button.rs:737`,
   `scroll/scrollable.rs:482`, as of `8086a20e`), `scripts/connector_parity_exceptions.toml`,
   `tools/showcase-support/src`;
-- the showcase's other files (`SC/demo.rs`, `SC/support.rs`, `SC/tests.rs` and the rest).
+- the showcase's other files (`SC/demo.rs`, `SC/support.rs`, `SC/tests.rs` and the rest);
+- the egui and iced showcases' gpui citations (§4.1's scope).
 
 Each is read in the new source and re-pointed or rewritten. A reason text in
 `docs/showcase-exceptions.toml` that occurs verbatim in several groups gets the same rewrite in
@@ -361,8 +393,9 @@ each: `scripts/check_showcase_parity.py` keys its merge groups by identical reas
 (rationale §1.9):
 
 - `TextSystem::resolve_font` (`GP/text_system.rs:352`, the panic at `:621`);
-- `resolve_font_uncached` (`:570`), which caches the fallback family as `CachedFont::Direct`
-  and the asked one as `Fallback` (`:244`);
+- `resolve_font_uncached` (`:570`), which caches a family that loads as `CachedFont::Direct`,
+  and one that does not as `Fallback` of the stack family drawn instead, itself `Direct`
+  (`:244`);
 - `get_font_for_id` (`:336`), which reads `Direct` only;
 - gpui-fast 0.1.12's counterparts, each read there;
 - the platform crates' per-family ids (gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12
@@ -376,13 +409,19 @@ motion skips every entrance upstream (`:621-623`)" becomes a citation of `exit_d
 renumbering or this hand-read.
 
 **Version-stating prose:** `grep -rn '0\.8\.0\|0\.3\.9\|0\.1\.10' connectors/native-theme-gpui
-docs/showcase-exceptions.toml tools/showcase-support/src .github/workflows/ci.yml`. The count
-at the start goes in the commit body. The README's `<!-- compat:begin -->` …
-`<!-- compat:end -->` line is excepted: only `scripts/update_compatibility.sh` writes it.
+connectors/native-theme-egui/examples connectors/native-theme-iced/examples
+docs/showcase-exceptions.toml scripts/connector_parity_exceptions.toml
+tools/showcase-support/src`. The count at the start goes in the commit body.
+
+Two kinds of line are not this task's:
+- **`CN/README.md`'s version statements** are §9's (Task 8), and its `toolbar` row is §6's
+  (Task 5), so each README edit has one owner;
+- **the README's `<!-- compat:begin -->` … `<!-- compat:end -->` line**, which only
+  `scripts/update_compatibility.sh` writes.
 
 - **A present-tense claim** gets the new version or is rewritten. Examples: the module headers
-  that say "verified against 0.8.0", `docs/showcase-exceptions.toml:20-22`, `CN/README.md:29`,
-  `:57`, `:365`, `:822-837`.
+  that say "verified against 0.8.0", `docs/showcase-exceptions.toml:20-22`,
+  `scripts/connector_parity_exceptions.toml:491` ("gpui-component 0.8.0").
 - **A present-tense measurement** is re-measured, not version-swapped. Examples: the
   `CN/src/contract.rs` statements "nothing reads … in 0.8.0" are re-grepped in `GC` and `GB`.
 - **A historical statement stays.**
@@ -401,21 +440,27 @@ at the start goes in the commit body. The README's `<!-- compat:begin -->` …
 
 ## 5 — The gate for upstream functions that panic on their input (P6)
 
-**The inventory.** Collect every doc line in `GP`, `GF`, `GB`, `GC` and gpui-kit 0.8.1's `src/`
-that matches `///.*(# Panics|[Pp]anics (on|if|when)|will panic)`: 84 at these versions. Sort
-each public function they document:
+**The inventory.** Collect every doc or comment line that mentions a panic
+(`grep -rEn '^\s*//[/!].*\b[Pp]anic'`) in the `src/` of `GP`, `GF`, `GB`, `GC`, gpui-kit 0.8.1,
+and the gpui-pre and gpui-fast sub-crates at 0.3.10 and 0.1.12. There are 172 at these
+versions. Sort each public function they document:
 
 - **Listed** where the documented panic depends on an argument's value, whether or not the
-  connector calls the function today. Known: `KeyBinding::new` (`GP/keymap/binding.rs:32`),
-  `TextSystem::resolve_font` (`GP/text_system.rs:351`), `TextSystem::shape_line`
-  (`:668-670`), the line-boundary function at `GP/text_system/line.rs:280-281`, gpui-base's
-  scroll-bounce parameters (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio
-  (`GB/motion.rs:484`).
+  connector calls the function today. Known:
+  - `KeyBinding::new` (`GP/keymap/binding.rs:32`);
+  - `TextSystem::resolve_font` (`GP/text_system.rs:351`);
+  - `WindowTextSystem::shape_line` (`:668-670`, the `impl` at `:641`);
+  - the line-boundary function at `GP/text_system/line.rs:280-281`;
+  - `Bounds::inset` ("may panic", `GP/geometry.rs:1101`), if its doc's condition is an
+    argument's;
+  - gpui-base's scroll-bounce parameters (`GB/scroll_bounce.rs:65`, `:93`) and motion ratio
+    (`GB/motion.rs:484`).
   A gpui-fast function at the same path needs no entry of its own where clippy resolves the
   path in both cores' `gpui` crate. The done-criterion shows whether it does; where it does
   not, the gpui-fast path gets its own entry.
 - **Not listed** where it is a panic on framework state or misuse: a global never set, a
   re-entrant update, a wrong arena or App, the test and bench harnesses.
+- **Set aside** where the line is not a function's panic, such as a "does not panic" remark.
 
 The commit body holds the whole sorted list: each candidate, its group, and for the not-listed
 ones the reason.
@@ -442,26 +487,33 @@ The two cores define the items in different crates under one library name, `gpui
 and `expect_used`, `:200-201`) and in the showcase's crate root (`SC/main.rs`), so a listed call
 is an error in every clippy run, not only under `-D warnings`.
 
-**Today's calls**, each made unable to panic or allowed at its site with
-`#[allow(clippy::disallowed_methods)]` and the reason:
+**Today's calls.** The lint flags every call of a listed function, guarded or not, so each call
+needs `#[allow(clippy::disallowed_methods)]` at its site, with the reason. A guard, where one is
+needed, comes in addition to the allow, not instead of it.
 
 - **`SC/inspector.rs:341`, `resolve_font`:** allowed. It is reached only where the text
   system lists a fallback-stack family, `DrawnFamilies::of`'s existing guard, and its doc
   states the one case left.
-- **`SC/demo.rs:2384`, `shape_line`** (a `debug_assert!` on a newline, `GP/text_system.rs:678-681`):
-  - preferred: unable to panic, the label checked for `'\n'` before shaping, with a newline
-    taken as the label's first line;
-  - else allowed, with "the segment labels are the showcase's constants, none holds a newline"
-    and a test that holds it.
+- **`SC/demo.rs:2384`, `shape_line`** (a `debug_assert!` on a newline,
+  `GP/text_system.rs:678-681`): allowed, with "the segment labels are the showcase's constants,
+  none holds a newline". A test asserts that no label holds one.
 - **The test modules** that call listed functions with literals (`shape_line` in `SC/tests.rs`
   at `:1969`, `:4945`, `:5231`, as of `8086a20e`) carry an allow on the module or the item,
   with the reason "test code may panic".
 - Any other call the inventory finds is decided the same way.
 
-**Done-criterion, mechanical.** A planted `gpui::KeyBinding::new("a", Quit, None)` in a non-test
-showcase function fails `cargo clippy -p native-theme-gpui --all-targets` on both cores, and
-removing it passes. The same is shown for one gpui-base entry. Both results go in the commit
-body.
+**Done-criterion, mechanical, for every entry** (rationale P6). A wrong path flags nothing and
+passes every run.
+
+1. **Does clippy report an unresolvable path?** Add a deliberately wrong entry, run
+   `cargo clippy -p native-theme-gpui --all-targets -- -D warnings`, and record the result.
+2. **If it reports one**, a clean run on both cores shows that every entry resolves. One planted
+   `gpui::KeyBinding::new("a", Quit, None)` in a non-test showcase function fails on both cores
+   and passes once removed, which shows the alias and GPUI Fast are reached.
+3. **If it does not**, each entry gets its own planted call, failing on both cores and passing
+   once removed.
+
+The results go in the commit body.
 
 **The upgrade checklist:** a line in `CN/clippy.toml`'s header comment says the sweep is redone
 at each GPUI Kit upgrade (rationale P6).
@@ -483,9 +535,11 @@ content's height, where it states none. It sets the height to `auto` as before.
 (`:2824-2828`) expects `Some(px(h).into())` where `bar_height` is stated and
 `Some(gpui::Length::Auto)` where it is not.
 
-- **Red first:** the changed expectation fails on today's builder for the 14 presets that
-  state no bar height, in both modes. Only macos-monterey, material-3 and windows-11 state
-  one.
+- **Red first:** the changed expectation fails on today's builder. The loop asserts preset by
+  preset, so the run stops at the first preset in `Theme::list_presets()`'s order that states
+  no bar height, and the message names it. That is enough to show the test sees the defect.
+  The fix reaches all 14 presets that state none; only macos-monterey, material-3 and
+  windows-11 state one.
 - Then the fix makes it pass.
 
 **`CN/README.md:365`** (the `toolbar` row) states the same. **The Widget Info claim
@@ -505,33 +559,50 @@ floor (rationale P7).
 
 ## 7 — The Separator, the issue drafts, parity, the todo list (P10, P11, P12)
 
-**The Separator (P11).** The gpui showcase's Layout page captured at rest, on gpui-pre and on
-GPUI Fast. The desktop run is announced, since it takes the focus.
+**The Separator (P11): a showcase test, on both cores.**
 
-- **The capture:**
-  - start the gpui showcase with `--capture --tab layout` (`tools/showcase-support/src/cli.rs`),
-    once with its default features and once with `--features gpui-fast`;
-  - capture each with `capture_window.sh`'s `capture_showcase gpui <pid> <png>`
-    (`scripts/capture_window.sh:300-372`), sourced as the screenshot scripts source it;
-  - read the label's x-range and the line's from each PNG.
-  On Linux the binary's own `--screenshot` does not capture: it is macOS and Windows only
-  (`cli.rs:42-43`). The screenshot scripts build only the default core, so this is a separate
-  run.
-- **If "Section Break" is centred on its line in both:** the `docs/todo.md` entry *File the
-  gpui-kit issue: on gpui-pre a labelled `Separator` draws its label at the line's end*
-  closes. It gets a dated line naming taffy 0.15.0's `src/compute/flexbox.rs:2274-2275`, the
-  two captures' label x-ranges, and the closing commit, and moves to the archive.
-- **If not:** the entry stays open and gets a dated line with the measured positions, and the
-  rationale's §1.8 is corrected in its own commit.
+- **The test**, `the_labelled_separator_centres_its_label`, in `SC/tests.rs`:
+  - it opens the Layout page;
+  - it takes the labelled Separator's bounds by its selector, `layout-separator-labelled`
+    (`SC/pages/layout.rs:32`, set at `SC/demo.rs:6653`);
+  - among the painted quads inside those bounds (`scene_quads`,
+    `CN/src/widgets/scene_read.rs:22`), it finds the label's box. That is the one filled with
+    the theme's `tokens.background` (`GC/separator.rs:149`) and narrower than the line;
+  - it asserts that the box's horizontal centre is within 1 px of the Separator's.
+  It runs on both cores through the usual suites.
+- **If the label's box cannot be told apart** from the other quads, the fallback is a desktop
+  capture, announced first:
+  - start the showcase with `--capture --tab layout`, with the default features and with
+    `--features gpui-fast`;
+  - capture each with `scripts/capture_window.sh`'s `capture_showcase gpui <pid> <png>`
+    (`:300-372`);
+  - read the label's and the line's x-ranges from the PNGs.
+  The test is then recorded as not written, with the reason.
+- **Centred on both cores:** the `docs/todo.md` entry *File the gpui-kit issue: on gpui-pre a
+  labelled `Separator` draws its label at the line's end* closes. Its dated line names taffy
+  0.15.0's `src/compute/flexbox.rs:2274-2275` and the test (or the captures' x-ranges), and the
+  entry moves to the archive.
+- **Not centred:** the entry stays open, with a dated line giving the measured positions, and
+  the rationale's §1.8 is corrected in its own commit.
 
-**The two other drafts (P10)** stay open, each with a dated line *GPUI Kit 0.8.1 (2026-10-26,
-G4):*:
+**The two other drafts (P10)** stay open. Their text is not rewritten: `docs/todo.md` is
+append-only, and the text names its versions. Each gets a dated line, *GPUI Kit 0.8.1
+(2026-10-26, G4):*, saying it still holds, with its new lines:
 
-- **The rounded clip:** still so; `GP/window.rs:2239-2246`, and gpui-fast 0.1.12's
-  `rounded_clip.rs` and `style.rs` lines as read there. Its paste-ready text's versions and
-  lines are updated in place: the text is a draft, not history.
-- **`try_resolve_font`:** still so; `GP/text_system.rs:352`, the panic at `:621`, and gpui-fast
-  0.1.12's as read there. Its text is updated likewise.
+- **the rounded clip:** `GP/window.rs:2239-2246`, and gpui-fast 0.1.12's `rounded_clip.rs` and
+  `style.rs` lines as read there;
+- **`try_resolve_font`:** `GP/text_system.rs:352`, the panic at `:621`, and gpui-fast 0.1.12's
+  as read there.
+
+**Both cores' layouts compared (P11)**, as archived G3 spec §9 did. Announced first, since it
+takes the desktop's focus:
+
+- **The dumps:** `--dump-layout` for kde-breeze and adwaita, light and dark (four runs), from
+  the showcase built with its defaults and built with `--features gpui-fast`, at rest.
+- **The comparison:** each pair compared element by element, every element's position and size
+  equal, as a JSON diff.
+- **A difference** is fixed in its own commit, gated, or explained in the ledger. Both cores
+  now share taffy 0.15.0, so a difference G3 recorded may be gone; one that is gone is noted.
 
 **Parity.** On the final layout (after §6), the Linux parity run, as
 `scripts/generate_assets_release.sh:126-156` makes it:
@@ -559,8 +630,8 @@ changes excluded, plus the gpui-pre and gpui-fast files that changed) is re-read
 - **still so:** a dated line *GPUI Kit 0.8.1 (2026-10-26, G4):* says so, with its 0.8.1 lines
   where they moved.
 
-Each cited number's 0.8.1 line is found with §4.1's line map (`upstream.py`, `Crates.line_map`,
-the same rule), not by eye. A number the map sets aside is read in the diff. Entries citing
+Each cited number's 0.8.1 line is found with §4.1's `lookup.py`, not by eye. A number it sets
+aside is read in the diff. Entries citing
 iced or egui files of the same name are not in scope.
 
 **Also dated, as they wait for a release:**
@@ -586,14 +657,20 @@ re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current 
     (`GC/dialog/dialog.rs:667-673`; the setter `Dialog::margin_top`, `:488`).
   - What it needs: a `platform-facts.md` row per platform, a `[dialog]` field, presets,
     inheritance, and the three connectors.
-  - Why `[1.0]`: `DialogTheme` is not `#[non_exhaustive]`
-    (`native-theme/src/model/widgets/mod.rs:810-815`).
+  - Why `[1.0]` (settled before 1.0): the placement is a native-look fact on every platform
+    and needs platform research. It cannot be a `[v0.7.x]` patch, because `DialogTheme` is not
+    `#[non_exhaustive]` (`native-theme/src/model/widgets/mod.rs:810-815`); a later minor may
+    carry it.
 - ***Markdown: inline code, list markers and blockquotes in the model*, `[post-1.0]`.**
   - The seams: `TextView::inline_code_style`, `list_style` and `blockquote_style`
     (`GC/text/compat.rs:114`, `:121`, `:127`).
   - What exists: the connector already feeds `defaults.mono_font` as `mono_font_family`
     (`CN/src/config.rs:65`), which inline code falls back to.
   - What is missing: no platform-facts rows, and these are not platform controls.
+- ***iced and egui: a gate for upstream functions that panic on their input*, `[1.0]`**
+  (rationale P6).
+  - The same inventory over iced, iced_aw and egui, and a `clippy.toml` per connector.
+  - Its place is those crates' next upgrade, as §5's sweep is the gpui connector's.
 
 **Widget Info:**
 
@@ -617,9 +694,14 @@ re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current 
 - the alias comment (`:144`): `version = "0.3.10"`;
 - the rows at `:29`, `:57`, `:365`, and the rest of §4.3's grep.
 
-**`docs/COMPATIBILITY.toml` and the README's Verified line** are written only by `scripts/update_compatibility.sh run gpui`, after the connector's last source
-change. Gates: `compat::the_verified_line_is_the_stamps` and
-`scripts/update_compatibility.sh check`.
+**`docs/COMPATIBILITY.toml` and the README's Verified line** are written only by
+`scripts/update_compatibility.sh`, after each connector's last source change:
+
+- `run gpui`;
+- `run iced` and `run egui` too, since §4 changes their showcases' citations and their stamps
+  hash their examples (`scripts/update_compatibility.sh:74-78`).
+
+Gates: `compat::the_verified_line_is_the_stamps` and `scripts/update_compatibility.sh check`.
 
 **`CHANGELOG.md` `[Unreleased]`:**
 
@@ -666,6 +748,10 @@ native-theme-gpui --allow-dirty --target-dir target/package-verify --features gp
 
 **CI on the branch is green**, including *Test the gpui connector on GPUI Fast* and the macOS
 and Windows GPUI Fast builds.
+
+**The dependency canary, dispatched on the branch** (`gh workflow run dependency-canary.yml --ref
+v0.7.0-rc1`), is green, or each failure is read and found outside the gpui stack (rationale
+P15). It runs after the unit's push and after the close.
 
 **For the close-out's `generate_assets_release.sh`, these screenshots change:**
 
