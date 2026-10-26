@@ -13775,3 +13775,24 @@ scope). Test: `a_widget_focused_in_the_body_is_ringed_at_the_callers_radius` (kd
 adwaita, windows-11, catppuccin-mocha): the body's ring equals a plain button's; a
 `Role::Expander` scope's differs in at least one preset; red by mutation.
 **Status:** done, 64bd92be.
+
+#### C-06 · gpui: the theme-drawn widgets' focus ring from the theme
+**Problem:** the connector's `Checkbox`, `Radio`, `Slider` and `Switch` called gpui-component's
+`focus_ring_style`, a 3 px ring at half the ring colour's alpha (gpui-component 0.8.0
+`src/styled.rs:11-12`, `:301-327`), so `defaults.focus_ring_width` and `focus_ring_offset`
+reached none of them.
+**Fix:** `widgets::FocusRing` (`src/widgets/mod.rs`): `FocusRing::of(resolved)` is `None` where
+the width is not positive or a value not finite; `draw` adds an absolute child against the
+element's padding box whose outer edge is the element's bounds grown by `offset + width` (the
+stated border widths added), `width` wide, in `focus_ring_color` as stated, its corners the
+element's grown as much, floored at 0 (the geometry of iced's `focus_ring::RingLook::quad` and
+egui's `paint_focus_ring`), and where `offset == -width` tints the element's border instead.
+The four widgets call it; the switch keeps its `focus_ring(bool)`. Tests:
+`the_focus_ring_is_the_themes` (outside, straddling, inset, none: 0, NaN, ∞) and
+`a_switch_told_not_to_draws_no_focus_ring` rewritten for the new ring; red by mutation (the
+growth without the width). The showcase's HOW lines for `defaults.focus_ring_width`, `_offset`
+and `_color` name the new route, and its widget citations (switch.rs, by difflib) follow the
+moved lines; the README's keyboard-focus paragraph, the switch's doc and a CHANGELOG Fixed line
+say what is drawn. A paint change: kde-breeze, macOS and the community presets draw another ring
+round a focused control, adwaita a tinted border.
+**Status:** done, 753cda70.

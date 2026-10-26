@@ -3806,9 +3806,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had there
 (M8 T21, 2026-10-17).
 
-### gpui: the theme-drawn widgets' focus ring
-- [ ] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
-
 ---
 
 ## Post-1.0
