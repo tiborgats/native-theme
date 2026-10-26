@@ -1701,6 +1701,15 @@ and many have since drifted, as the archive's [README](README.md) warns.
 - [x] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; `[light.text_scale]`, `[dark.text_scale]`) and for `dialog.title_font` (15pt; `[light.dialog.title_font] size_pt`, `[dark.dialog.title_font] size_pt`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
   *Closed 2026-10-26 in 67aa7b4b (C-03):* the GNOME reader derives, from the size of the font it reads, `text_scale.caption` (82%, `.caption`), `text_scale.dialog_title` and `dialog.title_font` (136%, `.title-2`) and `text_scale.display` (181%, `.title-1`), the shares libadwaita states (`docs/platform-facts.md:746-755`, :1485-1488, :1561); the weights and `text_scale.section_heading`, which inherits the base size, stay the preset's. At GNOME's default 11pt the sizes round to adwaita.toml's (9, 15, 20, 15pt); the text-scaling factor is reported apart and applied once by the connectors (M2e).
 
+### gpui: the base-palette repair writes colours without their tokens
+
+- [x] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
+      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still harmless: no gpui-component or gpui-base
+      0.8.0 source reads `tokens.red` … `tokens.cyan_light` outside `theme/`
+      (`grep -rnE 'tokens\.(red|green|blue|yellow|magenta|cyan)'` over both
+      crates' `src` finds none).
+  *Closed 2026-10-26 in e92c288a (C-04):* the tokens are on the styled `Theme`, not on `ThemeColor`: `Theme::tokens: ThemeTokens` (gpui-component 0.8.0 `src/theme/mod.rs:154`), whose `red` … `cyan_light` (`src/theme/theme_color.rs:533-544`) a rebuild resets with the colours. `colors::copy_base_palette` now takes the `Theme` and writes each colour's solid token (`From<Hsla> for ThemeToken`, `:30-37`) beside it, and `repair_base_palette` probes a clone of it; `the_base_palette_repair_keeps_the_tokens_with_the_colours` holds all 12 tokens to the native colours after a rebuild (red's upstream token differs, so it proves the write).
+
 ## Post-1.0 / Deferred
 
 ### Change notification

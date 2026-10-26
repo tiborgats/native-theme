@@ -13747,3 +13747,16 @@ no size states none.
   archive's closing line are corrected). M3: `dialog.icon_size`'s evidence says no sibling
   exposes it and iced has no dialog widget to draw a type icon. M4: the showcase's
   `dialog_padding` doc names `native_theme_iced::dialog_padding`.
+
+#### C-04 · gpui base-palette repair, the tokens
+**Problem:** the observer's base-palette repair wrote the 12 base colours (`red` … `cyan_light`)
+without their tokens, harmless while nothing reads `tokens.red` … `tokens.cyan_light`.
+**Fix:** gpui-component 0.8.0 keeps them on the styled `Theme`, not on `ThemeColor`:
+`Theme::tokens` (`src/theme/mod.rs:154`), fields `red` … `cyan_light`
+(`src/theme/theme_color.rs:533-544`). `colors::copy_base_palette(from, &mut Theme)` writes each
+colour and its solid token (`From<Hsla> for ThemeToken`, `:30-37`), and `repair_base_palette`
+probes a clone of the styled theme; the test
+`the_base_palette_repair_keeps_the_tokens_with_the_colours` checks all 12 after a rebuild (and
+fails, by mutation, without the token write). The showcase's Theme Map and the contract cited
+`colors.rs` lines the new doc moved by 10; they cite the moved lines.
+**Status:** done, e92c288a.

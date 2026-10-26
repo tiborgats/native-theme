@@ -3806,13 +3806,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had there
 (M8 T21, 2026-10-17).
 
-### gpui: the base-palette repair writes colours without their tokens
-- [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
-      *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still harmless: no gpui-component or gpui-base
-      0.8.0 source reads `tokens.red` … `tokens.cyan_light` outside `theme/`
-      (`grep -rnE 'tokens\.(red|green|blue|yellow|magenta|cyan)'` over both
-      crates' `src` finds none).
-
 ### egui: the focus ring inside an Expander's body takes the expander's radius
 - [ ] [v0.7.x] The companion crate's `Expander` draws its body in the caller's style (round 4 review, item 17 I1), but the connector's install plugin rings a focused widget there with `expander.border.corner_radius`: `native_scope` records the scope's `Ui` with `Role::Expander`'s radius (`connectors/native-theme-egui/src/ext.rs:103-106`), and the ring takes the innermost recorded scope round the widget (`src/plugin.rs:595-613`, `:646-651`); the body's `Ui` records none. Add a public hook to native-theme-egui that sets a style on a `Ui` and records that `Ui`'s radius from it with `replace = true`, as `native_set_style` does for a role's cell, and call it in the `Expander`'s body wrapper (`connectors/native-theme-egui-widgets/src/expander.rs`, `Expander::show`) with the caller's style. Predates the round.
 
