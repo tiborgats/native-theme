@@ -151,6 +151,12 @@ reason = "gpui-component has a `Dialog`, so the receivers are its style builders
 
 [[exception]]
 connector = "gpui"
+name = "dialog_min_width"
+kind = "absent"
+reason = "no gpui receiver reads it: `geometry::dialog` refines the dialog's heights, padding, radius and colours and `geometry::dialog_max_width` its greatest width (`src/geometry.rs`), and gpui-component's `Dialog` is as wide as `Dialog::max_w` lets it be; an application drawing its own dialog reads `resolved.dialog.min_width`"
+
+[[exception]]
+connector = "gpui"
 name = "dialog_title_font_color"
 kind = "absent"
 reason = "the receiver is `geometry::dialog_title` (`src/geometry.rs`), the `DialogTitle` refinement that colours the title with `dialog.title_font.color`; iced has no dialog title, so its consumer colours its own text with the accessor"
@@ -259,9 +265,9 @@ reason = "the atlas writes it to `visuals.selection.stroke.color` (src/style/bas
 
 [[exception]]
 connector = "egui"
-name = ["dialog_max_width", "dialog_max_height", "dialog_min_height", "dialog_title_font_color"]
+name = ["dialog_max_width", "dialog_max_height", "dialog_min_width", "dialog_min_height", "dialog_title_font_color"]
 kind = "absent"
-reason = "an egui application reads these leaves itself from `ThemeAtlas::resolved_for` (src/mapping.md, `dialog.max_width`, `dialog.max_height`, `dialog.min_height`, `dialog.title_font.color`: DERIVED, → T18(a)), sizing its `Modal` or `Window` and colouring its title with them; no egui `Style` field takes them"
+reason = "an egui application reads these leaves itself from `ThemeAtlas::resolved_for` (src/mapping.md, `dialog.max_width`, `dialog.max_height`, `dialog.min_width`, `dialog.min_height`, `dialog.title_font.color`: DERIVED, → T18(a)), sizing its `Modal` or `Window` and colouring its title with them; no egui `Style` field takes them"
 
 [[exception]]
 connector = "egui"

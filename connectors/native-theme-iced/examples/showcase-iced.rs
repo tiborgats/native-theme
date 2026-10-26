@@ -8870,7 +8870,7 @@ fn palette_groups(state: &State) -> Vec<(&'static str, Vec<PaletteEntry>)> {
 /// `defaults.icon_sizes.small`; its body in `dialog.body_font`'s colour; filled
 /// with `dialog.background_color`, framed by `dialog.border`, padded by
 /// [`dialog_padding`], `dialog.max_width` wide and at least
-/// `dialog.min_height` tall.
+/// `dialog.min_width` wide and `dialog.min_height` tall.
 fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     let resolved = &state.current_resolved;
     let a11y = &state.accessibility;
@@ -8907,11 +8907,17 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
     .align_y(iced::Center);
     let padding = dialog_padding(state);
     let min_height = (native_theme_iced::dialog_min_height(resolved) - padding.y()).max(0.0);
+    let min_width = (native_theme_iced::dialog_min_width(resolved) - padding.x()).max(0.0);
     // A row is as tall as its tallest child, and keeps the content at its
-    // top: the space beside the content is the dialog's minimum height.
-    container(row![
-        column![head, body].spacing(gap.widget).width(Fill),
-        space().height(Length::Fixed(min_height)),
+    // top: the space beside the content is the dialog's minimum height. A
+    // column is as wide as its widest child: the space below the row, no
+    // height, is its minimum width.
+    container(column![
+        row![
+            column![head, body].spacing(gap.widget).width(Fill),
+            space().height(Length::Fixed(min_height)),
+        ],
+        space().width(Length::Fixed(min_width)),
     ])
     .padding(padding)
     .width(Fill)
@@ -8925,7 +8931,7 @@ fn dialog(state: &State, overlay: Overlay) -> Element<'_, Message> {
 /// `dialog.border.padding` states, else gpui-component's
 /// [`DIALOG_PADDING_PX`], inside the border line; iced measures a padding
 /// from the bounds, so each side is the line width more
-/// (`padding_inside_border`).
+/// (`native_theme_iced::dialog_padding`).
 fn dialog_padding(state: &State) -> Padding {
     let resolved = &state.current_resolved;
     native_theme_iced::dialog_padding(

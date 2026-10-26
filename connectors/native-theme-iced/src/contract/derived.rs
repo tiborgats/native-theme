@@ -1008,18 +1008,10 @@ pub(super) const UNREACHABLE: &[Unreachable] = &[
         ],
     },
     Unreachable {
-        field: "dialog.min_width",
-        evidence: "a dialog is the consumer's `container`, and a `Container` \
-             takes a width and a `max_width` and `max_height` \
-             (`container.rs:121`, `:133`, `:139`) and no minimum; neither \
-             sibling connector offers a dialog minimum width either",
-        lost: |_, r| lost_length(r.dialog.min_width),
-        exceptions: &[],
-    },
-    Unreachable {
         field: "dialog.icon_size",
-        evidence: "iced 0.14 and `iced_aw` 0.14.1 have no dialog, so nothing \
-             draws a dialog's type icon (warning, error) at a size of its own",
+        evidence: "no sibling connector exposes it, and iced 0.14 and `iced_aw` \
+             0.14.1 have no dialog widget to draw a type icon (warning, \
+             error) at a size of its own",
         lost: |_, r| lost_length(r.dialog.icon_size),
         exceptions: &[],
     },

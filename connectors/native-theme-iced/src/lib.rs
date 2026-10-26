@@ -230,7 +230,7 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (30 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control and its segments, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`) | Per-widget resolved fields |
+//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
@@ -240,10 +240,9 @@
 //! bar's; and the window frame's colours, which iced takes no colour for
 //! (`decorations: bool`, `iced_core` 0.14 `window/settings.rs:65-66`). A
 //! dialog, which neither has either, is the consumer's `container`, which
-//! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance`,
-//! `.min_width` and `.icon_size` reach nothing: no iced widget animates a
-//! dialog's entrance, a `Container` takes no minimum width, and no dialog
-//! draws a type icon. An `iced_aw` `Card` is not the dialog's receiver: its
+//! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance` and
+//! `.icon_size` reach nothing: no iced widget animates a dialog's entrance,
+//! and iced has no dialog widget to draw a type icon. An `iced_aw` `Card` is not the dialog's receiver: its
 //! head, body and foot take styles of their own, and only its maxima match
 //! a dialog's.
 //!
@@ -1527,12 +1526,13 @@ pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 /// `max_width` and `max_height` its only bounds), so the floor goes in the
 /// content: beside it, in a row, a `space` as tall as this less the
 /// container's vertical padding ([`dialog_padding`]), which the row grows
-/// to:
+/// to; [`dialog_min_width`]'s floor goes below it, in a column:
 ///
 /// ```rust,ignore
 /// let padding = native_theme_iced::dialog_padding(&resolved, default);
-/// let floor = (native_theme_iced::dialog_min_height(&resolved) - padding.y()).max(0.0);
-/// container(row![content, space().height(floor)])
+/// let floor_y = (native_theme_iced::dialog_min_height(&resolved) - padding.y()).max(0.0);
+/// let floor_x = (native_theme_iced::dialog_min_width(&resolved) - padding.x()).max(0.0);
+/// container(column![row![content, space().height(floor_y)], space().width(floor_x)])
 ///     .padding(padding)
 ///     .max_width(native_theme_iced::dialog_max_width(&resolved))
 ///     .max_height(native_theme_iced::dialog_max_height(&resolved))
@@ -1541,6 +1541,16 @@ pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 #[must_use]
 pub fn dialog_min_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
     resolved.dialog.min_height
+}
+
+/// Returns `dialog.min_width`, a dialog's least width in logical pixels.
+/// A `Container` takes no minimum, so the floor goes in the content, as
+/// [`dialog_min_height`]'s does: below it, in a column, a `space` as wide
+/// as this less the container's horizontal padding ([`dialog_padding`]),
+/// which the column grows to (the example at [`dialog_min_height`]).
+#[must_use]
+pub fn dialog_min_width(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
+    resolved.dialog.min_width
 }
 
 /// Returns `dialog.button_gap`, the space between a dialog's buttons in
@@ -2467,6 +2477,7 @@ mod tests {
         assert_eq!(dialog_max_width(&resolved), 372.0);
         assert_eq!(dialog_max_height(&resolved), 600.0);
         assert_eq!(dialog_min_height(&resolved), 140.0);
+        assert_eq!(dialog_min_width(&resolved), 300.0);
         assert_eq!(dialog_button_gap(&resolved), 12.0);
         assert_eq!(
             dialog_button_order(&resolved),

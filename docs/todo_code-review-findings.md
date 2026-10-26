@@ -13736,3 +13736,14 @@ the preset's stated sizes (the facts' ≈), 14pt scales them, a pixel font scale
 text-scaling factor leaves them unchanged (M2e: applied once, by the connectors), and a font with
 no size states none.
 **Status:** done, 67aa7b4b.
+- *C-01 review follow-up (2026-10-26, the controller's review of fad5f7f7):* I1:
+  `dialog.min_width` reaches iced as `dialog_min_height` does, a floor in the content (a
+  `space` as wide as it less the horizontal padding, below the content in a column), so it is
+  no longer `UNREACHABLE`: `dialog_min_width`, with its doc, the unit test and the coverage
+  line, and gpui and egui `absent` parity exceptions; the iced showcase's dialog takes the floor
+  (adwaita: 300 under the 372 the dialog is, so its geometry is unchanged). M2: the C-01 entry
+  above and the first CHANGELOG and archive texts said the gap and order take "the gpui and egui
+  names"; they take gpui's, and egui has `dialog_button_order` alone (the CHANGELOG line and the
+  archive's closing line are corrected). M3: `dialog.icon_size`'s evidence says no sibling
+  exposes it and iced has no dialog widget to draw a type icon. M4: the showcase's
+  `dialog_padding` doc names `native_theme_iced::dialog_padding`.
