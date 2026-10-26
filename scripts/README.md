@@ -423,7 +423,9 @@ python3 scripts/check_docsrs.py native-theme
 Checks that every widget the toolkits offer is rendered by the matching
 showcase. Discovers the widgets from the dependencies' own sources through
 `cargo metadata` (the iced manifest with `--features iced_aw`, so the optional
-dependency is in the graph), then requires each one to be either shown in the
+dependency is in the graph; gpui-component's widgets by their `RenderOnce` /
+`IntoElement` impls and their `IntoElement` or `IntoPlot` derives, the charts
+deriving `IntoPlot`), then requires each one to be either shown in the
 showcase or listed with a reason in `docs/showcase-exceptions.toml`. Exits 0
 when clean, 1 on a missing widget or a stale exception, 2 when a toolkit's
 package is absent from the metadata, the discovery finds no widget in it, or
@@ -655,6 +657,35 @@ Requires Python 3.11+ (for `tomllib`).
 ```sh
 python3 scripts/check_todo_citations.py
 python3 scripts/check_todo_citations.py --self-test
+```
+
+## check_preset_citations.py
+
+Checks the `docs/platform-facts.md` citations in the presets' comments: a
+comment that starts with `platform-facts.md:N` (a range `N-M`, or further
+`, :K` lines, each with its `(§x)`) must cite the row of the value below it.
+The row's backticked name must be the value's key path inside its widget,
+`<sub-table>.<key>` without `_px`, `_ms` or `_pt`
+(`[light.button.border] color` is `border.color`), and the row must lie in the
+section the comment states; a citation of several rows also needs each row to
+name a value it covers. A line number drifts with every edit above it, which
+is how 52 of material-3's comments in each variant came to cite a
+neighbouring row. The stated cross-row citations pass by rules (a disabled
+colour citing `disabled_opacity`, an unchecked or hovered fill citing the
+widget's `background_color`, ...), and the rest by the script's `EXCEPTIONS`
+list, keyed by preset, key path and cited row, each with its reason; an
+exception no citation uses is a finding. The script's docstring states the
+whole rule. Prints one line per finding (preset:line, key path, cited line,
+what is wrong) and the counts per preset, and exits 0 when there is none, 1
+when there are some, 2 on an input it cannot read. `--self-test` runs the
+rule on a synthetic facts file and preset. `check_release.sh` (both modes) and
+`ci.yml`'s parity job run it and its self-test.
+
+Requires Python 3.11+ (for `tomllib`).
+
+```sh
+python3 scripts/check_preset_citations.py
+python3 scripts/check_preset_citations.py --self-test
 ```
 
 ## update_icons.sh

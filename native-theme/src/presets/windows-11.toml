@@ -132,7 +132,7 @@ hover_text_color = "#000000e4"
 active_text_color = "#0000009e"
 # ButtonForegroundDisabled = TextFillColorDisabled #5C000000 (Button_themeresources.xaml:135)
 disabled_text_color = "#0000005c"
-# platform-facts.md:1192 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #4DF9F9F9, flattened as the hover: 249 × 77/255 + 243 × 178/255 = 244.8 → #f5f5f5
+# platform-facts.md:1196 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #4DF9F9F9, flattened as the hover: 249 × 77/255 + 243 × 178/255 = 244.8 → #f5f5f5
 active_background = "#f5f5f5"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#f9f9f900"
@@ -732,7 +732,7 @@ hover_text_color = "#ffffff"
 active_text_color = "#ffffffc5"
 # ButtonForegroundDisabled = TextFillColorDisabled #5DFFFFFF (Button_themeresources.xaml:37)
 disabled_text_color = "#ffffff5d"
-# platform-facts.md:1192 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #08FFFFFF, flattened as the hover: 255 × 8/255 + 32 × 247/255 = 39.0 → #272727
+# platform-facts.md:1196 (§2.3): ButtonBackgroundPressed = ControlFillColorTertiary #08FFFFFF, flattened as the hover: 255 × 8/255 + 32 × 247/255 = 39.0 → #272727
 active_background = "#272727"
 # soft_option: Fluent ControlFillColorDisabled
 disabled_background = "#33333300"

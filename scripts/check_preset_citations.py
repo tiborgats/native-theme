@@ -86,17 +86,11 @@ from pathlib import Path
 PRESETS = Path("native-theme/src/presets")
 FACTS = Path("docs/platform-facts.md")
 
-PRESSED_IN_HOVER_ROW = (
-    "the hover row states the pressed fill too: `ButtonBackgroundPressed`, flattened the same "
-    "way, \"the preset's `active_background`\""
-)
 SEVERITY_TEXT_RANGE = (
     "the range spans the four severity text colours, between which the fills' rows lie; the "
     "dark variant's `info_color` and `info_text_color` follow `info_color`'s own citation"
 )
 EXCEPTIONS: dict[tuple[str, str, str], str] = {
-    ("windows-11.toml", "light.button.active_background", "hover_background"): PRESSED_IN_HOVER_ROW,
-    ("windows-11.toml", "dark.button.active_background", "hover_background"): PRESSED_IN_HOVER_ROW,
     ("windows-11.toml", "dark.defaults.danger_text_color", "info_color"): SEVERITY_TEXT_RANGE,
     ("windows-11.toml", "dark.defaults.danger_text_color", "info_text_color"): SEVERITY_TEXT_RANGE,
 }
