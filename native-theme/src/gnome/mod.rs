@@ -1554,6 +1554,38 @@ mod tests {
         assert!(result.accessibility.high_contrast);
     }
 
+    /// A portal accent other than adwaita's default reaches the four accent fills
+    /// through inheritance: adwaita states none of them, as libadwaita fills a
+    /// checked check and radio, an on switch, a scale's highlight and a progress
+    /// bar's with `--accent-bg-color`, the portal's accent (libadwaita 1.10.0
+    /// `src/stylesheet/widgets/_checks.scss:54`, `_switch.scss:43`,
+    /// `_scale.scss:15`, `_progress-bar.scss:31`; `_colors.scss:166`), so they
+    /// resolve to it.
+    #[test]
+    fn a_portal_accent_reaches_the_accent_fills() {
+        let mut data = default_gnome_data();
+        data.accent_rgb = Some((0.5, 0.25, 0.75));
+        let reader = build_gnome_spec_pure(&data);
+        let accent = reader_mode(&reader).defaults.accent_color;
+        assert!(accent.is_some());
+        let sys = crate::pipeline::run_pipeline(reader, "adwaita").unwrap();
+        let r = &sys.light;
+        assert_ne!(
+            Some(r.defaults.accent_color),
+            crate::Theme::preset("adwaita")
+                .ok()
+                .and_then(|t| t.light)
+                .and_then(|l| l.defaults.accent_color),
+            "the portal's accent is adwaita's default, so this test proves nothing"
+        );
+        let accent = accent.expect("the portal accent was read");
+        assert_eq!(r.defaults.accent_color, accent);
+        assert_eq!(r.checkbox.checked_background, accent);
+        assert_eq!(r.switch.checked_background, accent);
+        assert_eq!(r.slider.fill_color, accent);
+        assert_eq!(r.progress_bar.fill_color, accent);
+    }
+
     /// `size` in points, `None` for a pixel size or none.
     fn pt(size: Option<FontSize>) -> Option<f32> {
         match size {

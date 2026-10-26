@@ -767,6 +767,33 @@ mod tests {
         assert_eq!(dark.defaults.accent_color, Some(red));
     }
 
+    /// A non-default accent reaches the four accent fills through inheritance:
+    /// macOS draws a checked checkbox and radio, an on switch, a slider's value
+    /// and a progress bar in `controlAccentColor` (docs/platform-facts.md:1239,
+    /// :1521, :1317, :1333, ← `defaults.accent_color`), the macOS presets state
+    /// none of them, and the reader writes only the accent.
+    #[test]
+    fn a_custom_accent_reaches_the_accent_fills() {
+        let red = crate::Rgba::rgb(255, 59, 48);
+        let defaults = |accent| crate::ThemeDefaults {
+            accent_color: Some(accent),
+            ..Default::default()
+        };
+        let theme = build_theme(defaults(red), defaults(red), &sample_widget_fonts());
+        for preset in ["macos-monterey", "macos-tahoe"] {
+            let mut mode = crate::Theme::preset(preset).unwrap().light.unwrap();
+            assert_ne!(mode.defaults.accent_color, Some(red), "{preset}");
+            mode.merge(theme.light.as_ref().unwrap());
+            let r = mode
+                .into_resolved(&crate::ResolutionContext::for_tests())
+                .unwrap();
+            assert_eq!(r.checkbox.checked_background, red, "{preset}");
+            assert_eq!(r.switch.checked_background, red, "{preset}");
+            assert_eq!(r.slider.fill_color, red, "{preset}");
+            assert_eq!(r.progress_bar.fill_color, red, "{preset}");
+        }
+    }
+
     /// The reader states only what macOS reports (M1-T1-02): `build_theme`
     /// carries the read colours and fonts and no design constant.
     #[test]

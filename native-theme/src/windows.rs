@@ -400,6 +400,20 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     progress_border.line_width = Some(1.0);
     progress_border.color = Some(colors.window_text);
     variant.progress_bar.track_color = Some(colors.window_bg);
+    // The accent controls' fills: a checked checkbox `SystemColorHighlightColor`
+    // (CheckBox_themeresources.xaml:145), an on switch the same (ToggleSwitch :87), a
+    // progress bar the same (ProgressBar_themeresources.xaml:14), and a slider's value
+    // `SystemControlHighlightAccentBrush` (Slider_themeresources.xaml:71; generic.xaml:2055).
+    // The radio's checked fill is `SystemColorHighlightTextColor` (RadioButton :88), which
+    // the field the two share cannot also hold: the checkbox's stands
+    // (docs/platform-facts.md:1239).
+    variant.checkbox.checked_background = Some(colors.highlight);
+    variant.switch.checked_background = Some(colors.highlight);
+    variant.slider.fill_color = Some(colors.highlight);
+    variant.progress_bar.fill_color = Some(colors.highlight);
+    // A hovered on switch, `ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColor`
+    // (ToggleSwitch_themeresources.xaml:88), a replacing fill.
+    variant.switch.hover_checked_background = Some(colors.btn_face);
 }
 
 /// Read accessibility settings (WIN-04).
@@ -509,6 +523,15 @@ fn build_theme(
     let primary_bg = if dark { light2 } else { dark1 }.unwrap_or(accent);
     variant.button.primary_background = Some(primary_bg);
     variant.button.checked_background = Some(primary_bg);
+    // Every accent control is filled with the same `AccentFillColorDefault`: a checked
+    // checkbox and radio, an on switch, a slider's value and a progress bar
+    // (CheckBox_themeresources.xaml:233, RadioButton_themeresources.xaml:146,
+    // ToggleSwitch_themeresources.xaml:143, Slider_themeresources.xaml:128,
+    // ProgressBar_themeresources.xaml:22; docs/platform-facts.md:1239, :1521, :1317, :1333).
+    variant.checkbox.checked_background = Some(primary_bg);
+    variant.switch.checked_background = Some(primary_bg);
+    variant.slider.fill_color = Some(primary_bg);
+    variant.progress_bar.fill_color = Some(primary_bg);
     // `HyperlinkForeground` = `AccentTextFillColorPrimary`: AccentDark2 light,
     // AccentLight3 dark (docs/platform-facts.md:1058).
     variant.defaults.link_color = if dark { light3 } else { dark2 };
@@ -522,6 +545,10 @@ fn build_theme(
     if !high_contrast {
         variant.link.hover_text_color = if dark { light3 } else { dark3 };
         variant.link.active_text_color = if dark { light2 } else { dark1 };
+        // A focused text box's bottom line, `TextControlElevationBorderFocusedBrush`: the
+        // same shade (docs/platform-facts.md:1219). Not under high contrast, whose TextBox
+        // dictionary leaves the key out; the preset's value stands there.
+        variant.input.focus_border_color = Some(primary_bg);
     }
 
     // --- Defaults-level font (message font) ---
@@ -863,6 +890,54 @@ mod tests {
         Some(crate::Rgba::rgb(0, 0, 6)),
     ];
 
+    /// The fields the accent fill reaches beside the buttons: the four accent
+    /// controls' fills and the focused text box's line.
+    fn accent_fills(v: &crate::ThemeMode) -> [(&'static str, Option<crate::Rgba>); 5] {
+        [
+            ("checkbox.checked_background", v.checkbox.checked_background),
+            ("switch.checked_background", v.switch.checked_background),
+            ("slider.fill_color", v.slider.fill_color),
+            ("progress_bar.fill_color", v.progress_bar.fill_color),
+            ("input.focus_border_color", v.input.focus_border_color),
+        ]
+    }
+
+    /// windows-11's hovered on switch, the window at alpha 25 laid over the
+    /// track as the model lays a hover (rule C17), composites to WinUI's
+    /// flattened `ToggleSwitchFillOnPointerOver` for the default accent: the
+    /// shade at 0.9 over the window, #1875c5 light and #48b2e9 dark
+    /// (`windows-11.toml` `[light.switch] hover_checked_background`), within
+    /// one level per channel.
+    #[test]
+    fn the_windows_11_switch_hover_composites_to_winuis() {
+        for (mode, winui) in [
+            (crate::ColorMode::Light, [0x18_u8, 0x75, 0xc5]),
+            (crate::ColorMode::Dark, [0x48, 0xb2, 0xe9]),
+        ] {
+            let r = crate::Theme::preset("windows-11")
+                .unwrap()
+                .into_variant(mode)
+                .unwrap()
+                .into_resolved(&crate::ResolutionContext::for_tests())
+                .unwrap();
+            let s = &r.switch;
+            let layer = s
+                .hover_checked_background
+                .expect("windows-11 states the hover");
+            let [red, green, blue, _] = crate::color::composite_over(
+                layer.to_f32_array(),
+                s.checked_background.to_f32_array(),
+            );
+            let got = crate::Rgba::from_f32(red, green, blue, 1.0);
+            for (channel, (got, want)) in [got.r, got.g, got.b].into_iter().zip(winui).enumerate() {
+                assert!(
+                    got.abs_diff(want) <= 1,
+                    "{mode:?} channel {channel}: {got} against WinUI's {want}"
+                );
+            }
+        }
+    }
+
     /// Light mode: the accent fill is AccentDark1, the link AccentDark2, the
     /// informational fill the accent (docs/platform-facts.md:1188, :1194,
     /// :1058, :1090).
@@ -882,6 +957,11 @@ mod tests {
         assert_eq!(variant.defaults.accent_color, Some(accent));
         assert_eq!(variant.button.primary_background, SHADES[0]);
         assert_eq!(variant.button.checked_background, SHADES[0]);
+        // The accent controls and the focused text box take the same shade
+        // (docs/platform-facts.md:1239, :1521, :1317, :1333, :1219).
+        for (field, value) in accent_fills(variant) {
+            assert_eq!(value, SHADES[0], "{field}");
+        }
         assert_eq!(variant.defaults.link_color, SHADES[1]);
         assert_eq!(variant.link.hover_text_color, SHADES[2]);
         assert_eq!(variant.link.active_text_color, SHADES[0]);
@@ -906,6 +986,9 @@ mod tests {
         assert_eq!(variant.defaults.accent_color, Some(accent));
         assert_eq!(variant.button.primary_background, SHADES[4]);
         assert_eq!(variant.button.checked_background, SHADES[4]);
+        for (field, value) in accent_fills(variant) {
+            assert_eq!(value, SHADES[4], "{field}");
+        }
         assert_eq!(variant.defaults.link_color, SHADES[5]);
         assert_eq!(variant.link.hover_text_color, SHADES[5]);
         assert_eq!(variant.link.active_text_color, SHADES[4]);
@@ -1112,6 +1195,14 @@ mod tests {
         // text, and the user's accent shades are not written under high contrast.
         assert_eq!(v.link.hover_text_color, None);
         assert_eq!(v.link.active_text_color, None);
+        // The accent controls take the highlight, the hovered on switch the
+        // button face; the text box's focus line is not written (its
+        // HighContrast dictionary leaves the key out).
+        for (field, value) in accent_fills(v).into_iter().take(4) {
+            assert_eq!(value, Some(c.highlight), "{field}");
+        }
+        assert_eq!(v.switch.hover_checked_background, Some(c.btn_face));
+        assert_eq!(v.input.focus_border_color, None);
         assert_eq!(v.defaults.info_color, Some(c.window_text));
         assert_eq!(
             v.progress_bar.border.as_ref().and_then(|b| b.line_width),

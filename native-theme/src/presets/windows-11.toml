@@ -212,6 +212,11 @@ disabled_background = "#f9f9f900"
 unchecked_background = "#00000006"
 # platform-facts.md:1248 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
 unchecked_border_color = "#00000072"
+# platform-facts.md:1239 (§2.5): CheckBoxCheckBackgroundFillChecked = AccentFillColorDefault = SystemAccentColorDark1
+# (CheckBox_themeresources.xaml:233, Common_themeresources_any.xaml:329 at microsoft-ui-xaml 8463f45),
+# UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2, probe.toml:755); the
+# radio's RadioButtonOuterEllipseCheckedFill is the same brush (RadioButton_themeresources.xaml:146)
+checked_background = "#0067c0"
 
 [light.checkbox.border]
 # platform-facts.md:1236 (§2.5): no shadow
@@ -259,6 +264,10 @@ thumb_color = "#ffffff"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
+# platform-facts.md:1317 (§2.9): SliderTrackValueFill = AccentFillColorDefault = SystemAccentColorDark1
+# (Slider_themeresources.xaml:128, Common_themeresources_any.xaml:329 at microsoft-ui-xaml 8463f45),
+# UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2, probe.toml:755)
+fill_color = "#0067c0"
 # SliderTrackValueFillDisabled = AccentFillColorDisabled #37000000 (Slider_themeresources.xaml:131;
 # Common_themeresources_any.xaml:242 at microsoft-ui-xaml 8463f45)
 disabled_fill_color = "#00000037"
@@ -266,6 +275,10 @@ disabled_fill_color = "#00000037"
 disabled_track_color = "#00000051"
 
 [light.progress_bar]
+# platform-facts.md:1333 (§2.10): ProgressBarForeground = AccentFillColorDefault = SystemAccentColorDark1
+# (ProgressBar_themeresources.xaml:22, Common_themeresources_any.xaml:329 at microsoft-ui-xaml 8463f45),
+# UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2, probe.toml:755)
+fill_color = "#0067c0"
 # platform-facts.md:1334 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #72000000
 track_color = "#00000072"
 track_height_px = 1.0
@@ -442,6 +455,10 @@ divider_width_px = 1.0
 # divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1469-1470)
 
 [light.switch]
+# platform-facts.md:1521 (§2.21): ToggleSwitchFillOn = AccentFillColorDefault = SystemAccentColorDark1
+# (ToggleSwitch_themeresources.xaml:143, Common_themeresources_any.xaml:329 at microsoft-ui-xaml 8463f45),
+# UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2, probe.toml:755)
+checked_background = "#0067c0"
 # platform-facts.md:1522 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000, inside
 # ToggleSwitchStrokeOff (unchecked_track_border_color)
 unchecked_background = "#00000006"
@@ -454,12 +471,14 @@ track_height_px = 20.0
 thumb_diameter_px = 12.0
 track_radius_px = 10.0
 # soft_option interactive state colors (Windows Fluent ToggleSwitch)
-# ToggleSwitchFillOnPointerOver = AccentFillColorSecondary, SystemAccentColorDark1 at opacity 0.9
-# (ToggleSwitch_themeresources.xaml:144; Common_themeresources_any.xaml:330 at microsoft-ui-xaml
-# 8463f45), UISettings AccentDark1 #0067c0 for the accent above (OS probe, Windows 11 25H2); it
-# replaces the rest fill, flattened over background_color: 0 × 0.9 + 243 × 0.1 = 24.3,
-# 103 × 0.9 + 24.3 = 117.0, 192 × 0.9 + 24.3 = 197.1 → #1875c5
-hover_checked_background = "#1875c5"
+# platform-facts.md:1527 (§2.21): ToggleSwitchFillOnPointerOver = AccentFillColorSecondary,
+# SystemAccentColorDark1 at opacity 0.9 (ToggleSwitch_themeresources.xaml:144; Common_themeresources_any.xaml:330
+# at microsoft-ui-xaml 8463f45), in place of the rest fill over the window: 0.9 × S + 0.1 × W. As the
+# model's hover, a layer over the track S (checked_background), that is the window W (background_color
+# #f3f3f3) at alpha 0.1, here 25/255, so it follows any accent; over #0067c0: 243 × 25/255 = 23.8 → 24,
+# 103 × 230/255 + 23.8 = 116.7 → 117, 192 × 230/255 + 23.8 = 197.0 → 197, #1875c5, as WinUI's
+# 0 × 0.9 + 24.3 = 24.3, 103 × 0.9 + 24.3 = 117.0, 192 × 0.9 + 24.3 = 197.1
+hover_checked_background = "#f3f3f319"
 # ToggleSwitchFillOffPointerOver = ControlAltFillColorTertiary #0F000000 (ToggleSwitch_themeresources.xaml:136; Common_themeresources_any.xaml:235 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened over background_color: 243 × 240/255 = 228.7 → #e5e5e5
 hover_unchecked_background = "#e5e5e5"
 # ToggleSwitchFillOnDisabled = AccentFillColorDisabled #37000000 (ToggleSwitch_themeresources.xaml:146;
@@ -812,6 +831,11 @@ disabled_background = "#33333300"
 unchecked_background = "#00000019"
 # platform-facts.md:1248 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
 unchecked_border_color = "#ffffff8b"
+# platform-facts.md:1239 (§2.5): CheckBoxCheckBackgroundFillChecked = AccentFillColorDefault = SystemAccentColorLight2
+# (CheckBox_themeresources.xaml:57, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
+# UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758); the
+# radio's RadioButtonOuterEllipseCheckedFill is the same brush (RadioButton_themeresources.xaml:30)
+checked_background = "#4cc2ff"
 
 [dark.checkbox.border]
 # platform-facts.md:1236 (§2.5): no shadow
@@ -859,6 +883,10 @@ thumb_color = "#454545"
 track_height_px = 4.0
 thumb_diameter_px = 18.0
 tick_mark_length_px = 4.0
+# platform-facts.md:1317 (§2.9): SliderTrackValueFill = AccentFillColorDefault = SystemAccentColorLight2
+# (Slider_themeresources.xaml:24, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
+# UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758)
+fill_color = "#4cc2ff"
 # SliderTrackValueFillDisabled = AccentFillColorDisabled #28FFFFFF (Slider_themeresources.xaml:27;
 # Common_themeresources_any.xaml:38 at microsoft-ui-xaml 8463f45)
 disabled_fill_color = "#ffffff28"
@@ -866,6 +894,10 @@ disabled_fill_color = "#ffffff28"
 disabled_track_color = "#ffffff3f"
 
 [dark.progress_bar]
+# platform-facts.md:1333 (§2.10): ProgressBarForeground = AccentFillColorDefault = SystemAccentColorLight2
+# (ProgressBar_themeresources.xaml:6, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
+# UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758)
+fill_color = "#4cc2ff"
 # platform-facts.md:1334 (§2.10): ProgressBarBackground = ControlStrongStrokeColorDefault #8BFFFFFF
 track_color = "#ffffff8b"
 track_height_px = 1.0
@@ -1041,6 +1073,10 @@ divider_width_px = 1.0
 # divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1469-1470)
 
 [dark.switch]
+# platform-facts.md:1521 (§2.21): ToggleSwitchFillOn = AccentFillColorDefault = SystemAccentColorLight2
+# (ToggleSwitch_themeresources.xaml:23, Common_themeresources_any.xaml:125 at microsoft-ui-xaml 8463f45),
+# UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2, probe.toml:758)
+checked_background = "#4cc2ff"
 # platform-facts.md:1522 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000, inside
 # ToggleSwitchStrokeOff (unchecked_track_border_color)
 unchecked_background = "#00000019"
@@ -1053,12 +1089,14 @@ track_height_px = 20.0
 thumb_diameter_px = 12.0
 track_radius_px = 10.0
 # soft_option interactive state colors (Windows Fluent ToggleSwitch)
-# ToggleSwitchFillOnPointerOver = AccentFillColorSecondary, SystemAccentColorLight2 at opacity 0.9
-# (ToggleSwitch_themeresources.xaml:24; Common_themeresources_any.xaml:126 at microsoft-ui-xaml
-# 8463f45), UISettings AccentLight2 #4cc2ff for the accent above (OS probe, Windows 11 25H2); it
-# replaces the rest fill, flattened over background_color: 76 × 0.9 + 32 × 0.1 = 71.6,
-# 194 × 0.9 + 3.2 = 177.8, 255 × 0.9 + 3.2 = 232.7 → #48b2e9
-hover_checked_background = "#48b2e9"
+# platform-facts.md:1527 (§2.21): ToggleSwitchFillOnPointerOver = AccentFillColorSecondary,
+# SystemAccentColorLight2 at opacity 0.9 (ToggleSwitch_themeresources.xaml:24; Common_themeresources_any.xaml:126
+# at microsoft-ui-xaml 8463f45), in place of the rest fill over the window: 0.9 × S + 0.1 × W. As the
+# model's hover, a layer over the track S (checked_background), that is the window W (background_color
+# #202020) at alpha 0.1, here 25/255, so it follows any accent; over #4cc2ff: 76 × 230/255 + 3.1 = 71.7 → 72,
+# 194 × 230/255 + 3.1 = 178.1 → 178, 255 × 230/255 + 3.1 = 233.1 → 233, #48b2e9, as WinUI's
+# 76 × 0.9 + 3.2 = 71.6, 194 × 0.9 + 3.2 = 177.8, 255 × 0.9 + 3.2 = 232.7
+hover_checked_background = "#20202019"
 # ToggleSwitchFillOffPointerOver = ControlAltFillColorTertiary #0BFFFFFF (ToggleSwitch_themeresources.xaml:16; Common_themeresources_any.xaml:31 at microsoft-ui-xaml 8463f45) replaces the rest fill; flattened over background_color: 255 × 11/255 + 32 × 244/255 = 41.6 → #2a2a2a
 hover_unchecked_background = "#2a2a2a"
 # ToggleSwitchFillOnDisabled = AccentFillColorDisabled #28FFFFFF (ToggleSwitch_themeresources.xaml:26;

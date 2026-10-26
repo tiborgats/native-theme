@@ -430,34 +430,39 @@ accent_color = "#00ff00"
                      platform-facts does not derive it from the accent"
                 );
                 // checkbox.checked_background is derived from accent, except on
-                // KDE, where Breeze tints the button colour instead
+                // KDE, where Breeze tints the button colour instead, and on
+                // Windows, where WinUI fills it with AccentFillColorDefault
                 // (docs/platform-facts.md:1239, §2.5)
                 assert_eq!(
                     variant.checkbox.checked_background.is_some(),
-                    *name == "kde-breeze",
+                    matches!(*name, "kde-breeze" | "windows-11"),
                     "preset '{name}' {label}.checkbox.checked_background: stated only where \
                      platform-facts does not derive it from the accent"
                 );
-                // slider.fill is derived from accent
-                assert!(
-                    variant.slider.fill_color.is_none(),
-                    "preset '{name}' {label}.slider.fill_color should be None (derived)"
+                // slider.fill is derived from accent, except on Windows
+                // (AccentFillColorDefault, docs/platform-facts.md:1317, §2.9)
+                assert_eq!(
+                    variant.slider.fill_color.is_some(),
+                    *name == "windows-11",
+                    "preset '{name}' {label}.slider.fill_color: stated only where \
+                     platform-facts does not derive it from the accent"
                 );
                 // progress_bar.fill is derived from accent, except on KDE,
-                // where Breeze lays the accent at 0.7 over the window
-                // (docs/platform-facts.md:1333, §2.10)
+                // where Breeze lays the accent at 0.7 over the window, and on
+                // Windows (AccentFillColorDefault; docs/platform-facts.md:1333, §2.10)
                 assert_eq!(
                     variant.progress_bar.fill_color.is_some(),
-                    *name == "kde-breeze",
+                    matches!(*name, "kde-breeze" | "windows-11"),
                     "preset '{name}' {label}.progress_bar.fill_color: stated only where \
                      platform-facts does not derive it from the accent"
                 );
                 // switch.checked_background is derived from accent, except on
                 // KDE, where qqc2-desktop-style lays the highlight at 0.5 over
-                // the off track (docs/platform-facts.md §2.21 checked_background)
+                // the off track, and on Windows, AccentFillColorDefault
+                // (docs/platform-facts.md §2.21 checked_background)
                 assert_eq!(
                     variant.switch.checked_background.is_some(),
-                    *name == "kde-breeze",
+                    matches!(*name, "kde-breeze" | "windows-11"),
                     "preset '{name}' {label}.switch.checked_background: stated only where \
                      platform-facts does not derive it from the accent"
                 );

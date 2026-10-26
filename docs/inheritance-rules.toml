@@ -185,7 +185,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # checkbox (§2.5)
 "checkbox.background_color"                  = "defaults.background_color"
-"checkbox.checked_background"                = "defaults.accent_color"
+"checkbox.checked_background"                = "defaults.accent_color"        # see wrong_safety_nets
 "checkbox.indicator_color"                   = "defaults.accent_text_color"  # the mark sits on checked_background
 "checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
 "checkbox.disabled_text_color"               = "defaults.disabled_text_color"
@@ -206,13 +206,13 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "scrollbar.thumb_hover_color"                = "defaults.muted_color"         # see wrong_safety_nets
 
 # slider (§2.9)
-"slider.fill_color"                          = "defaults.accent_color"
+"slider.fill_color"                          = "defaults.accent_color"        # see wrong_safety_nets
 "slider.track_color"                         = "defaults.muted_color"
 "slider.thumb_color"                         = "defaults.surface_color"
 "slider.disabled_opacity"                    = "defaults.disabled_opacity"
 
 # progress_bar (§2.10)
-"progress_bar.fill_color"                    = "defaults.accent_color"
+"progress_bar.fill_color"                    = "defaults.accent_color"        # see wrong_safety_nets
 "progress_bar.track_color"                   = "defaults.muted_color"
 
 # tab (§2.11)
@@ -254,7 +254,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "separator.line_width"                       = "defaults.border.line_width"
 
 # switch (§2.21)
-"switch.checked_background"                  = "defaults.accent_color"
+"switch.checked_background"                  = "defaults.accent_color"        # see wrong_safety_nets
 "switch.thumb_background"                    = "defaults.surface_color"       # see wrong_safety_nets
 "switch.disabled_opacity"                    = "defaults.disabled_opacity"
 
@@ -487,13 +487,13 @@ fields = [
 
 # ─── Wrong safety nets ────────────────────────────────────────────────────
 #
-# Fields where resolve() currently inherits (via [uniform],
-# [font_inheritance] or [border_inheritance] above), or once did
-# (list.alternate_row_background, marked `removed`), but the inheritance is
-# known to produce wrong results. The preset MUST provide the actual value.
+# Fields where resolve() inherits (via [uniform], [font_inheritance] or [border_inheritance]
+# above), or once did (list.alternate_row_background, marked `removed`), but the
+# inheritance gives some platforms a wrong value. The preset of each platform an entry's
+# why_wrong names MUST provide the actual value; a preset whose platform the inheritance
+# gives its value keeps inheriting, so an overlay of the source re-derives the field.
 # These are listed in the inheritance doc as "cannot be universally derived."
-# Each `# see wrong_safety_nets` comment in [uniform] names one of these keys
-# (scripts/check_wrong_safety_nets.py).
+# Each `# see wrong_safety_nets` comment in [uniform] names one (scripts/check_wrong_safety_nets.py).
 
 [wrong_safety_nets]
 
@@ -625,6 +625,22 @@ why_wrong     = "No platform shadows a segmented control: macOS, Windows, KDE an
 [wrong_safety_nets."expander.border.shadow_enabled"]
 inherits_from = "defaults.border.shadow_enabled" # via border_inheritance
 why_wrong     = "macOS, Windows, KDE and Material shadow no expander; GNOME's shadow is the boxed-list card's the AdwExpanderRow sits in (platform-facts.md:1682, §2.27); §2.1.6 gives the defaults' yes (:1121)"
+
+[wrong_safety_nets."checkbox.checked_background"]
+inherits_from = "defaults.accent_color"
+why_wrong     = "Windows fills a checked box with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE lays the highlight at 0.3 over the button fill (platform-facts.md:1239, §2.5)"
+
+[wrong_safety_nets."slider.fill_color"]
+inherits_from = "defaults.accent_color"
+why_wrong     = "Windows fills a slider's value with AccentFillColorDefault, the accent's Dark1 / Light2 shade (platform-facts.md:1317, §2.9)"
+
+[wrong_safety_nets."progress_bar.fill_color"]
+inherits_from = "defaults.accent_color"
+why_wrong     = "Windows fills a progress bar with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE draws the accent at alpha 0.7 over the window (platform-facts.md:1333, §2.10)"
+
+[wrong_safety_nets."switch.checked_background"]
+inherits_from = "defaults.accent_color"
+why_wrong     = "Windows fills an on switch with AccentFillColorDefault, the accent's Dark1 / Light2 shade, and KDE lays the highlight at alpha 0.5 over the off track (platform-facts.md:1521, §2.21)"
 
 # ─── TextScale inheritance ────────────────────────────────────────────────
 #

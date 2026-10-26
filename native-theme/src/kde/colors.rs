@@ -745,6 +745,64 @@ inactiveForeground=161,169,177
         assert_eq!(v.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
     }
 
+    /// A scheme's accent other than Breeze's reaches the slider's value through
+    /// inheritance (docs/platform-facts.md:1317, KDE ← `defaults.accent_color`),
+    /// which kde-breeze does not state, and its selection colour reaches the
+    /// three blends the reader writes, the checked checkbox, the on switch and
+    /// the progress bar.
+    #[test]
+    fn a_custom_accent_reaches_the_accent_fills() {
+        let breeze = populate_fixture(BREEZE_DARK);
+        let custom = BREEZE_DARK
+            .replace(
+                "[Colors:Selection]\nBackgroundNormal=61,174,233",
+                "[Colors:Selection]\nBackgroundNormal=200,40,90",
+            )
+            .replace("DecorationFocus=61,174,233", "DecorationFocus=200,40,90");
+        assert_ne!(custom, BREEZE_DARK, "the fixture's accent moved");
+        let v = populate_fixture(&custom);
+        assert_eq!(
+            v.slider.fill_color, None,
+            "the reader leaves the slider to inheritance"
+        );
+        let mut mode = crate::Theme::preset("kde-breeze")
+            .ok()
+            .and_then(|t| t.dark)
+            .unwrap_or_default();
+        assert_eq!(
+            mode.slider.fill_color, None,
+            "kde-breeze states no slider fill"
+        );
+        mode.merge(&v);
+        let r = mode
+            .into_resolved(&crate::ResolutionContext::for_tests())
+            .unwrap();
+        assert_eq!(r.slider.fill_color, Rgba::rgb(200, 40, 90));
+        for (field, ours, breezes) in [
+            (
+                "checkbox",
+                v.checkbox.checked_background,
+                breeze.checkbox.checked_background,
+            ),
+            (
+                "switch",
+                v.switch.checked_background,
+                breeze.switch.checked_background,
+            ),
+            (
+                "progress_bar",
+                v.progress_bar.fill_color,
+                breeze.progress_bar.fill_color,
+            ),
+        ] {
+            assert!(ours.is_some(), "{field}: no fill");
+            assert_ne!(
+                ours, breezes,
+                "{field}: the custom selection colour did not reach it"
+            );
+        }
+    }
+
     #[test]
     fn test_background_from_window() {
         let v = populate_fixture(BREEZE_DARK);

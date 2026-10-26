@@ -124,6 +124,29 @@ fn overlay_accent_change_re_derives_widget_fields() {
     );
 }
 
+/// The twin of `overlay_accent_change_re_derives_widget_fields`: a field a
+/// preset states is not re-derived by an accent overlay. windows-11 states the
+/// four accent fills, as WinUI fills them with `AccentFillColorDefault`, a shade
+/// of the accent and not the accent itself (docs/inheritance-rules.toml,
+/// `[wrong_safety_nets]`), so an overlay that recolours only
+/// `defaults.accent_color` leaves them; the Windows reader writes them from the
+/// user's accent shades instead.
+#[test]
+fn overlay_accent_change_keeps_a_stated_fill() {
+    let theme = Theme::preset("windows-11").unwrap();
+    let mut variant = theme.dark.clone().unwrap();
+    let stated = variant.slider.fill_color;
+    assert!(stated.is_some(), "windows-11 states slider.fill_color");
+    variant.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
+    variant.resolve_all();
+    let resolved = variant.validate().unwrap();
+    assert_eq!(Some(resolved.slider.fill_color), stated);
+    assert_eq!(
+        Some(resolved.checkbox.checked_background),
+        theme.dark.as_ref().unwrap().checkbox.checked_background
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Issue 7g: Rgba f32 quantization
 // ---------------------------------------------------------------------------
