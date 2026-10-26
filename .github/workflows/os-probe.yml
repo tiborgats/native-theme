@@ -52,8 +52,8 @@ jobs:
           done
       - name: Run the probe
         run: cargo run -p native-theme-os-probe --release -- --out os-probe-out
-      # The image's own accessibility settings, read before any pass changes
-      # them: a value, `absent` where the image sets none (macOS 14-26 say the
+      # The image's own accessibility settings and wallpaper tinting, read
+      # before any pass changes them: a value, `absent` where the image sets none (macOS 14-26 say the
       # pair "does not exist", xcode-27 "Could not find key"), or what the read
       # said where it failed otherwise (and a pass then restores nothing).
       - name: Record the image's accessibility settings (macOS)
@@ -62,17 +62,40 @@ jobs:
         run: |
           set +e
           mkdir -p "$RUNNER_TEMP/universalaccess"
-          for key in reduceTransparency increaseContrast; do
-            value="$(defaults read com.apple.universalaccess "$key" 2>&1)"
+          for setting in "com.apple.universalaccess reduceTransparency" \
+                         "com.apple.universalaccess increaseContrast" \
+                         "-g AppleReduceDesktopTinting"; do
+            set -- $setting
+            value="$(defaults read "$1" "$2" 2>&1)"
             if [ $? -ne 0 ]; then
               case "$value" in
                 *"does not exist"*|*"Could not find key"*) value=absent ;;
                 *) value="unreadable: $value" ;;
               esac
             fi
-            echo "$value" > "$RUNNER_TEMP/universalaccess/$key"
-            echo "$key: $value"
+            echo "$value" > "$RUNNER_TEMP/universalaccess/$2"
+            echo "$1 $2: $value"
           done
+      # The desktop picture, which the materials and, with wallpaper tinting on,
+      # the window backgrounds show through: as System Events names it (which
+      # may need an Automation grant the image lacks, so it is given 20 s) and
+      # as the wallpaper store records it, for the README to name.
+      - name: Record the wallpaper (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/environment
+          mkdir -p "$out"
+          {
+            osascript -e 'tell application "System Events" to get picture of current desktop' &
+            pid=$!
+            for _ in $(seq 1 20); do kill -0 "$pid" 2>/dev/null || break; sleep 1; done
+            if kill -0 "$pid" 2>/dev/null; then kill "$pid"; echo "osascript: killed after 20 s"; else wait "$pid"; echo "osascript: exit $?"; fi
+            store="$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+            if [ -f "$store" ]; then plutil -p "$store"; echo "plutil: exit $?"; else echo "no $store"; fi
+          } > "$out/wallpaper.txt" 2>&1
+          cat "$out/wallpaper.txt"
       # Two more passes, each into its own folder, whatever fails: with Reduce
       # Transparency off, which the runner images turn on (probe.toml's
       # accessibilityDisplayShouldReduceTransparency), so the window section
@@ -120,6 +143,68 @@ jobs:
           } > "$out/settings.txt" 2>&1
           cat "$out/settings.txt"
           cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A pass with wallpaper tinting off ("Allow wallpaper tinting in windows",
+      # the global default AppleReduceDesktopTinting), to tell the window
+      # colours that follow the desktop picture from those that do not; the
+      # accessibility settings are the image's. settings.txt records each
+      # restore, the image's tinting value, the write's exit status and the
+      # value read back.
+      - name: Run the probe with wallpaper tinting off (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/tinting-off
+          mkdir -p "$out"
+          {
+            restore() {
+              image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+              case "$image" in
+                1) defaults write "$1" "$2" -bool true ;;
+                0) defaults write "$1" "$2" -bool false ;;
+                absent) defaults delete "$1" "$2" ;;
+                *) false ;;
+              esac
+              echo "restore $2 to the image's ($image): exit $?"
+              echo "read back: $(defaults read "$1" "$2" 2>&1)"
+            }
+            restore com.apple.universalaccess reduceTransparency
+            restore com.apple.universalaccess increaseContrast
+            echo "image's AppleReduceDesktopTinting: $(cat "$RUNNER_TEMP/universalaccess/AppleReduceDesktopTinting" 2>/dev/null || echo 'not recorded')"
+            defaults write -g AppleReduceDesktopTinting -bool true
+            echo "write AppleReduceDesktopTinting true: exit $?"
+            echo "read back: $(defaults read -g AppleReduceDesktopTinting 2>&1)"
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out"
+      # A pass with the image's own settings in which the probe's window is
+      # captured while a second window of the probe is key (`--not-key`), for
+      # what macOS draws in a window that is not key.
+      - name: Run the probe with its window not key (macOS)
+        if: runner.os == 'macOS'
+        continue-on-error: true
+        run: |
+          set +e
+          out=os-probe-out/not-key
+          mkdir -p "$out"
+          {
+            restore() {
+              image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
+              case "$image" in
+                1) defaults write "$1" "$2" -bool true ;;
+                0) defaults write "$1" "$2" -bool false ;;
+                absent) defaults delete "$1" "$2" ;;
+                *) false ;;
+              esac
+              echo "restore $2 to the image's ($image): exit $?"
+              echo "read back: $(defaults read "$1" "$2" 2>&1)"
+            }
+            restore com.apple.universalaccess reduceTransparency
+            restore com.apple.universalaccess increaseContrast
+            restore -g AppleReduceDesktopTinting
+          } > "$out/settings.txt" 2>&1
+          cat "$out/settings.txt"
+          cargo run -p native-theme-os-probe --release -- --out "$out" --not-key
       # A last pass, whatever fails: the built probe wrapped in a minimal .app
       # and started by LaunchServices (`open`), which an unbundled process
       # started from a shell is not, to see whether that gives it a key
@@ -140,15 +225,18 @@ jobs:
           id=org.native-theme.os-probe
           mkdir -p "$out" "$app/Contents/MacOS"
           {
-            for key in reduceTransparency increaseContrast; do
-              image="$(cat "$RUNNER_TEMP/universalaccess/$key" 2>/dev/null || echo 'not recorded')"
+            for setting in "com.apple.universalaccess reduceTransparency" \
+                           "com.apple.universalaccess increaseContrast" \
+                           "-g AppleReduceDesktopTinting"; do
+              set -- $setting
+              image="$(cat "$RUNNER_TEMP/universalaccess/$2" 2>/dev/null || echo 'not recorded')"
               case "$image" in
-                1) defaults write com.apple.universalaccess "$key" -bool true ;;
-                0) defaults write com.apple.universalaccess "$key" -bool false ;;
-                absent) defaults delete com.apple.universalaccess "$key" ;;
+                1) defaults write "$1" "$2" -bool true ;;
+                0) defaults write "$1" "$2" -bool false ;;
+                absent) defaults delete "$1" "$2" ;;
                 *) false ;;
               esac
-              echo "restore $key to the image's ($image): exit $?"
+              echo "restore $2 to the image's ($image): exit $?"
             done
             cp target/release/native-theme-os-probe "$app/Contents/MacOS/native-theme-os-probe"
             echo "copy the probe: exit $?"
