@@ -208,9 +208,9 @@ disabled_text_color = "#0000005c"
 hover_background = "#0000000a"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#f9f9f900"
-# platform-facts.md:1227 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #06000000
+# platform-facts.md:1247 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #06000000
 unchecked_background = "#00000006"
-# platform-facts.md:1230 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
+# platform-facts.md:1248 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #72000000
 unchecked_border_color = "#00000072"
 
 [light.checkbox.border]
@@ -439,7 +439,7 @@ padding_bottom_px = 17.0
 [light.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1468)
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1469-1470)
 
 [light.switch]
 # platform-facts.md:1522 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #06000000, inside
@@ -808,9 +808,9 @@ disabled_text_color = "#ffffff5d"
 hover_background = "#ffffff0f"
 # soft_option: Fluent checkbox disabled fill
 disabled_background = "#33333300"
-# platform-facts.md:1227 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #19000000
+# platform-facts.md:1247 (§2.5): CheckBoxCheckBackgroundFillUnchecked = ControlAltFillColorSecondary #19000000
 unchecked_background = "#00000019"
-# platform-facts.md:1230 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
+# platform-facts.md:1248 (§2.5): CheckBoxCheckBackgroundStrokeUnchecked = ControlStrongStrokeColorDefault #8BFFFFFF
 unchecked_border_color = "#ffffff8b"
 
 [dark.checkbox.border]
@@ -1038,7 +1038,7 @@ padding_bottom_px = 17.0
 [dark.splitter]
 divider_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.17 Windows)
-# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1468)
+# divider_color ← defaults.border.color; hover_color ← divider_color: WinUI 3 has no draggable divider (platform-facts.md:1469-1470)
 
 [dark.switch]
 # platform-facts.md:1522 (§2.21): ToggleSwitchFillOff = ControlAltFillColorSecondary #19000000, inside

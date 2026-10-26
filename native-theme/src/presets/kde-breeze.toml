@@ -193,9 +193,9 @@ hover_background = "#93cee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#f0f0f0"
 disabled_text_color = "#a0a1a3"
-# platform-facts.md:1227 (§2.5): [Colors:Button] BackgroundNormal 252,252,252
+# platform-facts.md:1247 (§2.5): [Colors:Button] BackgroundNormal 252,252,252
 unchecked_background = "#fcfcfc"
-# platform-facts.md:1230 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+# platform-facts.md:1248 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
 unchecked_border_color = "#c6c8c9"
 
 [light.checkbox.border]
@@ -265,7 +265,7 @@ item_gap_px = 0.0
 background_color = "#c7c8c9"
 active_background = "#eff0f1"
 active_text_color = "#232629"
-# platform-facts.md:1346 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+# platform-facts.md:1364 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeLight.colors:117) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#232629"
 # platform-facts.md:1361-1363 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
@@ -540,7 +540,7 @@ arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1686 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1687 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#232629"
 
@@ -731,9 +731,9 @@ hover_background = "#93cee9"
 # platform-facts.md:1119 (§2.1.6): Disabled [Colors:Button] BackgroundNormal (the box) / [Colors:Window] ForegroundNormal (the label), KColorScheme 6.31.0
 disabled_background = "#272a2e"
 disabled_text_color = "#686a6c"
-# platform-facts.md:1227 (§2.5): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
+# platform-facts.md:1247 (§2.5): [Colors:Button] BackgroundNormal 41,44,48 (BreezeDark.colors:32)
 unchecked_background = "#292c30"
-# platform-facts.md:1230 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
+# platform-facts.md:1248 (§2.5): separatorColor(), mix(Window, WindowText, 0.2)
 unchecked_border_color = "#4c4e51"
 
 [dark.checkbox.border]
@@ -805,7 +805,7 @@ background_color = "#1b1d20"
 # platform-facts.md:1347 (§2.11): ← defaults.background_color, [Colors:Window] BackgroundNormal 32,35,38 (BreezeDark.colors:130)
 active_background = "#202326"
 active_text_color = "#fcfcfc"
-# platform-facts.md:1346 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
+# platform-facts.md:1364 (§2.11): hovered, [Colors:View] DecorationHover 61,174,233 (BreezeDark.colors:118) at alpha 0.2 replaces the fill (breezehelper.cpp:1497-1502)
 hover_background = "#3daee933"
 hover_text_color = "#fcfcfc"
 # platform-facts.md:1361-1363 (§2.11): renderTabBarTab fills a TabBar_ActiveEffectSize 3 strip of QPalette::Highlight along a North tab's top edge (breezehelper.cpp:1471-1487, breezemetrics.h:137)
@@ -1080,7 +1080,7 @@ arrow_side = "leading"
 arrow_gap_px = 9.0
 content_indent_px = 20.0
 frame_enabled = false
-# hover_background not stated: platform-facts.md:1686 (§2.27): KCollapsibleGroupBox::paintEvent
+# hover_background not stated: platform-facts.md:1687 (§2.27): KCollapsibleGroupBox::paintEvent
 # paints the arrow and the title and nothing else, so no hover fill
 arrow_color = "#fcfcfc"
 

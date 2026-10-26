@@ -113,7 +113,7 @@ hover_text_color = "#1d192b"
 # on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
 active_background = "#d0c6df"
 active_text_color = "#1d192b"
-# platform-facts.md:1190 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
+# platform-facts.md:1198 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
 disabled_background = "#1d1b201f"
 disabled_text_color = "#1d1b2061"
 # platform-facts.md:1194-1195 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
@@ -178,7 +178,7 @@ check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 # unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
 hover_background = "#1d1b2014"
-# platform-facts.md:1240 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
+# platform-facts.md:1245 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
 disabled_background = "#1d1b2061"
 disabled_text_color = "#1d1b2061"
 # platform-facts.md:1247 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
@@ -193,7 +193,7 @@ line_width_px = 2.0
 corner_radius_px = 2.0
 # platform-facts.md:1236 (§2.5): no elevation token
 shadow_enabled = false
-# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80): the line is its selected-container-color, primary (:43)
+# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80), so the line is its fill, selected-container-color primary (:43), and the checked radio's ring is primary (platform-facts.md:1239)
 color = "#6750a4"
 
 [light.tooltip]
@@ -239,7 +239,7 @@ thumb_color = "#6750a4"
 thumb_hover_color = "#6750a4"
 # platform-facts.md:1318 (§2.9): inactive-track-color = surface-container-highest, neutral90 (_md-comp-slider.scss:62; _md-sys-color.scss:124; _md-ref-palette.scss:61)
 track_color = "#e6e0e9"
-# platform-facts.md:1323 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
+# platform-facts.md:1325 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
 disabled_fill_color = "#1d1b2061"
 disabled_track_color = "#1d1b201f"
 disabled_thumb_color = "#1d1b2061"
@@ -632,7 +632,7 @@ hover_text_color = "#e8def8"
 # on-secondary-container at pressed-state-layer-opacity 0.12 over secondary-container (_md-comp-filled-tonal-button.scss:85-88; _md-sys-state.scss:20)
 active_background = "#5d566b"
 active_text_color = "#e8def8"
-# platform-facts.md:1190 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
+# platform-facts.md:1198 (§2.3): on-surface at disabled-container-opacity 0.12, label at 0.38 (_md-comp-filled-tonal-button.scss:42-46)
 disabled_background = "#e6e0e91f"
 disabled_text_color = "#e6e0e961"
 # platform-facts.md:1194-1195 (§2.3): latest comp.button.tonal selected-container-color = secondary, selected-label-text-color = on-secondary (_md-comp-button-tonal.scss:79, :95)
@@ -697,7 +697,7 @@ check_mark_stroke_width_px = 2.0
 label_gap_px = 8.0
 # unselected-hover-state-layer-color = on-surface at hover opacity 0.08 (_md-comp-checkbox.scss:114-116)
 hover_background = "#e6e0e914"
-# platform-facts.md:1240 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
+# platform-facts.md:1245 (§2.5): selected-disabled-container-color on-surface at 0.38 (_md-comp-checkbox.scss:44-46)
 disabled_background = "#e6e0e961"
 disabled_text_color = "#e6e0e961"
 # platform-facts.md:1247 (§2.5): comp.checkbox has no unselected container colour, the box is transparent (_md-comp-checkbox.scss:118-120)
@@ -712,7 +712,7 @@ line_width_px = 2.0
 corner_radius_px = 2.0
 # platform-facts.md:1236 (§2.5): no elevation token
 shadow_enabled = false
-# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80): the line is its selected-container-color, primary (:43)
+# platform-facts.md:1230 (§2.5): a checked box has no outline (selected-outline-width 0, _md-comp-checkbox.scss:80), so the line is its fill, selected-container-color primary (:43), and the checked radio's ring is primary (platform-facts.md:1239)
 color = "#d0bcff"
 
 [dark.tooltip]
@@ -758,7 +758,7 @@ thumb_color = "#d0bcff"
 thumb_hover_color = "#d0bcff"
 # platform-facts.md:1318 (§2.9): inactive-track-color = surface-container-highest, neutral22 (_md-comp-slider.scss:62; _md-sys-color.scss:65; _md-ref-palette.scss:50)
 track_color = "#36343b"
-# platform-facts.md:1323 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
+# platform-facts.md:1325 (§2.9): on-surface at 0.38 (active track, handle) and 0.12 (inactive track) (_md-comp-slider.scss:40-47)
 disabled_fill_color = "#e6e0e961"
 disabled_track_color = "#e6e0e91f"
 disabled_thumb_color = "#e6e0e961"
