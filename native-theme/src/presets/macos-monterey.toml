@@ -106,8 +106,9 @@ hover_background = "#e0e0e5"
 # hover), disabled_text_color defaults.disabled_text_color
 # soft_option: CoreUI pressed highlight -- slightly darker than hover
 active_background = "#d6d6db"
-# soft_option, no source: the former button fill #e8e8ed at alpha 0x80
-disabled_background = "#e8e8ed80"
+# platform-facts.md:1198 (§2.3): the bezel at half its alpha, white at 128/255 (measured, os-probe run 40348854007,
+# renders/aqua/push_button-regular-disabled@2x.png, not key); over background_color #f6f6f6
+disabled_background = "#ffffff80"
 
 
 [light.button.border]
@@ -156,13 +157,15 @@ label_gap_px = 6.0
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: checkbox hover state -- subtle highlight
 hover_background = "#e0e0e5"
-# soft_option: disabled checkbox bg -- reduced alpha
-disabled_background = "#e8e8ed80"
+# no disabled_background: platform-facts.md:1245 (§2.5), macOS fades the unchecked box to half its
+# alpha (measured) and draws the checked one in the accent, unmeasured when disabled; one field cannot
+# carry both, so unset, it is the enabled box of each state
 # soft_option: unchecked indicator fill = controlBackgroundColor, probe :323
 unchecked_background = "#ffffff"
-# soft_option, no source: platform-facts.md:1230 gives only "(measured) gray outline", and
-# controlColor is a fill (#ffffff, probe :334), not this outline
-unchecked_border_color = "#86868b"
+# platform-facts.md:1248 (§2.5): ← border.color (:1230), the box's 1 pt edge, #d6d6d6 on the sides and
+# the bottom, darker at the top (#c3c3c3), which one colour cannot carry (measured, os-probe run 40348854007,
+# renders/aqua/checkbox-regular-off@2x.png; the radio's within 4 levels)
+unchecked_border_color = "#d6d6d6"
 
 [light.checkbox.border]
 # platform-facts.md:1236 (§2.5): no shadow
@@ -201,16 +204,25 @@ thumb_active_color = "#50505090"
 [light.slider]
 # platform-facts.md:1320 (§2.9): barRectFlipped 4 high (probe :1435)
 track_height_px = 4.0
+# platform-facts.md:1318 (§2.9): black at alpha 13/255 (measured, os-probe run 40348854007,
+# renders/aqua/slider-regular@2x.png; a key window draws #eaeaea over #f6f6f6,
+# os-probe-macos-14/probe.toml:3680), not muted_color; over background_color #e0e0e0
+track_color = "#0000000d"
 # platform-facts.md:1321 (§2.9): NSSlider knob 20 (measured, macOS 14.8.9 probe render)
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly darker surface
 thumb_hover_color = "#e0e0e0"
-# no disabled_fill_color: no source gives it (platform-facts.md:1325); unset, as in macos-tahoe
-# disabled slider track -- no source: the former muted colour #86868b at alpha 0x50
-disabled_track_color = "#86868b50"
-# disabled slider knob -- surface at reduced opacity
+# platform-facts.md:1325 (§2.9): no value fill when disabled, the bar black at alpha 7/255 on both
+# sides of the knob (measured, os-probe run 40348854007, renders/aqua/slider-regular-disabled@2x.png);
+# over background_color #e6e6e6
+disabled_fill_color = "#00000007"
+# platform-facts.md:1326 (§2.9): black at alpha 7/255 (measured, the same render); over
+# background_color #e6e6e6
+disabled_track_color = "#00000007"
+# platform-facts.md:1327 (§2.9): white at alpha 128/255 (measured, the same render); over
+# background_color #f6f6f6
 disabled_thumb_color = "#ffffff80"
 
 [light.progress_bar]
@@ -337,10 +349,15 @@ track_radius_px = 11.0
 # no hover_checked_background: platform-facts.md:1527 gives no hover colour for a switch; unset, as in macos-tahoe
 # NSSwitch hover unchecked -- slightly darker trough
 hover_unchecked_background = "#c8c8cd"
-# no disabled_checked_background: no source gives it (platform-facts.md:1529); unset, as in macos-tahoe
-# NSSwitch disabled unchecked -- no source: the former off track #d5d5d5 at the former disabled_opacity 0.3
-disabled_unchecked_background = "#d5d5d550"
-# NSSwitch disabled thumb -- white at reduced opacity
+# platform-facts.md:1529 (§2.21): accent_color at alpha 128/255, as macOS draws the enabled on track
+# at one half (measured in a key window, os-probe run 40348854007, os-probe-macos-14/probe.toml:3620,
+# :3640); the macOS reader writes the user's accent at it; over background_color #76b3f6
+disabled_checked_background = "#007aff80"
+# platform-facts.md:1530 (§2.21): black at alpha 7/255 (measured, os-probe run 40348854007,
+# renders/aqua/switch-regular-disabled-off@2x.png); over background_color #e6e6e6
+disabled_unchecked_background = "#00000007"
+# platform-facts.md:1531 (§2.21): white at alpha 128/255 (measured, the same render); over
+# background_color #f6f6f6
 disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
@@ -578,8 +595,9 @@ hover_background = "#444446"
 # hover), disabled_text_color defaults.disabled_text_color
 # soft_option: CoreUI pressed highlight -- brighter than hover
 active_background = "#4e4e50"
-# soft_option, no source: the former button fill #3a3a3c at alpha 0x80
-disabled_background = "#3a3a3c80"
+# platform-facts.md:1198 (§2.3): the bezel at half its alpha, white at 32/255 (measured, os-probe run 40348854007,
+# renders/darkAqua/push_button-regular-disabled@2x.png, not key); over background_color #4c4c4c
+disabled_background = "#ffffff20"
 
 
 [dark.button.border]
@@ -628,13 +646,16 @@ label_gap_px = 6.0
 # disabled_text_color inherits defaults.disabled_text_color
 # soft_option: checkbox hover state -- subtle highlight
 hover_background = "#444446"
-# soft_option: disabled checkbox bg -- reduced alpha
-disabled_background = "#3a3a3c80"
-# soft_option: unchecked indicator fill = controlBackgroundColor, probe :397
-unchecked_background = "#1e1e1e"
-# soft_option, no source: platform-facts.md:1230 gives only "(measured) gray outline", and
-# controlColor is a fill (#ffffff3f, probe :408), not this outline
-unchecked_border_color = "#98989d"
+# no disabled_background: platform-facts.md:1245 (§2.5), macOS fades the unchecked box to half its
+# alpha (measured) and draws the checked one in the accent, unmeasured when disabled; one field cannot
+# carry both, so unset, it is the enabled box of each state
+# platform-facts.md:1247 (§2.5): ← background_color (:1227), white at alpha 55/255 at the box's centre, a
+# gradient from 40/255 at its top to 71/255 at its bottom, not controlBackgroundColor (measured, os-probe run 40348854007,
+# renders/darkAqua/checkbox-regular-off@2x.png; the radio's the same); over background_color #5e5e5e
+unchecked_background = "#ffffff37"
+# platform-facts.md:1248 (§2.5): ← border.color (:1230), none: the fill runs to the box's edge, a faint
+# dark rim outside it (measured, the same render)
+unchecked_border_color = "#00000000"
 
 [dark.checkbox.border]
 # platform-facts.md:1236 (§2.5): no shadow
@@ -673,6 +694,10 @@ thumb_active_color = "#b0b0b090"
 [dark.slider]
 # platform-facts.md:1320 (§2.9): barRectFlipped 4 high (probe :1435)
 track_height_px = 4.0
+# platform-facts.md:1318 (§2.9): white at alpha 26/255 (measured, os-probe run 40348854007,
+# renders/darkAqua/slider-regular@2x.png; a key window draws #3e3e3e over #282828,
+# os-probe-macos-14/probe.toml:3874), not muted_color; over background_color #474747
+track_color = "#ffffff1a"
 # platform-facts.md:1319 (§2.9): the knob is white at alpha 128/255 (measured,
 # renders/darkAqua/slider-regular@2x.png); over background_color #999999
 thumb_color = "#ffffff80"
@@ -680,11 +705,18 @@ thumb_color = "#ffffff80"
 thumb_diameter_px = 20.0
 tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
-# no disabled_fill_color: no source gives it (platform-facts.md:1325); unset, as in macos-tahoe
-# disabled slider track -- no source: the former muted colour #98989d at alpha 0x50
-disabled_track_color = "#98989d50"
-# thumb_hover_color and disabled_thumb_color stay unset: no source gives either, and unset they
-# are the knob's thumb_color (platform-facts.md:1319)
+# platform-facts.md:1325 (§2.9): no value fill when disabled, the bar white at alpha 13/255 on both
+# sides of the knob (measured, os-probe run 40348854007, renders/darkAqua/slider-regular-disabled@2x.png);
+# over background_color #3c3c3c
+disabled_fill_color = "#ffffff0d"
+# platform-facts.md:1326 (§2.9): white at alpha 13/255 (measured, the same render); over
+# background_color #3c3c3c
+disabled_track_color = "#ffffff0d"
+# platform-facts.md:1327 (§2.9): white at alpha 32/255 (measured, the same render); over
+# background_color #4c4c4c
+disabled_thumb_color = "#ffffff20"
+# no thumb_hover_color: platform-facts.md:1324 (§2.9) gives no hover colour for a slider knob; unset,
+# it is the knob's thumb_color
 
 [dark.progress_bar]
 track_height_px = 6.0
@@ -811,11 +843,16 @@ track_radius_px = 11.0
 # no hover_checked_background: platform-facts.md:1527 gives no hover colour for a switch; unset, as in macos-tahoe
 # NSSwitch hover unchecked -- slightly brighter trough
 hover_unchecked_background = "#4a4a4c"
-# no disabled_checked_background: no source gives it (platform-facts.md:1529); unset, as in macos-tahoe
-# NSSwitch disabled unchecked -- no source: the former off track #3d3d3d at the former disabled_opacity 0.3
-disabled_unchecked_background = "#3d3d3d50"
-# NSSwitch disabled thumb -- white at reduced opacity
-disabled_thumb_color = "#ffffff80"
+# platform-facts.md:1529 (§2.21): accent_color at alpha 128/255, as macOS draws the enabled on track
+# at one half (measured in a key window, os-probe run 40348854007, os-probe-macos-14/probe.toml:3814,
+# :3834); the macOS reader writes the user's accent at it; over background_color #195699
+disabled_checked_background = "#007aff80"
+# platform-facts.md:1530 (§2.21): white at alpha 7/255 (measured, os-probe run 40348854007,
+# renders/darkAqua/switch-regular-disabled-off@2x.png); over background_color #383838
+disabled_unchecked_background = "#ffffff07"
+# platform-facts.md:1531 (§2.21): white at alpha 64/255 (measured, the same render); over
+# background_color #656565
+disabled_thumb_color = "#ffffff40"
 
 [dark.dialog]
 button_order = "primary_right"

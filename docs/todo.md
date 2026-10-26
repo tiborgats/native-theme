@@ -766,6 +766,11 @@ model, the platform presets and the three connectors
       control's width (98 against 91), the stepper's height (24 against 26),
       `underPageBackgroundColor` and the text field's render fill
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
+      Run 40348854007 adds two: in a key window a disabled on switch draws
+      the enabled track at about 0.71 over the window (26: about 0.45), and a
+      disabled slider's bar left of the knob #d9d9d9 / #3d3d3d (26: #dfdfdf /
+      #393939; `docs/platform-facts.md` §2.9 `disabled_fill_color`, §2.21
+      `disabled_checked_background`).
 
 ### macOS: the window background macOS 14 and 15 draw is not the one they read
 
@@ -784,35 +789,39 @@ model, the platform presets and the three connectors
       whether the drawn value follows it. If it does not, the preset can
       state the drawn value. The sidebar's #f6f6f6 / #383838 (§2.12),
       measured the same way, has the same open question.
+      A second instance, from run 40348854007: on macOS 14 and 15 a key
+      window draws the on switch's track #1485ff / #1674d9 (15 dark
+      #1664d9) and the slider's value fill #0a82ff / #177be5, where
+      `controlAccentColor` reads #007aff, and under a red accent #de2a30 /
+      #e23d41 and #dd2128 / #ee4044, where it reads #e0383e / #ff5257
+      (`os-probe-macos-14/probe.toml:3640`, `:3675`, `:3834`, `:3869`;
+      `docs/platform-facts.md` §2.21 `disabled_checked_background`). The
+      presets inherit the accent for both (`switch.checked_background`,
+      `slider.fill_color`, D2); macOS 26 draws them within 8 levels of it.
 
 ### macOS: what the OS probe does not render yet
 
-- [ ] [1.0] `macos-tahoe` states its selected segment `#0077f9` / `#077dff`
-      (`macos-tahoe.toml` `[light.segmented_control] active_background`,
-      `[dark.segmented_control] active_background`), a blue the D round's
-      OS probe measured in a key window on macOS 26 and 27
-      (`docs/platform-facts.md:1636`). It is accent-coloured, but no NSColor
-      the probe reads gives it (`controlAccentColor` #007aff,
-      `selectedContentBackgroundColor` #0064e1 / #0059d1), and no reader
-      writes it. Whether it follows the user's accent is unmeasured: if it
-      does, a live macOS 26 desktop with another accent keeps the default
-      blue there. A probe pass with another `AppleAccentColor` set before
-      the key-window capture would show it. If the segment follows, find
-      what it then matches and have the reader write it; if it does not,
-      the stated value stands. (D6/D7 review, M3, 2026-10-26.)
-- [ ] [1.0] The OS probe renders no hovered and no disabled control on
-      macOS, so `docs/platform-facts.md` gives no hover or disabled colour
-      for a slider (§2.9, `:1324-1327`), a sidebar row (§2.12, `:1379`), a
-      table row (§2.15, `:1435`) or a switch (§2.21, `:1527-1531`). The
-      macOS presets draw a hovered table or sidebar row in its own
-      background (D9) and a hovered on switch at rest; macos-tahoe draws a
-      disabled slider and switch in their enabled colours, macOS's
-      `disabled_opacity` being 1.0 (§2.1.6, `:1119`), while macos-monterey
-      keeps unsourced disabled fades for the slider's track and knob and the
-      switch's off track and knob. A probe pass that warps the pointer over
-      a table row, a sidebar row, a switch and a slider knob in the key
-      window, and adds disabled `NSSlider` and `NSSwitch` controls, would
-      give each a measured value. (D6/D7 review, I1 and M2, 2026-10-26.)
+- [ ] [1.0] The OS probe renders no hovered control on macOS, so
+      `docs/platform-facts.md` gives no hover colour for a slider knob
+      (§2.9, `:1324`), a sidebar row (§2.12, `:1379`), a table row (§2.15,
+      `:1435`) or a switch (§2.21, `:1527-1528`). The macOS presets draw a
+      hovered table or sidebar row in its own background (D9) and a hovered
+      on switch at rest, while macos-monterey keeps unsourced hover fills
+      for the light slider's knob and the switch's off track. A probe pass
+      that warps the pointer over a table row, a sidebar row, a switch and a
+      slider knob in the key window would give each a measured value.
+      (D6/D7 review, I1 and M2, 2026-10-26. The disabled slider and switch
+      this entry also named were measured in D12, run 40348854007.)
+- [ ] [1.0] A disabled checked checkbox and radio on macOS. A key window
+      draws a checked box in the accent, and the OS probe renders disabled
+      controls only offscreen, in the not-key look, so
+      `docs/platform-facts.md` §2.5 `disabled_background` measures the
+      unchecked box alone (half its alpha on macOS 14 and 15, 13/255 on 26).
+      The model's one `checkbox.disabled_background` stands for both states,
+      so the macOS presets leave it unset (D12). A disabled checked checkbox
+      and radio in the probe's key window would measure the checked box; a
+      `disabled_checked_background` beside it in the model would let a
+      preset state both. (D12, 2026-10-26.)
       D10 (d14ce711, 2026-10-26): the probe's key window now holds a
       disabled and an enabled `NSSwitch` on and off and `NSSlider`, sampled
       in both appearances, and the controls section renders five controls
@@ -1360,13 +1369,16 @@ model, the platform presets and the three connectors
         progress bar's and the sidebar's padding (§2.10: 0; §2.12: 12 across).
       - macos-monterey states these fields where the rows give ❓ (no AppKit
         source, and the OS probe renders no state but rest): the button's
-        pressed and disabled fills, the input's hover and focus borders and
-        disabled fill, the checkbox's hover, disabled and unchecked fills and
-        unchecked border, the scrollbar's pressed thumb, the slider's hover
-        and disabled colours, the tab's hover, the splitter's hover, the
-        switch's hover and disabled tracks and thumb, the combo box's hover
-        and disabled fills, the segmented control's hover, and the expander's
-        hover and arrow. macos-tahoe states none of them.
+        pressed fill, the input's hover and focus borders and disabled fill,
+        the checkbox's hover and unchecked fills and unchecked border, the scrollbar's pressed thumb, the slider's hover
+        colour, the tab's hover, the splitter's hover, the switch's hover
+        track, the combo box's hover and disabled fills, the segmented
+        control's hover, and the expander's hover and arrow. macos-tahoe
+        states none of them. (The button's disabled fill and the slider's and
+        the switch's disabled colours left this list in D12, 2026-10-26: OS
+        probe run 40348854007 measured them, `docs/platform-facts.md` §2.3,
+        §2.9, §2.21; the checkbox's disabled fill left it unset, as one field
+        cannot carry macOS's two disabled boxes, §2.5.)
       `native-theme/src/presets/documented_sizes.rs` cites §2.10 and §2.12 at
       their headings for the presets whose padding rows give a value they do
       not state yet; T16 states them and cites the rows.

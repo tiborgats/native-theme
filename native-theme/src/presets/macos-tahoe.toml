@@ -124,6 +124,9 @@ icon_text_gap_px = 4.0
 # defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
 # opaque colour, which would hide the translucent button on hover
 hover_background = "#e0e0e5"
+# platform-facts.md:1198 (§2.3): the bezel at half its alpha, black at 10/255 (measured, os-probe run 40348854007,
+# renders/aqua/push_button-regular-disabled@2x.png, not key); over background_color #f5f5f5
+disabled_background = "#0000000a"
 
 [light.button.border]
 # platform-facts.md:1184-1185 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
@@ -207,11 +210,22 @@ track_color = "#00000000"
 [light.slider]
 # platform-facts.md:1320 (§2.9): barRectFlipped 6 high (probe :1435)
 track_height_px = 6.0
+# platform-facts.md:1318 (§2.9): systemFillColor's value (probe :357), black at alpha 25/255 (measured,
+# os-probe run 40348854007, renders/aqua/slider-regular@2x.png; a key window draws #e4e4e4 over #ffffff,
+# os-probe-macos-26/probe.toml:3680), not muted_color; over background_color #e6e6e6
+track_color = "#00000019"
 # platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
 # platform-facts.md:1322 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
 tick_mark_length_px = 2.0
+# platform-facts.md:1325 (§2.9): no accent when disabled, the bar left of the knob a grey darker than
+# the track: #dfdfdf over the window's #ffffff in a key window (os-probe run 40348854007,
+# os-probe-macos-26/probe.toml:3660), black at alpha 32/255; over background_color #dfdfdf
+disabled_fill_color = "#00000020"
+# no disabled_track_color / disabled_thumb_color: platform-facts.md:1326-1327 (§2.9), macOS 26
+# draws a disabled slider's track and knob as the enabled ones; unset, they are track_color and
+# thumb_color
 
 [light.progress_bar]
 # platform-facts.md:1335 (§2.10): 8 (measured, renders/aqua/progress_bar-regular@2x.png)
@@ -285,6 +299,15 @@ track_height_px = 24.0
 thumb_diameter_px = 20.0
 # platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0
+# platform-facts.md:1529 (§2.21): accent_color at alpha 115/255, as macOS 26 draws the enabled on track
+# at about 0.45 (measured in a key window, os-probe run 40348854007, os-probe-macos-26/probe.toml:3620,
+# :3640); the macOS reader writes the user's accent at it; over background_color #8cc3ff
+disabled_checked_background = "#007aff73"
+# platform-facts.md:1530 (§2.21): black at alpha 13/255 (measured, os-probe run 40348854007,
+# renders/aqua/switch-regular-disabled-off@2x.png); over background_color #f2f2f2
+disabled_unchecked_background = "#0000000d"
+# no disabled_thumb_color: platform-facts.md:1531 (§2.21), macOS 26 draws a disabled knob white, as
+# the enabled one; unset, it is thumb_background
 
 [light.dialog]
 # platform-facts.md:1559 (§2.22): the default button rightmost
@@ -349,9 +372,9 @@ color = "#000000d8"
 segment_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1639): macos-monterey's value
 separator_width_px = 1.0
-# platform-facts.md:1636 (§2.25): the selected segment in a key window, measured on
-# macOS 26 and xcode-27's macOS 27, which agree (os-probe run 40320895749, os-probe-macos-26/probe.toml:3320)
-active_background = "#0077f9"
+# no active_background: platform-facts.md:1636 (§2.25), macOS 26 draws the selected segment in the
+# accent, within 7 levels of controlAccentColor under the default and a red accent (os-probe run 40348854007,
+# accent-red); unset, it is defaults.accent_color, which the macOS reader writes
 
 [light.segmented_control.border]
 # platform-facts.md:1644 (§2.25): no shadow (measured)
@@ -511,6 +534,9 @@ icon_text_gap_px = 4.0
 # defaults.background_color (inheritance-rules.toml:167, a wrong safety net) is the window's
 # opaque colour, which would hide the translucent button on hover
 hover_background = "#444446"
+# platform-facts.md:1198 (§2.3): the bezel at half its alpha, white at 10/255 (measured, os-probe run 40348854007,
+# renders/darkAqua/push_button-regular-disabled@2x.png, not key); over background_color #272727
+disabled_background = "#ffffff0a"
 
 [dark.button.border]
 # platform-facts.md:1184-1185 (§2.3): the title rect [12, 4, 41, 16] in the 65 x 24 bezel
@@ -594,6 +620,10 @@ track_color = "#00000000"
 [dark.slider]
 # platform-facts.md:1320 (§2.9): barRectFlipped 6 high (probe :1435)
 track_height_px = 6.0
+# platform-facts.md:1318 (§2.9): systemFillColor's value (probe :431), white at alpha 25/255 (measured,
+# os-probe run 40348854007, renders/darkAqua/slider-regular@2x.png; a key window draws #343434 over #1e1e1e,
+# os-probe-macos-26/probe.toml:3874), not muted_color; over background_color #343434
+track_color = "#ffffff19"
 # platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
 # track (docs/todo_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
@@ -602,6 +632,13 @@ tick_mark_length_px = 2.0
 # platform-facts.md:1319 (§2.9): white at alpha 217/255 (measured, renders/darkAqua/slider-regular@2x.png);
 # over background_color #dddddd
 thumb_color = "#ffffffd9"
+# platform-facts.md:1325 (§2.9): no accent when disabled, the bar left of the knob a grey lighter than
+# the track: #393939 over the window's #1e1e1e in a key window (os-probe run 40348854007,
+# os-probe-macos-26/probe.toml:3854), white at alpha 31/255; over background_color #393939
+disabled_fill_color = "#ffffff1f"
+# no disabled_track_color / disabled_thumb_color: platform-facts.md:1326-1327 (§2.9), macOS 26
+# draws a disabled slider's track and knob as the enabled ones; unset, they are track_color and
+# thumb_color
 
 [dark.progress_bar]
 # platform-facts.md:1335 (§2.10): 8 (measured, renders/darkAqua/progress_bar-regular@2x.png)
@@ -676,6 +713,16 @@ track_height_px = 24.0
 thumb_diameter_px = 20.0
 # platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0
+# platform-facts.md:1529 (§2.21): accent_color at alpha 115/255, as macOS 26 draws the enabled on track
+# at about 0.45 (measured in a key window, os-probe run 40348854007, os-probe-macos-26/probe.toml:3814,
+# :3834); the macOS reader writes the user's accent at it; over background_color #104783
+disabled_checked_background = "#007aff73"
+# platform-facts.md:1530 (§2.21): white at alpha 13/255 (measured, os-probe run 40348854007,
+# renders/darkAqua/switch-regular-disabled-off@2x.png); over background_color #292929
+disabled_unchecked_background = "#ffffff0d"
+# platform-facts.md:1531 (§2.21): white at alpha 219/255, where the enabled knob is 221/255 (measured,
+# the same render); over background_color #dfdfdf
+disabled_thumb_color = "#ffffffdb"
 
 [dark.dialog]
 # platform-facts.md:1559 (§2.22): the default button rightmost
@@ -740,9 +787,9 @@ color = "#ffffffd8"
 segment_height_px = 24.0
 # no macOS 26 source (platform-facts.md:1639): macos-monterey's value
 separator_width_px = 1.0
-# platform-facts.md:1636 (§2.25): the selected segment in a key window, measured on
-# macOS 26; xcode-27's macOS 27 draws #067dff (os-probe run 40320895749, os-probe-macos-26/probe.toml:3444)
-active_background = "#077dff"
+# no active_background: platform-facts.md:1636 (§2.25), macOS 26 draws the selected segment in the
+# accent, within 7 levels of controlAccentColor under the default and a red accent (os-probe run 40348854007,
+# accent-red); unset, it is defaults.accent_color, which the macOS reader writes
 
 [dark.segmented_control.border]
 # platform-facts.md:1644 (§2.25): no shadow (measured)

@@ -62,6 +62,32 @@ fn has_text_insertion_point_color(version: crate::pipeline::OsVersion) -> bool {
     version.major >= TEXT_INSERTION_POINT_MAJOR
 }
 
+/// The alpha a disabled on switch's track draws its accent at: macOS draws
+/// the enabled on track at one half in macos-monterey's look and at about
+/// 0.45 in macos-tahoe's (docs/platform-facts.md:1529). The generation is
+/// `os_version`'s, as the generation table reads it, and each preset states
+/// `switch.disabled_checked_background` as its accent at its generation's
+/// alpha.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn disabled_checked_alpha(version: crate::pipeline::OsVersion) -> u8 {
+    if crate::pipeline::macos_generation(version).0.name == "macos-tahoe" {
+        0x73
+    } else {
+        0x80
+    }
+}
+
+/// Write what macOS fades from the accent: a disabled on switch's track,
+/// the variant's accent at `disabled_checked_alpha`. A variant whose accent
+/// was not read keeps the preset's.
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
+fn apply_accent_fades(v: &mut crate::ThemeMode, disabled_checked_alpha: u8) {
+    v.switch.disabled_checked_background = v
+        .defaults
+        .accent_color
+        .map(|a| crate::Rgba::new(a.r, a.g, a.b, disabled_checked_alpha));
+}
+
 /// Per-widget colors read from appearance-dependent NSColor APIs.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 #[derive(Default)]
@@ -544,11 +570,13 @@ fn read_macos() -> crate::Result<crate::ReaderResult> {
 
     // The scroll bar is appearance-independent and requires the main thread.
     let scrollbar = objc2::MainThreadMarker::new().map(read_scrollbar);
+    let disabled_on_alpha = disabled_checked_alpha(os_version());
     for (variant, pw) in [(&mut theme.light, light_pw), (&mut theme.dark, dark_pw)] {
         let Some(v) = variant else { continue };
         if let Some(pw) = pw {
             apply_per_widget(v, pw);
         }
+        apply_accent_fades(v, disabled_on_alpha);
         if let Some(scrollbar) = &scrollbar {
             v.scrollbar.merge(scrollbar);
         }
@@ -793,7 +821,7 @@ mod tests {
     /// macOS draws a checked checkbox and radio, an on switch, a slider's value
     /// and a progress bar in `controlAccentColor` (docs/platform-facts.md:1239,
     /// :1521, :1317, :1333, ← `defaults.accent_color`), the macOS presets state
-    /// none of them, and the reader writes only the accent.
+    /// none of them, and the reader writes the accent, not the fills.
     #[test]
     fn a_custom_accent_reaches_the_accent_fills() {
         let red = crate::Rgba::rgb(255, 59, 48);
@@ -915,6 +943,79 @@ mod tests {
             light.scrollbar.overlay_mode.is_none(),
             "overlay_mode starts None (set by from_macos)"
         );
+    }
+
+    /// D12: each preset states its disabled on track as its accent at the
+    /// alpha the reader fades the user's accent by on that preset's
+    /// generation (docs/platform-facts.md:1529): 0x80 on macOS 12 to 15, and
+    /// on the 16 early macOS 26 betas report to an older SDK's binary, which
+    /// the generation table gives macos-monterey; 0x73 from 26.
+    #[test]
+    fn a_disabled_on_switch_is_the_accent_at_its_generations_alpha() {
+        use crate::pipeline::OsVersion;
+        for (version, preset) in [
+            (OsVersion::new(12, 0, 0), "macos-monterey"),
+            (OsVersion::new(15, 7, 9), "macos-monterey"),
+            (OsVersion::new(16, 0, 0), "macos-monterey"),
+            (OsVersion::new(26, 6, 2), "macos-tahoe"),
+            (OsVersion::new(27, 0, 1), "macos-tahoe"),
+        ] {
+            let theme = crate::Theme::preset(preset).unwrap();
+            for mode in [theme.light.as_ref().unwrap(), theme.dark.as_ref().unwrap()] {
+                let mut read = crate::ThemeMode {
+                    defaults: crate::ThemeDefaults {
+                        accent_color: mode.defaults.accent_color,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                };
+                apply_accent_fades(&mut read, disabled_checked_alpha(version));
+                assert_eq!(
+                    read.switch.disabled_checked_background,
+                    mode.switch.disabled_checked_background,
+                    "{preset} on {version}"
+                );
+            }
+        }
+    }
+
+    /// D12: under another accent a disabled on switch is that accent at the
+    /// generation's alpha, and macos-tahoe's selected segment is the accent,
+    /// as macOS 26 draws it (docs/platform-facts.md:1529, :1636), while
+    /// macos-monterey's stays the raised neutral segment.
+    #[test]
+    fn a_custom_accent_reaches_the_disabled_on_switch_and_tahoes_segment() {
+        use crate::pipeline::OsVersion;
+        let red = crate::Rgba::rgb(224, 56, 62);
+        for (version, preset) in [
+            (OsVersion::new(15, 7, 9), "macos-monterey"),
+            (OsVersion::new(26, 6, 2), "macos-tahoe"),
+        ] {
+            let alpha = disabled_checked_alpha(version);
+            let mut read = crate::ThemeMode {
+                defaults: crate::ThemeDefaults {
+                    accent_color: Some(red),
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            apply_accent_fades(&mut read, alpha);
+            let mut mode = crate::Theme::preset(preset).unwrap().light.unwrap();
+            mode.merge(&read);
+            let r = mode
+                .into_resolved(&crate::ResolutionContext::for_tests())
+                .unwrap();
+            assert_eq!(
+                r.switch.disabled_checked_background,
+                Some(crate::Rgba::new(224, 56, 62, alpha)),
+                "{preset}"
+            );
+            assert_eq!(
+                r.segmented_control.active_background == red,
+                preset == "macos-tahoe",
+                "{preset}"
+            );
+        }
     }
 
     /// D7: the reader asks for `textInsertionPointColor` from macOS 14 on,

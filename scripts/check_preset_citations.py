@@ -106,13 +106,7 @@ SEVERITY_TEXT_RANGE = (
     "the range spans the four severity text colours, between which the fills' rows lie; the "
     "dark variant's `info_color` and `info_text_color` follow `info_color`'s own citation"
 )
-UNCHECKED_LINE_QUOTED = (
-    "the comment quotes the `border.color` row's macOS cell, \"(measured) gray outline\", which the "
-    "`unchecked_border_color` row's macOS cell takes (`← border.color`)"
-)
 EXCEPTIONS: dict[tuple[str, str, str], str] = {
-    ("macos-monterey.toml", "light.checkbox.unchecked_border_color", "border.color"): UNCHECKED_LINE_QUOTED,
-    ("macos-monterey.toml", "dark.checkbox.unchecked_border_color", "border.color"): UNCHECKED_LINE_QUOTED,
     ("windows-11.toml", "dark.defaults.danger_text_color", "info_color"): SEVERITY_TEXT_RANGE,
     ("windows-11.toml", "dark.defaults.danger_text_color", "info_text_color"): SEVERITY_TEXT_RANGE,
 }

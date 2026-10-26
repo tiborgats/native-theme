@@ -207,7 +207,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # slider (§2.9)
 "slider.fill_color"                          = "defaults.accent_color"        # see wrong_safety_nets
-"slider.track_color"                         = "defaults.muted_color"
+"slider.track_color"                         = "defaults.muted_color"         # see wrong_safety_nets
 "slider.thumb_color"                         = "defaults.surface_color"
 "slider.disabled_opacity"                    = "defaults.disabled_opacity"
 
@@ -633,6 +633,10 @@ why_wrong     = "Windows fills a checked box with AccentFillColorDefault, the ac
 [wrong_safety_nets."slider.fill_color"]
 inherits_from = "defaults.accent_color"
 why_wrong     = "Windows fills a slider's value with AccentFillColorDefault, the accent's Dark1 / Light2 shade (platform-facts.md:1317, §2.9)"
+
+[wrong_safety_nets."slider.track_color"]
+inherits_from = "defaults.muted_color"
+why_wrong     = "macOS draws the unfilled track far lighter than secondaryLabelColor: black / white at alpha 13/255 / 26/255 on 14 and 15, systemFillColor's #00000019 / #ffffff19 on 26, measured in a key window and the renders (platform-facts.md:1318, §2.9); Windows fills it with ControlStrongFillColorDefault, #72000000 / #8BFFFFFF, and Material with surface-container-highest, #e6e0e9 / #36343b (:1318)"
 
 [wrong_safety_nets."progress_bar.fill_color"]
 inherits_from = "defaults.accent_color"

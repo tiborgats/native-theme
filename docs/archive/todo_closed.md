@@ -2382,3 +2382,20 @@ platform (`native-theme/src/watch/`).
       description at `docs/platform-facts.md:609` follow. The text colour
       is settled either way: `ForegroundNormal` is the same in both sets.
   *Closed 2026-10-26 in 2caad225 (facts and rules 719680cb):* the model's sidebar is KDE's `View` set, as the KDE HIG's sidebar is the non-modal `GlobalDrawer` (develop-kde-org `cc5482a3` content/hig/layout_and_nav.md:75), which Kirigami docks in `View` (GlobalDrawer.qml:337), and System Settings' sidebar sets `colorSet: View` (systemsettings v6.8.1 app/qml/CategoriesPage.qml:19-20); Dolphin's places panel, transparent over the window, is the exception the cell records. kde-breeze states `[Colors:View] BackgroundNormal`, #ffffff / #141618 (BreezeLight.colors:115, BreezeDark.colors:116 at v6.7.5), and the KDE reader reads `[Colors:View]` in place of `[Colors:Complementary]` (`native-theme/src/kde/colors.rs`, `populate_colors`; the entry's :173-176 having drifted), which on Breeze Light had given a dark #2a2e32 sidebar with #fcfcfc text. The facts cells :1370, :1372 and :609 and docs/inheritance-rules.toml:557-559 (the entry's :549) follow.
+
+### macOS: what the OS probe does not render yet
+
+- [x] [1.0] `macos-tahoe` states its selected segment `#0077f9` / `#077dff`
+      (`macos-tahoe.toml` `[light.segmented_control] active_background`,
+      `[dark.segmented_control] active_background`), a blue the D round's
+      OS probe measured in a key window on macOS 26 and 27
+      (`docs/platform-facts.md:1636`). It is accent-coloured, but no NSColor
+      the probe reads gives it (`controlAccentColor` #007aff,
+      `selectedContentBackgroundColor` #0064e1 / #0059d1), and no reader
+      writes it. Whether it follows the user's accent is unmeasured: if it
+      does, a live macOS 26 desktop with another accent keeps the default
+      blue there. A probe pass with another `AppleAccentColor` set before
+      the key-window capture would show it. If the segment follows, find
+      what it then matches and have the reader write it; if it does not,
+      the stated value stands. (D6/D7 review, M3, 2026-10-26.)
+  *Closed 2026-10-26 in D12_COMMIT (facts ae57aceb, 8973a684):* the segment follows the accent. OS probe run 40348854007's red-accent pass (`AppleAccentColor` 0) draws it #db373c / #ff575b on macOS 26 (#da373d / #ff565b on 27), where `controlAccentColor` reads #e0383e / #ff5257, as the default #0077f9 / #077dff sits by #007aff: within 7 levels each time, as macOS 26's on switch and slider value fill are, which the presets leave to the accent; no NSColor the probe reads matches it exactly. macos-tahoe states no `active_background`, so it inherits `defaults.accent_color`, which the macOS reader writes from `controlAccentColor`; macOS 14 and 15 keep their neutral #ffffff / #666666 under the red accent, and macos-monterey states it (`docs/platform-facts.md:1636`).
