@@ -1992,6 +1992,28 @@ pub(super) const TOOLTIP_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
     get: |t, r, ()| styles::tooltip(r)(t).border,
 }];
 
+/// An application's base style has no `Status` (shape B).
+#[cfg(feature = "widgets")]
+pub(super) const APPLICATION_STATUSES: &[()] = &[()];
+
+/// Both fields of `styles::application`: the window's fill, and the base
+/// style's text colour, which the palette takes from `defaults.text_color`.
+#[cfg(feature = "widgets")]
+pub(super) const APPLICATION_ROWS: &[StyleRow<()>] = &[
+    StyleRow {
+        field: "styles::application.background_color",
+        statuses: APPLICATION_STATUSES,
+        native: |r, ()| to_color(r.window.background_color),
+        get: |t, r, ()| Ok(styles::application(r)(t).background_color),
+    },
+    StyleRow {
+        field: "styles::application.text_color",
+        statuses: APPLICATION_STATUSES,
+        native: |r, ()| to_color(r.defaults.text_color),
+        get: |t, r, ()| Ok(styles::application(r)(t).text_color),
+    },
+];
+
 /// A card has no `Status` (shape B).
 #[cfg(feature = "widgets")]
 pub(super) const CONTAINER_CARD_STATUSES: &[()] = &[()];
@@ -2773,6 +2795,7 @@ pub(super) fn style_row_fields() -> Vec<String> {
             .map(|row| row.field.to_string()),
     );
     out.extend(TOOLTIP_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(APPLICATION_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(
         SEGMENTED_CONTROL_ROWS

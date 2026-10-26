@@ -151,7 +151,7 @@ returns a `'static + Clone` closure, so you can call it per widget in `view`
 and it follows a theme change on the next frame.
 
 iced's style setters do not all take the same closure, so the functions come
-in four shapes. Each one's doc comment names the setter it is passed to and
+in five shapes. Each one's doc comment names the setter it is passed to and
 the iced default it replaces:
 
 | Shape | Closure | Functions | Passed to |
@@ -159,6 +159,7 @@ the iced default it replaces:
 | with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; the `_over` forms fade a disabled control over a backdrop you name |
 | without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `segmented_control`, `expander_frame`, `pane_grid` | `.style(..)` — `segmented_control` styles the container holding the segments, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
+| application | `Fn(&Theme) -> theme::Style` | `application` | `iced::application(..).style(..)`, called inside its `Fn(&State, &Theme)`: the window's background, `window.background_color`, under the base style's text colour |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
 
 A stated hover or pressed colour is a layer the platform paints over the

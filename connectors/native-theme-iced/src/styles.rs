@@ -24,10 +24,10 @@
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 //! That read happens while the widget is being drawn, from the `&Theme` in
-//! effect, so twelve of these functions -- `button_danger`,
+//! effect, so thirteen of these functions -- `button_danger`,
 //! `button_success`, `button_warning`, `button_link`, `text_input`,
-//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable`, `rule` and
-//! `pane_grid` --
+//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable`, `rule`,
+//! `pane_grid` and `application` --
 //! assume that theme is the one `to_theme(resolved)` built from the same
 //! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
 //! a different palette: the hover of `button_danger`, for one, is then
@@ -1990,5 +1990,43 @@ pub fn expander_frame(
             shadow: iced.shadow,
             snap: iced.snap,
         }
+    }
+}
+
+/// The application's own background and default text, for
+/// `iced::application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`).
+///
+/// Replaces the theme's base style, `Base::base`
+/// (`iced_core-0.14.0/src/theme.rs:291-293`), which takes the background from
+/// the palette's background (`:328-336`), under this connector
+/// `defaults.background_color`, where the model states the window's own fill,
+/// `window.background_color`. The text colour is the base style's: the
+/// palette's `background.base.text`, which the connector sets from
+/// `defaults.text_color`; the model states no label of the window's own.
+///
+/// iced paints the background under the whole window and gives the text
+/// colour to every text that states none (`theme::Style`,
+/// `iced_core-0.14.0/src/theme.rs:222-230`). `application(..).style(..)`
+/// takes `Fn(&State, &Theme) -> theme::Style`, so call this inside it, from
+/// the `ResolvedTheme` the state keeps:
+///
+/// ```rust,ignore
+/// use native_theme_iced::styles;
+///
+/// iced::application(boot, update, view)
+///     .theme(|state: &State| state.theme.clone())
+///     .style(|state: &State, theme| styles::application(&state.resolved)(theme))
+/// ```
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn application(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_core::theme::Style + Clone + use<> {
+    use iced_core::theme::{Base, Style};
+
+    let background = to_color(resolved.window.background_color);
+
+    move |theme| Style {
+        background_color: background,
+        text_color: theme.base().text_color,
     }
 }

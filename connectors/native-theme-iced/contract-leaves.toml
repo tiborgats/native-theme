@@ -373,6 +373,7 @@ moves = [
   { row = "extended.background.base.text" },
   { row = "extended.background.weak.text" },
   { row = "palette.text" },
+  { row = "styles::application.text_color" },
   { row = "styles::aw::card.body_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::aw::card.foot_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
   { row = "styles::aw::card.head_text_color", statuses = ["Active", "Disabled", "Focused", "Hovered", "Pressed", "Selected"] },
@@ -1053,10 +1054,9 @@ moves = [
 ]
 
 [leaves."window.background_color"]
-named = "UNREAD_COLOURS"
-entry = "window.background_color"
-kind = "ruled"
-why = "iced paints the application's background from `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), `defaults.background_color`; this leaf inherits that one (`docs/inheritance-rules.toml:157`) and equals it in all 34 bundled combinations. A style for `application(..).style(..)` that reads it is a docs/todo.md item. Ruling T12a C4"
+moves = [
+  { row = "styles::application.background_color" },
+]
 
 [leaves."window.border.color"]
 named = "UNREAD_COLOURS"
@@ -1173,6 +1173,12 @@ leaves = ["defaults.text_color"]
 
 [rows."palette.warning"]
 leaves = ["defaults.warning_color"]
+
+[rows."styles::application.background_color"]
+leaves = ["window.background_color"]
+
+[rows."styles::application.text_color"]
+leaves = ["defaults.text_color"]
 
 [rows."styles::aw::card.background"]
 cfg = "iced_aw"

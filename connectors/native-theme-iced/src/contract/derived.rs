@@ -1345,19 +1345,6 @@ pub(super) const UNREAD_COLOURS: &[UnreadColour] = &[
         ),
     },
     UnreadColour {
-        leaf: "window.background_color",
-        why: Unread::Ruled(
-            "iced paints the application's background from \
-             `theme::Style.background_color` \
-             (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` \
-             takes from the palette's background (`theme.rs:291-293`, \
-             `:328-336`), `defaults.background_color`; this leaf inherits that \
-             one (`docs/inheritance-rules.toml:157`) and equals it in all 34 \
-             bundled combinations. A style for `application(..).style(..)` that \
-             reads it is a docs/todo.md item. Ruling T12a C4",
-        ),
-    },
-    UnreadColour {
         leaf: "window.border.color",
         why: Unread::NoReceiver(WINDOW_FRAME),
     },

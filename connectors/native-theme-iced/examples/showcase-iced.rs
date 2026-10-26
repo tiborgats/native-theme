@@ -17548,6 +17548,7 @@ fn main() -> iced::Result {
         .font(iced_aw::ICED_AW_FONT_BYTES)
         .title(|_: &State| WINDOW_TITLE.to_string())
         .theme(theme)
+        .style(|state: &State, theme: &Theme| styles::application(&state.current_resolved)(theme))
         .subscription(subscription)
         .window_size(WINDOW_SIZE)
         .centered();

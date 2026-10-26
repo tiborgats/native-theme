@@ -1557,6 +1557,22 @@ fn pane_grid_style_fields(style: &pane_grid::Style) -> Vec<String> {
     out
 }
 
+/// Both fields of the `theme::Style` `styles::application` emits.
+#[cfg(feature = "widgets")]
+fn application_style_fields(style: &iced_core::theme::Style) -> Vec<String> {
+    let mut out = Vec::new();
+    leaves_under!(
+        out,
+        style,
+        "styles::application",
+        iced_core::theme::Style {
+            background_color,
+            text_color
+        }
+    );
+    out
+}
+
 /// Every field of the `card::Style` the connector emits. A card's border is
 /// three bare fields rather than an iced `Border`, so there is nothing to walk.
 #[cfg(feature = "iced_aw")]
@@ -1761,6 +1777,9 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
         )));
         out.extend(rule_style_fields(&styles::rule(resolved)(theme)));
         out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
+        out.extend(application_style_fields(&styles::application(resolved)(
+            theme,
+        )));
         // Two functions emit a `container::Style`, so the one walker runs
         // twice under two prefixes.
         out.extend(container_fields(
@@ -2470,6 +2489,7 @@ fn every_status_list_names_each_status_once() {
         ("RULE_STATUSES", RULE_STATUSES),
         ("PANE_GRID_STATUSES", PANE_GRID_STATUSES),
         ("TOOLTIP_STATUSES", TOOLTIP_STATUSES),
+        ("APPLICATION_STATUSES", APPLICATION_STATUSES),
         ("CONTAINER_CARD_STATUSES", CONTAINER_CARD_STATUSES),
         ("SEGMENTED_CONTROL_STATUSES", SEGMENTED_CONTROL_STATUSES),
         ("EXPANDER_FRAME_STATUSES", EXPANDER_FRAME_STATUSES),
@@ -3336,6 +3356,7 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
         &mut ran,
     );
     check_style_rows(TOOLTIP_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(APPLICATION_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(
@@ -4667,6 +4688,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::rule(r));
     assert_clone(&styles::pane_grid(r));
     assert_clone(&styles::tooltip(r));
+    assert_clone(&styles::application(r));
     assert_clone(&styles::container_card(r));
     assert_clone(&styles::segmented_control(r));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
@@ -5004,6 +5026,7 @@ impl Reading {
         x.style(RULE_ROWS, t, r);
         x.style(PANE_GRID_ROWS, t, r);
         x.style(TOOLTIP_ROWS, t, r);
+        x.style(APPLICATION_ROWS, t, r);
         x.style(CONTAINER_CARD_ROWS, t, r);
         x.style(SEGMENTED_CONTROL_ROWS, t, r);
         x.style(SEGMENT_ROWS, t, r);
