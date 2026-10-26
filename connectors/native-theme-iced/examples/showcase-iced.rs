@@ -21455,8 +21455,12 @@ mod tests {
     /// `docs/showcase-elements.toml`: the gpui and egui tables, read from
     /// their sources, are iced's, their `SEGMENTED_GROUP` is iced's
     /// [`BASIC_SEGMENTED_GROUP`], which names the Segmented control, and the
-    /// element list's `n = ..` lines name each column's groups in order
-    /// (round 4 review, item 17 minor 6).
+    /// element list's `n = ..` lines name each column's groups in order, a
+    /// name it does not know failing; gpui's and egui's matches pick those
+    /// tables for each count, their group names are iced's
+    /// [`BASIC_GROUPS`], and each page draws the Segmented control as the
+    /// group at [`BASIC_SEGMENTED_GROUP`] (round 4 review, item 17 minor 6;
+    /// round 5 review, item 18 M6).
     #[test]
     fn the_basic_arrangements_agree_across_the_showcases() {
         const GPUI: &str =
@@ -21505,6 +21509,92 @@ mod tests {
             );
         }
         assert_eq!(BASIC_GROUPS[BASIC_SEGMENTED_GROUP], "Segmented control");
+        // The match that picks a table for a count: `N => &NAME` and `_ => &NAME`.
+        let arms = |source: &str, function: &str| -> Vec<(String, String)> {
+            let Some(at) = source.find(&format!("fn {function}(columns: usize)")) else {
+                return Vec::new();
+            };
+            let rest = &source[at..];
+            let body = rest
+                .get(..rest.find("\n}\n").unwrap_or(rest.len()))
+                .unwrap_or_default();
+            body.lines()
+                .filter_map(|line| {
+                    let (count, table) = line.trim().split_once(" => &")?;
+                    Some((count.to_owned(), table.trim_end_matches(',').to_owned()))
+                })
+                .collect()
+        };
+        for (who, source, function, prefix) in [
+            ("gpui", GPUI, "basic_arrangement", "BASIC_"),
+            ("egui", EGUI, "arrangement", ""),
+        ] {
+            let want: Vec<(String, String)> = ["5", "4", "3", "2", "_"]
+                .iter()
+                .zip(["FIVE", "FOUR", "THREE", "TWO", "ONE"])
+                .map(|(count, word)| ((*count).to_owned(), format!("{prefix}{word}")))
+                .collect();
+            assert_eq!(arms(source, function), want, "{who}'s {function} arms");
+        }
+        // The quoted strings in `source` from `start` to the next `];`.
+        let quoted = |source: &str, start: &str| -> Vec<String> {
+            let Some(at) = source.find(start) else {
+                return Vec::new();
+            };
+            let rest = &source[at + start.len()..];
+            let body = rest
+                .get(..rest.find("];").unwrap_or(rest.len()))
+                .unwrap_or_default();
+            body.split('"')
+                .skip(1)
+                .step_by(2)
+                .map(str::to_owned)
+                .collect()
+        };
+        let names: Vec<String> = BASIC_GROUPS.iter().map(|g| (*g).to_owned()).collect();
+        // gpui's are `(heading id, name)` pairs, egui's the names.
+        let gpui: Vec<String> = quoted(GPUI, "const BASIC_GROUPS: [BasicGroup; 20] = [")
+            .into_iter()
+            .skip(1)
+            .step_by(2)
+            .collect();
+        assert_eq!(gpui, names, "gpui's BASIC_GROUPS names");
+        assert_eq!(
+            quoted(EGUI, "const GROUPS: [&str; 20] = ["),
+            names,
+            "egui's GROUPS"
+        );
+        // Each page draws the Segmented control as the group at that index:
+        // egui's `group` match, gpui's heading taken from `BASIC_GROUPS` in
+        // order and handed the control.
+        assert!(
+            EGUI.contains(&format!("        {BASIC_SEGMENTED_GROUP} => segmented(")),
+            "egui's group() does not draw the Segmented control at {BASIC_SEGMENTED_GROUP}"
+        );
+        let bound: Vec<&str> = GPUI
+            .find("] = BASIC_GROUPS;")
+            .and_then(|end| {
+                let head = GPUI.get(..end)?;
+                head.rfind("let [").and_then(|at| head.get(at + 5..))
+            })
+            .unwrap_or_default()
+            .split(',')
+            .map(str::trim)
+            .filter(|name| !name.is_empty())
+            .collect();
+        assert_eq!(
+            bound.iter().position(|name| *name == "segmented"),
+            Some(BASIC_SEGMENTED_GROUP),
+            "gpui binds the Segmented heading elsewhere: {bound:?}"
+        );
+        let drawn = GPUI
+            .find("let g_segmented = group(\n            segmented,")
+            .and_then(|at| GPUI.get(at..at + 200))
+            .is_some_and(|call| call.contains("demo::segmented("));
+        assert!(
+            drawn,
+            "gpui's Segmented group does not draw demo::segmented"
+        );
         // The element list's comment, `# n = 5: Column 1: a, b. Column 2: ..`.
         let comment: String = LIST
             .lines()
@@ -21530,7 +21620,14 @@ mod tests {
                         names
                             .trim_end_matches(|c: char| c == '.' || c.is_whitespace())
                             .split(", ")
-                            .filter_map(|name| BASIC_GROUPS.iter().position(|g| *g == name))
+                            .map(|name| {
+                                let at = BASIC_GROUPS.iter().position(|g| *g == name);
+                                assert!(
+                                    at.is_some(),
+                                    "the element list's n = {n} line names no group {name:?}"
+                                );
+                                at.unwrap_or_default()
+                            })
                             .collect()
                     })
                     .collect()
