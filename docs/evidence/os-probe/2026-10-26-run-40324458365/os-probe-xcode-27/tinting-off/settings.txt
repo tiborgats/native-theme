@@ -1,0 +1,7 @@
+restore reduceTransparency to the image's (1): exit 0
+read back: 1
+restore increaseContrast to the image's (absent): exit 0
+read back: Error: Could not find key 'increaseContrast' in domain 'com.apple.universalaccess'.
+image's AppleReduceDesktopTinting: absent
+write AppleReduceDesktopTinting true: exit 0
+read back: 1

@@ -1,0 +1,172 @@
+/System/Library/Desktop Pictures/Solid Colors/Black.png
+osascript: exit 0
+{
+  "AllSpacesAndDisplays" => {
+    "Idle" => {
+      "Content" => {
+        "Choices" => [
+          0 => {
+            "Configuration" => {length = 0, bytes = 0x}
+            "Files" => [
+            ]
+            "Provider" => "default"
+          }
+        ]
+        "EncodedOptionValues" => "$null"
+        "Shuffle" => "$null"
+      }
+      "LastSet" => 2026-10-05 04:13:08 +0000
+      "LastUse" => 2026-10-26 12:39:31 +0000
+    }
+    "Type" => "idle"
+  }
+  "Displays" => {
+    "2109FE05-700B-4D86-963C-08B091DE5E60" => {
+      "Desktop" => {
+        "Content" => {
+          "Choices" => [
+            0 => {
+              "Configuration" => {length = 152, bytes = 0x62706c6973743030d201020304547479 ... 0000000000000071}
+              "Files" => [
+              ]
+              "Provider" => "com.apple.wallpaper.choice.image"
+            }
+          ]
+          "EncodedOptionValues" => {length = 269, bytes = 0x62706c6973743030d101025676616c75 ... 00000000000000d5}
+          "Shuffle" => "$null"
+        }
+        "LastSet" => 2026-10-23 05:13:08 +0000
+        "LastUse" => 2026-10-26 12:39:31 +0000
+      }
+      "Idle" => {
+        "Content" => {
+          "Choices" => [
+            0 => {
+              "Configuration" => {length = 0, bytes = 0x}
+              "Files" => [
+              ]
+              "Provider" => "default"
+            }
+          ]
+          "EncodedOptionValues" => "$null"
+          "Shuffle" => "$null"
+        }
+        "LastSet" => 2026-10-05 04:13:08 +0000
+        "LastUse" => 2026-10-05 04:13:08 +0000
+      }
+      "Type" => "individual"
+    }
+  }
+  "Spaces" => {
+    "" => {
+      "Default" => {
+        "Desktop" => {
+          "Content" => {
+            "Choices" => [
+              0 => {
+                "Configuration" => {length = 152, bytes = 0x62706c6973743030d201020304547479 ... 0000000000000071}
+                "Files" => [
+                ]
+                "Provider" => "com.apple.wallpaper.choice.image"
+              }
+            ]
+            "EncodedOptionValues" => {length = 269, bytes = 0x62706c6973743030d101025676616c75 ... 00000000000000d5}
+            "Shuffle" => "$null"
+          }
+          "LastSet" => 2026-10-23 05:13:08 +0000
+          "LastUse" => 2026-10-26 12:39:31 +0000
+        }
+        "Idle" => {
+          "Content" => {
+            "Choices" => [
+              0 => {
+                "Configuration" => {length = 0, bytes = 0x}
+                "Files" => [
+                ]
+                "Provider" => "default"
+              }
+            ]
+            "EncodedOptionValues" => "$null"
+            "Shuffle" => "$null"
+          }
+          "LastSet" => 2026-10-05 04:13:08 +0000
+          "LastUse" => 2026-10-05 04:13:08 +0000
+        }
+        "Type" => "individual"
+      }
+      "Displays" => {
+        "2109FE05-700B-4D86-963C-08B091DE5E60" => {
+          "Desktop" => {
+            "Content" => {
+              "Choices" => [
+                0 => {
+                  "Configuration" => {length = 152, bytes = 0x62706c6973743030d201020304547479 ... 0000000000000071}
+                  "Files" => [
+                  ]
+                  "Provider" => "com.apple.wallpaper.choice.image"
+                }
+              ]
+              "EncodedOptionValues" => {length = 269, bytes = 0x62706c6973743030d101025676616c75 ... 00000000000000d5}
+              "Shuffle" => "$null"
+            }
+            "LastSet" => 2026-10-23 05:13:08 +0000
+            "LastUse" => 2026-10-26 12:39:31 +0000
+          }
+          "Idle" => {
+            "Content" => {
+              "Choices" => [
+                0 => {
+                  "Configuration" => {length = 0, bytes = 0x}
+                  "Files" => [
+                  ]
+                  "Provider" => "default"
+                }
+              ]
+              "EncodedOptionValues" => "$null"
+              "Shuffle" => "$null"
+            }
+            "LastSet" => 2026-10-05 04:13:08 +0000
+            "LastUse" => 2026-10-05 04:13:08 +0000
+          }
+          "Type" => "individual"
+        }
+      }
+    }
+  }
+  "SystemDefault" => {
+    "Desktop" => {
+      "Content" => {
+        "Choices" => [
+          0 => {
+            "Configuration" => {length = 152, bytes = 0x62706c6973743030d201020304547479 ... 0000000000000071}
+            "Files" => [
+            ]
+            "Provider" => "com.apple.wallpaper.choice.image"
+          }
+        ]
+        "EncodedOptionValues" => {length = 269, bytes = 0x62706c6973743030d101025676616c75 ... 00000000000000d5}
+        "Shuffle" => "$null"
+      }
+      "LastSet" => 2026-10-23 05:13:08 +0000
+      "LastUse" => 2026-10-26 12:39:31 +0000
+    }
+    "Idle" => {
+      "Content" => {
+        "Choices" => [
+          0 => {
+            "Configuration" => {length = 0, bytes = 0x}
+            "Files" => [
+            ]
+            "Provider" => "default"
+          }
+        ]
+        "EncodedOptionValues" => "$null"
+        "Shuffle" => "$null"
+      }
+      "LastSet" => 2026-10-05 04:13:08 +0000
+      "LastUse" => 2026-10-05 04:13:08 +0000
+    }
+    "Type" => "individual"
+  }
+}
+plutil: exit 0
