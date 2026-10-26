@@ -1408,7 +1408,10 @@ where
 /// here, after the field, over whatever lies round it. A ring inset at the
 /// edge (`focus_ring_offset` minus `focus_ring_width`, libadwaita's) is the
 /// field's border already ([`styles::text_input`], [`styles::text_editor`]),
-/// so where the theme states one, or no ring, `field` is returned as it is.
+/// so where the theme states one, or no ring, the wrapper draws nothing; it
+/// wraps `field` all the same, so the tree keeps its shape and a focused
+/// field keeps its focus where the application switches between such a theme
+/// and one that rings it.
 ///
 /// The wrapper learns whether the field is focused from iced's own
 /// `Focusable` operation over it, each time it is operated on (iced's focus
@@ -1435,11 +1438,7 @@ where
     Message: 'a,
     Renderer: iced_core::Renderer + 'a,
 {
-    let field = field.into();
-    match focus_ring::ring_look(resolved, corner_radius) {
-        Some(look) => focus_ring::FocusRing::new(field, look).into(),
-        None => field,
-    }
+    focus_ring::FocusRing::new(field.into(), focus_ring::ring_look(resolved, corner_radius)).into()
 }
 
 /// Returns the standard border radius from the resolved theme.

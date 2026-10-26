@@ -166,11 +166,16 @@ impl Operation for Probe {
 /// operated on keeps.
 pub(crate) struct FocusRing<'a, Message, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
-    look: RingLook,
+    /// `None` where the theme draws no ring ([`ring_look`]): the wrapper is
+    /// there all the same, so the tree keeps its shape across themes.
+    look: Option<RingLook>,
 }
 
 impl<'a, Message, Renderer> FocusRing<'a, Message, Renderer> {
-    pub(crate) fn new(content: Element<'a, Message, Theme, Renderer>, look: RingLook) -> Self {
+    pub(crate) fn new(
+        content: Element<'a, Message, Theme, Renderer>,
+        look: Option<RingLook>,
+    ) -> Self {
         Self { content, look }
     }
 
@@ -279,7 +284,7 @@ where
             .as_widget()
             .draw(child, renderer, theme, style, layout, cursor, viewport);
         if ringed(tree)
-            && let Some((quad, background)) = self.look.quad(layout.bounds())
+            && let Some((quad, background)) = self.look.and_then(|look| look.quad(layout.bounds()))
         {
             renderer.fill_quad(quad, background);
         }
@@ -827,6 +832,39 @@ mod tests {
             0,
             "the field was operated on as it was laid out"
         );
+    }
+
+    /// A focused field keeps its focus where the theme changes between one
+    /// whose ring is the field's border (adwaita, no ring drawn) and one that
+    /// rings it (windows-11), both ways: [`crate::focus_ring()`] wraps the
+    /// field whatever the theme states, so the tree keeps its shape and iced
+    /// keeps the field's state (round 5 review, item 18 M4).
+    #[test]
+    fn the_focus_survives_a_theme_that_draws_no_ring() {
+        let adwaita = resolved("adwaita", ColorMode::Light);
+        let windows = resolved("windows-11", ColorMode::Light);
+        for (first, second) in [(&windows, &adwaita), (&adwaita, &windows)] {
+            let mut element: Element<'_, (), Theme, Recorder> =
+                crate::focus_ring(first, 4.0, Element::new(Clicked));
+            let mut tree = Tree::new(&element);
+            let node = laid(&mut element, &mut tree);
+            let press = Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left));
+            send(&mut element, &mut tree, &node, press);
+            for theme in [second, &windows] {
+                let mut next: Element<'_, (), Theme, Recorder> =
+                    crate::focus_ring(theme, 4.0, Element::new(Clicked));
+                tree.diff(&next);
+                let node = laid(&mut next, &mut tree);
+                operated(&mut next, &mut tree, &node);
+                element = next;
+            }
+            let node = laid(&mut element, &mut tree);
+            assert_eq!(
+                painted(&element, &tree, &node),
+                1,
+                "the field focused under the first theme lost its focus through the second"
+            );
+        }
     }
 
     /// Where the view replaces the field with a widget of another kind, whose
