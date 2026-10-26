@@ -870,25 +870,6 @@ model, the platform presets and the three connectors
       M8 T21 fix round 1 (2026-10-17): [1.0], not [v0.7.0]: a model change
       that no plan schedules fits neither of the header's `[v0.7.0]` clauses.
 
-### Presets: kde-breeze's sidebar colour set
-
-- [ ] [v0.7.0] `docs/platform-facts.md` §2.12 gave KDE's sidebar
-      `[Colors:Complementary]`, which no sidebar uses at KF 6.31.0; since M2e
-      fix round 1 the cells (`:1370`, `:1372`) are ❓. A non-modal Kirigami
-      drawer takes the `Window` set (kirigami v6.31.0
-      `src/templates/OverlayDrawer.qml:244`), a non-modal `GlobalDrawer` the
-      `View` set (`src/controls/GlobalDrawer.qml:337`), and KIO's places
-      panel (Dolphin, the file dialog) is transparent over the window with
-      `WindowText` (kio v6.31.0 `src/filewidgets/kfileplacesview.cpp:863-866`).
-      Decide which the model's sidebar is; then the facts cells, kde-breeze's
-      `sidebar.background_color` (`#dee0e2`, `[Colors:Header]
-      BackgroundNormal`; dark `#272c31`, `[WM] activeBackground`; both
-      marked ❓ "no source"), the KDE reader, which reads `[Colors:Complementary]`
-      (`native-theme/src/kde/colors.rs:173-176`, M4),
-      `docs/inheritance-rules.toml:549` and the `[Colors:Complementary]`
-      description at `docs/platform-facts.md:609` follow. The text colour
-      is settled either way: `ForegroundNormal` is the same in both sets.
-
 ### OS probe: macOS renders for the sidebar, the title bar and the list header
 
 - [ ] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar

@@ -13852,3 +13852,15 @@ toggler hover now moves with the checked colour). The new `[1.0]` entry *windows
   drawn after the caller's `refine_style`. M4: each ring is the last child, over the indicator,
   label, outline and thumb. M5: the radio's ring follows the row, as upstream's and egui's (its
   doc says so); the showcase's `switch_leaves` doc cites the lines `SwitchLook::of` now reads at.
+
+#### D3 · kde-breeze's sidebar colour set (todo 967)
+**Problem:** facts §2.12 left KDE's sidebar set open (❓). kde-breeze stated unsourced values. The
+reader read `[Colors:Complementary]`, which no KDE sidebar uses, and so drew a dark sidebar on
+Breeze Light.
+**Fix:** the View set, from the HIG and System Settings (facts and rules 719680cb, W2). The preset
+hunk (W2's d-w2d patch) states #ffffff / #141618, and the reader reads `[Colors:View]`
+BackgroundNormal and ForegroundNormal (`kde/colors.rs`, `populate_colors`); no reader code reads
+the Complementary set any more. The unit tests assert the fixtures' View values, a Complementary
+set that does not reach the sidebar and no sidebar without a View set; `tests/reader_kde.rs`
+follows (Breeze Light's sidebar is now white).
+**Status:** done, 2caad225 (facts and rules 719680cb).

@@ -2187,3 +2187,23 @@ platform (`native-theme/src/watch/`).
       off colours, the slider's track and disabled colours) keep
       their light or dark values.
   *Closed 2026-10-26 in c7989e7b (facts 56407e2d):* the reader writes `input.focus_border_color` and the four accent fills (`checkbox.checked_background`, `switch.checked_background`, `slider.fill_color`, `progress_bar.fill_color`) from the UISettings shade the accent and checked buttons take, SystemAccentColorDark1 in light and Light2 in dark, and under high contrast the four from Highlight (CheckBox :145, ToggleSwitch :87, ProgressBar :14; the slider's SystemControlHighlightAccentBrush, generic.xaml:2055) and the switch hover from ButtonFace (ToggleSwitch :88); the focused text box's line is not written under high contrast, whose TextBox dictionary leaves the key out. WinUI 3 fills every accent control with `AccentFillColorDefault` (CheckBox_themeresources.xaml:233, :57; RadioButton :146, :30; Slider :128, :24; ProgressBar :22, :6; ToggleSwitch :143, :23 at microsoft-ui-xaml 8463f45), not `SystemAccentColor`; windows-11 states the four as #0067c0 / #4cc2ff. The checked switch's hover is the window at alpha 25/255 laid over the track (#f3f3f319 / #20202019), which composites to WinUI's #1875c5 / #48b2e9 for the default accent and follows any other (`the_windows_11_switch_hover_composites_to_winuis`). The four [uniform] rules are `# see wrong_safety_nets` for Windows and KDE (the controller's ruling: the MUST binds the presets of the platforms an entry's why_wrong names; GNOME, macOS, iOS and Material keep inheriting the accent). The notes that have no Microsoft source move to the `[1.0]` entry *windows-11: values WinUI 3 states no source for*.
+
+### Presets: kde-breeze's sidebar colour set
+
+- [x] [v0.7.0] `docs/platform-facts.md` §2.12 gave KDE's sidebar
+      `[Colors:Complementary]`, which no sidebar uses at KF 6.31.0; since M2e
+      fix round 1 the cells (`:1370`, `:1372`) are ❓. A non-modal Kirigami
+      drawer takes the `Window` set (kirigami v6.31.0
+      `src/templates/OverlayDrawer.qml:244`), a non-modal `GlobalDrawer` the
+      `View` set (`src/controls/GlobalDrawer.qml:337`), and KIO's places
+      panel (Dolphin, the file dialog) is transparent over the window with
+      `WindowText` (kio v6.31.0 `src/filewidgets/kfileplacesview.cpp:863-866`).
+      Decide which the model's sidebar is; then the facts cells, kde-breeze's
+      `sidebar.background_color` (`#dee0e2`, `[Colors:Header]
+      BackgroundNormal`; dark `#272c31`, `[WM] activeBackground`; both
+      marked ❓ "no source"), the KDE reader, which reads `[Colors:Complementary]`
+      (`native-theme/src/kde/colors.rs:173-176`, M4),
+      `docs/inheritance-rules.toml:549` and the `[Colors:Complementary]`
+      description at `docs/platform-facts.md:609` follow. The text colour
+      is settled either way: `ForegroundNormal` is the same in both sets.
+  *Closed 2026-10-26 in 2caad225 (facts and rules 719680cb):* the model's sidebar is KDE's `View` set, as the KDE HIG's sidebar is the non-modal `GlobalDrawer` (develop-kde-org `cc5482a3` content/hig/layout_and_nav.md:75), which Kirigami docks in `View` (GlobalDrawer.qml:337), and System Settings' sidebar sets `colorSet: View` (systemsettings v6.8.1 app/qml/CategoriesPage.qml:19-20); Dolphin's places panel, transparent over the window, is the exception the cell records. kde-breeze states `[Colors:View] BackgroundNormal`, #ffffff / #141618 (BreezeLight.colors:115, BreezeDark.colors:116 at v6.7.5), and the KDE reader reads `[Colors:View]` in place of `[Colors:Complementary]` (`native-theme/src/kde/colors.rs`, `populate_colors`; the entry's :173-176 having drifted), which on Breeze Light had given a dark #2a2e32 sidebar with #fcfcfc text. The facts cells :1370, :1372 and :609 and docs/inheritance-rules.toml:557-559 (the entry's :549) follow.
