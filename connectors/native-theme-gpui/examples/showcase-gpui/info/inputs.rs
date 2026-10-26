@@ -883,7 +883,54 @@ pub fn native_checkbox(
     } else {
         info
     };
+    // While focused the row draws the theme's focus ring; a disabled checkbox
+    // takes no focus.
+    let info = if disabled {
+        info
+    } else {
+        theme_focus_ring(info, r, "row")
+    };
     toggled(info.instance("label", label), CHECKBOX, checked, disabled)
+}
+
+/// The focus ring a theme-drawn control draws round its `part` while focused
+/// (native-theme-gpui/widgets/mod.rs, FocusRing): `defaults.focus_ring_color`
+/// as stated, `focus_ring_width` wide, its outer edge `focus_ring_offset` plus
+/// the width outside the part; inset at the edge it is a band inside the
+/// part's edge, as none of these parts has a border of its own.
+fn theme_focus_ring(info: WidgetInfo, r: &ResolvedTheme, part: &str) -> WidgetInfo {
+    let d = &r.defaults;
+    let (width, offset) = (d.focus_ring_width, d.focus_ring_offset);
+    if !(width.is_finite() && offset.is_finite() && width > 0.0) {
+        return info.config(
+            "focus ring",
+            "none: the theme's focus_ring_width is not positive (native-theme-gpui/widgets/mod.rs, FocusRing::of)",
+        );
+    }
+    let place = if offset == -width {
+        format!(
+            "inset at the {part}'s edge, a band inside it, the {part} having no border of its own to take the colour"
+        )
+    } else {
+        format!(
+            "its outer edge {}px outside the {part}'s, focus_ring_offset {}px plus the width, its corners grown as much",
+            px_text(offset + width),
+            px_text(offset)
+        )
+    };
+    info.color(claim(
+        "focus ring",
+        "focus_ring_color",
+        stated(d.focus_ring_color),
+        "native-theme-gpui/widgets/mod.rs:344",
+    ))
+    .config(
+        "focus ring",
+        format!(
+            "{}px wide, {place}, painted over the {part}'s other parts (native-theme-gpui/widgets/mod.rs, FocusRing::draw)",
+            px_text(width)
+        ),
+    )
 }
 
 /// The indicator's colours for a checkbox or radio in this state, `look`'s,
@@ -1129,7 +1176,9 @@ pub fn native_radio_column(
         "radios",
         format!("{radios}, each a widgets::Radio told its place in the group, widget_gap apart"),
     );
-    info.instance("selected", chosen)
+    // The focused radio's row draws the ring, as gpui-component's and the
+    // egui connector's do.
+    theme_focus_ring(info.instance("selected", chosen), r, "row")
 }
 
 /// A theme-drawn `widgets::Switch` reading `label`, `checked` or not,
@@ -1263,18 +1312,12 @@ pub fn native_switch(
         Some(f32::from(look.thumb_border_width)),
         "native-theme-gpui/widgets/switch.rs:140",
     ));
-    // While focused the track draws the focus ring in `ring` at 50% alpha
-    // (gpui-component/styled.rs:261), `ring` being the connector's
-    // `defaults.focus_ring_color`; a disabled switch takes no focus.
+    // While focused the track draws the theme's focus ring; a disabled switch
+    // takes no focus.
     let info = if disabled {
         info
     } else {
-        info.color(claim(
-            "focus ring, focus_ring_color at 50% alpha",
-            "focus_ring_color",
-            stated(r.defaults.focus_ring_color).alpha(0.5),
-            "native-theme-gpui/colors.rs:223",
-        ))
+        theme_focus_ring(info, r, "track")
     };
     let disabled_thumb = disabled && s.disabled_thumb_color.is_some();
     let info = info.color(
@@ -1404,6 +1447,8 @@ pub fn native_slider(r: &ResolvedTheme, vertical: bool, range: bool) -> WidgetIn
     } else {
         info
     };
+    // The focused end thumb draws the ring.
+    let info = theme_focus_ring(info, r, "end thumb");
     if range {
         info.instance("keyboard", "Left/Down and Right/Up step the range's end, Home takes it down to the start, End to the maximum; the start stays")
     } else {

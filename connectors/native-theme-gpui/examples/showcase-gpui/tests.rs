@@ -15675,17 +15675,17 @@ fn checkbox_leaves(
 
 /// The leaf each colour of a switch's look is read from, `checked` or not,
 /// `disabled` or not, as `SwitchLook::of` reads them
-/// (widgets/switch.rs:93-144): the track `checked_background` (:96) or
-/// `unchecked_background` (:98), disabled `disabled_checked_background`
-/// (:101) or `disabled_unchecked_background` (:102) where stated; the hover
-/// `hover_checked_background` (:106) or `hover_unchecked_background` (:108)
+/// (widgets/switch.rs:93-144): the track `checked_background` (:94) or
+/// `unchecked_background` (:96), disabled `disabled_checked_background`
+/// (:99) or `disabled_unchecked_background` (:100) where stated; the hover
+/// `hover_checked_background` (:104) or `hover_unchecked_background` (:106)
 /// over the track, or the track at rest; the track's outline
-/// `checked_track_border_color` (:123) or `unchecked_track_border_color`
-/// (:125), disabled their `disabled_*` forms (:128, :130) where stated; the
-/// thumb's outline `thumb_border_color` (:142); the thumb `thumb_background`
-/// (:113), off `unchecked_thumb_background` where stated (:115), disabled
-/// `disabled_thumb_color` where stated (:118); the label
-/// `defaults.disabled_text_color` disabled (:144), else `text_color` (:146)
+/// `checked_track_border_color` (:121) or `unchecked_track_border_color`
+/// (:123), disabled their `disabled_*` forms (:126, :128) where stated; the
+/// thumb's outline `thumb_border_color` (:140); the thumb `thumb_background`
+/// (:111), off `unchecked_thumb_background` where stated (:113), disabled
+/// `disabled_thumb_color` where stated (:116); the label
+/// `defaults.disabled_text_color` disabled (:142), else `text_color` (:144)
 /// -- as (track, hover, track outline, thumb outline, thumb, label).
 #[cfg(feature = "widgets")]
 fn switch_leaves(
@@ -15837,6 +15837,40 @@ fn look_findings(
     wrong
 }
 
+/// What is wrong with the focus ring `info` claims, if anything: a control
+/// that can take the focus (`focusable`) claims `defaults.focus_ring_color` as
+/// stated, read by `FocusRing::of` (native-theme-gpui/widgets/mod.rs:344), where
+/// the theme states a ring, and none otherwise.
+fn ring_findings(
+    whose: &str,
+    info: &WidgetInfo,
+    r: &native_theme::theme::ResolvedTheme,
+    focusable: bool,
+) -> Vec<String> {
+    let d = &r.defaults;
+    let drawn = focusable
+        && d.focus_ring_width.is_finite()
+        && d.focus_ring_offset.is_finite()
+        && d.focus_ring_width > 0.0;
+    let found = claim_by_role(info, "focus ring").map(|c| (c.value, c.field, c.cited_at));
+    let expected = drawn.then(|| {
+        (
+            crate::info::stated(d.focus_ring_color),
+            "focus_ring_color",
+            "native-theme-gpui/widgets/mod.rs:344",
+        )
+    });
+    if found == expected {
+        Vec::new()
+    } else {
+        vec![format!(
+            "{whose}: the focus ring claims {:?}, the theme draws {:?}",
+            found.map(|(v, f, c)| (as_rgba(v), f, c)),
+            expected.map(|(v, f, c)| (as_rgba(v), f, c))
+        )]
+    }
+}
+
 /// A theme-drawn Checkbox's, Radio's and Switch's info prints what the
 /// widget draws (M9-050, M9-051, M9-052, M9-053): each size it prints and
 /// each colour it claims is the field of the connector's Look the widget
@@ -15891,7 +15925,13 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                     ("mark", checked.then_some(look.mark), mark),
                     ("label", Some(look.label), label),
                 ],
-                &[],
+                &["focus ring"],
+            ));
+            wrong.extend(ring_findings(
+                &format!("{whose}: the Checkbox"),
+                &info,
+                &r,
+                !disabled,
             ));
             for (what, length) in [
                 ("indicator", look.indicator),
@@ -15966,6 +16006,12 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                     ("label", Some(look.label), label),
                 ],
                 &["focus ring"],
+            ));
+            wrong.extend(ring_findings(
+                &format!("{whose}: the Switch"),
+                &info,
+                &r,
+                !disabled,
             ));
             let thumb = note_of(&info.config, "thumb");
             let off_thumb = !checked && r.switch.unchecked_thumb_diameter.is_some();
@@ -16048,7 +16094,13 @@ fn a_theme_drawn_controls_info_prints_its_look() {
                 ),
                 ("hover", unselected.hover_fill, off_hover),
             ],
-            &[],
+            &["focus ring"],
+        ));
+        wrong.extend(ring_findings(
+            &format!("{name}: the radios"),
+            &info,
+            &r,
+            true,
         ));
         if !says(note_of(&info.config, "label gap"), &len(selected.label_gap)) {
             wrong.push(format!(

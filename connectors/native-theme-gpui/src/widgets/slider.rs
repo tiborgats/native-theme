@@ -371,10 +371,10 @@ impl RenderOnce for Slider {
         // The end thumb, the one the keys move, draws the focus ring.
         let end_thumb = thumb(&state, &look, axis, end, false, disabled)
             .debug_selector(|| "native-slider-thumb".into())
+            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))))
             .when_some(ring.filter(|_| focused), |thumb, ring| {
                 ring.draw(thumb, window)
-            })
-            .children(observer.map(|o| part_bounds(Part::Thumb, o, px(0.))));
+            });
         let start_thumb = range.then(|| {
             thumb(&state, &look, axis, start, true, disabled)
                 .debug_selector(|| "native-slider-start-thumb".into())

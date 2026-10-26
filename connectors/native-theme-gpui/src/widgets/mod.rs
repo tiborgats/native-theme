@@ -319,9 +319,12 @@ fn color(rgba: Rgba) -> Hsla {
 ///
 /// No ring where the width is not positive or the width or the offset is not
 /// finite. Where the ring lies inset at the element's edge (`offset` is
-/// minus `width`, libadwaita's), the element's border takes
-/// `focus_ring_color` instead, as the iced connector's focused field draws
-/// its ring as its border.
+/// minus `width`, libadwaita's) and the element states a border of its own,
+/// that border takes `focus_ring_color` instead, as the iced connector's
+/// focused field draws its ring as its border; an element without a border
+/// gets the band inside its edge. The caller adds the ring after the element's
+/// other children, so it paints over them, as the iced and egui rings do, and
+/// after its own refinement, which it reads the border and the corners from.
 #[derive(Clone, Copy, Debug, PartialEq)]
 struct FocusRing {
     /// `defaults.focus_ring_color`, as stated.
@@ -353,9 +356,6 @@ impl FocusRing {
             width,
             offset,
         } = self;
-        if offset == -width {
-            return element.border_color(ring);
-        }
         let rem = window.rem_size();
         let length = |l: Option<gpui::AbsoluteLength>| {
             l.map(|l| f32::from(l.to_pixels(rem))).unwrap_or_default()
@@ -367,6 +367,12 @@ impl FocusRing {
             length(style.border_widths.bottom),
             length(style.border_widths.left),
         );
+        // An inset ring on an element with a border of its own is that border in the
+        // ring's colour; on one without, the band below draws it inside the edge, as the
+        // egui connector's inset band (`paint_focus_ring`).
+        if offset == -width && [top, right, bottom, left].iter().any(|w| *w > 0.0) {
+            return element.border_color(ring);
+        }
         let grow = offset + width;
         let corner = |l: Option<gpui::AbsoluteLength>| Some(px((length(l) + grow).max(0.0)).into());
         let mut band = gpui::StyleRefinement::default();

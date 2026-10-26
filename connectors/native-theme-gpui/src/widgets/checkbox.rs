@@ -288,12 +288,15 @@ impl Parts {
             // The row the focus ring follows, as gpui-component rounds it
             // (checkbox.rs:289).
             .rounded(px(f32::from(cx.theme().radius) / 2.))
-            .when_some(ring.filter(|_| focused), |row, ring| ring.draw(row, window))
             .on_mouse_down(MouseButton::Left, |_, window, _| window.prevent_default())
             .opacity(look.opacity)
             .child(indicator)
             .children(label)
-            .refine_style(&style))
+            .refine_style(&style)
+            // The ring follows the row, for a radio as for a checkbox, as
+            // gpui-component's and the egui connector's do: last, over the indicator
+            // and the label, and after the caller's refinement.
+            .when_some(ring.filter(|_| focused), |row, ring| ring.draw(row, window)))
     }
 }
 

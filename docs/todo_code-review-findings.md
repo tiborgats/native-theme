@@ -13838,3 +13838,17 @@ among the presets that state them. The iced `contract-leaves.toml` was regenerat
 toggler hover now moves with the checked colour). The new `[1.0]` entry *windows-11: values WinUI
 3 states no source for* holds the parts no Microsoft source gives.
 **Status:** done, c7989e7b (facts 56407e2d).
+- *C-06 review follow-up (2026-10-26):* C1: the entry above said adwaita draws "a tinted
+  border"; none of the four controls' ringed parts states a border (the checkbox and radio row,
+  the switch track, whose outline is a child box, the slider thumb), so adwaita drew no ring at
+  all. `FocusRing::draw` tints the border only where the element states a positive border width,
+  and otherwise draws the band, at grow 0 inside the edge, as the egui connector's inset band;
+  tests: the borderless inset case in `the_focus_ring_is_the_themes` and
+  `every_focused_control_draws_the_ring` (kde-breeze and adwaita: checkbox, radio, switch; the
+  slider), both red by mutation. I2: the switch's Widget Info claimed `focus_ring_color` at 50 %
+  (`colors.rs:223`, `styled.rs:261`); it and the checkbox's, the radio column's and the
+  slider's now claim the stated colour at `widgets/mod.rs:344` (`FocusRing::of`) with the width
+  and offset as config (`theme_focus_ring` in `info/inputs.rs`). M3: the checkbox row's ring is
+  drawn after the caller's `refine_style`. M4: each ring is the last child, over the indicator,
+  label, outline and thumb. M5: the radio's ring follows the row, as upstream's and egui's (its
+  doc says so); the showcase's `switch_leaves` doc cites the lines `SwitchLook::of` now reads at.

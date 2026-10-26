@@ -2629,12 +2629,68 @@ fn a_switch_told_not_to_draws_no_focus_ring(cx: &mut TestAppContext) {
     }
 }
 
+/// A focused Checkbox, Radio, Switch and Slider each draw the theme's ring
+/// (C-06): kde-breeze's outside the control, adwaita's inset one as a band
+/// inside the edge of the borderless row, track and thumb.
+#[gpui::test]
+fn every_focused_control_draws_the_ring(cx: &mut TestAppContext) {
+    type Build = Box<dyn Fn() -> AnyElement>;
+    for preset in ["kde-breeze", "adwaita"] {
+        let controls: [(&str, Build); 3] = [
+            (
+                "checkbox",
+                Box::new(|| Checkbox::new("c").label("C").into_any_element()),
+            ),
+            (
+                "radio",
+                Box::new(|| Radio::new("r").label("R").into_any_element()),
+            ),
+            ("switch", Box::new(|| Switch::new("s").into_any_element())),
+        ];
+        for (name, build) in controls {
+            let cx = window_with(
+                cx,
+                Some((preset, ColorMode::Light)),
+                Box::new(move |_, _| build()),
+            );
+            assert!(
+                cx.debug_bounds(FOCUS_RING_SELECTOR).is_none(),
+                "{preset} {name}: a ring before the focus"
+            );
+            focus_next(cx);
+            redraw(cx);
+            assert!(
+                cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+                "{preset} {name}: no ring once focused"
+            );
+        }
+    }
+    let (cx, _state) = slider_window(cx, false);
+    focus_next(cx);
+    redraw(cx);
+    assert!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).is_some(),
+        "kde-breeze slider: no ring once focused"
+    );
+}
+
 /// A theme's stated ring, `width` wide `offset` off the element's edge,
 /// drawn round a 40 px square with a 1 px border and 4 px corners.
 fn ringed(
     cx: &mut TestAppContext,
     width: f32,
     offset: f32,
+) -> (&mut VisualTestContext, ResolvedTheme) {
+    ringed_square(cx, width, offset, true)
+}
+
+/// [`ringed`], the square with a 1 px border where `bordered`, and none
+/// where not.
+fn ringed_square(
+    cx: &mut TestAppContext,
+    width: f32,
+    offset: f32,
+    bordered: bool,
 ) -> (&mut VisualTestContext, ResolvedTheme) {
     let mut r = resolved("kde-breeze", ColorMode::Light);
     r.defaults.focus_ring_width = width;
@@ -2644,11 +2700,12 @@ fn ringed(
         cx,
         Some(("kde-breeze", ColorMode::Light)),
         Box::new(move |window, _| {
+            use gpui::prelude::FluentBuilder as _;
             let square = div()
                 .debug_selector(|| "ringed".into())
                 .relative()
                 .size(px(40.))
-                .border(px(1.))
+                .when(bordered, |square| square.border(px(1.)))
                 .rounded(px(4.));
             match ring {
                 Some(ring) => ring.draw(square, window).into_any_element(),
@@ -2712,6 +2769,26 @@ fn the_focus_ring_is_the_themes(cx: &mut TestAppContext) {
             .iter()
             .any(|q| q.border_color == ring && q.border_widths.top.0 > 0.0),
         "an inset ring is not the square's border"
+    );
+    // Inset at the edge of an element with no border of its own (adwaita's
+    // ring on the checkbox row, the switch track, the slider thumb): the band
+    // inside the edge, at the element's corners.
+    let (cx, r) = ringed_square(cx, 2.0, -2.0, false);
+    let ring = color(r.defaults.focus_ring_color);
+    let square = bounds(cx, "ringed");
+    let scale = cx.update(|window, _| window.scale_factor());
+    assert_eq!(
+        cx.debug_bounds(FOCUS_RING_SELECTOR).map(|b| b.size),
+        Some(square.size),
+        "a borderless inset ring is a band at the edge"
+    );
+    assert!(
+        quads_round(cx, square, 0.0)
+            .iter()
+            .any(|q| q.border_color == ring
+                && (q.border_widths.top.0 - 2.0 * scale).abs() < 0.01
+                && (q.corner_radii.top_left.0 - 4.0 * scale).abs() < 0.01),
+        "no 2 px band inside the borderless square's edge"
     );
     // No ring at all.
     for (width, offset) in [(0.0_f32, 1.0_f32), (f32::NAN, 1.0), (1.0, f32::INFINITY)] {

@@ -453,6 +453,9 @@ impl Switch {
         cx: &App,
     ) -> SwitchTrack {
         let observer = self.observer.as_ref();
+        let ring = (focused && !self.disabled && self.focus_ring)
+            .then(|| cx.native().and_then(|n| FocusRing::of(n.resolved)))
+            .flatten();
         SwitchTrack::new((self.id.clone(), "track"))
             .checked(self.checked)
             .disabled(self.disabled)
@@ -462,12 +465,6 @@ impl Switch {
             .h(look.track_height)
             .rounded(look.track_radius)
             .bg(look.track)
-            .when_some(
-                (focused && !self.disabled && self.focus_ring)
-                    .then(|| cx.native().and_then(|n| FocusRing::of(n.resolved)))
-                    .flatten(),
-                |track, ring| ring.draw(track, window),
-            )
             .when_some(look.hover_track, |track, hover| {
                 track.group_hover(HOVER_GROUP, move |style| style.bg(hover))
             })
@@ -513,6 +510,8 @@ impl Switch {
                     ),
             )
             .children(observer.map(|o| part_bounds(Part::Track, o, px(0.))))
+            // Last, so it paints over the outline and the thumb.
+            .when_some(ring, |track, ring| ring.draw(track, window))
     }
 }
 
