@@ -402,10 +402,13 @@ keys = [
     "adwaita:basic.list.heading.h",
     "adwaita:basic.list.frame.y",
     "kde-breeze:basic.list.row_2.h",
+    "kde-breeze:basic.list.row_2.text.h",
     "kde-breeze:basic.list.row_3.y",
     "kde-breeze:basic.expander.heading.h",
     "kde-breeze:basic.expander.details.y",
+    "kde-breeze:basic.expander.details.h",
     "kde-breeze:basic.expander.details.body.h",
+    "kde-breeze:basic.expander.more.y",
     "kde-breeze:basic.expander.more.title.h",
     "adwaita:basic.table.heading.h",
     "kde-breeze:basic.table.heading.h",
@@ -416,6 +419,15 @@ keys = [
     "kde-breeze:basic.table.frame.h",
     "kde-breeze:basic.table.row_1.h",
     "kde-breeze:basic.table.row_2.y",
+]
+
+[[parity.group]]
+reason = "a sum: it holds or is placed after the Basic tabs, whose height differs for the reason their own entries give (iced_aw's TabBar, below); the Tabs group stands above the Expander group in the fifth column | toolkit limit: iced_aw's TabBar gives the bar, each tab and its label's column one fixed height, takes the tab's padding and a hard-coded 5 px label padding off it, lays the label out on its text size plus one at iced's 1.3 in what is left, and draws it at its text size clipped to that node (iced_aw 0.14.1 src/widget/tab_bar.rs:418-420, :491-509, :696, :901-918; iced_core 0.14.0 src/layout/limits.rs:79-85, :122-133), so the iced showcase lays its bars out at the label's line inside those paddings where that is taller than tab.min_height (aw_tab_height): under every bundled preset but material-3 (48) it is (kde-breeze 18.6 + 10 + its padding 8 = 37 where it states 30, macos-tahoe 23.8 + 10 + 10 = 44 where it states 24), so iced's tabs are taller than gpui's and egui's, which are at least tab.min_height and hold the label inside the tab's padding alone"
+keys = [
+    "kde-breeze:basic.page.h",
+    "kde-breeze:basic.column_5.h",
+    "catppuccin-mocha:basic.expander.heading.y",
+    "kde-breeze:basic.expander.heading.y",
 ]
 
 [[parity.group]]
@@ -1006,17 +1018,27 @@ keys = [
     "adwaita:basic.list.row_3.h",
     "catppuccin-mocha:basic.list.row_3.h",
     "material-3:basic.list.row_3.h",
+    "catppuccin-mocha:basic.list.row_3.text.h",
 ]
 
 [[parity.group]]
 reason = "the theme states no list.border.padding_* or list.row_height_px on material-3 and catppuccin-mocha: each toolkit keeps its own default (iced: iced_aw's SelectionList row padding 5, iced_aw 0.14.1 src/widget/selection_list.rs:77) | theme silence: material-3 and catppuccin-mocha state no list.border.padding_* and no list.row_height_px (None), so a row is its line box and each toolkit's own padding (egui's button_padding 4 x 1 for the list, egui-0.36.2/src/style.rs:1458; 0 for the table, the three showcases' agreed rule for a None side), and the list's frame, scroll bar and the groups under it follow"
 keys = [
     "basic.list.row_1.h",
+    "catppuccin-mocha:basic.list.row_1.text.x",
+    "catppuccin-mocha:basic.list.row_1.text.y",
+    "material-3:basic.list.row_1.text.y",
     "basic.list.row_2.y",
     "catppuccin-mocha:basic.list.row_2.h",
     "material-3:basic.list.row_2.h",
+    "catppuccin-mocha:basic.list.row_2.text.x",
+    "catppuccin-mocha:basic.list.row_2.text.y",
+    "material-3:basic.list.row_2.text.y",
     "catppuccin-mocha:basic.list.row_3.y",
     "material-3:basic.list.row_3.y",
+    "catppuccin-mocha:basic.list.row_3.text.x",
+    "catppuccin-mocha:basic.list.row_3.text.y",
+    "material-3:basic.list.row_3.text.y",
 ]
 
 [[parity.group]]
@@ -1059,8 +1081,8 @@ keys = [
 reason = "theme silence, material-3 and catppuccin-mocha: expander.frame_enabled, arrow_side, arrow_gap, content_indent and the padding are unstated there (docs/platform-facts.md section 2.27 states them for the desktops); gpui keeps upstream's bordered Accordion (gpui-component src/accordion.rs), both items in one frame whose line insets the headers and whose items pad their bodies, where iced and egui draw no frame and outline no header, an unstated frame_enabled drawn as a stated false (ledger M9-176, M9-178), so the expander's left edge shows gpui's frame line and their background"
 keys = [
     "catppuccin-mocha:basic.expander.details.h",
-    "kde-breeze:basic.expander.details.h",
     "material-3:basic.expander.details.h",
+    "catppuccin-mocha:basic.expander.details.border",
     "catppuccin-mocha:basic.expander.details.header.x",
     "material-3:basic.expander.details.header.x",
     "catppuccin-mocha:basic.expander.details.header.y",
@@ -1071,7 +1093,6 @@ keys = [
     "catppuccin-mocha:basic.expander.details.body.y",
     "material-3:basic.expander.details.body.y",
     "catppuccin-mocha:basic.expander.more.y",
-    "kde-breeze:basic.expander.more.y",
     "material-3:basic.expander.more.y",
     "catppuccin-mocha:basic.expander.more.h",
     "material-3:basic.expander.more.h",
