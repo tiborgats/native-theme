@@ -53,7 +53,8 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 /// collapsing_header.rs:518-523`), the stated height at a text scale of 1 or less, where the
 /// connector fits the scope's vertical padding to it, and above 1 grown by the same rule. The
 /// open state lives in egui's `CollapsingState` under the header's id, so it animates and
-/// persists as egui's does.
+/// persists as egui's does. Either way the body is drawn in the style the expander is shown
+/// in, not in the header's `Role::Expander` cell, so a widget in it is the caller's.
 #[must_use = "You should call .show()"]
 pub struct Expander {
     title: egui::WidgetText,
@@ -147,6 +148,14 @@ impl Expander {
         let e = &t.expander;
         let line = scaled_line(t, atlas.accessibility());
         let enabled = self.enabled;
+        // The body is drawn in the style the expander is shown in, not in the header's cell,
+        // which `native_scope` puts in place of the whole style: a widget in the body is the
+        // caller's. The disabled state lives on the `Ui`, so the body keeps it.
+        let outer = std::sync::Arc::clone(ui.style());
+        let add_body = move |ui: &mut egui::Ui| {
+            ui.set_style(outer);
+            add_body(ui)
+        };
         if e.arrow_side.is_none()
             && e.arrow_gap.is_none()
             && e.content_indent.is_none()

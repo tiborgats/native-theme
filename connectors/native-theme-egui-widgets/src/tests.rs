@@ -775,6 +775,43 @@ fn an_expander_with_no_stated_frame_outlines_nothing() {
     }
 }
 
+/// A widget in an expander's body is drawn in the style the expander was shown in, not in the
+/// expander's header cell (round 4 review, item 17 I1): under catppuccin-mocha, which reaches
+/// egui's own `CollapsingHeader`, and kde-breeze, which the crate lays out, a `Button` in the
+/// open body keeps the base style's button outline, where the header cell's is 0 wide (M9-178).
+#[test]
+fn a_widget_in_the_body_keeps_the_callers_style() {
+    let prefs = AccessibilityPreferences::default();
+    for preset in ["catppuccin-mocha", "kde-breeze"] {
+        let t = from_preset(preset, true, &prefs).unwrap().1;
+        let ctx = installed(&t, &prefs);
+        let mut base = egui::Stroke::NONE;
+        let mut button = egui::Rect::NOTHING;
+        let mut show = |ui: &mut egui::Ui| {
+            base = ui.visuals().widgets.inactive.bg_stroke;
+            let _ = Expander::new("Details")
+                .default_open(true)
+                .show(ui, |ui| button = ui.button("Inside").rect);
+        };
+        let _ = pass(&ctx, at(0.0), &mut show);
+        let out = pass(&ctx, at(0.0), &mut show);
+        assert!(base.width > 0.0, "{preset}: the base style outlines a button");
+        let outlined = rects(&out)
+            .iter()
+            .any(|r| r.stroke == base && r.rect.contains(button.center()));
+        assert!(
+            outlined,
+            "{preset}: the Button in the body at {button:?} is not outlined in the base style's \
+             {base:?}: {:?}",
+            rects(&out)
+                .iter()
+                .filter(|r| r.rect.contains(button.center()))
+                .map(|r| r.stroke)
+                .collect::<Vec<_>>()
+        );
+    }
+}
+
 /// `scale` as the OS's text-scaling factor.
 fn scaled_by(scale: f32) -> AccessibilityPreferences {
     let mut prefs = AccessibilityPreferences::default();
