@@ -658,8 +658,9 @@ pub(super) const TOOLTIP_PAIRS: &[StylePair<()>] = &[StylePair {
     },
 }];
 
-/// A segment's label on the fill it paints, over the control's own fill: the
-/// segment covers the frame's line-coloured fill wherever its label is.
+/// A segment's label on the fill it lays over the control's group fill,
+/// which lies on the window: an unselected segment at rest paints none, so
+/// its label is on the group itself.
 #[cfg(feature = "widgets")]
 pub(super) const SEGMENT_PAIRS: &[StylePair<(bool, button::Status)>] = &[StylePair {
     what: "segment label",
@@ -667,19 +668,26 @@ pub(super) const SEGMENT_PAIRS: &[StylePair<(bool, button::Status)>] = &[StylePa
     statuses: SEGMENT_STATUSES,
     emitted: |t, r, (selected, status)| {
         let style = styles::segment(r, selected, styles::SegmentPosition::Middle)(t, status);
-        flat(style.background).map(|fill| {
-            (
-                style.text_color,
-                fill,
-                to_color(r.segmented_control.background_color),
-            )
-        })
+        let fill = match style.background {
+            None => Ok(Color::TRANSPARENT),
+            some => flat(some),
+        }?;
+        Ok((style.text_color, fill, segment_ground(r)))
     },
     native: |r, s| {
         let (fill, label) = native_segment(r, s);
-        (label, fill, to_color(r.segmented_control.background_color))
+        (label, fill, segment_ground(r))
     },
 }];
+
+/// What a segment lies on: the control's group fill over the window.
+#[cfg(feature = "widgets")]
+fn segment_ground(r: &ResolvedTheme) -> Color {
+    over(
+        to_color(r.segmented_control.background_color),
+        to_color(r.defaults.background_color),
+    )
+}
 
 /// An expander header's label on whatever fill it paints, over the window it
 /// sits on: at rest it paints none, so the label is on the window itself.

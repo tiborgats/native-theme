@@ -14134,3 +14134,43 @@ segment entry carries the commit.
 **Status:** done, cd32a249 and the commit that files this entry. Visible in CI Screenshots only:
 the macOS presets' disabled controls, slider track, monterey's unchecked checkbox and tahoe's
 segment.
+
+#### D13 · the D11/D12 review: the segmented control's group, the high-contrast segment hover, monterey's comments
+**Problem:** I1: the iced connector and the egui widgets drew a segmented control by filling
+the whole control with `border.color` and painting each segment's `background_color` over it
+(iced `styles.rs`, `segmented_control` / `segment`; egui-widgets `segmented_control.rs`,
+`Outline::frame`), so windows-11's translucent group fill (#00000006 / #00000019) came out
+darker inside than WinUI draws it and the outline inverted; the disabled fade uncovered the
+line colour too. I2: under high contrast the Windows reader wrote the segment hover as the
+highlight while the model has no hovered segment text, so the label stayed the button text on
+it. M4: monterey's light `unchecked_background` comment was stale and the M8 T15 list still
+named measured items. M5: the CHANGELOG did not say that an accent overlay does not move the
+stated disabled on track or windows-11's spinner. M6: monterey's dark disabled on track gave the
+composite alone.
+**Fix:** I1, as gpui's `demo::segmented`: the control's fill is `background_color`, its edge the
+`border.color` outline, each segment lays only its own fill over the group (none at rest,
+`hover_background` as given, `active_background` selected), separators are lines of the border
+colour where `separator_width` > 0, and a disabled control fades its segments alone, over the
+group (`docs/platform-facts.md` §2.25). iced: `styles::segmented_control` fills with the group,
+`styles::segment` paints `None` at rest, and the new `styles::segment_separator` is a container
+fill a consumer lays between the segments (a container, because `rule::vertical` rounds its x to
+a whole point, which shifted the line off the segments' edges by a device pixel in a first draft);
+the row takes `Shrink` height over the separators' `Fill`. The contract rows, pairs (a segment
+lies on the group over the window), `DERIVED` entries, README and crate docs follow, and
+`contract-leaves.toml` is regenerated. egui-widgets: the frame is the group fill stroked with the
+outline, the segments' resting fills are cleared and their hover is the theme's layer, the
+dividers are painted in the gaps (the one painter call; T8 now allows it), and
+`SegmentedControl::backdrop`, which only the removed fade-as-one used, is gone (it was added this
+cycle, so 0.6.1 never had it). Proof: the iced Basic page's segmented control, rendered by
+`iced_test` before and after for kde-breeze, catppuccin-mocha, material-3, adwaita, nord, ios-13
+and both macOS presets in both modes, is byte-identical but for 0 to 40 pixels at one level of
+anti-aliasing per image; windows-11's inside changes, and
+`the_windows_11_segments_lie_on_the_group_fill` (iced, pixels; egui-widgets, shapes) holds it to
+the group over the page and the selected segment to `active_background` over that. The egui
+drawing has no rasteriser here: the controller's gate compares its dumps. I2: the reader leaves
+the hover unwritten under high contrast; a `[1.0]` todo entry asks for
+`segmented_control.hover_text_color` (SegmentedItem.xaml:249-250, :271-272). M4, M5, M6: the
+comment restated from facts :1227 / :1247, the T15 list's checkbox items moved to its D12 note,
+the CHANGELOG lines say the overlay holds as for the D2 fills, and the dark comment gives the
+measured #1f4e81 (probe 14 :3816).
+**Status:** done, the commit that files this entry.

@@ -1725,27 +1725,37 @@ impl SegmentPosition {
 /// that holds its segments.
 ///
 /// iced has no segmented control, so one is built from iced's own widgets: a
-/// container holding a row of buttons, each styled by [`segment`]. The
-/// container is the control's outline and its separators:
+/// container holding a row of buttons, each styled by [`segment`], with a
+/// [`segment_separator`] between each two where the control states a
+/// `separator_width`; the row's height is `Shrink`, so a separator, `Fill`
+/// tall, spans the segments' height:
 ///
 /// ```rust,ignore
-/// use iced::widget::{container, row};
+/// use iced::widget::{container, row, space};
+/// use iced::{Fill, Shrink};
 /// use native_theme_iced::styles;
 ///
 /// let sc = &resolved.segmented_control;
-/// container(row(segments).spacing(sc.separator_width))
+/// let mut parts = Vec::new();
+/// for (i, segment) in segments.into_iter().enumerate() {
+///     if i > 0 && sc.separator_width > 0.0 {
+///         let line = container(space()).width(sc.separator_width).height(Fill);
+///         parts.push(line.style(styles::segment_separator(&resolved)).into());
+///     }
+///     parts.push(segment);
+/// }
+/// container(row(parts).height(Shrink))
 ///     .padding(sc.border.line_width)
 ///     .style(styles::segmented_control(&resolved))
 /// ```
 ///
-/// Its fill is `segmented_control.border.color`, and every segment paints its
-/// own fill over it, so what shows of it is the outline -- the
-/// `border.line_width` the container's padding leaves round the row -- and
-/// the `separator_width` gaps the row leaves between the segments. The model
-/// states the separators' width and no colour of their own, so they are the
-/// one line colour the control states. The outline itself is
-/// `segmented_control.border.*`, drawn over that fill in the same colour, so
-/// its corner radius rounds the control.
+/// Its fill is `segmented_control.background_color`, the group every
+/// segment lies on, and its outline `segmented_control.border.*`, the line
+/// colour at the line width, rounded by the corner radius; the padding of
+/// the line width keeps the segments inside the outline. A segment paints
+/// only what it lays over the group (its selected or hovered fill), so a
+/// translucent group fill, as windows-11 states, shows once, over what lies
+/// under the control, as gpui's showcase draws the control.
 ///
 /// `text_color` is `segmented_control.font.color`, which the segments'
 /// labels also take from [`segment`]. `shadow` and `snap` have no native
@@ -1763,7 +1773,7 @@ pub fn segmented_control(
 
     let s = &resolved.segmented_control;
 
-    let lines = to_color(s.border.color);
+    let group = to_color(s.background_color);
     let label = to_color(s.font.color);
 
     let border = border_of(&s.border);
@@ -1772,11 +1782,35 @@ pub fn segmented_control(
         let iced = Style::default();
         Style {
             text_color: Some(label),
-            background: Some(Background::Color(lines)),
+            background: Some(Background::Color(group)),
             border,
             shadow: iced.shadow,
             snap: iced.snap,
         }
+    }
+}
+
+/// The line between two segments of the platform's own segmented control,
+/// for `container(space()).width(separator_width).height(Fill).style(..)`
+/// between them in the row [`segmented_control`] holds: a fill of
+/// `segmented_control.border.color`, the one line colour the control states
+/// (the model states the separators' width and no colour of their own). A
+/// container, not a `rule::vertical`, because a rule rounds its line's x to
+/// a whole point (iced_widget 0.14.2 `src/rule.rs`, `draw`), off the
+/// segments' edges. `text_color`, `border`, `shadow` and `snap` are
+/// `container::Style::default()`'s. A `separator_width` of 0 is no line: the
+/// consumer adds none.
+#[must_use = "this returns the style function; it does not apply it"]
+pub fn segment_separator(
+    resolved: &ResolvedTheme,
+) -> impl Fn(&Theme) -> iced_widget::container::Style + Clone + use<> {
+    use iced_widget::container::Style;
+
+    let line = to_color(resolved.segmented_control.border.color);
+
+    move |_theme| Style {
+        background: Some(Background::Color(line)),
+        ..Style::default()
     }
 }
 
@@ -1786,29 +1820,28 @@ pub fn segmented_control(
 /// `selected` is whether this is the chosen segment, and `position` where it
 /// sits, which decides its corners.
 ///
-/// An unselected segment is `segmented_control.background_color` with
-/// `.font.color`, and `.hover_background` layered over that fill under the
-/// pointer -- a soft option, whose `None` is the platform saying a hovered
-/// segment looks no different. The selected segment is
-/// `segmented_control.active_background` with `.active_text_color`, and the
-/// model states no hover for it, so a hovered selected segment is exactly the
-/// selected one. The model states no pressed segment either: a pressed
-/// segment is the hovered one.
+/// A segment lies on the control's group fill and paints only what the
+/// model lays over it. An unselected segment paints no fill at rest
+/// (`background` is `None`) and `.hover_background` under the pointer, laid
+/// over the group as given -- a soft option, whose `None` is the platform
+/// saying a hovered segment looks no different; its label is `.font.color`.
+/// The selected segment is `segmented_control.active_background` with
+/// `.active_text_color`, and the model states no hover for it, so a hovered
+/// selected segment is exactly the selected one. The model states no pressed
+/// segment either: a pressed segment is the hovered one.
 ///
-/// A disabled segment is its enabled self at `segmented_control.disabled_opacity`:
-/// the model states the dimming as the control's opacity, and iced has no
-/// widget opacity, so the fill is faded over the control's own
-/// `background_color` -- not over the container's border-coloured fill, which
-/// the fade would otherwise uncover -- and the label's alpha is multiplied by
-/// it.
+/// A disabled segment is its enabled self at `segmented_control.disabled_opacity`
+/// (docs/platform-facts.md §2.25): its fill's alpha and its label's are
+/// multiplied by it, over the group fill, which is not faded.
 ///
 /// Each segment rounds the corners it shares with the control's outline, to
 /// the outline's inner radius -- `border.corner_radius` less
 /// `border.line_width`, and never below zero -- so its fill stays inside the
 /// rounded outline; its other corners are square. The segment has no border
-/// of its own -- the control's outline and its separators are the container's
-/// -- so the border's colour and width are iced's own for a button,
-/// `button::Style::default()`'s none, and so are `shadow` and `snap`.
+/// of its own -- the control's outline is the container's, its separators
+/// [`segment_separator`]'s -- so the border's colour and width are iced's own
+/// for a button, `button::Style::default()`'s none, and so are `shadow` and
+/// `snap`.
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn segment(
     resolved: &ResolvedTheme,
@@ -1819,19 +1852,17 @@ pub fn segment(
 
     let s = &resolved.segmented_control;
 
-    let base = to_color(s.background_color);
     let (idle, hovered, label) = if selected {
-        let fill = to_color(s.active_background);
+        let fill = Some(to_color(s.active_background));
         (fill, fill, to_color(s.active_text_color))
     } else {
         (
-            base,
-            s.hover_background
-                .map_or(base, |hover| composite_over(to_color(hover), base)),
+            None,
+            s.hover_background.map(to_color),
             to_color(s.font.color),
         )
     };
-    let disabled = composite_over(faded(idle, s.disabled_opacity), base);
+    let disabled = idle.map(|fill| faded(fill, s.disabled_opacity));
     let disabled_label = faded(label, s.disabled_opacity);
 
     let inner_radius = (s.border.corner_radius - s.border.line_width).max(0.0);
@@ -1850,7 +1881,7 @@ pub fn segment(
             Status::Disabled => (disabled, disabled_label),
         };
         Style {
-            background: Some(Background::Color(background)),
+            background: background.map(Background::Color),
             text_color,
             border: Border {
                 radius,

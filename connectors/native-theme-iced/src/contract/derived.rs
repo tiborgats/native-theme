@@ -706,6 +706,53 @@ pub(super) const DERIVED: &[(&str, &str)] = &[
     ),
     #[cfg(feature = "widgets")]
     (
+        "styles::segment_separator.text_color",
+        "iced default: container::Style::default().text_color -- a line holds no text",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.color",
+        "iced default: container::Style::default().border.color -- the line is its fill",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.width",
+        "iced default: container::Style::default().border.width -- none, the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.radius.top_left",
+        "iced default: container::Style::default().border.radius.top_left -- a square line, as gpui's showcase draws it",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.radius.top_right",
+        "iced default: container::Style::default().border.radius.top_right -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.radius.bottom_right",
+        "iced default: container::Style::default().border.radius.bottom_right -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.border.radius.bottom_left",
+        "iced default: container::Style::default().border.radius.bottom_left -- the same",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.shadow",
+        "iced default: container::Style::default().shadow -- the model has a \
+         shadow color but no offset or blur",
+    ),
+    #[cfg(feature = "widgets")]
+    (
+        "styles::segment_separator.snap",
+        "iced default: container::Style::default().snap -- a renderer setting, \
+         cfg!(feature = \"crisp\")",
+    ),
+    #[cfg(feature = "widgets")]
+    (
         "styles::expander_frame.text_color",
         "iced default: container::Style::default().text_color -- ExpanderTheme \
          states no label for the frame, and iced's None inherits the label \

@@ -2118,8 +2118,8 @@ pub(super) const CONTAINER_CARD_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
 pub(super) const SEGMENTED_CONTROL_STATUSES: &[()] = &[()];
 
 /// Every color field of `styles::segmented_control`: the frame's fill is the
-/// control's line colour, which shows as the outline and the separators, and
-/// its label is the control's own.
+/// group every segment lies on, the control's own fill, and its label is the
+/// control's own.
 #[cfg(feature = "widgets")]
 pub(super) const SEGMENTED_CONTROL_ROWS: &[StyleRow<()>] = &[
     StyleRow {
@@ -2131,7 +2131,7 @@ pub(super) const SEGMENTED_CONTROL_ROWS: &[StyleRow<()>] = &[
     StyleRow {
         field: "styles::segmented_control.background",
         statuses: SEGMENTED_CONTROL_STATUSES,
-        native: |r, ()| to_color(r.segmented_control.border.color),
+        native: |r, ()| to_color(r.segmented_control.background_color),
         get: |t, r, ()| flat(styles::segmented_control(r)(t).background),
     },
 ];
@@ -2146,6 +2146,16 @@ pub(super) const SEGMENTED_CONTROL_BORDER_ROWS: &[BorderRow<()>] = &[BorderRow {
         radius: r.segmented_control.border.corner_radius,
     },
     get: |t, r, ()| styles::segmented_control(r)(t).border,
+}];
+
+/// The one colour field of `styles::segment_separator`, the line between
+/// two segments, its fill; its others are iced's container defaults.
+#[cfg(feature = "widgets")]
+pub(super) const SEGMENT_SEPARATOR_ROWS: &[StyleRow<()>] = &[StyleRow {
+    field: "styles::segment_separator.background",
+    statuses: SEGMENTED_CONTROL_STATUSES,
+    native: |r, ()| to_color(r.segmented_control.border.color),
+    get: |t, r, ()| flat(styles::segment_separator(r)(t).background),
 }];
 
 /// Every state of a segment: whether it is the selected one, and its
@@ -2172,29 +2182,28 @@ pub(super) const SEGMENT_POSITIONS: &[styles::SegmentPosition] = &[
 ];
 
 /// The fill and the label the native fields give a segment, computed from the
-/// resolved theme alone.
-///
-/// Unselected, the control's fill with its hover layered over it; selected,
-/// the active pair in every enabled status, since the model states no hover
-/// of its own for it; pressed, the hovered look, since the model states no
-/// pressed segment. Disabled, the enabled pair at
-/// `segmented_control.disabled_opacity`, the fill faded over the control's
+/// resolved theme alone: what the segment lays over the control's group
 /// fill.
+///
+/// Unselected, none at rest and its hover under the pointer (none where that
+/// soft option is `None`); selected, the active pair in every enabled
+/// status, since the model states no hover of its own for it; pressed, the
+/// hovered look, since the model states no pressed segment. Disabled, the
+/// enabled pair at `segmented_control.disabled_opacity`, over the group,
+/// which is not faded. "None" is fully transparent here, the colour a `None`
+/// background paints.
 #[cfg(feature = "widgets")]
 pub(super) fn native_segment(
     r: &ResolvedTheme,
     (selected, status): (bool, button::Status),
 ) -> (Color, Color) {
     let s = &r.segmented_control;
-    let base = to_color(s.background_color);
     let (idle, hovered, label) = if selected {
         let fill = to_color(s.active_background);
         (fill, fill, to_color(s.active_text_color))
     } else {
-        let hovered = s
-            .hover_background
-            .map_or(base, |hover| over(to_color(hover), base));
-        (base, hovered, to_color(s.font.color))
+        let hovered = s.hover_background.map_or(Color::TRANSPARENT, to_color);
+        (Color::TRANSPARENT, hovered, to_color(s.font.color))
     };
     let fade = |c: Color| Color {
         a: c.a * s.disabled_opacity,
@@ -2203,7 +2212,7 @@ pub(super) fn native_segment(
     match status {
         button::Status::Active => (idle, label),
         button::Status::Hovered | button::Status::Pressed => (hovered, label),
-        button::Status::Disabled => (over(fade(idle), base), fade(label)),
+        button::Status::Disabled => (fade(idle), fade(label)),
     }
 }
 
@@ -2214,10 +2223,17 @@ pub(super) const SEGMENT_ROWS: &[StyleRow<(bool, button::Status)>] = &[
         field: "styles::segment.background",
         statuses: SEGMENT_STATUSES,
         native: |r, s| native_segment(r, s).0,
-        get: |t, r, (selected, status)| {
-            flat(
-                styles::segment(r, selected, styles::SegmentPosition::Middle)(t, status).background,
-            )
+        // A `None` background is the segment painting nothing over the group;
+        // any other background must be a flat color.
+        get: |t, r, (selected, status)| match styles::segment(
+            r,
+            selected,
+            styles::SegmentPosition::Middle,
+        )(t, status)
+        .background
+        {
+            None => Ok(Color::TRANSPARENT),
+            some => flat(some),
         },
     },
     StyleRow {
@@ -2872,6 +2888,11 @@ pub(super) fn style_row_fields() -> Vec<String> {
     out.extend(DIALOG_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TOOLBAR_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(TOOLBAR_RULE_ROWS.iter().map(|row| row.field.to_string()));
+    out.extend(
+        SEGMENT_SEPARATOR_ROWS
+            .iter()
+            .map(|row| row.field.to_string()),
+    );
     out.extend(CONTAINER_CARD_ROWS.iter().map(|row| row.field.to_string()));
     out.extend(
         SEGMENTED_CONTROL_ROWS

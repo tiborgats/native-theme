@@ -75,14 +75,15 @@
 //! the calling `Ui`'s, which egui applied before the widget's scope opened.
 //!
 //! A [`switch::Switch`], [`radio_button::RadioButton`] or [`slider::Slider`]
-//! built with `.enabled(false)` or added to a disabled `Ui`, and a
+//! built with `.enabled(false)` or added to a disabled `Ui` is faded as one
+//! widget over its backdrop, the window's `defaults.background_color` unless
+//! `.backdrop(..)` names another ([`fade::fade_as_one`]): its thumb or dot
+//! keeps its colour on the track or circle, a knob its own over the backdrop,
+//! and the whole fades, as libadwaita's `filter: Opacity(..)` does, where
+//! egui's per-shape fade would show the thumb through the faded track. A
 //! [`segmented_control::SegmentedControl`] (which has no `.enabled(..)`) added
-//! to a disabled `Ui`, is faded as one widget over its backdrop, the window's
-//! `defaults.background_color` unless `.backdrop(..)` names another
-//! ([`fade::fade_as_one`]): its thumb, dot or segment keeps its colour on the
-//! track, circle or outline, a knob its own over the backdrop, and the whole
-//! fades, as libadwaita's `filter: Opacity(..)` does, where egui's per-shape
-//! fade would show the thumb through the faded track. Under a disabled `Ui`
+//! to a disabled `Ui` fades its segments alone, over its group fill, which
+//! does not fade (`docs/platform-facts.md` §2.25). Under a disabled `Ui`
 //! the fade is that `Ui`'s `disabled_alpha`, the one level of fade egui gave
 //! the painter taken back; a `Ui` disabled twice, or restyled after it was
 //! disabled, keeps the rest. A checked radio button opens the connector's

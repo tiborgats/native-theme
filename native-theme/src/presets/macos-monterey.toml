@@ -160,7 +160,8 @@ hover_background = "#e0e0e5"
 # no disabled_background: platform-facts.md:1245 (§2.5), macOS fades the unchecked box to half its
 # alpha (measured) and draws the checked one in the accent, unmeasured when disabled; one field cannot
 # carry both, so unset, it is the enabled box of each state
-# soft_option: unchecked indicator fill = controlBackgroundColor, probe :323
+# platform-facts.md:1247 (§2.5): ← background_color (:1227), the unchecked box measured white on macOS 14
+# and 15 (os-probe run 40348854007, renders/aqua/checkbox-regular-off@2x.png; the radio's the same)
 unchecked_background = "#ffffff"
 # platform-facts.md:1248 (§2.5): ← border.color (:1230), the box's 1 pt edge, #d6d6d6 on the sides and
 # the bottom, darker at the top (#c3c3c3), which one colour cannot carry (measured, os-probe run 40348854007,
@@ -845,7 +846,8 @@ track_radius_px = 11.0
 hover_unchecked_background = "#4a4a4c"
 # platform-facts.md:1529 (§2.21): accent_color at alpha 128/255, as macOS draws the enabled on track
 # at one half (measured in a key window, os-probe run 40348854007, os-probe-macos-14/probe.toml:3814,
-# :3834); the macOS reader writes the user's accent at it; over background_color #195699
+# :3834); the macOS reader writes the user's accent at it; over background_color #195699, where the key
+# window drew #1f4e81 (probe :3816), macOS's dark on track being darker than the accent it reads
 disabled_checked_background = "#007aff80"
 # platform-facts.md:1530 (§2.21): white at alpha 7/255 (measured, os-probe run 40348854007,
 # renders/darkAqua/switch-regular-disabled-off@2x.png); over background_color #383838

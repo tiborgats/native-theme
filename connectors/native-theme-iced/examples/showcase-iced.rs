@@ -8236,7 +8236,7 @@ fn iced_route(state: &State, element: &ShowcaseElement, leaf: &str) -> String {
             "at_least(label, ..): each segment's outer height less its padding".into()
         }
         ("segmented_control", "separator_width_px") => {
-            "the segments' Row::spacing, over the outline colour".into()
+            "the width of the styles::segment_separator line between two segments".into()
         }
         ("segmented_control", "border.corner_radius_px") => {
             "styles::segmented_control and styles::segment: the outer corners".into()
@@ -11122,25 +11122,45 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
     // has no border of its own, so its content is that less its padding, and
     // the control is the segments inside its outline.
     let seg_min = iced::Size::new(0.0, (sc.segment_height - seg_pad.y()).max(0.0));
-    let segments = BASIC_SEGMENTS.iter().enumerate().map(|(i, label)| {
-        button(at_least(
-            text(*label).themed(&sc.font, resolved, a11y),
-            seg_min,
-        ))
-        .padding(seg_pad)
-        .style(styles::segment(
-            resolved,
-            i == state.basic_segment,
-            styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
-        ))
-        .on_press(Message::BasicSegmentSelected(i))
-        .into()
-    });
-    // A divider: the gap between two segments, where the outline shows
-    // through, `segmented_control.separator_width` wide.
+    // Between each two segments a `segment_separator` line
+    // `segmented_control.separator_width` wide, where the theme states one:
+    // the row's children are then a segment at every even index.
+    let separated = sc.separator_width > 0.0;
+    let at = move |i: usize| if separated { 2 * i } else { i };
+    let mut segments: Vec<Element<'_, Message>> = Vec::new();
+    for (i, label) in BASIC_SEGMENTS.iter().enumerate() {
+        if i > 0 && separated {
+            segments.push(
+                container(space())
+                    .width(sc.separator_width)
+                    .height(Fill)
+                    .style(styles::segment_separator(resolved))
+                    .into(),
+            );
+        }
+        segments.push(
+            button(at_least(
+                text(*label).themed(&sc.font, resolved, a11y),
+                seg_min,
+            ))
+            .padding(seg_pad)
+            .style(styles::segment(
+                resolved,
+                i == state.basic_segment,
+                styles::SegmentPosition::of(i, BASIC_SEGMENTS.len()),
+            ))
+            .on_press(Message::BasicSegmentSelected(i))
+            .into(),
+        );
+    }
+    let segment_at = move |i: usize| {
+        move |layout: iced::advanced::Layout<'_>| node_at(layout, &[0, at(i)]).map(|n| n.bounds())
+    };
+    // A divider: the separator after a segment,
+    // `segmented_control.separator_width` wide.
     let divider = |before: usize| {
         move |layout: iced::advanced::Layout<'_>| {
-            node_at(layout, &[0, before]).map(|segment| {
+            node_at(layout, &[0, at(before)]).map(|segment| {
                 let s = segment.bounds();
                 iced::Rectangle {
                     x: s.x + s.width,
@@ -11162,14 +11182,17 @@ fn view_basic<'a>(state: &'a State, btn_pad: Padding, inp_pad: Padding) -> Eleme
             // less `layout.widget_gap` ([`basic_column_count`], M9-166).
             tagged(
                 "basic.segmented.control",
-                container(row(segments).spacing(sc.separator_width))
+                // `Shrink` over the separators' `Fill`, which a row would
+                // otherwise take for its own height: the separators then
+                // span the segments' height.
+                container(row(segments).height(Length::Shrink))
                     .padding(sc.border.line_width)
                     .style(styles::segmented_control(resolved)),
             )
             .loose()
-            .node("basic.segmented.day", &[0, 0])
-            .node("basic.segmented.week", &[0, 1])
-            .node("basic.segmented.month", &[0, 2])
+            .part("basic.segmented.day", segment_at(0))
+            .part("basic.segmented.week", segment_at(1))
+            .part("basic.segmented.month", segment_at(2))
             .part("basic.segmented.divider_1", divider(0))
             .part("basic.segmented.divider_2", divider(1)),
         ),
@@ -25990,6 +26013,62 @@ mod tests {
             ys.iter().all(|y| y.is_some() && *y == ys[0]),
             "the segments are not on one row: {ys:?}"
         );
+    }
+
+    /// D13: the segmented control's group is `segmented_control.background_color`
+    /// laid once over what the control lies on, and a segment lays only its
+    /// own fill over the group: under windows-11, whose group fill is
+    /// translucent (#00000006 / #00000019), an unselected segment's inside is
+    /// the group over the page and the selected one `active_background` over
+    /// that, in both modes, where the control was filled with its line colour
+    /// and each segment painted the group fill again over it.
+    #[test]
+    fn the_windows_11_segments_lie_on_the_group_fill() {
+        for mode in [AppColorMode::Light, AppColorMode::Dark] {
+            let mut state = page_state("windows-11", Tab::Basic);
+            assert!(state.install_in_mode(ThemeChoice::Preset("windows-11".to_owned()), mode));
+            let sc = state.current_resolved.segmented_control.clone();
+            assert!(
+                sc.background_color.a < 255,
+                "windows-11 ({mode:?}) no longer states a translucent group fill, so this proves nothing"
+            );
+            let (image, rects, scale) = basic_frame(&state);
+            let rect = |id: &str| match rects.get(id) {
+                Some(rect) => *rect,
+                None => panic!("{id} is not drawn"),
+            };
+            let control = rect("basic.segmented.control");
+            let pixel = |x: f32, y: f32| {
+                let (x, y) = ((x * scale) as u32, (y * scale) as u32);
+                image.get_pixel(x, y).0
+            };
+            let mid = control.y + control.height / 2.0;
+            let ground = pixel(control.x - 3.0, mid);
+            let ground = Color::from_rgba8(ground[0], ground[1], ground[2], 1.0);
+            let group = styles::composite_over(to_color(sc.background_color), ground);
+            let ids = [
+                "basic.segmented.day",
+                "basic.segmented.week",
+                "basic.segmented.month",
+            ];
+            for (i, id) in ids.into_iter().enumerate() {
+                let segment = rect(id);
+                let want = if i == state.basic_segment {
+                    styles::composite_over(to_color(sc.active_background), group)
+                } else {
+                    group
+                }
+                .into_rgba8();
+                let got = pixel(segment.x + 3.0, segment.y + segment.height / 2.0);
+                assert!(
+                    got.iter()
+                        .zip(want)
+                        .take(3)
+                        .all(|(a, b)| a.abs_diff(b) <= 1),
+                    "windows-11 ({mode:?}) {id}: {got:?}, where the fill laid over the group is {want:?}"
+                );
+            }
+        }
     }
 
     /// M9x CI item I6 (M9-175): the Number input's Widget Info says how

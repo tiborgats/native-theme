@@ -416,10 +416,13 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     variant.spinner.fill_color = Some(colors.highlight);
     // The segmented control, the Windows Community Toolkit Segmented's
     // (docs/platform-facts.md §2.25, v8.2.251219): the group the button face, edged in
-    // the highlight (Segmented.xaml:26-29); an item lettered in the button text, hovered
-    // in the highlight and, selected, the highlight lettered in its text
-    // (SegmentedItem.xaml:269-270, :247-248, :249-250, :273-274). Outside high contrast
-    // these are WinUI's fixed brushes, which no user setting moves: the preset's stand.
+    // the highlight (Segmented.xaml:26-29); an item lettered in the button text and,
+    // selected, the highlight lettered in its text (SegmentedItem.xaml:269-270, :247-248,
+    // :273-274). A hovered item is the highlight (:249-250) under a foreground of its own
+    // (:271-272), which the model cannot carry: it has no hovered segment text, and the
+    // button text would stay on the highlight, so the hover is not written, as the button's
+    // is not; the preset's stands. Outside high contrast these are WinUI's fixed
+    // brushes, which no user setting moves: the preset's stand.
     variant.segmented_control.background_color = Some(colors.btn_face);
     variant
         .segmented_control
@@ -427,7 +430,6 @@ fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
         .get_or_insert_default()
         .color = Some(colors.highlight);
     variant.segmented_control.font.get_or_insert_default().color = Some(colors.btn_text);
-    variant.segmented_control.hover_background = Some(colors.highlight);
     variant.segmented_control.active_background = Some(colors.highlight);
     variant.segmented_control.active_text_color = Some(colors.highlight_text);
     // A hovered on switch, `ToggleSwitchFillOnPointerOver` = `SystemColorButtonFaceColor`
@@ -1264,7 +1266,10 @@ mod tests {
         assert_eq!(seg.background_color, Some(c.btn_face));
         assert_eq!(seg.border.as_ref().and_then(|b| b.color), Some(c.highlight));
         assert_eq!(font_color(&seg.font), Some(c.btn_text));
-        assert_eq!(seg.hover_background, Some(c.highlight));
+        assert_eq!(
+            seg.hover_background, None,
+            "a hovered item's highlight text has no field: the hover is not written"
+        );
         assert_eq!(seg.active_background, Some(c.highlight));
         assert_eq!(seg.active_text_color, Some(c.highlight_text));
         assert_eq!(v.defaults.info_color, Some(c.window_text));

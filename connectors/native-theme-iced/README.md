@@ -157,7 +157,7 @@ the iced default it replaces:
 | Shape | Closure | Functions | Passed to |
 |---|---|---|---|
 | with a status | `Fn(&Theme, Status) -> Style` | `button`, `button_primary`, `button_danger`, `button_success`, `button_warning`, `button_link`, `button_toggle`, `text_input`, `text_editor`, `checkbox`, `checkbox_over`, `radio`, `toggler`, `toggler_over`, `pick_list`, `scrollable`, `slider`, `segment`, `expander` | `.style(..)` — `slider` also serves `vertical_slider`; `text_input` also serves `ComboBox::input_style(..)`; `segment` and `expander` style the buttons of a segmented control and an expander header, which iced lacks; `scrollable` hides a floating bar (`scrollbar.overlay_mode`) at rest and shows it under the pointer, as iced has no auto-hide; `button_toggle(&resolved, checked)` is a toggle button, the plain button while off; the `_over` forms fade a disabled control over a backdrop you name |
-| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `dialog`, `toolbar`, `toolbar_rule`, `segmented_control`, `expander_frame`, `pane_grid` | `.style(..)` — `dialog` styles the container a dialog is drawn in, which iced lacks (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width` and `dialog_min_height` give its geometry, `dialog_title_font_color` its title), `toolbar` the container a toolbar is drawn in and `toolbar_rule` the rule under it, which iced lacks too (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and `toolbar_border_line_width` give its geometry), `segmented_control` the container holding the segments, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
+| without a status | `Fn(&Theme) -> Style` | `container_card`, `progress_bar`, `rule`, `tooltip`, `dialog`, `toolbar`, `toolbar_rule`, `segmented_control`, `segment_separator`, `expander_frame`, `pane_grid` | `.style(..)` — `dialog` styles the container a dialog is drawn in, which iced lacks (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width` and `dialog_min_height` give its geometry, `dialog_title_font_color` its title), `toolbar` the container a toolbar is drawn in and `toolbar_rule` the rule under it, which iced lacks too (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and `toolbar_border_line_width` give its geometry), `segmented_control` the container holding the segments and `segment_separator` the line between two, `expander_frame` the one round an expander's header and body, `pane_grid` a `PaneGrid`'s split lines |
 | menu | `Fn(&Theme) -> menu::Style` | `menu` | `.menu_style(..)` on `PickList` and `ComboBox` |
 | application | `Fn(&Theme) -> theme::Style` | `application` | `iced::application(..).style(..)`, called inside its `Fn(&State, &Theme)`: the window's background, `window.background_color`, under the base style's text colour |
 | a value | `scrollable::Scrollbar` | `scrollbar` | `.direction(Direction::Vertical(..))` — widths, and an embedded bar where the platform does not overlay its scrollbars |
@@ -195,24 +195,34 @@ let controls: Column<'_, Message> = column![
 ```
 
 iced has no segmented control and no expander; both are built from its own
-buttons and containers. A segmented control is a container of segment
-buttons, whose fill shows as the outline and the separators:
+buttons and containers. A segmented control is a container, the group fill
+inside the outline, of segment buttons, each laying only its selected or
+hovered fill over the group, with a `segment_separator` line between each two
+where the theme states a `separator_width`:
 
 ```rust,no_run
-use iced::widget::{Container, button, container, row, text};
+use iced::widget::{Container, button, container, row, space, text};
+use iced::{Element, Fill, Shrink};
 use native_theme_iced::styles;
 
 # #[derive(Debug, Clone)]
 # enum Message {}
 # fn f(resolved: native_theme_iced::ResolvedTheme, labels: &[&str], chosen: usize) {
 let sc = &resolved.segmented_control;
-let segments = labels.iter().enumerate().map(|(i, label)| {
+let mut parts: Vec<Element<'_, Message>> = Vec::new();
+for (i, label) in labels.iter().enumerate() {
+    if i > 0 && sc.separator_width > 0.0 {
+        let line = container(space()).width(sc.separator_width).height(Fill);
+        parts.push(line.style(styles::segment_separator(&resolved)).into());
+    }
     let position = styles::SegmentPosition::of(i, labels.len());
-    button(text(*label))
-        .style(styles::segment(&resolved, i == chosen, position))
-        .into()
-});
-let control: Container<'_, Message> = container(row(segments).spacing(sc.separator_width))
+    parts.push(
+        button(text(*label))
+            .style(styles::segment(&resolved, i == chosen, position))
+            .into(),
+    );
+}
+let control: Container<'_, Message> = container(row(parts).height(Shrink))
     .padding(sc.border.line_width)
     .style(styles::segmented_control(&resolved));
 # }

@@ -1370,15 +1370,17 @@ model, the platform presets and the three connectors
       - macos-monterey states these fields where the rows give ❓ (no AppKit
         source, and the OS probe renders no state but rest): the button's
         pressed fill, the input's hover and focus borders and disabled fill,
-        the checkbox's hover and unchecked fills and unchecked border, the scrollbar's pressed thumb, the slider's hover
-        colour, the tab's hover, the splitter's hover, the switch's hover
+        the checkbox's hover fill, the scrollbar's pressed thumb, the slider's
+        hover colour, the tab's hover, the splitter's hover, the switch's hover
         track, the combo box's hover and disabled fills, the segmented
         control's hover, and the expander's hover and arrow. macos-tahoe
         states none of them. (The button's disabled fill and the slider's and
         the switch's disabled colours left this list in D12, 2026-10-26: OS
         probe run 40348854007 measured them, `docs/platform-facts.md` §2.3,
         §2.9, §2.21; the checkbox's disabled fill left it unset, as one field
-        cannot carry macOS's two disabled boxes, §2.5.)
+        cannot carry macOS's two disabled boxes, §2.5; and the checkbox's
+        unchecked fill and border, measured from the same run's renders,
+        §2.5 `background_color`, `border.color`, D13.)
       `native-theme/src/presets/documented_sizes.rs` cites §2.10 and §2.12 at
       their headings for the presets whose padding rows give a value they do
       not state yet; T16 states them and cites the rows.
@@ -1531,6 +1533,19 @@ model, the platform presets and the three connectors
       needs a measured or published source first: an OS-probe read in dark mode
       for the selected text, a render of the menu's backdrop, and the
       high-contrast dictionaries of the control resources for the rest.
+
+### Model: a hovered segment's text colour
+
+- [ ] [1.0] From the D11/D12 review (I2, 2026-10-26). Under high contrast the Windows
+      Community Toolkit's `Segmented` fills a hovered item with
+      `SystemColorHighlightColor` and letters it in a foreground of its own
+      (`SegmentedItem.xaml:249-250`, `:271-272`, CommunityToolkit/Windows v8.2.251219), but
+      `SegmentedControlTheme` has `hover_background` and no hovered text colour, so the
+      label would stay `SystemColorButtonTextColor` on the highlight. The Windows reader
+      therefore leaves `segmented_control.hover_background` unwritten under high contrast,
+      as it leaves the button's hover (`native-theme/src/windows.rs`, `apply_sys_colors`).
+      A `segmented_control.hover_text_color` field, inheriting `font.color`, would let it
+      write both; the connectors would then letter a hovered segment in it.
 
 ### windows-11: the validator's findings after T35 left open
 

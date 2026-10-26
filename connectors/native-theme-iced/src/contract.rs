@@ -1784,6 +1784,10 @@ fn named_fields(theme: &Theme, resolved: &ResolvedTheme) -> Vec<String> {
             &styles::toolbar_rule(resolved)(theme),
             "styles::toolbar_rule",
         ));
+        out.extend(container_fields(
+            &styles::segment_separator(resolved)(theme),
+            "styles::segment_separator",
+        ));
         out.extend(pane_grid_style_fields(&styles::pane_grid(resolved)(theme)));
         out.extend(application_style_fields(&styles::application(resolved)(
             theme,
@@ -3378,6 +3382,12 @@ fn every_style_field_equals_its_native_value() -> native_theme::Result<()> {
     check_style_rows(DIALOG_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(TOOLBAR_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(TOOLBAR_RULE_ROWS, &combinations, &mut failures, &mut ran);
+    check_style_rows(
+        SEGMENT_SEPARATOR_ROWS,
+        &combinations,
+        &mut failures,
+        &mut ran,
+    );
     check_border_rows(DIALOG_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_border_rows(TOOLTIP_BORDER_ROWS, &combinations, &mut failures, &mut ran);
     check_style_rows(CONTAINER_CARD_ROWS, &combinations, &mut failures, &mut ran);
@@ -4334,15 +4344,18 @@ fn an_unset_hover_soft_option_is_the_idle_fill() -> native_theme::Result<()> {
             "macos-tahoe ({mode:?}): a hovered unselected radio with no hover \
              stated is the unselected radio"
         );
+        let segment = styles::segment(&resolved, false, styles::SegmentPosition::Only);
         assert_eq!(
-            styles::segment(&resolved, false, styles::SegmentPosition::Only)(
-                &theme,
-                button::Status::Hovered
-            )
-            .background,
-            Some(Background::Color(idle)),
+            segment(&theme, button::Status::Hovered).background,
+            segment(&theme, button::Status::Active).background,
             "macos-tahoe ({mode:?}): a hovered segment with no hover stated is \
              the segment at rest"
+        );
+        assert_eq!(
+            styles::segmented_control(&resolved)(&theme).background,
+            Some(Background::Color(idle)),
+            "macos-tahoe ({mode:?}): the group under the segments is the \
+             control's fill"
         );
     }
     Ok(())
@@ -4714,6 +4727,7 @@ fn every_style_closure_is_clone() -> native_theme::Result<()> {
     assert_clone(&styles::dialog(r));
     assert_clone(&styles::toolbar(r));
     assert_clone(&styles::toolbar_rule(r));
+    assert_clone(&styles::segment_separator(r));
     assert_clone(&styles::container_card(r));
     assert_clone(&styles::segmented_control(r));
     assert_clone(&styles::segment(r, true, styles::SegmentPosition::First));
@@ -5055,6 +5069,7 @@ impl Reading {
         x.style(DIALOG_ROWS, t, r);
         x.style(TOOLBAR_ROWS, t, r);
         x.style(TOOLBAR_RULE_ROWS, t, r);
+        x.style(SEGMENT_SEPARATOR_ROWS, t, r);
         x.style(CONTAINER_CARD_ROWS, t, r);
         x.style(SEGMENTED_CONTROL_ROWS, t, r);
         x.style(SEGMENT_ROWS, t, r);
