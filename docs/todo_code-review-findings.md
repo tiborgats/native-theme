@@ -13559,3 +13559,27 @@ green on all 39 jobs, including the msrv job under `-Dwarnings` (Task 3b) and ev
 Windows leg. The three documents are in `docs/archive/`. Left to others: the egui
 compatibility stamp is M9c's close, and the screenshots are the maintainer's next
 `generate_assets_release.sh` run.
+
+### C round: the v0.7.0 todo items (2026-10-26)
+
+The eight `[v0.7.0]` items of `docs/todo.md` *This cycle (v0.7.0)*, done at the maintainer's
+request ("do all eight now, then the close-out"), on v0.7.0-rc1 from 294ff9ad. Two writers:
+W1 the Rust items (C-01 to C-06, C-07b), W2 the scripts (C-07a, C-08). Each entry names the
+commit that did it; a closed `docs/todo.md` entry moves to `docs/archive/todo_closed.md`.
+
+#### C-07b · the gpui showcase shows RadarChart and SankeyChart
+**Problem:** gpui-component 0.8.0's charts derive `IntoPlot`; two of them, `RadarChart` and
+`SankeyChart` (`src/chart/radar_chart.rs:76-77`, `src/chart/sankey_chart.rs:115-116`), were
+shown by no showcase (`docs/todo.md`, *check_widget_coverage.py discovers no chart*).
+**Fix:** the gpui showcase's Charts page shows both after the other five
+(`demo::radar_chart`, `demo::sankey_chart`, ids `CHARTS_RADAR_CHART`, `CHARTS_SANKEY_CHART`),
+coloured as the page colours the others, through the charts' setters from the theme's chart
+palette: the radar's two series `chart_1` and `chart_2`, each over a fill of itself at the
+showcase's `RADAR_FILL_OPACITY`; the sankey's five nodes `chart_1` to `chart_5` through
+`SankeyChart::node_color`. Their Widget Info (`info::charts::radar_chart`, `sankey_chart`)
+claims the upstream-read colours at their lines (radar labels `muted_foreground`
+`radar_chart.rs:563`, grid `chart_grid` `:507`, hovered vertices' ring `background` `:656`;
+sankey node labels `muted_foreground` `sankey_chart.rs:391`) and notes the literals (series
+2px, rings and spokes 1px, label text 10px, the link opacity, `HOVER_DIM`).
+`every_chart_shows_its_own_info` hovers all seven. The coverage script's half is C-07a.
+**Status:** done, b1b8f095.
