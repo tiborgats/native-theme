@@ -13632,3 +13632,12 @@ takes from the palette's background (`iced_core-0.14.0/src/theme.rs:222-230`, `:
 table has an application shape and the crate docs' *Theme Field Coverage* counts 29
 functions. No bundled preset differs in the two leaves, so nothing drawn changes there.
 **Status:** done, b3591c62.
+- *Review follow-up 2 (2026-10-26, the controller's review of 307ff3c7 and b3591c62):* I1: the
+  AreaChart's line was left at `chart_1` by 307ff3c7's mutation check (a revert `sed` that
+  matched the area's line too) while its Info claims `chart_3`; it is `chart_3` again. M3:
+  `demo::area_series` and `demo::radar_series` hold the colours the charts are given, the two
+  fill-swatch tests compare the Info with them, and `the_area_charts_hover_marks_are_its_line_colour`
+  and the radar's hover test read the hover dots and halos from the frame (`hover_marks`); by
+  mutation, a changed area line, radar line or radar fill each turns a test red. M4:
+  `ROADMAP.md` counts 29 iced style functions, `application` among the 21 that replace
+  iced's own. Commit 3a0da4a3.
