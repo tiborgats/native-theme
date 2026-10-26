@@ -1032,8 +1032,8 @@ vanish. The comparison:
 - `--dump-layout` for kde-breeze and adwaita, light and dark, from a gpui-pre build and a GPUI
   Fast build;
 - each pair compared element by element.
-A difference is fixed, or explained in the ledger. It takes the desktop's focus, so it is
-announced.
+A difference is fixed, or explained in the plan's *Record* (P15). It takes the desktop's
+focus, so it is announced.
 
 **The Linux parity run** (`scripts/check_showcase_parity.py`) runs on the final layout, against
 the iced and egui showcases: a layout-engine bump and 0.8.1's scroll-area flex change (§1.7)
@@ -1062,7 +1062,7 @@ check here runs on our lock's 0.15.0. The options:
   - It costs one rebuild of the gpui-pre stack each way, in the same build folder.
 
 **(d).** It is the only option that measures what users run. A difference is explained in the
-ledger, or fixed where it is ours. The release screenshots stay those of our lock, 0.15.0, and
+plan's *Record*, or fixed where it is ours. The release screenshots stay those of our lock, 0.15.0, and
 a visible difference is recorded beside them. If the resolve keeps gpui-fast after all, the
 gap is recorded as (a), with the reason.
 
@@ -1189,19 +1189,34 @@ The one partial answer, inline code's seam, is P13's.
 
 The `secondary` change is upstream's. The connector's public API does not change.
 
-### P15 — Where G4 sits: after the C and D rounds, before the close-out, as one writer
+### P15 — Where G4 sits: after the code review's close, before the release, as one writer
 
-`v0.7.0-rc1` is being written by the C round (`docs/todo_code-review-findings.md`, *C round*,
-2026-10-26) and then the D round.
-- G3 entered between M9b's tasks (K13). G4 cannot: the review session asked, on 2026-10-26,
-  that G4 not start in this tree until it says the D round is closed.
-- Its writers run cargo and `check_release.sh` continuously, so a dependency bump under one
-  would break its builds and gates.
-- G4 therefore starts after the D round, on a clean tree.
+`v0.7.0-rc1` was written by the C round and then the D round on 2026-10-26
+(`docs/archive/todo_v0.7.0_code-review-findings.md`, *C round*, *D round*).
+- G3 entered between M9b's tasks (K13). G4 could not: the review session asked, on 2026-10-26,
+  that G4 not start in this tree until it said the D round was closed.
+- Its writers ran cargo and `check_release.sh` continuously, so a dependency bump under one
+  would have broken its builds and gates.
+- The session said so the same day: the C and D rounds closed, the review closed at `60fa77fd`
+  with its plan and ledger archived, the branch pushed at `7f011f00`, its writers stopped.
+  G4 starts from there, on a clean tree.
 
 **The shared files:** `Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`,
-`docs/todo_code-review-findings.md`, `docs/showcase-exceptions.toml`, the showcase. One writer
-at a time keeps them consistent.
+`docs/showcase-exceptions.toml`, the showcase. One writer at a time keeps them consistent.
+
+**G4's record.** G1–G3 registered in the review plan and kept their findings in its ledger, while
+the review ran. The review is closed now, so G4 needs a record of its own: each task's commits,
+a missing input, each failure or difference explained rather than fixed, the taffy 0.15.1
+result (P11).
+- **(a) A row and a section in the archived review plan and ledger.** Pro: one place, as for
+  G1–G3. Con: it reopens documents archived as final (their *As built* notes and Status table
+  say the review is closed), for a milestone the review did not run.
+- **(b) A *Record* section at the end of G4's plan.** Pro: no new file; it is archived with the
+  plan, beside the spec's *As built* note. Con: none for a milestone of ten tasks.
+- **(c) A G4 ledger file.** Pro: the record apart from the steps, as the review kept it. Con: a
+  fourth document, with nothing in it the plan's section cannot hold.
+
+**(b).** The approvals are this document's §3, so no decision line elsewhere is needed.
 
 **The unit**, between which no other commit lands:
 
@@ -1223,7 +1238,7 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - P2's scoped update deliberately does not take the rest of the newest dependencies, but an
   application's fresh resolve does (§1.2).
 - The dependency canary has `workflow_dispatch` (`dependency-canary.yml:25`). Dispatched on
-  `v0.7.0-rc1` after the unit's push and again after the close
+  `v0.7.0-rc1` after the unit's push and again after G4's last push
   (`gh workflow run dependency-canary.yml --ref v0.7.0-rc1`), it builds and tests the branch
   on exactly that resolve.
 - It is one command each time. A failure there is read like any canary failure: an upstream

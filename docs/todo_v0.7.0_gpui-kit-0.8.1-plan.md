@@ -34,19 +34,21 @@ gpui-component, gpui-base and gpui-kit 0.8.1, gpui-pre 0.3.10, gpui-fast 0.1.12.
 **Spec:** [`todo_v0.7.0_gpui-kit-0.8.1-spec.md`](todo_v0.7.0_gpui-kit-0.8.1-spec.md).
 **Reasons:** [`todo_v0.7.0_gpui-kit-0.8.1-rationale.md`](todo_v0.7.0_gpui-kit-0.8.1-rationale.md).
 
-**When:** on `v0.7.0-rc1`, before the v0.7.0 close-out (rationale P15), and only once the
-review session running the C and D rounds in this tree has said that the D round is closed.
-- That session asked for this on 2026-10-26. Its writers edit the connector, the showcase, the
-  presets, `docs/todo.md`, `CHANGELOG.md` and the ledger, and run `check_release.sh` and cargo
-  continuously.
-- A dependency bump under a running writer would break its builds and gates, so task
-  boundaries are not enough here.
-- Until then, G4 commits only its three documents, by explicit path.
+**When:** on `v0.7.0-rc1`, before the v0.7.0 release (rationale P15), after the code review's
+close.
+- The review session asked on 2026-10-26 that G4 wait until it said the D round was closed:
+  its writers edited the connector, the showcase, the presets, `docs/todo.md` and
+  `CHANGELOG.md`, and ran `check_release.sh` and cargo continuously.
+- It said so the same day: the review closed at `60fa77fd`, its plan and ledger archived, the
+  branch pushed at `7f011f00`, its writers stopped.
+- The start is the maintainer's. Until then, G4 commits only its three documents, by explicit
+  path.
 - An Opus session orchestrates. Code tasks run in `implement` agents (Opus), with a fresh
   reviewer per task.
 
 **Needs the maintainer for:**
 
+- the start;
 - a veto of any decision other than P1 and P3, which are approved;
 - nothing else by default. Branch pushes are granted (2026-10-25), and desktop captures are
   run by the session, announced first.
@@ -72,8 +74,7 @@ review session running the C and D rounds in this tree has said that the D round
   - each message ends "(G4 Tn)".
 - **Builds:** in the project's `target/`, with the global build folder. No other target or
   build directory, except `check_release.sh`'s own `target/package-verify`.
-- **Shared documents.** `docs/todo.md`, the ledger and the review plan are re-read before
-  editing, and only appended to. A closed todo entry moves to `docs/archive/todo_closed.md`
+- **Shared documents.** `docs/todo.md` is re-read before editing, and only appended to. A closed todo entry moves to `docs/archive/todo_closed.md`
   with its closing commit. Entries are cited by heading and opening words.
 - **Gates per task:**
   - `./scripts/check_release.sh --commit` green on the task's last commit;
@@ -85,7 +86,7 @@ review session running the C and D rounds in this tree has said that the D round
     two showcase citation gates and `the_fallback_stack_copy_is_gpuis` red; Task 2's leaves
     them red only for the set-aside list; Task 3's makes the branch green. Every other commit
     is green.
-- **Shared files** (`Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`, the ledger,
+- **Shared files** (`Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`,
   `docs/showcase-exceptions.toml`, the showcase, the connector) are located by content:
   - each task re-reads, at its start, the code the spec describes and checks that the
     description still holds;
@@ -141,27 +142,21 @@ review session running the C and D rounds in this tree has said that the D round
 
 ---
 
-## Task 0: Register G4
+## Task 0: Open G4's Record
 
 - [ ] **The three documents** are committed at
   `docs/todo_v0.7.0_gpui-kit-0.8.1-{rationale,spec,plan}.md`: the rationale in `8086a20e`, the
   spec and the plan in `02095604`, and the check passes after them (`git log -- <path>`).
   Task 0 checks that they are there.
-- [ ] **`docs/todo_code-review-plan.md`** (re-read first):
-  - a G4 row in the milestone table;
-  - a decision line in its decision list, after D10 and D11 (G1–G3): D12, GPUI Kit 0.8.1 as
-    milestone G4. This D12 is the review plan's decision, not the D round's ledger item `D12`
-    (`docs/todo_code-review-findings.md`, *D round*). Where the two could be confused, the
-    text says "decision D12". It points at these documents,
-    records the maintainer's approval of P1 and P3 (2026-10-26), and says that G4 runs after
-    the D round's close, as the one writer;
-  - the *Resuming* rule names G4.
-- [ ] **`docs/todo_code-review-findings.md`** (re-read first): a *G4* status row and section.
+- [ ] **The *Record*** (rationale P15): a `## Record` section at the end of this plan, opened
+  with the review's close (`60fa77fd`, the branch at `7f011f00`) and the maintainer's approvals
+  (rationale §3). Each task adds its commits, and each failure or difference it explains
+  rather than fixes. The archived review plan and ledger are not edited.
 - [ ] **The inputs** the spec names are in `.superpowers/sdd/todo_code-review-plan/g4/`:
   `gk081-trial-check.log`, `gk081-trial-tests.log`, `gk081-lockdiff.txt`,
   `gk081-diff-review.md`, `gk081-msrv-1.94.txt`, `trial.sh` and `trial2.sh`. If one is
-  missing, the ledger says so.
-- **Commit:** `docs(review): GPUI Kit 0.8.1 as milestone G4, after the D round (G4 T0)`.
+  missing, the *Record* says so.
+- **Commit:** `docs(gpui): the GPUI Kit 0.8.1 plan's Record, after the code review's close (G4 T0)`.
 
 ## Task 1: The bump, the keys and the test migration (the unit opens)
 
@@ -172,8 +167,7 @@ review session running the C and D rounds in this tree has said that the D round
 - `SC/app.rs`, `SC/demo.rs`, `SC/pages/feedback.rs`, and `SC/pages/typography.rs` (doc only);
 - `SC/tests.rs`, `CN/src/widgets/tests.rs`.
 
-**Depends on:** Task 0, and the review session's message that the D round is closed, on a
-clean tree.
+**Depends on:** Task 0, on a clean tree.
 
 - [ ] **Spec §1:** the four floors and the alias, and the comments re-verified; the scoped
   `cargo update` with the lock-diff gate; `cargo tree` before and after; the MSRV lines
@@ -326,7 +320,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - [ ] **The two drafts' dated lines** (spec §7). Their texts are not rewritten.
 - [ ] **Announce the desktop runs.** Then:
   - spec §7's dumps on both cores, compared pair by pair, each difference fixed or explained in
-    the ledger;
+    the *Record*;
   - spec §7's taffy 0.15.1 measurement on gpui-pre (the suite and the four dumps on a lock
     without gpui-fast), then `CN/Cargo.toml` and `Cargo.lock` restored and `git status`
     showing neither changed;
@@ -365,7 +359,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   - the CHANGELOG (*Changed* rewritten in place, *Added* for the gate);
   - ROADMAP;
   - the full-theme note;
-  - the review plan and the ledger.
+  - the dated line on `docs/todo.md`'s gpui screenshot entry, with spec §10's list.
 - [ ] **`scripts/update_compatibility.sh run gpui`, `run iced` and `run egui`**, each after that
   connector's last source change (the iced and egui stamps for their showcases' re-cited
   lines).
@@ -377,12 +371,9 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - [ ] **Close:**
   - the three documents to `docs/archive/`, with an *As built* note at the top of the spec;
   - the archive index row;
-  - decision D12 and the ledger's links pointed at the archive;
-  - the ledger's G4 status: done;
+  - the *Record*'s last line: G4 closed, with the closing commit;
   - the memory;
   - `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
-- [ ] **For the close-out:** spec §10's list of screenshots that change goes to the close-out's
-  `generate_assets_release.sh` run.
 - **Commits:**
   - `docs(gpui): GPUI Kit 0.8.1 in the changelog, README, roadmap and notes (G4 T8)`;
   - `docs(gpui): the compatibility stamp for GPUI Kit 0.8.1 (G4 T8)`;

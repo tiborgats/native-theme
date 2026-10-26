@@ -17,9 +17,10 @@
 
 **Line numbers.**
 
-- Ours are of `v0.7.0-rc1` at `8086a20e`. The C and D rounds still commit to the branch, so
-  every task locates its regions by content and re-reads what this spec describes before it
-  writes (§0.2). The D round's D4 is known to move lines this spec cites in
+- Ours are of `v0.7.0-rc1` at `8086a20e`. The C and D rounds committed to the branch after it,
+  until the review closed (`7f011f00`), so every task locates its regions by content and re-reads
+  what this spec describes before it writes (§0.2). The D round's D4 is known to move lines this
+  spec cites in
   `CN/src/geometry.rs` (the dialog docs, `toolbar` and its test), `CN/src/config.rs:65` and
   `SC/demo.rs:6478`.
 - `docs/todo.md` entries are cited by section, heading and opening words, as its header
@@ -77,10 +78,10 @@ Nothing a task needs is only there: every count and finding used here is restate
   - An edit leaves an existing `.unwrap()` or `.expect(` outside its text.
   - A new failure in test code is an `assert!`.
   - The hook is never worked around (rationale P5).
-- **Shared files are located by content.** A task that edits a file the review rounds also write
+- **Shared files are located by content.** A task that edits a file the review rounds also wrote
   re-reads, before writing, the code this spec describes there. Those files are `Cargo.lock`,
-  `CHANGELOG.md`, `docs/todo.md`, the ledger, `docs/showcase-exceptions.toml`, the showcase
-  and the connector. Where the description no longer holds, the task stops and reports.
+  `CHANGELOG.md`, `docs/todo.md`, `docs/showcase-exceptions.toml`, the showcase and the
+  connector. Where the description no longer holds, the task stops and reports.
   A rename or a move that keeps the role and the behaviour is followed and noted; a changed
   behaviour is a stop.
 - **`docs/todo.md` is append-only.** A closed entry moves to `docs/archive/todo_closed.md`
@@ -695,7 +696,7 @@ takes the desktop's focus:
   the showcase built with its defaults and built with `--features gpui-fast`, at rest.
 - **The comparison:** each pair compared element by element, every element's position and size
   equal, as a JSON diff.
-- **A difference** is fixed in its own commit, gated, or explained in the ledger. Both cores
+- **A difference** is fixed in its own commit, gated, or explained in the plan's *Record*. Both cores
   now share taffy 0.15.0, so a difference G3 recorded may be gone; one that is gone is noted.
 
 **taffy 0.15.1, measured once (P11 (d)).** After the dumps, on a clean tree:
@@ -710,8 +711,8 @@ takes the desktop's focus:
 4. `git checkout -- connectors/native-theme-gpui/Cargo.toml Cargo.lock`, and `git status` shows
    neither changed. Nothing of steps 1–3 is committed.
 
-A failure or a difference is explained in the ledger, or fixed in its own commit where it is
-ours. The commit body of Task 6's docs commit records the result: the taffy versions, the test
+A failure or a difference is explained in the plan's *Record*, or fixed in its own commit
+where it is ours. The commit body of Task 6's docs commit records the result: the taffy versions, the test
 result, and the differences or "none".
 
 **Parity.** On the final layout (after §6), the Linux parity run, as
@@ -727,7 +728,7 @@ What follows from it:
 - an exception that no longer matches anything is removed;
 - the tracked captures the screenshot scripts overwrite, in each connector's `docs/assets/`,
   are restored afterwards (`git checkout --` of the three asset directories). New screenshots
-  are the close-out's `generate_assets_release.sh` run, which stamps them
+  are the release asset run's (`scripts/generate_assets_release.sh`), which stamps them
   (`docs/assets/PROVENANCE.toml`).
 
 **The upstream entries re-checked (P12).** Every open `[upstream]` gpui entry of `docs/todo.md`
@@ -836,10 +837,10 @@ Gates: `compat::the_verified_line_is_the_stamps` and `scripts/update_compatibili
 **`docs/todo_gpui-full-theme.md`:** an appended "gpui-component 0.8.1" note: the theme is
 unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows its entrance.
 
-**The review** (re-read before each edit):
-
-- `docs/todo_code-review-plan.md`: the G4 row, decision D12 (the review plan's decision list, not the D round's ledger item D12);
-- `docs/todo_code-review-findings.md`: the *G4* section and status row.
+**`docs/todo.md`'s `[v0.7.0]` entry *Regenerate the gpui screenshots and review the showcase's
+visible changes*:** a dated line appended, with §10's list of the screenshots that change, for
+the release asset run that closes the entry. The review plan and its ledger are archived and
+get nothing (rationale P15); G4's own record is its plan's *Record*.
 
 ---
 
@@ -869,7 +870,7 @@ native-theme-gpui --allow-dirty --target-dir target/package-verify --features gp
 and Windows GPUI Fast builds.
 
 **The dependency canary, dispatched on the branch** (`gh workflow run dependency-canary.yml --ref
-v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It runs after the unit's push and after the close.
+v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It runs after the unit's push and after G4's last push.
 - **Every failure of a gpui test or of the gpui coverage line is G4's**, even where `main`
   fails the same way. `main`'s standing failures are gpui gates on released code (rationale
   §0), so they are no baseline for the branch.
@@ -878,7 +879,8 @@ v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It run
   on the same resolve: `cargo update` in the tree, the canary's gpui lines, then `git checkout
   -- Cargo.lock`.
 
-**For the close-out's `generate_assets_release.sh`, these screenshots change:**
+**For the release asset run (`scripts/generate_assets_release.sh`), these screenshots change**
+(§9's dated line lists them):
 
 - the gpui Layout page, if §7 found the label centred;
 - whatever the parity run of §7 found moved;
