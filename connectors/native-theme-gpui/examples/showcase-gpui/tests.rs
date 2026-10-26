@@ -10650,8 +10650,8 @@ fn each_family_of_the_stack_is_named_where_it_is_drawn() {
 }
 
 /// The showcase's copy of gpui's fallback stack (`inspector::GPUI_FALLBACK_STACK`) is each
-/// core's, at the lines its doc cites: gpui-pre 0.3.9 `src/text_system.rs:255-266`, gpui-fast
-/// 0.1.10 `:256-267`, read from the sources `cargo metadata` names. The field is private in
+/// core's, at the lines its doc cites: gpui-pre 0.3.10 `src/text_system.rs:262-273`, gpui-fast
+/// 0.1.12 `:263-274`, read from the sources `cargo metadata` names. The field is private in
 /// both, so the source is the only place to read it whole.
 #[test]
 fn the_fallback_stack_copy_is_gpuis() {
@@ -10671,8 +10671,8 @@ fn the_fallback_stack_copy_is_gpuis() {
         .as_array()
         .expect("cargo metadata lists packages");
     for (core, version, first, last) in [
-        ("gpui-pre", "0.3.9", 255, 266),
-        ("gpui-fast", "0.1.10", 256, 267),
+        ("gpui-pre", "0.3.10", 262, 273),
+        ("gpui-fast", "0.1.12", 263, 274),
     ] {
         let manifest = packages
             .iter()

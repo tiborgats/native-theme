@@ -678,7 +678,7 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre/window.rs:4705-4712 for fills and edges, :4849 and
+    // inside it (gpui-pre/window.rs:4705-4713 for fills and edges, :4849 and
     // :4898 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()

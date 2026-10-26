@@ -436,3 +436,16 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   127 of 826 colour claims and 14 of 976 prose citations failed before the run, none after.
   `tests::the_fallback_stack_copy_is_gpuis` stays red ("gpui-pre 0.3.9 is not in the cargo
   metadata"), Task 3's.
+- **Task 3, set-aside numbers that hold.** Of the 35 set-aside chains and five gate (4) entries
+  in `SC/info/`, 21 chains cite lines that did not move, in files unchanged between the
+  versions (gpui-component `styled.rs`, `radio.rs`, `accordion.rs`, `link.rs`, `label.rs`,
+  gpui-base `tooltip.rs`, gpui-fast `src/fast/retained.rs`, `src/fast/splice.rs`, gpui-kit
+  `src/test.rs`) or in the unchanged parts of changed ones (both `switch.rs`, whose only change
+  is in their tests, gpui-fast `src/window.rs` and `src/fast/dependencies.rs`). They keep their
+  numbers and, in the comments, their unqualified file names, so a later run of the script
+  sets them aside again. The five gate (4) entries are no citation (a 0, a 75%) or a citation
+  of an unchanged gpui-component file, and stay as they are.
+- **Task 3, a version word left to Task 3b.** `SC/info/registry.rs`'s module doc names
+  "gpui-fast 0.1.10" before `src/fast/retained.rs:738-825`, which Task 2 judged unchanged.
+  The version grep corrects it. The re-pointed lines that named a version name the new one
+  (`SC/info/registry.rs`'s "gpui-kit 0.8.1's `click`", the fallback-stack doc and test).

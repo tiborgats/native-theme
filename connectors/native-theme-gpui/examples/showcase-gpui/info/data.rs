@@ -120,7 +120,7 @@ pub fn data_table(
         .instance("rows", format!("{rows} rows of {columns} columns from the delegate, each reporting itself; a click selects a row"))
         .instance("columns", "a click on a header selects its column, whose cells then take table_active (table/state.rs, TableState::render_col_wrap)")
         .instance("sortable", "the Role column only: its button cycles descending, ascending and unsorted (table/state.rs, TableState::perform_sort), and the showcase sorts its rows to match")
-        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: lines 2254 and 2359), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 329) because selecting cells instead of rows would change the row panels")
+        .instance("right-clicked cell", "none: the outline, table_active_border at 50% (table/state.rs, render_table_row: lines 2311 and 2421), is drawn only round a right-clicked cell of a cell_selectable table, and this one keeps cell_selectable off (table/state.rs, TableState::new: line 329) because selecting cells instead of rows would change the row panels")
 }
 
 /// The `DataTable`'s header row.

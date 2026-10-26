@@ -442,7 +442,7 @@ fn disabled_fill(t: &Theme, kind: ButtonKind) -> Option<ColorClaim> {
 
 /// What a loading Button of `kind` paints: its colours at rest, faded with
 /// the whole element to 80% (button/button.rs:856). It is not interactive,
-/// so it takes no hover or press style (:524-526, :723, :741).
+/// so it takes no hover or press style (:536-538, :737, :755).
 ///
 /// Only the variant the page shows loading has an arm: read another's rest
 /// arms before the page loads one.
