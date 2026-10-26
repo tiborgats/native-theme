@@ -423,7 +423,7 @@ fn frame_contrast(ini: &configparser::ini::Ini) -> f64 {
 /// Populate a ThemeMode with colors from KDE INI color groups.
 ///
 /// Maps all standard KDE color groups (View, Window, Button, Selection,
-/// Tooltip, Complementary, Header, WM) to per-widget fields on the variant.
+/// Tooltip, Header, WM) to per-widget fields on the variant.
 /// Missing INI keys result in None fields (no hardcoded fallbacks), so a
 /// colour the reader cannot derive keeps the preset's value.
 ///
@@ -504,9 +504,11 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
         variant.tooltip.font.get_or_insert_default().color = Some(color);
     }
 
-    // Sidebar (from Complementary group)
-    variant.sidebar.background_color = get_color(ini, "Colors:Complementary", "BackgroundNormal");
-    if let Some(color) = get_color(ini, "Colors:Complementary", "ForegroundNormal") {
+    // Sidebar (docs/platform-facts.md:1370, :1372, §2.12): the View set, as the KDE HIG's
+    // sidebar, the non-modal GlobalDrawer, is docked in it (Kirigami GlobalDrawer.qml:337)
+    // and System Settings' sidebar sets it (CategoriesPage.qml:19-20).
+    variant.sidebar.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
+    if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
         variant.sidebar.font.get_or_insert_default().color = Some(color);
     }
 
@@ -1083,21 +1085,35 @@ inactiveForeground=161,169,177
         );
     }
 
-    // === Per-widget: Sidebar (Complementary) ===
+    // === Per-widget: Sidebar (View) ===
 
     #[test]
-    fn test_sidebar_background_from_complementary() {
+    fn test_sidebar_background_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(35, 38, 41)));
     }
 
     #[test]
-    fn test_sidebar_font_color_from_complementary() {
+    fn test_sidebar_font_color_from_view() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(
             v.sidebar.font.as_ref().and_then(|f| f.color),
-            Some(Rgba::rgb(239, 240, 241))
+            Some(Rgba::rgb(252, 252, 252))
         );
+    }
+
+    /// The Complementary set, which no KDE sidebar uses, does not reach the
+    /// sidebar (it gave Breeze Light a dark one).
+    #[test]
+    fn test_sidebar_ignores_complementary() {
+        let content = "\
+[Colors:Complementary]
+BackgroundNormal=42,46,50
+ForegroundNormal=239,240,241
+";
+        let v = populate_fixture(content);
+        assert!(v.sidebar.background_color.is_none());
+        assert!(v.sidebar.font.is_none());
     }
 
     // === KDE-01: Title bar from WM ===
@@ -1240,13 +1256,13 @@ inactiveForeground=161,169,177
         assert!(v.separator.line_color.is_none());
     }
 
-    // === Sidebar None when Complementary missing ===
+    // === Sidebar None when View missing ===
 
     #[test]
-    fn test_sidebar_none_without_complementary() {
+    fn test_sidebar_none_without_view() {
         let content = "\
-[Colors:View]
-BackgroundNormal=35,38,41
+[Colors:Window]
+BackgroundNormal=49,54,59
 ForegroundNormal=252,252,252
 ";
         let v = populate_fixture(content);

@@ -79,8 +79,8 @@ fn breeze_dark_fixture_colors_and_fonts() {
     // Per-widget: Tooltip
     assert_eq!(v.tooltip.background_color, Some(Rgba::rgb(49, 54, 59)));
 
-    // Per-widget: Sidebar (Complementary)
-    assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
+    // Per-widget: Sidebar (the View set, docs/platform-facts.md:1370)
+    assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(35, 38, 41)));
 
     // WM: title bar
     assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
@@ -118,8 +118,9 @@ fn breeze_light_fixture() {
     assert_eq!(v.defaults.text_color, Some(Rgba::rgb(35, 38, 41)));
     assert_eq!(v.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
 
-    // Pitfall 4: Breeze Light's Complementary group has a dark background
-    assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
+    // The sidebar is the View set, Breeze Light's white, not the dark
+    // Complementary group the reader once read (docs/platform-facts.md:1370)
+    assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(255, 255, 255)));
 
     // AnimationDurationFactor=1.0 -> reduce_motion=false
     assert!(!accessibility.reduce_motion);
@@ -190,7 +191,7 @@ fn minimal_config_fixture() {
     // No Tooltip section
     assert!(v.tooltip.background_color.is_none());
 
-    // No Complementary section
+    // No View section, so no sidebar
     assert!(v.sidebar.background_color.is_none());
 
     // No General font
@@ -224,8 +225,8 @@ fn missing_groups_fixture() {
     // Missing Tooltip section
     assert!(v.tooltip.background_color.is_none());
 
-    // Missing Complementary section
-    assert!(v.sidebar.background_color.is_none());
+    // The sidebar is the View set, which this fixture has
+    assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(35, 38, 41)));
 
     // Missing Header section
     assert!(v.list.header_background.is_none());

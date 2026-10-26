@@ -1133,10 +1133,10 @@ BackgroundNormal=49,54,59
     fn test_sidebar_colors_populated() {
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = reader_mode(&result);
-        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(35, 38, 41)));
         assert_eq!(
             v.sidebar.font.as_ref().and_then(|f| f.color),
-            Some(Rgba::rgb(239, 240, 241))
+            Some(Rgba::rgb(252, 252, 252))
         );
     }
 

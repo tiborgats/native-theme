@@ -363,13 +363,16 @@ padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [light.sidebar]
-# ❓ platform-facts.md:1370 (§2.12): no source for #dee0e2, [Colors:Header] BackgroundNormal (BreezeLight.colors:59); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
-background_color = "#dee0e2"
+# platform-facts.md:1370 (§2.12): [Colors:View] BackgroundNormal 255,255,255 (BreezeLight.colors:115, breeze v6.7.5):
+# the KDE HIG's sidebar is the non-modal GlobalDrawer, which Kirigami docks in the View set (GlobalDrawer.qml:337),
+# and System Settings' sidebar sets the View set too (CategoriesPage.qml:19-20)
+background_color = "#ffffff"
 hover_background = "#93cee9"
 
 
 [light.sidebar.font]
-# platform-facts.md:1372 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:137, :123, breeze v6.7.5)
+# platform-facts.md:1372 (§2.12): [Colors:View] ForegroundNormal 35,38,41 (BreezeLight.colors:123, breeze v6.7.5), as the
+# Window set's (:137)
 color = "#232629"
 [light.popover]
 # background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color
@@ -903,13 +906,16 @@ padding_top_px = 3.0
 padding_bottom_px = 2.0
 
 [dark.sidebar]
-# ❓ platform-facts.md:1370 (§2.12): no source for #272c31, [WM] activeBackground (BreezeDark.colors:204); Kirigami and KIO draw a sidebar in the Window or the View set (docs/todo.md, "Presets: kde-breeze's sidebar colour set")
-background_color = "#272c31"
+# platform-facts.md:1370 (§2.12): [Colors:View] BackgroundNormal 20,22,24 (BreezeDark.colors:116, breeze v6.7.5):
+# the KDE HIG's sidebar is the non-modal GlobalDrawer, which Kirigami docks in the View set (GlobalDrawer.qml:337),
+# and System Settings' sidebar sets the View set too (CategoriesPage.qml:19-20)
+background_color = "#141618"
 hover_background = "#2e4a5e"
 
 
 [dark.sidebar.font]
-# platform-facts.md:1372 (§2.12): [Colors:Window] / [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:138, :124, breeze v6.7.5)
+# platform-facts.md:1372 (§2.12): [Colors:View] ForegroundNormal 252,252,252 (BreezeDark.colors:124, breeze v6.7.5), as the
+# Window set's (:138)
 color = "#fcfcfc"
 [dark.popover]
 # background_color not stated: platform-facts.md:1454 (§2.16), ← defaults.background_color
