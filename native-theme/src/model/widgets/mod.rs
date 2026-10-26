@@ -525,8 +525,9 @@ pub struct SidebarTheme {
     /// Selected item text color.
     #[theme(inherit_from = "defaults.selection_text_color")]
     pub selection_text_color: Option<Rgba>,
-    /// Hovered item background color.
-    #[theme(inherit_from = "defaults.background_color")]
+    /// Hovered item background color; unstated, the sidebar's own
+    /// `background_color`, no tint (a widget-to-widget rule,
+    /// `resolve_widget_to_widget`).
     pub hover_background: Option<Rgba>,
     /// Sidebar font specification.
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
@@ -628,8 +629,9 @@ pub struct ListTheme {
     #[serde(rename = "header_height_px")]
     #[theme(category = "soft_option", check = "positive")]
     pub header_height: Option<f32>,
-    /// Hovered row background color.
-    #[theme(inherit_from = "defaults.background_color")]
+    /// Hovered row background color; unstated, the list's own
+    /// `background_color`, no tint (a widget-to-widget rule,
+    /// `resolve_widget_to_widget`).
     pub hover_background: Option<Rgba>,
     /// Hovered row text color.
     pub hover_text_color: Option<Rgba>,

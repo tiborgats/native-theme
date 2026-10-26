@@ -785,6 +785,40 @@ model, the platform presets and the three connectors
       state the drawn value. The sidebar's #f6f6f6 / #383838 (§2.12),
       measured the same way, has the same open question.
 
+### macOS: what the OS probe does not render yet
+
+- [ ] [1.0] `macos-tahoe` states its selected segment `#0077f9` / `#077dff`
+      (`macos-tahoe.toml` `[light.segmented_control] active_background`,
+      `[dark.segmented_control] active_background`), a blue the D round's
+      OS probe measured in a key window on macOS 26 and 27
+      (`docs/platform-facts.md:1636`). It is accent-coloured, but no NSColor
+      the probe reads gives it (`controlAccentColor` #007aff,
+      `selectedContentBackgroundColor` #0064e1 / #0059d1), and no reader
+      writes it. Whether it follows the user's accent is unmeasured: if it
+      does, a live macOS 26 desktop with another accent keeps the default
+      blue there. A probe pass with another `AppleAccentColor` set before
+      the key-window capture would show it. If the segment follows, find
+      what it then matches and have the reader write it; if it does not,
+      the stated value stands. (D6/D7 review, M3, 2026-10-26.)
+- [ ] [1.0] The OS probe renders no hovered and no disabled control on
+      macOS, so `docs/platform-facts.md` gives no hover or disabled colour
+      for a slider (§2.9, `:1324-1327`), a sidebar row (§2.12, `:1379`), a
+      table row (§2.15, `:1435`) or a switch (§2.21, `:1527-1531`). The
+      macOS presets draw a hovered table or sidebar row in its own
+      background (D9) and a hovered on switch at rest; macos-tahoe draws a
+      disabled slider and switch in their enabled colours, macOS's
+      `disabled_opacity` being 1.0 (§2.1.6, `:1119`), while macos-monterey
+      keeps unsourced disabled fades for the slider's track and knob and the
+      switch's off track and knob. A probe pass that warps the pointer over
+      a table row, a sidebar row, a switch and a slider knob in the key
+      window, and adds disabled `NSSlider` and `NSSwitch` controls, would
+      give each a measured value. (D6/D7 review, I1 and M2, 2026-10-26.)
+      D10 (d14ce711, 2026-10-26): the probe's key window now holds a
+      disabled and an enabled `NSSwitch` on and off and `NSSlider`, sampled
+      in both appearances, and the controls section renders five controls
+      disabled; OS-probe run 40348854007 holds the first measurement. The
+      hovered half stays open.
+
 ### material-3: the screenshot names and the display name
 
 - [ ] [v0.7.0] At the next `scripts/generate_assets_release.sh` run, the six README

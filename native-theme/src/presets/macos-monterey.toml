@@ -268,8 +268,8 @@ row_height_px = 24.0
 # platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no hover_background: platform-facts.md:1435 names selectedContentBackgroundColor at reduced
-# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
+# no hover_background: platform-facts.md:1435 gives no hover colour for a table row; unset, the
+# list's own background, no tint, as in macos-tahoe
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
@@ -299,8 +299,8 @@ padding_vertical_px = 0.0
 # (os-probe run 40320895749, os-probe-macos-14/probe.toml:3315)
 background_color = "#f6f6f6"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no hover_background: platform-facts.md:1379 names selectedContentBackgroundColor at reduced
-# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
+# no hover_background: platform-facts.md:1379 gives no hover colour for a sidebar item; unset, the
+# sidebar's own background, no tint, as in macos-tahoe
 
 
 [light.sidebar.font]
@@ -742,8 +742,8 @@ row_height_px = 24.0
 # platform-facts.md:1432 (§2.15): NSTableHeaderView height 28, .fullWidth, macOS 14.8.9 and 15.7.9 (probe :537)
 header_height_px = 28.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
-# no hover_background: platform-facts.md:1435 names selectedContentBackgroundColor at reduced
-# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
+# no hover_background: platform-facts.md:1435 gives no hover colour for a table row; unset, the
+# list's own background, no tint, as in macos-tahoe
 # hover_text_color and disabled_text_color inherit item_font.color and defaults.disabled_text_color
 
 
@@ -773,8 +773,8 @@ padding_vertical_px = 0.0
 # (os-probe run 40320895749, os-probe-macos-14/probe.toml:3439)
 background_color = "#383838"
 # Interactive state colors (platform-facts.md section 2.12 macOS)
-# no hover_background: platform-facts.md:1379 names selectedContentBackgroundColor at reduced
-# opacity and gives no alpha, so no value follows from it; unset, as in macos-tahoe
+# no hover_background: platform-facts.md:1379 gives no hover colour for a sidebar item; unset, the
+# sidebar's own background, no tint, as in macos-tahoe
 
 
 [dark.sidebar.font]

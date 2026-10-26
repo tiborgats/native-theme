@@ -225,7 +225,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "sidebar.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
 "sidebar.selection_background"               = "defaults.selection_background"
 "sidebar.selection_text_color"               = "defaults.selection_text_color"
-"sidebar.hover_background"                   = "defaults.background_color"
+"sidebar.hover_background"                   = "sidebar.background_color"      # widget-to-widget: unstated, no tint
 "sidebar.border.color"                       = "defaults.border.color"         # generated: border_kind = "partial"
 "sidebar.border.line_width"                  = "defaults.border.line_width"    # generated: border_kind = "partial"
 
@@ -276,7 +276,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 # expander (§2.27) — no additional uniform rules beyond border/font
 
 # list (§2.15) additional
-"list.hover_background"                      = "defaults.background_color"
+"list.hover_background"                      = "list.background_color"         # widget-to-widget: unstated, no tint
 # list state colors (§2.15)
 "list.hover_text_color"                      = "list.item_font.color"         # widget-to-widget
 "list.disabled_text_color"                   = "defaults.disabled_text_color"

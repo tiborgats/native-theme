@@ -14055,3 +14055,21 @@ keeps its value: the new keys follow the ones they sit beside, and no new view c
 point. Gates as for D1b: clippy for x86_64-apple-darwin, x86_64-pc-windows-msvc and the host,
 strict-panic for darwin and the host, the probe's tests, fmt.
 **Status:** done, the commit that files this entry; the run is the controller's dispatch.
+
+#### D9 · macOS list and sidebar hovers inherit their own widget (D6/D7 review I1 (a), M3)
+**Problem:** `list.hover_background` and `sidebar.hover_background` inherited
+`defaults.background_color`, so macos-monterey and macos-tahoe, which state neither because no
+source gives macOS's, drew a hovered row in the window grey on a white list (#ececec on #ffffff,
+#323232 on #1e1e1e).
+**Fix:** W2's d-w1-d9-macos-hover.patch (regenerated at 8546ce59), applied and gated: both are
+widget-to-widget rules now, `list.background_color` and `sidebar.background_color`, filled in
+`resolve_widget_to_widget` after the uniform phase (the model drops their `inherit_from`), with
+the drift list, docs/inheritance-rules.toml :228 and :279, monterey's four notes and a CHANGELOG
+Changed line; `an_unstated_list_or_sidebar_hover_is_the_widgets_own_background` and
+`the_macos_presets_hover_list_and_sidebar_rows_with_no_tint`. M3's todo section *macOS: what the
+OS probe does not render yet*, with a dated line that D10 covers its disabled half. Review fix on
+the patch: `uniform_rules_all_accounted_for`'s silent-green guard counted at least 67 derive
+rows; the two rules leaving the derive make it 65. The connectors' tests pass and
+`contract-leaves.toml` is unchanged (no iced row moves on the macOS presets' hovers).
+**Status:** done, the commit that files this entry. The controller's Linux gate: the macOS
+presets' hovered list and sidebar rows.

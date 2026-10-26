@@ -1997,6 +1997,60 @@ fn accent_derives_selection_then_selection_inactive() {
     );
 }
 
+/// D9: an unstated list or sidebar hover is the widget's own background,
+/// no tint, not the window's (docs/inheritance-rules.toml, widget-to-widget);
+/// a stated one stands.
+#[test]
+fn an_unstated_list_or_sidebar_hover_is_the_widgets_own_background() {
+    let mut v = variant_with_defaults();
+    v.defaults.background_color = Some(Rgba::rgb(236, 236, 236));
+    v.list.background_color = Some(Rgba::rgb(255, 255, 255));
+    v.sidebar.background_color = Some(Rgba::rgb(246, 246, 246));
+    v.resolve();
+    assert_eq!(v.list.hover_background, Some(Rgba::rgb(255, 255, 255)));
+    assert_eq!(v.sidebar.hover_background, Some(Rgba::rgb(246, 246, 246)));
+
+    let mut stated = variant_with_defaults();
+    stated.list.background_color = Some(Rgba::rgb(255, 255, 255));
+    stated.list.hover_background = Some(Rgba::rgb(1, 2, 3));
+    stated.resolve();
+    assert_eq!(stated.list.hover_background, Some(Rgba::rgb(1, 2, 3)));
+}
+
+/// D9: the two macOS presets, which state neither hover (no source gives
+/// one, docs/platform-facts.md:1379, :1435), hover a row in its own
+/// background: macos-monterey's light window #ececec is not its list's
+/// #ffffff, so the window would show as a grey row.
+#[test]
+fn the_macos_presets_hover_list_and_sidebar_rows_with_no_tint() {
+    for name in ["macos-monterey", "macos-tahoe"] {
+        for mode in [crate::ColorMode::Light, crate::ColorMode::Dark] {
+            let r = crate::Theme::preset(name)
+                .expect("preset")
+                .resolve(mode)
+                .expect("resolves")
+                .variant;
+            assert_eq!(
+                r.list.hover_background, r.list.background_color,
+                "{name} {mode:?}"
+            );
+            assert_eq!(
+                r.sidebar.hover_background, r.sidebar.background_color,
+                "{name} {mode:?}"
+            );
+        }
+    }
+    let monterey = crate::Theme::preset("macos-monterey")
+        .expect("preset")
+        .resolve(crate::ColorMode::Light)
+        .expect("resolves")
+        .variant;
+    assert_ne!(
+        monterey.list.hover_background, monterey.defaults.background_color,
+        "the window colour is the list's, so this test cannot tell the rules apart"
+    );
+}
+
 #[test]
 fn title_bar_background_inherits_from_surface_not_background() {
     let mut v = ThemeMode::default();

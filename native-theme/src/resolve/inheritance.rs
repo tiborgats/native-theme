@@ -326,6 +326,18 @@ impl ThemeMode {
         if self.tab.hover_text_color.is_none() {
             self.tab.hover_text_color = self.tab.font.as_ref().and_then(|f| f.color);
         }
+        // list.hover_background <- list.background_color and
+        // sidebar.hover_background <- sidebar.background_color (widget-to-widget):
+        // an unstated hover is no tint, the row's own fill, where no source
+        // gives the platform's (macOS, docs/platform-facts.md §2.12, §2.15).
+        // Must run AFTER resolve_widgets_from_defaults has filled each
+        // background_color.
+        if self.list.hover_background.is_none() {
+            self.list.hover_background = self.list.background_color;
+        }
+        if self.sidebar.hover_background.is_none() {
+            self.sidebar.hover_background = self.sidebar.background_color;
+        }
         // list.hover_text_color <- list.item_font.color (widget-to-widget)
         if self.list.hover_text_color.is_none() {
             self.list.hover_text_color = self.list.item_font.as_ref().and_then(|f| f.color);
@@ -696,8 +708,8 @@ mod tests {
                 })
                 .collect();
         assert!(
-            macro_rules.len() >= 67,
-            "Expected >=67 inherit_from rows in UniformInheritanceInfo, got {}. \
+            macro_rules.len() >= 65,
+            "Expected >=65 inherit_from rows in UniformInheritanceInfo, got {}. \
              Silent-green guard: the proc-macro may not be emitting inventory::submit!.",
             macro_rules.len()
         );
@@ -747,6 +759,8 @@ mod tests {
             ("button.hover_text_color", "button.font.color"),
             ("button.active_text_color", "button.font.color"),
             ("tab.hover_text_color", "tab.font.color"),
+            ("list.hover_background", "list.background_color"),
+            ("sidebar.hover_background", "sidebar.background_color"),
             ("list.hover_text_color", "list.item_font.color"),
             ("splitter.hover_color", "splitter.divider_color"),
             ("link.hover_text_color", "link.font.color"),
