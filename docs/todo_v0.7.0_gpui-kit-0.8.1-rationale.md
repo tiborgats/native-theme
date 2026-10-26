@@ -450,7 +450,8 @@ two claims whose **text**, not just line, is false: §1.5 and §1.6.
 - G3's K3 left gpui-pre's as they were, since it did not change then.
 - The cited gpui-pre files that changed: `elements/div.rs`, `window.rs`, `text_system.rs`,
   `platform/keystroke.rs`, `platform.rs` and `taffy.rs`. `taffy.rs` is cited at
-  `CN/src/widgets/separator.rs:92` and `docs/showcase-exceptions.toml:580`; its lines move by
+  `CN/src/widgets/separator.rs:92` and on twelve lines of `docs/showcase-exceptions.toml`
+(`:307` to `:959` at `7f011f00`); its lines move by
   +11 after `:264`. Among them is `SC/tests.rs:2377-2379`'s "gpui-pre
   keystroke.rs:143-150", which is now false: `secondary` needs the OS.
 - `elements/animation.rs`, `styled.rs` and `text_system/line.rs` did not change.
@@ -1020,8 +1021,12 @@ defect. So the entry closes on gpui-pre's measurement.
 Centred on gpui-pre, the `docs/todo.md` entry closes with a dated line naming taffy's
 `flexbox.rs` "the auto margins have absorbed all of the free space" (0.15.0 `:2274-2275`, 0.15.1
 `:2320-2321`) and the test, and moves to `docs/archive/todo_closed.md`. If the test shows the
-label is not centred, the entry stays open, the draft is re-cited to taffy 0.15, and this
-document's §1.8 is corrected.
+label is not centred, the entry stays open with a dated line giving taffy 0.15 and the measured
+positions, this document's §1.8 is corrected, and the test is committed `#[ignore]`d with the
+entry's name as its reason. Options for the test then: committed red breaks every later gate;
+asserting the defect pins upstream's bug as the contract; dropped, it is lost and the next bump
+writes it again. Ignored, it stays green and one `--ignored` run re-checks the entry at each
+bump.
 
 **No exception or claim names the label's position today.** The two exception files and
 `SC/info/layout.rs` were checked, so nothing else changes for the label.
@@ -1161,7 +1166,8 @@ The one partial answer, inline code's seam, is P13's.
 
 - **`CN/README.md`:** the Compatibility table (`:76-79`), the *Verified against* line
   (`:95`, with the new date), the quick start (`:109`), the alias comment (`:144`), the
-  *Backends* section (`:822-837`), and the 0.8.0 mentions in rows (`:29`, `:57`, `:365`).
+  *Backends* section (`:822-837`), and the 0.8.0 mentions in rows (`:29`, `:57`; the `toolbar`
+row's, `:365`, with P13's change).
   `compat::` checks the table and the quick start.
 - **`docs/COMPATIBILITY.toml`:** through `scripts/update_compatibility.sh`, for gpui, and for
   iced and egui too, since P9 changes their showcases' citations and their stamps hash their
@@ -1176,8 +1182,9 @@ The one partial answer, inline code's seam, is P13's.
 
 **CHANGELOG `[Unreleased]`:**
 
-- **The *Changed* entry that states the floors ("requires gpui-component, gpui-base and
-  gpui-kit 0.8.0 and gpui-pre 0.3.9 …") is rewritten in place.**
+- **The entry that states the floors ("requires gpui-component, gpui-base and gpui-kit 0.8.0
+  and gpui-pre 0.3.9 …"), under *Breaking Changes* since the close-out audit `5c3bd3bb`, is
+  rewritten in place.**
   v0.7.0 is unreleased, so the entry states what v0.7.0 requires. There is no migration note
   (pre-1.0).
 - **The Kbd and toolbar fixes need no CHANGELOG entry of their own.** They repair what the
@@ -1197,8 +1204,9 @@ The `secondary` change is upstream's. The connector's public API does not change
   that G4 not start in this tree until it said the D round was closed.
 - Its writers ran cargo and `check_release.sh` continuously, so a dependency bump under one
   would have broken its builds and gates.
-- The session said so the same day: the C and D rounds closed, the review closed at `60fa77fd`
-  with its plan and ledger archived, the branch pushed at `7f011f00`, its writers stopped.
+- The session said so the same day: the C and D rounds closed, the review's plan and ledger
+  archived at `60fa77fd`, the branch pushed at `7f011f00` (after D15's last fix), its writers
+  stopped.
   G4 starts from there, on a clean tree.
 
 **The shared files:** `Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`,
@@ -1212,11 +1220,19 @@ result (P11).
   G1–G3. Con: it reopens documents archived as final (their *As built* notes and Status table
   say the review is closed), for a milestone the review did not run.
 - **(b) A *Record* section at the end of G4's plan.** Pro: no new file; it is archived with the
-  plan, beside the spec's *As built* note. Con: none for a milestone of ten tasks.
+  plan, beside the spec's *As built* note. Con: a task's line rides in a commit that also edits
+  the plan. That costs nothing if the Record holds no commit hashes: `git log --grep 'G4 T'`
+  lists the commits, since each message ends "(G4 Tn)". So each task writes its lines in its own
+  last commit, inside the unit too, and needs no later commit naming a hash.
 - **(c) A G4 ledger file.** Pro: the record apart from the steps, as the review kept it. Con: a
   fourth document, with nothing in it the plan's section cannot hold.
 
 **(b).** The approvals are this document's §3, so no decision line elsewhere is needed.
+
+**The screenshots that change** (spec §10) cannot wait in the Record: it is archived at G4's
+close, before the release asset run. They go as a dated line on the `docs/todo.md` entry that
+run closes (*native-theme-gpui connector*, *Regenerate the gpui screenshots and review the
+showcase's visible changes*).
 
 **The unit**, between which no other commit lands:
 
@@ -1238,7 +1254,7 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - P2's scoped update deliberately does not take the rest of the newest dependencies, but an
   application's fresh resolve does (§1.2).
 - The dependency canary has `workflow_dispatch` (`dependency-canary.yml:25`). Dispatched on
-  `v0.7.0-rc1` after the unit's push and again after G4's last push
+  `v0.7.0-rc1` after the unit's push and again after Task 8's push
   (`gh workflow run dependency-canary.yml --ref v0.7.0-rc1`), it builds and tests the branch
   on exactly that resolve.
 - It is one command each time. A failure there is read like any canary failure: an upstream
@@ -1246,10 +1262,11 @@ tests `main` (§0). The unit is the step that takes 0.8.1, and its gates pass wi
 - **How its result is read.** `main`'s standing failures are gpui gates themselves (§0): the
   citation gates and the widget coverage gate, on released code against a newer gpui. So a
   "same failure as `main`" rule would file exactly G4's kind of failure as standing. Instead:
-  - **every failure of a gpui test or of the gpui coverage line on the branch is G4's**, to be
-    diagnosed and fixed or explained;
+  - **every failure of a gpui clippy, test, doc or coverage line on the branch is G4's**, to
+    be diagnosed and fixed or explained;
   - **a failure elsewhere** (native-theme, iced, egui) is read like any canary failure;
-  - **if the Test step stops before its gpui lines** (`bash -e`, §0), those lines did not run.
+  - **if the Clippy, Test or Documentation step stops before its gpui lines** (`bash -e`, §0),
+    those lines did not run.
     They are run by hand on the same resolve: a full `cargo update` in the tree, the canary's
     gpui lines, then `Cargo.lock` restored. Without that, the dispatch shows nothing for gpui.
 

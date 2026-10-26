@@ -18,9 +18,10 @@
 **Line numbers.**
 
 - Ours are of `v0.7.0-rc1` at `8086a20e`. The C and D rounds committed to the branch after it,
-  until the review closed (`7f011f00`), so every task locates its regions by content and re-reads
-  what this spec describes before it writes (§0.2). The D round's D4 is known to move lines this
-  spec cites in
+  up to `7f011f00`: 23 files of `CN` and `SC` changed, and `CHANGELOG.md`, `ROADMAP.md`, the
+  presets and both exception files. So every task locates its regions by content and re-reads
+  what this spec describes before it writes (§0.2). Among them, D4 moves lines this spec cites
+  in
   `CN/src/geometry.rs` (the dialog docs, `toolbar` and its test), `CN/src/config.rs:65` and
   `SC/demo.rs:6478`.
 - `docs/todo.md` entries are cited by section, heading and opening words, as its header
@@ -75,13 +76,14 @@ Nothing a task needs is only there: every count and finding used here is restate
   `unsafe`, unless the text holds `#[test]`,
   `#[cfg(test)]` or `#[allow(clippy::unwrap_used` or the file is under `tests/`. `SC/tests.rs`
   and `CN/src/widgets/tests.rs` are not exempt, and `#[gpui::test]` is not `#[test]`.
-  - An edit leaves an existing `.unwrap()` or `.expect(` outside its text.
+  - An edit leaves an existing `.unwrap()`, `.expect(` or `panic!(` outside its text (one
+    sits right after the parse in `the_kbds_take_the_showcases_modifier`).
   - A new failure in test code is an `assert!`.
   - The hook is never worked around (rationale P5).
 - **Shared files are located by content.** A task that edits a file the review rounds also wrote
   re-reads, before writing, the code this spec describes there. Those files are `Cargo.lock`,
-  `CHANGELOG.md`, `docs/todo.md`, `docs/showcase-exceptions.toml`, the showcase and the
-  connector. Where the description no longer holds, the task stops and reports.
+  `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, `docs/showcase-exceptions.toml`, the showcase
+  and the connector. Where the description no longer holds, the task stops and reports.
   A rename or a move that keeps the role and the behaviour is followed and noted; a changed
   behaviour is a stop.
 - **`docs/todo.md` is append-only.** A closed entry moves to `docs/archive/todo_closed.md`
@@ -248,7 +250,8 @@ Each of these sites failed to compile in the trial, or would assert nothing:
   OS, and the tooltip test also for `save_tooltip(cx)`. Their expected strings are unchanged.
 - **`use_preset` (`SC/tests.rs:263-272`)** asserts that `apply_theme_by_name` returned `true`
   (`SC/app.rs:1861-1866`), with the preset's name in the message. `use_preset_scaled` calls
-  it, so the assertion covers its 96 calls and `use_preset_scaled`'s 4.
+  it, so the assertion covers every call: 96 at `8086a20e` (97 at `7f011f00`) and
+  `use_preset_scaled`'s 4.
 - **A new helper, `use_missing_preset`, asserts that the install failed.** It is for the two
   tests that pass `"no-such-preset"` on purpose to provoke a theme error:
   `the_theme_error_alerts_icon_follows_the_chosen_set` (`:8613`) and
@@ -475,7 +478,9 @@ renumbering or this hand-read.
 **Version-stating prose:** `grep -rn '0\.8\.0\|0\.3\.9\|0\.1\.10' connectors/native-theme-gpui
 connectors/native-theme-egui/examples connectors/native-theme-iced/examples
 docs/showcase-exceptions.toml scripts/connector_parity_exceptions.toml
-tools/showcase-support/src native-theme/src`. The count at the start goes in the commit body.
+scripts/check_widget_coverage.py tools/showcase-support/src native-theme/src`.
+`check_widget_coverage.py:44`'s "gpui-component-macros 0.8.0, derive_into_plot.rs:20" becomes
+0.8.1: the line is unchanged there. The count at the start goes in the commit body.
 
 `native-theme/src` holds two gpui citations outside the script's scope: `src/lib.rs:354` and
 `src/gnome/mod.rs:572-576`. Both cite gpui-pre-linux 0.3.9 `src/linux/x11/client.rs:2671-2678`
@@ -484,7 +489,7 @@ native-theme's own version numbers are history or are not gpui's.
 
 Two kinds of line are not this task's:
 - **`CN/README.md`'s version statements** are §9's (Task 8), and its `toolbar` row is §6's
-  (Task 5), so each README edit has one owner;
+  (Task 5), its version included, so each README edit has one owner;
 - **the README's `<!-- compat:begin -->` … `<!-- compat:end -->` line**, which only
   `scripts/update_compatibility.sh` writes.
 
@@ -635,7 +640,8 @@ content's height, where it states none. It sets the height to `auto` as before.
   none; only macos-monterey, material-3 and windows-11 state one.
 - Then the fix makes both pass.
 
-**`CN/README.md:365`** (the `toolbar` row) states the same. **The Widget Info claim
+**`CN/README.md:365`** (the `toolbar` row) states the same; its "gpui-component 0.8.0's
+`Toolbar`" becomes 0.8.1 in the same edit. **The Widget Info claim
 `SC/info/buttons.rs:902`** reads: `min_h_8, p_1, gap_1 and text_sm at its default Small Size
 (gpui-component/toolbar.rs, RenderOnce for Toolbar)`, then that `geometry::toolbar` sets the
 height to the content's and the minimum to `toolbar.bar_height` where stated, else to `auto`.
@@ -657,7 +663,7 @@ floor (rationale P7).
 - **The test**, `the_labelled_separator_centres_its_label`, in `SC/tests.rs`:
   - it opens the Layout page;
   - it takes the labelled Separator's bounds by its selector, `layout-separator-labelled`
-    (`SC/pages/layout.rs:32`, set at `SC/demo.rs:6653`);
+    (`SC/pages/layout.rs:32`, set at `SC/demo.rs:6679`);
   - among the painted quads inside those bounds (`scene_quads`,
     `CN/src/widgets/scene_read.rs:22`), it finds the label's box. That is the one filled with
     the theme's `tokens.background` (`GC/separator.rs:149`) and narrower than the line;
@@ -678,7 +684,10 @@ floor (rationale P7).
   0.15.1 `:2320-2321`) and the test (or the capture's x-ranges), and the entry moves to the
   archive.
 - **Not centred:** the entry stays open, with a dated line giving the measured positions, and
-  the rationale's §1.8 is corrected in its own commit.
+  the rationale's §1.8 is corrected in its own commit. The test is committed with
+  `#[ignore = "gpui-pre draws a labelled Separator's label at the line's end: docs/todo.md, File
+  the gpui-kit issue …"]` (rationale P11), so every gate stays green and an `--ignored` run
+  re-checks it at the next bump.
 
 **The two other drafts (P10)** stay open. Their text is not rewritten: `docs/todo.md` is
 append-only, and the text names its versions. Each gets a dated line, *GPUI Kit 0.8.1
@@ -705,8 +714,10 @@ takes the desktop's focus:
    `cargo tree --workspace -i gpui-fast` then finds nothing, and `cargo update -p taffy` takes
    0.15.1. If gpui-fast stays in the resolve, stop: the gap is recorded as P11's (a), with the
    reason.
-2. `cargo test -p native-theme-gpui --features native,watch --all-targets`, the Separator test
-   among them.
+2. `cargo test -p native-theme-gpui --features native,watch --all-targets -- --skip
+   the_fallback_stack_copy_is_gpuis`, the Separator test among them. The skipped test looks
+   gpui-fast up in `cargo metadata`, which no longer holds it, so it would fail by design, and a
+   failing target stops cargo before the next.
 3. The four gpui-pre dumps again, each compared element by element with its 0.15.0 dump.
 4. `git checkout -- connectors/native-theme-gpui/Cargo.toml Cargo.lock`, and `git status` shows
    neither changed. Nothing of steps 1–3 is committed.
@@ -733,8 +744,9 @@ What follows from it:
 
 **The upstream entries re-checked (P12).** Every open `[upstream]` gpui entry of `docs/todo.md`
 whose cited upstream file changed in 0.8.1's non-test code
-(`git diff --name-only v0.8.0 v0.8.1 -- crates/base/src crates/component/src`, test-only
-changes excluded, plus the gpui-pre and gpui-fast files that changed) is re-read at 0.8.1:
+(`diff -rq` of the registry's `gpui-component-0.8.0/src` and `-0.8.1/src`, and of
+`gpui-base`'s pair, test-only changes excluded, plus the gpui-pre and gpui-fast files that
+changed) is re-read at 0.8.1:
 
 - **resolved by 0.8.1:** it closes, with a dated line naming what resolved it, and moves to the
   archive;
@@ -811,7 +823,7 @@ re-cited in place, as at gpui-component 0.8.1, since ROADMAP states the current 
 - the *Backends* section (`:822-837`): GPUI Kit 0.8.1, its example manifest line, and GPUI
   Fast 0.1.12 or later (gpui-kit 0.8.1's `gpui-fast = "0.1.12"`);
 - the alias comment (`:144`): `version = "0.3.10"`;
-- the rows at `:29`, `:57`, `:365`, and the rest of §4.3's grep.
+- the rows at `:29` and `:57`, and the rest of §4.3's grep (the `toolbar` row is §6's).
 
 **`docs/COMPATIBILITY.toml` and the README's Verified line** are written only by
 `scripts/update_compatibility.sh`, after each connector's last source change:
@@ -824,8 +836,9 @@ Gates: `compat::the_verified_line_is_the_stamps` and `scripts/update_compatibili
 
 **`CHANGELOG.md` `[Unreleased]`:**
 
-- ***Changed*:** the entry that states the floors ("requires gpui-component, gpui-base and
-  gpui-kit 0.8.0 and gpui-pre 0.3.9 …") is rewritten in place for 0.8.1, 0.3.10 and GPUI Fast
+- ***Breaking Changes*:** the entry that states the floors ("requires gpui-component,
+  gpui-base and gpui-kit 0.8.0 and gpui-pre 0.3.9 …"; under *Changed* at `8086a20e`, moved by
+  the close-out audit `5c3bd3bb`) is rewritten in place for 0.8.1, 0.3.10 and GPUI Fast
   0.1.12, with the MSRV as measured in §1.
 - ***Added*:** a `**Development**:` entry for `CN/clippy.toml`'s gate, beside the other gates'
   entries.
@@ -838,7 +851,7 @@ Gates: `compat::the_verified_line_is_the_stamps` and `scripts/update_compatibili
 unchanged; the Toolbar's floor is reset where unstated; the Dialog exit follows its entrance.
 
 **`docs/todo.md`'s `[v0.7.0]` entry *Regenerate the gpui screenshots and review the showcase's
-visible changes*:** a dated line appended, with §10's list of the screenshots that change, for
+visible changes* (section *native-theme-gpui connector*):** a dated line appended, with §10's list of the screenshots that change, for
 the release asset run that closes the entry. The review plan and its ledger are archived and
 get nothing (rationale P15); G4's own record is its plan's *Record*.
 
@@ -870,12 +883,14 @@ native-theme-gpui --allow-dirty --target-dir target/package-verify --features gp
 and Windows GPUI Fast builds.
 
 **The dependency canary, dispatched on the branch** (`gh workflow run dependency-canary.yml --ref
-v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It runs after the unit's push and after G4's last push.
-- **Every failure of a gpui test or of the gpui coverage line is G4's**, even where `main`
+v0.7.0-rc1`), is green, or each failure is read as below (rationale P15). It runs after the unit's push and after Task 8's push. The Close's commits after it are
+documents only and need no new dispatch.
+- **Every failure of a gpui clippy, test, doc or coverage line is G4's**, even where `main`
   fails the same way. `main`'s standing failures are gpui gates on released code (rationale
   §0), so they are no baseline for the branch.
 - **A failure elsewhere** (native-theme, iced, egui) is read like any canary failure.
-- **If the Test step stops before its gpui lines** (`bash -e`), those lines are run by hand
+- **If the Clippy, Test or Documentation step stops before its gpui lines** (`bash -e`), those
+  lines are run by hand
   on the same resolve: `cargo update` in the tree, the canary's gpui lines, then `git checkout
   -- Cargo.lock`.
 

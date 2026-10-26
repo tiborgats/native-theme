@@ -39,8 +39,8 @@ close.
 - The review session asked on 2026-10-26 that G4 wait until it said the D round was closed:
   its writers edited the connector, the showcase, the presets, `docs/todo.md` and
   `CHANGELOG.md`, and ran `check_release.sh` and cargo continuously.
-- It said so the same day: the review closed at `60fa77fd`, its plan and ledger archived, the
-  branch pushed at `7f011f00`, its writers stopped.
+- It said so the same day: the review's plan and ledger archived at `60fa77fd`, the branch
+  pushed at `7f011f00` (after D15's last fix), its writers stopped.
 - The start is the maintainer's. Until then, G4 commits only its three documents, by explicit
   path.
 - An Opus session orchestrates. Code tasks run in `implement` agents (Opus), with a fresh
@@ -86,7 +86,7 @@ close.
     two showcase citation gates and `the_fallback_stack_copy_is_gpuis` red; Task 2's leaves
     them red only for the set-aside list; Task 3's makes the branch green. Every other commit
     is green.
-- **Shared files** (`Cargo.lock`, `CHANGELOG.md`, `docs/todo.md`,
+- **Shared files** (`Cargo.lock`, `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`,
   `docs/showcase-exceptions.toml`, the showcase, the connector) are located by content:
   - each task re-reads, at its start, the code the spec describes and checks that the
     description still holds;
@@ -97,8 +97,11 @@ close.
   and no release. No upstream issue is filed by an agent.
 - **Outside the project:**
   - reading the cargo home is granted;
-  - cargo's own writes there are permitted: the lock update, and `cargo audit`'s advisory
-    fetch;
+  - cargo's own writes there are permitted: the downloads of the lock update, `cargo fetch`
+    and `cargo package`, `cargo audit`'s advisory fetch, and the full `check_release.sh`'s
+    removal of its own unpacked `native-theme*` copies from the registry
+    (`scripts/check_release.sh:1105-1107`);
+  - `~/.claude` is granted (Task 8's memory);
   - nothing else outside the project is written; a missing toolchain is installed only with
     the maintainer's permission.
   - `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme` runs whenever the build
@@ -116,8 +119,8 @@ close.
    - `no_inspector_toggle_remains` compares with a real key.
    - `use_preset` and `set_preset` fail the test on a preset that does not install.
 3. **The Kbd row and the tooltip are back** (Task 1): four Kbds on the Typography page, held by
-   `the_typography_page_draws_its_kbds`, and "Ctrl+S" or "⌘S" in the tooltip, by the test
-   platform's OS.
+   `the_typography_page_draws_its_kbds`, and "Ctrl+S" off macOS or "⌘S" on it in the tooltip
+   (the modifier by gpui's runtime OS, drawn by the compile target, spec §2.2).
 4. **No cited number skipped or mis-moved** (Task 2), as G3 Task 2's focus.
    - gpui-pre's citations are in scope this time.
    - The unit's own lines are left alone and listed.
@@ -128,14 +131,16 @@ close.
    duration, and no `AnimationExt`.
 6. **The gate catches** (Task 4).
    - Every entry is shown to flag a call, not only one: the planted function draws exactly
-     one `disallowed_methods` error per entry in each of the three configurations, GPUI Fast
-     included, and each `allow-invalid` entry states why.
+     `disallowed_methods` error at each planted line that a configuration builds, counted per
+     line (spec §5), in each of the three configurations, GPUI Fast included, and each
+     `allow-invalid` entry states why.
    - Every listed function's group is argued from its doc line.
    - Every existing call is allowed, with its reason; a guard comes in addition where needed.
 7. **The toolbar tests fail before the fix** (Task 5): the single-fixture test is red first,
    and both toolbar unit tests pass after it.
 8. **The Separator is closed only on gpui-pre's measurement** (Task 6): the test, or a capture
-   if the test cannot find the label's box there. GPUI Fast asserts where it finds the box.
+   if the test cannot find the label's box there; not centred, the test is ignored with the open
+   entry as its reason. GPUI Fast asserts where it finds the box.
 9. **Both cores lay the showcase out alike** (Task 6): the four dump pairs compared, each
    difference fixed or explained. The same for gpui-pre on taffy 0.15.1 against 0.15.0, and
    the temporary manifest and lock restored.
@@ -149,9 +154,10 @@ close.
   spec and the plan in `02095604`, and the check passes after them (`git log -- <path>`).
   Task 0 checks that they are there.
 - [ ] **The *Record*** (rationale P15): a `## Record` section at the end of this plan, opened
-  with the review's close (`60fa77fd`, the branch at `7f011f00`) and the maintainer's approvals
-  (rationale §3). Each task adds its commits, and each failure or difference it explains
-  rather than fixes. The archived review plan and ledger are not edited.
+  with the review's close (`60fa77fd`, the branch at `7f011f00`), the maintainer's approvals
+  (rationale §3) and the date of the maintainer's start. Each task adds, in its own last commit,
+  each failure or difference it explains rather than fixes; it names no commit hash
+  (`git log --grep 'G4 T'` lists them). The archived review plan and ledger are not edited.
 - [ ] **The inputs** the spec names are in `.superpowers/sdd/todo_code-review-plan/g4/`:
   `gk081-trial-check.log`, `gk081-trial-tests.log`, `gk081-lockdiff.txt`,
   `gk081-diff-review.md`, `gk081-msrv-1.94.txt`, `trial.sh` and `trial2.sh`. If one is
@@ -314,7 +320,8 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 **Depends on:** Tasks 3b and 5, so that the comparisons read the final layout.
 
 - [ ] **Spec §7's Separator test**, passing on both cores; or with GPUI Fast's half under a
-  `cfg` with its reason; or, if gpui-pre cannot find the box, the capture there.
+  `cfg` with its reason; or, if gpui-pre cannot find the box, the capture there; or, if gpui-pre
+  does not centre the label, committed `#[ignore]`d with the entry as its reason.
 - [ ] **The Separator entry** closes with its dated line and moves to the archive, or stays open
   with the measured positions (and the rationale's §1.8 corrected in its own commit).
 - [ ] **The two drafts' dated lines** (spec §7). Their texts are not rewritten.
@@ -322,7 +329,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   - spec §7's dumps on both cores, compared pair by pair, each difference fixed or explained in
     the *Record*;
   - spec §7's taffy 0.15.1 measurement on gpui-pre (the suite and the four dumps on a lock
-    without gpui-fast), then `CN/Cargo.toml` and `Cargo.lock` restored and `git status`
+    without gpui-fast, `the_fallback_stack_copy_is_gpuis` skipped, spec §7), then `CN/Cargo.toml` and `Cargo.lock` restored and `git status`
     showing neither changed;
   - the Linux parity run against iced and egui: a new difference is fixed or excepted with its
     measured reason, and a stale exception is removed. The three asset directories are restored
@@ -336,7 +343,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   The commit body lists each entry re-read and its outcome.
 - [ ] **Gates:** `--commit` green, and the GPUI Fast tests (the Separator test is code).
 - **Commits:**
-  - `test(gpui showcase): the labelled Separator's label is centred on its line on both cores, since gpui-pre 0.3.10 lays out on taffy 0.15 (G4 T6)`;
+  - `test(gpui showcase): the labelled Separator's label is centred on its line on both cores, since gpui-pre 0.3.10 lays out on taffy 0.15 (G4 T6)`, or, not centred, `test(gpui showcase): the labelled Separator's centring test, ignored while gpui-pre 0.3.10 draws the label at the line's end (G4 T6)`;
   - `docs(todo): GPUI Kit 0.8.1 — the Separator entry <closes | stays open>, the issue drafts and the upstream entries re-checked, ROADMAP's list re-cited (G4 T6)`;
   - a layout or parity change, if any, each in its own commit.
 
@@ -356,7 +363,8 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 
 - [ ] **Spec §9:**
   - the README's *Backends* section, alias comment and rows;
-  - the CHANGELOG (*Changed* rewritten in place, *Added* for the gate);
+  - the CHANGELOG (the floors' *Breaking Changes* entry rewritten in place, *Added* for the
+    gate);
   - ROADMAP;
   - the full-theme note;
   - the dated line on `docs/todo.md`'s gpui screenshot entry, with spec §10's list.
@@ -367,11 +375,12 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - [ ] **The full `./scripts/check_release.sh`**, with spec §10's expected items only. Right
   after it, the packaging check with `--features gpui-fast`.
 - [ ] **Push**, then CI green, and the dependency canary dispatched on the branch again
-  (spec §10).
+  (spec §10). The Close's commits are pushed after it, with CI green; being documents only,
+  they need no new dispatch.
 - [ ] **Close:**
   - the three documents to `docs/archive/`, with an *As built* note at the top of the spec;
   - the archive index row;
-  - the *Record*'s last line: G4 closed, with the closing commit;
+  - the *Record*'s last line: G4 closed on its date, by the archive commit that carries it;
   - the memory;
   - `~/.claude/scripts/sweep-target.sh /home/tibi/Rust/native-theme`.
 - **Commits:**
