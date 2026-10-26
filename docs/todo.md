@@ -1719,6 +1719,25 @@ model, the platform presets and the three connectors
       `breeze-mobile` were the only ones, and store.kde.org had none). Then
       write the spec; the rationale's §5 sketches the reader.
 
+### Dialog: the platform's vertical placement
+
+- [ ] [1.0] **Model where each platform places an in-window modal dialog.**
+      gpui-component 0.8.1 added the seam: `Dialog::centered` and
+      `AlertDialog::centered` centre a dialog vertically in the window
+      (`dialog/dialog.rs:495`, `dialog/alert_dialog.rs:276`). Upstream's
+      default anchors the dialog's top at `margin_top`, or a tenth of the
+      viewport's height where the caller sets none (`dialog/dialog.rs:669-674`;
+      the setter `Dialog::margin_top`, `:488`). The gpui showcase keeps that
+      default, and its Widget Info states the placement as not themeable. What
+      it needs: a `docs/platform-facts.md` row per platform, cited to its
+      sources, then a `[dialog]` field (`docs/property-registry.toml` states
+      none), the presets, the inheritance rules and the three connectors.
+      Settled before 1.0, because the placement is a native-look fact on every
+      platform and needs platform research first. It cannot be a `[v0.7.x]`
+      patch: `DialogTheme` is not `#[non_exhaustive]`
+      (`native-theme/src/model/widgets/mod.rs:811-817` at 3987442e), so a new
+      public field breaks struct literals; a later minor release may carry it.
+
 ---
 
 ## Toolkit Connectors
@@ -3733,6 +3752,35 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 
 - [ ] [1.0] gpui's `to_theme(&resolved, name, is_dark: bool, ..)` could take a `ColorMode`, the type `Loaded::mode` carries and iced's `to_theme_in` takes (M8 T4 ruling, 2026-10-16): a break outside the maintainer's four M8 answers, which buys nothing while `Loaded` carries the mode; fold it into the 1.0 API pass.
 
+### iced and egui: a gate for upstream functions that panic on their input
+
+- [ ] [1.0] G4 gives the gpui connector a gate for the upstream functions
+      that panic on an argument's value: clippy's `disallowed-methods`, in a
+      `clippy.toml` of its own, from an inventory of upstream's panic notes
+      (G4's rationale P6 and its plan's Task 4,
+      `todo_v0.7.0_gpui-kit-0.8.1-rationale.md` and `-plan.md`, in `docs/`
+      until G4 closes, then in `docs/archive/`). The iced and egui connectors
+      have the same gap: a call into iced, iced_aw or egui that panics on its
+      input passes every lint they run, and only a test that reaches the call
+      catches it. To do: the same inventory over those crates, each function
+      sorted into one that panics on an argument's value (listed) or on
+      framework state or misuse (not listed, with the reason), and a
+      `clippy.toml` per connector, each entry shown to flag a planted call.
+      Its place is those crates' next upgrade, as G4's sweep is the gpui
+      connector's.
+
+### gpui-fast pins `taffy = "=0.15.0"`
+
+- [ ] [upstream] gpui-fast 0.1.12 requires taffy at exactly 0.15.0
+      (`Cargo.toml:344-345`), where gpui-pre 0.3.10 takes it with a caret
+      (`Cargo.toml:524-525`). So a workspace that builds both cores, ours
+      among them, locks gpui-pre to taffy 0.15.0 too, while an application on
+      gpui-pre alone resolves 0.15.1. Our CI and the dependency canary
+      therefore cannot test the taffy that applications on the default core
+      get. G4 measures it once, in its plan's Task 6. For the maintainer to
+      raise upstream (an agent files nothing); re-check it at the next GPUI Kit
+      upgrade.
+
 ---
 
 ## This cycle (v0.7.0)
@@ -3761,6 +3809,21 @@ The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had 
       maintainer's approval; and a watched source, since the watcher does not
       receive the `WM_SETTINGCHANGE` with `SPI_SETMOUSEHOVERTIME` that reports
       a change (`native-theme/src/windows.rs`, *Sources not watched*).
+
+### Markdown: inline code, list markers and blockquotes in the model
+- [ ] [post-1.0] gpui-component 0.8.1's `TextView` takes refinements for its
+      inline code, its list markers and its blockquotes:
+      `TextView::inline_code_style`, `list_style` and `blockquote_style`
+      (`text/compat.rs:114`, `:121`, `:127`). The model states none of them,
+      so the connector passes none, and the gpui showcase's TextView panel
+      names inline code's fill, gpui-component's `accent`, as this gap. What
+      exists: the connector already feeds `defaults.mono_font` as
+      `mono_font_family` (`connectors/native-theme-gpui/src/config.rs:62` at
+      3987442e), which gpui-component projects into gpui-base's mono token
+      (`theme/mod.rs:595`), the family inline code falls back to (gpui-base
+      0.8.1 `text/node.rs:2760-2766`). What is missing: `docs/platform-facts.md`
+      has no rows a value could come from, and these are not platform
+      controls.
 
 ---
 

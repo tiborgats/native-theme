@@ -1329,6 +1329,10 @@ pub(super) fn dialog_surface(
         "upstream's 448px default, the showcase setting none of its own (dialog/dialog.rs, DialogProps); where a native theme is installed geometry::dialog holds it at least dialog.min_width and geometry::dialog_max_width caps it",
     )
     .not_themeable(
+        "placement",
+        "anchored at its top a tenth of the viewport's height down, 16px lower for each dialog open beneath it, and moved up to gpui-component's lg spacing from the edge where it is too tall to fit there: upstream's default where the caller sets no Dialog::margin_top, and the showcase sets none (dialog/dialog.rs, Dialog::render, lines 662-675). Dialog::centered centres it instead (dialog/dialog.rs, Dialog::centered), but native-theme states no placement, so the showcase keeps the default; docs/todo.md plans the field under Dialog: the platform's vertical placement",
+    )
+    .not_themeable(
         "animation",
         match (entrance, reduce_motion) {
             (false, true) => "none: reduced motion is on, so the Dialog appears at rest at once and leaves at once (dialog/dialog.rs, Dialog::exit_duration, lines 559-561), where it would slide and fade in as it opens, and out as it closes, over 0.25s on a literal curve, the same both ways, not the theme's motion tokens -- the default entrance, which the showcase keeps where the theme states no dialog.entrance (dialog/entrance.rs, DialogEntrance::SlideDown; dialog/dialog.rs, ANIMATION_DURATION; dialog/dialog.rs, Dialog::exit_duration, lines 558-568; dialog/dialog.rs, Dialog::motion_transition, lines 570-580; gpui-component/root.rs, WindowState::dialog_layer, lines 264-269)",

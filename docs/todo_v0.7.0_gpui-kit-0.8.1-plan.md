@@ -485,3 +485,19 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   `:366` (Task 5's); history at `CN/src/widgets/scene_read.rs:9` ("since 0.1.10"),
   `SC/tests.rs:7583` (the Folder TabBar 0.8.0 added) and `docs/showcase-exceptions.toml:22`
   (the re-read dates).
+- **Task 7, line numbers read again.** Spec §8's repo lines are of `8086a20e`: the mono-font
+  line is now `CN/src/config.rs:62` (§8 wrote `:65`) and `DialogTheme`'s attributes and
+  header `native-theme/src/model/widgets/mod.rs:811-817` (§8 wrote `:810-815`); the todo
+  entries cite these, dated. Upstream's default placement is `dialog/dialog.rs:669-674`, the
+  `if`/`else` that picks the anchor, which the todo entry cites; the Dialog's Widget Info row
+  cites `:662-675`, wider than §8's `:667-673`, because it also states upstream's comment on
+  an overflowing dialog (`:662-666`) and the 16px offset per stacked dialog (`:668`, `:675`).
+  Inline code's fallback to the mono font, which §8 states, holds through gpui-component's
+  projection of `mono_font_family` into gpui-base's tokens (`theme/mod.rs:595`) and
+  gpui-base `text/node.rs:2760-2766`; the entry cites both.
+- **Task 7, the entries' places and two tenses.** The Dialog entry is under Core API (a model
+  change), the iced and egui gate and gpui-fast's pin under Toolkit Connectors, the Markdown
+  entry under Post-1.0, each at its section's end. Task 4 has not landed, so the iced and
+  egui entry names the gpui connector's `clippy.toml` as G4's plan's Task 4, not as a file;
+  the taffy entry says G4 measures 0.15.1 once in Task 6 (the controller's ruling), for
+  Task 6 to append its result as a dated line.
