@@ -105,7 +105,8 @@ Against the enabled controls:
   differs from the window by more than 40 levels, about 0.45 on macOS 26 (0.44–0.47) and about
   0.71 on xcode-27 (0.70–0.75).
 - On macOS 14 and 15 a disabled slider draws no value fill: the bar has the track's colour on
-  both sides of the knob. On macOS 26 the disabled fill is grey, darker than the track.
+  both sides of the knob. On macOS 26 the bar left of the knob is a denser grey than the
+  track, darker in light and lighter in dark.
 - On macOS 26 a disabled knob, and a disabled slider's track, draw as the enabled ones.
 
 The offscreen renders (`renders/<appearance>/switch-regular-disabled-off@2x.png`, …) give the
