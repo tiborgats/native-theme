@@ -1842,6 +1842,59 @@ and many have since drifted, as the archive's [README](README.md) warns.
 - [x] [v0.7.0] The connector's `Checkbox`, `Radio`, `Slider` and `Switch` draw the focus ring through gpui-component's `focus_ring_style`, upstream's 3px at half the ring colour's alpha (`styled.rs:11-12`); the model states `defaults.focus_ring_width` and `focus_ring_offset`, which reach none of them.
   *Closed 2026-10-26 in 753cda70 (C-06):* `widgets::FocusRing` draws the model's ring for the connector's `Checkbox`, `Radio`, `Slider` and `Switch` in place of gpui-component's `focus_ring_style` (3 px at half `ThemeColor::ring`'s alpha, gpui-component 0.8.0 `src/styled.rs:11-12`, `:301-327`): `defaults.focus_ring_color` as stated, `focus_ring_width` wide, the outer edge the element's bounds grown by `focus_ring_offset + focus_ring_width` and the corners grown as much, floored at 0, an absolute child against the padding box, as iced's `focus_ring::RingLook::quad` and egui's `paint_focus_ring` draw it; no ring where the width is not positive or a value not finite; where the ring is inset at the edge (`offset == -width`, adwaita) a band inside the edge, or the element's own border in the ring's colour where it has one (the C-06 review's fix). `the_focus_ring_is_the_themes` checks the band's bounds, width, colour and corners for an outside and a straddling ring, the inset tint and the no-ring cases; `a_switch_told_not_to_draws_no_focus_ring` checks the switch's option.
 
+### OS probe: macOS renders for the sidebar, the title bar and the list header
+
+- [x] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar
+      is `NSVisualEffectView.Material.sidebar`, a material with no colour
+      (`docs/platform-facts.md:1370`), yet `macos-monterey` and `macos-tahoe`
+      state `#e8e8ed` / `#262626`. The OS probe resolves its colours with
+      Reduce Transparency on and renders no material. Have it render a
+      sidebar-material `NSVisualEffectView` with Reduce Transparency on and
+      off, in both appearances, on each macOS image; then state the cell
+      from the renders and the presets follow (found in M2a Step 8's
+      re-audit, 2026-10-11).
+- [x] [v0.7.0] `window.title_bar_background` and `list.header_background`
+      are ≈ `defaults.surface_color` on macOS, "measured", with no render
+      cited (`docs/platform-facts.md:1160`, `:1429`). In `macos-monterey`
+      dark both inherit `controlBackgroundColor` `#1e1e1e` under a window of
+      `#323232`. Render a titled window and an `NSTableView` with a header
+      on the probe images, in both appearances, and check both cells against
+      the renders (found in M2a Step 8's re-audit, 2026-10-11).
+  *Closed 2026-10-26 in 8c219626 (evidence and facts 2245393c, dc1be6bd):*
+  - os-probe run 40320895749 (`docs/evidence/os-probe/2026-10-26-run-40320895749/`, D1's
+    key-window section) made a titled window key on every macOS image and captured it with a
+    sidebar-material `NSVisualEffectView` (state active), an `NSTableView` with its header and a
+    segmented control.
+  - A calibration strip read exact in every capture.
+  - Reduce Transparency was on (the images' setting), with a second pass off. The facts cells
+    :1160, :1370, :1429, :1636 and :1637 state the measured values.
+  - macos-monterey (macOS 14 and 15, which agree) and macos-tahoe (macOS 26, as 27 but for the
+    dark selected segment, #067dff) state them.
+  - Run 40324458365 (`docs/evidence/os-probe/2026-10-26-run-40324458365/`) adds the title bar of a
+    window that is not key, #ececec / #141414 on macOS 14 and 15 (facts :1166, macos-monterey's
+    `inactive_title_bar_background`), and shows wallpaper tinting off drawing every value the same.
+  - The selected segment in a key window is not `selectedContentBackgroundColor`: macOS 14 and 15
+    draw it raised and neutral (#ffffff / #666666) with the ordinary label colour, and macOS 26
+    draws it #0077f9 / #077dff, which no NSColor the probe reads gives.
+
+### OS probe: the selected segment in a key window
+
+- [x] [v0.7.0] `segmented_control.active_background` on macOS is
+      `selectedContentBackgroundColor` (`docs/platform-facts.md:1636`), whose
+      value macOS 26 reports unchanged (probe 26 `:324`, `:398`), but the OS
+      probe renders each control in a borderless window it never orders
+      front, so never key (probe `:514`), and there the selected segment is
+      not that colour: white, and white at alpha 74/255 in dark, on macOS
+      14.8.9 and 15.7.9; black or white at alpha 50/255 on macOS 26
+      (`renders/aqua/` and `renders/darkAqua/segmented_control-regular@2x.png`
+      under `docs/evidence/os-probe/2026-10-11-run-38129819806/`, measured
+      2026-10-11). Have the probe render a segmented control with a selected
+      segment in a key window, in both appearances, on each macOS image;
+      then the facts cell follows, and `macos-monterey` and `macos-tahoe`
+      (which carries monterey's value, marked so) follow the cell (found in
+      M2a Steps 8–12, 2026-10-11).
+  *Closed 2026-10-26 in 8c219626 (evidence and facts 2245393c, dc1be6bd),* with *OS probe: macOS renders for the sidebar, the title bar and the list header* above, whose closing has the runs: the selected segment in a key window is not `selectedContentBackgroundColor`: macOS 14 and 15 draw it raised and neutral (#ffffff / #666666) with the ordinary label colour (facts :1636, :1637), and macOS 26 draws it #0077f9 / #077dff (#067dff dark on 27), which no NSColor the probe reads gives; macos-monterey and macos-tahoe state them.
+
 ## Post-1.0 / Deferred
 
 ### Change notification

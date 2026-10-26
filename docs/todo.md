@@ -757,6 +757,24 @@ model, the platform presets and the three connectors
       `underPageBackgroundColor` and the text field's render fill
       (`docs/evidence/os-probe/2026-10-11-run-38129819806/os-probe-xcode-27`).
 
+### macOS: the window background macOS 14 and 15 draw is not the one they read
+
+- [ ] [1.0] From the D round's OS probe (runs 40320895749 and 40324458365,
+      `docs/evidence/os-probe/`). On macOS 14 and 15, a box filled with
+      `windowBackgroundColor`, and the window's own background, draw
+      #f6f6f6 / #282828 with Reduce Transparency on (the runner images'
+      setting) and #eaeaea / #242424 with it off, where the NSColor reads
+      #ececec / #323232. Key or not, and with wallpaper tinting off, they
+      draw the same (`docs/platform-facts.md` §2.1.3 `background_color`).
+      macOS 26 and 27 draw it as they read it. `macos-monterey` keeps the
+      read value. Two things are unmeasured: what makes the drawn colour
+      differ, and whether it depends on the wallpaper, which is solid black
+      on every runner image. An OS-probe pass that sets another solid
+      wallpaper (and one more with Reduce Transparency off) would show
+      whether the drawn value follows it. If it does not, the preset can
+      state the drawn value. The sidebar's #f6f6f6 / #383838 (§2.12),
+      measured the same way, has the same open question.
+
 ### material-3: the screenshot names and the display name
 
 - [ ] [v0.7.0] At the next `scripts/generate_assets_release.sh` run, the six README
@@ -869,42 +887,6 @@ model, the platform presets and the three connectors
       review is assigned.
       M8 T21 fix round 1 (2026-10-17): [1.0], not [v0.7.0]: a model change
       that no plan schedules fits neither of the header's `[v0.7.0]` clauses.
-
-### OS probe: macOS renders for the sidebar, the title bar and the list header
-
-- [ ] [v0.7.0] `sidebar.background_color` has no source on macOS: the sidebar
-      is `NSVisualEffectView.Material.sidebar`, a material with no colour
-      (`docs/platform-facts.md:1370`), yet `macos-monterey` and `macos-tahoe`
-      state `#e8e8ed` / `#262626`. The OS probe resolves its colours with
-      Reduce Transparency on and renders no material. Have it render a
-      sidebar-material `NSVisualEffectView` with Reduce Transparency on and
-      off, in both appearances, on each macOS image; then state the cell
-      from the renders and the presets follow (found in M2a Step 8's
-      re-audit, 2026-10-11).
-- [ ] [v0.7.0] `window.title_bar_background` and `list.header_background`
-      are ≈ `defaults.surface_color` on macOS, "measured", with no render
-      cited (`docs/platform-facts.md:1160`, `:1429`). In `macos-monterey`
-      dark both inherit `controlBackgroundColor` `#1e1e1e` under a window of
-      `#323232`. Render a titled window and an `NSTableView` with a header
-      on the probe images, in both appearances, and check both cells against
-      the renders (found in M2a Step 8's re-audit, 2026-10-11).
-
-### OS probe: the selected segment in a key window
-
-- [ ] [v0.7.0] `segmented_control.active_background` on macOS is
-      `selectedContentBackgroundColor` (`docs/platform-facts.md:1636`), whose
-      value macOS 26 reports unchanged (probe 26 `:324`, `:398`), but the OS
-      probe renders each control in a borderless window it never orders
-      front, so never key (probe `:514`), and there the selected segment is
-      not that colour: white, and white at alpha 74/255 in dark, on macOS
-      14.8.9 and 15.7.9; black or white at alpha 50/255 on macOS 26
-      (`renders/aqua/` and `renders/darkAqua/segmented_control-regular@2x.png`
-      under `docs/evidence/os-probe/2026-10-11-run-38129819806/`, measured
-      2026-10-11). Have the probe render a segmented control with a selected
-      segment in a key window, in both appearances, on each macOS image;
-      then the facts cell follows, and `macos-monterey` and `macos-tahoe`
-      (which carries monterey's value, marked so) follow the cell (found in
-      M2a Steps 8–12, 2026-10-11).
 
 ### `ResolvedLayoutTheme`: a public type nothing produces
 

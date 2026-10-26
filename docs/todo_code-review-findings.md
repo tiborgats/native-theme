@@ -13953,3 +13953,30 @@ toolbar role as the receivers.
   `toolbar.item_gap` (SCOPED «toolbar» `spacing.item_spacing.x`) and the line width's
   `noninteractive.bg_stroke.width` (src/mapping.md). M4: gpui's `geometry::toolbar` doc anchors
   the iced citation at `toolbar_rule`.
+- *D1 completed (2026-10-26; it belongs to D1's entry above, whose status was "in progress"):*
+  D1b (96199f83: activation first, the calibration strip, raw bytes, `-psn_` ignored) and D1c
+  (891e66dd: `--not-key`) followed 855cea3a. Run 40320895749 made the window key on every macOS
+  image, 288 of 288 sRGB calibration patches exact, with the Reduce Transparency, Increase
+  Contrast and app-bundle passes; run 40324458365 adds the window not key and wallpaper tinting
+  off, 432 of 432 patches exact. W2 committed the evidence and the facts (2245393c, dc1be6bd);
+  D6 (8c219626) applies them to the presets. **Status:** done, 855cea3a, 96199f83, 891e66dd.
+
+#### D6 · macOS presets from the key-window probe (todo 1009, 1018, 1028)
+**Problem:** the macOS sidebar colour had no source. The title bar and list header were "≈ surface"
+with no render. The selected segment was assumed to be `selectedContentBackgroundColor`, from
+renders of a window that was never key.
+**Fix:** D1's key-window probe section and W2-f's workflow passes. Run 40320895749: every macOS
+pass key, 288 of 288 sRGB patches exact; the run's README has the system-colour patches' 26
+differences and the app-bundle pass, which is not key at its captures. Facts and evidence in
+2245393c (and dc1be6bd for the window not key); W2's preset draft d-w2i-macos.patch, applied
+here: macos-monterey states the title bar #ffffff / #262626, the not-key title bar #ececec /
+#141414, the sidebar #f6f6f6 / #383838, the list header #ffffff / #1e1e1e and the selected
+segment #ffffff / #666666 under `labelColor` (#000000d8 / #ffffffd8); macos-tahoe the title bar
+#ffffff / #1e1e1e, the same sidebar and list header, and the selected segment #0077f9 / #077dff.
+Each value was checked against the facts cells (:1160, :1166, :1370, :1429, :1636, :1637) and
+the probe's samples. The new `[1.0]` entry *macOS: the window background macOS 14 and 15 draw is
+not the one they read* holds the drawn-versus-read `windowBackgroundColor` and the wallpaper
+question. The core, iced, gpui and egui tests pass over the new values; `contract-leaves.toml` is
+unchanged.
+**Status:** done, 2245393c, dc1be6bd, 8c219626. The controller's Linux gate: the macOS presets'
+screenshots move (the sidebar, the selected segment, monterey's dark and not-key title bar).
