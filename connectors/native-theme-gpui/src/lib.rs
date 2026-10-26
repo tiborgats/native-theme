@@ -94,7 +94,7 @@
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
-//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and its gutter's over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme), and its line height via `geometry::editor` |
+//! | `input` | 3 of 13 + geometry | border, caret, selection_background; height, line height, padding, radius, border, text and its colour via `geometry::input`; the fill, and a disabled field's fill and text colour, via `geometry::input_fill`; the code `Editor`'s fill, and where it is translucent its gutter's, the fill over `window.background_color`, through the highlight theme (its current line, line numbers and syntax colours stay upstream's scheme), and its line height via `geometry::editor` |
 //! | `scrollbar` | colours + geometry | track/thumb colours, widths, inset, min length via `base_layer` |
 //! | `status_bar` | 3 of 3 | background, border colour; the border's padding sides and the font's family, size, weight, style and colour via `geometry::status_bar` |
 //! | `table` | head, from `list.header_background` / `list.header_font` | the model states no footer colour, so `table_foot*` are derived |
@@ -1710,13 +1710,15 @@ mod tests {
     }
 
     /// The code editor takes the platform's field fill, `input.background_color`,
-    /// in every preset and mode, and its gutter that fill over the window,
-    /// opaque wherever the window is, so text scrolling under the gutter
-    /// cannot show through it.
+    /// in every preset and mode. Where that fill is translucent its gutter is
+    /// the fill over the window, opaque wherever the window is, so text
+    /// scrolling under the gutter cannot show through it; where it is opaque
+    /// the gutter is left unset, so upstream paints it in the editor's fill
+    /// and halves it with the fill in a disabled editor. Both branches occur.
     #[test]
     fn the_code_editor_takes_the_platforms_field_fill() {
         let prefs = AccessibilityPreferences::default();
-        let mut translucent = Vec::new();
+        let (mut translucent, mut opaque) = (Vec::new(), Vec::new());
         for info in Theme::list_presets() {
             for is_dark in [false, true] {
                 let (theme, r) =
@@ -1731,19 +1733,23 @@ mod tests {
                     "{at}: the editor's fill"
                 );
                 let gutter = style.editor_gutter_background;
-                assert_eq!(gutter, Some(colors::over(window, fill)), "{at}: the gutter");
-                if window.a >= 1.0 {
-                    assert_eq!(gutter.map(|g| g.a), Some(1.0), "{at}: a translucent gutter");
-                }
                 if fill.a < 1.0 {
+                    assert_eq!(gutter, Some(colors::over(window, fill)), "{at}: the gutter");
+                    if window.a >= 1.0 {
+                        assert_eq!(gutter.map(|g| g.a), Some(1.0), "{at}: a translucent gutter");
+                    }
                     translucent.push(at);
+                } else {
+                    assert_eq!(gutter, None, "{at}: an opaque fill's gutter is set");
+                    opaque.push(at);
                 }
             }
         }
         assert!(
-            !translucent.is_empty(),
-            "no preset states a translucent field fill any more, so the gutter's \
-             composite is tested over opaque fills alone"
+            !translucent.is_empty() && !opaque.is_empty(),
+            "the presets no longer state both a translucent and an opaque field \
+             fill, so one of the gutter's branches goes untested (translucent: \
+             {translucent:?})"
         );
     }
 

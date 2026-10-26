@@ -88,11 +88,14 @@ pub fn to_theme_config(
 /// field fill (`src/theme/mod.rs:485-499`). The fill is the field's,
 /// `input.background_color`, as
 /// [`geometry::input_fill`](crate::geometry::input_fill) gives a text field.
-/// gpui-base paints the gutter as an opaque overlay above text that scrolls
-/// under it, in `editor_gutter_background` or else the editor's fill
-/// (gpui-base `src/input/base/element.rs:3352-3358`); a translucent field
-/// fill, as windows-11 states, would show the text through, so the gutter is
-/// that fill composited over `window.background_color`.
+/// gpui-base paints the gutter as an overlay above text that scrolls under
+/// it, in `editor_gutter_background` or else the editor's fill, which it
+/// halves in a disabled editor as upstream halves the root's
+/// (gpui-base `src/input/base/element.rs:3146-3150`, `:3352-3358`;
+/// gpui-component `src/input/input.rs:726-730`). A translucent field fill,
+/// as windows-11 states, would show the text through, so there the gutter is
+/// that fill composited over `window.background_color`; an opaque one is
+/// left unset, and the gutter is the editor's fill, halved with it.
 ///
 /// The current line, the line numbers, the invisibles and the syntax colours
 /// stay upstream's scheme: the model states none of them.
@@ -109,7 +112,7 @@ pub(crate) fn highlight_style(
     let mut style = default.style.clone();
     style.editor_background = Some(fill);
     style.editor_gutter_background =
-        Some(over(rgba_to_hsla(resolved.window.background_color), fill));
+        (fill.a < 1.0).then(|| over(rgba_to_hsla(resolved.window.background_color), fill));
     style
 }
 

@@ -13928,3 +13928,14 @@ on). Review fix on the patch: `styles_cover_every_widget_shown` accepts `styles:
 as a horizontal rule's style. Parity exceptions name gpui's `geometry::toolbar` and egui's
 toolbar role as the receivers.
 **Status:** done, 2eca456a. The controller's Linux gate: the iced dump identical.
+- *D4 review follow-up (2026-10-26; it belongs to D4's entry above):* M1: `highlight_style` set
+  an opaque gutter everywhere, so a disabled Editor's gutter stayed solid while upstream halves
+  the body (gpui-component `src/input/input.rs:726-730`, gpui-base
+  `src/input/base/element.rs:3146-3150`); it now sets `editor_gutter_background` only where the
+  field fill is translucent (windows-11), and elsewhere upstream's fallback, the editor's fill,
+  halved with it, applies. `the_code_editor_takes_the_platforms_field_fill` checks both branches
+  and that both occur. M2: README's `editor` row, `geometry::editor`'s doc, the crate docs'
+  `input` row, the CHANGELOG line and the Editor's Widget Info comment say so. M3:
+  `geometry::dialog`'s doc says `min_w` holds in a window narrower than `dialog.min_width` plus
+  twice the `lg` spacing (`dialog/dialog.rs:611-628`; gpui-base `src/positioner.rs:314-316`).
+  Two showcase colour claims follow geometry.rs's new lines.

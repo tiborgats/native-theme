@@ -306,8 +306,10 @@ pub fn editor(t: &Theme) -> WidgetInfo {
         // The root's fill (input/input.rs:720-722, Theme::editor_background)
         // and the gutter's, painted over the text that scrolls under it
         // (gpui-base/input/base/element.rs:3356-3358, the root's fill where
-        // it is unset): the connector's highlight theme gives both the
-        // platform's field fill (native-theme-gpui config.rs, highlight_style).
+        // it is unset): the connector's highlight theme gives the root the
+        // platform's field fill, and the gutter, where that fill is
+        // translucent, the fill over the window (native-theme-gpui config.rs,
+        // highlight_style).
         .color(claim(
             "fill",
             "editor_background",

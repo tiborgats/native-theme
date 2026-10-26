@@ -401,7 +401,8 @@ pub fn text_area(n: Native<'_>) -> StyleRefinement {
 /// lettered in `Theme::mono_font_family` at `mono_font_size` (`:155-156`),
 /// which [`to_theme`](crate::to_theme) fills from `defaults.mono_font`,
 /// scaled. Its fill and its gutter's are the highlight theme's, which
-/// `to_theme` gives `input.background_color`.
+/// `to_theme` gives `input.background_color`, and the gutter, where that
+/// fill is translucent, the fill over `window.background_color`.
 #[must_use]
 pub fn editor(n: Native<'_>) -> StyleRefinement {
     with_line_height(StyleRefinement::default(), n)
@@ -604,7 +605,11 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 ///
 /// `min_w` arrives too: upstream sets the dialog's width after the
 /// refinement (`w` at `:733`), a property apart, so the dialog keeps
-/// upstream's width and is at least `dialog.min_width` wide.
+/// upstream's width and is at least `dialog.min_width` wide. It holds in a
+/// window narrower than `dialog.min_width` plus twice the `lg` spacing too:
+/// upstream's shrink-to-fit width (`:611-628`) stops at `dialog.min_width`,
+/// and gpui-base's positioner keeps the dialog's left edge inside the
+/// window (gpui-base `src/positioner.rs:314-316`).
 ///
 /// Upstream reads the four padding sides back out of this style
 /// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so

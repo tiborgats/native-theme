@@ -601,7 +601,7 @@ fn list_fill(info: WidgetInfo, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "fill",
             "background_color",
             stated(r.list.background_color),
-            "native-theme-gpui/geometry.rs:732",
+            "native-theme-gpui/geometry.rs:737",
         )),
         None => info.not_themeable("fill", "none: no native theme is installed, so geometry::list, which paints list.background_color on the box around the rows, does not apply, and ThemeColor::list has no reader (list/list_item.rs, ListItem::render)"),
     }
