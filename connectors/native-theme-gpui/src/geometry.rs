@@ -1028,9 +1028,11 @@ fn title_bar_gradient(bar: gpui::Hsla, background: gpui::Hsla) -> gpui::Backgrou
 /// `toolbar.bar_height` where the platform states one -- KDE's and GNOME's
 /// toolbars size to their content and state none (platform-facts.md:1390),
 /// and a fixed height would be an invention there, so the refinement sets
-/// the height to `auto`, which also replaces the `h_8` gpui-component's
-/// `Toolbar` sets at its Small size (toolbar.rs:252-256); an application that
-/// wants a fixed height sets one after the refinement --,
+/// the height to `auto`, and replaces the `min_h_8` gpui-component's
+/// `Toolbar` sets at its Small size (toolbar.rs:253-255) with
+/// `toolbar.bar_height` where the theme states one and with `auto`, the
+/// content's height, where it states none; an application that wants a
+/// fixed height or a floor sets one after the refinement --,
 /// `toolbar.item_gap` between items where the theme states one, the
 /// `toolbar.border` padding sides the platform states,
 /// `toolbar.background_color`, and `toolbar.font`. An unstated side or gap
@@ -1058,7 +1060,7 @@ pub fn toolbar(n: Native<'_>) -> StyleRefinement {
     let r = with_coloured_text(StyleRefinement::default(), &t.font, n).h_auto();
     let r = match t.bar_height {
         Some(h) => r.min_h(px(h)),
-        None => r,
+        None => r.min_h_auto(),
     };
     let r = match t.item_gap {
         Some(g) => r.gap(px(g)),
@@ -2882,7 +2884,7 @@ mod tests {
     /// Over every preset in both modes: the row is the model's `toolbar`, with
     /// the bar height as a floor rather than a fixed height, and only where it
     /// is stated (KDE's toolbar sizes to its content, platform-facts §2.13),
-    /// and its bottom edge the model's `toolbar.border`, on no other side.
+    /// the minimum reset to `auto` where it is not, and its bottom edge the model's `toolbar.border`, on no other side.
     #[test]
     fn toolbar_carries_the_models_toolbar() {
         let mut stated = 0usize;
@@ -2899,7 +2901,7 @@ mod tests {
                 let out = toolbar(n);
                 assert_eq!(
                     out.min_size.height,
-                    t.bar_height.map(|h| px(h).into()),
+                    Some(t.bar_height.map_or(gpui::Length::Auto, |h| px(h).into())),
                     "{at}: bar height"
                 );
                 assert_eq!(
@@ -3054,15 +3056,15 @@ mod tests {
         assert_eq!(out.padding.right, None, "an unstated side is upstream's");
     }
 
-    /// Without a stated bar height the toolbar is its content's height, with
-    /// no floor.
+    /// Without a stated bar height the minimum is reset to `auto`, so the bar
+    /// is its content's height, whatever upstream's `Toolbar` sets.
     #[test]
-    fn toolbar_leaves_min_height_unset_without_a_bar_height() {
+    fn toolbar_resets_the_min_height_without_a_bar_height() {
         let mut r = resolved("catppuccin-mocha", ColorMode::Dark);
         r.toolbar.bar_height = None;
         r.toolbar.item_gap = None;
         let out = toolbar(Native::unscaled(&r));
-        assert_eq!(out.min_size.height, None);
+        assert_eq!(out.min_size.height, Some(gpui::Length::Auto));
         assert_eq!(out.size.height, Some(gpui::Length::Auto));
         assert_eq!(out.gap.width, None, "an unstated gap is the row's own");
         r.toolbar.bar_height = Some(40.0);

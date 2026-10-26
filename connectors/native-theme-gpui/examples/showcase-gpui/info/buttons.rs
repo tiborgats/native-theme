@@ -899,7 +899,7 @@ pub fn toolbar(item_gap: Option<f32>, native: Option<&ResolvedTheme>) -> WidgetI
         .variant("Small, two ToolbarGroups")
         .not_themeable(
             "size",
-            "h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar replaces each one the theme states: the height always, by the content's, at least toolbar.bar_height; the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
+            "min_h_8, p_1, gap_1 and text_sm at its default Small Size (gpui-component/toolbar.rs, RenderOnce for Toolbar), set before the caller's style, so geometry::toolbar sets the height to the content's and the minimum to toolbar.bar_height where stated, else to auto, and replaces each other one the theme states: the gap by toolbar.item_gap; the padding by toolbar.border's stated sides; the text by toolbar.font's size and weight",
         )
         .not_themeable(
             "items",

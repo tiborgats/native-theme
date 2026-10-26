@@ -1428,7 +1428,10 @@ fn the_toolbar_is_the_models_toolbar(cx: &mut TestAppContext) {
         let (bar_height, item_gap) = model.unwrap_or_default();
         let bar = bounds_of(&mut cx, CHROME_TOOLBAR);
         // A theme that states no bar height leaves the row to size to its
-        // content, so there is nothing to hold it to.
+        // content, so there is nothing to hold it to: the row measured here is
+        // the showcase's own div, not upstream's `Toolbar`, and geometry's
+        // `toolbar_resets_the_min_height_without_a_bar_height` holds the
+        // unstated case.
         if let Some(bar_height) = bar_height {
             assert!(
                 bar.size.height >= px(bar_height),
