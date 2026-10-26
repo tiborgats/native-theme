@@ -231,7 +231,7 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 }
 
 /// Whether a page of `columns` columns lays the Segmented control out in its
-/// last column, whose right edge is the page content's.
+/// last column, which the page's right margin follows.
 fn segmented_in_last_column(columns: usize) -> bool {
     basic_arrangement(columns)
         .last()
@@ -254,8 +254,9 @@ fn segmented_in_last_column(columns: usize) -> bool {
 /// its labels), whose segments stay on one row: the control may reach into
 /// the section gap after its column, but keeps `layout.widget_gap`, the gap
 /// the page's rows keep between neighbouring widgets (Button and Primary),
-/// from the next column's left edge (M9-166); in the last column, whose
-/// right edge is the page content's, it is at most the column's width. One
+/// from the next column's left edge (M9-166); in the last column it may
+/// reach into the page's right margin, `layout.window_margin`, keeping
+/// `layout.widget_gap` from the scroll area's edge or its scroll bar. One
 /// where not even one does: the page is then wider than its area.
 pub(crate) fn basic_column_count(
     resolved: &native_theme::theme::ResolvedTheme,
@@ -281,15 +282,17 @@ pub(crate) fn basic_column_count(
         .max(tabs)
         .max(BASIC_WIDE)
         .max(BASIC_WIDTH);
-    let reach = gap - layout.widget_gap.unwrap_or_default();
+    let widget_gap = layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
             let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            // past the column into the section gap, or in the last column into the page's
+            // right margin, keeping `layout.widget_gap` from what lies beyond either
             let room = if segmented_in_last_column(n) {
-                column
+                column + margin - widget_gap
             } else {
-                column + reach
+                column + gap - widget_gap
             };
             column >= widest && room >= segmented
         })

@@ -594,7 +594,8 @@ fn the_chrome_is_where_the_layout_puts_it() {
 /// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of the round 2-3 review):
 /// the Basic page's column count holds the Segmented control's own width as egui laid it out,
 /// so the control may reach into the section gap but keeps `layout.widget_gap` from the next
-/// column's left edge, and in the last column ends inside the page content, under every bundled
+/// column's left edge, and in the last column may reach into the page's right margin but keeps
+/// `layout.widget_gap` from the content panel's edge, under every bundled
 /// preset at a text scale of 1 and of 2.25, the largest, where three columns, the old floor,
 /// left it past the window under macos-monterey, macos-tahoe and ios-13; and the four Linux
 /// parity presets keep their columns at a text scale of 1: kde-breeze, adwaita and
@@ -641,10 +642,17 @@ fn the_column_count_holds_the_segmented_control() {
                     control.right()
                 ));
             }
-            if !next.is_finite() && control.right() > page.right() + 0.01 {
+            let margin = harness
+                .state()
+                .atlas
+                .layout()
+                .window_margin
+                .unwrap_or_default();
+            if !next.is_finite() && control.right() > page.right() + margin - gap + 0.01 {
                 faults.push(format!(
-                    "{preset} at {scale}: the control in the last column ends at {}, past the \
-                     page content's {}",
+                    "{preset} at {scale}: the control in the last column ends at {}, within \
+                     layout.widget_gap {gap} of the panel's edge, the page's {} and its {margin} \
+                     margin",
                     control.right(),
                     page.right()
                 ));

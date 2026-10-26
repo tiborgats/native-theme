@@ -140,8 +140,8 @@ pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
     }
 }
 
-/// Whether a page of `columns` columns lays the Segmented control out in its last column, whose
-/// right edge is the page content's.
+/// Whether a page of `columns` columns lays the Segmented control out in its last column, which
+/// the page's right margin follows.
 fn segmented_in_last_column(columns: usize) -> bool {
     arrangement(columns)
         .last()
@@ -160,8 +160,9 @@ fn segmented_in_last_column(columns: usize) -> bool {
 /// (`DemoState::segmented_width`), whose segments stay on one row: the control may reach into the
 /// section gap after its column, but keeps `layout.widget_gap`, the gap the page's rows keep
 /// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166);
-/// in the last column, whose right edge is the page content's, it is at most the column's width.
-/// One where not even one does: the page is then wider than its area.
+/// in the last column it may reach into the page's right margin, `layout.window_margin`, keeping
+/// `layout.widget_gap` from the content panel's edge or its scroll bar. One where not even one
+/// does: the page is then wider than its area.
 pub(crate) fn column_count(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
@@ -186,15 +187,17 @@ pub(crate) fn column_count(
         .max(tabs)
         .max(BASIC_WIDE)
         .max(BASIC_WIDTH);
-    let reach = gap - layout.widget_gap.unwrap_or_default();
+    let widget_gap = layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
             let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            // past the column into the section gap, or in the last column into the page's
+            // right margin, keeping `layout.widget_gap` from what lies beyond either
             let room = if segmented_in_last_column(n) {
-                column
+                column + margin - widget_gap
             } else {
-                column + reach
+                column + gap - widget_gap
             };
             column >= widest && room >= segmented
         })
@@ -316,7 +319,14 @@ pub(crate) fn show(
             "basic.page",
             egui::Rect::from_min_size(origin, egui::vec2(page_width, used.max.y - origin.y)),
         );
-        ui.advance_cursor_after_rect(used);
+        // The page takes its own width, whatever reaches into its right margin (the Segmented
+        // control in the last column may, `column_count`): a wider rectangle would widen the
+        // margin's frame, the scroll area and the panel past the window.
+        let page = egui::Rect::from_min_max(
+            used.min,
+            egui::pos2(used.max.x.min(origin.x + page_width), used.max.y),
+        );
+        ui.advance_cursor_after_rect(page);
     }
 }
 

@@ -18221,7 +18221,8 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
 /// control's own width, so the control, on one row, may reach into the
 /// section gap but keeps `layout.widget_gap`, the gap the page's rows keep
 /// between neighbouring widgets, from the next column's left edge, and in the
-/// last column ends inside the page content, under every bundled preset at a
+/// last column may reach into the page's right margin but keeps
+/// `layout.widget_gap` from the scroll area's edge, under every bundled preset at a
 /// text scale of 1 and 2.25: under macos-monterey and macos-tahoe at 1 the
 /// shared count left it 9 and 13 px into the next column, and at 2.25 three
 /// columns, the old floor, left it past the window under macos-monterey and
@@ -18233,11 +18234,15 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
 fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let mut faults = Vec::new();
+    // The four Linux parity presets at 1; and catppuccin-mocha at 2.25, whose
+    // control ends a pixel past the page in the last of three columns, inside
+    // the right margin (the round 4 review's ruling, item 17 minor 9).
     let kept = [
-        ("kde-breeze", 5),
-        ("adwaita", 5),
-        ("catppuccin-mocha", 5),
-        ("material-3", 4),
+        ("kde-breeze", 1.0, 5),
+        ("adwaita", 1.0, 5),
+        ("catppuccin-mocha", 1.0, 5),
+        ("material-3", 1.0, 4),
+        ("catppuccin-mocha", 2.25, 3),
     ];
     for preset in native_theme::theme::Theme::list_presets()
         .iter()
@@ -18246,8 +18251,11 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
         for scale in [1.0, 2.25] {
             use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
             show(&mut cx, &showcase, Page::Basic);
-            let gap = read(&mut cx, &showcase, |this, _| {
-                this.layout.widget_gap.unwrap_or_default()
+            let (gap, margin) = read(&mut cx, &showcase, |this, _| {
+                (
+                    this.layout.widget_gap.unwrap_or_default(),
+                    this.layout.window_margin.unwrap_or_default(),
+                )
             });
             let drawn = read(&mut cx, &showcase, |this, cx| {
                 this.info_ui.read(cx).layout_drawn()
@@ -18260,9 +18268,8 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
             println!("gpui {preset} at {scale}: {} columns", laid.len());
             let want = kept
                 .iter()
-                .find(|(name, _)| *name == preset)
-                .map(|&(_, n)| n)
-                .filter(|_| scale == 1.0);
+                .find(|&&(name, at, _)| name == preset && at == scale)
+                .map(|&(_, _, n)| n);
             if let Some(want) = want
                 && laid.len() != want
             {
@@ -18298,10 +18305,11 @@ fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
                         control.right()
                     ));
                 }
-                None if control.right() > page.right() + px(0.5) => {
+                None if control.right() > page.right() + px(margin) - px(gap) + px(0.5) => {
                     faults.push(format!(
                         "{preset} at {scale}: the control in the last column ends at {:?}, \
-                         past the page content's {:?}",
+                         within layout.widget_gap {gap} of the scroll area's edge, the page's \
+                         {:?} and its {margin} margin",
                         control.right(),
                         page.right()
                     ));

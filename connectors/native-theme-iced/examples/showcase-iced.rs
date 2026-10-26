@@ -9833,7 +9833,7 @@ fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 }
 
 /// Whether a Basic page of `columns` columns lays the Segmented control out
-/// in its last column, whose right edge is the page content's.
+/// in its last column, which the page's right margin follows.
 fn basic_segmented_in_last_column(columns: usize) -> bool {
     basic_arrangement(columns)
         .last()
@@ -9906,9 +9906,10 @@ fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
 /// stay on one row: the control may reach into the section gap after its
 /// column, but keeps `layout.widget_gap`, the gap the page's rows keep
 /// between neighbouring widgets (Button and Primary), from the next column's
-/// left edge (M9-166); in the last column, whose right edge is the page
-/// content's, it is at most the column's width. One where not even one does:
-/// the page is then wider than its area.
+/// left edge (M9-166); in the last column it may reach into the page's right
+/// margin, `layout.window_margin`, keeping `layout.widget_gap` from the
+/// scroll area's edge or its scroll bar. One where not even one does: the
+/// page is then wider than its area.
 fn basic_column_count(
     resolved: &ResolvedTheme,
     layout: &LayoutTheme,
@@ -9926,15 +9927,17 @@ fn basic_column_count(
     };
     let page = content_width - margin - margin - gutter;
     let widest = basic_widest(resolved, tabs);
-    let reach = gap - layout.widget_gap.unwrap_or_default();
+    let widget_gap = layout.widget_gap.unwrap_or_default();
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
             let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            // past the column into the section gap, or in the last column into the page's
+            // right margin, keeping `layout.widget_gap` from what lies beyond either
             let room = if basic_segmented_in_last_column(n) {
-                column
+                column + margin - widget_gap
             } else {
-                column + reach
+                column + gap - widget_gap
             };
             column >= widest && room >= segmented
         })
@@ -25672,8 +25675,9 @@ mod tests {
     /// the round 2-3 review): the Basic page's column count holds the
     /// Segmented control's own width ([`basic_segmented_width`]), so the
     /// control may reach into the section gap but keeps `layout.widget_gap`
-    /// from the next column's left edge, and in the last column ends inside
-    /// the page content, under every bundled preset at a text scale of 1 and
+    /// from the next column's left edge, and in the last column may reach
+    /// into the page's right margin but keeps `layout.widget_gap` from the
+    /// scroll area's edge, under every bundled preset at a text scale of 1 and
     /// of 2.25, the largest, with the side panel shown, as the window opens:
     /// at 2.25 three columns, the old floor, left it past the window under
     /// macos-monterey (about 38 px) and ios-13. The four Linux parity presets
@@ -25697,11 +25701,17 @@ mod tests {
                 state.active_tab = Tab::Basic;
                 let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
                 let gap = state.layout.widget_gap.unwrap_or_default();
-                // Tall enough for one column at 2.25, whose Segmented group
-                // lies below the 2000 px `basic_frame` draws, and at a scale
-                // factor of 2 inside wgpu's 8192 px texture limit.
-                let (_, rects, _) =
-                    frame_of(&state, view(&state), Size::new(WINDOW_SIZE.0, 4000.0));
+                let margin = state.layout.window_margin.unwrap_or_default();
+                // The window at its size, surveyed as the layout dump surveys
+                // it (`Tagged::operate`), so a group scrolled out of view is
+                // found where the page lays it out, and the page's scroll bar
+                // takes its room where the page overflows the window.
+                let rects = recording(|| {
+                    let mut ui: Simulator<'_, Message> =
+                        Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
+                    let _ = texts(&mut ui);
+                    surveyed_layout()
+                });
                 let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
                     .iter()
                     .filter_map(|id| rects.get(id).copied())
@@ -25739,10 +25749,11 @@ mod tests {
                          layout.widget_gap {gap} of the next column at {next}"
                     ));
                 }
-                if !next.is_finite() && right > page.x + page.width + 0.01 {
+                if !next.is_finite() && right > page.x + page.width + margin - gap + 0.01 {
                     faults.push(format!(
                         "{preset} at {scale}: the control in the last column ends at {right}, \
-                         past the page content's {}",
+                         within layout.widget_gap {gap} of the scroll area's edge, the page's \
+                         {} and its {margin} margin",
                         page.x + page.width
                     ));
                 }
@@ -29784,6 +29795,36 @@ mod tests {
                         );
                         let _ = texts(&mut ui);
                         let laid = surveyed_layout();
+                        // The survey finds every group, scrolled out of view
+                        // or not (`Tagged::operate`): each group's heading.
+                        for group in [
+                            "buttons",
+                            "checkboxes",
+                            "radios",
+                            "drop_down",
+                            "text_inputs",
+                            "text_area",
+                            "slider",
+                            "switches",
+                            "number_input",
+                            "spinner",
+                            "segmented",
+                            "card",
+                            "typography",
+                            "separator",
+                            "progress_bar",
+                            "list",
+                            "icons",
+                            "tabs",
+                            "expander",
+                            "table",
+                        ] {
+                            let id = format!("basic.{group}.heading");
+                            assert!(
+                                laid.keys().any(|key| *key == id),
+                                "{preset} (dark: {dark}, scale {scale}): {id} is not surveyed"
+                            );
+                        }
                         let columns = laid
                             .keys()
                             .filter(|id| id.starts_with("basic.column_"))
