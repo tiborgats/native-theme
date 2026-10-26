@@ -41,8 +41,11 @@ pub(crate) const BASIC_WIDTH: f32 = 140.0;
 pub(crate) const BASIC_WIDE: f32 = 170.0;
 
 /// The fewest and the most columns the page lays its groups out in.
-const MIN_COLUMNS: usize = 3;
+const MIN_COLUMNS: usize = 1;
 const MAX_COLUMNS: usize = 5;
+
+/// The Segmented control's group, by its index in reading order.
+const SEGMENTED_GROUP: usize = 10;
 
 /// The drop-down's rows.
 const FRUITS: [&str; 3] = ["Apple", "Banana", "Cherry"];
@@ -98,7 +101,7 @@ pub(crate) const GROUPS: [&str; 20] = [
 ];
 
 /// Each column's groups, top to bottom, as indices of the groups in reading order, for the
-/// page's five, four and three columns: the gpui and iced pages' arrangements
+/// page's five, four, three, two and one columns: the gpui and iced pages' arrangements
 /// (docs/showcase-elements.toml, the Basic page).
 pub(crate) const FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
@@ -118,18 +121,35 @@ pub(crate) const THREE: [&[usize]; 3] = [
     &[4, 5, 6, 13, 14, 16, 19],
     &[7, 8, 9, 10, 11, 12, 17],
 ];
+pub(crate) const TWO: [&[usize]; 2] = [
+    &[0, 1, 2, 3, 7, 12, 15, 17, 18],
+    &[4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 19],
+];
+pub(crate) const ONE: [&[usize]; 1] = [&[
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+]];
 
 /// The groups of each column of a page of `columns` columns.
 pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
     match columns {
         5 => &FIVE,
         4 => &FOUR,
-        _ => &THREE,
+        3 => &THREE,
+        2 => &TWO,
+        _ => &ONE,
     }
 }
 
+/// Whether a page of `columns` columns lays the Segmented control out in its last column, whose
+/// right edge is the page content's.
+fn segmented_in_last_column(columns: usize) -> bool {
+    arrangement(columns)
+        .last()
+        .is_some_and(|column| column.contains(&SEGMENTED_GROUP))
+}
+
 /// How many columns the page lays its groups out in, from the theme alone, as the gpui and
-/// iced pages count them: the most, of five, four and three, whose width,
+/// iced pages count them: the most, of five down to one, whose width,
 /// `(page - (n - 1) * layout.section_gap) / n`, holds the widest fixed-width control the theme
 /// states on the page — `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
 /// apart with room for both of the selected tab's flares, `2 * tab.active_outward_corner_radius`
@@ -139,8 +159,9 @@ pub(crate) fn arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// The column also holds `segmented`, the Segmented control's own width as egui laid it out
 /// (`DemoState::segmented_width`), whose segments stay on one row: the control may reach into the
 /// section gap after its column, but keeps `layout.widget_gap`, the gap the page's rows keep
-/// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166).
-/// Three where not even three do: the page is then wider than its area.
+/// between neighbouring widgets (Button and Primary), from the next column's left edge (M9-166);
+/// in the last column, whose right edge is the page content's, it is at most the column's width.
+/// One where not even one does: the page is then wider than its area.
 pub(crate) fn column_count(
     t: &native_theme_egui::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
@@ -164,13 +185,18 @@ pub(crate) fn column_count(
         .min_width
         .max(tabs)
         .max(BASIC_WIDE)
-        .max(BASIC_WIDTH)
-        .max(segmented - gap + layout.widget_gap.unwrap_or_default());
+        .max(BASIC_WIDTH);
+    let reach = gap - layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
-            let n = n as f32;
-            (page - (n - 1.0) * gap) / n >= widest
+            let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            let room = if segmented_in_last_column(n) {
+                column
+            } else {
+                column + reach
+            };
+            column >= widest && room >= segmented
         })
         .unwrap_or(MIN_COLUMNS)
 }

@@ -5604,12 +5604,14 @@ fn a_section_heading_takes_the_section_heading_role(cx: &mut TestAppContext) {
 
 /// The Basic page's column rule, the iced and egui showcases' too: under a
 /// preset whose widest fixed-width control fits a fifth of the page, five
-/// columns; under material-3, whose drop-down is 210 wide, four; and each
-/// arrangement holds every group once, a column's groups in reading order.
+/// columns; under material-3, whose drop-down is 210 wide, four; on a
+/// narrower page two or one; and each arrangement, five columns to one,
+/// holds every group once, a column's groups in reading order.
 #[test]
 fn the_basic_page_counts_its_columns_from_the_theme() {
     use crate::pages::basic::{
-        BASIC_FIVE, BASIC_FOUR, BASIC_THREE, basic_arrangement, basic_column_count,
+        BASIC_FIVE, BASIC_FOUR, BASIC_ONE, BASIC_THREE, BASIC_TWO, basic_arrangement,
+        basic_column_count,
     };
     let resolved = |preset: &str| {
         native_theme::theme::Theme::preset(preset)
@@ -5641,7 +5643,10 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
     }
     let r = resolved("kde-breeze");
     if let Ok(r) = r {
-        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0, 0.0), 3);
+        // Below three columns where three do not hold the widest control
+        // (item 15(1) of the round 2-3 review), down to one.
+        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 400.0, 0.0), 2);
+        assert_eq!(basic_column_count(&r, &layout("kde-breeze"), 250.0, 0.0), 1);
         // A Segmented control wider than a fifth of the page drops a column
         // (M9-166).
         assert_eq!(
@@ -5653,6 +5658,8 @@ fn the_basic_page_counts_its_columns_from_the_theme() {
         (5, &BASIC_FIVE[..]),
         (4, &BASIC_FOUR[..]),
         (3, &BASIC_THREE[..]),
+        (2, &BASIC_TWO[..]),
+        (1, &BASIC_ONE[..]),
     ] {
         assert_eq!(basic_arrangement(count), arrangement);
         assert_eq!(arrangement.len(), count);
@@ -5991,10 +5998,12 @@ fn the_basic_list_shows_three_rows(cx: &mut TestAppContext) {
 }
 
 /// The Basic page never needs sideways scrolling under the Linux presets the
-/// captures take, in both modes: every control ends inside the scroll area,
-/// and the page lays out the columns its rule counts from the content
-/// panel's width. It may be taller than the scroll area (material-3 is), and
-/// then scrolls, at rest at the top; the test reports by how much.
+/// captures take, in both modes, and under every bundled preset at a text
+/// scale of 2.25 (round 2-3 review, item 15(1)): every control ends inside
+/// the scroll area, and the page lays out the columns its rule counts from
+/// the content panel's width. It may be taller than the scroll area
+/// (material-3 is), and then scrolls, at rest at the top; the test reports
+/// by how much.
 #[gpui::test]
 fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
     use crate::pages::basic::basic_column_count;
@@ -6062,6 +6071,46 @@ fn the_basic_page_fits_the_window_across(cx: &mut TestAppContext) {
             }
         }
     }
+    let mut faults = Vec::new();
+    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+        use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), 2.25);
+        show(&mut cx, &showcase, Page::Basic);
+        let viewport = read(&mut cx, &showcase, |this, _| this.content_scroll.bounds());
+        let content = bounds_of(&mut cx, CONTENT_PANEL);
+        let count = cx.update(|window, cx| {
+            let layout = showcase.read(cx).layout.clone();
+            native_value(cx, |n| {
+                let segmented = crate::demo::segmented_width(
+                    window,
+                    &n,
+                    &crate::pages::basic::BASIC_SEGMENTS,
+                );
+                basic_column_count(n.resolved, &layout, content.size.width.as_f32(), segmented)
+            })
+        });
+        let drawn = read(&mut cx, &showcase, |this, cx| {
+            this.info_ui.read(cx).layout_drawn()
+        });
+        let columns = drawn
+            .keys()
+            .filter(|id| id.starts_with("basic.column_"))
+            .count();
+        if Some(columns) != count {
+            faults.push(format!(
+                "{preset} at 2.25: {columns} columns laid out, the rule counts {count:?}"
+            ));
+        }
+        for (id, bounds) in drawn.iter().filter(|(id, _)| id.starts_with("basic.")) {
+            if bounds.right() > viewport.right() + px(0.5) {
+                faults.push(format!(
+                    "{preset} at 2.25: {id} ends at {:?}, past the scroll area's {:?}",
+                    bounds.right(),
+                    viewport.right()
+                ));
+            }
+        }
+    }
+    assert!(faults.is_empty(), "{faults:#?}");
 }
 
 /// Keys typed while a capture runs reach the window the desktop gives the
@@ -18167,74 +18216,95 @@ fn the_page_menu_button_shows_its_caret_without_the_sets_chevron(cx: &mut TestAp
     );
 }
 
-/// M9x CI item 9, the controller's rulings (M9-166): the Basic page's column
-/// count holds the Segmented control's own width, so the control, on one
-/// row, may reach into the section gap but keeps `layout.widget_gap`, the gap
-/// the page's rows keep between neighbouring widgets, from the next column's
-/// left edge: under macos-monterey and macos-tahoe at a text scale of 1,
-/// where the shared count left it 9 and 13 px into the next column, and
-/// under kde-breeze at 2.25. The four Linux parity presets keep their
-/// columns at a text scale of 1: kde-breeze, adwaita and catppuccin-mocha
-/// five, material-3 four.
+/// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of the
+/// round 2-3 review): the Basic page's column count holds the Segmented
+/// control's own width, so the control, on one row, may reach into the
+/// section gap but keeps `layout.widget_gap`, the gap the page's rows keep
+/// between neighbouring widgets, from the next column's left edge, and in the
+/// last column ends inside the page content, under every bundled preset at a
+/// text scale of 1 and 2.25: under macos-monterey and macos-tahoe at 1 the
+/// shared count left it 9 and 13 px into the next column, and at 2.25 three
+/// columns, the old floor, left it past the window under macos-monterey and
+/// ios-13. The four Linux parity presets keep their columns at 1: kde-breeze,
+/// adwaita and catppuccin-mocha five, material-3 four. It prints each
+/// preset's count.
 #[cfg(feature = "widgets")]
 #[gpui::test]
 fn the_column_count_holds_the_segmented_control(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
     let mut faults = Vec::new();
-    for (preset, scale, columns) in [
-        ("macos-monterey", 1.0, None),
-        ("macos-tahoe", 1.0, None),
-        ("kde-breeze", 2.25, None),
-        ("kde-breeze", 1.0, Some(5)),
-        ("adwaita", 1.0, Some(5)),
-        ("catppuccin-mocha", 1.0, Some(5)),
-        ("material-3", 1.0, Some(4)),
-    ] {
-        use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
-        draw(&mut cx);
-        let gap = read(&mut cx, &showcase, |this, _| {
-            this.layout.widget_gap.unwrap_or_default()
-        });
-        let drawn = read(&mut cx, &showcase, |this, cx| {
-            this.info_ui.read(cx).layout_drawn()
-        });
-        let laid: Vec<Bounds<Pixels>> = drawn
-            .iter()
-            .filter(|(id, _)| id.starts_with("basic.column_"))
-            .map(|(_, b)| *b)
-            .collect();
-        if let Some(want) = columns
-            && laid.len() != want
-        {
-            faults.push(format!(
-                "{preset} at {scale}: {} columns, not {want}",
-                laid.len()
-            ));
-        }
-        let Some(control) = drawn.get("basic.segmented.control").copied() else {
-            faults.push(format!("{preset} at {scale}: no segmented control"));
-            continue;
-        };
-        let Some(column) = laid
-            .iter()
-            .find(|c| c.left() <= control.left() + px(0.5) && control.left() < c.right())
-        else {
-            faults.push(format!("{preset} at {scale}: the control is in no column"));
-            continue;
-        };
-        let next = laid
-            .iter()
-            .map(|c| c.left())
-            .filter(|left| *left > column.left() + px(0.5))
-            .min();
-        if let Some(next) = next
-            && control.right() > next - px(gap) + px(0.5)
-        {
-            faults.push(format!(
-                "{preset} at {scale}: the control's right edge {:?} is within \
-                 layout.widget_gap {gap} of the next column at {next:?}",
-                control.right()
-            ));
+    let kept = [
+        ("kde-breeze", 5),
+        ("adwaita", 5),
+        ("catppuccin-mocha", 5),
+        ("material-3", 4),
+    ];
+    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+        for scale in [1.0, 2.25] {
+            use_preset_scaled(&mut cx, &showcase, preset, Some(96.0), scale);
+            show(&mut cx, &showcase, Page::Basic);
+            let gap = read(&mut cx, &showcase, |this, _| {
+                this.layout.widget_gap.unwrap_or_default()
+            });
+            let drawn = read(&mut cx, &showcase, |this, cx| {
+                this.info_ui.read(cx).layout_drawn()
+            });
+            let laid: Vec<Bounds<Pixels>> = drawn
+                .iter()
+                .filter(|(id, _)| id.starts_with("basic.column_"))
+                .map(|(_, b)| *b)
+                .collect();
+            println!("gpui {preset} at {scale}: {} columns", laid.len());
+            let want = kept
+                .iter()
+                .find(|(name, _)| *name == preset)
+                .map(|&(_, n)| n)
+                .filter(|_| scale == 1.0);
+            if let Some(want) = want
+                && laid.len() != want
+            {
+                faults.push(format!(
+                    "{preset} at {scale}: {} columns, not {want}",
+                    laid.len()
+                ));
+            }
+            let (Some(control), Some(page)) = (
+                drawn.get("basic.segmented.control").copied(),
+                drawn.get("basic.page").copied(),
+            ) else {
+                faults.push(format!("{preset} at {scale}: no segmented control or page"));
+                continue;
+            };
+            let Some(column) = laid
+                .iter()
+                .find(|c| c.left() <= control.left() + px(0.5) && control.left() < c.right())
+            else {
+                faults.push(format!("{preset} at {scale}: the control is in no column"));
+                continue;
+            };
+            let next = laid
+                .iter()
+                .map(|c| c.left())
+                .filter(|left| *left > column.left() + px(0.5))
+                .min();
+            match next {
+                Some(next) if control.right() > next - px(gap) + px(0.5) => {
+                    faults.push(format!(
+                        "{preset} at {scale}: the control's right edge {:?} is within \
+                         layout.widget_gap {gap} of the next column at {next:?}",
+                        control.right()
+                    ));
+                }
+                None if control.right() > page.right() + px(0.5) => {
+                    faults.push(format!(
+                        "{preset} at {scale}: the control in the last column ends at {:?}, \
+                         past the page content's {:?}",
+                        control.right(),
+                        page.right()
+                    ));
+                }
+                _ => {}
+            }
         }
     }
     assert!(faults.is_empty(), "{faults:#?}");

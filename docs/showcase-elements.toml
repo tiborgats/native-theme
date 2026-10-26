@@ -642,21 +642,30 @@ sample = { text = "glyph" }
 
 # =============================================================================================
 # The Basic page (v6): columns, each a stack of groups; a group is its heading over its rows.
-# The column count n is the theme's, never measured text's: the largest n of 5, 4 and 3 whose
-# column, (page width - (n - 1) * layout.section_gap) / n, holds the widest fixed-width control
-# the theme states on the page, max(combo_box.min_width, 2 * tab.min_width + tab.item_gap +
-# 2 * tab.active_outward_corner_radius, BASIC_WIDE, BASIC_WIDTH); the page width is the
-# content area's less twice layout.window_margin and, where scrollbar.overlay_mode is false,
-# scrollbar.groove_width. The page scrolls vertically where it is taller than its area (at
-# rest at the top), never sideways.
+# The column count n is the largest of 5 down to 1 whose column, (page width - (n - 1) *
+# layout.section_gap) / n, holds the widest fixed-width control the theme states on the page,
+# max(combo_box.min_width, 2 * tab.min_width + tab.item_gap + 2 * tab.active_outward_corner_radius,
+# BASIC_WIDE, BASIC_WIDTH), and the Segmented control at the width each toolkit measures it,
+# its segments on one row: it may reach into the section gap after its column but keeps
+# layout.widget_gap from the next column, and in the last column ends inside the page (M9-166);
+# the page width is the content area's less twice layout.window_margin and, where
+# scrollbar.overlay_mode is false, scrollbar.groove_width. The page scrolls vertically where it
+# is taller than its area (at rest at the top), never sideways.
 # n = 5: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down. Column 2: Text inputs, Text
 # area, Slider. Column 3: Switches, Number input, Spinner, Segmented control, Card. Column 4:
 # Typography, Separator, Progress bar, List. Column 5: Icons, Tabs, Expander, Table.
 # n = 4: column 5's groups end the other four: Expander after Drop-down, Icons after Slider,
 # Tabs after Card, Table after List.
-# n = 3: Column 1: Buttons, Checkboxes, Radio buttons, Drop-down, Expander, List. Column 2: Text
-# inputs, Text area, Slider, Icons, Separator, Progress bar, Table. Column 3: Switches, Number
-# input, Spinner, Segmented control, Card, Tabs, Typography.
+# n = 3: column 4's groups end the other three: Column 1: Buttons, Checkboxes, Radio buttons,
+# Drop-down, List, Expander. Column 2: Text inputs, Text area, Slider, Separator, Progress bar,
+# Icons, Table. Column 3: Switches, Number input, Spinner, Segmented control, Card, Typography,
+# Tabs.
+# n = 2: column 3's groups end the other two: Column 1: Buttons, Checkboxes, Radio buttons,
+# Drop-down, Switches, Typography, List, Tabs, Expander. Column 2: Text inputs, Text area,
+# Slider, Number input, Spinner, Segmented control, Card, Separator, Progress bar, Icons, Table.
+# n = 1: every group in reading order.
+# Each column's groups are in reading order; fewer columns are balanced by the groups' heights
+# under material-3, the tallest.
 # A heading is measured against the element above it in its five-column column (the column for
 # the first), wherever fewer columns put it; a control against its heading or the control
 # before it.
@@ -682,6 +691,7 @@ name = "Column"
 parent = "basic.column_1"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
 states = ["Normal"]
+when = "the page has two columns or more"
 
 [[element]]
 id = "basic.column_3"
@@ -689,6 +699,7 @@ name = "Column"
 parent = "basic.column_2"
 leaves = ["layout.widget_gap_px", "layout.section_gap_px"]
 states = ["Normal"]
+when = "the page has three columns or more"
 
 [[element]]
 id = "basic.column_4"

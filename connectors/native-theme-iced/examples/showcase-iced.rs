@@ -9777,8 +9777,8 @@ const BASIC_GROUPS: [&str; 20] = [
 ];
 
 /// Each column's groups, top to bottom, as indices of [`BASIC_GROUPS`], for
-/// the Basic page's five, four and three columns: the gpui and egui pages'
-/// arrangements (docs/showcase-elements.toml, the Basic page).
+/// the Basic page's five, four, three, two and one columns: the gpui and
+/// egui pages' arrangements (docs/showcase-elements.toml, the Basic page).
 const BASIC_FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
     &[4, 5, 6],
@@ -9797,10 +9797,20 @@ const BASIC_THREE: [&[usize]; 3] = [
     &[4, 5, 6, 13, 14, 16, 19],
     &[7, 8, 9, 10, 11, 12, 17],
 ];
+const BASIC_TWO: [&[usize]; 2] = [
+    &[0, 1, 2, 3, 7, 12, 15, 17, 18],
+    &[4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 19],
+];
+const BASIC_ONE: [&[usize]; 1] = [&[
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+]];
 
 /// The fewest and the most columns the Basic page lays its groups out in.
-const BASIC_MIN_COLUMNS: usize = 3;
+const BASIC_MIN_COLUMNS: usize = 1;
 const BASIC_MAX_COLUMNS: usize = 5;
+
+/// The Segmented control's group in [`BASIC_GROUPS`].
+const BASIC_SEGMENTED_GROUP: usize = 10;
 
 /// The Basic page's columns' ids in the element list.
 const BASIC_COLUMN_IDS: [&str; 5] = [
@@ -9816,8 +9826,18 @@ fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
     match columns {
         5 => &BASIC_FIVE,
         4 => &BASIC_FOUR,
-        _ => &BASIC_THREE,
+        3 => &BASIC_THREE,
+        2 => &BASIC_TWO,
+        _ => &BASIC_ONE,
     }
+}
+
+/// Whether a Basic page of `columns` columns lays the Segmented control out
+/// in its last column, whose right edge is the page content's.
+fn basic_segmented_in_last_column(columns: usize) -> bool {
+    basic_arrangement(columns)
+        .last()
+        .is_some_and(|column| column.contains(&BASIC_SEGMENTED_GROUP))
 }
 
 /// The two Basic tabs' widths together, as the Basic page's tab row lays
@@ -9876,8 +9896,8 @@ fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
 }
 
 /// How many columns the Basic page lays its groups out in, from the theme
-/// alone, as the gpui and egui pages count them: the most, of five, four and
-/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds
+/// alone, as the gpui and egui pages count them: the most, of five down to
+/// one, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds
 /// [`basic_widest`] -- where `page` is `content_width`
 /// less `layout.window_margin` on both sides and, where
 /// `scrollbar.overlay_mode` is false, the `scrollbar.groove_width` a
@@ -9886,8 +9906,9 @@ fn basic_widest(resolved: &ResolvedTheme, tabs: f32) -> f32 {
 /// stay on one row: the control may reach into the section gap after its
 /// column, but keeps `layout.widget_gap`, the gap the page's rows keep
 /// between neighbouring widgets (Button and Primary), from the next column's
-/// left edge (M9-166). Three where not even three do: the page is then wider
-/// than its area.
+/// left edge (M9-166); in the last column, whose right edge is the page
+/// content's, it is at most the column's width. One where not even one does:
+/// the page is then wider than its area.
 fn basic_column_count(
     resolved: &ResolvedTheme,
     layout: &LayoutTheme,
@@ -9904,13 +9925,18 @@ fn basic_column_count(
         bar.groove_width
     };
     let page = content_width - margin - margin - gutter;
-    let widest =
-        basic_widest(resolved, tabs).max(segmented - gap + layout.widget_gap.unwrap_or_default());
+    let widest = basic_widest(resolved, tabs);
+    let reach = gap - layout.widget_gap.unwrap_or_default();
     (BASIC_MIN_COLUMNS..=BASIC_MAX_COLUMNS)
         .rev()
         .find(|&n| {
-            let n = n as f32;
-            (page - (n - 1.0) * gap) / n >= widest
+            let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            let room = if basic_segmented_in_last_column(n) {
+                column
+            } else {
+                column + reach
+            };
+            column >= widest && room >= segmented
         })
         .unwrap_or(BASIC_MIN_COLUMNS)
 }
@@ -24135,9 +24161,10 @@ mod tests {
 
     /// The Basic page's column rule, the gpui and egui pages' too: five
     /// columns under a preset whose widest fixed-width control fits a fifth
-    /// of the page, four under material-3 (its drop-down is 210 wide), three
-    /// where not even four fit; each arrangement holds every group once, a
-    /// column's groups in reading order.
+    /// of the page, four under material-3 (its drop-down is 210 wide), two
+    /// or one on a page where not even three fit; each arrangement, five
+    /// columns to one, holds every group once, a column's groups in reading
+    /// order.
     #[test]
     fn the_basic_page_counts_its_columns_from_the_theme() {
         for (preset, content, columns) in [
@@ -24145,7 +24172,8 @@ mod tests {
             ("adwaita", 979.0, 5),
             ("catppuccin-mocha", 976.0, 5),
             ("material-3", 976.0, 4),
-            ("kde-breeze", 400.0, 3),
+            ("kde-breeze", 400.0, 2),
+            ("kde-breeze", 250.0, 1),
         ] {
             let mut state = State::default();
             let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), false);
@@ -24166,6 +24194,8 @@ mod tests {
             (5, &BASIC_FIVE[..]),
             (4, &BASIC_FOUR[..]),
             (3, &BASIC_THREE[..]),
+            (2, &BASIC_TWO[..]),
+            (1, &BASIC_ONE[..]),
         ] {
             assert_eq!(basic_arrangement(count), arrangement);
             assert_eq!(arrangement.len(), count);
@@ -25638,40 +25668,80 @@ mod tests {
         assert!(faults.is_empty(), "{faults:#?}");
     }
 
-    /// M9x CI item 9, the controller's rulings (M9-166): the Basic page's
-    /// column count holds the Segmented control's own width
-    /// ([`basic_segmented_width`]), so the control may reach into the
-    /// section gap but keeps `layout.widget_gap` from the next column's left
-    /// edge: under macos-monterey, macos-tahoe and kde-breeze at the largest
-    /// text scale, 2.25, with the side panel shown, as the window opens.
+    /// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of
+    /// the round 2-3 review): the Basic page's column count holds the
+    /// Segmented control's own width ([`basic_segmented_width`]), so the
+    /// control may reach into the section gap but keeps `layout.widget_gap`
+    /// from the next column's left edge, and in the last column ends inside
+    /// the page content, under every bundled preset at a text scale of 1 and
+    /// of 2.25, the largest, with the side panel shown, as the window opens:
+    /// at 2.25 three columns, the old floor, left it past the window under
+    /// macos-monterey (about 38 px) and ios-13. The four Linux parity presets
+    /// keep their columns at 1: kde-breeze, adwaita and catppuccin-mocha
+    /// five, material-3 four. It prints each preset's count.
     #[test]
     fn the_column_count_holds_the_segmented_control() {
         let mut faults = Vec::new();
-        for preset in ["macos-monterey", "macos-tahoe", "kde-breeze"] {
-            let mut state = loaded(preset, false);
-            state.active_tab = Tab::Basic;
-            let _ = update(&mut state, Message::TextScaleSelected(TextScale(2.25)));
-            let gap = state.layout.widget_gap.unwrap_or_default();
-            let (_, rects, _) = basic_frame(&state);
-            let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
-                .iter()
-                .filter_map(|id| rects.get(id).copied())
-                .collect();
-            let Some(control) = rects.get("basic.segmented.control").copied() else {
-                faults.push(format!("{preset}: no segmented control"));
-                continue;
-            };
-            let next = columns
-                .iter()
-                .map(|c| c.x)
-                .filter(|x| *x > control.x + 0.5)
-                .fold(f32::INFINITY, f32::min);
-            if next.is_finite() && control.x + control.width > next - gap + 0.01 {
-                faults.push(format!(
-                    "{preset}: the control's right edge {} is within layout.widget_gap {gap} \
-                     of the next column at {next}",
-                    control.x + control.width
-                ));
+        let kept = [
+            ("kde-breeze", 5),
+            ("adwaita", 5),
+            ("catppuccin-mocha", 5),
+            ("material-3", 4),
+        ];
+        for preset in native_theme::theme::Theme::list_presets()
+            .iter()
+            .map(|info| info.key)
+        {
+            for scale in [1.0, 2.25] {
+                let mut state = loaded(preset, false);
+                state.active_tab = Tab::Basic;
+                let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
+                let gap = state.layout.widget_gap.unwrap_or_default();
+                let (_, rects, _) = basic_frame(&state);
+                let columns: Vec<Rectangle> = BASIC_COLUMN_IDS
+                    .iter()
+                    .filter_map(|id| rects.get(id).copied())
+                    .collect();
+                println!("iced {preset} at {scale}: {} columns", columns.len());
+                let want = kept
+                    .iter()
+                    .find(|(name, _)| *name == preset)
+                    .map(|&(_, n)| n)
+                    .filter(|_| scale == 1.0);
+                if let Some(want) = want
+                    && columns.len() != want
+                {
+                    faults.push(format!(
+                        "{preset} at {scale}: {} columns, not {want}",
+                        columns.len()
+                    ));
+                }
+                let (Some(control), Some(page)) = (
+                    rects.get("basic.segmented.control").copied(),
+                    rects.get("basic.page").copied(),
+                ) else {
+                    faults.push(format!("{preset} at {scale}: no segmented control or page"));
+                    continue;
+                };
+                let right = control.x + control.width;
+                let next = columns
+                    .iter()
+                    .map(|c| c.x)
+                    .filter(|x| *x > control.x + 0.5)
+                    .fold(f32::INFINITY, f32::min);
+                if next.is_finite() && right > next - gap + 0.01 {
+                    faults.push(format!(
+                        "{preset} at {scale}: the control's right edge {right} is within \
+                         layout.widget_gap {gap} of the next column at {next}"
+                    ));
+                }
+                if !next.is_finite() && right > page.x + page.width + 0.01 {
+                    faults.push(format!(
+                        "{preset} at {scale}: the control in the last column ends at {right}, \
+                         past the page content's {}",
+                        page.x + page.width
+                    ));
+                }
             }
         }
         assert!(faults.is_empty(), "{faults:#?}");
@@ -29574,7 +29644,8 @@ mod tests {
 
     /// The Basic page never needs sideways scrolling under any bundled preset
     /// in either mode (M9-074: macos-tahoe states no `layout.section_gap`, and
-    /// the column count takes none): laid out in the page area of a 1280 x
+    /// the column count takes none), nor in light at the largest text scale,
+    /// 2.25 (item 15(1) of the round 2-3 review): laid out in the page area of a 1280 x
     /// 720 window, every element ends inside the page's scroll area, and the
     /// page has the columns its rule counts from the content panel's width.
     /// It may be taller than its area (material-3 is): it then scrolls, and
@@ -29586,7 +29657,7 @@ mod tests {
                 .iter()
                 .map(|info| info.key)
             {
-                for dark in [false, true] {
+                for (dark, scale) in [(false, 1.0), (true, 1.0), (false, 2.25)] {
                     let mut state = State {
                         accessibility: native_theme_iced::AccessibilityPreferences::default(),
                         active_tab: Tab::Basic,
@@ -29594,6 +29665,9 @@ mod tests {
                     };
                     let loaded = state.load_theme(&ThemeChoice::Preset(preset.to_string()), dark);
                     assert!(loaded.is_ok(), "{preset}: {loaded:?}");
+                    if scale != 1.0 {
+                        let _ = update(&mut state, Message::TextScaleSelected(TextScale(scale)));
+                    }
                     let mut ui: Simulator<'_, Message> =
                         Simulator::with_size(Settings::default(), WINDOW_SIZE, view(&state));
                     // The page's scrollable is the rightmost one as tall as half
@@ -29620,17 +29694,17 @@ mod tests {
                         .max_by(|a, b| a.0.x.total_cmp(&b.0.x));
                     assert!(
                         page.is_some(),
-                        "{preset} (dark: {dark}): no page scrollable found"
+                        "{preset} (dark: {dark}, scale {scale}): no page scrollable found"
                     );
                     if let Some((bounds, content)) = page {
                         assert!(
                             content.width <= bounds.width + 0.01,
-                            "{preset} (dark: {dark}): the Basic page is {}px wide, its area {}px",
+                            "{preset} (dark: {dark}, scale {scale}): the Basic page is {}px wide, its area {}px",
                             content.width,
                             bounds.width
                         );
                         println!(
-                            "{preset} (dark: {dark}): page {}x{} in an area {}x{}{}",
+                            "{preset} (dark: {dark}, scale {scale}): page {}x{} in an area {}x{}{}",
                             content.width,
                             content.height,
                             bounds.width,
@@ -29656,12 +29730,12 @@ mod tests {
                         );
                         assert_eq!(
                             columns, count,
-                            "{preset} (dark: {dark}): the columns laid out"
+                            "{preset} (dark: {dark}, scale {scale}): the columns laid out"
                         );
                         if let Some(panel) = laid.get("chrome.content") {
                             assert!(
                                 (panel.width - content_width(&state)).abs() < 0.01,
-                                "{preset} (dark: {dark}): the content panel is {}px, the page counts from {}px",
+                                "{preset} (dark: {dark}, scale {scale}): the content panel is {}px, the page counts from {}px",
                                 panel.width,
                                 content_width(&state)
                             );
@@ -29669,7 +29743,7 @@ mod tests {
                         for (id, r) in laid.iter().filter(|(id, _)| id.starts_with("basic.")) {
                             assert!(
                                 r.x + r.width <= bounds.x + bounds.width + 0.01,
-                                "{preset} (dark: {dark}): {id} ends at {}, past the page area's {}",
+                                "{preset} (dark: {dark}, scale {scale}): {id} ends at {}, past the page area's {}",
                                 r.x + r.width,
                                 bounds.x + bounds.width
                             );
@@ -29697,11 +29771,11 @@ mod tests {
                             match laid.get(id) {
                                 Some(rect) => assert!(
                                     near(rect.width, width),
-                                    "{preset} (dark: {dark}): {id} is drawn {}px wide, its stated \
+                                    "{preset} (dark: {dark}, scale {scale}): {id} is drawn {}px wide, its stated \
                                  width {width}px",
                                     rect.width
                                 ),
-                                None => panic!("{preset} (dark: {dark}): {id} is not laid out"),
+                                None => panic!("{preset} (dark: {dark}, scale {scale}): {id} is not laid out"),
                             }
                         }
                         // The columns the count chose hold the widest control it
@@ -29714,7 +29788,7 @@ mod tests {
                         {
                             assert!(
                                 r.width + 0.01 >= widest,
-                                "{preset} (dark: {dark}): {id} is {}px wide, narrower than the \
+                                "{preset} (dark: {dark}, scale {scale}): {id} is {}px wide, narrower than the \
                              {widest}px control the column count counted with",
                                 r.width
                             );

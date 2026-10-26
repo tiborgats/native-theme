@@ -3,8 +3,9 @@
 //! so the gpui, iced and egui captures compare control by control. Each
 //! control is built by the helper its own page builds it with.
 //!
-//! Equal columns, five, four or three as the theme's widest fixed-width
-//! control leaves room for (`basic_column_count`), each a stack of groups; a
+//! Equal columns, five down to one as the theme's widest fixed-width
+//! control and the Segmented control leave room for
+//! (`basic_column_count`), each a stack of groups; a
 //! group is its heading over its rows of controls, a row wrapping where its
 //! column is too narrow for it. The page scrolls in the content panel where
 //! it is taller than the panel. The groups and their elements are
@@ -176,10 +177,12 @@ pub(crate) const BASIC_GROUPS: [BasicGroup; 20] = [
 ];
 
 /// Each column's groups, top to bottom, as indices of [`BASIC_GROUPS`], for
-/// the page's five, four and three columns (docs/showcase-elements.toml, the
-/// Basic page): four columns end the other four with the fifth's groups,
-/// three put the fourth's too, balanced by the groups' heights under the
-/// material-3 preset, the tallest.
+/// the page's five, four, three, two and one columns
+/// (docs/showcase-elements.toml, the Basic page): four columns end the other
+/// four with the fifth's groups, three put the fourth's too and two the
+/// third's, balanced by the groups' heights under the material-3 preset, the
+/// tallest; one column holds every group in reading order. A column's groups
+/// are in reading order.
 pub(crate) const BASIC_FIVE: [&[usize]; 5] = [
     &[0, 1, 2, 3],
     &[4, 5, 6],
@@ -198,10 +201,20 @@ pub(crate) const BASIC_THREE: [&[usize]; 3] = [
     &[4, 5, 6, 13, 14, 16, 19],
     &[7, 8, 9, 10, 11, 12, 17],
 ];
+pub(crate) const BASIC_TWO: [&[usize]; 2] = [
+    &[0, 1, 2, 3, 7, 12, 15, 17, 18],
+    &[4, 5, 6, 8, 9, 10, 11, 13, 14, 16, 19],
+];
+pub(crate) const BASIC_ONE: [&[usize]; 1] = [&[
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+]];
 
 /// The fewest and the most columns the page lays its groups out in.
-const MIN_COLUMNS: usize = 3;
+const MIN_COLUMNS: usize = 1;
 const MAX_COLUMNS: usize = 5;
+
+/// The Segmented control's group in [`BASIC_GROUPS`].
+const SEGMENTED_GROUP: usize = 10;
 
 /// The Segmented control's segments, which the column count measures.
 pub(crate) const BASIC_SEGMENTS: [&str; 3] = ["Day", "Week", "Month"];
@@ -211,13 +224,23 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
     match columns {
         5 => &BASIC_FIVE,
         4 => &BASIC_FOUR,
-        _ => &BASIC_THREE,
+        3 => &BASIC_THREE,
+        2 => &BASIC_TWO,
+        _ => &BASIC_ONE,
     }
 }
 
+/// Whether a page of `columns` columns lays the Segmented control out in its
+/// last column, whose right edge is the page content's.
+fn segmented_in_last_column(columns: usize) -> bool {
+    basic_arrangement(columns)
+        .last()
+        .is_some_and(|column| column.contains(&SEGMENTED_GROUP))
+}
+
 /// How many columns the page lays its groups out in, from the theme alone,
-/// as the iced and egui Basic pages count them: the most, of five, four and
-/// three, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
+/// as the iced and egui Basic pages count them: the most, of five down to
+/// one, whose width, `(page - (n - 1) * layout.section_gap) / n`, holds the
 /// widest fixed-width control the theme states on the page --
 /// `combo_box.min_width`, the two tabs at `tab.min_width` `tab.item_gap`
 /// apart with room for both of the selected tab's flares,
@@ -231,8 +254,9 @@ pub(crate) fn basic_arrangement(columns: usize) -> &'static [&'static [usize]] {
 /// its labels), whose segments stay on one row: the control may reach into
 /// the section gap after its column, but keeps `layout.widget_gap`, the gap
 /// the page's rows keep between neighbouring widgets (Button and Primary),
-/// from the next column's left edge (M9-166). Three where not even three do:
-/// the page is then wider than its area.
+/// from the next column's left edge (M9-166); in the last column, whose
+/// right edge is the page content's, it is at most the column's width. One
+/// where not even one does: the page is then wider than its area.
 pub(crate) fn basic_column_count(
     resolved: &native_theme::theme::ResolvedTheme,
     layout: &native_theme::theme::LayoutTheme,
@@ -256,13 +280,18 @@ pub(crate) fn basic_column_count(
         .min_width
         .max(tabs)
         .max(BASIC_WIDE)
-        .max(BASIC_WIDTH)
-        .max(segmented - gap + layout.widget_gap.unwrap_or_default());
+        .max(BASIC_WIDTH);
+    let reach = gap - layout.widget_gap.unwrap_or_default();
     (MIN_COLUMNS..=MAX_COLUMNS)
         .rev()
         .find(|&n| {
-            let n = n as f32;
-            (page - (n - 1.0) * gap) / n >= widest
+            let column = (page - (n as f32 - 1.0) * gap) / n as f32;
+            let room = if segmented_in_last_column(n) {
+                column
+            } else {
+                column + reach
+            };
+            column >= widest && room >= segmented
         })
         .unwrap_or(MIN_COLUMNS)
 }

@@ -591,44 +591,61 @@ fn the_chrome_is_where_the_layout_puts_it() {
     assert_eq!(harness.state().settings.page, Page::Icons);
 }
 
-/// M9x CI item 9, the controller's rulings (M9-166): the Basic page's column count holds the
-/// Segmented control's own width as egui laid it out, so the control may reach into the section
-/// gap but keeps `layout.widget_gap` from the next column's left edge: under macos-monterey,
-/// macos-tahoe and kde-breeze at the largest text scale, 2.25; and the four Linux parity presets
-/// keep their columns at a text scale of 1: kde-breeze, adwaita and catppuccin-mocha five,
-/// material-3 four (the window's own content width).
+/// M9x CI item 9, the controller's rulings (M9-166, and item 15(1) of the round 2-3 review):
+/// the Basic page's column count holds the Segmented control's own width as egui laid it out,
+/// so the control may reach into the section gap but keeps `layout.widget_gap` from the next
+/// column's left edge, and in the last column ends inside the page content, under every bundled
+/// preset at a text scale of 1 and of 2.25, the largest, where three columns, the old floor,
+/// left it past the window under macos-monterey, macos-tahoe and ios-13; and the four Linux
+/// parity presets keep their columns at a text scale of 1: kde-breeze, adwaita and
+/// catppuccin-mocha five, material-3 four (the window's own content width). It prints each
+/// preset's count.
 #[test]
 fn the_column_count_holds_the_segmented_control() {
     let mut faults = Vec::new();
-    for preset in ["macos-monterey", "macos-tahoe", "kde-breeze"] {
-        let harness = open_scaled(preset, "basic", 2.25);
-        let gap = harness
-            .state()
-            .atlas
-            .layout()
-            .widget_gap
-            .unwrap_or_default();
-        let places = harness.state().registry.places();
-        let columns: Vec<egui::Rect> = places
-            .iter()
-            .filter(|(id, _)| id.starts_with("basic.column_"))
-            .map(|(_, r)| *r)
-            .collect();
-        let Some(control) = places.get("basic.segmented.control").copied() else {
-            faults.push(format!("{preset}: no segmented control"));
-            continue;
-        };
-        let next = columns
-            .iter()
-            .map(|c| c.left())
-            .filter(|x| *x > control.left() + 0.5)
-            .fold(f32::INFINITY, f32::min);
-        if next.is_finite() && control.right() > next - gap + 0.01 {
-            faults.push(format!(
-                "{preset}: the control's right edge {} is within layout.widget_gap {gap} of the \
-                 next column at {next}",
-                control.right()
-            ));
+    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+        for scale in [1.0, 2.25] {
+            let harness = open_scaled(preset, "basic", scale);
+            let gap = harness
+                .state()
+                .atlas
+                .layout()
+                .widget_gap
+                .unwrap_or_default();
+            let places = harness.state().registry.places();
+            let columns: Vec<egui::Rect> = places
+                .iter()
+                .filter(|(id, _)| id.starts_with("basic.column_"))
+                .map(|(_, r)| *r)
+                .collect();
+            println!("egui {preset} at {scale}: {} columns", columns.len());
+            let (Some(control), Some(page)) = (
+                places.get("basic.segmented.control").copied(),
+                places.get("basic.page").copied(),
+            ) else {
+                faults.push(format!("{preset} at {scale}: no segmented control or page"));
+                continue;
+            };
+            let next = columns
+                .iter()
+                .map(|c| c.left())
+                .filter(|x| *x > control.left() + 0.5)
+                .fold(f32::INFINITY, f32::min);
+            if next.is_finite() && control.right() > next - gap + 0.01 {
+                faults.push(format!(
+                    "{preset} at {scale}: the control's right edge {} is within \
+                     layout.widget_gap {gap} of the next column at {next}",
+                    control.right()
+                ));
+            }
+            if !next.is_finite() && control.right() > page.right() + 0.01 {
+                faults.push(format!(
+                    "{preset} at {scale}: the control in the last column ends at {}, past the \
+                     page content's {}",
+                    control.right(),
+                    page.right()
+                ));
+            }
         }
     }
     for (preset, want) in [
@@ -654,6 +671,34 @@ fn the_column_count_holds_the_segmented_control() {
         }
     }
     assert!(faults.is_empty(), "{faults:#?}");
+}
+
+/// Each of the Basic page's arrangements, five columns to one, as the gpui and iced pages',
+/// holds every group once, a column's groups in reading order (item 15(1) of the round 2-3
+/// review: two and one columns where three do not hold the page's widest control).
+#[test]
+fn every_arrangement_holds_every_group_once_in_reading_order() {
+    use crate::pages::basic::{FIVE, FOUR, GROUPS, ONE, THREE, TWO, arrangement};
+    for (count, want) in [
+        (5, &FIVE[..]),
+        (4, &FOUR[..]),
+        (3, &THREE[..]),
+        (2, &TWO[..]),
+        (1, &ONE[..]),
+    ] {
+        let laid = arrangement(count);
+        assert_eq!(laid, want, "{count} columns");
+        assert_eq!(laid.len(), count);
+        for column in laid {
+            assert!(
+                column.windows(2).all(|w| w.first() < w.get(1)),
+                "{count} columns: {column:?} is not in reading order"
+            );
+        }
+        let mut all: Vec<usize> = laid.iter().flat_map(|c| c.iter().copied()).collect();
+        all.sort_unstable();
+        assert_eq!(all, (0..GROUPS.len()).collect::<Vec<_>>(), "{count} columns");
+    }
 }
 
 /// M9x CI item 9 (M9-166): the Basic Segmented control keeps its segments on one row, as the
@@ -5615,7 +5660,8 @@ fn the_basic_page_has_every_group_in_its_column() {
 /// content width just above a count boundary too, where the counted columns hold the widest
 /// control with nothing to spare: under macos-tahoe, which states no `layout.section_gap`,
 /// installed directly (a preset of another platform here), at the five- and four-column
-/// boundaries.
+/// boundaries. It fits under every bundled preset at a text scale of 2.25 too (item 15(1) of the
+/// round 2-3 review).
 #[test]
 fn the_basic_page_fits_the_window_across() {
     use crate::pages::basic::column_count;
@@ -5655,6 +5701,11 @@ fn the_basic_page_fits_the_window_across() {
             );
             fits_across(&harness, theme, &format!("macos-tahoe at {width}"));
         }
+    }
+    // Every bundled preset at the largest text scale (item 15(1) of the round 2-3 review).
+    for preset in native_theme::theme::Theme::list_presets().iter().map(|p| p.key) {
+        let harness = open_scaled_in(egui::Theme::Light, preset, "basic", 2.25);
+        fits_across(&harness, egui::Theme::Light, &format!("{preset} at 2.25"));
     }
 }
 
