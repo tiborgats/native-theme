@@ -918,6 +918,15 @@ impl Kind {
     fn has_state(self) -> bool {
         matches!(self, Kind::Checkbox | Kind::Radio | Kind::Switch)
     }
+
+    /// Whether the control section also renders it disabled
+    /// (`setEnabled: NO`), beside its enabled renders.
+    fn renders_disabled(self) -> bool {
+        matches!(
+            self,
+            Kind::PushButton | Kind::Checkbox | Kind::Radio | Kind::Switch | Kind::Slider
+        )
+    }
 }
 
 fn ns(s: &str) -> Retained<NSString> {
@@ -1059,6 +1068,13 @@ fn controls_table(
             "_wh = [width, height]; _xywh = [x, y, width, height]; _tlbr = [top, left, bottom, right]; all in points",
         ),
     );
+    out::put(
+        &mut t,
+        "method_disabled",
+        out::text(
+            "at the regular size the push button, checkbox, radio, switch and slider are also rendered disabled (setEnabled: NO), each at its enabled render's size: render_disabled (<kind>-regular-disabled, or -disabled-off for a control with a state) and render_disabled_on (-disabled-on)",
+        ),
+    );
     let mut setups = Table::new();
     for kind in Kind::ALL {
         out::put(&mut setups, kind.name(), out::text(kind.setup()));
@@ -1179,6 +1195,29 @@ impl Run<'_> {
                 let stem_on = format!("{}-{size_name}-on", kind.name());
                 out::put_table(&mut t, "render_on", self.render(&on_container, &stem_on));
                 on_container.removeFromSuperview();
+            }
+            if kind.renders_disabled() {
+                for on in [false, true] {
+                    if on && !kind.has_state() {
+                        continue;
+                    }
+                    let disabled = build(kind, size, on, self.mtm);
+                    let obj: &AnyObject = disabled.as_ref();
+                    if let Some(control) = obj.downcast_ref::<NSControl>() {
+                        control.setEnabled(false);
+                    }
+                    let disabled_container = self.mount(&disabled);
+                    disabled.setFrameSize(view.frame().size);
+                    fit_container(&disabled_container, &disabled);
+                    let (key, state) = match (kind.has_state(), on) {
+                        (false, _) => ("render_disabled", ""),
+                        (true, false) => ("render_disabled", "-off"),
+                        (true, true) => ("render_disabled_on", "-on"),
+                    };
+                    let stem = format!("{}-{size_name}-disabled{state}", kind.name());
+                    out::put_table(&mut t, key, self.render(&disabled_container, &stem));
+                    disabled_container.removeFromSuperview();
+                }
             }
         }
         container.removeFromSuperview();
@@ -1466,6 +1505,43 @@ const KEY_SEGMENT_SAMPLE_INSET: f64 = 12.0;
 /// A point of the content view no view covers: the window's own background.
 const KEY_BACKGROUND_POINT: NSPoint = NSPoint::new(390.0, 120.0);
 
+/// The bottom edge of the row of disabled controls in the key window's
+/// content view, in the free band between the segmented control and the
+/// table, left of `KEY_BACKGROUND_POINT`.
+const KEY_DISABLED_ROW_Y: f64 = 96.0;
+
+/// The bottom edge of the row of their enabled twins.
+const KEY_ENABLED_ROW_Y: f64 = 128.0;
+
+/// The left edge of each row's switch that is on.
+const KEY_SWITCH_ON_X: f64 = 200.0;
+
+/// The left edge of each row's switch that is off.
+const KEY_SWITCH_OFF_X: f64 = 250.0;
+
+/// The left edge of each row's slider.
+const KEY_SLIDER_X: f64 = 300.0;
+
+/// Each row's slider's width, in points: it ends left of
+/// `KEY_BACKGROUND_POINT`.
+const KEY_SLIDER_WIDTH: f64 = 80.0;
+
+/// The slider's value, in its 0..1 range: the knob in the middle, the fill
+/// left of it.
+const KEY_SLIDER_VALUE: f64 = 0.5;
+
+/// Where along a slider's bar its fill is sampled, as a share of the bar's
+/// width: well left of the knob.
+const KEY_SLIDER_FILL_AT: f64 = 0.25;
+
+/// Where along a slider's bar its unfilled track is sampled: well right of
+/// the knob.
+const KEY_SLIDER_TRACK_AT: f64 = 0.75;
+
+/// Where along a switch its track is sampled, as a share of its width in
+/// from the end away from the knob: the middle of that third.
+const KEY_SWITCH_TRACK_AT: f64 = 1.0 / 6.0;
+
 /// The calibration strip's first patch, in the content view: a row below
 /// the segmented control, clear of every other sample point.
 const KEY_PATCH_ORIGIN: NSPoint = NSPoint::new(200.0, 20.0);
@@ -1602,6 +1678,41 @@ fn key_window_table(
     segmented.setFrameOrigin(KEY_SEGMENTED_ORIGIN);
     content.addSubview(&segmented);
 
+    let rows = [
+        (KEY_DISABLED_ROW_Y, false, "_disabled"),
+        (KEY_ENABLED_ROW_Y, true, ""),
+    ];
+    let mut switches: Vec<(String, bool, Retained<NSSwitch>)> = Vec::new();
+    let mut sliders: Vec<(String, Retained<NSSlider>)> = Vec::new();
+    for (y, enabled, suffix) in rows {
+        for (on, x, name) in [
+            (true, KEY_SWITCH_ON_X, "switch_on"),
+            (false, KEY_SWITCH_OFF_X, "switch_off"),
+        ] {
+            let switch = NSSwitch::new(mtm);
+            switch.setState(state_value(on));
+            switch.setEnabled(enabled);
+            switch.sizeToFit();
+            switch.setFrameOrigin(NSPoint::new(x, y));
+            content.addSubview(&switch);
+            switches.push((format!("{name}{suffix}"), on, switch));
+        }
+        let slider = NSSlider::new(mtm);
+        slider.setVertical(false);
+        slider.setMinValue(0.0);
+        slider.setMaxValue(1.0);
+        slider.setDoubleValue(KEY_SLIDER_VALUE);
+        slider.setEnabled(enabled);
+        slider.sizeToFit();
+        let height = slider.frame().size.height;
+        slider.setFrame(NSRect::new(
+            NSPoint::new(KEY_SLIDER_X, y),
+            NSSize::new(KEY_SLIDER_WIDTH, height),
+        ));
+        content.addSubview(&slider);
+        sliders.push((format!("slider{suffix}"), slider));
+    }
+
     let system_patches: [SystemPatch; 2] = [
         ("windowBackgroundColor", NSColor::windowBackgroundColor),
         ("controlBackgroundColor", NSColor::controlBackgroundColor),
@@ -1698,6 +1809,76 @@ fn key_window_table(
     out::put(&mut t, "column_width", out::float(column.width()));
     let segmented_frame = segmented.frame();
     out::put(&mut t, "segmentedControl_frame_xywh", rect(segmented_frame));
+    out::put(
+        &mut t,
+        "method_controls",
+        out::text(format!(
+            "in the band between the segmented control and the table: a row of disabled controls (setEnabled: NO) with its bottom edge at y {KEY_DISABLED_ROW_Y} and a row of the same controls enabled at y {KEY_ENABLED_ROW_Y}, each an NSSwitch on at x {KEY_SWITCH_ON_X}, an NSSwitch off at x {KEY_SWITCH_OFF_X} (both sized to fit) and an NSSlider, horizontal, 0..1 at {KEY_SLIDER_VALUE}, {KEY_SLIDER_WIDTH} pt wide at x {KEY_SLIDER_X} (sized to fit in height); a switch's track is sampled at {KEY_SWITCH_TRACK_AT} of its width in from the end away from the knob, and its knob half the frame's height in from the end it rests at (the right end when on), both at the frame's vertical centre; a slider's fill at {KEY_SLIDER_FILL_AT} and its track at {KEY_SLIDER_TRACK_AT} of the bar's width (barRectFlipped: of its NSSliderCell, in the content view; the frame where the cell is not one), at the bar's vertical centre, and its knob at the centre of knobRectFlipped: (the bar's centre where the cell is not an NSSliderCell)"
+        )),
+    );
+    let mut control_points: Vec<(String, NSPoint)> = Vec::new();
+    for (name, on, switch) in &switches {
+        let f = switch.frame();
+        out::put(&mut t, &format!("{name}_frame_xywh"), rect(f));
+        let mid = f.origin.y + f.size.height / 2.0;
+        let (track_x, knob_x) = if *on {
+            (
+                f.origin.x + f.size.width * KEY_SWITCH_TRACK_AT,
+                f.origin.x + f.size.width - f.size.height / 2.0,
+            )
+        } else {
+            (
+                f.origin.x + f.size.width * (1.0 - KEY_SWITCH_TRACK_AT),
+                f.origin.x + f.size.height / 2.0,
+            )
+        };
+        control_points.push((name.clone(), NSPoint::new(track_x, mid)));
+        control_points.push((format!("{name}_knob"), NSPoint::new(knob_x, mid)));
+    }
+    for (name, slider) in &sliders {
+        let f = slider.frame();
+        out::put(&mut t, &format!("{name}_frame_xywh"), rect(f));
+        let cell = slider.cell();
+        let slider_cell = cell.as_ref().and_then(|cell| {
+            let obj: &AnyObject = cell.as_ref();
+            obj.downcast_ref::<NSSliderCell>()
+        });
+        let flipped = slider.isFlipped();
+        let (bar, knob) = match slider_cell {
+            Some(c) => {
+                let bar = slider.convertRect_toView(c.barRectFlipped(flipped), Some(&content));
+                let knob = slider.convertRect_toView(c.knobRectFlipped(flipped), Some(&content));
+                out::put(&mut t, &format!("{name}_barRect_xywh"), rect(bar));
+                out::put(&mut t, &format!("{name}_knobRect_xywh"), rect(knob));
+                (bar, Some(knob))
+            }
+            None => {
+                out::put(
+                    &mut t,
+                    &format!("{name}_barRect_xywh"),
+                    out::unavailable("the slider's cell is not an NSSliderCell"),
+                );
+                (f, None)
+            }
+        };
+        let mid = bar.origin.y + bar.size.height / 2.0;
+        control_points.push((
+            format!("{name}_fill"),
+            NSPoint::new(bar.origin.x + bar.size.width * KEY_SLIDER_FILL_AT, mid),
+        ));
+        control_points.push((
+            format!("{name}_track"),
+            NSPoint::new(bar.origin.x + bar.size.width * KEY_SLIDER_TRACK_AT, mid),
+        ));
+        let knob_centre = match knob {
+            Some(k) => NSPoint::new(
+                k.origin.x + k.size.width / 2.0,
+                k.origin.y + k.size.height / 2.0,
+            ),
+            None => NSPoint::new(bar.origin.x + bar.size.width / 2.0, mid),
+        };
+        control_points.push((format!("{name}_knob"), knob_centre));
+    }
 
     // A point of the content view (bottom-left origin) in points from the
     // window frame's top left: the content view is the frame's bottom part.
@@ -1740,6 +1921,11 @@ fn key_window_table(
             )),
         ));
     }
+    points.extend(
+        control_points
+            .iter()
+            .map(|(name, p)| (name.as_str(), from_content(*p))),
+    );
     let patches: Vec<(&str, NSPoint)> = patches
         .into_iter()
         .map(|(key, p)| (key, from_content(p)))

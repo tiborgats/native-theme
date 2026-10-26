@@ -14031,3 +14031,27 @@ distance cases and material-3's step-glyph case) the icon features they need. ch
 ci.yml gain `cargo clippy -p native-theme-gpui --all-targets --no-default-features -D warnings`.
 The showcase's tests pass in that build too (291, 1 ignored), and in the default one (328).
 **Status:** done, the commit that files this entry.
+
+#### D10 · the OS probe renders disabled controls (for D9's M2)
+**Problem:** no probe run holds a disabled render (the D9 rulings, W2's M2 spec): the probe never
+calls `setEnabled`, so facts :1325-1327 and :1529-1531 (a disabled slider's fill, a disabled
+switch's checked track) have no measured macOS value, and macos-monterey's disabled siblings stay
+unsourced.
+**Fix:** the key-window section adds, in the free band between the segmented control and the
+table and left of `KEY_BACKGROUND_POINT`, a row of disabled controls at y 96 and their enabled
+twins at y 128: an `NSSwitch` on (x 200), one off (x 250) and an `NSSlider`, 0..1 at 0.5, 80 pt
+wide (x 300). Each frame is recorded (`switch_on_disabled_frame_xywh`, …, `slider_frame_xywh`),
+and a slider's bar and knob rects in the content view (`barRectFlipped:`, `knobRectFlipped:`,
+converted with `convertRect:toView:`). Each is sampled in both appearances, raw and
+`colorAtXY_sRGB`, with the other key-window samples: a switch's track a sixth of its width in
+from the end away from the knob and its knob half its height in from the end it rests at, at the
+frame's vertical centre (`switch_on_disabled`, `switch_on_disabled_knob`, …); a slider's fill at
+a quarter and its track at three quarters of the bar, at the bar's centre line, and its knob at
+the knob rect's centre (`slider_disabled_fill`, `_track`, `_knob`, and the same without
+`_disabled`). `method_controls` says how. The controls section also renders the push button,
+checkbox, radio, switch and slider disabled at the regular size (`render_disabled`,
+`render_disabled_on`; `<kind>-regular-disabled[-off|-on]`, `method_disabled`). Every existing key
+keeps its value: the new keys follow the ones they sit beside, and no new view covers a sample
+point. Gates as for D1b: clippy for x86_64-apple-darwin, x86_64-pc-windows-msvc and the host,
+strict-panic for darwin and the host, the probe's tests, fmt.
+**Status:** done, the commit that files this entry; the run is the controller's dispatch.
