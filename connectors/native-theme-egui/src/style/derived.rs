@@ -10,8 +10,8 @@
 use native_theme::theme::ResolvedTheme;
 
 use crate::convert::{
-    clamp_length, finite_or, i8_from_f32_saturating, padding_with_border, to_color32,
-    to_corner_radius, to_margin, to_shadow, to_stroke,
+    clamp_length, expander_padding_border, finite_or, i8_from_f32_saturating, padding_with_border,
+    to_color32, to_corner_radius, to_margin, to_shadow, to_stroke,
 };
 use crate::style::{BuildInput, note_transparent_fill, push_note};
 use crate::{Note, Role};
@@ -302,8 +302,10 @@ fn expander_arrow_size(style: &mut egui::Style, t: &ResolvedTheme, notes: &mut V
 /// centres the arrow on `indent / 2` from the header's left edge
 /// (`egui/src/containers/collapsing_header.rs:586-589`) and starts the title at `indent`
 /// (`:516`); the arrow is `arrow_icon_size` square after R-ARROW above. So the arrow's left
-/// edge is the padding plus the border's width in — the platform's padding lies inside its
-/// border (`padding_with_border`) — where `indent` is twice that plus the arrow. egui ties
+/// edge is the padding plus the border's width in where `expander.frame_enabled` is true —
+/// the platform's padding lies inside its border (`padding_with_border`) — and the padding
+/// alone elsewhere, the header drawing no outline (`expander_padding_border`, M9-178), where
+/// `indent` is twice that plus the arrow. egui ties
 /// the rest to the same field: the title starts that padding after the arrow, and the
 /// expanded body is indented by `indent` (`:164`, `egui/src/ui.rs:2253`), neither of which
 /// the theme states. Written only where the side is stated and the arrow's size is finite
@@ -314,7 +316,11 @@ fn expander_leading_padding(style: &mut egui::Style, t: &ResolvedTheme, notes: &
         sanitised("expander.border.padding.left", notes);
         return;
     }
-    let (Some(left), arrow) = (padding_with_border(border).left, t.expander.arrow_icon_size) else {
+    let framed = expander_padding_border(&t.expander);
+    let (Some(left), arrow) = (
+        padding_with_border(&framed).left,
+        t.expander.arrow_icon_size,
+    ) else {
         return;
     };
     if arrow.is_finite() {

@@ -273,6 +273,23 @@ pub(crate) fn padding_with_border(
     .padding_outside()
 }
 
+/// The expander's border as its padding counts it: `expander.border` with its line width 0
+/// where `expander.frame_enabled` is not `Some(true)`. The header draws no outline of its own
+/// (ledger M9-178), so a stated padding side lies inside a border only where the companion
+/// crate's `Expander` draws its frame round header and body, as the iced connector pads the
+/// header by the stated sides alone since M9-176.
+#[inline]
+#[must_use]
+pub(crate) fn expander_padding_border(
+    x: &native_theme::theme::ResolvedExpanderTheme,
+) -> native_theme::theme::ResolvedWidgetBorder {
+    let mut border = x.border.clone();
+    if x.frame_enabled != Some(true) {
+        border.line_width = 0.0;
+    }
+    border
+}
+
 /// `Spacing::button_padding` from a widget's resolved border, under spec §5's pair rule.
 ///
 /// `button_padding` is one `Vec2` (`egui/src/style.rs:398`) that `Button`, `ComboBox` and

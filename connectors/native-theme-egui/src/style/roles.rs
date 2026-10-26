@@ -11,7 +11,9 @@ use super::states::{
 };
 use super::{BuildInput, push_note};
 use crate::accessors::scaled_text_size;
-use crate::convert::{Rgba, clamp_length, padding_with_border, to_button_padding, to_color32};
+use crate::convert::{
+    Rgba, clamp_length, expander_padding_border, padding_with_border, to_button_padding, to_color32,
+};
 use crate::{Note, Role};
 
 /// One role's `Normal` cell: `base` copied, then the role's writes (§3.4).
@@ -1104,12 +1106,14 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
             push_note(notes, Note::ValueSanitised { path });
         }
     }
+    // a stated side lies inside the border only where the frame is drawn (M9-178)
     let own_padding = own.spacing.button_padding;
+    let border = expander_padding_border(x);
     s.spacing.button_padding = egui::vec2(
-        padding_with_border(&x.border)
+        padding_with_border(&border)
             .right
             .map_or(own_padding.x, clamp_length),
-        to_button_padding(own_padding, &x.border).y,
+        to_button_padding(own_padding, &border).y,
     );
     // the header's title is laid out in the Button font
     // (`egui/src/containers/collapsing_header.rs:518-523`)
@@ -1171,6 +1175,51 @@ mod tests {
         let base = base_style(&input, &mut notes);
         let c = role_cell(role, &base, &input, &mut notes);
         (c, base, t, notes)
+    }
+
+    /// The expander cell's padding counts the border's width inside a stated side only where
+    /// `expander.frame_enabled` is true, the frame the companion crate draws round header and
+    /// body; elsewhere the header draws no outline (M9-178), and the side is the padding alone,
+    /// as the iced connector's since M9-176 (round 4 review, item 17 minor 7): windows-11
+    /// states the left side 16 and the right 0, its border 1 wide.
+    #[test]
+    fn the_expander_padding_counts_the_border_only_where_the_frame_is_drawn() {
+        let t = resolved("windows-11", ColorMode::Light);
+        let width = t.expander.border.line_width;
+        assert!(width > 0.0, "windows-11's expander border has a width");
+        let arrow = t.expander.arrow_icon_size;
+        for (frame, inside) in [(Some(true), width), (Some(false), 0.0), (None, 0.0)] {
+            let mut t = t.clone();
+            t.expander.frame_enabled = frame;
+            let prefs = AccessibilityPreferences::default();
+            let layout = LayoutTheme::default();
+            let input = BuildInput {
+                scheme: egui::Theme::Light,
+                theme: &t,
+                prefs: &prefs,
+                layout: &layout,
+                row_height: None,
+                defs: None,
+                patch: None,
+            };
+            let mut notes = Vec::new();
+            let base = base_style(&input, &mut notes);
+            let c = role_cell(Role::Expander, &base, &input, &mut notes);
+            let p = &t.expander.border.padding;
+            let (Some(left), Some(right)) = (p.left, p.right) else {
+                panic!("windows-11 states the expander's left and right padding");
+            };
+            assert_eq!(
+                c.spacing.indent,
+                clamp_length(2.0 * (left + inside) + arrow),
+                "frame_enabled {frame:?}: the leading padding"
+            );
+            assert_eq!(
+                c.spacing.button_padding.x,
+                clamp_length(right + inside),
+                "frame_enabled {frame:?}: the trailing padding"
+            );
+        }
     }
 
     /// The five entries, in `Widgets`' field order.
@@ -2317,10 +2366,10 @@ mod tests {
             );
             assert_eq!(
                 c.spacing.button_padding.y,
-                to_button_padding(base.spacing.button_padding, &x.border).y,
+                to_button_padding(base.spacing.button_padding, &expander_padding_border(x)).y,
                 "{preset}"
             );
-            let right = crate::convert::padding_with_border(&x.border).right;
+            let right = crate::convert::padding_with_border(&expander_padding_border(x)).right;
             assert_eq!(
                 c.spacing.button_padding.x,
                 right.map_or(base.spacing.button_padding.x, clamp_length),
@@ -2328,7 +2377,7 @@ mod tests {
             );
             // the leading padding: the arrow, centred on `indent / 2`, starts it plus the
             // border's width in; egui's own indent where the side is unstated
-            let left = crate::convert::padding_with_border(&x.border).left;
+            let left = crate::convert::padding_with_border(&expander_padding_border(x)).left;
             assert_eq!(
                 c.spacing.indent,
                 left.map_or(base.spacing.indent, |l| clamp_length(

@@ -481,6 +481,16 @@ fn padding_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedPad
 
 /// A widget's `ResolvedWidgetBorder` (`native-theme/src/model/border.rs:243-256`), read back
 /// from the JSON leaves, for the helpers that take the whole border.
+/// [`border_of`] as `widget`'s padding counts it: the expander's line width 0 where
+/// `expander.frame_enabled` is not true (`convert::expander_padding_border`).
+fn padding_border_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedWidgetBorder {
+    let mut border = border_of(c, widget);
+    if widget == "expander" && c.resolved.expander.frame_enabled != Some(true) {
+        border.line_width = 0.0;
+    }
+    border
+}
+
 fn border_of(c: &Combination, widget: &str) -> native_theme::theme::ResolvedWidgetBorder {
     native_theme::theme::ResolvedWidgetBorder {
         color: colour(c, &format!("{widget}.border.color")).expect("required"),
@@ -880,11 +890,11 @@ fn expected(
             Val::F32(convert::clamp_length(s * (4.0 / 3.0)))
         }
         // the expander's leading padding: the arrow, centred on `indent / 2`, starts the stated
-        // padding plus the border's width in
+        // padding in, plus the border's width where the frame is drawn
         (Some("expander"), "normal", None, "spacing.indent") => {
-            let border = &t.expander.border;
+            let border = convert::expander_padding_border(&t.expander);
             let arrow = t.expander.arrow_icon_size;
-            match convert::padding_with_border(border).left {
+            match convert::padding_with_border(&border).left {
                 Some(left) if arrow.is_finite() => {
                     Val::F32(convert::clamp_length(2.0 * left + arrow))
                 }
@@ -926,7 +936,7 @@ fn expected(
             } else {
                 convert::to_button_padding(
                     inherited_style().spacing.button_padding,
-                    &border_of(c, w),
+                    &padding_border_of(c, w),
                 )
                 .y
             };
@@ -952,7 +962,7 @@ fn expected(
         // ---- §5's pair rule (§7.2 `to_button_padding`): four sides and the line width. The
         // expander reads `.x` on its trailing side only, so its `.x` is that side alone (§7.4). ----
         (Some("expander"), "normal", None, "spacing.button_padding.x") => {
-            match convert::padding_with_border(&border_of(c, "expander")).right {
+            match convert::padding_with_border(&padding_border_of(c, "expander")).right {
                 Some(right) => Val::F32(convert::clamp_length(right)),
                 None => return Ok(None),
             }
@@ -961,7 +971,7 @@ fn expected(
             let widget = scope.unwrap_or("button");
             let padding = convert::to_button_padding(
                 inherited_style().spacing.button_padding,
-                &border_of(c, widget),
+                &padding_border_of(c, widget),
             );
             Val::F32(if p.ends_with(".x") {
                 padding.x
@@ -1174,7 +1184,7 @@ fn t10_the_expander_arm_holds_a_fitted_header() {
             );
             let unfitted = convert::to_button_padding(
                 inherited_style(&c, sink).spacing.button_padding,
-                &border_of(&c, "expander"),
+                &padding_border_of(&c, "expander"),
             )
             .y;
             assert!(

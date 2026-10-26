@@ -795,7 +795,10 @@ fn a_widget_in_the_body_keeps_the_callers_style() {
         };
         let _ = pass(&ctx, at(0.0), &mut show);
         let out = pass(&ctx, at(0.0), &mut show);
-        assert!(base.width > 0.0, "{preset}: the base style outlines a button");
+        assert!(
+            base.width > 0.0,
+            "{preset}: the base style outlines a button"
+        );
         let outlined = rects(&out)
             .iter()
             .any(|r| r.stroke == base && r.rect.contains(button.center()));
