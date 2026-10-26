@@ -13617,3 +13617,18 @@ windows-11 206 (195, 3 excepted, 8). Since d296edf7, which re-points windows-11'
 `active_background` comments to their own row (`docs/platform-facts.md:1196`) and drops their
 exceptions, windows-11 reads 206 (197 hold, 1 excepted, 8 not compared).
 **Status:** done, 7bea7d81 and d296edf7 (W2).
+
+#### C-02 · iced application style
+**Problem:** iced paints an application's background from its base style, which `Base::base`
+takes from the palette's background (`iced_core-0.14.0/src/theme.rs:222-230`, `:291-293`,
+`:328-336`), `defaults.background_color` under this connector; nothing read
+`window.background_color`, which `UNREAD_COLOURS` named under ruling T12a C4.
+**Fix:** `styles::application(resolved)`, for `application(..).style(..)`
+(`iced-0.14.0/src/application.rs:394-399`): `background_color` is
+`window.background_color`, `text_color` the base style's (`defaults.text_color`), each with a
+`StyleRow` (`APPLICATION_ROWS`), walked by the tripwire (`application_style_fields`); the
+`UNREAD_COLOURS` entry is gone and `contract-leaves.toml` regenerated (the leaf moves
+`styles::application.background_color`). The iced showcase installs it. The README's style
+table has an application shape and the crate docs' *Theme Field Coverage* counts 29
+functions. No bundled preset differs in the two leaves, so nothing drawn changes there.
+**Status:** done, b3591c62.

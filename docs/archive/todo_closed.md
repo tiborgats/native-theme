@@ -1684,6 +1684,11 @@ and many have since drifted, as the archive's [README](README.md) warns.
       rows. The rest of the entry stays open.
   *Closed 2026-10-26 in 7bea7d81 (C-08):* `scripts/check_preset_citations.py` is the gate (check_release.sh and CI); all 104 drifted material-3 lines are re-pointed by content (the dialog's `body_font.color` among them, which a whole-font row had hidden); the other presets' cross-row citations pass by stated rules, and one windows-11 citation by named exceptions since d296edf7, which re-pointed windows-11's two `active_background` comments to their own row.
 
+### iced: an application style that reads `window.background_color`
+
+- [x] [v0.7.0] iced paints an application's background from its base style, `theme::Style.background_color` (`iced_core-0.14.0/src/theme.rs:222-230`), which `Base::base` takes from the palette's background (`theme.rs:291-293`, `:328-336`), under this connector `defaults.background_color`; nothing reads `window.background_color`. It inherits `defaults.background_color` (`docs/inheritance-rules.toml:157`) and equals it in all 34 bundled combinations, so nothing differs today (M5 T12a ruling C4). Add a style for `application(..).style(..)` (`iced-0.14.0/src/application.rs:394-399`), a `styles::application(resolved)` whose background is `window.background_color` and whose text colour is the base style's, with its contract row. The colour-leaf coverage test names the leaf for this entry (`connectors/native-theme-iced/src/contract/derived.rs:1353-1365`).
+  *Closed 2026-10-26 in b3591c62 (C-02):* `styles::application(resolved)`, background `window.background_color`, text colour the base style's (`defaults.text_color`), with two contract rows (`styles::application.background_color`, `.text_color`); the leaf left `UNREAD_COLOURS`, and the iced showcase passes it to `application(..).style(..)`.
+
 ## Post-1.0 / Deferred
 
 ### Change notification
