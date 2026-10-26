@@ -1020,6 +1020,25 @@ model, the platform presets and the three connectors
       developer override, not a GNOME setting. Decide whether the reader follows
       it, or `detect` stops reading it, so the two agree.
 
+### The GNOME reader applies libadwaita's high-contrast rules
+
+- [ ] [1.0] From the v0.7.0 entry *the gpui connector reads
+      `AccessibilityPreferences::high_contrast` nowhere* (closed 2026-10-26).
+      libadwaita 1.10.0 applies high contrast as `prefers-contrast: more`
+      (`adw-style-manager.c:270-284`): `--border-opacity` 50 % in place of
+      15 %, `--dim-opacity` 90 % in place of 55 %, `--disabled-opacity` 40 %
+      in place of 50 % (`_colors.scss:257-258`, `:316-329`), the window
+      outline at 30 % in place of 7 % (`:302-303`), the dimmer at 80 % in place
+      of 30 % (`:309-310`), and per-widget rules across the stylesheet (32
+      files, counted in M2e). The GNOME reader carries the flag (portal
+      `contrast`, else `org.gnome.desktop.a11y.interface high-contrast`,
+      `native-theme/src/gnome/mod.rs`) and applies one rule, the focus
+      ring's `$focus_border_color_hc` at 80 % (`gnome/accent.rs:83-98`). Under
+      the flag it could also write `defaults.border.opacity` 0.5 (and the
+      border colours composited from it), `defaults.disabled_opacity` 0.4 and
+      the dimmed text: the model's fields for the `:root` rules. The
+      per-widget rules need a field-by-field reading first.
+
 ### windows-11: the title bar with "Show accent colour on title bars"
 
 - [ ] [v0.7.x] From M4 T22 (ruled 2026-10-13): the Windows reader wrote
@@ -2029,30 +2048,13 @@ model, the platform presets and the three connectors
       M8 T21 fix round 1 (2026-10-17): the connector's own widgets draw the
       same ring: *gpui: the theme-drawn widgets' focus ring*, "The connector's
       `Checkbox`, `Radio`, `Slider` and `Switch`".
-- [ ] [v0.7.0] `tokens.tab`, `tokens.list`, `sidebar_primary` and
-      `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
-      `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
-      connector maps them anyway, and the contract marks pairs over them as
-      inert so they are not counted as coverage.
-      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
-      "`ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints"
-      (479e7284). Tagged [v0.7.0], that entry's tag, not [upstream]: its second
-      remedy, the contract recording the slots as write-only, is the connector's
-      own:
-      `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
-      The connector writes both on every `apply` and both have contract rows
-      (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
-      gpui-component or gpui-base (declared `theme_color.rs:261`, defaulted
-      `schema.rs:996`), and `list_even` is read only as `table_even`'s
-      fallback (`schema.rs:1005`) — which never fires, because the connector
-      writes `table_even` too (`contract.rs:391`). Every gate is green on
-      both: they are written, so no coverage check notices, and they are read
-      nowhere, so no widget can disagree with them. Either upstream should be
-      asked to read them or the contract should record them as write-only.
-      M8 T21 fix round 1 (2026-10-17): the list half overlaps
-      "**`geometry::list` could paint the list.**" (*Follow-ups from the
-      v0.5.9 showcase and contract work*), which would give
-      `list.background_color` a receiver.
+- [ ] [upstream] gpui-component reads `tokens.tab`, `tokens.list`,
+      `list_even`, `sidebar_primary` and `sidebar_primary_foreground`
+      nowhere outside `theme/` in 0.8.0 (the connector's contract names
+      them in `WRITE_ONLY`, with the evidence: `connectors/native-theme-gpui/src/contract.rs`).
+      Ask upstream to paint them (an idle tab's fill, a `List`'s or
+      `Tree`'s fill, the sidebar's primary button), or to drop them.
+      From the v0.7.0 entry closed 2026-10-26 (D4).
 - [ ] [upstream] the segmented `TabBar` has receivers for the track only
       (`tab/tab_bar.rs:391`): the selected segment is filled with
       `tokens.background` and labelled `tab_active_foreground`
@@ -2268,22 +2270,6 @@ model, the platform presets and the three connectors
       `SettingGroup` is `setting/page.rs:239-253`; a `Dialog`'s surface is
       built at `dialog/dialog.rs:718-804` and wrapped for its entrance at
       `:805-843`; `sheet.rs` and `setting/group.rs` are unchanged.
-- [ ] [v0.7.0] the gpui connector reads `AccessibilityPreferences::high_contrast`
-      nowhere but its accessor (`native-theme-gpui` `lib.rs:615-617`,
-      `is_high_contrast`): `to_theme` and `apply` build the same theme with it
-      set or unset, so the showcase's Preferences toggle changes only the
-      stored value and the status bar's flag. Decide what it should change
-      (a high-contrast preset, or the contrast rule's thresholds) or say in
-      the connector's docs that it is carried and not applied.
-      For `adwaita` the platform's rules are known (M2e, 2026-10-11):
-      libadwaita 1.10.0 applies high contrast as `prefers-contrast: more`
-      (`adw-style-manager.c:270-284`): `--border-opacity` 50 %,
-      `--dim-opacity` 90 %, `--disabled-opacity` 40 % (`_colors.scss:323-329`)
-      and per-widget rules in 32 stylesheet files. The GNOME reader carries
-      the flag (portal `contrast`, else `org.gnome.desktop.a11y.interface
-      high-contrast`, in `native-theme/src/gnome/mod.rs`'s
-      `accessibility_from_gnome_data` and `build_gnome_variant`);
-      no preset or connector applies it.
 
 #### native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -2866,21 +2852,6 @@ the gap — closing it is a change, and each wants its own decision.
       `platform-facts.md` for what the four platforms state about each before
       deciding; several (a KDE/Adwaita "tag" or "badge") may have no platform
       source at all, which would be the honest reason not to model them.
-- [ ] [v0.7.0] **Carry `defaults.line_height` to the code editor.** `Editor` sets
-      `relative(1.5)` and then applies the caller's refinement last, with a
-      comment saying that is deliberate so a text style set on the editor
-      refines over it (`input/editor.rs:137-143`, `:159`).
-      `defaults.line_height` is modelled — 1.4 on the bundled defaults — so
-      nothing new has to be modelled: it wants a builder, or a line in an
-      existing one.
-      **Update (v0.5.9 unstated sizes):** `control_height` is gone, and the
-      builders now apply the line height themselves: `geometry::button`,
-      `input`, `select`, `combobox`, `menu_item` and `list_item` set
-      `defaults.line_height` as the control's line height (`with_height_rule`
-      in `geometry.rs`). So an `Input` or `Textarea` refined with
-      `geometry::input` takes it over upstream's `1.25rem` rows
-      (`input/input.rs:699`, set before the caller's refinement at `:719`).
-      The `Editor` is what remains.
 - [ ] [1.0] **The showcase ignores its own `text_scale`.** `ResolvedTextScale` states
       four typographic roles — `caption`, `section_heading`, `dialog_title`,
       `display` — each with a size, a weight and a line height, and
@@ -2996,39 +2967,6 @@ the gap — closing it is a change, and each wants its own decision.
       `geometry::flat_button`, or a width-free variant), and note that the
       hover colour itself is out of reach: a refinement cannot set a hover
       style. Not checked visually. Found 2026-09-22.
-- [ ] [v0.7.0] **`geometry::list` could paint the list.** `ThemeColor::list` has no
-      reader (the contract says so at `contract.rs:1784`) and a `ListItem`
-      paints no idle background, so `list.background_color` reaches nothing.
-      On the bundled presets it falls back to the window background
-      (`resolve/inheritance.rs:143-144`), so nothing is lost there; on a live
-      KDE system it is `[Colors:View] BackgroundNormal` (`kde/colors.rs:91`),
-      the view background rather than the window's, and that is dropped. `geometry::list` lands on the element around the rows, which
-      is exactly where a fill belongs, and carries only the border
-      (`geometry.rs:362-369`). One `.bg()` would carry it. Found 2026-09-22.
-- [ ] [v0.7.0] **`Switch::color` is a receiver nothing feeds.** `switch.checked_background`
-      is modelled and every preset states it; `ThemeColor` has no field for
-      it, which is what `colors.rs`'s Issue 51 note and the contract's
-      `NoReceiver` entry record -- but `Switch::color` (`switch.rs:95`) takes
-      it per instance. A helper, or a `variants::` function like
-      `ghost_button`, would reach every switch an application builds. Found
-      2026-09-22.
-      M6 T16c (2026-10-16, 12be97dd): with `widgets` the leaf reaches
-      `SwitchLook` (the connector's own switch draws it), so the contract's
-      `NoReceiver` entry for it exists only without `widgets`.
-- [ ] [v0.7.0] **The code editor's background is a fixed colour.** `Theme::editor_background`
-      returns the highlight theme's `editor.background` and falls back to
-      `input_background()` only when that is unset (`theme/mod.rs:389-394`).
-      The connector installs `HighlightTheme::default_dark/light()`
-      (`lib.rs:192-196`), whose `editor.background` is `#0a0a0a` and `#ffffff`
-      (`theme/default-theme.json:314`, `:114`), so the fallback never fires
-      and every code editor -- the `Editor` widget and any `Input` in code
-      mode (`input/input.rs:640-641`), gutter included -- paints a fixed
-      near-black or white whatever the platform. Every `HighlightThemeStyle`
-      field is public, so the connector can clone the default and clear
-      `editor_background` (letting upstream fall back to the platform's input
-      background) or set it, and the same goes for `editor_active_line`, the
-      gutter and the line-number colours. The syntax colours themselves are a
-      separate question: native-theme models none. Found 2026-09-22.
 - [ ] [1.0] **A tab's `min_height` has a receiver nobody uses.** A `Tab` takes the
       caller's style first and then sets its own per-Size `.h()`, text size and
       colours over it (`tab/tab.rs:780-810`), but it never sets `min_h`, and

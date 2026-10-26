@@ -1094,6 +1094,48 @@ and many have since drifted, as the archive's [README](README.md) warns.
       palette as its one caller (the toolbar's Combobox installs a preset
       through its own `Change` event). Added to the archived spec's §2.2 as
       an *As built* note (Task 25).
+- [x] [v0.7.0] `tokens.tab`, `tokens.list`, `sidebar_primary` and
+      `sidebar_primary_foreground` are read by nothing in 0.6.4 outside
+      `theme/` (an idle tab is `transparent`, `tab/tab.rs:132-160`). The
+      connector maps them anyway, and the contract marks pairs over them as
+      inert so they are not counted as coverage.
+      M8 T21 fix round 1 (2026-10-17), the duplicate rule: the lines of the entry
+      "`ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints"
+      (479e7284). Tagged [v0.7.0], that entry's tag, not [upstream]: its second
+      remedy, the contract recording the slots as write-only, is the connector's
+      own:
+      `ThemeColor::tab` and `ThemeColor::list_even` are slots nothing paints.
+      The connector writes both on every `apply` and both have contract rows
+      (`contract.rs:420`, `:354`), but no `theme().tab` is read anywhere in
+      gpui-component or gpui-base (declared `theme_color.rs:261`, defaulted
+      `schema.rs:996`), and `list_even` is read only as `table_even`'s
+      fallback (`schema.rs:1005`) — which never fires, because the connector
+      writes `table_even` too (`contract.rs:391`). Every gate is green on
+      both: they are written, so no coverage check notices, and they are read
+      nowhere, so no widget can disagree with them. Either upstream should be
+      asked to read them or the contract should record them as write-only.
+      M8 T21 fix round 1 (2026-10-17): the list half overlaps
+      "**`geometry::list` could paint the list.**" (*Follow-ups from the
+      v0.5.9 showcase and contract work*), which would give
+      `list.background_color` a receiver.
+  *Closed 2026-10-26 in c77b6f77 (D4):* the second remedy. The contract keeps the five rows, the true mapping, so the day upstream reads a slot it carries the theme's colour, and names the slots in `WRITE_ONLY` (`connectors/native-theme-gpui/src/contract.rs`), each with its gpui-component 0.8.0 evidence (an idle tab `transparent` in every variant, `tab/tab.rs:173`-`:212`; `list` read only as the schema fallback of `list_even`, `list_head` and `table`, `theme/schema.rs:971-972`, `:1006`; `list_even` only as `table_even`'s, `:1009`; the two sidebar slots read nowhere): the coverage tripwire prints them and leaves them out of the coverage it counts, and `every_write_only_slot_is_a_row_and_not_coverage` holds each to one plain row that is not counted. The two list pairs leave `INERT_SURFACES`: their surface is now `geometry::list`'s fill, which is painted. Asking upstream to read the slots is the `[upstream]` entry "gpui-component reads `tokens.tab` …" in its place.
+- [x] [v0.7.0] the gpui connector reads `AccessibilityPreferences::high_contrast`
+      nowhere but its accessor (`native-theme-gpui` `lib.rs:615-617`,
+      `is_high_contrast`): `to_theme` and `apply` build the same theme with it
+      set or unset, so the showcase's Preferences toggle changes only the
+      stored value and the status bar's flag. Decide what it should change
+      (a high-contrast preset, or the contrast rule's thresholds) or say in
+      the connector's docs that it is carried and not applied.
+      For `adwaita` the platform's rules are known (M2e, 2026-10-11):
+      libadwaita 1.10.0 applies high contrast as `prefers-contrast: more`
+      (`adw-style-manager.c:270-284`): `--border-opacity` 50 %,
+      `--dim-opacity` 90 %, `--disabled-opacity` 40 % (`_colors.scss:323-329`)
+      and per-widget rules in 32 stylesheet files. The GNOME reader carries
+      the flag (portal `contrast`, else `org.gnome.desktop.a11y.interface
+      high-contrast`, in `native-theme/src/gnome/mod.rs`'s
+      `accessibility_from_gnome_data` and `build_gnome_variant`);
+      no preset or connector applies it.
+  *Closed 2026-10-26 in c77b6f77 (D4):* carried, not applied, by design. High contrast belongs in the theme data, which a reader fills with what the platform draws under it. The Windows reader writes the high-contrast system colours (`apply_sys_colors`), the GNOME reader libadwaita's high-contrast focus ring, and the macOS reader's system colours follow Increase Contrast (`docs/evidence/os-probe/2026-10-26-run-40320895749/os-probe-macos-14/increase-contrast-on/probe.toml`). A connector-side transform would invent behaviour no platform states, and on Windows apply it twice; no platform has a high-contrast preset beyond Windows' system colours, which the reader reads live. The three connectors' docs say so in one word-identical row. The rest of libadwaita's rules move to the `[1.0]` entry *The GNOME reader applies libadwaita's high-contrast rules*.
 
 ### Closed items from native-theme-iced: the same audit (found 2026-09-20, fixed in v0.5.9)
 
@@ -1362,6 +1404,58 @@ and many have since drifted, as the archive's [README](README.md) warns.
       page's Carousel, the Theme Map's swatch gaps) are named showcase
       constants, each with its comment and its Widget Info line. windows-11's
       unsourced `widget_gap` stays in the *Follow-up plan* table.
+- [x] [v0.7.0] **Carry `defaults.line_height` to the code editor.** `Editor` sets
+      `relative(1.5)` and then applies the caller's refinement last, with a
+      comment saying that is deliberate so a text style set on the editor
+      refines over it (`input/editor.rs:137-143`, `:159`).
+      `defaults.line_height` is modelled — 1.4 on the bundled defaults — so
+      nothing new has to be modelled: it wants a builder, or a line in an
+      existing one.
+      **Update (v0.5.9 unstated sizes):** `control_height` is gone, and the
+      builders now apply the line height themselves: `geometry::button`,
+      `input`, `select`, `combobox`, `menu_item` and `list_item` set
+      `defaults.line_height` as the control's line height (`with_height_rule`
+      in `geometry.rs`). So an `Input` or `Textarea` refined with
+      `geometry::input` takes it over upstream's `1.25rem` rows
+      (`input/input.rs:699`, set before the caller's refinement at `:719`).
+      The `Editor` is what remains.
+  *Closed 2026-10-26 in c77b6f77 (D4):* `geometry::editor(n)`, `defaults.line_height` and nothing else, over the `relative(1.5)` upstream's `Editor` sets on its `Input` first (gpui-component 0.8.0 `src/input/editor.rs:157`), which refines the caller's style last (`:174`); its font is already the theme's mono font (`:155-156`). The gpui showcase's `demo::editor` applies it and its Widget Info gives the builder's line. `editor_carries_the_platforms_line_height_alone` checks it over every preset and mode, and the showcase's `the_code_editor_is_refined_by_geometry_editor` the Editor it builds.
+- [x] [v0.7.0] **`geometry::list` could paint the list.** `ThemeColor::list` has no
+      reader (the contract says so at `contract.rs:1784`) and a `ListItem`
+      paints no idle background, so `list.background_color` reaches nothing.
+      On the bundled presets it falls back to the window background
+      (`resolve/inheritance.rs:143-144`), so nothing is lost there; on a live
+      KDE system it is `[Colors:View] BackgroundNormal` (`kde/colors.rs:91`),
+      the view background rather than the window's, and that is dropped. `geometry::list` lands on the element around the rows, which
+      is exactly where a fill belongs, and carries only the border
+      (`geometry.rs:362-369`). One `.bg()` would carry it. Found 2026-09-22.
+  *Closed 2026-10-26 in c77b6f77 (D4):* `geometry::list` fills the list view with `list.background_color` (`list_paints_the_list_background`, every preset and mode): neither a `List`, a `Tree` nor a `ListItem` at rest paints a fill (gpui-component 0.8.0 `src/list/list_item.rs:225-233`, `:257-265`). The gpui showcase's List and Tree drop the fill they painted by hand, the same colour, and the leaf route names the builder; the contract's two list pairs take the builder's fill as their surface.
+- [x] [v0.7.0] **`Switch::color` is a receiver nothing feeds.** `switch.checked_background`
+      is modelled and every preset states it; `ThemeColor` has no field for
+      it, which is what `colors.rs`'s Issue 51 note and the contract's
+      `NoReceiver` entry record -- but `Switch::color` (`switch.rs:95`) takes
+      it per instance. A helper, or a `variants::` function like
+      `ghost_button`, would reach every switch an application builds. Found
+      2026-09-22.
+      M6 T16c (2026-10-16, 12be97dd): with `widgets` the leaf reaches
+      `SwitchLook` (the connector's own switch draws it), so the contract's
+      `NoReceiver` entry for it exists only without `widgets`.
+  *Closed 2026-10-26 in c77b6f77 (D4):* `variants::switch_color(n)`, `switch.checked_background` from the `Native` view the geometry builders take, for `Switch::color` (gpui-component 0.8.0 `src/switch.rs:101-106`; the `primary` token otherwise, `:181-184`). The gpui showcase's gpui-component switches use it; the contract's `NoReceiver` entry, which stays without `widgets` because a `Switch` built without `.color` drops the value, and `colors.rs`'s Issue 51 note name it. `switch_color_is_the_platforms_checked_track` checks it over every preset and mode, and that it differs from `primary` somewhere.
+- [x] [v0.7.0] **The code editor's background is a fixed colour.** `Theme::editor_background`
+      returns the highlight theme's `editor.background` and falls back to
+      `input_background()` only when that is unset (`theme/mod.rs:389-394`).
+      The connector installs `HighlightTheme::default_dark/light()`
+      (`lib.rs:192-196`), whose `editor.background` is `#0a0a0a` and `#ffffff`
+      (`theme/default-theme.json:314`, `:114`), so the fallback never fires
+      and every code editor -- the `Editor` widget and any `Input` in code
+      mode (`input/input.rs:640-641`), gutter included -- paints a fixed
+      near-black or white whatever the platform. Every `HighlightThemeStyle`
+      field is public, so the connector can clone the default and clear
+      `editor_background` (letting upstream fall back to the platform's input
+      background) or set it, and the same goes for `editor_active_line`, the
+      gutter and the line-number colours. The syntax colours themselves are a
+      separate question: native-theme models none. Found 2026-09-22.
+  *Closed 2026-10-26 in c77b6f77 (D4):* the highlight theme the connector installs, in `to_theme` and in the `ThemeConfig` that `Theme::change` reads, is upstream's default for the mode with `editor_background` = `input.background_color`, the field's fill, as `geometry::input_fill` gives a text field (a code editor is an `Input` in code mode, gpui-component 0.8.0 `src/input/input.rs:720-722`), and `editor_gutter_background` that fill over `window.background_color`, opaque wherever the window is, as gpui-base wants the gutter over the text scrolling under it (`src/input/base/element.rs:3352-3358`; windows-11's field fill is translucent). Clearing `editor_background` would have landed on `input_background()`, the border token mixed toward transparent in dark (`src/theme/mod.rs:485-499`). The current line, the line numbers, the invisibles and the syntax colours stay upstream's scheme: the model states none of them (`config::highlight_style`). `the_code_editor_takes_the_platforms_field_fill` checks both fills over every preset and mode, and the Editor's Widget Info claims them.
 
 ### Closed items from Follow-ups from the v0.5.9 showcase and contract work
 

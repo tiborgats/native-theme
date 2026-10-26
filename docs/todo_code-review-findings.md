@@ -13875,3 +13875,39 @@ follows (Breeze Light's sidebar is now white).
   `TextControlBorderBrushFocused`, so generic.xaml's (:2658, SystemControlHighlightAccentBrush,
   :2055) stands (W2-k); `apply_sys_colors` writes it, its high-contrast test expects it, the D2
   entry's "not under high contrast" and the `[1.0]` entry's line for it are corrected.
+- *Placement note (2026-10-26):* the "D2 review follow-up" bullet above belongs to D2's entry,
+  not D3's; the ledger is append-only, so it stays where it is. Where it says the D2 entry's "not
+  under high contrast" and the `[1.0]` entry's line "are corrected", the archive's closing line
+  of 860 and the `[1.0]` entry were corrected (65027d69); the D2 entry's text above stands as
+  history. D3 review minors (applied in c77b6f77 and the D4 docs commit): the CHANGELOG line for
+  the KDE sidebar says the old kde-breeze colours were the Header set's grey (#dee0e2) in light
+  and `[WM] activeBackground` (#272c31) in dark; `documented_sizes.rs`'s kde-breeze sidebar row
+  keeps its ❓ with the reason the facts cell gives, "the GlobalDrawer states no padding".
+
+#### D4 · gpui: the list's fill, write-only slots, the switch colour, the code editor, high contrast (todo 3128, 2161, 3137, 2998, 3147, 2400)
+**Problem:** six gpui items. `geometry::list` carried the frame and not `list.background_color`,
+and the `list` token it was mapped to has no reader in gpui-component 0.8.0, so a list stood on
+whatever lay under it (3128). The contract counted five slots nothing paints as coverage (2161).
+`Switch::color` was a receiver nothing fed (3137). The code `Editor` kept upstream's 1.5 line
+height (2998) and upstream's fixed `#ffffff` / `#0a0a0a` fill, gutter included (3147).
+`high_contrast` changed nothing and the docs cited the open entry (2400). And `geometry::dialog`
+read `dialog.min_width` nowhere, the parity exception saying no gpui receiver could.
+**Fix:** W2's d-w1-d4-gpui.patch (regenerated at 2f0822e2), applied, reviewed and gated.
+`geometry::list` paints `list.background_color` and the showcase's List and Tree drop their
+hand-painted fill; `WRITE_ONLY` in contract.rs names `tab`, `list`, `list_even`,
+`sidebar_primary` and `sidebar_primary_foreground` with their evidence, out of the coverage
+count, and the two list pairs leave `INERT_SURFACES`; `variants::switch_color(n)` feeds
+`Switch::color` (the showcase's gpui-component switches, the `NoReceiver` evidence);
+`geometry::editor` carries `defaults.line_height`; `config::highlight_style` gives the installed
+highlight theme and the config's `editor_background` = `input.background_color` and
+`editor_gutter_background` that fill over the window (option (c), the active-line tint kept);
+`geometry::dialog` sets `min_w` from `dialog.min_width`, which upstream's later `w` keeps
+(`dialog/dialog.rs:730`, `:733`), and the parity exception names it as the receiver; the three
+connectors' `high_contrast` rows are word-identical (W2-e), and the GNOME rules move to a `[1.0]`
+entry. Review fixes on the patch: `demo::editor` builds the Editor through `native_info` itself
+(the `pub(crate)` `code_editor` the patch added failed `every_widget_reports_itself`), and the
+showcase test `the_code_editor_is_refined_by_geometry_editor` checks the line height, the fill
+and the Widget Info's `geometry::editor` line; the gutter citations name gpui-base's
+`element.rs:3352-3358`. An `[upstream]` entry asks gpui-component to paint the five slots.
+**Status:** done, c77b6f77. Needs the controller's Linux gate (the gpui Editor's fill, gutter and
+line height on the Typography page; the list dump identical).

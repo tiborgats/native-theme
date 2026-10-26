@@ -187,7 +187,7 @@ const ROWS: &[Row] = &[
     row(KdeBreeze, "progress_bar", all(0.0), &[1341, 1342], "0; 0, the contents span the groove"),
     row(KdeBreeze, "tab", axes(4.0, 8.0), &[1352, 1353], "TabBar_TabMarginWidth = 8; TabBar_TabMarginHeight = 4")
         .with(&[("item_gap", Some(0.0), 1360)]),
-    row(KdeBreeze, "sidebar", NONE, &[1380, 1381], "❓: no one sidebar"),
+    row(KdeBreeze, "sidebar", NONE, &[1380, 1381], "❓: the GlobalDrawer states no padding"),
     Row {
         preset: KdeBreeze,
         widget: "toolbar",
