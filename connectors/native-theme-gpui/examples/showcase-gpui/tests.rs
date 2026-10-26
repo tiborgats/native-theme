@@ -7576,6 +7576,64 @@ fn a_solid_separator_and_a_dashed_one_show_different_infos(cx: &mut TestAppConte
     );
 }
 
+/// The Layout page's labelled Separator (`pages/layout.rs`, `SEPARATORS`).
+const LAYOUT_SEPARATOR_LABELLED: &str = "layout-separator-labelled";
+
+/// The labelled Separator draws its label centred on its line: the row is
+/// `justify_center` and the label `mx_auto` (gpui-component 0.8.1
+/// `separator.rs:136`, `:147`), and the label's box is the one quad inside
+/// the Separator filled with `tokens.background` (`:149`) and narrower than
+/// it. On gpui-pre 0.3.9, which laid out on taffy 0.13.0, the label sat at
+/// the line's right end: taffy offset the auto-margined label by the free
+/// space twice, once for the margins and again for `justify-content`.
+/// taffy 0.14 and 0.15 leave none for `justify-content` once the margins
+/// have absorbed it (taffy 0.15.0 `src/compute/flexbox.rs:2274-2275`).
+#[gpui::test]
+fn the_labelled_separator_centres_its_label(cx: &mut TestAppContext) {
+    let (showcase, _root, mut cx) = open(cx, TALL_WINDOW);
+    show(&mut cx, &showcase, Page::Layout);
+    let separator = bounds_of(&mut cx, LAYOUT_SEPARATOR_LABELLED);
+    let background = cx.update(|_window, cx| Theme::global(cx).tokens.background.background);
+    assert!(
+        !background.is_transparent(),
+        "tokens.background is transparent, so the label's box paints no quad"
+    );
+    let (scale, labels) = cx.update(|window, _cx| {
+        let scale = window.scale_factor();
+        let within = separator.scale(scale);
+        let labels: Vec<Bounds<gpui::ScaledPixels>> = scene_quads(window)
+            .into_iter()
+            .filter(|q| {
+                q.background == background
+                    && q.bounds.left() >= within.left()
+                    && q.bounds.top() >= within.top()
+                    && q.bounds.right() <= within.right()
+                    && q.bounds.bottom() <= within.bottom()
+                    && q.bounds.size.width < within.size.width
+            })
+            .map(|q| q.bounds)
+            .collect();
+        (scale, labels)
+    });
+    assert_eq!(
+        labels.len(),
+        1,
+        "inside the labelled Separator at {separator:?}, not one quad narrower than it is \
+         filled with tokens.background {background:?}: {labels:?}"
+    );
+    let centre = separator.center().x.as_f32() * scale;
+    for label in &labels {
+        let label_centre = label.center().x.0;
+        assert!(
+            (label_centre - centre).abs() <= scale,
+            "the labelled Separator's label box spans x {:?}..{:?} (device pixels), centred at \
+             {label_centre}, where the Separator's centre is {centre}",
+            label.left(),
+            label.right()
+        );
+    }
+}
+
 /// Two unselected Folder tabs side by side, the second and the third
 /// (`demo::folder_tab_row` tags each tab `{id}-tab-{ix}`; the first is
 /// selected), and the disabled one.
