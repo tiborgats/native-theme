@@ -720,6 +720,12 @@ fn expected(
         (None, _, None, "spacing.scroll.foreground_color") => Val::Bool(false),
         // §6.1: the expander's hover fill lies in the collapsing-header frame.
         (Some("expander"), _, None, "visuals.collapsing_header_frame") => Val::Bool(true),
+        // §6.1: the header draws no outline; a stated frame is the companion crate's.
+        (Some("expander"), _, None, p)
+            if !state.is_empty() && state != "noninteractive" && p.ends_with(".bg_stroke.width") =>
+        {
+            Val::F32(0.0)
+        }
         // ---- §6.5 D1: the scroll fields, from the two widths and overlay_mode ----
         (
             None,

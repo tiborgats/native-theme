@@ -2868,10 +2868,10 @@ sinks   = [
 verdict = "scoped"
 sinks   = [
   { path = "visuals.widgets.noninteractive.bg_stroke.width", scope = "expander" },
-  { path = "visuals.widgets.inactive.bg_stroke.width", scope = "expander" },
-  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "expander" },
-  { path = "visuals.widgets.active.bg_stroke.width", scope = "expander" },
-  { path = "visuals.widgets.open.bg_stroke.width", scope = "expander" },
+  { path = "visuals.widgets.inactive.bg_stroke.width", scope = "expander", when = "never: written 0 in every expander cell, as egui strokes a header alone, its body outside, which no platform draws; a stated frame holds header and body, the companion crate drawing it in the noninteractive stroke, §6.1" },
+  { path = "visuals.widgets.hovered.bg_stroke.width", scope = "expander", when = "never: written 0 in every expander cell, as egui strokes a header alone, its body outside, which no platform draws; a stated frame holds header and body, the companion crate drawing it in the noninteractive stroke, §6.1" },
+  { path = "visuals.widgets.active.bg_stroke.width", scope = "expander", when = "never: written 0 in every expander cell, as egui strokes a header alone, its body outside, which no platform draws; a stated frame holds header and body, the companion crate drawing it in the noninteractive stroke, §6.1" },
+  { path = "visuals.widgets.open.bg_stroke.width", scope = "expander", when = "never: written 0 in every expander cell, as egui strokes a header alone, its body outside, which no platform draws; a stated frame holds header and body, the companion crate drawing it in the noninteractive stroke, §6.1" },
   { path = "spacing.button_padding.x", scope = "expander", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.button_padding.y", scope = "expander", when = "a side of the pair is stated, §5 intro" },
   { path = "spacing.indent", scope = "expander", when = "expander.border.padding.left is stated" },

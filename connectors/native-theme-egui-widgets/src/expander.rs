@@ -48,7 +48,8 @@ pub(crate) const EGUI_ARROW_SHARE: f32 = 0.75;
 ///
 /// Where the theme states none of the four, or with no atlas installed, it is egui's own
 /// `CollapsingHeader` (in the expander's scope, with the connector's `expander_icon`, where an
-/// atlas is installed): one line of title, never wrapped (`egui/src/containers/
+/// atlas is installed; the scope gives the header no outline, so there is no frame, as where
+/// `frame_enabled` is false): one line of title, never wrapped (`egui/src/containers/
 /// collapsing_header.rs:518-523`), the stated height at a text scale of 1 or less, where the
 /// connector fits the scope's vertical padding to it, and above 1 grown by the same rule. The
 /// open state lives in egui's `CollapsingState` under the header's id, so it animates and

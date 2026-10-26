@@ -1069,6 +1069,14 @@ fn expander(s: &mut egui::Style, own: &egui::Style, input: &BuildInput<'_>, note
         },
         notes,
     );
+    // The header draws no outline, whatever the theme states of `expander.frame_enabled`:
+    // egui's frame layer strokes the header alone (`collapsing_header.rs:561-568`), a shape no
+    // platform draws; a stated frame holds header and body together, the companion crate's
+    // `Expander` drawing it in the `noninteractive` stroke, which keeps the border's width.
+    let w = &mut s.visuals.widgets;
+    for e in [&mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
+        e.bg_stroke.width = 0.0;
+    }
     s.spacing.interact_size.y = length(
         "expander.header_height",
         x.header_height,
@@ -2288,6 +2296,15 @@ mod tests {
                     "{preset}"
                 );
             }
+            // the header draws no outline; the companion crate's frame keeps the width
+            for e in [&w.inactive, &w.hovered, &w.active, &w.open] {
+                assert_eq!(e.bg_stroke.width, 0.0, "{preset}");
+            }
+            assert_eq!(
+                w.noninteractive.bg_stroke.width,
+                clamp_length(x.border.line_width),
+                "{preset}"
+            );
             assert_eq!(
                 c.spacing.interact_size.y,
                 clamp_length(x.header_height),

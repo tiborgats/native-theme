@@ -732,6 +732,49 @@ fn the_expander_is_laid_out_as_stated() {
     );
 }
 
+/// Where the theme states no `expander.frame_enabled` the expander outlines nothing, resting
+/// or hovered: no platform outlines a header alone, its body outside (ledger M9-178).
+/// catppuccin-mocha states none of the four structure leaves, so egui's own `CollapsingHeader`
+/// draws it; macos-tahoe states `arrow_side`, so this crate does.
+#[test]
+fn an_expander_with_no_stated_frame_outlines_nothing() {
+    let prefs = AccessibilityPreferences::default();
+    for preset in ["macos-tahoe", "catppuccin-mocha"] {
+        let t = from_preset(preset, true, &prefs).unwrap().1;
+        assert_eq!(t.expander.frame_enabled, None, "{preset}");
+        assert!(t.expander.border.line_width > 0.0, "{preset}");
+        let ctx = installed(&t, &prefs);
+        let show = |ui: &mut egui::Ui| {
+            Expander::new("Details")
+                .default_open(true)
+                .show(ui, |ui| ui.label("Body"))
+                .header_response
+                .rect
+        };
+        let mut header = egui::Rect::NOTHING;
+        let _ = pass(&ctx, at(0.0), |ui| header = show(ui));
+        let resting = pass(&ctx, at(0.0), |ui| header = show(ui));
+        let hover = egui::RawInput {
+            events: vec![egui::Event::PointerMoved(header.center())],
+            focused: true,
+            ..Default::default()
+        };
+        let _ = pass(&ctx, hover.clone(), |ui| header = show(ui));
+        let hovered = pass(&ctx, hover, |ui| header = show(ui));
+        for (state, out) in [("resting", &resting), ("hovered", &hovered)] {
+            let outlines: Vec<_> = rects(out)
+                .into_iter()
+                .filter(|r| r.stroke.width > 0.0)
+                .map(|r| (r.rect, r.stroke))
+                .collect();
+            assert!(
+                outlines.is_empty(),
+                "{preset} {state}: the header {header:?} is outlined: {outlines:?}"
+            );
+        }
+    }
+}
+
 /// `scale` as the OS's text-scaling factor.
 fn scaled_by(scale: f32) -> AccessibilityPreferences {
     let mut prefs = AccessibilityPreferences::default();
