@@ -342,7 +342,7 @@ type AskedFamilies = std::sync::Mutex<std::collections::HashMap<String, Option<S
 /// verifier with a logging `fc-match` shim first on `PATH` over the gpui
 /// connector's release `timings` binary: two asks of about 12.5 ms in each
 /// preset's first call that brings two new families
-/// (docs/todo_code-review-findings.md, M6-03).
+/// (docs/archive/todo_v0.7.0_code-review-findings.md, M6-03).
 #[cfg(feature = "system-fonts")]
 fn asked_once(
     asked: &AskedFamilies,

@@ -218,7 +218,7 @@ track_height_px = 6.0
 # os-probe-macos-26/probe.toml:3680), not muted_color; over background_color #e6e6e6
 track_color = "#00000019"
 # platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
-# track (docs/todo_code-review-findings.md, M2a Steps 8-12)
+# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
 # platform-facts.md:1322 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
 tick_mark_length_px = 2.0
@@ -298,7 +298,7 @@ thumb_background = "#ffffff"
 track_width_px = 54.0
 track_height_px = 24.0
 # platform-facts.md:1519 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
-# track (docs/todo_code-review-findings.md, M2a Steps 8-12)
+# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 20.0
 # platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0
@@ -631,7 +631,7 @@ track_height_px = 6.0
 # os-probe-macos-26/probe.toml:3874), not muted_color; over background_color #343434
 track_color = "#ffffff19"
 # platform-facts.md:1321 (§2.9): the knob is a 20 x 16 capsule (probe :1436); its 16 across the
-# track (docs/todo_code-review-findings.md, M2a Steps 8-12)
+# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 16.0
 # platform-facts.md:1322 (§2.9): rectOfTickMarkAtIndex 2 x 2 (probe :1481)
 tick_mark_length_px = 2.0
@@ -715,7 +715,7 @@ thumb_background = "#ffffffdd"
 track_width_px = 54.0
 track_height_px = 24.0
 # platform-facts.md:1519 (§2.21): the knob is a 32 x 20 capsule (measured); its 20 across the
-# track (docs/todo_code-review-findings.md, M2a Steps 8-12)
+# track (docs/archive/todo_v0.7.0_code-review-findings.md, M2a Steps 8-12)
 thumb_diameter_px = 20.0
 # platform-facts.md:1520 (§2.21): half the track's height, a pill (the render's ends are round)
 track_radius_px = 12.0

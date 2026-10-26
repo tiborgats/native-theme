@@ -3,7 +3,7 @@ name: OS probe
 # Runs tools/os-probe (native-theme-os-probe, never published) on each macOS
 # and Windows runner image and uploads what the OS reported: probe.toml and,
 # on macOS, the control renders. Evidence for the platform-fidelity review
-# (docs/todo_code-review-plan.md, M2 Step 3). Dispatched by hand only.
+# (docs/archive/todo_v0.7.0_code-review-plan.md, M2 Step 3). Dispatched by hand only.
 
 on:
   workflow_dispatch:

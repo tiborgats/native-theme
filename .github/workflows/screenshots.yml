@@ -26,7 +26,7 @@ jobs:
       # on Windows Server 2025, whose metrics, fonts and system colours the OS
       # probe found equal to Windows 11 25H2's, the animation and drop-shadow
       # settings aside (docs/evidence/os-probe/2026-10-11-run-38129819806; M2b,
-      # docs/todo_code-review-findings.md). Each job records its runner's OS
+      # docs/archive/todo_v0.7.0_code-review-findings.md). Each job records its runner's OS
       # version beside its captures (below).
       matrix:
         include:

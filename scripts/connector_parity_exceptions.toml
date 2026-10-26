@@ -299,13 +299,13 @@ reason = "the atlas's role styles are immutable `Arc`s, so the preferences are a
 connector = ["gpui", "egui"]
 name = "theme_changes"
 kind = "absent"
-reason = "each connector delivers the OS theme's changes in its toolkit's idiom: iced's is a `Subscription`, the application's own channel for an outside event (ruling M5-03, docs/todo_code-review-findings.md:9212); gpui's is `on_theme_change`, a channel drained by a task on gpui's foreground (the M6 ruling, :9637); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread and wakes egui with `request_repaint` (the egui spec §10.2)"
+reason = "each connector delivers the OS theme's changes in its toolkit's idiom: iced's is a `Subscription`, the application's own channel for an outside event (ruling M5-03, docs/archive/todo_v0.7.0_code-review-findings.md:9245); gpui's is `on_theme_change`, a channel drained by a task on gpui's foreground (the M6 ruling, :9670); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread and wakes egui with `request_repaint` (the egui spec §10.2)"
 
 [[exception]]
 connector = ["iced", "egui"]
 name = "on_theme_change"
 kind = "absent"
-reason = "each connector delivers the OS theme's changes in its toolkit's idiom: gpui's is a channel drained by a task on gpui's foreground, with `&mut Window` and `&mut App` (the M6 ruling, docs/todo_code-review-findings.md:9637); iced's is `theme_changes`, a `Subscription` (ruling M5-03, :9212); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread (the egui spec §10.2)"
+reason = "each connector delivers the OS theme's changes in its toolkit's idiom: gpui's is a channel drained by a task on gpui's foreground, with `&mut Window` and `&mut App` (the M6 ruling, docs/archive/todo_v0.7.0_code-review-findings.md:9670); iced's is `theme_changes`, a `Subscription` (ruling M5-03, :9245); egui's is `ThemeWatcher`, which rebuilds the atlas off the UI thread (the egui spec §10.2)"
 
 # ── building a theme ────────────────────────────────────────────────────────
 
@@ -313,7 +313,7 @@ reason = "each connector delivers the OS theme's changes in its toolkit's idiom:
 connector = "gpui"
 name = "to_theme"
 kind = "unlike"
-reason = "gpui-component's `Theme` carries the mode and the font sizes: `to_theme` takes `is_dark` for its `mode` (the Step 6 ruling on the mode-taking builder, docs/todo_code-review-findings.md:11131, keeps it: a `ColorMode` in its place is a break outside the 2026-10-16 answers, and buys nothing while `Loaded` carries `mode`) and the preferences, since it writes `font_size`, the window rem, scaled by the text-scaling factor (src/lib.rs, *What each flag does*). iced's `Theme` is a palette with no text size, and egui's `to_theme` builds with `AccessibilityPreferences::default()`, any other input going through `ThemeAtlas::builder` (connectors/native-theme-egui/src/ext.rs, `to_theme`'s doc)"
+reason = "gpui-component's `Theme` carries the mode and the font sizes: `to_theme` takes `is_dark` for its `mode` (the Step 6 ruling on the mode-taking builder, docs/archive/todo_v0.7.0_code-review-findings.md:11164, keeps it: a `ColorMode` in its place is a break outside the 2026-10-16 answers, and buys nothing while `Loaded` carries `mode`) and the preferences, since it writes `font_size`, the window rem, scaled by the text-scaling factor (src/lib.rs, *What each flag does*). iced's `Theme` is a palette with no text size, and egui's `to_theme` builds with `AccessibilityPreferences::default()`, any other input going through `ThemeAtlas::builder` (connectors/native-theme-egui/src/ext.rs, `to_theme`'s doc)"
 
 [[exception]]
 connector = "iced"
@@ -325,7 +325,7 @@ reason = "it takes no `AccessibilityPreferences`: an iced `Theme` is a palette w
 connector = ["gpui", "egui"]
 name = "to_theme_in"
 kind = "absent"
-reason = "the public mode-taking builder is iced's alone (the Step 6 ruling on the mode-taking builder, docs/todo_code-review-findings.md:11131): iced's `to_theme` leaves the light/dark flag to iced's lightness guess, and `to_theme_in` takes the mode instead. gpui's `to_theme` already takes the mode as `is_dark`, and egui needs nothing: its builder holds both variants and the OS mode (`Builder::os_mode`)"
+reason = "the public mode-taking builder is iced's alone (the Step 6 ruling on the mode-taking builder, docs/archive/todo_v0.7.0_code-review-findings.md:11164): iced's `to_theme` leaves the light/dark flag to iced's lightness guess, and `to_theme_in` takes the mode instead. gpui's `to_theme` already takes the mode as `is_dark`, and egui needs nothing: its builder holds both variants and the OS mode (`Builder::os_mode`)"
 
 [[exception]]
 connector = ["iced", "egui"]
@@ -532,7 +532,7 @@ reason = "egui's `CollapsingHeader::icon` takes a painting closure, which this i
 connector = ["gpui", "egui"]
 name = "font"
 kind = "absent"
-reason = "iced's styles carry no font, so a widget's stated font reaches the widget only as an iced `Font` the application sets (the Step 6 ruling on iced's `font`, docs/todo_code-review-findings.md:11136). gpui's `geometry` builders set each stated font's family, weight and style on the element (connectors/native-theme-gpui/src/lib.rs, *Theme Field Coverage*); egui installs one face per family in the atlas's `FontDefinitions`, and a call site takes a role's weight and slant through `role_font_weight` and `role_font_is_italic` (the egui spec §4.9)"
+reason = "iced's styles carry no font, so a widget's stated font reaches the widget only as an iced `Font` the application sets (the Step 6 ruling on iced's `font`, docs/archive/todo_v0.7.0_code-review-findings.md:11169). gpui's `geometry` builders set each stated font's family, weight and style on the element (connectors/native-theme-gpui/src/lib.rs, *Theme Field Coverage*); egui installs one face per family in the atlas's `FontDefinitions`, and a call site takes a role's weight and slant through `role_font_weight` and `role_font_is_italic` (the egui spec §4.9)"
 
 [[exception]]
 connector = "gpui"
@@ -594,7 +594,7 @@ reason = "the egui connector's install plugin paints every focus ring itself, ro
 connector = ["iced", "gpui"]
 name = "role_modifier"
 kind = "absent"
-reason = "egui's popups and menus lay out in a `Ui` of their own, outside the role scope, and take their style as a `StyleModifier` (`Popup::style`, `MenuConfig::style`, `MenuBar::style`, `ComboBox::popup_style`); this one is the installed atlas's for a call site that holds a `Ui`, and a free function because it returns `None` without an atlas (the Step 6 ruling on `role_modifier`, docs/todo_code-review-findings.md:11133; connectors/native-theme-egui/src/ext.rs, its doc). iced styles a menu per widget (`styles::menu`), and gpui-component's popups read the global `Theme`"
+reason = "egui's popups and menus lay out in a `Ui` of their own, outside the role scope, and take their style as a `StyleModifier` (`Popup::style`, `MenuConfig::style`, `MenuBar::style`, `ComboBox::popup_style`); this one is the installed atlas's for a call site that holds a `Ui`, and a free function because it returns `None` without an atlas (the Step 6 ruling on `role_modifier`, docs/archive/todo_v0.7.0_code-review-findings.md:11166; connectors/native-theme-egui/src/ext.rs, its doc). iced styles a menu per widget (`styles::menu`), and gpui-component's popups read the global `Theme`"
 
 # ── icons: one conversion per toolkit type ──────────────────────────────────
 # Each connector converts an `IconData` into its toolkit's image type and is

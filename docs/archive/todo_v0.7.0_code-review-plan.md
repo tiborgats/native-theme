@@ -1,9 +1,102 @@
 # Whole-codebase code review — plan
 
+Status: Implemented (2026-10-11 to 2026-10-26, closed at `CO_COMMIT`) and archived; the ledger is
+[`todo_v0.7.0_code-review-findings.md`](todo_v0.7.0_code-review-findings.md). See *As built* below.
+
+## As built
+
+**What ran.** Every milestone but M2d's build and M2c's Step 17 (*Deferred*, below), on
+`v0.7.0-rc1` from `main` at `92893ce1`: the branch was
+`v0.6.2-rc1` until M1's stop point A accepted two breaking changes, which made the release 0.7.0
+(D0, D1).
+- M0, the baseline. M1, the design review.
+- M2, platform fidelity:
+  - M2a macOS: `macos-tahoe` and the preset picked by the running OS version, Steps 8–12.
+  - M2b Windows. M2c iOS: the `ios` → `ios-13` rename. M2e KDE and GNOME currency.
+- M3–M8, the code review of every crate, each with its fix phase.
+- M9, all three showcases: M9a gpui, M9b iced, M9c egui. The maintainer made M9 mandatory on
+  2026-10-16, though the plan's table calls it optional.
+- Rounds this plan did not schedule:
+  - G1, G2 (GPUI Kit 0.7.3, D10) and G3 (GPUI Kit 0.8.0, D11), between the milestones; their plans
+    are archived beside this one.
+  - M9x, the defects the CI captures of 2026-10-25 showed.
+  - The C round (C-01 to C-08) and the D round (D-1045, D-797, D-986, D1 to D14, with D13b),
+    on 2026-10-26:
+    the `[v0.7.0]` items of `docs/todo.md`, done at the maintainer's request after M9. The D round
+    added a key window to the OS probe and took in four of its runs on macOS (*Where the evidence
+    is*, below); from them the macOS presets state the sidebar, the title bar, the list header,
+    the selected segment, the disabled switch, slider and push button, the slider's track, the
+    unchecked checkbox and the radio dot macOS draws, and the macOS reader writes the caret and
+    a disabled on switch from the user's accent. The iced connector and the egui widgets draw
+    the segmented control on its group fill and fade a disabled one as one widget (D13, D13b).
+- The ledger's Status table gives each one's dates and closing commits.
+
+**Deferred, and why.**
+- **M2d, the two Material presets (D6), from Step 7 on.** D6 asks for one *stable* Compose
+  Material 3 release for both `material-3` and `material-3-expressive`.
+  - Only 1.5.0 makes the Expressive API public; 1.4.0 keeps it `internal`.
+  - At the close, 1.5.0's newest release is 1.5.0-beta02 (Google Maven, `androidx.compose.material3:material3`).
+  - Steps 1, 2 and 4–6 are done, the research at 1.5.0-beta01 (`19991f2c`). Step 3, the Compose
+    reference app, was skipped by the maintainer.
+  - The ledger's M2d entries stay open for the build. The ledger's *M2d release pin* says what to
+    do when 1.5.0 is stable: re-diff the research at the stable tag, then build.
+  - `material-3` stays material-web's tokens (`v0_192`) until then.
+- **`ios-26`, M2c Step 17.** 38 of the 59 leaves per variant that the resolver requires have no
+  iOS 26 source. Step 17 forbids filling them from `ios-13`. The `docs/todo.md` entry *ios-26: 38
+  required fields have no iOS 26 source* lists them.
+- **What the C and D rounds opened** for later, each a `docs/todo.md` entry:
+  - `[1.0]` *macOS: the window background macOS 14 and 15 draw is not the one they read*: the
+    drawn `windowBackgroundColor` and the sidebar against the read ones, and the on switch's
+    track and the slider's fill on 14 and 15 against `controlAccentColor`;
+  - `[1.0]` *macOS: what the OS probe does not render yet*, two entries: the hovered controls (a
+    slider knob, a sidebar row, a table row, a switch), and a disabled checked checkbox and radio,
+    which the model's one `checkbox.disabled_background` cannot carry beside the unchecked box;
+  - `[1.0]` *windows-11: values WinUI 3 states no source for*;
+  - `[1.0]` *Model: a hovered segment's text colour*, which a Windows segment under high
+    contrast takes;
+  - `[1.0]` *The GNOME reader applies libadwaita's high-contrast rules*;
+  - `[upstream]` gpui-component reads `tokens.tab`, `tokens.list` and `sidebar_primary` nowhere;
+  - and the existing `[1.0]` *macOS 27 Golden Gate: no preset of its own yet* gains what run
+    40348854007 shows 27 drawing apart from 26.
+- **The `[v0.7.0]` entries still open** are the release asset run's (the material-3 and macOS
+  screenshot names and display names, and the gpui showcase's screenshot review), which
+  `scripts/generate_assets_release.sh` closes. The ios-26 entry above is `[v0.7.x]` since the
+  close: 38 of its 59 leaves have no iOS 26 source.
+- **Everything else left open** is a `docs/todo.md` entry tagged `[v0.7.x]`, `[1.0]`, `[post-1.0]`
+  or `[upstream]`. A milestone that deferred a finding names its entry in the finding's Status line.
+
+**Where the evidence is.**
+- [`docs/evidence/os-probe/`](../evidence/os-probe/) keeps what each GitHub runner image reported
+  to `tools/os-probe`, as `docs/platform-facts.md` and the presets cite it; its README has each
+  run's date, commit and purpose:
+  - `2026-10-11-run-38129819806`, M2 Step 3;
+  - `2026-10-14-run-38478334574`, G1's two readings;
+  - `2026-10-26-run-40320895749`, the D round's macOS key window, with a calibration strip and the
+    Reduce Transparency, Increase Contrast and app-bundle passes;
+  - `2026-10-26-run-40324458365`, the window not key, wallpaper tinting off and the wallpaper;
+  - `2026-10-26-run-40348854007`, disabled and enabled switches and sliders in the key window, the
+    disabled control renders and a pass with a red accent.
+  - The D round's first key-window run, 40317706382, is not kept: it made the window key on
+    macOS 14 only and read the captures in the wrong colour space (D1b); the ledger's D1 entry
+    says so.
+  - GitHub deletes a run's artifacts after 90 days, so a run the ledger cites only by its number,
+    such as the Screenshots and CI runs, keeps only what the ledger says about it.
+- The ledger keeps each finding's evidence and the commits that closed it.
+- The working files of the subagent-driven phases (briefs, progress ledgers, review reports and
+  patch drafts under `.superpowers/sdd/`) were local and are not in the repository.
+
+**Close-out.**
+- The CHANGELOG `[Unreleased]` and ROADMAP audit is applied in `CO_COMMIT`, with the C and D rounds'
+  lines reconciled with each other and with v0.6.1.
+- The release asset run is `at the release`. It regenerates the visual assets and the gpui, iced and egui
+  compatibility stamps, which every full `check_release.sh` of the round reported as expected
+  before the release.
+- Push, PR and release are the maintainer's.
+
 > **For agentic workers:** each milestone's review phase runs as one Workflow (the maintainer
 > opted in, 2026-10-10); its fix phase uses superpowers:subagent-driven-development with
 > `implement` agents. Steps use checkbox (`- [ ]`) syntax for tracking. Before starting,
-> read this file and `docs/todo_code-review-findings.md`, then resume at the first unchecked
+> read this file and `docs/archive/todo_v0.7.0_code-review-findings.md`, then resume at the first unchecked
 > step (see *Resuming* below).
 
 **Goal:** review native-theme's design decisions, check every platform's theme details
@@ -294,7 +387,7 @@ test exercises well. Each line is a mandatory question for the reviewer of the o
 
 ## The finding ledger
 
-`docs/todo_code-review-findings.md`, created in M0, committed on the branch at every stop
+`docs/archive/todo_v0.7.0_code-review-findings.md`, created in M0, committed on the branch at every stop
 point. One section per milestone; one entry per finding:
 
 ```markdown
@@ -406,7 +499,7 @@ merges the results into the ledger, numbering findings `M<n>-01…`.
 No review agents; the session does it inline. Cost: small.
 
 **Files:**
-- Create: `docs/todo_code-review-findings.md`
+- Create: `docs/archive/todo_v0.7.0_code-review-findings.md`
 - Create: `native-theme/tests/timings.rs`
 
 - [ ] **Step 1: Branch.** `git switch -c v0.6.2-rc1` from `main` at `92893ce1` (D0).
@@ -542,7 +635,7 @@ fn freedesktop_icons() {
   `cargo semver-checks -p native-theme --baseline-version 0.6.1` and record "no breaking
   change" as the baseline (it should be: `main` has no API change since 0.6.1).
 
-- [ ] **Step 7: Ledger.** Create `docs/todo_code-review-findings.md` with the sections
+- [ ] **Step 7: Ledger.** Create `docs/archive/todo_v0.7.0_code-review-findings.md` with the sections
   *Baseline*, *Calibration*, *M1* … *M9*, filled from Steps 2–6. Commit:
   `docs: the code review's finding ledger, with the baseline gates, timings and inventories`.
 

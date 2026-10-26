@@ -1,6 +1,6 @@
 # Windows 11 Fluent Design theme
 # Covers: Windows 11, 21H2 (build 22000) to 26H2 (26300), the Fluent / WinUI 3 generation
-#   (docs/todo_code-review-findings.md, M2b Step 1). The Windows reader merges over it on
+#   (docs/archive/todo_v0.7.0_code-review-findings.md, M2b Step 1). The Windows reader merges over it on
 #   Windows 10 too, which has no preset of its own: on Windows Server 2022 (20348, the Windows 10
 #   era) the OS reported what Server 2025 did, except the default accent, #0078d7 against #0078d4;
 #   no Windows 10 client was measured.

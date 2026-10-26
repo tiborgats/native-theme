@@ -839,7 +839,7 @@ model, the platform presets and the three connectors
       (`native-theme/src/presets.rs`) when M2d rewrites the preset, with
       "Material 3 Expressive" for the second Material preset; the menus say
       "Material" until then. Nothing is renamed before
-      (`docs/todo_code-review-plan.md`, M2d Step 15).
+      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15).
 
 ### macos-monterey and macos-tahoe: the screenshot names and the display name
 
@@ -865,7 +865,7 @@ model, the platform presets and the three connectors
 
 ### ios-26: 38 required fields have no iOS 26 source
 
-- [ ] [v0.7.0] Step 17 of the code-review plan (`docs/todo_code-review-plan.md`,
+- [ ] [v0.7.x] Step 17 of the code-review plan (`docs/archive/todo_v0.7.0_code-review-plan.md`,
       M2c) writes `ios-26.toml`, the Liquid Glass look of iOS 26; it is
       deferred (2026-10-11). The resolver requires 59 leaves per variant
       that no inheritance rule fills (`ResolutionIncomplete` otherwise,
@@ -890,7 +890,7 @@ model, the platform presets and the three connectors
       slider thumb is a 24 × 16 capsule, the switch thumb a 39.857 × 26.571
       capsule, the select's chevron 0.55 em wide. The other 21 leaves have
       a source (9 confirmed, 12 plausible); their values and citations are
-      kept in `docs/todo_code-review-findings.md`, `## M2c — iOS`,
+      kept in `docs/archive/todo_v0.7.0_code-review-findings.md`, `## M2c — iOS`,
       *Steps 16–18*. Three of those carry an open choice:
       `defaults.disabled_opacity` 1.0 (the disabled colours are stated,
       `docs/inheritance-rules.toml:364-371`) or WebKit's 0.4 (html.css:945-947,
@@ -920,6 +920,9 @@ model, the platform presets and the three connectors
       pre-refresh tag, 31adf9d1, has `RenderThemeIOS.mm` instead), nor what
       UIKit's `UISwitch` draws. Step 17 cites the refreshed path's
       `liquidGlassSwitchThumbColor` (:475-493) for `ios-26`.
+      Retagged `[v0.7.x]` at the review's close (2026-10-26, the controller, as told to the
+      maintainer): 38 of the 59 leaves still have no iOS 26 source, so `ios-26.toml` waits for
+      the route above, after 0.7.0.
 
 ### Model: one `*_text_color` field, two meanings
 
@@ -1017,7 +1020,7 @@ model, the platform presets and the three connectors
       defects; the outline path is a new pipeline, to weigh in M6 with gpui's
       icon cache. SF Symbols have no public vector export, so they stay rasters.
       M8 T21 (2026-10-17): [1.0], no longer for M6, by M6's Step 6 ruling
-      (`docs/todo_code-review-findings.md`, "## M6", *Step 6 — fix plan
+      (`docs/archive/todo_v0.7.0_code-review-findings.md`, "## M6", *Step 6 — fix plan
       (2026-10-15)*: "deferred, tag moved to [1.0]"): M4's em-box raster and
       `.size(u32)` removed the visible defects, M6-13 routes the requested
       size to the Segoe loader, and a `GGO_NATIVE` outline pipeline is
@@ -1914,7 +1917,7 @@ model, the platform presets and the three connectors
       Our repro: the gpui showcase's Layout page, at rest on gpui-pre, draws
       "Section Break" at content x 1169–1249 on a 938 px line that starts at
       311, where GPUI Fast draws it at 740–820 (G3 Task 9's captures,
-      `docs/todo_code-review-findings.md`, *G3*). The screenshot scripts
+      `docs/archive/todo_v0.7.0_code-review-findings.md`, *G3*). The screenshot scripts
       build the showcase on gpui-pre, so its screenshots show the label at
       the end. Found 2026-10-22 (G3 Task 9). The issue, ready to paste:
 
@@ -3354,7 +3357,7 @@ the gap — closing it is a change, and each wants its own decision.
       two that would fall back to a value of another kind: `dialog.title_font`
       (13 pt Bold, against the inherited regular weight) and
       `segmented_control.active_background` (against the inherited accent)
-      (`docs/todo_code-review-findings.md`, M2a Steps 8-12).
+      (`docs/archive/todo_v0.7.0_code-review-findings.md`, M2a Steps 8-12).
 
       The Icons page's Icon Sizes section already marks the unsourced icon
       sizes (panel 20, dialog 22, macOS large 32). Outside sizing, KDE's
@@ -3401,7 +3404,7 @@ the gap — closing it is a change, and each wants its own decision.
       its source), every native value — not only padding and the toolbar —
       could be gated, and the Markdown tables generated from it.
       *OS-version axis (2026-10-11, M1-T5-01 in
-      `docs/todo_code-review-findings.md`):* a fact is keyed by platform and
+      `docs/archive/todo_v0.7.0_code-review-findings.md`):* a fact is keyed by platform and
       OS version, since a platform's next generation (`macos-tahoe` beside
       `macos-monterey`, two Material presets) differs from the last by version,
       not by cell. Until then a version-tagged cell gives each value to its
