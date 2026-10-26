@@ -13721,3 +13721,18 @@ restoring the image's Reduce Transparency (`os-probe-out/increase-contrast-on`),
 `settings.txt` (the image's value, the write's exit status, the value read back) beside a
 probe.toml that records whether the setting took.
 **Status:** in progress.
+
+#### C-03 · GNOME reader: the type scale from the user's font
+**Problem:** `adwaita.toml` states the text scale and `dialog.title_font` at their 11pt sizes
+(caption 9, dialog title 15, display 20, the dialog's title 15pt), and the GNOME reader, which
+reads the user's font, set none of them, so a user font other than 11pt left them fixed.
+**Fix:** `apply_type_scale` in `native-theme/src/gnome/mod.rs`, called where the reader parses
+`font-name`, writes the sizes libadwaita gives as a share of the base font
+(`docs/platform-facts.md:746-755`): `CAPTION_FACTOR` 0.82 (`.caption`, :748), `TITLE_2_FACTOR`
+1.36 (`.title-2`, :754; `dialog_title` :1487 and `dialog.title_font` :1561), `TITLE_1_FACTOR` 1.81
+(`.title-1`, :755; `display` :1488), in the font's own unit, sizes only; `section_heading`
+(`.heading`, the base size) and the weights stay the preset's. Tests: the default 11pt rounds to
+the preset's stated sizes (the facts' ≈), 14pt scales them, a pixel font scales in pixels, the
+text-scaling factor leaves them unchanged (M2e: applied once, by the connectors), and a font with
+no size states none.
+**Status:** done, 67aa7b4b.

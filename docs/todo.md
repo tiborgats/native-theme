@@ -3806,9 +3806,6 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
 The `[v0.7.0]` items that sat under *Deferred (pre-1.0)*, in the order they had there
 (M8 T21, 2026-10-17).
 
-### GNOME reader: title and heading sizes ignore the user's font
-- [ ] [v0.7.0] `adwaita.toml`, which the GNOME reader merges over, states fixed sizes for the text scale (`caption` 9pt, `dialog_title` 15pt, `display` 20pt; `[light.text_scale]`, `[dark.text_scale]`) and for `dialog.title_font` (15pt; `[light.dialog.title_font] size_pt`, `[dark.dialog.title_font] size_pt`). libadwaita sizes them as a percentage of the base font (`.caption` 82%, `.title-2` 136%, `.title-1` 181%; `docs/platform-facts.md:746-755`), so these are its sizes at the default 11pt only, and live mode ignores a user who sets another font. The GNOME reader (`native-theme/src/gnome/mod.rs`) reads the font but sets none of them; it should derive them from the font it reads, as the KDE reader derives its headings from the body font (`native-theme/src/kde/fonts.rs`, `HEADING_LEVEL_1_FACTOR` and `HEADING_LEVEL_2_FACTOR`). The preset half is done: the `-live` preset is removed (M1-T4-01, 2026-10-11).
-
 ### gpui: the base-palette repair writes colours without their tokens
 - [ ] [v0.7.0] Latent: the observer's base-palette repair (`connectors/native-theme-gpui/src/lib.rs` `repair_base_palette`, `:1370-1387`) writes the 12 base colours (`red` … `cyan_light`) onto `ThemeColor` without their `tokens`. Harmless while no widget reads `tokens.red` … `tokens.cyan_light`; check at every gpui-component bump.
       *GPUI Kit 0.8.0 (2026-10-22, G3 T10):* still harmless: no gpui-component or gpui-base
