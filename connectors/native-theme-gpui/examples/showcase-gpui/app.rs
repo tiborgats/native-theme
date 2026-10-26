@@ -2103,7 +2103,7 @@ impl Showcase {
     /// state, not the old one cleared: `ResizableState::clear` leaves the
     /// index of a handle being dragged (gpui-base resizable/mod.rs:266-269),
     /// and the next pointer move would look that panel up in a state that no
-    /// longer has it (resizable/panel.rs:485). The old state stays with the
+    /// longer has it (resizable/panel.rs:486). The old state stays with the
     /// listeners the last frame painted, whole.
     fn rearrange(&mut self, cx: &mut Context<Self>, change: impl FnOnce(&mut Self)) {
         let sizes = self.body_layout.read(cx).sizes().clone();

@@ -800,13 +800,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1030",
+                "gpui-component/button/button.rs:1044",
             ),
             claim(
                 "hover text",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1207",
+                "gpui-component/button/button.rs:1221",
             ),
         ),
         GhostContent::Icon => (
@@ -814,13 +814,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1030",
+                "gpui-component/button/button.rs:1044",
             ),
             claim(
                 "icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1207",
+                "gpui-component/button/button.rs:1221",
             ),
         ),
         GhostContent::TextAndIcon => (
@@ -828,13 +828,13 @@ pub(super) fn ghost_rest_and_hover(t: &Theme, content: GhostContent) -> Vec<Colo
                 "text and icon",
                 "secondary_foreground",
                 t.secondary_foreground,
-                "gpui-component/button/button.rs:1030",
+                "gpui-component/button/button.rs:1044",
             ),
             claim(
                 "text and icon on hover",
                 "accent_foreground",
                 t.accent_foreground,
-                "gpui-component/button/button.rs:1207",
+                "gpui-component/button/button.rs:1221",
             ),
         ),
     };
@@ -850,27 +850,27 @@ pub(super) fn ghost_colours(t: &Theme, content: GhostContent) -> Vec<ColorClaim>
         "pressed",
         "button_active",
         t.button_active,
-        "gpui-component/button/button.rs:1246",
+        "gpui-component/button/button.rs:1260",
     ));
     claims
 }
 
 /// What a Ghost Button is filled with while hovered: accent, at half alpha
-/// in dark mode (button/button.rs:1191-1197).
+/// in dark mode (button/button.rs:1205-1211).
 fn ghost_hover(t: &Theme) -> ColorClaim {
     if t.is_dark() {
         claim(
             "hover, at 50% (dark mode)",
             "accent",
             t.accent.opacity(0.5),
-            "gpui-component/button/button.rs:1194",
+            "gpui-component/button/button.rs:1208",
         )
     } else {
         claim(
             "hover",
             "accent",
             t.accent,
-            "gpui-component/button/button.rs:1192",
+            "gpui-component/button/button.rs:1206",
         )
     }
 }
@@ -910,7 +910,7 @@ pub fn preset_combobox(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo 
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:105",
+            "gpui-component/input/input.rs:103",
         ))
         .color(claim(
             "popup bg",
@@ -1305,13 +1305,13 @@ pub(super) fn dialog_surface(
             "bg",
             "background",
             t.background,
-            "gpui-component/dialog/dialog.rs:722",
+            "gpui-component/dialog/dialog.rs:779",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/dialog/dialog.rs:724",
+            "gpui-component/dialog/dialog.rs:781",
         ))
         .not_themeable(
             "fill",
@@ -1322,7 +1322,7 @@ pub(super) fn dialog_surface(
         "backdrop",
         "overlay",
         t.overlay,
-        "gpui-component/dialog/dialog.rs:327",
+        "gpui-component/dialog/dialog.rs:340",
     ))
     .not_themeable(
         "width",
@@ -1372,7 +1372,7 @@ pub fn palette_dialog(t: &Theme, reduce_motion: bool, entrance: bool, styled: bo
     )
     .instance(
         "closes",
-        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:689; gpui-base/dialog.rs:613)",
+        "when an entry runs, on Escape with an empty query, from its close button, or on a click on the backdrop 34px or more below the window's top -- TITLE_BAR_HEIGHT, whether or not a title bar is drawn there (title_bar.rs:16; dialog/dialog.rs:739; gpui-base/dialog.rs:613)",
     )
 }
 
@@ -1488,19 +1488,19 @@ pub(super) fn sheet_surface(
             "bg",
             "background",
             t.background,
-            "gpui-component/sheet.rs:172",
+            "gpui-component/sheet.rs:179",
         ))
         .color(claim(
             "border",
             "border",
             t.border,
-            "gpui-component/sheet.rs:173",
+            "gpui-component/sheet.rs:180",
         ))
         .color(claim(
             "backdrop",
             "overlay",
             t.overlay,
-            "gpui-component/dialog/dialog.rs:327",
+            "gpui-component/dialog/dialog.rs:340",
         ))
         .not_themeable(
             "fill",
@@ -1545,7 +1545,7 @@ pub(super) fn sheet_surface(
     .instance(
         "unreported",
         format!(
-            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (gpui-component/sheet.rs, Sheet::render, lines 167-245), so {rest} shows no info"
+            "only the title reports the Sheet: upstream builds the surface, its title row, padding and close button around what the showcase passes in, with no hook for an element of the caller's (gpui-component/sheet.rs, Sheet::render, lines 174-252), so {rest} shows no info"
         ),
     )
 }

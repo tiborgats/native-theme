@@ -1165,26 +1165,26 @@ pub fn carousel_slide(t: &Theme, index: usize, title: &str, caption: &str) -> Wi
 pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
     let info = WidgetInfo::new("CarouselPaginationItem");
     // A selected Button takes its selected style and no hover or press
-    // style (button/button.rs:716, :741, :807-812).
+    // style (button/button.rs:730, :755, :821-826).
     let info = if selected {
         info.variant("selected")
             .color(claim(
                 "bg",
                 "button_active",
                 t.button_active,
-                "gpui-component/button/button.rs:1308",
+                "gpui-component/button/button.rs:1322",
             ))
             .color(claim(
                 "text",
                 "button_foreground",
                 t.button_foreground,
-                "gpui-component/button/button.rs:1015",
+                "gpui-component/button/button.rs:1029",
             ))
             .color(claim(
                 "border",
                 "input",
                 t.input,
-                "gpui-component/button/button.rs:1067",
+                "gpui-component/button/button.rs:1081",
             ))
             .not_themeable(
                 "hover",
@@ -1195,31 +1195,31 @@ pub fn carousel_page(t: &Theme, index: usize, selected: bool) -> WidgetInfo {
             "bg",
             "button",
             t.button,
-            "gpui-component/button/button.rs:1001",
+            "gpui-component/button/button.rs:1015",
         ))
         .color(claim(
             "text",
             "button_foreground",
             t.button_foreground,
-            "gpui-component/button/button.rs:1015",
+            "gpui-component/button/button.rs:1029",
         ))
         .color(claim(
             "border",
             "input",
             t.input,
-            "gpui-component/button/button.rs:1067",
+            "gpui-component/button/button.rs:1081",
         ))
         .color(claim(
             "hover",
             "button_hover",
             t.button_hover,
-            "gpui-component/button/button.rs:1145",
+            "gpui-component/button/button.rs:1159",
         ))
         .color(claim(
             "active",
             "button_active",
             t.button_active,
-            "gpui-component/button/button.rs:1229",
+            "gpui-component/button/button.rs:1243",
         ))
     };
     info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))

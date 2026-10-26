@@ -270,7 +270,7 @@ pub fn native_spinner(
         } else if icons.spins {
             // An SVG element draws the icon's alpha mask in its text colour
             // (gpui-pre 0.3.9 src/svg_renderer.rs:241-250,
-            // src/window.rs:5007, :5032), the only element gpui turns.
+            // src/window.rs:5025, :5050), the only element gpui turns.
             info.color(claim(
                 "indicator",
                 "text_color",
@@ -678,8 +678,8 @@ pub fn tag(t: &Theme, kind: TagKind, outline: bool, label: &str) -> WidgetInfo {
         (info, vec![fill, text, edge])
     };
     // gpui multiplies a hovered element's opacity into every colour painted
-    // inside it (gpui-pre/window.rs:4687-4694 for fills and edges, :4831 and
-    // :4880 for glyphs), so these are what a hovered Tag paints.
+    // inside it (gpui-pre/window.rs:4705-4712 for fills and edges, :4849 and
+    // :4898 for glyphs), so these are what a hovered Tag paints.
     let hovered: Vec<String> = painted
         .iter()
         .map(|c| format!("{} {}", c.role, as_rgba(c.value.opacity(TAG_HOVER_OPACITY))))
@@ -882,8 +882,8 @@ pub fn tooltip(
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     };
     let info = match (built, delay) {
-        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1708)", delay.as_millis())),
-        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3723) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1708), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
+        (true, Some(delay)) => info.config("delay", format!("tooltip.show_delay_ms, {}ms: gpui's own tooltip, set on an element rather than through Button::tooltip, which the showcase gives the theme's delay through the element's own tooltip_show_delay (native-theme-gpui/lib.rs, tooltip_show_delay; gpui-pre/elements/div.rs, tooltip_show_delay, line 1755)", delay.as_millis())),
+        (true, None) => info.not_themeable("delay", "500ms: gpui's own tooltip, set on an element rather than through Button::tooltip, so it waits gpui's default (gpui-pre/elements/div.rs, DEFAULT_TOOLTIP_SHOW_DELAY, lines 53 and 3782) unless the element's own tooltip_show_delay sets another (gpui-pre/elements/div.rs, tooltip_show_delay, line 1755), which the showcase sets to the theme's tooltip.show_delay_ms where the theme states one; this one states none, or no native theme is installed"),
         (false, _) => info,
     };
     let info = if built {
@@ -895,8 +895,8 @@ pub fn tooltip(
             defaults.grace_period().as_millis(),
         );
         let info = match delay {
-            Some(_) => info.config("delay", format!("tooltip.show_delay_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 422)")),
-            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 422). The theme states no tooltip.show_delay_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
+            Some(_) => info.config("delay", format!("tooltip.show_delay_ms, {show}ms to show, and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108), where apply installed the theme's delay and kept the grace period (native-theme-gpui/lib.rs, install_tooltip_delay); the trigger sets no delay of its own (button/button.rs, Button::tooltip_show_delay, line 424)")),
+            None => info.not_themeable("delay", format!("{show}ms to show and {grace}ms of grace: Button::tooltip goes through the tooltip overlay of gpui-component's WindowState root plugin (root.rs, WindowState::tooltip_overlay), which waits the application-wide TooltipDefaults (gpui-base/tooltip.rs, TooltipDefaults, lines 58-108) unless the trigger sets its own (button/button.rs, Button::tooltip_show_delay, line 424). The theme states no tooltip.show_delay_ms, or no native theme is installed, so the delay is the application's -- gpui-base's 500ms where it installed none (native-theme-gpui/lib.rs, install_tooltip_delay), and the showcase installs none")),
         };
         info
             .not_themeable("position", "beside its trigger, flipping to stay in the window, unless Button::tooltip_placement pins a side (gpui-base/tooltip.rs, TooltipPositioner)")

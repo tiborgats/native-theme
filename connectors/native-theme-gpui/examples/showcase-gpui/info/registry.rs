@@ -270,7 +270,7 @@ impl InfoRegistry {
         // The record it replaces stands for an element no longer drawn: the
         // target is drawn again as a new element after a frame that did not
         // draw it, which starts from not hovered (gpui-pre
-        // elements/div.rs:3154-3163), so the hover it had is over. A frame
+        // elements/div.rs:3213-3222), so the hover it had is over. A frame
         // that took it away and recorded nothing did not prune it
         // (`close_frame`).
         if self.bounds.get(&id).is_some_and(|record| !record.drawn()) {
@@ -355,7 +355,7 @@ impl InfoRegistry {
     /// end to an element it stopped drawing, and drops that element's state
     /// with the frame (gpui-pre `window.rs:1195-1202`); drawn again under
     /// the pointer, it starts from not hovered and reports the hover anew
-    /// (`elements/div.rs:3154-3163`). Nor does a frame that only takes a
+    /// (`elements/div.rs:3213-3222`). Nor does a frame that only takes a
     /// target away send any hover change, so the choice is revisited here.
     /// Notifies when it cleared what was shown.
     ///
@@ -439,7 +439,7 @@ fn notify_after_draw(ui: &Entity<InfoRegistry>, window: &mut Window, cx: &mut Ap
 ///
 /// `key` tells apart the recorders that share their element's id path, as
 /// an `elements::record` beside another does. An element state is kept
-/// under its type as well as its id (gpui-fast src/window.rs:7420-7433), so
+/// under its type as well as its id (gpui-fast src/window.rs:7424-7437), so
 /// the `unwrap` of `with_element_state`'s downcast (:4495) cannot fail; the
 /// `expect` (:4497) cannot either, since a box is only put back holding a
 /// state (:4501, :4513-4516).

@@ -80,7 +80,7 @@
 //! them: a `Checkbox::label` is re-coloured by its own wrapper and both apply
 //! their disabled colour before the refinement, so a carried colour would
 //! either never arrive or displace the disabled one (`checkbox.rs:341-346` and
-//! `:262-266`, `input/input.rs:99-103` through `combobox.rs:998`).
+//! `:262-266`, `input/input.rs:97-101` through `combobox.rs:998`).
 //!
 //! `tests/seams.rs` lays real gpui-component widgets out headlessly, with and
 //! without a builder's refinement, and checks what arrives: the heights of
@@ -194,7 +194,7 @@ fn with_padding(r: StyleRefinement, p: &ResolvedPadding) -> StyleRefinement {
 /// The platform's `defaults.line_height` is the control's line height, which
 /// [`with_text`] sets, or [`with_line_height`] where no text size is: each
 /// receiving widget takes the refinement after its own line height
-/// (`button/button.rs:749` → `:750`, `input/input.rs:796` → `:816`) or sets
+/// (`button/button.rs:763` → `:764`, `input/input.rs:764` → `:784`) or sets
 /// none (`list/list_item.rs:198-209`, `select.rs:569-580`,
 /// `combobox.rs:981-998`), so the platform's wins. `stated` is the control's
 /// height at a text-scaling factor of 1 or less; above 1 it is its minimum
@@ -212,7 +212,7 @@ fn with_height_rule(r: StyleRefinement, stated: Option<f32>, n: Native<'_>) -> S
     }
 }
 
-/// `Button` (gpui-component `src/button/button.rs:680-717` → refined at `:750`).
+/// `Button` (gpui-component `src/button/button.rs:694-731` → refined at `:764`).
 /// The label's text size is set on an inner element (`:758-766`), Tier U.
 ///
 /// Height by the control-height rule (module doc), through `h`.
@@ -229,7 +229,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
         .border(px(b.border.line_width))
         .border_color(rgba_to_hsla(b.border.color))
         // The weight, and deliberately not the size. This refinement lands on
-        // the button's outer element (`button/button.rs:750`), and GPUI
+        // the button's outer element (`button/button.rs:764`), and GPUI
         // cascades text style to descendants: the label is a child that sets
         // its own size from the `Size` enum (`button_text_size`, which maps
         // to `text_xs`/`text_sm`/`text_base`) and so would overrule a size
@@ -248,7 +248,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 ///
 /// gpui-component sets the label's size from the `Size` enum on the content
 /// element (`button_text_size`, `src/sizing.rs:337-343`, applied at
-/// `src/button/button.rs:766`) after the button's own refinement (`:750`), so
+/// `src/button/button.rs:780`) after the button's own refinement (`:764`), so
 /// a size given to [`button`] would be shadowed; since 0.7.1 that size is
 /// `text_sm` at `Size::Medium`, 0.875 of the platform font. The content
 /// element's children are the one public route under it (`:789`): a label
@@ -296,38 +296,38 @@ pub fn toggle(n: Native<'_>) -> StyleRefinement {
     button_label(n)
 }
 
-/// `Input` root (`src/input/input.rs:801-811` → `:816`).
+/// `Input` root (`src/input/input.rs:769-779` → `:784`).
 ///
 /// Height by the control-height rule (module doc), through `h`. The rule is
 /// for a single-line field: a multi-line `Input` sets its own height before
-/// this refinement (`input/input.rs:803-806`), which the rule's `h` would
+/// this refinement (`input/input.rs:771-774`), which the rule's `h` would
 /// replace, so a caller that wants a multi-line height sets it after this
 /// builder, fully qualified as `Styled::h(input, height)`. Method syntax
-/// reaches `Input::h` instead (`input/input.rs:292-296`, "Multi-line only"),
+/// reaches `Input::h` instead (`input/input.rs:290-294`, "Multi-line only"),
 /// which shadows `Styled::h` and only records the height that upstream
-/// applies at `:805`, before the caller's refinement at `:816`, so the
+/// applies at `:773`, before the caller's refinement at `:784`, so the
 /// rule's `h` would still replace it. The padding is a single-line field's too:
-/// upstream pads only a single-line root (`input/input.rs:797-799`), so a
+/// upstream pads only a single-line root (`input/input.rs:765-767`), so a
 /// caller that refines a multi-line `Input` or a `Textarea` uses
 /// [`text_area`] instead, or clears this refinement's padding as well.
 ///
 /// The stated padding sides reach the root: upstream pads a single-line
-/// field (`input_px`/`input_py`, `input/input.rs:798`) before the refinement
-/// at `:816`, so the refinement wins, and the field's text element has no
+/// field (`input_px`/`input_py`, `input/input.rs:766`) before the refinement
+/// at `:784`, so the refinement wins, and the field's text element has no
 /// padding of its own to double it. One exception: an `Input` with a suffix
 /// takes its right padding from upstream *after* the refinement
-/// (`input/input.rs:833`, `this.pr(self.size.input_px())`), so there the
+/// (`input/input.rs:801`, `this.pr(self.size.input_px())`), so there the
 /// platform's right side does not arrive.
 ///
 /// When refining an `InputGroup` or `NumberInput` frame, clear the padding
 /// sides: the inner Input already pads (`input/group.rs:272-293` and
 /// `input/number_input.rs:173-180` each render an `Input`, which pads itself
-/// at `input/input.rs:797-799`).
+/// at `input/input.rs:765-767`).
 ///
 /// The text is `input.font.color`. The root sets no text colour of its own
 /// (`input/input.rs:720-816`; `input_style`'s foreground is dropped at
 /// `:720`), and gpui-base paints the field's text in the colour the root
-/// inherits (gpui-base `input/base/element.rs:2630-2633`), so without the
+/// inherits (gpui-base `input/base/element.rs:2714-2717`), so without the
 /// refinement it is the window's `foreground`. gpui-base halves that
 /// colour's alpha in a disabled field (`:2632-2633`): [`input_fill`] for a
 /// disabled field gives it `input.disabled_text_color` to halve.
@@ -344,8 +344,8 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:801-811`
-/// → `:816`).
+/// A multi-line `Input` or a `Textarea` root (`src/input/input.rs:769-779`
+/// → `:784`).
 ///
 /// [`input`]'s refinement for the multi-line field: `text_area.border`'s
 /// padding, corner radius and line width in place of the input's (the
@@ -357,8 +357,8 @@ pub fn input(n: Native<'_>) -> StyleRefinement {
 ///
 /// **Padding.** Upstream pads a multi-line field's editor, inside the root,
 /// by its `Size`'s `input_px` and `input_py`, from render, where no caller
-/// reaches it (`input/input.rs:596-610`), and pads no multi-line root
-/// (`:797-799`). A `Textarea` renders its `Input` at its own `Size`
+/// reaches it (`input/input.rs:573-587`), and pads no multi-line root
+/// (`:765-767`). A `Textarea` renders its `Input` at its own `Size`
 /// (`input/textarea.rs:172-177, 205`), `Size::Medium` unless the caller sizes
 /// it (`:74`), whose editor padding is 10 across and 8 down
 /// (`sizing.rs:147-166`); this refinement assumes that default, so a
@@ -526,7 +526,7 @@ const TOOLTIP_SHADOW: [(f32, f32, f32); 2] = [(4., 6., -1.), (2., 4., -2.)];
 /// installs as the rem: `defaults.font.size` scaled by
 /// [`crate::scaled_text_size`] (`theme.font_size` in [`crate::to_theme`],
 /// which gpui-component's `WindowState` root plugin sets as the window's rem
-/// size, `src/root.rs:538`).
+/// size, `src/root.rs:714`).
 ///
 /// Never negative: a platform that states a width narrower than its own
 /// paddings leaves nothing for the text rather than a width gpui would reject.
@@ -585,7 +585,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// `Dialog` (`src/dialog/dialog.rs:633-643, 722-726` → `:730`); width through
+/// `Dialog` (`src/dialog/dialog.rs:692-702, 779-783` → `:787`); width through
 /// [`dialog_max_width`] and `Dialog::max_w`. The radius is the dialog's own
 /// (`dialog.border.corner_radius`), which upstream would otherwise take from
 /// `radius_lg` (`:725`); the two differ on Adwaita. The fill and the edge are
@@ -612,7 +612,7 @@ pub fn status_bar(n: Native<'_>) -> StyleRefinement {
 /// window (gpui-base `src/positioner.rs:314-316`).
 ///
 /// Upstream reads the four padding sides back out of this style
-/// (`dialog/dialog.rs:635-647`), starting from 16px on each side, so
+/// (`dialog/dialog.rs:694-706`), starting from 16px on each side, so
 /// an unstated side keeps that 16px. It also reuses them as gaps: the gap
 /// between the dialog's sections is `max(top, 8px)` (`:729`), and a
 /// `DialogContent`'s gap is the bottom padding (`:760`). A platform that
@@ -631,7 +631,7 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
 }
 
 /// For `Dialog::entrance` and `AlertDialog::entrance`
-/// (`src/dialog/dialog.rs:526`, `src/dialog/alert_dialog.rs:277`): the
+/// (`src/dialog/dialog.rs:549`, `src/dialog/alert_dialog.rs:284`): the
 /// entrance closest to `dialog.entrance` that gpui-component draws, or `None`
 /// where the theme states none, so the dialog keeps upstream's default,
 /// `DialogEntrance::SlideDown`.
@@ -641,7 +641,7 @@ pub fn dialog(n: Native<'_>) -> StyleRefinement {
 /// (`src/dialog/dialog.rs:653-668, 866-869`):
 ///
 /// - `ScaleFade` (Windows, GNOME, Material) loses its scale: gpui-component
-///   has no scaling entrance (`src/dialog/entrance.rs:12-25`).
+///   has no scaling entrance (`src/dialog/entrance.rs:14-27`).
 /// - `FadeRise` (KDE) loses its rise: gpui-component has no rising entrance,
 ///   and its `FadeSlide` settles from just above the final position, the
 ///   opposite direction.
@@ -659,7 +659,7 @@ pub fn dialog_entrance(n: Native<'_>) -> Option<DialogEntrance> {
 ///
 /// gpui-component scales a control's radius with its size — an in-group
 /// button is `XSmall` and gets `radius / 2`, `Button` does the same for its
-/// small and large roundings (`src/button/button.rs:647-649`) — where
+/// small and large roundings (`src/button/button.rs:661-663`) — where
 /// native-theme records one radius per widget, whatever its size. [`button`]
 /// already restores it for a `Button`; this does the same for the button
 /// nested in a field, whose height, width and padding the group sets so that
@@ -921,10 +921,10 @@ fn combo_box_metrics(n: Native<'_>) -> StyleRefinement {
 ///
 /// The colour is carried for the same reason as [`list_item`]: upstream labels
 /// the trigger with `foreground` through `input_style`
-/// (`src/input/input.rs:105`, applied at `select.rs:573`) before applying this
+/// (`src/input/input.rs:103`, applied at `select.rs:573`) before applying this
 /// refinement. It is safe here although the same helper's disabled branch
 /// returns `muted_foreground` before the refinement too
-/// (`src/input/input.rs:99-103`), because `Select` re-mutes its title *child*
+/// (`src/input/input.rs:97-101`), because `Select` re-mutes its title *child*
 /// when disabled (`select.rs:511-513`) and a child wins over the trigger.
 #[must_use]
 pub fn select(n: Native<'_>) -> StyleRefinement {
@@ -970,8 +970,8 @@ pub fn title_bar(n: Native<'_>) -> StyleRefinement {
 /// A `TitleBar` of a window that is not the active one: the fill
 /// `window.inactive_title_bar_background` and the text
 /// `window.inactive_title_bar_text_color`. Apply it after [`title_bar`] while
-/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:2973`);
-/// gpui redraws the window when that changes (`:1999-2013`).
+/// gpui's `Window::is_window_active` is false (gpui-pre `src/window.rs:2990`);
+/// gpui redraws the window when that changes (`:2011-2025`).
 ///
 /// Colour, carried because neither `TitleBar` nor `ThemeColor` knows of a
 /// window's activation: upstream paints every bar the same, a gradient from
@@ -1084,9 +1084,9 @@ pub fn spinner_size(n: Native<'_>) -> Size {
 /// of 1 the row is at least the scaled `list.item_font`'s line box at
 /// `defaults.line_height`, rounded up, upstream's own top and bottom cell
 /// padding (`Size::table_cell_padding`, `src/sizing.rs:89-94`) and the row's
-/// 1 px bottom border (`border_b_1`, `src/table/state.rs:2198`): the
+/// 1 px bottom border (`border_b_1`, `src/table/state.rs:2241`): the
 /// control-height rule (module doc), computed here because upstream gives
-/// every row this height (`src/table/state.rs:2182`, `:2196`), its border
+/// every row this height (`src/table/state.rs:2223`, `:2239`), its border
 /// inside it, and clips each cell to it (`:1520-1526`).
 ///
 /// Under `Size::Size` gpui-component sets the row height verbatim
@@ -1111,7 +1111,7 @@ pub fn data_table_size(n: Native<'_>) -> Size {
 /// header (`src/table/state.rs:800-804`) and [`data_table_size`] sets.
 ///
 /// It grows with `list.item_font`, the font the header's text is drawn in: a
-/// `Size::Size` header cell sets no text size (`src/table/state.rs:1827`
+/// `Size::Size` header cell sets no text size (`src/table/state.rs:1861`
 /// through `render_cell`, `src/sizing.rs:323-333`), so it inherits the
 /// container's, which [`table`] sets; `list.header_font` reaches only the
 /// header's text colour (`ThemeColor::table_head_foreground`).
@@ -1123,8 +1123,8 @@ pub fn list_header_height(n: Native<'_>) -> Option<Pixels> {
 }
 
 /// The bottom border upstream draws under a `DataTable` row and under its
-/// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2198`,
-/// the header's `:2094-2095`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
+/// header row, inside the row's height: `border_b_1()` (`src/table/state.rs:2241`,
+/// the header's `:2135-2136`), 1 px (gpui-pre-macros 0.3.9 `src/styles.rs:1336-1340`).
 const TABLE_ROW_BORDER: f32 = 1.0;
 
 /// A `DataTable` row's height by the control-height rule (module doc): at a
@@ -1206,7 +1206,7 @@ pub fn scrollbar_gutter(n: Native<'_>) -> StyleRefinement {
 
 // --- Builder helpers (spec §9.3) ----------------------------------------------
 
-/// For `Dialog::max_w` (`src/dialog/dialog.rs:497`).
+/// For `Dialog::max_w` (`src/dialog/dialog.rs:519`).
 #[must_use]
 pub fn dialog_max_width(n: Native<'_>) -> Pixels {
     px(n.resolved.dialog.max_width)
@@ -1217,7 +1217,7 @@ pub fn dialog_max_width(n: Native<'_>) -> Pixels {
 ///
 /// A single-line `Input` takes it through `StyledExt::refine_style`, the
 /// caller's style, which `Input` refines its root with last
-/// (`src/input/input.rs:816`). Above a text-scaling factor of 1 the rule's
+/// (`src/input/input.rs:784`). Above a text-scaling factor of 1 the rule's
 /// height is automatic, so the field then grows around its own drawn text
 /// and padding -- upstream's, unless the caller also gives it the
 /// platform's.
@@ -1230,8 +1230,8 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
     )
 }
 
-/// The fill of an `Input` root (`src/input/input.rs:720-731`, painted at
-/// `:808`, refined at `:816`), for a field built with `disabled`: the
+/// The fill of an `Input` root (`src/input/input.rs:691-702`, painted at
+/// `:776`, refined at `:784`), for a field built with `disabled`: the
 /// platform's `input.background_color`, or disabled its
 /// `input.disabled_background` and its text in `input.disabled_text_color`.
 /// Apply it after [`input`].
@@ -1241,7 +1241,7 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// field with `Theme::input_background`, which is the window's `background`
 /// in a light theme and `input` mixed with transparent in a dark one
 /// (`theme/mod.rs:485-491`), and a disabled one with `input` mixed with
-/// transparent at half opacity (`input/input.rs:98-101`, `:727-731`); the
+/// transparent at half opacity (`input/input.rs:96-99`, `:698-702`); the
 /// `input` token is the field's border (`contract.rs`'s `input` row), so
 /// neither fill can be the platform's. The fill is painted before the
 /// caller's refinement, so the refinement's wins -- in either state, which is
@@ -1256,7 +1256,7 @@ pub fn input_height(n: Native<'_>) -> StyleRefinement {
 /// root, whose colour gpui-base paints the field's text in; it feeds
 /// gpui-base's dim rather than replacing it, since the editor halves the
 /// alpha of a disabled field's text whatever its colour (gpui-base
-/// `input/base/element.rs:2632-2633`), and the field's
+/// `input/base/element.rs:2716-2717`), and the field's
 /// `input.disabled_opacity` fades it with the rest of the field.
 #[must_use]
 pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
@@ -1283,7 +1283,7 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
 /// Colour, carried for the reason [`input_fill`] is: upstream fills an
 /// enabled trigger with `Theme::input_background` and a disabled one with the
 /// `input` token mixed toward transparent (`input_style`,
-/// `src/input/input.rs:97-107`), and no `ThemeColor` field maps to the
+/// `src/input/input.rs:95-105`), and no `ThemeColor` field maps to the
 /// platform's combo box fill. Disabled, the fade replaces upstream's
 /// `opacity(0.5)` on the trigger (`select.rs:574`, `combobox.rs:992`), both
 /// set before the refinement: a platform dims by its disabled colours or by
@@ -1292,7 +1292,7 @@ pub fn input_fill(n: Native<'_>, disabled: bool) -> StyleRefinement {
 ///
 /// The disabled text colour reaches a `Combobox`'s selected text: its
 /// trigger takes `muted_foreground` from `input_style` before the refinement
-/// (`input/input.rs:99-103` → `combobox.rs:991` → `:998`), and the title
+/// (`input/input.rs:97-101` → `combobox.rs:991` → `:998`), and the title
 /// elements set none (`combobox.rs:570-591`). It does not reach a `Select`'s
 /// title, which re-mutes itself when disabled (`select.rs:511-512`), nor the
 /// placeholder or the caret of either, which are `muted_foreground` on
@@ -1333,7 +1333,7 @@ fn unit(opacity: f32) -> f32 {
 /// Colour, not geometry, carried because no `ThemeColor` field reaches it:
 /// upstream paints a disabled Default button with `input_background()` at
 /// half opacity and its label with `muted_foreground` at half opacity
-/// (`src/button/button.rs:1339-1385`, the label at `:1350`), literals of its
+/// (`src/button/button.rs:1353-1399`, the label at `:1364`), literals of its
 /// own. Its disabled
 /// style replays the caller's refinement over its own (`:814-820`), so the
 /// refinement's colours win there -- and at rest too (`:750`), which is why
@@ -1430,7 +1430,7 @@ pub fn link(n: Native<'_>) -> StyleRefinement {
 // the system path. There is no receiver to map these into: gpui-component's
 // `Theme::spacing_tokens()` returns `SpacingTokens::default()` with no field
 // behind it (`theme/mod.rs:588-590`), so its one reader, a `Dialog`'s viewport
-// margin (`dialog/dialog.rs:616`), gets that default whatever a theme says.
+// margin (`dialog/dialog.rs:667`), gets that default whatever a theme says.
 // `None` means the platform specifies nothing (platform-facts §2.20).
 
 /// Space between adjacent widgets.
@@ -1839,7 +1839,7 @@ mod tests {
     /// `input` and `text_area` letter the field in `input.font.color`: the
     /// Input root sets no text colour (`input/input.rs:720-816`) and gpui-base
     /// paints the field's text in the window's (gpui-base
-    /// `input/base/element.rs:2630-2633`), which is `foreground`, fed from
+    /// `input/base/element.rs:2714-2717`), which is `foreground`, fed from
     /// `defaults.text_color`. macos-monterey and macos-tahoe state another, in
     /// both modes.
     #[test]
@@ -2454,7 +2454,7 @@ mod tests {
                 // earlier and its disabled colour on a child afterwards:
                 // `list/list_item.rs:205` -> `:209`, `radio.rs:220` -> `:231`
                 // (child muted at `:261-262`) and `select.rs:573` -> `:580`
-                // (through `input_style`, `input/input.rs:105`; the title child
+                // (through `input_style`, `input/input.rs:103`; the title child
                 // re-mutes at `select.rs:511-513`).
                 assert_eq!(
                     list_item(n).text.color,
@@ -2551,7 +2551,7 @@ mod tests {
     /// that sets `foreground` itself (`checkbox.rs:341-346`), so a carried
     /// colour never reaches it; and both widgets apply their disabled colour
     /// *before* the refinement (`checkbox.rs:262-266`, and
-    /// `input_style(disabled, ..)` at `input/input.rs:99-103` feeding
+    /// `input_style(disabled, ..)` at `input/input.rs:97-101` feeding
     /// `combobox.rs:991` -> `:998`, whose selected-title branch `:585-591` sets
     /// no colour to re-mute with), so a carried colour would displace it.
     ///
@@ -2592,7 +2592,7 @@ mod tests {
                     None,
                     "{at}: geometry::combobox set a text colour; upstream \
                      applies the disabled `muted_foreground` before this \
-                     refinement (input/input.rs:99-103 -> combobox.rs:991 -> \
+                     refinement (input/input.rs:97-101 -> combobox.rs:991 -> \
                      :998), so it would displace the disabled colour"
                 );
                 assert_eq!(
@@ -2617,7 +2617,7 @@ mod tests {
                          gpui-component 0.8.0 gives no route for \
                          (combobox.rs:991 -> :998) -- record it as a Tier U \
                          candidate; do NOT carry it in the builder, it would \
-                         displace the disabled colour (input/input.rs:99-103)"
+                         displace the disabled colour (input/input.rs:97-101)"
                     );
                 }
             }

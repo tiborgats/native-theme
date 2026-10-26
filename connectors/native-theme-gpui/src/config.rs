@@ -82,7 +82,7 @@ pub fn to_theme_config(
 /// code editor's fill and its gutter's taken from the theme.
 ///
 /// A code editor is an `Input` in code mode, whose root upstream fills with
-/// `Theme::editor_background` (gpui-component `src/input/input.rs:720-722`):
+/// `Theme::editor_background` (gpui-component `src/input/input.rs:691-693`):
 /// the highlight theme's `editor_background`, a fixed `#ffffff` or `#0a0a0a`
 /// in the defaults, else `input_background()`, which is not the platform's
 /// field fill (`src/theme/mod.rs:485-499`). The fill is the field's,
@@ -91,8 +91,8 @@ pub fn to_theme_config(
 /// gpui-base paints the gutter as an overlay above text that scrolls under
 /// it, in `editor_gutter_background` or else the editor's fill, which it
 /// halves in a disabled editor as upstream halves the root's
-/// (gpui-base `src/input/base/element.rs:3146-3150`, `:3352-3358`;
-/// gpui-component `src/input/input.rs:726-730`). A translucent field fill,
+/// (gpui-base `src/input/base/element.rs:3255-3259`, `:3461-3467`;
+/// gpui-component `src/input/input.rs:697-701`). A translucent field fill,
 /// as windows-11 states, would show the text through, so there the gutter is
 /// that fill composited over `window.background_color`; an opaque one is
 /// left unset, and the gutter is the editor's fill, halved with it.

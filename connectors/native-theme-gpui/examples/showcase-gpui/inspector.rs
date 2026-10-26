@@ -466,10 +466,10 @@ pub(crate) fn window_rows(
     paddings: gpui::Edges<gpui::Pixels>,
 ) -> Vec<(&'static str, String)> {
     // gpui-component's `WindowState` root plugin wraps everything the window
-    // holds in `window_border()` (root.rs:552-560, `WindowState::decorate`).
-    // Its client-side arm alone sets the client inset (window_border.rs:155),
+    // holds in `window_border()` (root.rs:728-736, `WindowState::decorate`).
+    // Its client-side arm alone sets the client inset (window_border.rs:169),
     // lays hit zones and draws a frame; under server-side decorations it
-    // hands back the content itself (window_border.rs:134-139).
+    // hands back the content itself (window_border.rs:148-153).
     let inset = match inset {
         Some(inset) => format!("{}px, set by the WindowBorder", inset.as_f32()),
         None => "none: nothing has called set_client_inset".to_string(),

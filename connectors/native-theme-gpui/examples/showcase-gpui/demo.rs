@@ -343,7 +343,7 @@ pub(crate) fn title_bar(
 
 /// A menu title's side and top/bottom padding where `menu.border.padding`
 /// states no side: upstream's for a title of its `AppMenuBar`, a Small
-/// compact Button (button/button.rs:683-685, `px_1p5`) given `py_0p5`
+/// compact Button (button/button.rs:697-699, `px_1p5`) given `py_0p5`
 /// (menu/app_menu_bar.rs:276).
 const MENU_TITLE_PADDING_X: Rems = rems(0.375);
 const MENU_TITLE_PADDING_Y: Rems = rems(0.125);
@@ -1323,7 +1323,7 @@ pub(crate) struct ToolbarButton<'a> {
 ///
 /// The icon is the Button's child, not its `icon`: `Button::icon` resizes
 /// whatever it is given to a size derived from the Button's own
-/// (button/button.rs:626-629, 773-778), and the size an `Icon` is given last
+/// (button/button.rs:638-641, 787-792), and the size an `Icon` is given last
 /// wins over its style (icon.rs:187-193).
 pub(crate) fn toolbar_button(
     ui: &Entity<InfoRegistry>,
@@ -1481,7 +1481,7 @@ fn toolbar_item(ui: &Entity<InfoRegistry>, cx: &App, set: &str, item: ToolItem) 
 
 /// The installed theme's `tooltip.show_delay_ms`, for GPUI's own
 /// `.tooltip()` on an element, which waits GPUI's 500 ms unless the element
-/// is given another (gpui-pre `elements/div.rs:53, 1708`); `None` where the
+/// is given another (gpui-pre `elements/div.rs:53, 1755`); `None` where the
 /// theme states none or no native theme is installed.
 pub(crate) fn tooltip_delay(cx: &App) -> Option<Duration> {
     native_value(cx, |n| native_theme_gpui::tooltip_show_delay(n.resolved)).flatten()
@@ -3360,8 +3360,8 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
         &mut button_info,
     );
     // The platform's disabled pair, which upstream's disabled style replays
-    // the caller's refinement over (button/button.rs:814-820); a Button that
-    // is not disabled must not take it, since it lands at rest too (:750).
+    // the caller's refinement over (button/button.rs:828-834); a Button that
+    // is not disabled must not take it, since it lands at rest too (:764).
     let disabled_pair = (state == ButtonState::Disabled)
         .then(|| native_geometry(cx, geometry::button_disabled))
         .flatten();
@@ -3416,7 +3416,7 @@ pub(crate) fn button(ui: &Entity<InfoRegistry>, cx: &App, spec: DemoButton) -> S
 
 /// A Default Button at `size`, left without `geometry::button`: this row
 /// shows upstream's own size scale, which the refinement would overrule
-/// (button/button.rs:680-695, then :750).
+/// (button/button.rs:694-709, then :764).
 pub(crate) fn sized_button(
     ui: &Entity<InfoRegistry>,
     cx: &App,
@@ -3637,7 +3637,7 @@ fn text_field(
         InputField::Refined => {
             let input = native_info(input, cx, geometry::input, "input", &mut input_info);
             // The platform's fill for the state the field is built in, after
-            // upstream's (input/input.rs:808, then :816).
+            // upstream's (input/input.rs:776, then :784).
             let fill = native_geometry(cx, |n| geometry::input_fill(n, disabled));
             if fill.is_some() {
                 input_info = input_info.geometry("input_fill");
@@ -3669,7 +3669,7 @@ fn text_field(
             input
         }
         // Through the caller's style, which Input applies after its own
-        // height and line height (input/input.rs:796-800, then :816).
+        // height and line height (input/input.rs:764-768, then :784).
         InputField::HeightOnly => native_info(
             input,
             cx,
@@ -3692,10 +3692,10 @@ const INPUT_GROUP: &str = "input-surface";
 /// pointer. The caller leaves the field without a fill or an edge colour of
 /// its own, in upstream's `transparent` token (theme/schema.rs).
 ///
-/// `Input` is `Styled` only (input/input.rs:534) and its root's one state is
-/// `focused` (:770-777), so it has no hover edge of its own: the field is
+/// `Input` is `Styled` only (input/input.rs:511) and its root's one state is
+/// `focused` (:750-757), so it has no hover edge of its own: the field is
 /// left without a fill or an edge colour (its caller's style lands after its
-/// own, :816) and an absolute box under it, the field's size, paints them.
+/// own, :784) and an absolute box under it, the field's size, paints them.
 /// Focused, the field's own edge in `ring` shows over the surface's.
 fn input_surface(
     r: &native_theme_gpui::ResolvedTheme,
@@ -3729,7 +3729,7 @@ fn input_surface(
 /// unfaded.
 ///
 /// The fill is a box of its own inside the line, not under it: gpui fades
-/// each primitive it paints on its own (gpui-pre src/window.rs:4687-4695,
+/// each primitive it paints on its own (gpui-pre src/window.rs:4705-4713,
 /// `paint_quad`), and a quad draws its border over its own background
 /// (gpui-pre-wgpu src/shaders.wgsl:887, `fs_quad`), so a faded control whose
 /// fill lay under its line would show the fill through the faded line,
@@ -4656,14 +4656,14 @@ pub(crate) enum DataTableRow {
 /// reported it to the delegate.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct BodyRow {
-    /// An odd row of a striped table (table/state.rs:2177).
+    /// An odd row of a striped table (table/state.rs:2218).
     pub striped: bool,
     /// The last of the delegate's rows.
     pub last: bool,
     /// The table's selected row.
     pub selected: bool,
     /// The table is selecting rows, so it paints its selected row as one
-    /// (table/state.rs:524, 2401); a column selection keeps the selected row but
+    /// (table/state.rs:524, 2463); a column selection keeps the selected row but
     /// not its fill.
     pub selection_shown: bool,
     pub right_clicked: bool,
@@ -6024,7 +6024,7 @@ pub(crate) fn tooltip_button(
 /// tooltip the application builds itself, reading `text`.
 ///
 /// `Button::tooltip` takes a string and builds the tooltip itself
-/// (`button/button.rs:405`), so the only way to a refined one is to build
+/// (`button/button.rs:407`), so the only way to a refined one is to build
 /// it: that is what `geometry::tooltip` documents, and the one place the
 /// platform's tooltip padding, radius and text colour reach the popup. The
 /// width is the content element's, through `Tooltip::element`: on the
@@ -7939,7 +7939,7 @@ pub(crate) fn alert_dialog(
         None => alert,
     };
     // An AlertDialog has no `max_w` of its own; `Styled::max_w` lands on the
-    // surface through the refinement (dialog/dialog.rs:730).
+    // surface through the refinement (dialog/dialog.rs:787).
     let alert = match native_value(cx, geometry::dialog_max_width) {
         Some(width) => {
             alert_info = alert_info.geometry("dialog_max_width");

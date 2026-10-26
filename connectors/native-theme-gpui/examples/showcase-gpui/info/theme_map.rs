@@ -170,7 +170,7 @@ pub fn row(t: &Theme, token: ThemeToken) -> Row {
                 "native-theme-gpui/colors.rs:546",
             ),
             |i| {
-                i.config("model", "defaults.shadow_color").config("derived", "transparent black where reduced transparency is asked for: upstream's own colour for no overlay (dialog/dialog.rs:322-324), so no scrim is drawn; else defaults.shadow_color's hue, saturation and lightness at an alpha of 0.5 in dark mode and 0.4 in light (native-theme-gpui/colors.rs, assign_misc)")
+                i.config("model", "defaults.shadow_color").config("derived", "transparent black where reduced transparency is asked for: upstream's own colour for no overlay (dialog/dialog.rs:335-337), so no scrim is drawn; else defaults.shadow_color's hue, saturation and lightness at an alpha of 0.5 in dark mode and 0.4 in light (native-theme-gpui/colors.rs, assign_misc)")
             },
         ),
         ThemeToken::Primary => (

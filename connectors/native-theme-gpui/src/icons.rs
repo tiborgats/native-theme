@@ -712,7 +712,7 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// of the feature: the source is an
 /// `ImageSource::Image(Image::from_bytes(ImageFormat::Svg, bytes))` holding
 /// the SVG bytes, colorized first when `color` is `Some`, and gpui decodes it
-/// with its own resvg (gpui-pre `src/platform.rs:3351-3354`). That costs two
+/// with its own resvg (gpui-pre `src/platform.rs:3446-3449`). That costs two
 /// things. gpui decodes it in the background, so an element holding it paints
 /// nothing the first time it comes up (gpui-pre `src/elements/img.rs:534-553`).
 /// And gpui chooses the raster size, twice the SVG's own size
@@ -726,8 +726,8 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// carries a decoded [`gpui::RenderImage`], which takes a tile in each
 /// window's sprite atlas from the first frame that draws it and
 /// keeps it until the image is handed to `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
-/// `src/window.rs:5175-5186`); nothing releases it on its own. An application
+/// `Window::drop_image` (gpui-pre `src/app.rs:3238-3248`,
+/// `src/window.rs:5193-5204`); nothing releases it on its own. An application
 /// that rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should drop each replaced source through `drop_image`
 /// before it lets go of it. Without `svg-rasterize`, an SVG icon's source is
@@ -1117,7 +1117,7 @@ fn svg_to_render_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
 /// Hand SVG bytes to gpui as an undecoded [`ImageSource::Image`].
 ///
 /// Without `svg-rasterize` this crate has no rasterizer of its own; gpui
-/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3351-3354`),
+/// decodes `ImageFormat::Svg` itself (gpui-pre `src/platform.rs:3446-3449`),
 /// in the background and at twice the SVG's own size
 /// (`src/svg_renderer.rs:81, 200-206`), so `size` is not used. The bytes are
 /// not parsed here: this returns `Some` for any input, and an SVG gpui cannot
@@ -1143,7 +1143,7 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// The pixels are converted the way gpui's own decoder converts them: it turns
 /// the decoded image into RGBA8 and then swaps each pixel's first and third
 /// byte, leaving a BGRA buffer, and premultiplies nothing (gpui-pre
-/// `src/platform.rs:3240-3254`, the `RenderImage` it builds at `:3359`).
+/// `src/platform.rs:3335-3349`, the `RenderImage` it builds at `:3454`).
 ///
 /// Returns `None` for zero dimensions, for a buffer whose length is not
 /// `width × height × 4`, and for dimensions whose product overflows.
@@ -1151,8 +1151,8 @@ fn svg_to_render_source(svg_bytes: &[u8], _size: u32) -> Option<ImageSource> {
 /// A [`RenderImage`] the caller keeps holds a tile in each window's sprite
 /// atlas from the first frame that draws it, and nothing releases that tile on
 /// its own: gpui frees one only through `App::drop_image` /
-/// `Window::drop_image` (gpui-pre `src/app.rs:3103-3113`,
-/// `src/window.rs:5175-5186`), which its own image cache calls when it evicts
+/// `Window::drop_image` (gpui-pre `src/app.rs:3238-3248`,
+/// `src/window.rs:5193-5204`), which its own image cache calls when it evicts
 /// an entry (`src/elements/image_cache.rs:240, 269, 280`). An application that
 /// rebuilds its icons -- on an icon-theme change, or a colour change that
 /// re-colorizes them -- should hand each replaced source to `App::drop_image`
@@ -1774,7 +1774,7 @@ mod tests {
         assert_eq!(image.frame_count(), 1);
         // A `RenderImage` holds BGRA, which is what gpui's own decoder leaves
         // behind: it converts to RGBA8 and then swaps each pixel's first and
-        // third byte (gpui-pre `src/platform.rs:3249-3252`).
+        // third byte (gpui-pre `src/platform.rs:3344-3347`).
         assert_eq!(
             image.as_bytes(0),
             Some(

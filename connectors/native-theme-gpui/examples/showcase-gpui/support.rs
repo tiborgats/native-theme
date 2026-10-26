@@ -252,7 +252,7 @@ pub(crate) fn demo_border_width(cx: &App) -> Pixels {
 /// keeps an animated icon from blinking through its first pass; the price is
 /// that each one holds a tile in the window's sprite atlas until it is dropped
 /// there, and nothing releases it on its own (`App::drop_image`, gpui-pre
-/// `src/app.rs:3103-3113`). The showcase rebuilds these caches on every
+/// `src/app.rs:3238-3248`). The showcase rebuilds these caches on every
 /// icon-set change and on every colour change that re-colorizes the icons, so
 /// without this the atlas would grow for the life of the window. The other
 /// `ImageSource` variants are released through their own `remove_asset`, so a
@@ -337,7 +337,7 @@ pub(crate) fn gutter_scroll(
         content
     };
     let watched = handle.clone();
-    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:248-283):
+    // Clipped on the scrolled axis, as upstream's root (scrollable.rs:269-304):
     // a flex item that is not keeps its content's height as its minimum and
     // grows to it instead of scrolling.
     gpui::div()
@@ -1067,7 +1067,7 @@ impl TableDelegate for SampleTableDelegate {
         cx: &mut Context<TableState<Self>>,
     ) -> Stateful<Div> {
         // `demo::data_table` stripes the table, which shades its odd rows
-        // (table/state.rs:2177).
+        // (table/state.rs:2218).
         let striped = !row_ix.is_multiple_of(2);
         let (row, cells) = match self.rows.get(row_ix) {
             Some(cells) => (

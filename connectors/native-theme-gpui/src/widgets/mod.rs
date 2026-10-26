@@ -405,7 +405,7 @@ const FOCUS_RING_SELECTOR: &str = "native-focus-ring";
 /// then faded by `opacity` over `ground`. A platform that dims a disabled
 /// control by opacity fades the finished control as a whole
 /// (docs/platform-facts.md §2.1.6: libadwaita's `filter: Opacity(..)`),
-/// where gpui fades each quad on its own (gpui-pre src/window.rs:4687-4695,
+/// where gpui fades each quad on its own (gpui-pre src/window.rs:4705-4713,
 /// `paint_quad`), which would show a faded part through another.
 fn faded(ground: Hsla, under: Hsla, colour: Hsla, opacity: f32) -> Hsla {
     over(ground, over(under, colour).opacity(opacity))

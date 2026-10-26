@@ -1154,7 +1154,7 @@ fn main() {
                 // capture's log, never asserted (M9-167). In the
                 // application because a `#[gpui::test]` cannot ask:
                 // `TestAppContext::build` gives gpui's `NoopTextSystem`
-                // (gpui-pre 0.3.9 src/app/test_context.rs:131,
+                // (gpui-pre 0.3.9 src/app/test_context.rs:136,
                 // src/platform/test/platform.rs:127-134).
                 #[cfg(target_os = "macos")]
                 {

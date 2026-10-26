@@ -154,7 +154,7 @@ enum Indicator {
     /// element but not an image (gpui-pre elements/svg.rs,
     /// `Svg::with_transformation`), and an SVG element paints every shape in
     /// its text colour: it rasterizes the SVG to an alpha mask and draws that
-    /// in the colour (gpui-pre 0.3.9 `src/window.rs:5007`, `:5032`).
+    /// in the colour (gpui-pre 0.3.9 `src/window.rs:5025`, `:5050`).
     Spin {
         svg: Rc<[u8]>,
         duration_ms: NonZeroU32,
@@ -373,7 +373,7 @@ enum IconChoice {
 /// image, whose sprite carries no transformation (gpui-pre 0.3.9
 /// `src/scene.rs:749-758`), and the SVG element draws the icon's alpha
 /// mask in its text colour (`src/svg_renderer.rs:241-250`,
-/// `src/window.rs:5007`, `:5032`), so a spinning icon's own colours are
+/// `src/window.rs:5025`, `:5050`), so a spinning icon's own colours are
 /// lost. Frames play at the indicator's own frame duration, a spinning icon
 /// turns at its own speed, and under reduced motion the first frame stands
 /// still. Name the set with [`icon_set`](Self::icon_set) and, for a

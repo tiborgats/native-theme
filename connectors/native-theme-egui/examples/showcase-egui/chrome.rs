@@ -831,11 +831,11 @@ pub(crate) fn status_bar(app: &mut App, ui: &mut egui::Ui) {
 /// gpui-component's `StatusBar` padding, `.py_1().px_2()` (gpui-component 0.8.0
 /// `src/status_bar.rs:89-90`, `StatusBar`'s `render`): `rems(0.25)` above and below and
 /// `rems(0.5)` at the sides, at the rem gpui-component sets to the theme's font size
-/// (`src/root.rs:538`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
+/// (`src/root.rs:714`, `window.set_rem_size(cx.theme().font_size)`), which the gpui connector
 /// fills with the scaled `defaults.font.size` (`AccessibilityPreferences::scaled`); the padding
 /// the gpui showcase's status bar keeps where the theme states none, as `(vertical, horizontal)`
 /// in logical pixels. egui's frame margin is whole points, so each side is rounded to one as gpui
-/// rounds a padding before layout, a half toward zero (gpui-pre 0.3.9 `src/taffy.rs:523-527`,
+/// rounds a padding before layout, a half toward zero (gpui-pre 0.3.9 `src/taffy.rs:534-538`,
 /// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`): at a scale of 1
 /// the two bars are padded alike, 3 px above and below a 14 px font, a quarter of it 3.5.
 fn status_bar_padding(atlas: &native_theme_egui::ThemeAtlas, theme: egui::Theme) -> (f32, f32) {
@@ -1543,7 +1543,7 @@ fn watcher_note_banner(app: &mut App, ui: &mut egui::Ui, note: String) {
 }
 
 /// A dialog's title row, as gpui-component's `Dialog` draws one (gpui-component 0.8.0
-/// `src/dialog/dialog.rs:749-756`, the `DialogTitle`, and `:789-804`, the Ghost close button) and
+/// `src/dialog/dialog.rs:806-813`, the `DialogTitle`, and `:846-861`, the Ghost close button) and
 /// the gpui showcase titles its palette and About (`showcase-gpui/demo.rs:2540`, `:2582`): the
 /// title in `dialog.title_font` — its size is the dialog role's `Heading` slot (§5), its colour
 /// read from the theme — and flush right a Ghost close button, the chosen icon theme's

@@ -148,7 +148,7 @@ fn thumb_min_length(g: &ScrollbarGeometry) -> Pixels {
 /// renderer (a `border` hairline and a `muted_foreground` pill,
 /// gpui-component `src/resizable.rs:28-31, 108, 119-126`), nor `Settings`'
 /// divider or the dock's edges, which install it internally
-/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:144`).
+/// (`src/setting/settings.rs:416`, `src/dock/dock.rs:142`).
 #[must_use]
 pub fn resizable_theme(resolved: &ResolvedTheme) -> ResizableTheme {
     ResizableTheme {

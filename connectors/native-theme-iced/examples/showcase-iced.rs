@@ -5339,7 +5339,7 @@ struct IconButton<'a> {
     /// at the window's bottom edge, where iced would pull the bubble back
     /// over the button (`snap_within_viewport`, iced_widget 0.14.2
     /// `src/tooltip.rs:525-545`), above, as gpui's own tooltip turns above
-    /// the pointer there (gpui-pre 0.3.9 `src/window.rs:3835-3844`).
+    /// the pointer there (gpui-pre 0.3.9 `src/window.rs:3853-3862`).
     tip: tooltip::Position,
 }
 
@@ -6703,7 +6703,7 @@ fn status_bar(state: &State) -> Element<'_, Message> {
 
 /// `length` as gpui lays a padding out on a display of `scale`: rounded to
 /// whole device pixels, a half toward zero, before layout (gpui-pre 0.3.9
-/// `src/taffy.rs:523-527`, `round_to_device_pixel`; `src/util.rs:130-142`,
+/// `src/taffy.rs:534-538`, `round_to_device_pixel`; `src/util.rs:130-142`,
 /// `round_half_toward_zero`), in logical pixels again. So gpui's status bar
 /// is padded 3 px above and below under material-3's 14 px font, where a
 /// quarter of it is 3.5. `length` as it is where `scale` is no positive,
@@ -6721,7 +6721,7 @@ fn gpui_rounded(length: f32, scale: f32) -> f32 {
 /// keeps, `py_1` above and below and `px_2` at the sides (gpui-component
 /// 0.8.0 `src/status_bar.rs:89-90`). They are `rems(0.25)` and `rems(0.5)`
 /// (gpui-pre-macros 0.3.9 `src/styles.rs:939-951`), and gpui-component's rem
-/// is its `Theme::font_size` (`src/root.rs:538`), which the gpui connector
+/// is its `Theme::font_size` (`src/root.rs:714`), which the gpui connector
 /// fills with the scaled `defaults.font.size` (`native-theme-gpui/src/lib.rs`,
 /// `to_theme`): a quarter of that size above and below, a half at the sides.
 fn status_bar_padding(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> Padding {
@@ -10092,16 +10092,16 @@ fn bubble_padding(resolved: &ResolvedTheme) -> f32 {
 /// compared with (the toolbar's, the status bar's side-panel toggle's and
 /// the Basic page's, `showcase-gpui/demo.rs:1229`, `:1453`, `:5833`) is
 /// gpui's own element tooltip, which gpui places off the pointer, a pixel
-/// right of and below it (gpui-pre 0.3.9 `src/window.rs:3816-3817`,
+/// right of and below it (gpui-pre 0.3.9 `src/window.rs:3834-3835`,
 /// `prepaint_tooltip`), and above it where the window's bottom edge leaves
-/// no room (`:3835-3844`); so the gpui bubble stands `m_3` and a pixel from
+/// no room (`:3853-3862`); so the gpui bubble stands `m_3` and a pixel from
 /// the pointer. The model states no gap (`docs/property-registry.toml`
 /// `[tooltip]`).
 const TOOLTIP_GAP_REMS: f32 = 0.75;
 
 /// The gap between every tooltip of the showcase and its control,
 /// [`TOOLTIP_GAP_REMS`] of gpui-component's rem, its `Theme::font_size`
-/// (gpui-component 0.8.0 `src/root.rs:538`), which the gpui connector fills
+/// (gpui-component 0.8.0 `src/root.rs:714`), which the gpui connector fills
 /// with the scaled `defaults.font.size` (as [`status_bar_padding`]). iced
 /// places a tooltip by its control alone: its `FollowCursor` lays the bubble
 /// over the pointer, above it, with no gap (iced_widget 0.14.2
@@ -10112,7 +10112,7 @@ fn tooltip_gap(resolved: &ResolvedTheme, a11y: &AccessibilityPreferences) -> f32
 }
 
 /// `rems` of gpui-component's rem, its `Theme::font_size` (gpui-component
-/// 0.8.0 `src/root.rs:538`), which the gpui connector fills with the scaled
+/// 0.8.0 `src/root.rs:714`), which the gpui connector fills with the scaled
 /// `defaults.font.size` (`native-theme-gpui/src/lib.rs`, `to_theme`): the
 /// size a gpui showcase constant of `rems(..)` stands for under the
 /// installed theme (Addendum F's rem rule).
@@ -22414,7 +22414,7 @@ mod tests {
     /// bottom edge, iced's `snap_within_viewport` (on by default, iced_widget
     /// 0.14.2 `src/tooltip.rs:105`, `:525-545`) would pull the bubble back
     /// over the toggle, and gpui's own tooltip turns above the pointer there
-    /// (gpui-pre 0.3.9 `src/window.rs:3835-3844`). Under kde-breeze light.
+    /// (gpui-pre 0.3.9 `src/window.rs:3853-3862`). Under kde-breeze light.
     #[test]
     fn the_chrome_tooltips_stand_the_gap_from_their_control() {
         recording(|| {

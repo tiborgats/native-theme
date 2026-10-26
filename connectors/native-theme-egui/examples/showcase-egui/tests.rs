@@ -2533,7 +2533,7 @@ fn the_status_bar_is_one_line_and_its_padding_tall() {
 /// The status bar's padding on a side the theme leaves unstated, `(vertical, horizontal)`, as
 /// the gpui showcase's bar draws it at a scale of 1: gpui-component's `py_1`/`px_2`, a quarter
 /// and a half of the scaled `defaults.font.size`, each rounded to a whole pixel with a half
-/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.9 `src/taffy.rs:523-527`,
+/// toward zero, as gpui rounds a padding before layout (gpui-pre 0.3.9 `src/taffy.rs:534-538`,
 /// `round_to_device_pixel`; `src/util.rs:130-133`, `round_half_toward_zero`).
 fn gpui_status_bar_padding(harness: &Harness<'_, App>) -> (f32, f32) {
     let atlas = &harness.state().atlas;

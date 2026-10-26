@@ -121,7 +121,7 @@ struct Harness {
 impl Render for Harness {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // What gpui-component's `WindowState` root plugin does for an
-        // application's window (`root.rs:538`, `:546`): the installed font size is the rem, which
+        // application's window (`root.rs:714`, `:722`): the installed font size is the rem, which
         // the connector scales by the text-scaling factor, and the installed
         // family is the text's.
         window.set_rem_size(cx.theme().font_size);
@@ -293,7 +293,7 @@ mod first_draw {
     /// A view that shows the frame only once it is asked to.
     ///
     /// `add_window_view` runs the executor to a standstill before it returns
-    /// (gpui-pre `src/app/test_context.rs:347-372`), so an element built in the
+    /// (gpui-pre `src/app/test_context.rs:352-377`), so an element built in the
     /// opening frame has had every asynchronous decode finish behind it. Holding
     /// the frame back means the draw the test asks for is the first one that ever
     /// needs the image, which is the frame the maintainer sees blink.
@@ -612,7 +612,7 @@ fn probed_button(
     styled(Button::new("b").child(text_probe()), s)
 }
 /// An Input whose prefix is the text probe: the prefix is the root's first
-/// child (`input/input.rs:821`), so its left edge is where the root's
+/// child (`input/input.rs:789`), so its left edge is where the root's
 /// padding ends, and it lays out one line of the root's text style.
 fn probed_input(
     s: Option<&StyleRefinement>,
@@ -668,8 +668,8 @@ fn probed_menu_row(
 
 /// Under every native preset, at its own DPI, the drawn content inset of an
 /// Input, a Select and a Combobox is the border and the stated padding side:
-/// upstream pads each root before the refinement (`input/input.rs:798` then
-/// `:816`, `select.rs:578` then `:580`, `combobox.rs:996` then `:998`), so the
+/// upstream pads each root before the refinement (`input/input.rs:766` then
+/// `:784`, `select.rs:578` then `:580`, `combobox.rs:996` then `:998`), so the
 /// platform's side is the one drawn.
 ///
 /// The left side is measured: it is where the first child starts. At least
@@ -885,8 +885,8 @@ fn without_right(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, an Input with no suffix is laid
 /// out with the stated right padding side: upstream pads a single-line root
-/// (`input/input.rs:797-799`) before the refinement (`:816`), and only a
-/// suffix pads the right side again after it (`:833`). The right side has no
+/// (`input/input.rs:765-767`) before the refinement (`:784`), and only a
+/// suffix pads the right side again after it (`:801`). The right side has no
 /// child to measure it by, so it is measured as the width it adds: the
 /// Input's width under the refinement, less its width under the same
 /// refinement with a right side of 0. At least one preset states a right side
@@ -935,7 +935,7 @@ fn without_padding(style: &StyleRefinement) -> StyleRefinement {
 
 /// Under every native preset, at its own DPI, a Textarea refined as
 /// `geometry::input`'s doc says -- the padding sides cleared -- draws no
-/// padding: upstream pads only a single-line root (`input/input.rs:797-799`),
+/// padding: upstream pads only a single-line root (`input/input.rs:765-767`),
 /// so a multi-line root's inset is 0, and the refinement's padding must not
 /// reach it. The inset has no child to measure it by, so it is measured as
 /// the size it adds: the Textarea's size with the padding cleared equals its
@@ -1109,7 +1109,7 @@ fn bare_label(s: Option<&StyleRefinement>, _: &mut Window, _: &mut Context<Harne
 /// label passed as a Medium Button's child and refined with
 /// `geometry::button_label` is as wide as the same text refined alone.
 /// Upstream sets the label's size on the content element
-/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:766`), which
+/// (`button_text_size`, `sizing.rs:337-343`, at `button/button.rs:780`), which
 /// is `text_sm` at Medium and which the child's own size overrules; unstyled,
 /// the child takes that `text_sm`.
 #[gpui::test]
@@ -1296,7 +1296,7 @@ fn a_data_table_cell_takes_the_list_font(cx: &mut TestAppContext) {
     }
 }
 
-/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2198`,
+/// The bottom border upstream draws under a `DataTable` row (`table/state.rs:2241`,
 /// `border_b_1()`), inside the row's height.
 const ROW_BORDER: f32 = 1.0;
 
@@ -1304,7 +1304,7 @@ const ROW_BORDER: f32 = 1.0;
 /// `DataTable` sized with `geometry::data_table_size`, whose container is
 /// refined with `geometry::table`, lies inside its row at text scales 1, 1.1
 /// and 2, and at 1 the row is `data_table_size`'s stated height. Upstream sets
-/// a `Size::Size` row's height verbatim (`table/state.rs:2182`, `:2196`;
+/// a `Size::Size` row's height verbatim (`table/state.rs:2223`, `:2239`;
 /// `sizing.rs:57-64`), so above a text scale of 1 the builder grows the row
 /// around the scaled text, which at 2 overruns every native preset's row.
 /// Above 1 the text lies inside the cell's padding too, the cell's own

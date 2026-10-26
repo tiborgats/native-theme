@@ -409,3 +409,30 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
 - **Task 1, the `KeyBinding::new` grep.** In the showcase's non-test code it finds two lines,
   both doc comments (`init`'s and `macos_bindings`'), which name the constructor that panics,
   as spec §2.1 asks the docs to. It finds no call.
+- **Task 2, four numbers already wrong at the old version.** The chain review (rule 3) read
+  the 112 renumbered chains outside `CN/` or of a crate new to the scope against their
+  claims; 108 held. Four cited the wrong lines before this bump, and an explicit list in the
+  script sets them aside unchanged for Task 3's hand-read:
+  `docs/showcase-exceptions.toml`'s three placeholder entries cite gpui-base
+  `src/input/base/element.rs:1967-1971`, where the placeholder draw is 0.8.0 `:2634-2638`,
+  0.8.1 `:2718-2722`. Its `--open-menu` entry cites gpui-pre `src/window.rs:6022-6023`, where
+  the focus path is 0.3.9 `:6014-6015`, 0.3.10 `:6058-6059`.
+- **Task 2, rule 2 read over the whole note.** A family crate a note names anywhere, before or
+  after the citation, in its prose or as a path's leading crate directory, counts, so 73 chains
+  are set aside, among them citations a leading directory names (`SC/info/feedback.rs`'s
+  `gpui-base/tooltip.rs`). Reading only the names before the citation, with a leading
+  directory exempt, would have set aside 46.
+- **Task 2, gate (4)'s 76 failures.** The wider scan's numbers that are no citation (a 0, a
+  count, a pixel value, a CI run id) or whose file the scan, attributing each number by
+  itself, finds in two crates. None moved, and all 76 are on the set-aside list as its G
+  entries. Among them are citations in files the script judged unchanged that the scan cannot
+  attribute, such as `CN/src/geometry.rs`'s `select.rs:591-633` and `link.rs` `:90`.
+- **Task 2, old version words beside new numbers.** A renumbered citation that names the old
+  version keeps the version: the egui showcase's "gpui-component 0.8.0
+  src/button/button.rs:1022, :1112" and the `gpui-pre-0.3.9/` paths
+  (`SC/tests.rs`, the egui showcase's `main.rs`) now hold 0.8.1 / 0.3.10 numbers. The
+  version grep corrects their words.
+- **Task 2, the tests.** On both cores the two showcase citation gates pass:
+  127 of 826 colour claims and 14 of 976 prose citations failed before the run, none after.
+  `tests::the_fallback_stack_copy_is_gpuis` stays red ("gpui-pre 0.3.9 is not in the cargo
+  metadata"), Task 3's.

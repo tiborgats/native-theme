@@ -97,7 +97,7 @@ fn system_theme() -> native_theme::Result<native_theme::SystemTheme> {
 /// `gpui_kit::application().with_assets(gpui_kit::assets::Assets)` has no
 /// counterpart here — `TestAppContext::build` hands the app `Arc::new(())`
 /// through `build_with_platform` and exposes no setter
-/// (`gpui-pre-0.3.9/src/app/test_context.rs:127-139`, `:171-175`) — so
+/// (`gpui-pre-0.3.9/src/app/test_context.rs:132-144`, `:176-180`) — so
 /// gpui-component's own `IconName` SVGs resolve to nothing. The pages still
 /// lay out, which is what these tests measure; the showcase's native icons
 /// do not come from the asset source at all, they are decoded into
@@ -473,10 +473,10 @@ type ScrolledTo = fn(&mut VisualTestContext, &Entity<Showcase>) -> String;
 
 /// The Diff's lines that the left line-number column holds a quarter, half
 /// and three quarters of the way down the Diff, which a click there selects
-/// (gpui-component `diff/mod.rs:1318-1327`, `begin_line_selection`):
+/// (gpui-component `diff/mod.rs:1334-1343`, `begin_line_selection`):
 /// `DiffState` has no public scroll offset, so the lines under fixed points
 /// stand for it. A point over a hunk separator selects none, as the row has
-/// nothing there to click (`render_hunk_separator`, `diff/mod.rs:935-940`),
+/// nothing there to click (`render_hunk_separator`, `diff/mod.rs:951-956`),
 /// so at least one of the three has to select a line. A file header and a
 /// fold row hold a button there instead, which a click presses: the
 /// header's collapse button (`:1196-1214`) or the fold's expand buttons
@@ -4415,7 +4415,7 @@ fn the_status_bars_item_gap_note_names_the_widget_gap(cx: &mut TestAppContext) {
 
 /// The fill the panel toggle tagged `selector` paints with the pointer
 /// elsewhere: the ghost variant's active colour while it is selected
-/// (button/button.rs:1318, `colors.active`, which `variants::ghost_button`
+/// (button/button.rs:1332, `colors.active`, which `variants::ghost_button`
 /// fills with `secondary_active`), and none at rest -- the variant is
 /// transparent there.
 fn toggle_fill(cx: &mut VisualTestContext, selector: &'static str) -> Option<gpui::Hsla> {
@@ -5211,7 +5211,7 @@ fn an_environment_too_wide_for_the_status_bar_is_cut_short(cx: &mut TestAppConte
 /// (spec §3.2): with Material's taken out of the loaded gallery, the toggle
 /// is as wide as its tooltip's text in `button.font` (a Small Button's
 /// `text_sm`, sizing.rs:340, without a native theme) plus the theme's button
-/// padding, or the `px_2` on either side (button/button.rs:683-685) where it
+/// padding, or the `px_2` on either side (button/button.rs:697-699) where it
 /// states none, and says why in its info.
 #[cfg(feature = "material-icons")] // the bundled Material set it chooses
 #[gpui::test]
@@ -5547,7 +5547,7 @@ fn settle_at(
 }
 
 /// A swatch shows the colour upstream paints, not the token it dims: the
-/// Text Button's label is foreground at 90% (button/button.rs:1060). A text
+/// Text Button's label is foreground at 90% (button/button.rs:1074). A text
 /// colour is not a quad of the scene, so the swatch is checked against that
 /// line, not against the frame.
 #[gpui::test]
@@ -6602,7 +6602,7 @@ fn a_refined_input_is_filled_with_the_platforms_fill(cx: &mut TestAppContext) {
 
 /// The Basic page's disabled Button is filled with the platform's disabled
 /// fill, through `geometry::button_disabled` -- not with upstream's
-/// `input_background()` at half opacity (button/button.rs:1357-1361) -- in
+/// `input_background()` at half opacity (button/button.rs:1371-1375) -- in
 /// either mode, and its info names the builder.
 #[gpui::test]
 fn a_disabled_button_is_filled_with_the_platforms_disabled_fill(cx: &mut TestAppContext) {
@@ -6974,7 +6974,7 @@ fn sorted(mut rows: Vec<[String; 3]>, by: usize, descending: bool) -> Vec<[Strin
 }
 
 /// Click the sort button of the DataTable's column `col_ix`: upstream's
-/// `("icon-sort", col_ix)` (gpui-component 0.8.0 table/state.rs:1789, with
+/// `("icon-sort", col_ix)` (gpui-component 0.8.0 table/state.rs:1823, with
 /// `test_support()`).
 fn click_sort(cx: &mut VisualTestContext, col_ix: usize) {
     cx.update(|window, cx| {
@@ -7021,7 +7021,7 @@ fn the_tables_sort_button_sorts_its_rows(cx: &mut TestAppContext) {
 
 /// A header dragged to another place takes its cells with it
 /// (`SampleTableDelegate::move_column`, which upstream asks for in
-/// table/delegate.rs:145-155): the Role column dragged before the Name
+/// table/delegate.rs:155-165): the Role column dragged before the Name
 /// column holds the roles, and its sort button then sorts the rows by them.
 #[gpui::test]
 fn a_moved_column_keeps_its_data(cx: &mut TestAppContext) {
@@ -10264,7 +10264,7 @@ fn a_listed_font_row_names_the_family_gpui_draws(cx: &mut TestAppContext) {
 /// A platform text system that holds the families `held` alone and lays text out as gpui's
 /// `NoopTextSystem`: a host that lacks a theme's family, for a test. The test platform's own,
 /// `NoopTextSystem`, resolves every family to one face and lists none (gpui-pre 0.3.9
-/// `src/platform.rs:1547-1553`). As gpui's platform text systems do, it loads a family asked
+/// `src/platform.rs:1578-1584`). As gpui's platform text systems do, it loads a family asked
 /// for by an alias under the family the alias names (`gpui::font_name_with_fallbacks`, with
 /// Linux's system UI font, gpui-pre-linux 0.3.9 `src/linux/platform.rs:126`, gpui-pre-wgpu
 /// `src/cosmic_text_system.rs:386`), and gives each family asked for a face id of its own
@@ -13449,8 +13449,8 @@ fn the_about_title_reports_the_dialog(cx: &mut TestAppContext) {
 /// padding (spec §3.6), the reported defect. Under kde-breeze that is
 /// `Layout_TopLevelMarginWidth`, 10px (platform-facts §2.22), measured from
 /// the frame's inner edge: upstream draws the frame with `border_1`
-/// (dialog/dialog.rs:723) and pads each section inside it with the
-/// refinement's sides (dialog/dialog.rs:635-647, :758-760).
+/// (dialog/dialog.rs:780) and pads each section inside it with the
+/// refinement's sides (dialog/dialog.rs:694-706, :815-817).
 #[gpui::test]
 fn the_about_content_is_inset_by_the_dialogs_padding(cx: &mut TestAppContext) {
     let (showcase, _root, mut cx) = open(cx, WINDOW_SIZE);
@@ -14540,8 +14540,8 @@ fn fields_written(body: &str) -> Vec<(usize, &str)> {
 ///
 /// `cx.listener` only updates the entity (gpui-pre 0.3.9
 /// `src/app/context.rs:246-256`). A mouse click is followed by a refresh of
-/// the window (`src/elements/div.rs:3086-3089`); a keyboard click calls the
-/// same listeners and refreshes nothing (`:3040-3071`), so a control
+/// the window (`src/elements/div.rs:3145-3148`); a keyboard click calls the
+/// same listeners and refreshes nothing (`:3099-3130`), so a control
 /// activated from the keyboard by a listener that does not notify stays
 /// drawn as it was until something else redraws the window. gpui-component
 /// documents these values as controlled: the owner writes the value and calls
@@ -18620,7 +18620,7 @@ fn the_hairlines_are_filled_quads_at_scale_one(cx: &mut TestAppContext) {
 /// page row's menu button still shows upstream's caret (M9-168): the
 /// button holds the caret beside the theme's `button.border.padding`, where
 /// the caret-only Button, laid out as an icon Button of a fixed side
-/// (gpui-component 0.8.0 `button/button.rs:670-677`, `size_5`), gave the
+/// (gpui-component 0.8.0 `button/button.rs:684-691`, `size_5`), gave the
 /// stated side padding the whole of that side and the caret none.
 #[cfg(all(feature = "widgets", feature = "material-icons"))]
 #[gpui::test]

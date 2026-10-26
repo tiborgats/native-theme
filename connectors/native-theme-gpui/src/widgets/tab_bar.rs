@@ -114,7 +114,7 @@ pub(crate) struct FlareQuad {
 /// the square less the quarter disc of radius `r` in the fill and the band
 /// in the outline. The fill reaches under the band, not only to `r`, because
 /// gpui snaps each quad's bounds and border width to device pixels but not
-/// its corner radius (gpui-pre `src/window.rs:4684-4696`, `snap_bounds`,
+/// its corner radius (gpui-pre `src/window.rs:4702-4714`, `snap_bounds`,
 /// `snap_border_widths`): two annuli that only met at `r` would part along
 /// the curve at a fractional scale, while the overlap stays closed at any.
 /// At the square's top the band covers the side edge's own column, so the
@@ -340,7 +340,7 @@ type TabClick = Rc<dyn Fn(&usize, &mut Window, &mut App)>;
 /// ([`track_scroll`](Self::track_scroll)), or wrap onto a further row with
 /// [`wrap`](Self::wrap); a [`suffix`](Self::suffix) follows them. A vertical
 /// mouse wheel scrolls them sideways too: gpui turns it so on a row that
-/// scrolls on one axis alone (gpui-pre `src/elements/div.rs:3354-3362`), as
+/// scrolls on one axis alone (gpui-pre `src/elements/div.rs:3413-3421`), as
 /// gpui-component 0.8.0's `TabBar`, whose row locks its axis, does by a wheel
 /// mask (`tab/tab_bar.rs:691`, `:697`).
 ///

@@ -110,7 +110,7 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         InputField::HeightOnly => info.variant("control height only"),
     };
     // geometry::input_fill gives a refined field the platform's fill, in
-    // place of upstream's (input/input.rs:808, then :816); its geometry line
+    // place of upstream's (input/input.rs:776, then :784); its geometry line
     // names the fields. The showcase then leaves the field without a fill or
     // an edge colour of its own over a surface of its own (demo::text_field),
     // whose info claims the edge.
@@ -122,12 +122,12 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
             "border",
             "input",
             t.input,
-            "gpui-component/input/input.rs:811",
+            "gpui-component/input/input.rs:779",
         ))
         .color(input_background(t))
     };
     // Input takes only the fill from input_style and drops its foreground
-    // (input/input.rs:720), so the text is the colour of the root: the one
+    // (input/input.rs:691), so the text is the colour of the root: the one
     // geometry::input refines it with, or else the colour the showcase sets
     // on its window.
     let info = if filled {
@@ -144,10 +144,10 @@ pub fn input(t: &Theme, field: InputField, styled: bool) -> WidgetInfo {
         "placeholder",
         "muted_foreground",
         t.muted_foreground,
-        "gpui-component/input/input.rs:564",
+        "gpui-component/input/input.rs:541",
     ));
     // geometry::input carries border.corner_radius, which the refinement
-    // applies after upstream's own (input/input.rs:809, then :816).
+    // applies after upstream's own (input/input.rs:777, then :784).
     let info = if field == InputField::HeightOnly || !styled {
         info.config("border-radius", format!("radius: {}px", t.radius.as_f32()))
     } else {
@@ -208,7 +208,7 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
     // geometry::text_area letters the field in input.font's colour, over
     // the window's it inherits (a Textarea renders as an Input,
     // input/textarea.rs:221, which drops input_style's foreground,
-    // input/input.rs:720): its geometry line names it. A filled field has
+    // input/input.rs:691): its geometry line names it. A filled field has
     // no fill or edge colour of its own over the showcase's surface, whose
     // info claims the edge.
     let info = if filled {
@@ -225,14 +225,14 @@ pub fn textarea(t: &Theme, filled: bool) -> WidgetInfo {
                 "border",
                 "input",
                 t.input,
-                "gpui-component/input/input.rs:811",
+                "gpui-component/input/input.rs:779",
             ))
     };
     info.color(claim(
             "focused border",
             "ring",
             t.ring,
-            "gpui-component/input/input.rs:774",
+            "gpui-component/input/input.rs:754",
         ))
         .instance("row height", "defaults.line_height times the text size: geometry::text_area carries the platform's line height, which Input applies after its own 1.25rem (input/input.rs, Input::render: line_height then refine_style), and each row is the window's line height (gpui-base/input/base/element.rs, TextElement::request_layout)")
         .instance("height", "the showcase's own 90px, set after geometry::text_area, which sets none")
@@ -301,7 +301,7 @@ pub fn number_input(t: &Theme) -> WidgetInfo {
         ))
         .color(input_background(t))
         // The digits are the inner Input's, which drops input_style's
-        // foreground (input/input.rs:720).
+        // foreground (input/input.rs:691).
         .color(claim(
             "text, inherited",
             "foreground",
@@ -1524,7 +1524,7 @@ pub fn otp_input(t: &Theme) -> WidgetInfo {
             "digit",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:105",
+            "gpui-component/input/input.rs:103",
         ))
         .color(claim(
             "caret",
@@ -1551,7 +1551,7 @@ pub fn select(t: &Theme, native: Option<&ResolvedTheme>) -> WidgetInfo {
             "upstream trigger text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:105",
+            "gpui-component/input/input.rs:103",
         )),
     };
     info.color(claim(
@@ -1749,7 +1749,7 @@ pub fn color_select(t: &Theme, picked: bool) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:105",
+            "gpui-component/input/input.rs:103",
         ))
         .instance("swatch", "the picked colour, edged in it darkened by 30% (color_picker.rs, ColorPickerButton::render_field)")
     } else {
@@ -1859,7 +1859,7 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "text",
             "foreground",
             t.foreground,
-            "gpui-component/input/input.rs:105",
+            "gpui-component/input/input.rs:103",
         ))
         .color(claim(
             "border",
@@ -1871,13 +1871,13 @@ pub fn time_field(t: &Theme) -> WidgetInfo {
             "border, invalid",
             "danger",
             t.danger,
-            "gpui-component/time/time_field.rs:119",
+            "gpui-component/time/time_field.rs:118",
         ))
         .color(claim(
             "selected segment",
             "selection",
             t.selection,
-            "gpui-component/time/time_field.rs:135",
+            "gpui-component/time/time_field.rs:137",
         ))
         .color(claim(
             "focus ring, ring at 50% alpha",

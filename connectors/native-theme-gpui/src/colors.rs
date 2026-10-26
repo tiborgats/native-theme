@@ -213,7 +213,7 @@ pub fn to_theme_color(
         info: rgba_to_hsla(d.info_color),
         info_fg: rgba_to_hsla(d.info_text_color),
         // Upstream's `selection` is the *input* selection background
-        // (`theme_color.rs:228`, `input/input.rs:567`), which the model states
+        // (`theme_color.rs:228`, `input/input.rs:544`), which the model states
         // as `input.selection_background`; `defaults.selection_background` is
         // the row-selection colour `list_active` and `sidebar_accent` take.
         selection: rgba_to_hsla(resolved.input.selection_background),
@@ -297,7 +297,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors) {
     tc.link = c.link;
     // Both are text colours upstream, each the `fg` of a `Button::link` over
     // the transparent fill that variant paints in every state
-    // (`button/button.rs:1205, 1281, 1323` against `:1199, 1276, 1316`), so
+    // (`button/button.rs:1219, 1295, 1337` against `:1213, 1290, 1330`), so
     // they take the platform's hover and pressed link text. Feeding
     // `link.hover_background` into `link_hover` painted a ~9 % alpha fill as
     // a label.
@@ -355,7 +355,7 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 /// The 28 `button*` fields gpui-component reads for `Button`
-/// (`src/button/button.rs:995-1060`) take the values the semantic fields their
+/// (`src/button/button.rs:1009-1074`) take the values the semantic fields their
 /// variant used in 0.5.1 (`0.5.1 src/button/button.rs:642-647, 936-941`), so a
 /// native theme's solid button surfaces render as before (spec §6.1). Nothing
 /// new is read; upstream's alternative is a tinted house style (rationale §2.4).
@@ -419,7 +419,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     // The column header's own fill, which upstream paints as the header row
-    // (`table/column.rs:282`, `table/state.rs:1751, :1998`,
+    // (`table/column.rs:287`, `table/state.rs:1785, :2039`,
     // `table/table.rs:199`) and the model states as `list.header_background`.
     // The window background it used to take is the surface the header sits
     // on, not the header.
@@ -432,11 +432,11 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.table_even = tc.list_even;
     tc.table_head = c.list_header_bg;
     // The header row's own text (`table/table.rs:200`,
-    // `table/state.rs:1999`): `list.header_font.color`, not the muted
+    // `table/state.rs:2040`): `list.header_font.color`, not the muted
     // foreground upstream falls back to (`theme/schema.rs:1011`).
     tc.table_head_foreground = c.list_header_fg;
     // The grid line between rows and columns (`table/table.rs:203`,
-    // `table/state.rs:1618`), which the model states as `list.grid_color`.
+    // `table/state.rs:1652`), which the model states as `list.grid_color`.
     tc.table_row_border = c.list_grid;
     // The grid of a chart (`chart/mod.rs:493`, `chart/bar_chart.rs:878`,
     // `chart/radar_chart.rs:507`): the model's grid-line colour, which
@@ -540,7 +540,7 @@ fn assign_misc(
     // `accessibilityDisplayShouldReduceTransparency` asks for no
     // semitransparent backgrounds ("use only opaque windows"), and an opaque
     // scrim would hide the whole window. Transparent black is upstream's own
-    // colour for no overlay (dialog/dialog.rs:322-324); the backdrop still
+    // colour for no overlay (dialog/dialog.rs:335-337); the backdrop still
     // takes the clicks, whatever its colour.
     let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
     tc.overlay = if reduce_transparency {
