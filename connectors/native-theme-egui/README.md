@@ -620,33 +620,33 @@ showcases' captures do.
 
 **Theme switching**
 
-![egui theme switching](docs/assets/theme-switching.gif)
+![egui theme switching](docs/assets/theme-switching.gif "Theme switching")
 
 ### Linux
 
 **KDE Breeze, dark**
 
-![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png)
+![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png "KDE Breeze, dark")
 
 **KDE Breeze, light**
 
-![KDE Breeze Light](docs/assets/linux-kde-breeze-light.png)
+![KDE Breeze Light](docs/assets/linux-kde-breeze-light.png "KDE Breeze, light")
 
 **Material, dark**
 
-![Material Dark](docs/assets/linux-material-3-dark.png)
+![Material Dark](docs/assets/linux-material-3-dark.png "Material, dark")
 
 **Material, light**
 
-![Material Light](docs/assets/linux-material-3-light.png)
+![Material Light](docs/assets/linux-material-3-light.png "Material, light")
 
 **Catppuccin Mocha, dark**
 
-![Catppuccin Mocha Dark](docs/assets/linux-catppuccin-mocha-dark.png)
+![Catppuccin Mocha Dark](docs/assets/linux-catppuccin-mocha-dark.png "Catppuccin Mocha, dark")
 
 **Catppuccin Mocha, light**
 
-![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png)
+![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png "Catppuccin Mocha, light")
 
 ### macOS
 
@@ -654,19 +654,19 @@ The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, mac
 
 **macOS Monterey, light**
 
-![macOS Monterey Light](docs/assets/macos-macos-monterey-light.png)
+![macOS Monterey Light](docs/assets/macos-macos-monterey-light.png "macOS Monterey, light")
 
 **macOS Monterey, dark**
 
-![macOS Monterey Dark](docs/assets/macos-macos-monterey-dark.png)
+![macOS Monterey Dark](docs/assets/macos-macos-monterey-dark.png "macOS Monterey, dark")
 
 **macOS Tahoe, light**
 
-![macOS Tahoe Light](docs/assets/macos-macos-tahoe-light.png)
+![macOS Tahoe Light](docs/assets/macos-macos-tahoe-light.png "macOS Tahoe, light")
 
 **macOS Tahoe, dark**
 
-![macOS Tahoe Dark](docs/assets/macos-macos-tahoe-dark.png)
+![macOS Tahoe Dark](docs/assets/macos-macos-tahoe-dark.png "macOS Tahoe, dark")
 
 ### Windows
 
@@ -674,11 +674,11 @@ The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Ser
 
 **Windows 11, light**
 
-![Windows 11 Light](docs/assets/windows-windows-11-light.png)
+![Windows 11 Light](docs/assets/windows-windows-11-light.png "Windows 11, light")
 
 **Windows 11, dark**
 
-![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
+![Windows 11 Dark](docs/assets/windows-windows-11-dark.png "Windows 11, dark")
 
 ## Links
 

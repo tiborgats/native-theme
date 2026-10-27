@@ -13,15 +13,15 @@ populated `ResolvedTheme`.
 
 **gpui**
 
-![gpui theme switching](connectors/native-theme-gpui/docs/assets/theme-switching.gif)
+![gpui theme switching](connectors/native-theme-gpui/docs/assets/theme-switching.gif "gpui")
 
 **iced**
 
-![Iced theme switching](connectors/native-theme-iced/docs/assets/theme-switching.gif)
+![Iced theme switching](connectors/native-theme-iced/docs/assets/theme-switching.gif "iced")
 
 **egui**
 
-![egui theme switching](connectors/native-theme-egui/docs/assets/theme-switching.gif)
+![egui theme switching](connectors/native-theme-egui/docs/assets/theme-switching.gif "egui")
 
 ## Pick your path
 
