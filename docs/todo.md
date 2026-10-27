@@ -3884,17 +3884,39 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       (`showcase-gpui/demo.rs:N`, `inspector.rs`, `main.rs`, `chrome.rs`,
       `info/chrome.rs`, `pages/icons.rs` and others) for what they copy from
       it, and no gate reads those citations. The egui showcase re-pointed them
-      by content on 2026-10-24 (7408549a, e9e42718); by b847149a, after the
-      M9x fixes, 26 of the 50 named other lines, 24 of them by 83 to 476
-      lines, and nobody noticed until G4's Task 4 review. G4's Task 4 fix
-      round re-pointed all 50 by content. To do: a gate like the citation
-      gates, run by `scripts/check_release.sh` and CI, for every citation of a
-      showcase's line from another showcase or a connector: either the cited
-      line's text is recorded beside the citation and compared, or the
-      citation names a symbol (a function, a constant) that is looked up at
-      the cited line. The egui connector's citations of the gpui connector's
-      `src/lib.rs` (in its `src/atlas.rs`, `src/plugin.rs` and `src/ext.rs`)
-      have the same gap, and at b847149a several named other lines.
+      by content on 2026-10-23 and 2026-10-24 (7408549a, e9e42718); by
+      b847149a, after the M9x fixes, 26 of the 50 named other lines, 24 of
+      them by 83 to 476 lines, and nobody noticed until G4's Task 4 review.
+      G4's Task 4 fix round re-pointed all 50 by content. To do: a gate like
+      the citation gates, run by `scripts/check_release.sh` and CI, for every
+      citation of a showcase's line from another showcase or a connector:
+      either the cited line's text is recorded beside the citation and
+      compared, or the citation names a symbol (a function, a constant) that
+      is looked up at the cited line. The egui connector's citations of the
+      gpui connector's `src/lib.rs` (in its `src/atlas.rs`, `src/plugin.rs`
+      and `src/ext.rs`) have the same gap, and at b847149a several named
+      other lines.
+
+### gpui: the panic gate's sweep reads function bodies too
+
+- [ ] [v0.7.x] G4's gate for upstream functions that panic on their input
+      (`connectors/native-theme-gpui/clippy.toml`) was built from an inventory
+      of upstream's comment lines that mention a panic (G4's rationale P6).
+      Its reviews then found panics that no doc line states, only by reading
+      code: `StyledText::with_runs` panics on runs that do not fit its text
+      (gpui-pre 0.3.10 `src/elements/text.rs:526-536`), `with_highlights`
+      checks its ranges only with `debug_assert!` (`:445-446`), and the Linux
+      text system slices the text by the runs' lengths
+      (gpui-pre-wgpu 0.3.10 `src/cosmic_text_system.rs:1074`), which
+      `shape_line`, `shape_line_by_hash`, `shape_text`, `layout_line`,
+      `layout_line_by_hash` and `PlatformTextSystem::layout_line` reach. G4
+      lists those and stops there.
+      To do: the next GPUI Kit upgrade's sweep also reads the public
+      functions' bodies of gpui-pre, gpui-fast, gpui-base and
+      gpui-component for explicit panics on their arguments (`panic!`,
+      `assert!`, indexing and slicing by an argument-derived value), and
+      lists what it finds, each entry shown to flag a planted call, as G4's
+      plan's Task 4 did.
 
 ---
 

@@ -509,7 +509,7 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   single-line text" (gpui-pre `src/text_system.rs:721`, gpui-fast `:718`), and its body
   holds `shape_line`'s `debug_assert!` on a newline (gpui-pre `:760-763`). It is listed
   under `shape_line`'s doc line (`:668-670`), which it refers to, and the planted count
-  covers it: 12 entries, 15 after the fix rounds below.
+  covers it: 12 entries, 19 after the fix rounds below.
 - **Task 4, a panic no gpui function documents.** gpui-base and gpui-component comment that
   the platform text system panics on a run that splits a multi-byte character (gpui-base
   `src/input/base/element.rs:373`, `:3666`; gpui-component
@@ -531,7 +531,16 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   gpui-fast `:848`, then `src/fast/text.rs:798`): 15 entries. `try_layout_line_by_hash`
   (gpui-pre `src/text_system.rs:1000`, gpui-fast `:997`) only probes the cache
   (`text_system/line_layout.rs:730-777`, gpui-fast `:727-774`), returning a cached layout or
-  `None`, and never reaches the text system, so it is not listed. The macOS and Windows text
+  `None`, and never reaches the text system, so it is not listed. A third ruling adds four
+  and stops the search there: `PlatformTextSystem::layout_line` (the trait method, gpui-pre
+  `src/platform.rs:1552`, gpui-fast `:1570`; the Linux implementation is the slicing one,
+  `cosmic_text_system.rs:273`), and `StyledText::with_highlights` (its char-boundary checks
+  are `debug_assert!`s, gpui-pre `src/elements/text.rs:445-446`, gpui-fast `:446-447`),
+  `with_runs` (`panic!` and `assert!` on runs that do not fit the text, `:526-536`,
+  gpui-fast `:527-537`) and `with_default_highlights` (through `with_runs`, `:418-429`,
+  gpui-fast `:419-430`): 19 entries. Reading function bodies is a wider inventory than P6's;
+  `CN/clippy.toml`'s header and a `docs/todo.md` entry, *gpui: the panic gate's sweep reads
+  function bodies too*, give it to the next upgrade's sweep. The macOS and Windows text
   systems were not examined.
 - **Task 4, no `allow-invalid`.** Every entry drew its error at its planted line on gpui-pre,
   GPUI Fast and without default features; none is in a crate that a Linux configuration
@@ -546,8 +555,8 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   other lines before this task and are left as they are (the file is append-only).
 - **Task 4 fix round, the showcases' citations of the gpui showcase.** The review found that
   most of the egui and iced showcases' citations of the gpui showcase's lines were already
-  wrong before Task 4 renumbered them: re-pointed by content on 2026-10-24, they drifted with
-  the M9x fixes. At b847149a, 26 of the 50 named other lines (24 by 83 to 476 lines). The
+  wrong before Task 4 renumbered them: re-pointed by content on 2026-10-23 and 2026-10-24,
+  they drifted with the M9x fixes. At b847149a, 26 of the 50 named other lines (24 by 83 to 476 lines). The
   fix round re-points all 50 by content: each cited block, read at the commit that last wrote
   the citation, is found at HEAD; four blocks that occur twice at HEAD (an icon-or-label
   arm and three `.tooltip` lines) and the two functions that changed since (`panel_toggle`,

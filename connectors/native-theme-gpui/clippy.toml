@@ -11,7 +11,10 @@
 # Fast.
 # At each GPUI Kit upgrade the sweep and the planted-function count (one
 # temporary call per entry, one disallowed_methods error each, in the
-# gpui-pre, GPUI Fast and no-default-features clippy runs) are redone.
+# gpui-pre, GPUI Fast and no-default-features clippy runs) are redone; the
+# next sweep also reads the public functions' bodies for explicit panics on
+# their arguments (panic!, assert!, indexing, slicing), which no doc line may
+# state, as StyledText::with_runs and the text system's run slicing showed.
 disallowed-methods = [
     { path = "gpui::KeyBinding::new", reason = "panics on a parse error (gpui-pre 0.3.10 src/keymap/binding.rs:32, gpui-fast 0.1.12 :32); use KeyBinding::load" },
     { path = "gpui::TextSystem::resolve_font", reason = "panics if the font and none of the fallbacks can be resolved (gpui-pre 0.3.10 src/text_system.rs:351, gpui-fast 0.1.12 :353)" },
@@ -20,6 +23,10 @@ disallowed-methods = [
     { path = "gpui::WindowTextSystem::shape_text", reason = "panics on a run that splits a character: the text system slices the text by the runs' lengths, which no doc line states (gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12 src/cosmic_text_system.rs:1074, for a run whose font has fallbacks)" },
     { path = "gpui::WindowTextSystem::layout_line", reason = "panics on a run that splits a character or runs past the text: the text system slices the text by the runs' lengths, which no doc line states (gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12 src/cosmic_text_system.rs:1074, for a run whose font has fallbacks)" },
     { path = "gpui::WindowTextSystem::layout_line_by_hash", reason = "panics on a run that splits a character or runs past the text, where the cache misses: the text system slices the text by the runs' lengths, which no doc line states (gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12 src/cosmic_text_system.rs:1074, for a run whose font has fallbacks)" },
+    { path = "gpui::PlatformTextSystem::layout_line", reason = "the Linux text system's implementation panics on a run that splits a character or runs past the text, which no doc line states (the trait method at gpui-pre 0.3.10 src/platform.rs:1552, gpui-fast 0.1.12 :1570; gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12 src/cosmic_text_system.rs:273, :1074, for a run whose font has fallbacks)" },
+    { path = "gpui::StyledText::with_highlights", reason = "checks that each range starts and ends on a char boundary only with debug_assert! (gpui-pre 0.3.10 src/elements/text.rs:445-446, gpui-fast 0.1.12 :446-447); in a release build a range off a boundary becomes a run that splits a character, which shaping the text panics on (gpui-pre-wgpu 0.3.10 and gpui-fast-wgpu 0.1.12 src/cosmic_text_system.rs:1074)" },
+    { path = "gpui::StyledText::with_runs", reason = "panics if a run ends inside a character or past the text, or the runs do not cover the whole text (gpui-pre 0.3.10 src/elements/text.rs:526-536, gpui-fast 0.1.12 :527-537)" },
+    { path = "gpui::StyledText::with_default_highlights", reason = "hands the runs it builds from the highlights to with_runs, which panics if a run ends inside a character or past the text, or the runs do not cover the whole text (gpui-pre 0.3.10 src/elements/text.rs:418-429 and :526-536, gpui-fast 0.1.12 :419-430 and :527-537)" },
     { path = "gpui::ShapedLineCursor::take_until", reason = "panics if the boundary precedes the previous one, exceeds the line's length, or falls inside a UTF-8 character (gpui-pre 0.3.10 src/text_system/line.rs:280-281, gpui-fast 0.1.12 :281-282)" },
     { path = "gpui::Window::paint_image", reason = "panics if the frame_index is not valid (gpui-pre 0.3.10 src/window.rs:5064, gpui-fast 0.1.12 :5114)" },
     { path = "gpui_base::Spring::with_damping", reason = "panics when ratio is negative or non-finite (gpui-base 0.8.1 src/motion.rs:484); use Spring::try_with_damping" },
