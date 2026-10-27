@@ -71,14 +71,18 @@ echo ""
 echo "=== Step 1/7: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
-# Ensure local changes are pushed so CI uses the latest code
+# Ensure local changes are pushed so CI uses the latest code. The workflow runs
+# on the branch of this name on origin, so that branch, as GitHub has it, must
+# be HEAD; a branch pushed by an explicit refspec has no upstream (`@{u}`).
 info "Checking for unpushed commits..."
 LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "none")
+BRANCH=$(git branch --show-current)
+[ -n "$BRANCH" ] || fail "HEAD is detached: check out the branch the captures run on"
+REMOTE=$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)
 
 if [ "$LOCAL" != "$REMOTE" ]; then
-    info "Unpushed commits detected. Push first, then re-run."
-    fail "Push your changes before running this script (CI needs the latest code)"
+    info "origin's $BRANCH is at ${REMOTE:-nothing}, HEAD at $LOCAL."
+    fail "Push $BRANCH before running this script (CI needs the latest code)"
 fi
 ok "Branch is up to date with remote"
 
@@ -88,7 +92,6 @@ bash "$SCRIPT_DIR/update_provenance.sh" verify-clean >/dev/null \
 ok "Asset sources match HEAD"
 
 info "Triggering screenshots workflow..."
-BRANCH=$(git branch --show-current)
 EXPECTED_SHA="$LOCAL"
 
 # The runs that exist before this one is triggered: an earlier run at the same
