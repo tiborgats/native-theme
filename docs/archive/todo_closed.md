@@ -862,6 +862,51 @@ and many have since drifted, as the archive's [README](README.md) warns.
       :70 at microsoft-ui-xaml 8463f45), and `docs/platform-facts.md:1347`'s
       Windows cell gives the brush in place of "← `defaults.background_color`".
 
+### material-3: the screenshot names and the display name
+
+- [x] [v0.7.0] At the next `scripts/generate_assets_release.sh` run, the six README
+      links to `linux-material-{light,dark}.png` (the gpui, iced and egui
+      READMEs) become `linux-material-3-*`, since the screenshot scripts name
+      their output after the preset key, and the old PNGs are removed with
+      `git rm`. The display name "Material 3" is set in
+      the preset's line of the `bundled_presets!` table
+      (`native-theme/src/presets.rs`) when M2d rewrites the preset, with
+      "Material 3 Expressive" for the second Material preset; the menus say
+      "Material" until then. Nothing is renamed before
+      (`docs/archive/todo_v0.7.0_code-review-plan.md`, M2d Step 15).
+      *Closed 2026-10-27 by `b933efe0` (the v0.7.0 release asset run):* the six
+      README links name `linux-material-3-{light,dark}.png` and the old PNGs are
+      removed. The display-name half waits for M2d, as written; it is the open
+      `[v0.7.x]` entry *material-3: the display names "Material 3" and "Material 3
+      Expressive"* in `docs/todo.md`, *Core API*.
+
+### macos-monterey and macos-tahoe: the screenshot names and the display name
+
+- [x] [v0.7.0] At the next `scripts/generate_assets_release.sh` run (M2a
+      Step 12): the captures are named after the preset key, so the six
+      README links to `macos-macos-sonoma-{light,dark}.png`
+      (`connectors/native-theme-egui/README.md`, `native-theme-iced/README.md`,
+      `native-theme-gpui/README.md`) become `macos-macos-monterey-*`, and the
+      old PNGs are removed with `git rm`; `macos-monterey`'s display name and
+      TOML `name` become "macOS Monterey" (its line of
+      the `bundled_presets!` table in `native-theme/src/presets.rs`,
+      `macos-monterey.toml`'s `name`; "macOS Sonoma" until that run, ruled 2026-10-11). The run also
+      captures `macos-tahoe` (`.github/workflows/screenshots.yml`), and the
+      three connector READMEs show `macos-macos-tahoe-{light,dark}.png` beside
+      the Monterey pair (ruled 2026-10-11, Q5); no README links them before
+      the files exist. The header comment of
+      `scripts/generate_screenshots_gpui.sh` ("macOS Sonoma and Windows 11 are
+      captured by CI") then names both macOS presets (`_egui.sh` has no such
+      line).
+  *The header-comment half done by M8 T12 (2026-10-17, 7e450822):* the
+      sentence went (Step 6 ruling, M8-40), so the run leaves that header as
+      it is.
+      *Closed 2026-10-27:* `macos-monterey`'s display name and TOML `name` are
+      "macOS Monterey" (`bd903293`); the release asset run (`b933efe0`) captured
+      `macos-macos-monterey-*` and `macos-macos-tahoe-*` on the `macos-26` runner
+      (macOS 26.6.2), the three galleries link both pairs and say so, and the
+      `macos-macos-sonoma-*` PNGs are removed.
+
 ---
 
 ## Toolkit Connectors
@@ -1133,6 +1178,156 @@ and many have since drifted, as the archive's [README](README.md) warns.
       spans x 311–1270 and the label 745–836, both centred at 790.5, on gpui-pre and
       on GPUI Fast. The Linux screenshot scripts capture the Basic page, so none of
       them showed the label.
+
+- [x] [v0.7.0] **Regenerate the gpui screenshots and review the showcase's visible
+      changes.** The v0.5.9 showcase-app plan (Tasks 1–25) changed what the
+      gpui showcase draws, and nobody has looked at it on screen: the plan's
+      tasks lay it out headlessly and never ran
+      `scripts/generate_screenshots_gpui.sh`, which is maintainer-run because
+      it drives the desktop. Changes to check, by task:
+      - Task 9, the toolbar: the preset Combobox and the icon-set Select have
+        no literal width (they take `combo_box.min_width` and grow with their
+        content, where both were 260px); the icon buttons are laid out at a
+        labelled Button's height, `h_8` (2rem); on kde-breeze the items touch,
+        because `toolbar.item_gap` and the toolbar padding are 0 there, and a
+        vertical Separator's line overflows its 0px box. *Superseded by the
+        unstated-sizes plan below:* the three theme controls moved to the
+        Sidebar's header, the toolbar is padded, and the Separator is gone.
+      - Task 10: the window is 1380px wide (`NAV_WIDTH` 200 + 880 for the
+        page + `INSPECTOR_WIDTH` 300), with the Sidebar, the resizable panels
+        and the inspector. *Superseded, then restored:* `NAV_WIDTH` was 205
+        while the Mode row was a switch; with the Mode row a Select it is 200
+        again, and the window 1380px. *Superseded by the showcase-layout
+        plan below:* two panels, and the window 1180px.
+      - Task 12: the Preferences sheet is 600px wide (`PREFERENCES_WIDTH`).
+      - Task 14: page headings are sized to their text (`self_start`), not
+        the page's width.
+      - Task 16: List, Tree and DataTable row text takes the theme's list
+        font; the alignment of the standalone outgoing Bubble (`ml_auto` in
+        its block wrapper).
+      - Task 18: the strikethrough sample is no longer also underlined; the
+        masked sample masks only the secret, with its caption as page text.
+      - Task 19: the Layout page's Settings sidebar is upstream's 250px (the
+        showcase's `sidebar_width(140)`, which upstream clamped to 160, is
+        gone); GroupBox content is plain text, so it takes the GroupBox's
+        colour.
+      - Task 20: the Dialog and the two Sheets take upstream's default sizes
+        (448px, 350px); the Popover content lost its extra `p_4`; the Open
+        Dialog and Click for Menu triggers take `geometry::button`; the
+        Dialog's Close button sits at the footer's right; menu rows turn
+        their text `accent_foreground` on hover.
+      - Task 21: the HoverCard content lost its `container_margin` inset
+        inside the card's own padding.
+      - Task 22: the Spin card turns (a Transform indicator, drawn as a mask
+        in the foreground colour) where it pulsed; choosing gpui-component's
+        built-in icon set shows its icons.
+      - Task 24: section headings are `text_base` (1rem), where they were
+        13px.
+
+      The v0.5.9 unstated-sizes plan
+      ([archive](archive/todo_v0.5.9_unstated-sizes-and-chrome-ux-plan.md))
+      changed more, again without a look on screen. Sides are top / right /
+      bottom / left:
+      - **The chrome.** The panel toggles are at the two ends of the status
+        bar, which is taller for them (the toggles are `h_6`). The theme
+        settings are labelled in the Sidebar's header. The toolbar holds
+        Command Palette, Reload Theme and Preferences. The title reads
+        `native-theme-gpui <version> showcase`. `NAV_WIDTH` is 200 and the
+        window 1380 wide. The Sidebar's icons are `icon_size_small`. The
+        Icons page has an Icon Sizes section. The Mode row is a Select
+        (System / Light / Dark), like the Theme and Icon set rows; the status
+        bar shows the resolved mode. On KDE, `PanelRight` is
+        `sidebar-expand-right`. The vertical Separator is no longer shown
+        anywhere: widget coverage counts types, not variants. *Superseded
+        by the showcase-layout plan below:* the Sidebar, its header, the
+        rail, the inspector panel and the second toggle are gone.
+      - **Windows:** popover 15/16/17/16; dialog 24; card and group box 12;
+        list rows 0/12 (were 4/12); menu rows 4/11/5/11 (were 8/11/8/11);
+        tooltip 6/9/8/9; button top 5 (gpui and iced); input 5/6/6/10, its
+        right side 10 → 6 (gpui and iced); select and combobox 5/–/7/12, the
+        right side upstream's; the toolbar gains a 4px left padding.
+      - **GNOME:** popover 8; list rows 2/2/2/2 (were 8/12); the toolbar
+        loses its 47 minimum, sizes to its content and gains 6 on every side;
+        status bar 6/10; dialog 32/24/24/24, and upstream also uses the top
+        and bottom as the gaps between its sections and its content; select
+        and combobox gain vertical 5.
+      - **KDE:** dialog 10; the toolbar loses its 40 minimum and gains 6 on
+        every side; status bar 3/14/2/2 (the right is the size grip's
+        empty 14px); select and combobox gain vertical 6;
+        the live reader's button 5 → 6.
+      - **macOS:** dialog 20; toolbar 0/8/0/8; select and combobox
+        horizontal becomes upstream's, with vertical 3; the live reader's
+        button 12 → 8; select and combobox are 26px at scale 1 (upstream's
+        `h_8`; the stated 21 cannot shrink it).
+      - **Live Windows only:** reader button 12 → 11, input 12/12 → 10/6,
+        menu 12 → 11, tooltip 8 → 6/9/8/9, toolbar `item_gap` 4 → 0.
+      - **The colour-scheme presets** (ten at 40px, material at 64px): the
+        toolbar sizes to its content, and the showcase's own toolbar padding
+        applies where nothing is stated. Their dialog and status bar draw
+        gpui-component's padding, where they drew 0.
+      - **Every preset:** the popover and hover card, which drew 0; the
+        input, select and combobox now draw their stated padding.
+      - **Control heights:** the stated height at text scale 1 (the Windows
+        button was 33 for 32; macOS controls at 96 DPI were 27 for 22),
+        growing with the platform's line height above 1.
+      - **The Textarea** keeps its own 90px, and the single-line padding is
+        cleared from it.
+
+      The v0.5.9 showcase-layout plan
+      ([archive](archive/todo_v0.5.9_showcase-layout.md)) changed the
+      window's shape, again without a look on screen:
+      - **The frame.** The window asks for server-side decorations. On KDE,
+        KWin grants them, so the title bar, the window controls, the
+        corners and the shadow are KWin's decoration (Breeze by default),
+        and the menus sit in a menu-bar row above the toolbar. The window
+        draws gpui-component's `TitleBar` only where a compositor refuses
+        (GNOME's Mutter); under KWin the Layout page shows one as a sample.
+        The screenshot scripts capture the active window with
+        `spectacle -a -b -n`; check that the captures hold KWin's frame, as
+        whether Spectacle includes a window's decoration is its own setting.
+        (Since 2026-09-27 the scripts' shared helper, `scripts/capture_window.sh`
+        (then `capture_size.sh`), fails a capture no larger than the window's
+        content, so one without the frame fails the script. Since 2026-09-28 it
+        also makes the showcase's
+        window the active one before capturing, and fails unless the window's
+        content appears pixel for pixel inside the capture.)
+      - **The layout.** Two panels: the side panel (`LEFT_PANEL_WIDTH`
+        300) holds the Theme, Mode and Icon theme rows, a Separator and the
+        inspector; the content panel has a TabBar of the pages above the
+        page. The window is 1280 × 720 (1180 × 850 until 2026-09-27). The status bar has one toggle, at
+        its left end. The Layout page shows an expanded and a collapsed
+        `Sidebar`.
+
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* the screenshots the release asset run
+      changes. Every committed gpui, iced and egui screenshot is still
+      v0.6.1's (`docs/assets/PROVENANCE.toml`, commit `8db3da0e`), and each
+      Linux capture of G4's parity run differed from the committed PNG, so the
+      run replaces all of them; material-3's are written as new
+      `linux-material-3-*` files, since the preset was renamed and the
+      committed ones are still `linux-material-*`. Of what G4 itself changed:
+      - The Layout page's labelled Separator now has its label centred on the
+        line on gpui-pre as well (gpui-pre 0.3.10 lays out on taffy 0.15).
+        No screenshot shows it: every capture path passes `--tab basic`.
+      - The parity run moved nothing against the iced and egui showcases but
+        six status-bar keys that differed at M9x and agree now: material-3's
+        status bar y and height and its toggle's x and y, and
+        catppuccin-mocha's toggle x and y.
+      - The ColorPicker's hex text, where a channel rounds differently
+        (gpui-base 0.8.1 rounds each channel, `color_picker.rs:71`), is on the
+        Inputs page, which no screenshot shows either.
+      *Closed 2026-10-27 by `b933efe0` (the v0.7.0 release asset run, captured from
+      `bcde8141`):* every gpui, iced and egui screenshot regenerated, 12 per toolkit,
+      and looked at, each Linux one beside its iced and egui counterpart: the KWin
+      frame is in every Linux capture, the title reads "native-theme-gpui 0.7.0
+      showcase", the parity step found 887 differences, all excepted. The gpui
+      showcase's other ten pages were captured under kde-breeze light and looked at:
+      the labelled Separator's label is centred, the Layout page shows the expanded
+      and the collapsed `Sidebar` and the TitleBar sample, the masked label masks only
+      the secret, the Icons page has its Icon Sizes section, the Textarea keeps its
+      90px. What only opens on input (the
+      Dialog, the two Sheets, the Popover, the HoverCard, the menus' hover colours)
+      was not opened on screen; that look is the open `[v0.7.x]` entry *gpui
+      showcase: look at the overlays that open on input*.
 
 ### Closed items from Upstream PR candidates from v0.5.8 (Tier U)
 
