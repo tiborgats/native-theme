@@ -77,8 +77,8 @@ theme data (`tooltip.show_delay_ms`, `dialog.entrance`,
 thumb outlines; and theme-change integrations in the iced and gpui connectors
 (`theme_changes()`, `on_theme_change`).
 
-It also moves the gpui connector to GPUI Kit 0.8.0 on gpui-pre 0.3.9, with a
-`gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.10.
+It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
+`gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.12.
 
 ## v0.7.1 — Full theme geometry in the iced connector
 

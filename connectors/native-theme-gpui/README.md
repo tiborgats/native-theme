@@ -26,7 +26,7 @@ Turns a `ResolvedTheme` into a fully configured
   The splitter colours reach the handles gpui-base draws itself — groups built
   with `gpui_base::h_resizable` / `v_resizable` (`gpui_kit::base::…`), as
   colours at gpui-base's 1 px width, the hover colour only while dragged — not
-  gpui-component 0.8.0's own `h_resizable` / `v_resizable`, `Settings`' divider
+  gpui-component 0.8.1's own `h_resizable` / `v_resizable`, `Settings`' divider
   or the dock's edges, which draw a `border` hairline and a `muted_foreground`
   pill of their own.
 - **Per-widget geometry**: pure builders that return a `StyleRefinement` with
@@ -53,8 +53,8 @@ Turns a `ResolvedTheme` into a fully configured
   whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
   from is unchanged between the two releases. It was audited again against
   0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
-  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`; 0.7.3's and
-  0.8.0's lists are 0.7.1's, 106 variants. Since 0.6.1 the tables end in a wildcard: an
+  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`; 0.7.3's,
+  0.8.0's and 0.8.1's lists are 0.7.1's, 106 variants. Since 0.6.1 the tables end in a wildcard: an
   `IconName` newer than this crate maps to no icon, and the test module's
   exhaustive list is what reports it. The audit is repeated on every
   gpui-component bump.
@@ -141,7 +141,7 @@ The examples name GPUI and gpui-component through gpui-kit, as gpui-kit's own
 documentation does: GPUI at its root (`gpui_kit::Window`, `gpui_kit::div`)
 and gpui-component as `gpui_kit::component`. An application that depends on
 gpui-component and GPUI directly instead, with GPUI under the name
-gpui-component gives it (`gpui = { package = "gpui-pre", version = "0.3.9" }`),
+gpui-component gives it (`gpui = { package = "gpui-pre", version = "0.3.10" }`),
 names the same items `gpui::…` and `gpui_component::…`.
 
 `gpui_kit::open_window` wraps the view in gpui-base's `Root`, which carries
@@ -829,10 +829,10 @@ before letting go of it. `examples/showcase-gpui/support.rs` does it in
 
 ## Backends
 
-GPUI Kit 0.8.0 builds on one of two GPUI cores: **gpui-pre**, its default,
+GPUI Kit 0.8.1 builds on one of two GPUI cores: **gpui-pre**, its default,
 and **GPUI Fast** (the `gpui-fast` package, a fork of gpui-pre with retained
 rendering and layout), which its `gpui-fast` feature selects; it builds GPUI
-Fast 0.1.10 or later (gpui-kit 0.8.0's `gpui-fast = "0.1.10"`). The two cores'
+Fast 0.1.12 or later (gpui-kit 0.8.1's `gpui-fast = "0.1.12"`). The two cores'
 types are distinct (`Hsla`, `Pixels`, `App`, …), and Cargo unifies features
 across the build graph: once a crate's `gpui-fast` feature is on, it is on for
 every user of that crate. gpui-kit, gpui-component and gpui-base each have
@@ -844,7 +844,7 @@ alias gpui-kit documents), so it is built on the core gpui-kit is built on:
 
 - An application on **gpui-pre** needs nothing: it is the default.
 - An application on **GPUI Fast** through gpui-kit
-  (`gpui-kit = { version = "0.8.0", features = ["gpui-fast"] }`, with gpui-kit's
+  (`gpui-kit = { version = "0.8.1", features = ["gpui-fast"] }`, with gpui-kit's
   default `component` feature) needs nothing more either: this crate follows
   gpui-kit.
 - Any other application on **GPUI Fast** (one that depends on gpui-component

@@ -750,3 +750,33 @@ gpui-pre 0.3.9 or GPUI Fast 0.1.10, and the citations below are at 0.8.0.
   `ROADMAP.md` drops it. The others were re-read at 0.8.0 and re-cited where
   their lines moved (`Tab`'s height, radius and text size at
   `tab/tab.rs:958-966`, the TextView rule at gpui-base `text/node.rs:4296`).
+
+## Note: gpui-component 0.8.1
+
+Appended 2026-10-27 (G4); the text above is left as written. In v0.7.0 the
+connector moves on to gpui-component, gpui-base and gpui-kit 0.8.1, on
+gpui-pre 0.3.10 or GPUI Fast 0.1.12, and the citations below are at 0.8.1.
+
+- **The theme is unchanged.** No file of gpui-component's `src/theme/` or of
+  gpui-base's theme changed between 0.8.0 and 0.8.1, and no `Theme`,
+  `ThemeColor`, `ThemeConfig` or tokens field was added, removed or renamed,
+  so `ThemeColor` keeps its 139 fields and the base-palette fields of
+  `ThemeConfigColors` are still private (`theme/schema.rs:643-677`). The rows
+  above stand.
+- **The Toolbar's floor is reset where unstated.** 0.8.1's `Toolbar` sets a
+  minimum height by its size (`min_h_7`, `min_h_8`, `min_h_12`,
+  `toolbar.rs:253-255`) where 0.8.0 set the height (`h_8` at Small), so the
+  `h_auto` of `geometry::toolbar` no longer let a bar the theme gives no height
+  size to its content. The builder now sets the minimum height to
+  `toolbar.bar_height` where the theme states it and resets it to `auto` where
+  not, so such a bar is its content's height again.
+- **The Dialog's exit follows its entrance.** New in 0.8.1, a closing `Dialog`
+  stays in the window's dialog stack, taking no input, and leaves the way it
+  came in: one transition drives its opacity, the SlideDown offset and
+  FadeSlide's progress both ways (`Dialog::motion_transition`,
+  `dialog/dialog.rs:570-580`; `root.rs:264-269`), lasting `ANIMATION_DURATION`
+  for SlideDown and the motion tokens' `duration_normal` for the other
+  entrances, and none under reduced motion or for `DialogEntrance::None`
+  (`Dialog::exit_duration`, `:558-568`). So the entrance
+  `geometry::dialog_entrance` gives a dialog is its exit too; the theme states
+  no exit of its own, and the dialog row of the G2 note stands.

@@ -3305,6 +3305,24 @@ the gap — closing it is a change, and each wants its own decision.
         page. The window is 1280 × 720 (1180 × 850 until 2026-09-27). The status bar has one toggle, at
         its left end. The Layout page shows an expanded and a collapsed
         `Sidebar`.
+
+      *GPUI Kit 0.8.1 (2026-10-27, G4):* the screenshots the release asset run
+      changes. Every committed gpui, iced and egui screenshot is still
+      v0.6.1's (`docs/assets/PROVENANCE.toml`, commit `8db3da0e`), and each
+      Linux capture of G4's parity run differed from the committed PNG, so the
+      run replaces all of them; material-3's are written as new
+      `linux-material-3-*` files, since the preset was renamed and the
+      committed ones are still `linux-material-*`. Of what G4 itself changed:
+      - The Layout page's labelled Separator now has its label centred on the
+        line on gpui-pre as well (gpui-pre 0.3.10 lays out on taffy 0.15).
+        No screenshot shows it: every capture path passes `--tab basic`.
+      - The parity run moved nothing against the iced and egui showcases but
+        six status-bar keys that differed at M9x and agree now: material-3's
+        status bar y and height and its toggle's x and y, and
+        catppuccin-mocha's toggle x and y.
+      - The ColorPicker's hex text, where a channel rounds differently
+        (gpui-base 0.8.1 rounds each channel, `color_picker.rs:71`), is on the
+        Inputs page, which no screenshot shows either.
 - [ ] [1.0] **The iced showcase: per-instance Widget Info.** The gpui showcase now
       builds every widget through a helper that attaches a `WidgetInfo` and
       shows the innermost hovered instance's info in an inspector (the v0.5.9
