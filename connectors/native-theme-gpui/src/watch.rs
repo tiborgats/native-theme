@@ -35,15 +35,18 @@ use gpui::{App, Window};
 /// notifications, so the channel is unbounded: the watcher's thread never
 /// waits for the foreground.
 ///
-/// ```rust,ignore
+/// ```no_run
+/// # fn f(window: &mut gpui_kit::Window, cx: &mut gpui_kit::App) -> native_theme_gpui::Result<()> {
 /// let watcher = native_theme_gpui::on_theme_change(window, cx, |_event, _window, cx| {
 ///     native_theme_gpui::native_theme::detect::invalidate_caches();
 ///     if let Ok(sys) = native_theme_gpui::SystemTheme::from_system() {
 ///         native_theme_gpui::apply_system_theme(&sys, cx);
 ///     }
-/// });
+/// })?;
 /// // Keep `watcher` alive (in the main window's view) while the application
 /// // follows the OS theme.
+/// # Ok(())
+/// # }
 /// ```
 ///
 /// # Errors

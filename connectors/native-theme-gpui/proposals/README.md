@@ -64,6 +64,18 @@ The `native-theme` crate captures these values in a `WidgetMetrics` struct conta
 > (`toolbar.bar_height`) is likewise `Option<f32>`, `None` where the toolbar
 > sizes to its content.
 
+> **Status note (v0.7.0, gpui-component 0.8.1).** `ThemeConfig` still holds
+> only the fields listed under *Background*, with `colors` and `highlight`;
+> the separate `SemanticThemeConfig` adds scales of radii, spacing, shadows
+> and type (`sm`, `md`, `lg`, …), but no per-widget metric. The connector no
+> longer waits on this proposal for every widget: where gpui-component applies
+> the caller's style after its own, the `geometry` module's builders set the
+> native sizes through a `StyleRefinement` (alternative 3 below), and the
+> `widgets` module draws its own checkbox, radio, switch, slider, progress
+> bar, spinner, tab bar and separator. Hooks like these are still what the
+> parts no caller's style reaches would need; the crate documentation's
+> *Limits* paragraph lists them.
+
 Without `ThemeConfig` hooks for these values, connector crates like `native-theme-gpui`
 cannot apply native widget sizing -- they can only map colors, fonts, and border radius.
 

@@ -12,8 +12,8 @@ Turns a `ResolvedTheme` into a fully configured
 `gpui_component::theme::Theme` and installs it:
 
 - **Colours**: all 139 `ThemeColor` fields, including the 28 `button*`
-  fields gpui-component 0.7 reads for `Button`, so native themes keep their
-  solid button surfaces instead of upstream's tinted house style.
+  fields gpui-component's `Button` reads (since 0.7), so native themes keep
+  their solid button surfaces instead of upstream's tinted house style.
 - **Fonts and global geometry**: families, sizes, `radius`, `shadow`,
   `focus_ring`, `scrollbar_mode`; a `ThemeConfig` per mode so upstream's own
   `Theme::change` reproduces the native palette in light and dark (the 12
@@ -47,25 +47,19 @@ Turns a `ResolvedTheme` into a fully configured
 - **Icons**: mappings from every gpui-component `IconName` (106 variants) to
   the bundled Lucide and Material sets and to freedesktop icon names, `None`
   for the two a set lacks. gpui-component's `IconName` cannot be enumerated
-  in code, so the tables are audited by hand: against 0.6.4's variant set,
-  and again against 0.6.1, which keeps the same 101 variants (its full Lucide
-  catalog lives in `gpui_kit_assets::IconName`). It holds for 0.6.6 too,
-  whose variant set is 0.6.4's: the list gpui-kit-assets generates the enum
-  from is unchanged between the two releases. It was audited again against
-  0.7.0's `default-icons.txt`, which added `ban`, `circle-alert` and
-  `refresh-cw` to 0.6.6's 101. 0.7.1 added `mic` and `square`; 0.7.3's,
-  0.8.0's and 0.8.1's lists are 0.7.1's, 106 variants. Since 0.6.1 the tables end in a wildcard: an
-  `IconName` newer than this crate maps to no icon, and the test module's
-  exhaustive list is what reports it. The audit is repeated on every
-  gpui-component bump.
+  in code, so the tables are audited by hand against the list gpui-kit-assets
+  generates the enum from (`default-icons.txt`) on every gpui-component bump;
+  0.8.1's is 0.7.1's, 106 variants. The tables end in a wildcard: an
+  `IconName` newer than this crate maps to no icon instead of stopping the
+  build, and the test module's exhaustive list is what reports it.
 
 ## How it fits
 
 Depend on this crate; it re-exports `native-theme` as
 `native_theme_gpui::native_theme`, so your `Cargo.toml` need not add a second
 dependency on it, whose version could drift from the connector's. The
-workspace-level README at the repo root has a diagram showing where each
-crate sits.
+[workspace README](../../README.md) has a diagram showing where each crate
+sits.
 
 ## Compatibility
 
@@ -108,6 +102,10 @@ Add the crate to your `Cargo.toml`, with the OS readers (`native`):
 native-theme-gpui = { version = "0.7", features = ["native"] }
 gpui-kit = "0.8.1"        # or gpui-component + gpui-base + gpui-pre directly
 ```
+
+Without `native`, `from_system()` is the platform preset on Linux and an
+error on macOS and Windows, where the code below falls back to a bundled
+preset (see [Features](#features)).
 
 ```rust,no_run
 use gpui_kit::{AppContext as _, WindowOptions};
@@ -338,6 +336,7 @@ test over every preset and mode says so.
 | `input_fill(n, disabled)` | `input.background_color`; disabled, `input.disabled_background` (or `input.background_color` where it is not stated), `input.disabled_text_color` and `input.disabled_opacity` | `Input`, after `input`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a field with `Theme::input_background` — the window background in a light theme — and a disabled one with the border token mixed toward transparent, before the caller's refinement. The disabled text colour is what gpui-base then draws at half its alpha, as it draws every disabled field's text |
 | `combo_box_fill(n, disabled)` | `combo_box.background_color`; disabled, `combo_box.disabled_background` (or `combo_box.background_color` where it is not stated), `combo_box.disabled_text_color` and `combo_box.disabled_opacity` | `Select`, `Combobox`, after `select` or `combobox`, built with the same `disabled`. A colour, where no `ThemeColor` field maps: upstream fills a trigger as it fills an `Input`. The disabled text colour reaches a `Combobox`'s selected text; a `Select`'s title mutes itself when disabled |
 | `button_disabled` | `button.disabled_background` (or `button.background_color` where it is not stated), `button.disabled_text_color`, `button.disabled_opacity` | a disabled `Button`, after `button`. A colour, where no `ThemeColor` field maps: upstream paints a disabled button with its own faded literals and then replays the caller's refinement over them; the refinement lands at rest too, so an enabled Button must not take it |
+| `input_group_button` | `button.border.corner_radius` | the button nested in an `InputGroup` (`InputGroupButton`): the platform's button radius, where upstream rounds that `XSmall` button with half the theme's radius |
 | `button_checked` | `button.checked_background` (or `button.active_background`), `button.checked_text_color` (or `button.active_text_color`) | a toggle `Button` that is on (`selected(true)`), after `button`. A colour, where no `ThemeColor` field maps; with neither fill stated, upstream's selected fill stands |
 | `link` | `link.underline_enabled`, `link.font`, `link.background_color`, `defaults.line_height` | `Link`: where the platform draws links without an underline, a zero-thickness underline in place of upstream's resting one. The colour is `ThemeColor::link` (`link.font.color`) |
 | `menu_item` | `menu.row_height` (where stated), `menu.border.padding` (the stated sides), `menu.icon_text_gap`, `menu.font`, `defaults.line_height` | a menu row the application draws with its own elements — gpui-component's own `MenuItemElement` is crate-private and `PopupMenu` builds its rows itself, so no upstream widget takes this style |
@@ -348,7 +347,7 @@ test over every preset and mode says so.
 | `tooltip_content` | `tooltip.max_width` less the left and right padding (upstream's `px_2`, 0.5 rem at the installed font size, for a side the theme does not state) and `tooltip.border.line_width` twice | the element the application passes to `Tooltip::element` — the one place the platform's tooltip width makes the text wrap |
 | `popover` | `popover.border.padding` (the stated sides), `.corner_radius`, `.line_width`, `.color` | `Popover`, `HoverCard`: the edge lies inside the shadow ring gpui-component draws as a popover's edge, which stays |
 | `status_bar` | `status_bar.border.padding` (the stated sides), `status_bar.font`, `defaults.line_height` | `StatusBar` |
-| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_width`, `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: gpui-component 0.6.4 clamps the dialog to what is left of the viewport after applying the caller's style |
+| `dialog`, `dialog_max_width` | `dialog.border.padding` (the stated sides), `dialog.min_width`, `dialog.min_height`, `.border.corner_radius`, `.border.color`, `.background_color`, `.max_width` | `Dialog` (`Dialog::max_w` for the width). An unstated side keeps upstream's 16 px; upstream also spaces the dialog's sections by `max(top, 8px)` and a `DialogContent` by the bottom padding. `dialog.max_height` no longer arrives: since 0.6.4 gpui-component clamps the dialog to what is left of the viewport after applying the caller's style |
 | `dialog_entrance` | `dialog.entrance` | `Dialog::entrance`, `AlertDialog::entrance`. Both styles are approximations, drawn as `DialogEntrance::Fade`, a fade in place: `scale_fade` loses its scale, because gpui-component has no scaling entrance, and `fade_rise` its rise, because its `FadeSlide` settles from just above the dialog's place. Since gpui-component 0.8.1 the dialog leaves the way it entered: it fades out on the same curve and over the same duration, the motion tokens' `duration_normal`, as it faded in. `None` where the theme states none, and the dialog keeps upstream's `SlideDown` |
 | `dialog_footer`, `dialog_title`, `dialog_description` | `dialog.button_gap`, `dialog.title_font`, `dialog.body_font`; the two fonts with `defaults.line_height` | `DialogFooter`, `DialogTitle`, `DialogDescription` |
 | `table` | `list.item_font`, `defaults.line_height` | declarative `Table` |
@@ -409,9 +408,9 @@ Build it in `render`: it reads the installed theme, so it follows a light/dark
 switch. Buttons gpui-component creates internally (a dialog's close button,
 calendar navigation, the tab bar) cannot be reached this way.
 
-`input_group_button` gives a button nested in an `InputGroup` the platform's
-button radius; gpui-component sizes such a button `XSmall` and would round it
-with half the theme's radius.
+`geometry::input_group_button` gives a button nested in an `InputGroup` the
+platform's button radius; gpui-component sizes such a button `XSmall` and
+would round it with half the theme's radius.
 
 `variants::switch_color(n)` gives gpui-component's `Switch::color` the
 platform's checked track, `switch.checked_background`, for the `Native` view
@@ -428,7 +427,8 @@ takes the text input's border colour; and tab height, radius
 and text size, which `Tab`'s render writes into the same style bag the caller's
 setters fill, `tab/tab.rs:958-966`) is
 listed in §14 of the [v0.5.8 specification](https://github.com/tiborgats/native-theme/blob/main/docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md)
-and in the roadmap's upstream-PR list. The checkbox, radio, switch, slider,
+and in the [roadmap](../../ROADMAP.md)'s upstream-PR list (*v0.7.2 — Upstream
+receivers for the gpui connector*). The checkbox, radio, switch, slider,
 progress bar, spinner, tab bar and separator among them have theme-drawn
 replacements in the `widgets` module.
 
@@ -568,9 +568,9 @@ argument has no effect. `icons::to_image_source` documents it.
 | Preference | Effect |
 |---|---|
 | `text_scaling_factor` | multiplies `Theme.font_size` and `mono_font_size` (and their `ThemeConfig` copies); gpui-component's `WindowState` plugin sets the window rem to `font_size`, so every rem-relative size in gpui-component scales; the geometry builders scale text sizes and grow control heights; `scaled_text_size(size, &prefs)` scales a text size the connector does not apply itself, such as a `text_scale` role's |
-| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations and gpui-component's spinner, shimmer, progress, marker and accordion honour the flag |
+| `reduce_motion` | `true` switches `App::reduce_motion` on if it is off; a later `false` undoes only that, then gpui-base (which reads the OS preference itself since 0.6.2) re-reads the OS and decides. GPUI's animations, gpui-base's motion and gpui-component's animated widgets read the flag (the spinner, shimmer, progress, marker and accordion among them) |
 | `reduce_transparency` | the overlay behind a dialog or sheet is not drawn (`overlay` becomes transparent): macOS asks for no semitransparent backgrounds, and an opaque overlay would hide the window. The dialog or sheet stays modal |
-| `high_contrast` | no receiver in GPUI or gpui-component yet |
+| `high_contrast` | nothing, by design: GPUI and gpui-component have no receiver, and high contrast belongs in the theme data, which the OS readers fill with what the platform draws under high contrast; `is_high_contrast(&sys)` reads the flag |
 
 Non-finite or non-positive scaling factors count as 1.0.
 

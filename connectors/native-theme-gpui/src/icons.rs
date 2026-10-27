@@ -123,7 +123,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// Maps 31 of the 42 `IconRole` variants to `IconName`. The 11 unmapped roles
 /// (Shield, ActionSave, ActionPaste, ActionCut, ActionEdit, ActionPrint,
 /// NavHome, TrashFull, DialogQuestion, Help, Lock) have no corresponding icon
-/// in gpui-component 0.7.
+/// in gpui-component 0.8.1.
 ///
 /// # Examples
 ///

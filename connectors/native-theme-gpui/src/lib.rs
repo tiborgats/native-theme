@@ -1,6 +1,21 @@
 //! gpui toolkit connector for native-theme.
 //!
-//! Maps [`ResolvedTheme`] data to gpui-component's theming system.
+//! Maps [`ResolvedTheme`] data to gpui-component's theming system:
+//!
+//! - **build** a gpui-component theme: [`from_system()`] (the OS theme),
+//!   [`from_preset()`] (a bundled preset) or [`to_theme()`] (a
+//!   `ResolvedTheme` you already hold);
+//! - **install** it: [`apply`], or [`apply_system_theme`] for both variants
+//!   of the OS theme at once, and [`apply_accessibility`] when a preference
+//!   changes at run time;
+//! - **per-widget geometry and colours** that `ThemeColor` cannot carry: the
+//!   [`geometry`] builders and the [`variants`], fed by
+//!   [`cx.native()`](ActiveNativeTheme::native);
+//! - **scrollbars and resize handles**, which gpui-base draws: [`base_layer`],
+//!   which [`apply`] installs and keeps installed;
+//! - **icons** in the theme's icon set: [`icons`];
+//! - **theme-drawn controls** for the parts gpui-component draws from literals
+//!   of its own: the `widgets` module (feature `widgets`, on by default).
 //!
 //! # Quick Start
 //!
@@ -90,7 +105,7 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | 14 of 24 | text_color, muted_color, accent_color, border.color, focus_ring_color, shadow_color (the dialog overlay's colour, at an alpha of its own), and the four status colours with their text colours; the window background comes from `window.background_color` |
 //! | `defaults` geometry | radius, radius_lg, shadow, focus ring | fonts scaled by the text-scaling factor |
-//! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces (the 0.5.1 semantics); flat buttons via [`variants::ghost_button`] |
+//! | `button` | all 28 `button*` plus `primary*` / `secondary*` | solid native surfaces, the semantic colours each variant read in gpui-component 0.5.1, not upstream's tinted house style; flat buttons via [`variants::ghost_button`] |
 //! | `tab` | 5 of 10 colours | geometry is upstream work (`Tab`'s render writes its own height, radius and text size into the style bag the caller's setters fill, `tab/tab.rs:958-966`) |
 //! | `sidebar` | 5 of 6 | background, font.color, selection_background, selection_text_color, border.color |
 //! | `window` | 6 of 6 | background_color, title_bar_background, border colour; title_bar_font family, size, weight, style and colour via `geometry::title_bar`; the inactive title bar's fill and text via `geometry::title_bar_inactive` |
@@ -158,8 +173,12 @@
 //!
 //! The crate names GPUI through gpui-kit, so it is built on whichever core
 //! gpui-kit is: an application that enables `gpui-kit/gpui-fast` with
-//! gpui-kit's `component` feature gets this crate on GPUI Fast without
-//! `gpui-fast` here. The README's *Backends* section says when to enable it.
+//! gpui-kit's `component` feature (on by default) gets this crate on GPUI Fast
+//! without `gpui-fast` here. Enable `gpui-fast` here only for an application
+//! on GPUI Fast otherwise (one that depends on gpui-component directly, or
+//! uses gpui-kit without `component`): it switches gpui-kit and
+//! gpui-component together, since the two cores' types are distinct. The
+//! README's *Backends* section has the details.
 //!
 //! Without `svg-rasterize` an SVG icon is still converted: [`icons`] hands
 //! gpui the (colorized) SVG bytes as an undecoded `ImageSource::Image`, which
@@ -486,8 +505,10 @@ pub struct Loaded {
 ///
 /// **Ownership note:** this function takes ownership of the
 /// `SystemTheme`'s active variant. The non-active variant (light when dark
-/// is active, or vice versa) is dropped. If you need both variants, use
-/// `SystemTheme::from_system()` directly and call [`to_theme()`] on each.
+/// is active, or vice versa) is dropped. To install both variants, so a
+/// light/dark switch keeps the native palette, use
+/// [`SystemTheme::from_system()`](native_theme::SystemTheme::from_system) and
+/// [`apply_system_theme`]; to build both, call [`to_theme()`] on each.
 ///
 /// **Performance note:** `SystemTheme::from_system()` resolves both light
 /// and dark variants before this function picks one; native-theme has no
@@ -835,9 +856,11 @@ pub fn mono_font_weight(resolved: &ResolvedTheme) -> u16 {
 
 /// The platform-appropriate dialog button order.
 ///
-/// Returns whether affirmative buttons should appear on the leading (left)
-/// or trailing (right) side of a dialog. KDE uses leading-affirmative;
-/// most other platforms use trailing-affirmative.
+/// Returns whether a dialog's primary (affirmative) button sits at the
+/// leading (left) or the trailing (right) end of its button row: Windows and
+/// KDE put it at the left end ([`DialogButtonOrder::PrimaryLeft`]), GNOME,
+/// macOS, iOS and Material at the right ([`DialogButtonOrder::PrimaryRight`];
+/// `docs/platform-facts.md` §2.22 `button_order`, and the ios-13 preset).
 #[must_use]
 pub fn dialog_button_order(resolved: &ResolvedTheme) -> DialogButtonOrder {
     resolved.dialog.button_order
@@ -1111,9 +1134,11 @@ pub fn apply(
     apply_inner(theme, light, dark, prefs, cx);
 }
 
-/// [`SystemThemeExt::to_gpui_theme`] for the OS mode, storing both variants
-/// and installing both `ThemeConfig`s, then [`apply`]; upstream's
-/// `Theme::sync_system_appearance` then reproduces native colours in either mode.
+/// [`apply`] for the OS theme: installs the theme of the OS colour mode, as
+/// [`SystemThemeExt::to_gpui_theme`] builds it, and stores both variants
+/// with a `ThemeConfig` for each, so upstream's
+/// `Theme::sync_system_appearance` and `Theme::change` reproduce native
+/// colours in either mode.
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
     let theme = system_gpui_theme(sys);
     apply_inner(

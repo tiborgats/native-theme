@@ -38,14 +38,14 @@ use crate::colors::rgba_to_hsla;
 /// idle, exactly like upstream's `.ghost()`, but hovering and pressing with the
 /// colours every other button of the installed theme uses.
 ///
-/// ```ignore
-/// use gpui_kit::component::button::{Button, ButtonVariants as _};
+/// ```no_run
+/// use gpui_kit::component::{IconName, button::{Button, ButtonVariants as _}, input::InputGroupButton};
 /// use native_theme_gpui::variants;
-///
-/// // instead of `.ghost()`
+/// # fn f(cx: &gpui_kit::App) {
+/// // Instead of `.ghost()`, on a button and on a button inside an input group:
 /// Button::new("close").icon(IconName::Close).custom(variants::ghost_button(cx));
-/// // inside an input group
 /// InputGroupButton::new("copy").label("Copy").custom(variants::ghost_button(cx));
+/// # }
 /// ```
 ///
 /// Read from the installed theme at call time: `secondary_foreground`,
@@ -73,15 +73,16 @@ pub fn ghost_button(cx: &App) -> ButtonCustomVariant {
 /// of the model, read from the [`Native`] view the
 /// [`geometry`](crate::geometry) builders take, not from the installed theme.
 ///
-/// ```ignore
+/// ```no_run
 /// use gpui_kit::component::switch::Switch;
 /// use native_theme_gpui::{ActiveNativeTheme as _, variants};
-///
+/// # fn f(cx: &gpui_kit::App, on: bool) {
 /// let switch = Switch::new("wifi").checked(on);
 /// let switch = match cx.native() {
 ///     Some(n) => switch.color(variants::switch_color(n)),
 ///     None => switch,
 /// };
+/// # }
 /// ```
 ///
 /// The connector's own `widgets::Switch` (feature `widgets`) draws the

@@ -7,13 +7,13 @@
 //! [`StyleRefinement`] the application applies with
 //! `gpui_component::StyledExt::refine_style`:
 //!
-//! ```ignore
-//! use gpui_kit::component::StyledExt;
+//! ```no_run
+//! use gpui_kit::component::{StyledExt, button::Button};
 //! use native_theme_gpui::{ActiveNativeTheme, geometry};
-//!
-//! let n = cx.native();
+//! # fn f(cx: &gpui_kit::App) {
 //! let button = Button::new("save").label("Save");
-//! let button = match n { Some(n) => button.refine_style(&geometry::button(n)), None => button };
+//! let button = match cx.native() { Some(n) => button.refine_style(&geometry::button(n)), None => button };
+//! # }
 //! ```
 //!
 //! Each widget applies the caller's refinement after its own geometry at the
@@ -256,11 +256,10 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 /// and refined with this. The name upstream derives from `.label()`
 /// (`:768-771`) is then given explicitly:
 ///
-/// ```ignore
-/// use gpui_kit::component::{StyledExt, button::Button};
-/// use gpui_kit::{ParentElement, Styled, div};
+/// ```no_run
+/// use gpui_kit::{ParentElement, Styled, component::{StyledExt, button::Button}, div};
 /// use native_theme_gpui::geometry;
-///
+/// # fn f(n: native_theme_gpui::Native<'_>) {
 /// Button::new("save")
 ///     .refine_style(&geometry::button(n))
 ///     .child(
@@ -269,6 +268,7 @@ pub fn button(n: Native<'_>) -> StyleRefinement {
 ///             .child("Save"),
 ///     )
 ///     .accessibility_label("Save");
+/// # }
 /// ```
 ///
 /// It carries the line height [`button`] gives the button, so it is complete
