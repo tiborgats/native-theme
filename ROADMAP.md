@@ -82,7 +82,40 @@ thumb outlines; and theme-change integrations in the iced and gpui connectors
 It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 `gpui-fast` feature that builds it on GPUI Kit's other core, GPUI Fast 0.1.12.
 
-## v0.7.1 — Full theme geometry in the iced connector
+## v0.7.1 — Model completeness: what native-theme does not carry
+
+native-theme is to carry everything a platform draws visibly. It does not yet:
+the model has a shadow colour and a per-widget `shadow_enabled`, but no
+shadow's offset, blur, spread or layers, so every connector keeps its
+toolkit's own shadow shape; and the connectors record about forty more
+properties "the model states no" value for (the hover of a checked
+checkbox, a pressed segment, a dragged slider thumb, the menu bar's fill, a
+circular progress indicator's diameter, motion, among others). A value no
+platform document states is measured on the platform, never left to a
+toolkit's default.
+
+v0.7.1 is three documents, for the model only (the connectors follow once
+the model changes):
+
+- the gap map, [`docs/todo_v0.7.1_model-completeness-gap-map.md`](docs/todo_v0.7.1_model-completeness-gap-map.md):
+  every part, state, paint, geometry, text, motion, timing and accessibility
+  variant each platform draws, every standard control the model lacks, and
+  the properties that cross widgets (elevation and shadows, translucent
+  materials, motion, focus, the caret, selection, window chrome, size
+  variants), each with where its value will come from: read at run time,
+  published, or measured;
+- the rationale, which decides how the model covers each gap;
+- the specification of the model changes.
+
+Their implementation, the presets' values and the readers follow in the
+release the specification names.
+
+## Later — the connectors
+
+These wait for the model changes above, which change what each of them has
+to map.
+
+### Full theme geometry in the iced connector
 
 v0.5.9 ships most of it, and v0.7.0 adds `styles::button_toggle`,
 `pane_grid`, `expander_frame`, `segment_separator`, `dialog`, `toolbar`,
@@ -130,12 +163,12 @@ upstream lines that show it, in the connector's mapping contract.
   and a radio's sizes already come through `switch` and `radio`), which an application reads from the `ResolvedTheme` itself
   today, and a helper that sets iced's `Settings` default font and text size
   from the theme's font;
-- shadows: the model carries a shadow colour but no offset or blur, so every
-  style keeps iced's own `shadow`.
+- shadows: every style keeps iced's own `shadow` until the model carries
+  shadow geometry (v0.7.1).
 
 Detailed design: [`docs/todo_iced-full-theme-geometry.md`](docs/todo_iced-full-theme-geometry.md).
 
-## v0.7.2 — Upstream receivers for the gpui connector
+### Upstream receivers for the gpui connector
 
 v0.5.8 delivered the connector-side geometry: every widget where
 gpui-component 0.6 and later applies the caller's `StyleRefinement` after its own
@@ -144,7 +177,7 @@ through the `geometry` module, and the base layer (scrollbar, resize handle)
 takes native values through `base_layer` with automatic re-application. What
 remains is geometry on **inner elements the caller's style cannot reach**,
 plus the tab properties `Tab`'s render overwrites in the shared style bag,
-which is upstream work. v0.7.2 is the set of PRs to gpui-kit, one concern
+which is upstream work. It is the set of PRs to gpui-kit, one concern
 each, framed as theming flexibility:
 
 - a styled `Theme` scrollbar-style override honoured by `base_theme()`, so
@@ -190,8 +223,9 @@ limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
 ## Also in the 0.7.x releases
 
 [`docs/todo.md`](docs/todo.md) tags 29 open items `[v0.7.x]`, follow-ups of
-the v0.7.0 review that a 0.7 patch release takes beside the two milestones
-above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
+the v0.7.0 review that a 0.7 patch release takes beside the milestones
+above; an item that touches a property v0.7.1 changes waits for that
+change. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
 while 38 of the values the resolver requires have no iOS 26 source;
 material-3's rewrite (the code-review plan's M2d), after which its display
 name becomes "Material 3"; the theme watchers' open questions on Windows and
