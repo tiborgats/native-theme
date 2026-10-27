@@ -171,12 +171,15 @@ mod tests {
         );
     }
 
-    /// Writes 50 ms apart, closer than the debounce window, give one event,
-    /// after the last write (`docs/archive/todo_closed.md`, *Closed items from Theme watcher:
+    /// Writes 50 ms apart, closer than the debounce window, fire the
+    /// debounce window after the last write, not only after the first
+    /// (`docs/archive/todo_closed.md`, *Closed items from Theme watcher:
     /// OS changes it does not report*, "KDE: the 300 ms throttle keeps the first event of a
-    /// burst").
+    /// burst"). A loaded machine can stall a write past the window and split
+    /// the burst, so that a burst fires exactly once is checked on made-up
+    /// instants (`watch::tests::a_burst_is_due_once_after_its_last_message`).
     #[test]
-    fn a_burst_of_writes_fires_once_after_the_last() {
+    fn a_burst_of_writes_fires_after_the_last() {
         let dir = temp_config_dir("burst");
         let (event_tx, event_rx) = mpsc::channel();
         let subscription = super::watch_kde_dir(dir.0.clone(), move |_| {
@@ -184,27 +187,27 @@ mod tests {
         })
         .unwrap();
 
-        let mut last_write = Instant::now();
+        let mut before_last_write = Instant::now();
         for round in 0..6 {
             if round > 0 {
                 std::thread::sleep(Duration::from_millis(50));
             }
+            before_last_write = Instant::now();
             write_kdeglobals(&dir, round);
-            last_write = Instant::now();
         }
 
-        let fired = event_rx
-            .recv_timeout(TIMEOUT)
-            .expect("no event after the burst");
-        assert!(
-            fired >= last_write,
-            "the event fired {:?} before the last write",
-            last_write.duration_since(fired)
-        );
-        assert!(
-            event_rx.recv_timeout(Duration::from_secs(1)).is_err(),
-            "the burst fired more than one event"
-        );
+        // The last write's events arrive after `before_last_write`, and
+        // their burst fires the debounce window after that.
+        let due = before_last_write + super::super::DEBOUNCE;
+        let deadline = Instant::now() + TIMEOUT;
+        loop {
+            let fired = event_rx
+                .recv_timeout(deadline.saturating_duration_since(Instant::now()))
+                .expect("no event the debounce window after the last write");
+            if fired >= due {
+                break;
+            }
+        }
         assert!(drop_returns(subscription));
     }
 

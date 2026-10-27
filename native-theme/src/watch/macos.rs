@@ -414,7 +414,11 @@ mod tests {
     }
 
     /// Two notifications of one change, posted together, fire the callback
-    /// once.
+    /// once. Each notification's time is taken under the lock that the
+    /// queued callback checks it under, so two posts less than
+    /// [`super::super::DEBOUNCE`] apart fire once whatever the scheduler
+    /// does. A loaded machine can stall the test between the posts, and
+    /// then they are two changes, which may fire twice.
     #[test]
     fn notifications_posted_together_fire_once() {
         let registrations = [
@@ -428,10 +432,20 @@ mod tests {
         });
         let queue = queue(&guard);
 
+        let before = Instant::now();
         post(&registrations[0].name);
         post(&registrations[1].name);
+        let posting = before.elapsed();
         queue.waitUntilAllOperationsAreFinished();
-        assert_eq!(count.load(Ordering::SeqCst), 1);
+        let fires = count.load(Ordering::SeqCst);
+        if posting < super::super::DEBOUNCE {
+            assert_eq!(fires, 1, "posts {posting:?} apart fired {fires} times");
+        } else {
+            assert!(
+                (1..=2).contains(&fires),
+                "posts {posting:?} apart fired {fires} times"
+            );
+        }
         drop(guard);
     }
 

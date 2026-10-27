@@ -277,8 +277,7 @@ fn fire_debounced<T>(
     use std::time::{Duration, Instant};
 
     let poll = Duration::from_millis(200);
-    // When the last relevant message not yet fired arrived.
-    let mut pending: Option<Instant> = None;
+    let mut debounce = Debounce::default();
 
     loop {
         match shutdown.try_recv() {
@@ -286,23 +285,68 @@ fn fire_debounced<T>(
             Err(mpsc::TryRecvError::Empty) => {}
         }
 
-        let wait = pending.map_or(poll, |last| {
-            DEBOUNCE.saturating_sub(last.elapsed()).min(poll)
-        });
-        match events.recv_timeout(wait) {
+        match events.recv_timeout(debounce.wait(Instant::now(), poll)) {
             Ok(message) => {
                 if is_relevant(message) {
-                    pending = Some(Instant::now());
+                    debounce.note(Instant::now());
                 }
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {}
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         }
 
-        if pending.is_some_and(|last| last.elapsed() >= DEBOUNCE) {
-            pending = None;
+        if debounce.take_due(Instant::now()) {
             fire(callback);
         }
+    }
+}
+
+/// [`fire_debounced`]'s decision: when the last relevant message not yet
+/// fired arrived, and whether its burst is due. Every method takes the time
+/// as an argument, so the tests drive it with made-up instants: what a
+/// burst fires does not depend on how the test machine schedules threads.
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
+#[derive(Debug, Default)]
+struct Debounce {
+    /// When the last relevant message not yet fired arrived; `None` while
+    /// no burst is pending.
+    last: Option<std::time::Instant>,
+}
+
+#[cfg(any(
+    test,
+    all(target_os = "linux", any(feature = "kde", feature = "portal"))
+))]
+impl Debounce {
+    /// A relevant message arrived at `now`: the pending burst, or a new
+    /// one, is due [`DEBOUNCE`] after it.
+    fn note(&mut self, now: std::time::Instant) {
+        self.last = Some(now);
+    }
+
+    /// How long to wait at `now` for the next message: `poll`, or less when
+    /// the pending burst is due sooner.
+    fn wait(&self, now: std::time::Instant, poll: std::time::Duration) -> std::time::Duration {
+        self.last.map_or(poll, |last| {
+            DEBOUNCE
+                .saturating_sub(now.saturating_duration_since(last))
+                .min(poll)
+        })
+    }
+
+    /// Whether the pending burst is due at `now`, [`DEBOUNCE`] after its
+    /// last message. A due burst is cleared, so it fires once.
+    fn take_due(&mut self, now: std::time::Instant) -> bool {
+        let due = self
+            .last
+            .is_some_and(|last| now.saturating_duration_since(last) >= DEBOUNCE);
+        if due {
+            self.last = None;
+        }
+        due
     }
 }
 
@@ -844,37 +888,136 @@ mod tests {
         assert_eq!(calls.load(Ordering::SeqCst), 2);
     }
 
-    /// A burst of relevant messages fires once, after the last of them; an
-    /// irrelevant one fires nothing; `fire_debounced` returns when its
-    /// channel disconnects.
+    /// The instant `ms` milliseconds after `start`.
+    fn after(start: std::time::Instant, ms: u64) -> std::time::Instant {
+        start + std::time::Duration::from_millis(ms)
+    }
+
+    /// Messages closer together than [`DEBOUNCE`] are one burst, due once,
+    /// [`DEBOUNCE`] after the last of them, not after the first
+    /// (`docs/archive/todo_closed.md`, *Closed items from Theme watcher: OS
+    /// changes it does not report*, "KDE: the 300 ms throttle keeps the first
+    /// event of a burst").
     #[test]
-    fn fire_debounced_fires_once_per_burst() {
-        use std::sync::atomic::{AtomicUsize, Ordering};
+    fn a_burst_is_due_once_after_its_last_message() {
+        let start = std::time::Instant::now();
+        let window = u64::from(DEBOUNCE_MS);
+        let mut debounce = Debounce::default();
+        for ms in [0, 50, 100, 150, 200, 250] {
+            assert!(
+                !debounce.take_due(after(start, ms)),
+                "due at {ms} ms, inside the burst"
+            );
+            debounce.note(after(start, ms));
+        }
+        assert!(!debounce.take_due(after(start, 250 + window - 1)));
+        assert!(debounce.take_due(after(start, 250 + window)));
+        assert!(
+            !debounce.take_due(after(start, 250 + 2 * window)),
+            "a burst is due once"
+        );
+    }
+
+    /// A gap of [`DEBOUNCE`] between two messages makes two bursts.
+    #[test]
+    fn a_gap_of_the_debounce_window_makes_two_bursts() {
+        let start = std::time::Instant::now();
+        let window = u64::from(DEBOUNCE_MS);
+        let mut debounce = Debounce::default();
+        assert!(!debounce.take_due(start), "nothing is due before a message");
+        debounce.note(start);
+        assert!(debounce.take_due(after(start, window)));
+        debounce.note(after(start, window));
+        assert!(!debounce.take_due(after(start, 2 * window - 1)));
+        assert!(debounce.take_due(after(start, 2 * window)));
+    }
+
+    /// The loop waits `poll` while no burst is pending, then no longer than
+    /// until the pending burst is due, and not at all once it is.
+    #[test]
+    fn the_wait_ends_when_the_burst_is_due() {
+        use std::time::Duration;
+
+        let start = std::time::Instant::now();
+        let window = u64::from(DEBOUNCE_MS);
+        let poll = Duration::from_millis(200);
+        let mut debounce = Debounce::default();
+        assert_eq!(debounce.wait(start, poll), poll);
+        debounce.note(start);
+        assert_eq!(debounce.wait(start, poll), poll);
+        assert_eq!(
+            debounce.wait(after(start, window - 50), poll),
+            Duration::from_millis(50)
+        );
+        assert_eq!(debounce.wait(after(start, window), poll), Duration::ZERO);
+        assert_eq!(
+            debounce.wait(after(start, 2 * window), poll),
+            Duration::ZERO
+        );
+    }
+
+    /// `fire_debounced` on the real clock: an irrelevant message fires
+    /// nothing; a burst of relevant ones fires [`DEBOUNCE`] after the last of
+    /// them, at most once per relevant message; it returns when its channel
+    /// disconnects. A loaded machine can stall a thread past [`DEBOUNCE`]
+    /// and split the burst, so that it fires exactly once is checked on
+    /// made-up instants ([`a_burst_is_due_once_after_its_last_message`]).
+    #[test]
+    fn fire_debounced_fires_after_the_last_relevant_message() {
         use std::time::{Duration, Instant};
 
         let (events_tx, events_rx) = mpsc::channel::<bool>();
         let (_shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
-        let sender = std::thread::spawn(move || {
-            for relevant in [true, false, true, true] {
-                let _ = events_tx.send(relevant);
-                std::thread::sleep(Duration::from_millis(50));
-            }
-            let last = Instant::now();
-            std::thread::sleep(DEBOUNCE * 3);
-            let _ = events_tx.send(false);
-            std::thread::sleep(DEBOUNCE * 2);
-            last
+        let (fired_tx, fired_rx) = mpsc::channel::<Instant>();
+        let watcher = std::thread::spawn(move || {
+            fire_debounced(&events_rx, &shutdown_rx, |relevant| relevant, &|_| {
+                let _ = fired_tx.send(Instant::now());
+            });
         });
 
-        let fired = std::sync::Mutex::new(Vec::new());
-        let calls = AtomicUsize::new(0);
-        fire_debounced(&events_rx, &shutdown_rx, |relevant| relevant, &|_| {
-            calls.fetch_add(1, Ordering::SeqCst);
-            fired.lock().unwrap().push(Instant::now());
-        });
-        let last = sender.join().unwrap();
-        assert_eq!(calls.load(Ordering::SeqCst), 1, "a burst fires once");
-        assert!(fired.lock().unwrap().iter().all(|at| *at >= last));
+        let _ = events_tx.send(false);
+        assert!(
+            fired_rx.recv_timeout(DEBOUNCE * 2).is_err(),
+            "an irrelevant message fired"
+        );
+
+        let relevant_messages = [true, false, true, true];
+        let mut before_last = Instant::now();
+        for relevant in relevant_messages {
+            std::thread::sleep(Duration::from_millis(50));
+            if relevant {
+                before_last = Instant::now();
+            }
+            let _ = events_tx.send(relevant);
+        }
+        // The last relevant message arrives after `before_last`, and its
+        // burst fires DEBOUNCE after that.
+        let due = before_last + DEBOUNCE;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut fires = 0;
+        let mut fired_when_due = false;
+        while !fired_when_due {
+            match fired_rx.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
+                Ok(fired) => {
+                    fires += 1;
+                    fired_when_due = fired >= due;
+                }
+                Err(_) => break,
+            }
+        }
+        assert!(
+            fired_when_due,
+            "no fire DEBOUNCE after the last relevant message"
+        );
+
+        drop(events_tx);
+        watcher.join().unwrap();
+        fires += fired_rx.try_iter().count();
+        let relevant = relevant_messages.iter().filter(|&&r| r).count();
+        assert!(
+            fires <= relevant,
+            "{fires} fires for {relevant} relevant messages"
+        );
     }
 
     #[test]
