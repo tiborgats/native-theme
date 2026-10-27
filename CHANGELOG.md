@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-27
 
 ### Breaking Changes
 
@@ -1771,7 +1771,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
-[Unreleased]: https://github.com/tiborgats/native-theme/compare/v0.6.1...HEAD
+[0.7.0]: https://github.com/tiborgats/native-theme/compare/v0.6.1...v0.7.0
 [0.6.1]: https://github.com/tiborgats/native-theme/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/tiborgats/native-theme/compare/v0.5.9...v0.6.0
 [0.5.9]: https://github.com/tiborgats/native-theme/compare/v0.5.8...v0.5.9

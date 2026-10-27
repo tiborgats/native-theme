@@ -44,9 +44,7 @@ Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archiv
 
 ## v0.7.0 — Whole-codebase review
 
-**Status:** about to ship. The review is closed, the workspace version is
-0.7.0 and the release assets are generated; the tag and the crates.io
-release come next.
+**Status:** released 2026-10-27 (tag `v0.7.0`).
 
 The release after v0.6.1 is 0.7.0. The review's design phase accepted two
 breaking changes ([`docs/archive/todo_v0.7.0_code-review-plan.md`](docs/archive/todo_v0.7.0_code-review-plan.md), D1):
@@ -70,7 +68,7 @@ and the gpui and egui connectors run a platform reader only with their
 `windows`), as the iced connector does: without one, Linux gives the
 platform preset in the OS's light or dark mode and reduced-motion
 preference, and macOS and Windows an error. The *Breaking Changes* of
-[CHANGELOG.md](CHANGELOG.md)'s *Unreleased* section list every one.
+[CHANGELOG.md](CHANGELOG.md)'s *0.7.0* section list every one.
 
 New in it: the `macos-tahoe` preset, macOS 26's Liquid Glass look, and the
 platform preset picked by the running OS version's generation
