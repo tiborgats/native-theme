@@ -91,14 +91,21 @@ info "Triggering screenshots workflow..."
 BRANCH=$(git branch --show-current)
 EXPECTED_SHA="$LOCAL"
 
+# The runs that exist before this one is triggered: an earlier run at the same
+# commit (one cancelled, or from a run of this script that stopped) is not ours,
+# and the newest run at EXPECTED_SHA is that one until GitHub registers the new.
+PREVIOUS_RUNS=$(gh run list --workflow=screenshots.yml --branch="$BRANCH" --limit 50 \
+    --json databaseId --jq '[.[].databaseId]')
+
 gh workflow run screenshots.yml --ref "$BRANCH"
 
 # Poll until the new run appears (the fixed-sleep approach races with GitHub's queue)
 info "Waiting for workflow run to register..."
 RUN_ID=""
 for i in $(seq 1 30); do
-    RUN_ID=$(gh run list --workflow=screenshots.yml --branch="$BRANCH" --limit 1 \
-        --json databaseId,headSha --jq ".[] | select(.headSha == \"$EXPECTED_SHA\") | .databaseId")
+    RUN_ID=$(gh run list --workflow=screenshots.yml --branch="$BRANCH" --limit 10 \
+        --json databaseId,headSha \
+        --jq "[.[] | select(.headSha == \"$EXPECTED_SHA\" and (.databaseId | IN($PREVIOUS_RUNS[]) | not))][0].databaseId // empty")
     if [ -n "$RUN_ID" ]; then
         break
     fi
