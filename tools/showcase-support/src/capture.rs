@@ -210,8 +210,8 @@ impl FrameCapture {
     /// scale `content` gives at that moment. A capture that fails the check
     /// is not left at the path. On Windows a finder run that has not found
     /// the window within [`crate::CAPTURE_WAIT`] fails it; on macOS a
-    /// `screencapture` that WindowServer refuses is run again, every
-    /// [`RETRY_PAUSE`], until it has been refused that long. Poll until it
+    /// `screencapture` that WindowServer refuses is run again, every 500 ms,
+    /// until it has been refused that long. Poll until it
     /// returns `Some`, then stop: on Windows a later poll returns `None`
     /// again, as the finder run is gone.
     pub fn poll(
