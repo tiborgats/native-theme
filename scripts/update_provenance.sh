@@ -19,8 +19,8 @@
 #
 # The hash covers the git object ids of every path that feeds the showcases:
 # crate manifests and sources, presets, icon bundles, the egui connector's
-# mapping.toml, the lockfile, the capture scripts and the screenshots
-# workflow. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check`
+# mapping.toml, the showcases' shared crate (tools/showcase-support), the
+# lockfile, the capture scripts and the screenshots workflow. `git rev-parse HEAD:<path>` yields a tree or blob id, so `check`
 # works on a depth-1 checkout.
 #
 # The stamp also records the OS versions of the CI runners that captured the
@@ -59,6 +59,8 @@ SOURCE_PATHS=(
     connectors/native-theme-egui/mapping.toml
     connectors/native-theme-egui-widgets/Cargo.toml
     connectors/native-theme-egui-widgets/src
+    tools/showcase-support/Cargo.toml
+    tools/showcase-support/src
     scripts/generate_screenshots_iced.sh
     scripts/generate_screenshots_gpui.sh
     scripts/generate_screenshots_egui.sh

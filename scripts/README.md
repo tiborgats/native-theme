@@ -232,8 +232,8 @@ Provenance stamp for the visual assets. `write` records the workspace
 version, the commit, and a SHA-256 over the git object ids of every path
 that feeds the showcases (crate manifests and sources, presets, icon
 bundles, the egui connector's `mapping.toml`, the egui widgets crate,
-`Cargo.lock`, the capture
-scripts, the screenshots workflow) into
+the showcases' shared crate `tools/showcase-support`, `Cargo.lock`, the
+capture scripts, the screenshots workflow) into
 `docs/assets/PROVENANCE.toml`; `write DIR` also records, as `macos_version`
 and `windows_version`, every distinct OS version in DIR's sidecars
 (`<toolkit>-macos.txt`, `<toolkit>-windows.txt`: `sw_vers -productVersion`
