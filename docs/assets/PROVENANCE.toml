@@ -1,21 +1,21 @@
 # Provenance of the visual assets (screenshots and GIFs under
 # native-theme/docs/assets and connectors/*/docs/assets).
 # Written by scripts/update_provenance.sh at the end of scripts/generate_assets_release.sh;
-# read by scripts/check_release.sh and the crates.io workflow's CI gate.
+# read by scripts/check_release.sh and the crates.io workflow's release gate.
 # Do not edit by hand.
 
 # Workspace version and commit the assets were captured from.
-version = "0.6.1"
-commit = "8db3da0e10768b85c87007f1fe33a91b00cd2777"
-generated = "2026-10-08"
+version = "0.7.0"
+commit = "bcde81412f770895ba3d5a09f4166662da5d311e"
+generated = "2026-10-27"
 
 # OS versions of the CI runners that captured the macOS and Windows
 # screenshots, from the screenshots workflow's sidecars; empty when the run
 # recorded none.
-macos_version = ""
-windows_version = ""
+macos_version = "26.6.2"
+windows_version = "10.0.26100.0"
 
 # SHA-256 over the git object ids of every path that feeds the showcases
 # (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
-sources = "810e002fe0392e2fa0607c233d551e00c39eee8021a451e3cbe3aea4a11cf8fd"
+sources = "43c43f5829789e9c2856851ce9c5590db3bc3da7307bd8cd9d02931fdb8514a6"

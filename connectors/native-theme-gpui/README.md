@@ -964,9 +964,9 @@ every title is).
 
 ![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png)
 
-![Material Light](docs/assets/linux-material-light.png)
+![Material Light](docs/assets/linux-material-3-light.png)
 
-![Material Dark](docs/assets/linux-material-dark.png)
+![Material Dark](docs/assets/linux-material-3-dark.png)
 
 ![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png)
 
@@ -974,9 +974,15 @@ every title is).
 
 ### macOS
 
-![macOS Sonoma Light](docs/assets/macos-macos-sonoma-light.png)
+The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.6.2, so the Monterey pair shows that preset drawn on macOS 26.
 
-![macOS Sonoma Dark](docs/assets/macos-macos-sonoma-dark.png)
+![macOS Monterey Light](docs/assets/macos-macos-monterey-light.png)
+
+![macOS Monterey Dark](docs/assets/macos-macos-monterey-dark.png)
+
+![macOS Tahoe Light](docs/assets/macos-macos-tahoe-light.png)
+
+![macOS Tahoe Dark](docs/assets/macos-macos-tahoe-dark.png)
 
 ### Windows
 
