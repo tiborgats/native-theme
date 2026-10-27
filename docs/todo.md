@@ -2638,6 +2638,9 @@ What is still open on the iced side:
       M8 T21 fix round 1 (2026-10-17): a mechanical check of such citations is
       *gpui: a citation gate for the connector's doc comments*, "The
       showcase's citations are checked by gates".
+      *2026-10-27 (G4, the v0.7.0 doc audit):* ROADMAP.md's upstream list is
+      re-cited at gpui-component 0.8.1 (G4 Task 6); the citations of this file
+      and `docs/todo_gpui-full-theme.md` older than that stay to re-verify.
 
 #### Follow-ups from the v0.5.9 showcase and contract work
 
