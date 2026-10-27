@@ -5891,10 +5891,10 @@ fn icon_theme_picker(state: &State) -> Element<'_, Message> {
 /// 0.14.2 `src/combo_box.rs:970-1013`, `search` over the matchers built
 /// from the option's `Display`, which `overlay/menu.rs:559` draws as the
 /// row's label), so a key's word missing from the name finds no row of that
-/// preset here: `3` of material-3 (Material), `13` of ios-13 (iOS),
-/// `monterey` of macos-monterey (macOS Sonoma), though the `default (..)`
-/// row, which names the default preset's key, is found by its words. Its
-/// placeholder, shown while the field is empty, says so.
+/// preset here: `3` of material-3 (Material) and `13` of ios-13 (iOS),
+/// though the `default (..)` row, which names the default preset's key, is
+/// found by its words. Its placeholder, shown while the field is empty,
+/// says so.
 ///
 /// The arrow is the field's icon: [`arrow_handle`]'s chevron at its size,
 /// right-aligned at the right padding's inner edge as the drop-down's is

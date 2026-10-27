@@ -58,7 +58,7 @@ bundled_presets! {
     "kde-breeze" => "KDE Breeze", &["linux-kde"];
     "adwaita" => "Adwaita", &["linux"];
     "windows-11" => "Windows 11", &["windows"];
-    "macos-monterey" => "macOS Sonoma", &["macos"];
+    "macos-monterey" => "macOS Monterey", &["macos"];
     "macos-tahoe" => "macOS Tahoe", &["macos"];
     "material-3" => "Material", &[];
     "ios-13" => "iOS", &["macos", "ios"];

@@ -10,7 +10,7 @@
 # gives it, and its comment gives the composite over the colour it sits on.
 # Source: docs/platform-facts.md's macOS column (AppKit documentation, the HIG, WebKit,
 # measurements) and the probe.
-name = "macOS Sonoma"
+name = "macOS Monterey"
 icon_set = "sf-symbols"
 icon_theme = "sf-symbols"
 
