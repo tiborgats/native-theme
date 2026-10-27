@@ -61,8 +61,8 @@ watch = ["native-theme/watch", "dep:futures"]  # enables `on_theme_change`
 # `gpui`. Caret: an exact pin in a library would conflict with any consumer
 # whose other dependencies want a later snapshot.
 gpui = { package = "gpui-pre", version = "0.3.10" }
-# A hard floor: 0.7.1 added IconName::Mic and IconName::Square, which the
-# icon tables name.
+# A hard floor: the claims, citations and tests are of 0.8.1, which a fresh
+# resolve of `^0.8.0` takes anyway (docs/archive/todo_v0.7.0_gpui-kit-0.8.1-rationale.md, P1).
 gpui-component = "0.8.1"
 # For gpui_base::Theme, ScrollbarTheme, ResizableTheme and
 # apply_system_reduce_motion (not re-exported), and the headless primitives
