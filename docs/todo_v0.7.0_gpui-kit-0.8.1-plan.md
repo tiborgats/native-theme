@@ -659,3 +659,15 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   the width rounded up; the `.ceil()` is at 0.3.10 `:772`, which `SC/demo.rs` cites. Every
   copy took the same text, and the parity check's merged groups (84 over 582 keys) and their
   reasons' order are unchanged.
+- **Task 8, the resize handle's target.** `SC/demo.rs`'s `resize_handles` doc cited taffy
+  0.13 for a handle `HANDLE_SIZE` wide that layout widens to its 8px of padding. gpui-base
+  0.7.0 and later size a straddling handle `straddle_extent` wide, `HANDLE_SIZE` plus
+  `HANDLE_PADDING` twice, border-box (0.8.1 `resizable/resize_handle.rs:283`, `:298`,
+  `:340-346`; taffy 0.15.0 `style/mod.rs:882`), so its band is 9px, boundary − 4 to + 5, and
+  taffy's clamp to the padding (`compute/oof.rs:511-512`) does not bite. The Widget Info
+  target covered the older 8px, to + 4, and `the_resize_handle_reports_itself` asserted that
+  and probed + 4.5 as outside the handle. The target now ends `HANDLE_PADDING` past the
+  line, and the test asserts + 5, hovers + 4.5 inside and + 5.5 outside; it failed on the old
+  target (`(296px, 304px)` against `(296px, 305px)`). `HANDLE_SIZE`'s doc no longer calls it
+  the width the handle is given. `SC/demo.rs` keeps its line count, and no citation names the
+  lines between the two docs, which moved by one.

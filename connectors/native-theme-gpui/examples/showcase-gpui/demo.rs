@@ -2509,9 +2509,8 @@ pub(crate) fn segmented(
 /// upstream, so the showcase names it again to cover the handle's hit area.
 const HANDLE_PADDING: Pixels = px(4.);
 
-/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:13): the width a
-/// resize handle is given and its line is drawn at, `pub(crate)` upstream as
-/// well.
+/// gpui-base's `HANDLE_SIZE` (resizable/resize_handle.rs:13): the width of a
+/// resize handle's line, between its paddings; `pub(crate)` upstream as well.
 pub(crate) const HANDLE_SIZE: Pixels = px(1.);
 
 /// The room the side panel keeps clear at its right edge for the splitter's
@@ -2529,12 +2528,13 @@ pub(crate) fn splitter_reserve(cx: &App) -> Option<Pixels> {
 /// in upstream's colour, with an info target over the handle's whole hit
 /// area.
 ///
-/// That area is not the line and `HANDLE_PADDING` on either side. The handle
-/// is `HANDLE_SIZE` wide with `HANDLE_PADDING` on each side, and layout
-/// widens a box to at least its padding (taffy 0.13 compute/flexbox.rs:
-/// 2294-2295), so the handle spans `HANDLE_PADDING` either side of the
-/// panel boundary: 4px left of the line, which starts at the boundary, and
-/// 3px right of it.
+/// That area is the line, which starts at the boundary, and `HANDLE_PADDING`
+/// on either side of it: the handle is `straddle_extent` wide, its line padded
+/// by `HANDLE_PADDING` each side, absolutely placed `HANDLE_PADDING` left of
+/// the boundary (gpui-base 0.8.1 resizable/resize_handle.rs:283, :298,
+/// :340-346). gpui lays boxes out border-box (taffy 0.15.0 style/mod.rs:882;
+/// gpui-pre's taffy.rs never sets it), so taffy's clamp of an absolute box's
+/// min size to its padding (compute/oof.rs:511-512) does not bite: 9px over 8.
 ///
 /// `handles` names the group's handles in order, as `(id, between)`. The
 /// renderer is not told which handle it draws (resizable/resize_handle.rs,
@@ -2576,7 +2576,7 @@ pub(crate) fn resize_handles(
             // The model's splitter: its line `splitter.divider_width` wide,
             // widened back over the strip the panel before the boundary
             // keeps clear for it (`splitter_reserve`), since the handle
-            // lays out no wider than HANDLE_SIZE; `splitter.hover_color`
+            // holds its line in HANDLE_SIZE; `splitter.hover_color`
             // under the pointer, through the group upstream names the
             // handle (resizable/resize_handle.rs, `ResizeHandle`).
             let native = cx.native();
@@ -2593,7 +2593,7 @@ pub(crate) fn resize_handles(
                 .top_0()
                 .bottom_0()
                 .left(-HANDLE_PADDING)
-                .right(px(-(f32::from(HANDLE_PADDING) - f32::from(HANDLE_SIZE))))
+                .right(-HANDLE_PADDING)
                 .debug_selector(move || id.into());
             let painted = match splitter {
                 Some((width, hover)) => div()

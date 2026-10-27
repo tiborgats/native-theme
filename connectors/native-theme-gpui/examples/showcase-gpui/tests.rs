@@ -2866,16 +2866,16 @@ fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
     let boundary = boundary(bounds_of(&mut cx, CONTENT_PANEL));
     let title = "ResizeHandle · side panel | content";
     let target = bounds_of(&mut cx, CHROME_HANDLE);
-    // The handle's hit area: 4px either side of the boundary, the line
-    // taking the first pixel right of it (demo.rs, resize_handles).
+    // The handle's hit area: 4px either side of its line, which takes the
+    // first pixel right of the boundary (demo.rs, resize_handles).
     assert_eq!(
         (target.left(), target.right()),
-        (boundary - px(4.), boundary + px(4.)),
+        (boundary - px(4.), boundary + px(5.)),
         "the target at {target:?} is not the hit area around {boundary:?}"
     );
     // Just past the hit area, where no handle takes a press.
     let y = target.center().y;
-    hover(&mut cx, point(boundary + px(4.5), y));
+    hover(&mut cx, point(boundary + px(5.5), y));
     settle(&mut cx);
     assert_ne!(
         read(&mut cx, &showcase, |this, cx| {
@@ -2886,7 +2886,7 @@ fn the_resize_handle_reports_itself(cx: &mut TestAppContext) {
         "a hover past the handle's hit area showed its info"
     );
     // Off the line, in the hit area beside it.
-    hover(&mut cx, point(boundary + px(3.5), y));
+    hover(&mut cx, point(boundary + px(4.5), y));
     settle(&mut cx);
     assert_eq!(
         read(&mut cx, &showcase, |this, cx| {
