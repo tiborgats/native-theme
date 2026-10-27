@@ -9,7 +9,7 @@ homepage.workspace = true
 keywords = ["theme", "iced", "gui", "native", "colors"]
 categories = ["gui", "config"]
 readme = "README.md"
-description = "iced toolkit connector for native-theme"
+description = "iced toolkit connector for native-theme: the OS theme or a bundled preset as an iced Theme, per-widget styles and widget metrics"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -20,6 +20,7 @@ targets = [
 ]
 
 [features]
+# Every feature but `iced_aw`, `native` and `watch`.
 default = ["widgets", "spinner", "material-icons", "lucide-icons", "system-icons", "svg-rasterize", "system-fonts", "advanced-shaping"]
 
 # Every text of the application shaped with the font's kerning, as the
@@ -29,10 +30,11 @@ default = ["widgets", "spinner", "material-icons", "lucide-icons", "system-icons
 advanced-shaping = ["iced_core/advanced-shaping"]
 
 # Which iced crates this connector covers. Additive, never subtractive.
-widgets = ["dep:iced_widget"]            # enables `styles`
+widgets = ["dep:iced_widget"]            # enables `styles`, the padding helpers and the widgets (`switch`, `radio`, `focus_ring`, …)
 spinner = ["widgets", "iced_widget/svg", "iced_widget/image", "iced_widget/canvas"]  # enables `Spinner`
 iced_aw = ["widgets", "dep:iced_aw"]     # enables `styles::aw`
 
+# native-theme's icon sets and SVG rasteriser, passed through.
 material-icons = ["native-theme/material-icons"]
 lucide-icons = ["native-theme/lucide-icons"]
 system-icons = ["native-theme/system-icons"]

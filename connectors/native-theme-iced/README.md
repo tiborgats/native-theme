@@ -1,6 +1,9 @@
 # native-theme-iced
 
-[iced](https://iced.rs/) connector for [`native-theme`](https://crates.io/crates/native-theme).
+[iced](https://iced.rs/) connector for [`native-theme`](https://crates.io/crates/native-theme):
+it gives an iced application the colours, fonts and widget geometry of the
+platform it runs on (KDE Plasma, GNOME, macOS, Windows), read from the OS at
+run time, or of one of native-theme's bundled presets.
 
 Compatibility: the versions this connector requires, and the set it has been
 verified against, are in [Compatibility](#compatibility).
@@ -19,15 +22,98 @@ Two layers, and you can stop after the first:
    the resolved theme's own field instead. See [Styles](#styles).
 
 Plus widget-metric helpers (`button_padding`, `border_corner_radius`, `font_size`, …)
-for the sizing iced applies per widget rather than through the Catalog.
+for the sizing iced applies per widget rather than through the Catalog, and
+widgets for what iced draws otherwise or not at all (`switch`, `radio`,
+`focus_ring`, `tab_indicator`, `tab_flares`, `Spinner`).
+
+## Quick start
+
+Add the crate beside iced. The `native` feature turns on the OS readers,
+which `from_system()` needs; a bundled preset needs no feature:
+
+```toml
+[dependencies]
+native-theme-iced = { version = "0.7", features = ["native"] }
+iced = "0.14"
+```
+
+A whole application: load a theme, give iced its `iced::Theme` and the
+window's background, and style each widget from the `ResolvedTheme` kept
+beside it:
+
+```rust,no_run
+use iced::Element;
+use iced::widget::{button, column, text};
+use native_theme_iced::{AccessibilityPreferences, ResolvedTheme, font_size, from_preset, styles};
+
+struct App {
+    theme: iced::Theme,
+    resolved: ResolvedTheme,
+}
+
+#[derive(Debug, Clone)]
+enum Message {
+    Save,
+}
+
+fn update(_app: &mut App, _message: Message) {}
+
+fn view(app: &App) -> Element<'_, Message> {
+    let r = &app.resolved;
+    // iced draws a text given no size at its own default, whatever the theme.
+    let size = font_size(r, &AccessibilityPreferences::default());
+    column![
+        text("Hello").size(size),
+        button(text("Save").size(size))
+            .on_press(Message::Save)
+            .style(styles::button_primary(r)),
+    ]
+    .into()
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let (theme, resolved) = from_preset("adwaita", false)?; // false: the light variant
+    iced::application(
+        move || App { theme: theme.clone(), resolved: resolved.clone() },
+        update,
+        view,
+    )
+    .theme(|app: &App| app.theme.clone())
+    .style(|app: &App, theme| styles::application(&app.resolved)(theme))
+    .run()?;
+    Ok(())
+}
+```
+
+To follow the OS instead, load with `from_system()`, which returns both
+halves in the OS's light or dark mode, with the user's accessibility
+preferences beside them:
+
+```rust,no_run
+use native_theme_iced::{font_size, from_system};
+
+# fn f() -> native_theme_iced::Result<()> {
+let loaded = from_system()?;
+// `loaded.theme` is the iced Theme, `loaded.resolved` the ResolvedTheme;
+// `loaded.accessibility` carries the OS text-scaling factor:
+let body = font_size(&loaded.resolved, &loaded.accessibility);
+# Ok(())
+# }
+```
+
+Where to go next: [Styles](#styles) for every widget's style function,
+[Text scaling](#text-scaling) for sizing text, [Runtime theme
+change](#runtime-theme-change) to follow the OS's changes while the
+application runs, and [What iced cannot take](#what-iced-cannot-take) for
+the parts of a theme no iced widget has a place for.
 
 ## How it fits
 
 Depend on this crate; it re-exports `native-theme` as
 `native_theme_iced::native_theme`, so your `Cargo.toml` need not add a second
 dependency on it, whose version could drift from the connector's. The
-workspace-level README at the repo root has a diagram showing where each
-crate sits.
+[workspace README](../../README.md) has a diagram showing where each crate
+sits.
 
 Unlike the GPUI connector, iced applies geometry (padding, sizes, spacing)
 via inline widget configuration, so the theme and the style functions carry
@@ -65,65 +151,9 @@ Verified against iced 0.14.0, iced_aw 0.14.1, iced_core 0.14.0, iced_futures 0.1
 (`.github/workflows/dependency-canary.yml`), and a break it finds is recorded in
 the CHANGELOG.
 
-## Quick start
-
-Add the crate to your `Cargo.toml` beside iced, with the OS readers
-(`native`); its default `spinner` feature turns on the `svg`, `image` and
-`canvas` widgets of the `iced_widget` it shares with iced:
-
-```toml
-[dependencies]
-native-theme-iced = { version = "0.7", features = ["native"] }
-iced = "0.14"
-```
-
-Load a bundled preset:
-
-```rust,no_run
-use native_theme_iced::from_preset;
-
-# fn f() -> native_theme_iced::Result<()> {
-let (theme, resolved) = from_preset("dracula", true)?; // true: is_dark
-// `theme` is the iced Theme; `resolved` has metric fields for widget sizing.
-# Ok(())
-# }
-```
-
-Or read the OS theme at runtime:
-
-```rust,no_run
-use native_theme_iced::from_system;
-
-# fn f() -> native_theme_iced::Result<()> {
-let loaded = from_system()?;
-// `loaded.theme` is the iced Theme, `loaded.resolved` the OS mode's variant.
-# Ok(())
-# }
-```
-
-## Kerning
-
-Qt, GTK (Pango), WinUI and AppKit kern every text. iced 0.14 does not by
-default: its default shaping, `Shaping::Auto`, shapes text that is all ASCII
-with `Shaping::Basic`, which sets each glyph at its own advance, with no
-kerning, so pairs like "AV", "To" and "Wa" stand further apart than the
-platform sets them.
-
-This crate's `advanced-shaping` feature, on by default, turns on `iced_core`'s
-feature of that name, which makes `Shaping::Advanced` the default. Cargo
-builds one `iced_core` for your application and this crate, so depending on
-this crate is enough: every text that sets no shaping of its own is kerned —
-`text`, and the labels of checkboxes, radios, togglers, pick lists and combo
-boxes (text inputs and text editors shape with `Shaping::Advanced` already).
-A text stays unkerned where you set `.shaping(Shaping::Basic)` or
-`.shaping(Shaping::Auto)` on it, and everywhere with `default-features = false`
-unless you list `advanced-shaping`. iced's docs call advanced shaping the
-costlier of the two; it is what the platforms do for every text. The crate
-docs' *Kerning* section cites the sources.
-
 ## Core concepts
 
-- **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
+- **`from_preset(name, is_dark)`** — load a bundled preset (`native_theme_iced::Theme::list_presets()`, native-theme's `Theme`, names them all) as an iced `Theme` and the `ResolvedTheme` it was built from. `is_dark` picks the preset's dark or its light variant; every bundled preset has both.
 - **`from_system()`** — read the OS theme. Returns a `Loaded`: `theme` and `resolved` for the variant the OS is currently using, `mode` (which variant that is), `accessibility` (the user's accessibility preferences, see [Text scaling](#text-scaling)), and `icon_set` and `icon_theme` for icons and the spinner. `SystemThemeExt::to_iced_theme` gives the same from a `SystemTheme`.
 - **`to_theme(&resolved, "App Name")`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else. `to_theme_in(&resolved, "App Name", mode)` is the same in a mode you know, which sets the theme's light/dark flag where `to_theme` leaves it to iced's guess from the background's lightness.
 - **`styles::*`** — one function per widget, each returning a closure for that widget's style setter. See [Styles](#styles).
@@ -479,43 +509,63 @@ showcase does both (`drawable_font` and `register_weight`); the crate docs'
 variable face at any weight its axis covers, which makes filing faces
 unnecessary once iced draws with it.
 
+## Kerning
+
+Qt, GTK (Pango), WinUI and AppKit kern every text. iced 0.14 does not by
+default: its default shaping, `Shaping::Auto`, shapes text that is all ASCII
+with `Shaping::Basic`, which sets each glyph at its own advance, with no
+kerning, so pairs like "AV", "To" and "Wa" stand further apart than the
+platform sets them.
+
+This crate's `advanced-shaping` feature, on by default, turns on `iced_core`'s
+feature of that name, which makes `Shaping::Advanced` the default. Cargo
+builds one `iced_core` for your application and this crate, so depending on
+this crate is enough: every text that sets no shaping of its own is kerned —
+`text`, and the labels of checkboxes, radios, togglers, pick lists and combo
+boxes (text inputs and text editors shape with `Shaping::Advanced` already).
+A text stays unkerned where you set `.shaping(Shaping::Basic)` or
+`.shaping(Shaping::Auto)` on it, and everywhere with `default-features = false`
+unless you list `advanced-shaping`. iced's docs call advanced shaping the
+costlier of the two; it is what the platforms do for every text. The crate
+docs' *Kerning* section cites the sources.
+
 ## Features
+
+| Feature | Default | Enables |
+|---|---|---|
+| `widgets` | yes | `styles`; the `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`, `button_content_min_size` and `at_least` helpers; the `switch`, `switch_over`, `radio`, `pick_list_handle`, `tab_indicator`, `tab_indicator_line`, `tab_flares` and `focus_ring` widgets; all through `iced_widget` |
+| `spinner` | yes | `Spinner`, through `iced_widget`'s `svg`, `image` and `canvas` widgets, which it turns on in the `iced_widget` the application's iced shares; implies `widgets` |
+| `iced_aw` | no | `styles::aw`, for the `iced_aw` widgets (see [`iced_aw`](#iced_aw)); implies `widgets`. Off by default because `iced_aw` is a third-party crate with its own release cadence and an embedded icon font |
+| `material-icons`, `lucide-icons` | yes | native-theme's bundled Material Symbols and Lucide icon sets |
+| `system-icons` | yes | the platform icon sets: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent Icons and stock icons (Windows); also enables `material-icons` |
+| `svg-rasterize` | yes | native-theme's SVG-to-RGBA rasteriser, through resvg |
+| `system-fonts` | yes | `system_font_family` and `font` (see [Fonts](#fonts)) |
+| `advanced-shaping` | yes | every text of the application kerned, as the platforms kern it (see [Kerning](#kerning)) |
+| `native` | no | the OS readers, which `from_system()` reads the OS theme with |
+| `watch` | no | `theme_changes`, the OS theme's changes as an iced `Subscription`, through `iced_futures` (see [Runtime theme change](#runtime-theme-change)) |
+
+Every feature adds coverage; `default-features = false` is the way to narrow:
 
 | You want | You write |
 |---|---|
-| everything iced itself offers (the default) | nothing |
+| the styles and widgets for iced's own widgets, and the icons and fonts (the default) | nothing |
 | the `iced_aw` widgets too | `features = ["iced_aw"]` |
 | the OS theme from `from_system()` | `features = ["native"]` |
 | the OS theme's changes, as a subscription | `features = ["native", "watch"]` |
 | the palette only, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping"]` |
 | the palette plus icons, no `iced_widget`, text kerned | `default-features = false, features = ["advanced-shaping", "lucide-icons"]` |
 
-`widgets` (default) enables `styles`, the `button_padding`,
-`input_padding`, `text_area_padding`, `combo_box_padding`,
-`button_content_min_size` and `at_least` helpers, and the `switch`,
-`switch_over`, `radio`, `pick_list_handle`, `tab_indicator`,
-`tab_indicator_line`, `tab_flares` and `focus_ring` widgets; `spinner` (default, implies `widgets`) enables
-`Spinner` through `iced_widget`'s `svg`, `image` and `canvas`; `iced_aw` (opt-in, implies `widgets`)
-enables `styles::aw`. It is off by default because `iced_aw` is a third-party
-crate with its own release cadence and an embedded icon font. The icon
-features — `material-icons`, `lucide-icons`, `system-icons`, `svg-rasterize`
-— are on by default. `system-fonts` (default) enables
-`system_font_family`, the family iced's font database holds for a theme font — on macOS the
-system UI font's `.SF NS` for the stated "SF Pro", and for a family the system lacks the
-one the platform draws in its place, as the gpui and egui connectors draw it (fontconfig's
-match on Linux, asked once per family and kept for the process: the first ask is one
-`fc-match` process, about 12.5 ms, with a 2 s timeout). It also enables `font`, the whole
-`iced::Font` of a theme font. `advanced-shaping` (default)
-kerns every text of the application, as the platforms do (see [Kerning](#kerning)); with
-`default-features = false`, list it to keep that. Every feature adds coverage; `default-features = false`
-is the way to narrow.
+`system_font_family` names the family iced's font database holds for a theme
+font: on macOS the system UI font's `.SF NS` for the stated "SF Pro", and for
+a family the system lacks, the one the platform draws in its place, as the
+gpui and egui connectors draw it (fontconfig's match on Linux, asked once per
+family and kept for the process: the first ask is one `fc-match` process,
+about 12.5 ms, with a 2 s timeout).
 
 The OS readers are the `native` feature (or native-theme's `kde`, `portal`,
 `macos` and `windows`, one platform each), off by default as in native-theme;
 without one, `from_system()` is the platform preset on Linux and an error on
-macOS and Windows. `watch` (opt-in) enables `theme_changes`, the OS theme's
-changes as an iced `Subscription`, through `iced_futures`; it watches with
-a reader feature only (see [Runtime theme change](#runtime-theme-change)).
+macOS and Windows. `watch` watches with a reader feature only.
 
 ## Accessibility
 
@@ -593,6 +643,48 @@ are `Text::size` and `Text::font`; `text_size` and `font` on `checkbox`,
 `radio`, `toggler` and `pick_list`; `size` and `font` on `text_input`,
 `combo_box` and `text_editor`; and `text_size` and `text_font` on `iced_aw`'s
 `TabBar`, `Tabs` and `Sidebar`.
+
+## What iced cannot take
+
+iced takes a theme through three receivers: its palette, each widget's
+`Style`, and each widget's builder. Some of what a theme states has a place
+in none of them:
+
+- **Widgets iced lacks.** Neither iced 0.14 nor `iced_aw` 0.14.1 has a
+  popover or a status bar, so `popover.*` and `status_bar.*` reach nothing.
+  A dialog and a toolbar are no iced widgets either; they are containers the
+  application draws, which `styles::dialog`, `styles::toolbar`,
+  `styles::toolbar_rule` and the `dialog_*` and `toolbar_*` helpers style.
+  `dialog.entrance` and `dialog.icon_size` reach nothing: no iced widget
+  animates a dialog's entrance or draws its type icon.
+- **The window frame.** iced takes no colour for the title bar or the window
+  border (`window::Settings::decorations` is a `bool`); it passes the
+  theme's light or dark flag to the window, which `to_theme_in`,
+  `from_preset` and `from_system` set from the colour mode.
+- **The default text size.** iced fixes it when the renderer is created, so
+  a text given no size stays at iced's default under every theme: size each
+  text from the theme (see [Text scaling](#text-scaling)).
+- **Minimum widths.** iced's size setters take the size itself, never a
+  floor. Minimum heights reach a single-line control as its line height
+  (`control_line_height`) and a button's minimum size as a floor under its
+  label (`at_least`), but a combo box's and a progress bar's minimum width
+  have no receiver.
+- **A combo box's focus ring.** iced's `ComboBox` passes the focus
+  operation to no field, so `focus_ring` cannot ring it.
+- **`iced_aw`'s card close button.** `Card::on_close` styles its button with
+  the default card class, so `card`'s `close_color` never reaches it (see
+  [`iced_aw`](#iced_aw)).
+- **High contrast and reduced transparency.** iced's theme has no receiver
+  for either (see [Accessibility](#accessibility)).
+- **`spinner.min_diameter`.** `Spinner` offers no size of its own for it to
+  bound.
+
+Where iced's own widget has no field for what the platform draws, the crate
+draws it with a widget of its own: `switch` for a track that is not twice
+as wide as it is tall, `radio` for the dot's size, `focus_ring` for a ring
+outside the field's edge, `tab_indicator` and `tab_flares` for the active
+tab's line and WinUI 3's folder-tab corners, and `pick_list_handle` for the
+platforms' open chevron.
 
 ## Common recipes
 
@@ -875,7 +967,7 @@ the widget's layout box stays constant during rotation.
 |--------|---------|
 | `palette` | Maps native-theme colours to iced's 6-field Palette |
 | `styles` | Per-widget style functions (feature `widgets`, default); `styles::aw` for `iced_aw` (feature `iced_aw`) |
-| `extended` | (internal) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. `apply_overrides`' own doc comment says where each one comes from |
+| `extended` | (private) Overrides nine slots of iced's Extended palette: `background.base.text`, `background.weak.color`, `background.weak.text`, `secondary.base`, `secondary.strong`, and the `.base.text` of `primary`, `success`, `danger` and `warning`. The crate docs' *Theme Field Coverage* table names where each comes from |
 | `icons` | `IconData` to iced `image`/`svg` handles (borrowing and consuming), a provider's custom icons, animated-frame handles and the spin angle; role icons come from `SystemTheme::icon` |
 | `spinner` | `Spinner`, the icon set's animated loading indicator or an arc (feature `spinner`, default) |
 

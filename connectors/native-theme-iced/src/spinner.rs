@@ -58,11 +58,15 @@ const SWEEP_DEGREES: f32 = 240.0;
 /// [`Spinner::view`] with the time since the animation started, redrawing on
 /// a timer (`iced::time::every`) while it shows.
 ///
-/// ```rust,ignore
+/// ```rust,no_run
+/// use native_theme_iced::{AccessibilityPreferences, IconSet, ResolvedTheme, Spinner};
+///
+/// # fn f(resolved: &ResolvedTheme, prefs: &AccessibilityPreferences, start: std::time::Instant) -> iced::Element<'static, ()> {
 /// // On a theme or icon-set change:
-/// let spinner = native_theme_iced::Spinner::new(&resolved, IconSet::Freedesktop, Some("breeze"));
+/// let spinner = Spinner::new(resolved, IconSet::Freedesktop, Some("breeze"));
 /// // In view():
 /// spinner.view(start.elapsed(), prefs.reduce_motion)
+/// # }
 /// ```
 ///
 /// Requires the `spinner` feature (on by default).

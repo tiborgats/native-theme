@@ -8,6 +8,40 @@
 //! this connector builds cannot correct that: the slot does not exist. These
 //! functions do, by handing each widget the resolved theme's own field.
 //!
+//! Pass a function's result to the widget's style setter, from the
+//! `ResolvedTheme` the iced `Theme` was built from:
+//!
+//! ```rust
+//! use iced::widget::{Button, TextInput, button, text_input};
+//! use native_theme_iced::{from_preset, styles};
+//!
+//! let (_theme, resolved) = from_preset("kde-breeze", false)?;
+//! let save: Button<'_, ()> = button("Save").style(styles::button_primary(&resolved));
+//! let name: TextInput<'_, ()> = text_input("Name", "").style(styles::text_input(&resolved));
+//! # Ok::<(), native_theme_iced::Error>(())
+//! ```
+//!
+//! Which function styles which widget:
+//!
+//! | iced widget | Function |
+//! |---|---|
+//! | `button` | [`button`], [`button_primary`], [`button_danger`], [`button_success`], [`button_warning`], [`button_link`], [`button_toggle`]; [`segment`] and [`expander`] for the buttons of a segmented control and of an expander's header |
+//! | `text_input`, and `ComboBox::input_style` | [`text_input`] |
+//! | `text_editor` | [`text_editor`] |
+//! | `checkbox` | [`checkbox`], [`checkbox_over`] |
+//! | `radio` | [`radio`] |
+//! | `toggler` | [`toggler`], [`toggler_over`] |
+//! | `pick_list` | [`pick_list`]; [`menu`] for its `menu_style`, and a `ComboBox`'s |
+//! | `slider`, `vertical_slider` | [`slider`] |
+//! | `scrollable` | [`scrollable`]; [`scrollbar`] for its `direction` |
+//! | `progress_bar` | [`progress_bar`] |
+//! | `rule` | [`rule`]; [`toolbar_rule`] under a toolbar |
+//! | `pane_grid` | [`pane_grid`] |
+//! | `tooltip` | [`tooltip`] |
+//! | `container` | [`container_card`], [`dialog`], [`toolbar`], [`segmented_control`], [`segment_separator`], [`expander_frame`]: the surfaces iced has no widget for |
+//! | `iced::application(..).style(..)` | [`application`], the window's background |
+//! | the `iced_aw` widgets (feature `iced_aw`) | `aw::card`, `aw::menu`, `aw::tab_bar`, `aw::sidebar`, `aw::selection_list`, `aw::spinner` |
+//!
 //! Each function takes a `&ResolvedTheme`, captures the handful of values it
 //! needs by value, and returns a `'static` closure a widget can store. Its doc
 //! comment names the iced default it replaces and the setter it is passed to.
@@ -24,10 +58,10 @@
 //! A `Style` field the native model does not carry is read from iced's own
 //! default for that widget, inside the closure, never written as a literal.
 //! That read happens while the widget is being drawn, from the `&Theme` in
-//! effect, so thirteen of these functions -- `button_danger`,
+//! effect, so fifteen of these functions -- `button_danger`,
 //! `button_success`, `button_warning`, `button_link`, `text_input`,
-//! `toggler`, `pick_list`, `menu`, `slider`, `scrollable`, `rule`,
-//! `pane_grid` and `application` --
+//! `toggler`, `toggler_over`, `pick_list`, `menu`, `slider`, `scrollable`,
+//! `rule`, `toolbar_rule`, `pane_grid` and `application` --
 //! assume that theme is the one `to_theme(resolved)` built from the same
 //! `ResolvedTheme`. Under any other theme the borrowed fields are derived from
 //! a different palette: the hover of `button_danger`, for one, is then
@@ -225,8 +259,8 @@ pub fn button(
 ///
 /// The model states no hovered and no pressed checked toggle, so under the
 /// pointer and while pressed it is the checked one, as gpui-component paints
-/// a selected button, with no hover of its own (gpui-component 0.7.3
-/// `src/button/button.rs:716`, `!self.disabled && !selected`). Disabled, it
+/// a selected button, with no hover of its own (gpui-component 0.8.1
+/// `src/button/button.rs:730`, `!self.disabled && !selected`). Disabled, it
 /// is [`button`]'s disabled pair where the platform states a disabled fill;
 /// where it states none it dims by opacity alone (`docs/platform-facts.md`
 /// §2.1.6), and the toggle keeps its checked pair. Either has each colour's
@@ -1730,11 +1764,12 @@ impl SegmentPosition {
 /// `separator_width`; the row's height is `Shrink`, so a separator, `Fill`
 /// tall, spans the segments' height:
 ///
-/// ```rust,ignore
-/// use iced::widget::{container, row, space};
-/// use iced::{Fill, Shrink};
+/// ```rust
+/// use iced::widget::{Container, container, row, space};
+/// use iced::{Element, Fill, Shrink};
 /// use native_theme_iced::styles;
 ///
+/// # fn f<'a>(resolved: &native_theme_iced::ResolvedTheme, segments: Vec<Element<'a, ()>>, disabled: bool) -> Container<'a, ()> {
 /// let sc = &resolved.segmented_control;
 /// let mut parts = Vec::new();
 /// for (i, segment) in segments.into_iter().enumerate() {
@@ -1747,6 +1782,7 @@ impl SegmentPosition {
 /// container(row(parts).height(Shrink))
 ///     .padding(sc.border.line_width)
 ///     .style(styles::segmented_control(&resolved, disabled))
+/// # }
 /// ```
 ///
 /// Its fill is `segmented_control.background_color`, the group every
@@ -2042,10 +2078,12 @@ pub fn expander(
 /// container round both, and the header [`expander`] styles draws no outline
 /// of its own:
 ///
-/// ```rust,ignore
+/// ```rust
 /// use iced::widget::{column, container};
+/// use iced::Element;
 /// use native_theme_iced::styles;
 ///
+/// # fn f<'a>(resolved: &native_theme_iced::ResolvedTheme, header: Element<'a, ()>, body: Element<'a, ()>) -> Element<'a, ()> {
 /// let x = &resolved.expander;
 /// let item = column![header, body];
 /// match x.frame_enabled {
@@ -2055,6 +2093,7 @@ pub fn expander(
 ///         .into(),
 ///     _ => container(item).into(),
 /// }
+/// # }
 /// ```
 ///
 /// The outline is `expander.border.*`. Where the theme does not state
@@ -2214,12 +2253,25 @@ pub fn toolbar_rule(
 /// takes `Fn(&State, &Theme) -> theme::Style`, so call this inside it, from
 /// the `ResolvedTheme` the state keeps:
 ///
-/// ```rust,ignore
-/// use native_theme_iced::styles;
+/// ```rust,no_run
+/// use native_theme_iced::{ResolvedTheme, from_preset, styles};
 ///
-/// iced::application(boot, update, view)
-///     .theme(|state: &State| state.theme.clone())
-///     .style(|state: &State, theme| styles::application(&state.resolved)(theme))
+/// struct State {
+///     theme: iced::Theme,
+///     resolved: ResolvedTheme,
+/// }
+/// # fn update(_state: &mut State, _message: ()) {}
+/// # fn view(_state: &State) -> iced::Element<'_, ()> { iced::widget::text("").into() }
+///
+/// fn main() -> Result<(), Box<dyn std::error::Error>> {
+///     let (theme, resolved) = from_preset("adwaita", false)?;
+///     let boot = move || State { theme: theme.clone(), resolved: resolved.clone() };
+///     iced::application(boot, update, view)
+///         .theme(|state: &State| state.theme.clone())
+///         .style(|state: &State, theme| styles::application(&state.resolved)(theme))
+///         .run()?;
+///     Ok(())
+/// }
 /// ```
 #[must_use = "this returns the style function; it does not apply it"]
 pub fn application(

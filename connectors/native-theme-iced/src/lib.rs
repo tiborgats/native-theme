@@ -1,17 +1,71 @@
 //! iced toolkit connector for native-theme.
 //!
-//! Maps [`ResolvedTheme`] data to iced's theming system.
+//! Gives an iced application the colours, fonts and widget geometry of the
+//! platform it runs on (KDE Plasma, GNOME, macOS, Windows), read from the OS
+//! at run time, or of one of native-theme's bundled presets. [`from_system()`]
+//! and [`from_preset()`] return an iced `Theme` and the [`ResolvedTheme`] it
+//! was built from: the `Theme` colours iced's built-in widget styles, and the
+//! `styles` functions and the metric helpers read everything else off the
+//! `ResolvedTheme`.
 //!
 //! # Quick Start
 //!
-//! ```rust,no_run
-//! use native_theme_iced::from_preset;
+//! A whole application: load a theme, give iced its `iced::Theme` and the
+//! window's background (`styles::application`, feature `widgets`), and
+//! style each widget from the `ResolvedTheme` kept
+//! beside it:
 //!
-//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
-//! # Ok::<(), native_theme_iced::Error>(())
+//! ```rust,no_run
+//! # #[cfg(feature = "widgets")]
+//! # mod app {
+//! use iced::Element;
+//! use iced::widget::{button, column, text};
+//! use native_theme_iced::{AccessibilityPreferences, ResolvedTheme, font_size, from_preset, styles};
+//!
+//! struct App {
+//!     theme: iced::Theme,
+//!     resolved: ResolvedTheme,
+//! }
+//!
+//! #[derive(Debug, Clone)]
+//! enum Message {
+//!     Save,
+//! }
+//!
+//! fn update(_app: &mut App, _message: Message) {}
+//!
+//! fn view(app: &App) -> Element<'_, Message> {
+//!     let r = &app.resolved;
+//!     // iced draws a text given no size at its own default, whatever the theme.
+//!     let size = font_size(r, &AccessibilityPreferences::default());
+//!     column![
+//!         text("Hello").size(size),
+//!         button(text("Save").size(size))
+//!             .on_press(Message::Save)
+//!             .style(styles::button_primary(r)),
+//!     ]
+//!     .into()
+//! }
+//!
+//! fn main() -> Result<(), Box<dyn std::error::Error>> {
+//!     let (theme, resolved) = from_preset("adwaita", false)?; // false: the light variant
+//!     iced::application(
+//!         move || App { theme: theme.clone(), resolved: resolved.clone() },
+//!         update,
+//!         view,
+//!     )
+//!     .theme(|app: &App| app.theme.clone())
+//!     .style(|app: &App, theme| styles::application(&app.resolved)(theme))
+//!     .run()?;
+//!     Ok(())
+//! }
+//! # }
 //! ```
 //!
-//! Or from the OS-detected theme:
+//! To follow the OS instead, load with [`from_system()`] (OS readers: the
+//! `native` feature), which returns both halves in the OS's light or dark
+//! mode, as a [`Loaded`], with the user's accessibility preferences beside
+//! them:
 //!
 //! ```rust,no_run
 //! use native_theme_iced::from_system;
@@ -74,10 +128,15 @@
 //! native model does not carry is read from iced's own default at run time,
 //! never written as a literal.
 //!
-//! ```rust,ignore
-//! use native_theme_iced::styles;
+//! ```rust
+//! # #[cfg(feature = "widgets")] {
+//! use iced::widget::{Button, button};
+//! use native_theme_iced::{from_preset, styles};
 //!
-//! button("Save").style(styles::button_primary(&resolved))
+//! let (_theme, resolved) = from_preset("kde-breeze", false)?;
+//! let save: Button<'_, ()> = button("Save").style(styles::button_primary(&resolved));
+//! # }
+//! # Ok::<(), native_theme_iced::Error>(())
 //! ```
 //!
 //! Both layers are held to a mapping contract by this crate's tests: every
@@ -143,21 +202,48 @@
 //! [`SystemThemeExt::to_iced_theme`] for a pinned preset), and rebuild what
 //! was built from the old theme, such as the `Spinner`:
 //!
-//! ```rust,ignore
-//! fn subscription(_state: &State) -> iced::Subscription<Message> {
-//!     native_theme_iced::theme_changes()
-//!         .filter_map(|changed| changed.ok().map(|_| Message::ThemeChanged))
+//! ```rust,no_run
+//! # #[cfg(all(feature = "watch", feature = "spinner"))]
+//! # mod example {
+//! use native_theme_iced::native_theme::detect::invalidate_caches;
+//! use native_theme_iced::{Loaded, Spinner, from_system, theme_changes};
+//!
+//! struct State {
+//!     loaded: Loaded,
+//!     spinner: Spinner,
 //! }
 //!
-//! // In update():
-//! Message::ThemeChanged => {
-//!     native_theme_iced::native_theme::detect::invalidate_caches();
-//!     if let Ok(loaded) = native_theme_iced::from_system() {
-//!         state.spinner = Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
-//!         state.loaded = loaded;
+//! #[derive(Debug, Clone)]
+//! enum Message {
+//!     ThemeChanged,
+//! }
+//!
+//! fn subscription(_state: &State) -> iced::Subscription<Message> {
+//!     // A watcher that cannot start (a desktop with none) yields its error
+//!     // once; this drops it.
+//!     theme_changes().filter_map(|changed| changed.ok().map(|_| Message::ThemeChanged))
+//! }
+//!
+//! fn update(state: &mut State, message: Message) {
+//!     match message {
+//!         Message::ThemeChanged => {
+//!             invalidate_caches();
+//!             if let Ok(loaded) = from_system() {
+//!                 state.spinner =
+//!                     Spinner::new(&loaded.resolved, loaded.icon_set, loaded.icon_theme.as_deref());
+//!                 state.loaded = loaded;
+//!             }
+//!         }
 //!     }
 //! }
+//! # }
 //! ```
+//!
+//! The watcher runs while `subscription()` returns `theme_changes()`. KDE
+//! Plasma, GNOME and Budgie, macOS and Windows are watched; on another Linux
+//! desktop, or without a reader feature, the subscription yields
+//! [`Error::WatchUnavailable`] once and ends (`theme_changes`' own doc lists
+//! the other errors).
 //!
 //! # Font Configuration
 //!
@@ -230,26 +316,11 @@
 //! | `Palette` (6 fields) | background, text, primary, success, warning, danger | `defaults.*` |
 //! | `Extended` overrides (9) | background.base.text, secondary.base + strong, background.weak.color/text, primary/success/danger/warning.base.text | `input.placeholder_color`, `defaults.surface_color`, `defaults.text_color`, `defaults.{accent,success,danger,warning}_text_color` |
 //! | `styles` (33 functions) | every `Style` field of button (six classes), toggle button, text input, text editor, checkbox, radio, toggler, pick list, menu, slider, scrollable, progress bar, rule, pane grid split lines, tooltip, card container, segmented control, its segments and the separators between them, expander header and frame, the dialog's container (`dialog.background_color`, `.border`, `.body_font.color`), the toolbar's container and its bottom rule (`toolbar.background_color`, `.font.color`, `.border.color`), and the application's base style (`window.background_color`); scrollbar widths and embedding | the widget's own resolved theme; fields the model lacks come from iced's default |
-//! | Widget metrics | button/input/combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), a switch's track and thumb (`switch`) and a radio's indicator and dot (`radio`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`), a toolbar's padding, item gap, outer height and rule width (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height`, `toolbar_border_line_width`) | Per-widget resolved fields |
+//! | Widget metrics | button, input, text-area and combo-box padding (the stated sides inside the border, iced's own default for the others; `widgets` feature), any widget's padding over a default the caller names (`padding_or`, `padding_inside_border`) or where every side is stated (`stated_padding`), minimum control heights as a line height (`control_line_height`), a button's minimum size (`button_content_min_size`, `at_least`; `widgets` feature), border radius, scrollbar width, a tooltip's show delay (`tooltip_show_delay`, for `Tooltip::delay`), a table header's height (`list_header_height`), a dialog's padding inside its border and its bounds (`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`, `dialog_min_height`), its button gap and order (`dialog_button_gap`, `dialog_button_order`), a toolbar's padding, item gap, outer height and rule width (`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height`, `toolbar_border_line_width`) | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height, the text scale (`text_scale`) | `defaults.font.*`, `defaults.mono_font.*`, `text_scale.*` |
 //! | Color helpers | `border_color`, `link_color`, `selection_background`, `info_color`, `info_text_color`, `warning_text_color`, `focus_ring_color`; `expander_arrow_color`, `dialog_title_font_color` | `defaults.*`; the widget's own |
 //! | Geometry helpers | disabled_opacity | `defaults.*` |
-//!
-//! The theme values of the widgets neither iced 0.14 nor `iced_aw` 0.14.1
-//! has reach no receiver here: the popover's and the status bar's; and
-//! the window frame's colours, which iced takes no colour for
-//! (`decorations: bool`, `iced_core` 0.14 `window/settings.rs:65-66`). A
-//! dialog, which neither has either, is the consumer's `container`, which
-//! `styles::dialog` and the `dialog_*` helpers style; `dialog.entrance` and
-//! `.icon_size` reach nothing: no iced widget animates a dialog's entrance,
-//! and iced has no dialog widget to draw a type icon. A toolbar, which
-//! neither has either, is the consumer's `container` with a rule under it,
-//! which `styles::toolbar`, `styles::toolbar_rule` and the `toolbar_*`
-//! helpers style; its items' text takes `toolbar.font`, through [`font`]
-//! (`system-fonts`) at [`scaled_text_size`] of `toolbar.font.size`. An
-//! `iced_aw` `Card` is
-//! not the dialog's receiver: its head, body and foot take styles of their
-//! own, and only its maxima match a dialog's.
+//! | Widgets (`widgets` feature; `Spinner`, `spinner`) | a switch at the stated track and thumb sizes (`switch`, `switch_over`), a radio at the stated indicator and dot sizes (`radio`), the focus ring round a field (`focus_ring`), the active tab's line (`tab_indicator`, `tab_indicator_line`) and outward corners (`tab_flares`), the drop-down chevron (`pick_list_handle`), the loading indicator (`Spinner`) | `switch.*`; `checkbox.*`; `defaults.focus_ring_*`; `tab.*`; `combo_box.arrow_icon_size`; `spinner.*` |
 //!
 //! A helper that returns one `ResolvedTheme` leaf, converted to iced's type or
 //! scaled by the text-scaling factor, is named after the leaf's path, without
@@ -271,8 +342,55 @@
 //! controls reach iced as a line height instead ([`control_line_height()`],
 //! for `input.min_height` and `combo_box.min_height`), and a button's
 //! minimum size as a floor under its label ([`at_least()`] of
-//! [`button_content_min_size()`]). A combo box's or a progress bar's minimum
-//! width has no receiver.
+//! [`button_content_min_size()`]).
+//!
+//! # What iced cannot take
+//!
+//! iced takes a theme through three receivers: its palette, each widget's
+//! `Style`, and each widget's builder. Some of what a theme states has a
+//! place in none of them:
+//!
+//! - **Widgets iced lacks.** The theme values of the widgets neither iced
+//!   0.14 nor `iced_aw` 0.14.1 has, the popover's and the status bar's,
+//!   reach nothing. A dialog, which neither has either, is the consumer's
+//!   `container`, which `styles::dialog` and the `dialog_*` helpers style;
+//!   `dialog.entrance` and `.icon_size` reach nothing: no iced widget
+//!   animates a dialog's entrance, and iced has no dialog widget to draw a
+//!   type icon. An `iced_aw` `Card` is not the dialog's receiver: its head,
+//!   body and foot take styles of their own, and only its maxima match a
+//!   dialog's. A toolbar, which neither has either, is the consumer's
+//!   `container` with a rule under it, which `styles::toolbar`,
+//!   `styles::toolbar_rule` and the `toolbar_*` helpers style; its items'
+//!   text takes `toolbar.font`, through [`font`] (`system-fonts`) at
+//!   [`scaled_text_size`] of `toolbar.font.size`.
+//! - **The window frame.** iced takes no colour for it (`decorations:
+//!   bool`, `iced_core` 0.14 `window/settings.rs:65-66`); it passes the
+//!   theme's light or dark flag to the window, which [`to_theme_in()`] sets
+//!   from the colour mode.
+//! - **The default text size.** iced fixes it when the renderer is created,
+//!   so a text given no size stays at iced's default under every theme (see
+//!   [`font_size()`]).
+//! - **Minimum widths.** A combo box's or a progress bar's minimum width has
+//!   no receiver (see the paragraph above for the minimum heights).
+//! - **A combo box's focus ring.** iced's `ComboBox` passes the focus
+//!   operation to no field, so `focus_ring` (feature `widgets`) cannot ring
+//!   it.
+//! - **`iced_aw`'s card close button.** `Card::on_close` styles its button
+//!   with the default card class, not the card's own, so `close_color`
+//!   never reaches it (`styles::aw::card`, feature `iced_aw`).
+//! - **High contrast and reduced transparency.** iced's theme has no
+//!   receiver for either; high contrast reaches the application through the
+//!   theme data instead (see *What each flag does*).
+//! - **`spinner.min_diameter`.** The `Spinner` offers no size of its own for
+//!   it to bound.
+//!
+//! Where iced's own widget has no field for what the platform draws, the
+//! crate draws it with a widget of its own (feature `widgets`): `switch`
+//! for a track that is not twice as wide as it is tall, `radio` for the
+//! dot's size, `focus_ring` for a ring outside the field's edge,
+//! `tab_indicator` and `tab_flares` for the active tab's line and WinUI 3's
+//! folder-tab corners, and `pick_list_handle` for the platforms' open
+//! chevron.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -1533,7 +1651,10 @@ pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 /// container's vertical padding ([`dialog_padding`]), which the row grows
 /// to; [`dialog_min_width`]'s floor goes below it, in a column:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # #[cfg(feature = "widgets")]
+/// # fn f<'a>(resolved: &native_theme_iced::ResolvedTheme, default: iced::Padding, content: iced::Element<'a, ()>) -> iced::widget::Container<'a, ()> {
+/// # use iced::widget::{column, container, row, space};
 /// let padding = native_theme_iced::dialog_padding(&resolved, default);
 /// let floor_y = (native_theme_iced::dialog_min_height(&resolved) - padding.y()).max(0.0);
 /// let floor_x = (native_theme_iced::dialog_min_width(&resolved) - padding.x()).max(0.0);
@@ -1542,6 +1663,7 @@ pub fn dialog_max_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 ///     .max_width(native_theme_iced::dialog_max_width(&resolved))
 ///     .max_height(native_theme_iced::dialog_max_height(&resolved))
 ///     .style(native_theme_iced::styles::dialog(&resolved))
+/// # }
 /// ```
 #[must_use]
 pub fn dialog_min_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
@@ -1613,7 +1735,11 @@ pub fn toolbar_item_gap(resolved: &native_theme::theme::ResolvedTheme) -> Option
 /// rule's width ([`toolbar_border_line_width`]) and the container's vertical
 /// padding ([`toolbar_padding`]), which the row grows to:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # #[cfg(feature = "widgets")]
+/// # fn f<'a>(resolved: &native_theme_iced::ResolvedTheme, default: iced::Padding, items: iced::widget::Row<'a, ()>, gap: f32) -> iced::widget::Column<'a, ()> {
+/// # use iced::widget::{column, container, row, space};
+/// # use iced::{Center, Fill};
 /// let line = native_theme_iced::toolbar_border_line_width(&resolved);
 /// let padding = native_theme_iced::toolbar_padding(&resolved, default);
 /// let floor = native_theme_iced::toolbar_bar_height(&resolved)
@@ -1625,6 +1751,7 @@ pub fn toolbar_item_gap(resolved: &native_theme::theme::ResolvedTheme) -> Option
 ///     .width(Fill)
 ///     .style(native_theme_iced::styles::toolbar(&resolved));
 /// column![bar, iced::widget::rule::horizontal(line).style(native_theme_iced::styles::toolbar_rule(&resolved))]
+/// # }
 /// ```
 #[must_use]
 pub fn toolbar_bar_height(resolved: &native_theme::theme::ResolvedTheme) -> Option<f32> {
@@ -1808,11 +1935,12 @@ pub fn mono_font_size(
 /// # Example
 ///
 /// ```rust,no_run
-/// let loaded = native_theme_iced::from_system().unwrap();
+/// let loaded = native_theme_iced::from_system()?;
 /// let label = native_theme_iced::scaled_text_size(
 ///     loaded.resolved.button.font.size,
 ///     &loaded.accessibility,
 /// );
+/// # Ok::<(), native_theme_iced::Error>(())
 /// ```
 #[must_use]
 pub fn scaled_text_size(size: f32, prefs: &AccessibilityPreferences) -> f32 {
@@ -1996,11 +2124,12 @@ pub fn line_height(resolved: &native_theme::theme::ResolvedTheme) -> f32 {
 ///
 /// # Example
 ///
-/// ```rust,no_run
-/// let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true).unwrap();
+/// ```rust
+/// let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
 /// let weight = native_theme_iced::to_iced_weight(
 ///     native_theme_iced::font_weight(&resolved),
 /// );
+/// # Ok::<(), native_theme_iced::Error>(())
 /// ```
 #[must_use]
 pub fn to_iced_weight(css_weight: u16) -> iced_core::font::Weight {
