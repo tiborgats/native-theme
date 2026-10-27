@@ -1,7 +1,39 @@
 # v0.7.0 — GPUI Kit 0.8.1 (G4): Specification
 
-**Status:** design, drafted 2026-10-26. The maintainer approved rationale P1 and P3 on
-2026-10-26. The other decisions are settled by logic, and the maintainer may veto them.
+**Status:** implemented and archived (2026-10-27). Drafted 2026-10-26 and checked in eight
+passes; the maintainer approved rationale P1 and P3 and started G4 on 2026-10-26. See *As built*.
+
+**As built (2026-10-27).** G4 ran on `v0.7.0-rc1` after the code review's close, as the one
+writer, from `b3bf91b3` to the archiving commit. Its record is the plan's `## Record`; the
+orchestration ledger, with every ruling, was local scratch (`.superpowers/sdd/`).
+
+- **Commits, by task.**
+  - T0: `b3bf91b3`. T1: `010a99b8`. T2: `56cb658a`. T3: `076f09f1`. T3b: `7b05831c`.
+  - T4: `39da511f`, then `9c325090`, `eac7e00c`, `199bff85`, `3ce4f1a5` (review rounds).
+  - T5: `3987442e`. T6: `26186e33`, `8d5590c7`, `8af348e6`, `713f3bdb`, then `66b44340`,
+    `a8082046`, `d44e868c`. T7: `b847149a`.
+  - T8: `edd27b0b`, `7c3eb477`, the final review's `72a3e3a9`, `0971adb3`, `0f72cdd6`, and
+    this archiving.
+- **Results.** Both cores green at every task; `check_release.sh --commit` 140/140 on each
+  task's last commit; the full run with §10's expected items only, and packaging with
+  `--features gpui-fast`. CI 40400310124 (the unit) and 40429710551 (Task 8) green; the
+  dependency canary 40400312016 green on the unit.
+- **Where it went past this spec, by the orchestrator's rulings:**
+  - §4.1: the four chains a review found already wrong at the old version were set aside for
+    the hand-read; rule 2 kept its whole-note reading.
+  - §5: the gate lists 19 functions, not only those a doc line names. The text functions that
+    slice by their runs' lengths (`shape_text`, `layout_line`, `layout_line_by_hash`,
+    `PlatformTextSystem::layout_line`) and `StyledText`'s `with_highlights`, `with_runs` and
+    `with_default_highlights` were found by reading code. A `[v0.7.x]` todo entry has the next
+    sweep read function bodies.
+  - The egui and iced showcases' 50 citations of the gpui showcase's lines, 26 of them wrong
+    since M9x, were re-pointed (`eac7e00c`), with a `[v0.7.x]` entry for a gate.
+  - §7: taffy 0.15.1 was measured through a temporary root `[patch.crates-io]` of a copy of
+    gpui-fast with a caret taffy requirement, since three weak `gpui-fast?/test-support`
+    features keep gpui-fast in the lock. No difference: the suite passed and all eight dumps
+    were byte-identical. The Separator's label is centred on both cores; its entry closed.
+  - The final review found the showcase's resize-handle target 1px short of gpui-base 0.7.0's
+    9px band; fixed in `0971adb3`, red first.
 
 - Reasons: [`todo_v0.7.0_gpui-kit-0.8.1-rationale.md`](todo_v0.7.0_gpui-kit-0.8.1-rationale.md)
   (P1–P15).

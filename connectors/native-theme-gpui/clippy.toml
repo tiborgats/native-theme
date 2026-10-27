@@ -5,7 +5,7 @@
 # that states it, or the line that panics where no doc line does. The list
 # comes from a sweep of every comment line that mentions a panic in the src/
 # of gpui-pre, gpui-fast, gpui-base, gpui-component, gpui-kit and the gpui-pre
-# and gpui-fast sub-crates (docs/todo_v0.7.0_gpui-kit-0.8.1-spec.md §5), and
+# and gpui-fast sub-crates (docs/archive/todo_v0.7.0_gpui-kit-0.8.1-spec.md §5), and
 # from the review of what the listed text functions reach. A `gpui::` path
 # resolves in both cores' `gpui` crate, so one entry covers gpui-pre and GPUI
 # Fast.

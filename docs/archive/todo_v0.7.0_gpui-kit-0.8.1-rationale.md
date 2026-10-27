@@ -1,6 +1,7 @@
 # v0.7.0 — GPUI Kit 0.8.1 (G4): Rationale
 
-**Status:** design, not implemented. Written 2026-10-26, the day GPUI Kit 0.8.1 was published.
+**Status:** implemented and archived (2026-10-27; the spec's *As built* says how). Written
+2026-10-26, the day GPUI Kit 0.8.1 was published.
 The maintainer approved P1 and P3 the same day (§3). The other decisions are settled by logic,
 and the maintainer may veto any of them. The evidence comes from:
 

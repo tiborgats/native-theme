@@ -3954,6 +3954,22 @@ Checklist of likely needed PRs (discover exact gaps during connector work):
       `connectors/native-theme-gpui/clippy.toml`'s header, which asks for the
       body read, sets it no narrower scope than its comment sweep's.
 
+### gpui showcase: the resize handle's width in Widget Info and `content_width`
+
+- [ ] [v0.7.x] G4's final review (2026-10-27) fixed the resize handle's Widget
+      Info target to the 9px band gpui-base 0.7.0 and later lay out (boundary
+      − 4 to + 5, `resizable/resize_handle.rs:283`, `:340-346` at 0.8.1) and
+      noticed two older places that still reason from the handle's 1px
+      `HANDLE_SIZE`, which nobody has re-read since:
+      - `SC/info/chrome.rs`'s splitter "width" row says the handle "lays out
+        1px wide with 4px of padding on each side". Under gpui's border-box
+        layout the box is 9px wide with a 1px content box, so the sentence
+        reads either way; say which.
+      - `SC/app.rs`'s `content_width` counts `demo::HANDLE_SIZE` as width the
+        handle takes from the body before a first layout, though the handle is
+        absolutely placed. Check against the body's layout whether it takes
+        any, and correct the estimate or its doc.
+
 ---
 
 ## This cycle (v0.7.0)

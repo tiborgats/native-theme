@@ -1,5 +1,7 @@
 # v0.7.0 — GPUI Kit 0.8.1 (G4): Implementation Plan
 
+**Status:** implemented and archived (2026-10-27); the spec's *As built* and the *Record* below say how.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
@@ -671,3 +673,5 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   target (`(296px, 304px)` against `(296px, 305px)`). `HANDLE_SIZE`'s doc no longer calls it
   the width the handle is given. `SC/demo.rs` keeps its line count, and no citation names the
   lines between the two docs, which moved by one.
+- **2026-10-27, the close.** G4 closed with the archiving commit that carries this line; the
+  spec's *As built* lists the commits by task.

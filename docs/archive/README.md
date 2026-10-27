@@ -47,7 +47,7 @@ actually happened when they were implemented.
 | v0.6.0 (egui widgets) | `todo_egui-widgets-{rationale,spec}.md` |
 | v0.6.0 (gpui widgets) | `todo_gpui-widgets-spec.md` |
 | v0.6.1 | `todo_v0.6.1_gpui-kit-0.7.1-{rationale,spec,plan}.md` |
-| v0.7.0 | `todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md`, `todo_v0.7.0_code-review-plan.md` and its finding ledger `todo_v0.7.0_code-review-findings.md` |
+| v0.7.0 | `todo_v0.7.0_gpui-kit-0.7.3-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.0-{rationale,spec,plan}.md`, `todo_v0.7.0_gpui-kit-0.8.1-{rationale,spec,plan}.md`, `todo_v0.7.0_code-review-plan.md` and its finding ledger `todo_v0.7.0_code-review-findings.md` |
 | backlog, no version | `todo_closed.md`: the closed items of `docs/todo.md`, which move there as they close (the first batch on 2026-10-11) |
 
 The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to
