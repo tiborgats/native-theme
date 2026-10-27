@@ -925,27 +925,60 @@ in `docs/showcase-exceptions.toml`.
 
 ### Linux
 
+**KDE Breeze, dark**
+
 ![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png)
+
+**KDE Breeze, light**
+
 ![KDE Breeze Light](docs/assets/linux-kde-breeze-light.png)
+
+**Material, dark**
+
 ![Material Dark](docs/assets/linux-material-3-dark.png)
+
+**Material, light**
+
 ![Material Light](docs/assets/linux-material-3-light.png)
+
+**Catppuccin Mocha, dark**
+
 ![Catppuccin Mocha Dark](docs/assets/linux-catppuccin-mocha-dark.png)
+
+**Catppuccin Mocha, light**
+
 ![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png)
 
 ### macOS
 
 The `macos-monterey` preset, which covers macOS 12 to 15, and `macos-tahoe`, macOS 26's own look, both captured on GitHub's `macos-26` runner, macOS 26.6.2, so the Monterey pair shows that preset drawn on macOS 26.
 
+**macOS Monterey, light**
+
 ![macOS Monterey Light](docs/assets/macos-macos-monterey-light.png)
+
+**macOS Monterey, dark**
+
 ![macOS Monterey Dark](docs/assets/macos-macos-monterey-dark.png)
+
+**macOS Tahoe, light**
+
 ![macOS Tahoe Light](docs/assets/macos-macos-tahoe-light.png)
+
+**macOS Tahoe, dark**
+
 ![macOS Tahoe Dark](docs/assets/macos-macos-tahoe-dark.png)
 
 ### Windows
 
 The `windows-11` preset, captured on GitHub's `windows-2025` runner, Windows Server 2025 (build 26100): GitHub has no x64 Windows 11 image. On that image the OS reports the same metrics, fonts and system colours as Windows 11 25H2 (build 26200), except the animation and drop-shadow settings, which are off on Server.
 
+**Windows 11, light**
+
 ![Windows 11 Light](docs/assets/windows-windows-11-light.png)
+
+**Windows 11, dark**
+
 ![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
 ## Links

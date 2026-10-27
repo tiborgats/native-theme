@@ -11,9 +11,15 @@ on Linux (KDE, GNOME), macOS, and Windows, or loads any of 17 bundled presets
 (Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
 populated `ResolvedTheme`.
 
+**gpui**
+
 ![gpui theme switching](connectors/native-theme-gpui/docs/assets/theme-switching.gif)
 
+**iced**
+
 ![Iced theme switching](connectors/native-theme-iced/docs/assets/theme-switching.gif)
+
+**egui**
 
 ![egui theme switching](connectors/native-theme-egui/docs/assets/theme-switching.gif)
 
