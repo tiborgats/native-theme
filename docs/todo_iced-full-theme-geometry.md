@@ -484,3 +484,20 @@ are four optional sides now, and a helper such as `tooltip_padding()`
 would follow `button_padding` and `input_padding` — each side the theme's
 where stated, iced's own default where not — rather than return an axis
 value.
+
+## Note: what v0.7.0 adds
+
+Appended 2026-10-27; the text above is left as written. Besides M5's three
+functions named in the status line, v0.7.0 adds `styles::application` (the
+window's background), `styles::segment_separator`, and the containers for the
+two widgets iced 0.14 and `iced_aw` 0.14.1 do not have: `styles::dialog` with
+`dialog_padding`, `dialog_max_width`, `dialog_max_height`, `dialog_min_width`,
+`dialog_min_height`, `dialog_title_font_color`, `dialog_button_gap` and
+`dialog_button_order`, and `styles::toolbar` and `styles::toolbar_rule` with
+`toolbar_padding`, `toolbar_item_gap`, `toolbar_bar_height` and
+`toolbar_border_line_width`. `styles` now has 33 style functions. Outside
+`styles`: `focus_ring`, the theme's focus ring round a focused field;
+`tab_flares`, the selected tab's outward corners; and `font` (feature
+`system-fonts`), the `iced_core::Font` a theme font is drawn in, which a widget
+takes through its `font` setter, though no helper sets iced's `Settings`
+default font from the theme yet. ROADMAP.md's *What remains* list is current.

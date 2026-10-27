@@ -47,9 +47,11 @@ with all targets and features), `cargo fmt --all` (formats in place; CI uses
 (`native-theme` also with its Linux features,
 `kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize,system-fonts`;
 `native-theme-gpui` with `native,watch`, and with `gpui-fast,native,watch`), the strict
-panic lints on library code (`clippy::unwrap_used`, `clippy::indexing_slicing`
-and the rest of the type-aware set; `native-theme-gpui` with `native,watch` and
-with `gpui-fast,native,watch`),
+panic lints (`scripts/check_strict_panic.sh`: `clippy::unwrap_used`,
+`clippy::indexing_slicing` and the rest of the type-aware set) on library code,
+on the three showcase examples, the OS probe and the test fixtures
+(`native-theme-gpui` and its showcase with `native,watch` and with
+`gpui-fast,native,watch`),
 per-crate `cargo test` (`native-theme-gpui` with `native,watch`, and `native-theme`
 also with its Linux features, where the tests that need an installed Breeze or
 Adwaita theme run on a host that has them; a test leg that passes no test
@@ -63,14 +65,18 @@ iced, egui and egui-widgets crates' other configurations (tests with no default 
 `iced_aw,watch,native`, for egui and egui-widgets with all features; clippy with `iced_aw,watch,native`,
 for egui and egui-widgets with all features; for egui also that its graph holds
 one `skrifa`),
+on Linux the three showcases' tests in CI's runner environment
+(`scripts/run_in_runner_env.sh`, in the feature sets CI tests them with; a
+server outage skips them with a warning),
 `cargo build --examples` for the crates that have examples, the widget-coverage
 check (`scripts/check_widget_coverage.py`, Python 3.11+), the connector-parity
 check (`scripts/check_connector_parity.py` and its `--self-test`), the
 README-version check (`scripts/check_readme_versions.py` and its `--self-test`), the showcase-parity
 comparator's static modes (`scripts/check_showcase_parity.py --check-list` and
 `--self-test`, which needs Pillow), the data-document checks
-(`scripts/check_platform_facts_rows.py`, `scripts/check_wrong_safety_nets.py` and
-`scripts/check_section_refs.py`, each with its `--self-test`), per-crate
+(`scripts/check_platform_facts_rows.py`, `scripts/check_wrong_safety_nets.py`,
+`scripts/check_section_refs.py`, `scripts/check_todo_citations.py` and
+`scripts/check_preset_citations.py`, each with its `--self-test`), per-crate
 `cargo doc --no-deps --document-private-items` with `RUSTDOCFLAGS="-D warnings"`,
 so the private items' docs are held too (`native-theme` with its Linux
 features, plus its public API with no features; and `native-theme-iced`,
@@ -90,13 +96,17 @@ must be fixed. It needs jq and installs nothing: a missing `cargo-audit`,
 command.
 
 `--commit` runs every one of those checks except the release-tag check, the gpui
-connector's tests on GPUI Fast, `native-theme`'s ignored stem-index test and the
-release-only sections:
+connector's tests on GPUI Fast (the runner-environment leg on GPUI Fast among
+them), `native-theme`'s ignored stem-index test and the release-only sections:
 the docs.rs emulation (`scripts/check_docsrs.py`), packaging,
-`cargo semver-checks`, `cargo audit`, `cargo outdated`, and the PROVENANCE and
+`cargo semver-checks`, `cargo outdated`, and the PROVENANCE and
 compatibility stamp checks. Each of
 them prints `skipped (--commit mode)`, and the summary names them as skipped,
-not passed.
+not passed. `cargo audit` runs in both modes, as CI audits every pull request and every push to `main`; where
+the advisory database cannot be fetched, the full run fails, and `--commit`
+audits against the cached database with a warning naming its date, or warns
+that the audit did not run where no cached database loads. `--commit` needs
+`cargo-audit` installed too.
 
 The script runs the checks of the CI pipeline on the local platform, plus the
 packaging, semver, outdated-dependency and archive-index checks CI does not run.
@@ -148,17 +158,17 @@ CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 | `native-theme-gpui` | `connectors/native-theme-gpui/` | gpui toolkit connector |
 | `native-theme-iced` | `connectors/native-theme-iced/` | iced toolkit connector |
 | `native-theme-egui` | `connectors/native-theme-egui/` | egui toolkit connector |
-| `native-theme-egui-widgets` | `connectors/native-theme-egui-widgets/` | egui widgets the egui connector cannot give egui's own (switch, slider knob, spinner, segmented control, links, radio dot, progress-bar outline, expander) |
+| `native-theme-egui-widgets` | `connectors/native-theme-egui-widgets/` | egui widgets drawn from native-theme-egui's theme where egui's own cannot follow it: a switch, a segmented control, and a slider, spinner, links, drop-down, radio button, progress bar and expander as the theme states them |
 
 ## Feature flags
 
 The core `native-theme` crate has several feature flags:
 
-- **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all)
+- **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all); `linux-kde` and `linux-portal` are aliases of `kde` and `portal`
 - **Icons:** `system-icons`, `material-icons`, `lucide-icons`
 - **Watching:** `watch` (runtime theme change notifications)
 - **Rendering:** `svg-rasterize` (resvg-backed SVG→RGBA rasterisation)
-- **Fonts:** `system-fonts` (face matching against the installed fonts, `fonts::system_face`)
+- **Fonts:** `system-fonts` (face matching against the installed fonts, `fonts::system_face`, and the platform's substitute for a family the system lacks, `fonts::substitute_family`)
 
 Platform-specific features only compile on their target OS. See
 [`native-theme/Cargo.toml`](native-theme/Cargo.toml) for the full list and
@@ -204,7 +214,7 @@ ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
 
 Design-level choices are captured in files under `docs/`:
 
-- [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS Sonoma/Tahoe, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
+- [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (macOS 12–15 and 26, Windows 11, KDE Plasma, GNOME, Material 3), cited to official sources
 - [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
 - [`docs/inheritance-rules.toml`](docs/inheritance-rules.toml) — widget-field inheritance rules driving the resolution pipeline
 - [`docs/todo.md`](docs/todo.md) — the backlog: the open items and follow-ups, each tagged by milestone; closed ones move to [`docs/archive/todo_closed.md`](docs/archive/todo_closed.md)

@@ -96,7 +96,7 @@ Requires: spectacle (KDE)
 ## capture_window.sh
 
 Sourced by the four spectacle scripts, whose one launch-and-capture loop it
-holds: `capture_showcases KIND FEATURES OUTPUT ENTRY...` builds the showcase
+holds: `capture_showcases KIND FEATURES OUTPUT DUMPS ENTRY...` builds the showcase
 KIND in release mode with the cargo flags FEATURES, runs it once per ENTRY
 (`theme:variant:icon-set:icon-theme`) on its Basic page with `--capture`, and
 captures its window to OUTPUT, in which `{theme}`, `{variant}` and `{index}`
@@ -307,7 +307,7 @@ combinations, the cross-target checks and clippy, fmt, clippy, the strict
 panic lints, the tests, the connectors' other configurations, the showcases'
 tests in CI's runner environment (`run_in_runner_env.sh`, below), the examples,
 widget coverage, connector parity, the README versions, the showcase-parity comparator's static modes, the
-data documents' three checks, docs and the archive index, then the docs.rs emulation,
+data documents' five checks, docs and the archive index, then the docs.rs emulation,
 packaging, `cargo semver-checks`, `cargo audit`, `cargo outdated`, and the
 visual-asset and compatibility stamp checks, all release-only but `cargo audit`. Prints one line per check and a summary;
 exits 1 on a hard failure. A test leg that passes no test fails: a filter or a
@@ -317,7 +317,7 @@ With `--commit` it runs the per-commit subset: the release-tag check, the gpui
 connector's tests on GPUI Fast, native-theme's ignored stem-index test and the
 release-only sections are skipped, each
 printing `skipped (--commit mode)`, and the summary names them. `cargo audit`
-runs in both modes, as CI audits every push. It fetches the advisory database
+runs in both modes, as CI audits every pull request and every push to `main`. It fetches the advisory database
 each time; where it cannot (no network), the full run fails, and the
 per-commit subset audits against the cached database (`cargo audit
 --no-fetch`, which checks no yanks) and warns with that database's date, or,
@@ -329,6 +329,27 @@ fix phase and before the release commit. An unknown argument exits 2;
 ```sh
 ./scripts/check_release.sh --commit
 ./scripts/check_release.sh
+```
+
+## check_panic_patterns.py
+
+A regex tripwire for panic-prone code: scans the `.rs` files under the
+directories it is given for the panicking calls and macros its docstring
+lists, and for `Instant::now()` followed by `+` or `-`, outside test code
+(a `#[cfg(test)]` item, a `tests.rs` file, a module its parent declares under
+`#[cfg(test)]`), with comments and literals blanked first. The authoritative
+check is the type-aware `check_strict_panic.sh`; this one also sees what that
+run's lint list does not name and code behind a cfg the clippy runs do not
+build. Exits 0 when nothing is found, 1 on a finding or on an input it cannot
+read (a missing directory, one with no `.rs` file, a file that is not UTF-8).
+`--self-test` runs its built-in scenarios. `scripts/check_release.sh` (both
+modes) runs it over every workspace member's `src/` and runs the self-test.
+
+Requires Python 3.
+
+```sh
+python3 scripts/check_panic_patterns.py native-theme/src
+python3 scripts/check_panic_patterns.py --self-test
 ```
 
 ## check_features.sh
@@ -487,7 +508,7 @@ Checks that every README depends on this workspace's release, and on every
 crate its code names. Reads the
 workspace manifest's `[workspace.package] version` and, in the root README and
 every workspace member's, each `native-theme` or `native-theme-*` dependency a
-`toml` block states (`name = "0.6"`, `{ version = .. }`, `{ package = .., version = .. }`),
+`toml` block states (`name = "0.7"`, `{ version = .. }`, `{ package = .., version = .. }`),
 and requires it to name the version's `major.minor`. The rule compares against
 the version the workspace states, so until the release commit bumps it the
 READMEs name the current minor; the bump fails the check until the same

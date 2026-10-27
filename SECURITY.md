@@ -8,9 +8,9 @@ previous minor is no longer supported.
 
 | Version | Supported |
 |---|---|
-| Latest `0.6.x` | ✅ |
-| Older `0.6.*` | ❌ |
-| Any `0.5.x` or earlier | ❌ |
+| Latest `0.7.x` | ✅ |
+| Older `0.7.*` | ❌ |
+| Any `0.6.x` or earlier | ❌ |
 
 ## Reporting a vulnerability
 

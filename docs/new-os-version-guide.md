@@ -38,6 +38,28 @@ generation.
 
 ---
 
+## The OS probe (macOS, Windows)
+
+Where Apple's or Microsoft's documentation gives no exact value, measure it.
+`tools/os-probe` (`native-theme-os-probe`, never published) records what macOS
+or Windows reports (fonts, colours, control sizes, system metrics) in a
+`probe.toml`, and on macOS renders each control. It runs through
+`.github/workflows/os-probe.yml`, dispatched by hand (`gh workflow run
+os-probe.yml`), on each macOS and Windows runner image in the workflow's
+matrix, and uploads one artifact per image, `os-probe-<image>`.
+
+For a new OS version:
+
+1. Add its runner image to the matrix once GitHub offers one.
+2. Run the workflow and copy the run's artifacts into a new
+   `docs/evidence/os-probe/<date>-run-<id>/`, with a `README.md` of its own and
+   a row in `docs/evidence/README.md`'s table: GitHub deletes a run's artifacts
+   after 90 days, and a recorded file is never edited afterwards.
+3. Cite the probe's lines from `docs/platform-facts.md` with the new version's
+   tag, and the preset's values from those rows.
+
+---
+
 ## KDE (Breeze)
 
 **Source:** `breezemetrics.h` from the KDE Breeze repository
@@ -68,18 +90,19 @@ generation.
 1. Clone or pull the latest Breeze source from <https://invent.kde.org/plasma/breeze>.
 2. Compare the new `kstyle/breezemetrics.h` with the values in `populate_widget_sizing()`.
 3. Update any changed constants in `native-theme/src/kde/metrics.rs`.
-4. Regenerate the preset TOML if widget_metrics values changed:
-   `cargo test -p native-theme --features kde` to verify.
-5. Update `native-theme/src/presets/kde-breeze.toml` if colors, geometry, or spacing
-   defaults changed.
-6. Run the full test suite: `cargo test -p native-theme --features kde`.
+4. Update `native-theme/src/presets/kde-breeze.toml` by hand if colors, geometry,
+   or spacing defaults changed, each value from its `docs/platform-facts.md` row.
+   `native-theme/src/presets/documented_sizes.rs` checks the documented sizes in
+   the preset alone and with `metrics.rs`'s constants merged over it.
+5. Run the full test suite: `cargo test -p native-theme --features kde`.
 
 ---
 
 ## Windows
 
 **Source:** Windows SDK headers, `GetSystemMetricsForDpi` API documentation,
-WinUI3 Fluent Design specifications
+WinUI3 Fluent Design specifications, the OS probe's reads
+([The OS probe](#the-os-probe-macos-windows))
 
 **Files to update:**
 
@@ -150,7 +173,8 @@ probe's API reads and renders (`tools/os-probe`)
 - Changed default sizes in HIG (button heights, control padding, font sizes).
 - New or renamed `NSColor` semantic color names.
 - Changes to default system font family or size.
-- Changes to default corner radius (currently ~5px for controls).
+- Changes to default corner radius (`defaults.border.corner_radius_px`: 5 in
+  `macos-monterey`, 6 in `macos-tahoe`).
 - New accessibility or Dynamic Type behaviors.
 - A documented tooltip delay or dialog motion: AppKit states neither, so
   `tooltip.show_delay_ms` and `dialog.entrance` stay unset; and the
@@ -162,8 +186,8 @@ probe's API reads and renders (`tools/os-probe`)
 1. Review Apple HIG for the new macOS version at
    <https://developer.apple.com/design/human-interface-guidelines/>.
 2. Review AppKit release notes for changed/deprecated `NSColor` names.
-3. Measure updated control sizes with the OS probe (`tools/os-probe`, dispatched
-   through `.github/workflows/os-probe.yml`) where the HIG gives no exact value.
+3. Measure updated control sizes with the OS probe
+   ([The OS probe](#the-os-probe-macos-windows)) where the HIG gives no exact value.
 4. If semantic color names changed, update the NSColor mappings in
    `read_appearance_colors()`, which `MacosReader` calls.
 5. Update the preset TOML file, or create the new generation's preset.

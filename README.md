@@ -8,8 +8,10 @@
 
 Cross-platform native theme loading for Rust GUI applications. Reads OS themes
 on Linux (KDE, GNOME), macOS, and Windows, or loads any of 17 bundled presets
-(Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
-populated `ResolvedTheme`.
+(the platforms' own, such as `kde-breeze`, `adwaita`, `windows-11`,
+`macos-tahoe` and `material-3`, and colour schemes such as Catppuccin, Nord,
+Dracula and Tokyo Night), and hands your UI code a fully populated
+`ResolvedTheme`.
 
 **gpui**
 
@@ -30,12 +32,33 @@ populated `ResolvedTheme`.
 | [gpui](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
 | [iced](https://iced.rs) | [`native-theme-iced`](connectors/native-theme-iced/) |
 | [egui](https://www.egui.rs) | [`native-theme-egui`](connectors/native-theme-egui/) |
-| egui, with the widgets egui's own cannot draw natively (switch, slider knob, segmented control, …) | [`native-theme-egui-widgets`](connectors/native-theme-egui-widgets/), beside `native-theme-egui` |
+| egui, plus widgets drawn from the theme where egui's own cannot follow it (switch, segmented control, slider, …) | [`native-theme-egui-widgets`](connectors/native-theme-egui-widgets/), beside `native-theme-egui` |
 | Writing a new framework connector | [`native-theme`](native-theme/) directly |
 
 The connectors pull `native-theme` in transitively, so you only add one
-dependency for the common case. The core crates build with Rust 1.88; the gpui
-and egui connectors need Rust 1.95.
+dependency for the common case. The core crates and the iced connector build
+with Rust 1.88; the gpui, egui and egui-widgets crates need Rust 1.95.
+
+The OS readers cover KDE Plasma and GNOME (Budgie too) on Linux, macOS and
+Windows. Any other Linux desktop gets the `adwaita` preset in the OS's light or
+dark mode.
+
+## Quick start
+
+Add the connector for your framework. Reading the OS theme needs its `native`
+feature; the bundled presets need none:
+
+```toml
+[dependencies]
+native-theme-iced = { version = "0.7", features = ["native"] }
+```
+
+Then follow that crate's Quick start, which installs the theme in a running
+application: [gpui](connectors/native-theme-gpui/README.md#quick-start),
+[iced](connectors/native-theme-iced/README.md#quick-start),
+[egui](connectors/native-theme-egui/README.md#quick-start). Without `native`,
+`from_system()` gives the platform preset on Linux and an error on macOS and
+Windows.
 
 ## How the 7 crates fit together
 
@@ -44,7 +67,11 @@ and egui connectors need Rust 1.95.
 ## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
-- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Every font has a value, and so does every colour but 34 optional ones, most of them state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are the tooltip show delay, the dialog entrance, the expander's arrow side and frame, and the tab's active-indicator side; and `tab.active_outward_corner_radius`, where unstated the selected tab's feet are square. The switch's track and thumb outlines, their colours (five of the 34) and widths, are `None` where the theme states none, and no outline is drawn; a disabled track outline's colour left `None` takes the enabled one. Your UI code reads from this.
+- **`ResolvedTheme`** — the resolved variant (`.variant` of what `Theme::resolve(mode)` returns). Your UI code reads from this. Every font has a value, and so does every colour and size the model requires. The rest are `Option`s, which a theme, a bundled preset included, may leave `None`:
+  - 34 colours, most of them state shades such as `checkbox.hover_background`;
+  - the sizes the model treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter), the tooltip show delay, the dialog entrance, the expander's arrow side and frame, and the tab's active-indicator side: where one is `None`, the toolkit's own value applies;
+  - `tab.active_outward_corner_radius`: where it is `None`, the selected tab's feet are square;
+  - the switch's track and thumb outlines, their colours (five of the 34) and widths: where they are `None`, no outline is drawn, and a disabled track outline's colour left `None` takes the enabled one.
 - **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-monterey`). Load with `Theme::preset("name")`.
 - **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
@@ -62,11 +89,13 @@ and egui connectors need Rust 1.95.
 
 ## Icon sets
 
-<p align="center">
-  <img src="native-theme/docs/assets/spinner-material.gif" alt="Material spinner">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="native-theme/docs/assets/spinner-lucide.gif" alt="Lucide spinner">
-</p>
+**Material spinner**
+
+![Material spinner](native-theme/docs/assets/spinner-material.gif "Material spinner")
+
+**Lucide spinner**
+
+![Lucide spinner](native-theme/docs/assets/spinner-lucide.gif "Lucide spinner")
 
 Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appropriate glyphs:
 

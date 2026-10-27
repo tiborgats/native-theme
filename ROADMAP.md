@@ -44,6 +44,10 @@ Detailed design: [`docs/archive/todo_v0.6.1_gpui-kit-0.7.1-spec.md`](docs/archiv
 
 ## v0.7.0 — Whole-codebase review
 
+**Status:** about to ship. The review is closed, the workspace version is
+0.7.0 and the release assets are generated; the tag and the crates.io
+release come next.
+
 The release after v0.6.1 is 0.7.0. The review's design phase accepted two
 breaking changes ([`docs/archive/todo_v0.7.0_code-review-plan.md`](docs/archive/todo_v0.7.0_code-review-plan.md), D1):
 
@@ -82,9 +86,10 @@ It also moves the gpui connector to GPUI Kit 0.8.1 on gpui-pre 0.3.10, with a
 
 ## v0.7.1 — Full theme geometry in the iced connector
 
-v0.5.9 ships most of it, and the code review's M5 adds `styles::button_toggle`,
-`pane_grid` and `expander_frame` in v0.7.0. `native_theme_iced::styles`
-(feature `widgets`, on by default) has 29 style functions, closures built
+v0.5.9 ships most of it, and v0.7.0 adds `styles::button_toggle`,
+`pane_grid`, `expander_frame`, `segment_separator`, `dialog`, `toolbar`,
+`toolbar_rule` and `application`. `native_theme_iced::styles`
+(feature `widgets`, on by default) has 33 style functions, closures built
 from the resolved theme. Twenty-one replace iced's own: every `Style` field —
 colours, border radius and width included — of the button (neutral, primary,
 danger, success, warning and link classes), text input, text editor,
@@ -95,16 +100,18 @@ base style (`styles::application`, the window's background).
 control drawn on a backdrop rather than on the window (a disabled one is
 faded as one widget over it), `styles::button_toggle` is a toggle button,
 `styles::scrollbar` is the scrollbar's configuration, its widths and
-embedding, and `styles::segmented_control`, `segment`, `expander` and
-`expander_frame` style the containers and buttons the showcase builds those
-widgets from. `styles::aw` (feature `iced_aw`) gives `iced_aw`'s card, menu
+embedding, `styles::segmented_control`, `segment`, `segment_separator`,
+`expander` and `expander_frame` style the containers and buttons the showcase
+builds those widgets from, and `styles::dialog`, `toolbar` and `toolbar_rule`
+style the containers an application draws a dialog and a toolbar in, which
+iced 0.14 has no widget for. `styles::aw` (feature `iced_aw`) gives `iced_aw`'s card, menu
 bar, tab bar, sidebar, selection list and spinner the same. Padding, which
 iced takes through each widget's builder rather than its `Style`, comes from
 `button_padding`, `input_padding`, `text_area_padding`, `combo_box_padding`
 and, for any other widget, `padding_or`, `padding_inside_border` and
 `stated_padding`, each keeping iced's own default for a side the theme does
 not state. A `Style` field the model does not carry is read from iced's
-default for that widget, and the thirteen theme values iced 0.14 and
+default for that widget, and the theme values iced 0.14 and
 `iced_aw` 0.14.1 have no receiver for, or carry only in part (and one
 emitted field, `styles::aw::card.close_color`), are listed, with the
 upstream lines that show it, in the connector's mapping contract.
@@ -181,6 +188,17 @@ each, framed as theming flexibility:
 
 Gap analysis with citations: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md);
 limits table: `docs/archive/todo_v0.5.8_gpui-component-0.6-spec.md` §14.
+
+## Also in the 0.7.x releases
+
+[`docs/todo.md`](docs/todo.md) tags 29 open items `[v0.7.x]`, follow-ups of
+the v0.7.0 review that a 0.7 patch release takes beside the two milestones
+above. Among them: the `ios-26` preset, iOS 26's Liquid Glass look, deferred
+while 38 of the values the resolver requires have no iOS 26 source;
+material-3's rewrite (the code-review plan's M2d), after which its display
+name becomes "Material 3"; the theme watchers' open questions on Windows and
+macOS; details of the Linux desktop detection and of the KDE reader; and
+showcase follow-ups. The items tagged `[1.0]` are settled before 1.0.
 
 ## Beyond v0.7
 
