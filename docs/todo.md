@@ -1721,6 +1721,65 @@ model, the platform presets and the three connectors
       (`native-theme/src/model/widgets/mod.rs:811-817` at 3987442e), so a new
       public field breaks struct literals; a later minor release may carry it.
 
+### Values the v0.7.1 gap map found against their sources
+
+v0.7.1's platform research (2026-10-27, `docs/todo_v0.7.1_model-completeness-gap-map.md`)
+read sources that disagree with values the model already carries. Each is to be checked
+at the source and fixed in `docs/platform-facts.md`, the preset and the reader, or
+recorded as checked and right. The KDE citations are at Breeze `master` 75561b7f and
+KColorScheme 8bb948c4, to be re-pinned to the release tags `platform-facts.md` uses.
+
+- [ ] [v0.7.x] **KDE.** (1) `menu.hover_background` and `.hover_text_color`: the facts
+      give `[Colors:Selection]`, Breeze draws `focusColor` at `Blend_Value` with an outline
+      and keeps the text `WindowText` (`kstyle/breezestyle.cpp:6024-6047`, `:6159-6160`);
+      the solid selection colour is the pressed item. (2) `window.title_bar_background`
+      and the inactive colours: the reader reads `[WM]`, KWin uses `[Colors:Header]` and
+      `[Colors:Header][Inactive]` when the scheme has them (KWin 625e3132
+      `src/decorations/decorationpalette.cpp:126-160`). (3)
+      `defaults.selection_inactive_background`: the facts say unchanged on focus loss,
+      KColorScheme tints the window colour with the selection colour for the Inactive
+      group (`src/kcolorscheme.cpp:303-321`, `:386-389`). (4) `list.header_background`:
+      the reader reads `[Colors:Header]`, Breeze fills the header section with
+      `QPalette::Button` (`breezestyle.cpp:6832-6845`). (5)
+      `combo_box.border.shadow_enabled`: a non-editable combo box is a button frame with
+      the button's shadow (`breezestyle.cpp:7856-7871`, `breezehelper.cpp:729-732`). (6)
+      `list.hover_background`: Breeze draws `Highlight` at `Blend_Value`
+      (`breezestyle.cpp:4875-4880`), not a `DecorationHover` blend. (7)
+      `defaults.disabled_text_color`: the reader reads `[Colors:View] ForegroundInactive`
+      (`native-theme/src/kde/colors.rs:493` at caeddd6b), KDE derives it through
+      `[ColorEffects:Disabled]` (`kcolorscheme.cpp:21-56`). (8) `input.caret_color`: Qt
+      may draw the line edit's caret in the text colour, not `DecorationFocus`; to measure.
+      (9) `defaults.focus_ring_*`: Breeze's focus frame is a filled ring between two
+      rounded rectangles, `Highlight` at `Blend_Value` 0.3 (`breezestyle.cpp:6770-6786`,
+      `kstyle/breezemetrics.h:176`), not a 1.001 px stroke; its width is to read there.
+- [ ] [v0.7.x] **GNOME** (libadwaita 1.10.0, `src/stylesheet/`; GTK 4.24.1). (1) The
+      tooltip sets `box-shadow: none` (`widgets/_tooltip.scss:15`); the facts say it
+      casts one. (2) Menu items are rounded, `$menu_radius` 9 (`widgets/_menus.scss:138`),
+      not rectangular. (3) No even/odd row rule exists, so `list.alternate_row_background`
+      has no source. (4) A check's radius is `$check_radius` 6 (`widgets/_checks.scss:1`,
+      `:67-68`), not the inherited 9. (5) `checkbox.label_gap`: `border-spacing: 4px`
+      (`_checks.scss:4`), not 8; check what else adds space. (6) `tab.item_gap`: tabs have
+      4 px side margins (`widgets/_notebook.scss:181-184`). (7) `slider.tick_mark_length`:
+      GtkScale draws marks 6 px long (`widgets/_scale.scss:21`, `:119-122`). (8) The
+      progress bar's trough and fill are 99 px pills, and its horizontal `min-width` is
+      150; 80 is the vertical minimum (`widgets/_progress-bar.scss:5`, `:12`). (9)
+      GtkSpinner plays an animated SVG, a sand-watch under reduced motion (GTK
+      `gtk/gtkspinner.c:158-161`), not a rotating icon. (10)
+      `defaults.selection_inactive_background`: an unfocused selection has its own colour
+      (`_common.scss:64-66`). (11) Reader: the header bar's title is the UI font in bold
+      (`widgets/_header-bar.scss:213-218`), and `titlebar-uses-system-font` defaults to
+      true, so `titlebar-font` is not the title's font. (12) Reader: libadwaita snaps the
+      portal's accent to the nearest of its nine accents and gives it white text
+      (`src/adw-settings-impl-portal.c:140`, `src/adw-accent-color.c:160`,
+      `src/adw-style-manager.c:160-161`); the reader uses the accent as given.
+- [ ] [v0.7.x] **Material.** Compose Material 3 states a text selection colour, `primary`
+      at `TextSelectionBackgroundOpacity` (`compose/material3/material3/src/commonMain/kotlin/androidx/compose/material3/MaterialTheme.kt:276-287`
+      at androidx 1e677685), where `platform-facts.md` §2.1.3 and §2.4 say "(none)".
+- [ ] [v0.7.x] **Windows.** (1) The *Layering* page of Microsoft Learn gives a card
+      elevation 8 and a 1 px stroke, where `platform-facts.md` §2.26 says "border only".
+      (2) Learn's *Content layout and spacing* (updated 2026-10-14) publishes the gaps
+      §2.20 marks "(none)".
+
 ---
 
 ## Toolkit Connectors
