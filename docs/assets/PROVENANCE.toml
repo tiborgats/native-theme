@@ -6,7 +6,7 @@
 
 # Workspace version and commit the assets were captured from.
 version = "0.7.0"
-commit = "bcde81412f770895ba3d5a09f4166662da5d311e"
+commit = "87261cdfa9a1c2f61455dbb1a03c6b61b6528f07"
 generated = "2026-10-27"
 
 # OS versions of the CI runners that captured the macOS and Windows
@@ -18,4 +18,4 @@ windows_version = "10.0.26100.0"
 # SHA-256 over the git object ids of every path that feeds the showcases
 # (SOURCE_PATHS in scripts/update_provenance.sh). The gates recompute it at HEAD;
 # a difference means the assets were captured from other sources.
-sources = "43c43f5829789e9c2856851ce9c5590db3bc3da7307bd8cd9d02931fdb8514a6"
+sources = "f47445e7d01eec5c80f0138ce9ddc8479de5fa7c5982b2208f620242e53a5b79"
