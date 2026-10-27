@@ -80,7 +80,7 @@ pub(crate) enum BorderKind {
 /// `theme_inherit`) and must stay independent to avoid conflating the two
 /// concerns.
 ///
-/// Per-widget assignments (Phase 94-01 G6):
+/// Per-widget assignments:
 /// - `Full`: 10 widgets — button, input, checkbox, tooltip, progress_bar,
 ///   toolbar, list, combo_box, segmented_control, expander.
 /// - `FullLg`: 3 widgets — window, popover, dialog (use `corner_radius_lg`).
@@ -711,7 +711,7 @@ mod tests {
         assert!(err.contains("exceeds"), "got: {err}");
     }
 
-    // === explicit_fields parsing (Phase 93-05 G5) ===
+    // === explicit_fields parsing ===
 
     /// Helper to parse struct-level `#[theme_layer(...)]` attributes from a token stream.
     fn parse_layer_from_tokens(tokens: proc_macro2::TokenStream) -> Result<LayerMeta> {
@@ -813,7 +813,7 @@ mod tests {
         assert!(err.to_string().contains("resolved_name"), "got: {err}");
     }
 
-    // === theme_inherit parsing (Phase 94-01 G6) ===
+    // === theme_inherit parsing ===
 
     /// Helper: parse `#[theme_inherit(...)]` attributes from a token stream.
     fn parse_inherit_from_tokens(tokens: proc_macro2::TokenStream) -> Result<InheritMeta> {

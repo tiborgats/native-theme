@@ -18,10 +18,15 @@
 //! system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
 //! ```
 //!
-//! - **`name`** -- used to derive the generated enum name (`AppIcon`).
+//! - **`name`** -- used to derive the generated enum name (`AppIcon`) and the
+//!   generated file's name (`app_icon.rs`).
 //! - **`roles`** -- kebab-case role names; each becomes a PascalCase enum variant.
 //! - **`bundled-themes`** -- themes whose SVGs are embedded via `include_bytes!`.
 //! - **`system-themes`** -- themes resolved at runtime by the OS (no embedded SVGs).
+//!
+//! A theme name is one of `material`, `lucide`, `sf-symbols`, `segoe-fluent`
+//! and `freedesktop`; each listed theme needs a `mapping.toml` in a folder of
+//! that name next to the master TOML.
 //!
 //! # Directory Layout
 //!
@@ -36,7 +41,7 @@
 //!   sf-symbols/
 //!     mapping.toml       # Role -> SF Symbol name mappings
 //!   segoe-fluent/
-//!     mapping.toml       # Role -> Segoe codepoint mappings
+//!     mapping.toml       # Role -> Segoe Fluent glyph mappings
 //!   freedesktop/
 //!     mapping.toml       # Role -> freedesktop icon name mappings
 //! ```
@@ -58,7 +63,13 @@
 //! play-pause = { kde = "media-playback-start", default = "media-play" }
 //! ```
 //!
-//! A `default` key is required for every DE-aware entry.
+//! A `default` key is required for every DE-aware entry; it is the name on
+//! every other desktop and on every platform but Linux. A bundled theme
+//! rejects the form, since it embeds one SVG per role.
+//!
+//! A `segoe-fluent` value is a codepoint written `0x…` (`0xE8BB`), a Segoe
+//! Fluent glyph name native-theme knows (`ChromeClose`), or a Windows stock
+//! icon (`SIID_*`, `IDI_QUESTION`).
 //!
 //! # build.rs Setup
 //!
@@ -103,12 +114,17 @@
 //! let icon_data = MaterialLoader::new(&AppIcon::PlayPause).load();
 //! ```
 //!
+//! native-theme's loaders give `None` without their set's feature, for a
+//! generated enum too: `material-icons` for a bundled `material` theme,
+//! `lucide-icons` for `lucide`, and `system-icons` for the `sf-symbols`,
+//! `segoe-fluent` and `freedesktop` names.
+//!
 //! # What Gets Generated
 //!
 //! The output is a single `.rs` file containing:
 //!
-//! - A `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` enum with one
-//!   variant per role, `#[non_exhaustive]`, and an `ALL` constant listing
+//! - A `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` enum (plus the
+//!   [`IconGenerator::derive()`] extras) with one variant per role, `#[non_exhaustive]`, and an `ALL` constant listing
 //!   every variant. The enum, its variants and `ALL` carry doc comments, so
 //!   the file compiles under `#![deny(missing_docs)]`.
 //! - An `IconProvider` implementation with `icon_name()` returning the
@@ -122,8 +138,18 @@
 //! - Missing roles in mapping files (every role must be present in every theme).
 //! - Missing SVG files for bundled themes.
 //! - Unknown role names in mapping files (not declared in the master TOML).
-//! - Duplicate roles across multiple TOML files (builder API).
-//! - Missing `default` key in DE-aware mapping entries.
+//! - Duplicate roles across multiple TOML files (builder API), or in one file.
+//! - Missing `default` key in DE-aware mapping entries, and DE-aware entries
+//!   in a bundled theme.
+//! - Unknown theme names, and a theme listed twice or in both lists.
+//! - Role or enum names that make no Rust identifier, and roles that make
+//!   the same variant.
+//! - Icon names that are empty or hold control or invisible characters, a
+//!   path separator or `..`.
+//! - [`IconGenerator::crate_path()`] and [`IconGenerator::derive()`] values
+//!   that are not Rust paths.
+//!
+//! [`BuildError`] has a variant for each.
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -461,9 +487,14 @@ impl IconGenerator {
     ///
     /// # Errors
     ///
-    /// Returns [`BuildErrors`] if `CARGO_MANIFEST_DIR` is not set and a
-    /// relative source path is used, or if neither
-    /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set.
+    /// Returns [`BuildErrors`] if no [`source()`](Self::source) was added,
+    /// if `CARGO_MANIFEST_DIR` is not set and a relative source path or
+    /// [`base_dir()`](Self::base_dir) is used, if neither
+    /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set, if
+    /// [`crate_path()`](Self::crate_path) or [`derive()`](Self::derive) is
+    /// not a Rust path, if sources in different directories have no
+    /// `base_dir()`, if a TOML file cannot be read or parsed, or if the icon
+    /// pipeline detects missing roles, SVGs, or invalid mappings.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         self.generate_with_env(&|name| std::env::var(name))
     }

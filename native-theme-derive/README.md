@@ -10,16 +10,21 @@
 
 ## What it does
 
-Generates, from a single annotated struct definition:
+`#[derive(ThemeWidget)]` generates, from a single annotated struct definition:
 
 - A paired `Option` / `Resolved` struct hierarchy (sparse source vs. fully
   populated output)
 - `merge()` logic for overlay composition
 - Range and presence validation
-- Field-level inheritance rules wired into the resolution pipeline
+- The struct's inheritance rules wired into the resolution pipeline: per-field
+  rules from `#[theme(inherit_from = "...")]`, and border and font inheritance
+  from the struct-level `#[theme_inherit(...)]` attribute
 
-Also provides `#[theme_inherit]` — a codegen attribute for border/font
-inheritance rules previously written by hand across the crate.
+`#[derive(ThemeFields)]` registers a plain struct's serialized field names, so
+`native-theme` can lint a theme TOML for unknown keys.
+
+The expansions name paths that exist only inside `native-theme`
+(`crate::resolve::*`), so the macros compile nowhere else.
 
 ## Links
 

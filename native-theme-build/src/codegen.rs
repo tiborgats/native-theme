@@ -62,7 +62,7 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 /// - Header comment
 /// - Enum definition with docs, derives and `#[non_exhaustive]`, a doc per variant
 /// - `impl` block with a documented `const ALL`
-/// - `impl {crate_path}::IconProvider` with `icon_name()` and `icon_svg()` match arms
+/// - `impl {crate_path}::icons::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
 /// on `{crate_path}::detect::system().refined_linux_desktop_sync()`, the desktop

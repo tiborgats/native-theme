@@ -1,4 +1,5 @@
-//! Dev-only OS probe for the platform-fidelity review (code review M2a, M2b).
+//! Dev-only OS probe for the platform-fidelity review (M2a and M2b of the
+//! v0.7.0 code review, `docs/archive/todo_v0.7.0_code-review-plan.md`).
 //!
 //! Prints what macOS or Windows reports — fonts, colours, control sizes,
 //! system metrics — and writes it to `<out>/probe.toml`; on macOS it also
@@ -9,7 +10,10 @@
 //! or `not probed: …`) and the run goes on. On any other OS the probe prints
 //! that it supports macOS and Windows only and exits with success.
 //!
-//! Usage: `native-theme-os-probe [--out <dir>]` (default `os-probe-out`).
+//! Usage: `native-theme-os-probe [--out <dir>] [--not-key]`. `--out` (or
+//! `--out=<dir>`) names the output directory, `os-probe-out` by default;
+//! `--not-key`, macOS only, makes the key-window section capture its window
+//! after a second window has taken the key.
 
 #![deny(unsafe_code)]
 #![deny(

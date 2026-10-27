@@ -248,8 +248,11 @@ pub fn parse_point(value: &str) -> Option<(u16, u16)> {
 /// The colour-mode picker's rows: follow the OS, or a fixed mode.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ColorModeChoice {
+    /// Follow the OS's colour mode.
     System,
+    /// The light variant.
     Light,
+    /// The dark variant.
     Dark,
 }
 
@@ -326,7 +329,9 @@ pub fn color_mode(variant: &str) -> Result<ColorModeChoice, String> {
 /// The theme `--theme` names: the desktop's own (`default`), or a preset.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ThemeKey {
+    /// `default`: the desktop's own theme.
     Default,
+    /// A preset, by its key.
     Preset(String),
 }
 

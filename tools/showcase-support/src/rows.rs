@@ -19,7 +19,9 @@ pub fn default_label(default_preset: &str) -> String {
 /// name the row shows.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PresetRow {
+    /// The key `--theme` takes: `default`, or the preset's key.
     pub key: String,
+    /// The name the row shows.
     pub display_name: String,
 }
 

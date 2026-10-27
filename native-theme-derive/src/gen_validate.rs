@@ -48,9 +48,9 @@ fn gen_field_inits(fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
             match &f.category {
                 FieldCategory::Option => {
                     // Determine the fallback sentinel based on the inner type of
-                    // `Option<T>`. Supported inner types: Rgba, f32, u16, bool,
-                    // Arc<str>. Unknown types produce a compile error so the
-                    // caller knows to add a mapping here.
+                    // `Option<T>`; `fallback_for_ty` lists the supported inner
+                    // types. Unknown types produce a compile error so the
+                    // caller knows to add a mapping there.
                     let inner = option_inner(&f.ty);
                     let fallback = fallback_for_ty(&inner, &field_name);
                     quote! {
@@ -112,6 +112,7 @@ fn gen_field_inits(fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
 /// - `u16`   -> `0u16`
 /// - `bool`  -> `false`
 /// - `Arc<str>` -> `std::sync::Arc::<str>::from("")`
+/// - `String` -> `String::new()`
 /// - `DialogButtonOrder` -> `crate::model::DialogButtonOrder::PrimaryRight`
 ///   (matches the type's own `#[default]` variant)
 ///

@@ -43,8 +43,11 @@ pub mod values;
 /// into a text, an app id or the layout dump.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kind {
+    /// The gpui connector's showcase.
     Gpui,
+    /// The iced connector's showcase.
     Iced,
+    /// The egui connector's showcase.
     Egui,
 }
 
@@ -91,17 +94,17 @@ pub const INFO_SETTLE: Duration = Duration::from_millis(250);
 /// for a showcase's window and its dump (`scripts/capture_window.sh`,
 /// `SHOWCASE_WINDOW_TIMEOUT`), which `the_capture_wait_is_the_scripts` holds.
 /// The Windows capture's window finder ([`capture::FrameCapture::poll`]),
-/// the iced showcase's `--dump-layout` and the gpui showcase's dump readings
-/// wait as long. The showcases' own bound; the model states none.
+/// the iced and egui showcases' `--dump-layout` and the gpui showcase's dump
+/// readings wait as long. The showcases' own bound; the model states none.
 pub const CAPTURE_WAIT: Duration = Duration::from_secs(20);
 
 /// A dialog's padding on a side the theme's `dialog.border.padding` leaves
 /// unstated, inside the dialog's border line: gpui-component's `Dialog`'s
 /// own, `Edges::all(px(16.))`, which each stated side replaces
 /// (gpui-component 0.8.1 `src/dialog/dialog.rs:694-706`), and which the gpui
-/// showcase's dialogs keep. The iced showcase pads its dialogs so (and the
-/// egui showcase after M9c T7), as the shared chrome looks like gpui's; the
-/// model states no such default.
+/// showcase's dialogs keep. The iced and egui showcases pad their dialogs
+/// so, as the shared chrome looks like gpui's; the model states no such
+/// default.
 /// Logical pixels, not a rem multiple: text scale leaves it alone.
 pub const DIALOG_PADDING_PX: f32 = 16.0;
 

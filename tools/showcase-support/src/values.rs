@@ -23,7 +23,9 @@ pub const NOT_STATED: &str = "not stated";
 /// showcase draws as the row's swatch in its own colour type.
 #[derive(Clone, Debug, PartialEq)]
 pub struct LeafValue {
+    /// The value's text.
     pub text: String,
+    /// The colour, where the value is one.
     pub colour: Option<Rgba>,
 }
 

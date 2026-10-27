@@ -6,7 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 publish = false
-description = "Dev-only code the gpui, iced and egui showcases share: the command line, the window capture and its check, the layout dump, the element list, the Widget Info values and rows, the side panel's picker rows and the status bar's text"
+description = "Dev-only code the gpui, iced and egui showcases share: the command line, the window capture and its check, the layout dump, the element list, the Widget Info values and rows, the side panel's picker rows, the status bar's text and the macOS menu bar's titles"
 
 [dependencies]
 # No feature: every item the crate uses is feature-free, which

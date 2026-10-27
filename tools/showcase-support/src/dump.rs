@@ -9,9 +9,13 @@ use crate::Kind;
 /// 0)` is the top-left of the content area.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
+    /// The left edge.
     pub x: f32,
+    /// The top edge.
     pub y: f32,
+    /// The width.
     pub w: f32,
+    /// The height.
     pub h: f32,
 }
 

@@ -32,9 +32,13 @@ mod util;
 ///
 /// - `#[theme_layer(border_kind = "full"|"partial"|"none")]` -- border validation mode
 /// - `#[theme_layer(resolved_name = "CustomName")]` -- override resolved struct name
-/// - `#[theme_layer(skip_inventory)]` -- skip inventory::submit! for non-per-variant widgets
-/// - `#[theme_inherit(border_kind = "full"|"full_lg"|"partial")]` -- border INHERITANCE mode
-///   (Phase 94-01 G6; parallel to theme_layer.border_kind which drives validation)
+/// - `#[theme_layer(skip_inventory)]` -- emit no `inventory::submit!` registrations
+///   (widget fields, uniform, border and font inheritance rules), for structs that
+///   are not per-variant widgets
+/// - `#[theme_inherit(border_kind = "full"|"full_lg"|"partial")]` -- which border
+///   sub-fields inherit from `defaults.border` (`full_lg` takes `corner_radius_lg`,
+///   `partial` only the colour and line width); a separate concern from
+///   `theme_layer`'s `border_kind`, which drives validation
 /// - `#[theme_inherit(font = "<field>")]` -- font field that inherits from `defaults.font`
 ///   (repeatable: list declares item_font + header_font, dialog declares title_font + body_font)
 ///
@@ -42,6 +46,7 @@ mod util;
 ///
 /// - `#[theme(category = "option"|"soft_option")]` -- field merge/validation category (default: "option")
 /// - `#[theme(nested, resolved_type = "ResolvedFontSpec")]` -- nested validated type
+///   (`resolved_type` implies `nested`; `nested` alone keeps the field's own type)
 /// - `#[theme(check = "non_negative"|"positive")]` -- range check
 /// - `#[theme(range = "0.0..=1.0")]` -- f32 range check
 /// - `#[theme(range_u16 = "100..=900")]` -- u16 range check
@@ -136,7 +141,7 @@ fn gen_inventory_submit(
 }
 
 /// Derive macro that registers a plain struct's serialized field names in the
-/// `crate::resolve::FieldInfo` inventory for TOML linting (Phase 93-05 G5).
+/// `crate::resolve::FieldInfo` inventory for TOML linting.
 ///
 /// By default the macro introspects the struct's fields and honours any
 /// `#[serde(rename = "...")]` attributes (so `corner_radius` annotated with
@@ -250,8 +255,8 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
         }
     };
 
-    // Emit at item level directly -- mirrors the pattern used by the widget
-    // derive at line 111 above. The inventory registry path
+    // Emit at item level directly -- mirrors `gen_inventory_submit` above.
+    // The inventory registry path
     // `crate::resolve::FieldInfo` works because this derive is only ever
     // consumed inside the `native_theme` crate.
     Ok(quote::quote! {
