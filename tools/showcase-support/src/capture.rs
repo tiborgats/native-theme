@@ -157,9 +157,14 @@ pub struct FrameCapture {
     title: String,
     #[cfg(target_os = "windows")]
     finder: Option<std::process::Child>,
-    /// When the finder run was started ([`crate::CAPTURE_WAIT`]).
-    #[cfg(target_os = "windows")]
+    /// When the capture began, on Windows the finder run
+    /// ([`crate::CAPTURE_WAIT`]).
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     started: std::time::Instant,
+    /// When a poll may run `screencapture` again after WindowServer refused
+    /// the window ([`next_attempt`]).
+    #[cfg(target_os = "macos")]
+    next_try: std::time::Instant,
 }
 
 impl FrameCapture {
@@ -185,9 +190,12 @@ impl FrameCapture {
         }
         #[cfg(target_os = "macos")]
         {
+            let now = std::time::Instant::now();
             Ok(Self {
                 path: path.to_string(),
                 title: window_title.to_string(),
+                started: now,
+                next_try: now,
             })
         }
         #[cfg(not(any(target_os = "macos", target_os = "windows")))]
@@ -200,8 +208,10 @@ impl FrameCapture {
     /// `None` while the capture is under way; then, once, whether it was
     /// written and passed [`check_frame_capture`], with the content size and
     /// scale `content` gives at that moment. A capture that fails the check
-    /// is not left at the path, and on Windows a finder run that has not
-    /// found the window within [`crate::CAPTURE_WAIT`] fails it. Poll until it
+    /// is not left at the path. On Windows a finder run that has not found
+    /// the window within [`crate::CAPTURE_WAIT`] fails it; on macOS a
+    /// `screencapture` that WindowServer refuses is run again, every
+    /// [`RETRY_PAUSE`], until it has been refused that long. Poll until it
     /// returns `Some`, then stop: on Windows a later poll returns `None`
     /// again, as the finder run is gone.
     pub fn poll(
@@ -230,7 +240,24 @@ impl FrameCapture {
         }
         #[cfg(target_os = "macos")]
         {
-            Some(capture_macos(&self.title, &self.path, content))
+            let now = std::time::Instant::now();
+            if now < self.next_try {
+                return None;
+            }
+            match capture_macos(&self.title, &self.path, content) {
+                Err(MacosCaptureError::Refused(error)) => {
+                    match next_attempt(&error, self.started, now) {
+                        Ok(next_try) => {
+                            eprintln!("{error}; trying again in {RETRY_PAUSE:?}");
+                            self.next_try = next_try;
+                            None
+                        }
+                        Err(error) => Some(Err(error)),
+                    }
+                }
+                Err(MacosCaptureError::Failed(error)) => Some(Err(error)),
+                Ok(()) => Some(Ok(())),
+            }
         }
         #[cfg(not(any(target_os = "macos", target_os = "windows")))]
         {
@@ -287,6 +314,43 @@ fn find_window(pid: u32, title: &str) -> Result<xcap::Window, String> {
     }
 }
 
+/// How a macOS capture failed.
+#[cfg(target_os = "macos")]
+enum MacosCaptureError {
+    /// `screencapture` exited non-zero. WindowServer can refuse a window it
+    /// lists but has no image of yet ("could not create image from window",
+    /// seen on the macOS runner), so a later poll tries again
+    /// ([`next_attempt`]).
+    Refused(String),
+    /// Any other failure, which trying again does not change.
+    Failed(String),
+}
+
+/// The pause between two `screencapture` runs of a window WindowServer
+/// refused: the showcases poll a capture as often as every frame.
+#[cfg(any(target_os = "macos", test))]
+const RETRY_PAUSE: std::time::Duration = std::time::Duration::from_millis(500);
+
+/// When to run `screencapture` again after it was refused with `error` at
+/// `now`, the capture begun at `started`: [`RETRY_PAUSE`] later while `now`
+/// is within [`crate::CAPTURE_WAIT`] of `started`, and the refusal as the
+/// capture's error once it has been tried that long.
+#[cfg(any(target_os = "macos", test))]
+fn next_attempt(
+    error: &str,
+    started: std::time::Instant,
+    now: std::time::Instant,
+) -> Result<std::time::Instant, String> {
+    if now.saturating_duration_since(started) < crate::CAPTURE_WAIT {
+        Ok(now.checked_add(RETRY_PAUSE).unwrap_or(now))
+    } else {
+        Err(format!(
+            "{error}, still after {} s of tries",
+            crate::CAPTURE_WAIT.as_secs()
+        ))
+    }
+}
+
 /// `screencapture -l <id> -o <path>` of the window titled `title`: the
 /// window with its title bar, without its shadow (`-o`); then checked, and
 /// removed where the check fails.
@@ -295,20 +359,27 @@ fn capture_macos(
     title: &str,
     path: &str,
     content: impl FnOnce() -> Result<Content, String>,
-) -> Result<(), String> {
-    let window = find_window(std::process::id(), title)?;
-    let id = window.id().map_err(|e| format!("the window's id: {e}"))?;
+) -> Result<(), MacosCaptureError> {
+    let window = find_window(std::process::id(), title).map_err(MacosCaptureError::Failed)?;
+    let id = window
+        .id()
+        .map_err(|e| MacosCaptureError::Failed(format!("the window's id: {e}")))?;
     let status = std::process::Command::new("screencapture")
         .args(["-l", &id.to_string(), "-o", path])
         .status()
-        .map_err(|e| format!("running screencapture: {e}"))?;
+        .map_err(|e| MacosCaptureError::Failed(format!("running screencapture: {e}")))?;
     if !status.success() {
-        return Err(format!("screencapture exited with {status}"));
+        return Err(MacosCaptureError::Refused(format!(
+            "screencapture exited with {status}"
+        )));
     }
-    let size = image::image_dimensions(path).map_err(|e| format!("{path}: {e}"))?;
-    checked(size, content).inspect_err(|_| {
-        let _ = std::fs::remove_file(path);
-    })
+    let size = image::image_dimensions(path)
+        .map_err(|e| MacosCaptureError::Failed(format!("{path}: {e}")))?;
+    checked(size, content)
+        .inspect_err(|_| {
+            let _ = std::fs::remove_file(path);
+        })
+        .map_err(MacosCaptureError::Failed)
 }
 
 /// A window's visible frame in physical screen pixels: left, top, width,
@@ -570,6 +641,28 @@ mod tests {
         assert_eq!(
             finder_exited(&mut done, started, started + crate::CAPTURE_WAIT),
             Ok(true)
+        );
+    }
+
+    /// A `screencapture` WindowServer refused runs again [`RETRY_PAUSE`]
+    /// later while the capture is within [`crate::CAPTURE_WAIT`], and fails
+    /// the capture with the refusal after that.
+    #[test]
+    fn a_refused_screencapture_is_tried_again_until_the_capture_wait() {
+        let started = std::time::Instant::now();
+        let refusal = "screencapture exited with exit status: 1";
+        assert_eq!(
+            next_attempt(refusal, started, started),
+            Ok(started + RETRY_PAUSE)
+        );
+        let late = started + crate::CAPTURE_WAIT - RETRY_PAUSE;
+        assert_eq!(next_attempt(refusal, started, late), Ok(late + RETRY_PAUSE));
+        assert_eq!(
+            next_attempt(refusal, started, started + crate::CAPTURE_WAIT),
+            Err(format!(
+                "{refusal}, still after {} s of tries",
+                crate::CAPTURE_WAIT.as_secs()
+            ))
         );
     }
 
