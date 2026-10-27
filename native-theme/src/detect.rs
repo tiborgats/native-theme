@@ -2040,6 +2040,11 @@ mod subprocess_tests {
     use std::path::PathBuf;
     use std::time::{Duration, Instant};
 
+    /// The timeout of a test whose command finishes: a loaded machine never
+    /// takes that long, where it could take `SUBPROCESS_TIMEOUT`'s 2 s, the
+    /// readers' design value.
+    const GENEROUS: Duration = Duration::from_secs(10);
+
     /// Whether `program` is an executable file in a `$PATH` directory.
     fn on_path(program: &str) -> bool {
         std::env::var_os("PATH")
@@ -2062,7 +2067,7 @@ mod subprocess_tests {
             eprintln!("skipped: echo is not installed");
             return;
         }
-        let out = stdout_with_timeout("echo", &["hi"], SUBPROCESS_TIMEOUT);
+        let out = stdout_with_timeout("echo", &["hi"], GENEROUS);
         assert_eq!(out.as_deref().map(str::trim), Some("hi"));
     }
 
@@ -2074,20 +2079,15 @@ mod subprocess_tests {
             eprintln!("skipped: sh is not installed");
             return;
         }
-        let output =
-            run_with_timeout("sh", &["-c", "echo oops >&2; exit 3"], SUBPROCESS_TIMEOUT).unwrap();
+        let output = run_with_timeout("sh", &["-c", "echo oops >&2; exit 3"], GENEROUS).unwrap();
         assert_eq!(output.status.code(), Some(3));
         assert_eq!(output.stderr, b"oops\n");
-        assert_eq!(
-            stdout_with_timeout("sh", &["-c", "exit 3"], SUBPROCESS_TIMEOUT),
-            None
-        );
+        assert_eq!(stdout_with_timeout("sh", &["-c", "exit 3"], GENEROUS), None);
     }
 
     #[test]
     fn run_with_timeout_reports_a_missing_program_as_not_found() {
-        let error =
-            run_with_timeout("nt-test-no-such-program", &[], SUBPROCESS_TIMEOUT).unwrap_err();
+        let error = run_with_timeout("nt-test-no-such-program", &[], GENEROUS).unwrap_err();
         assert_eq!(error.kind(), std::io::ErrorKind::NotFound);
     }
 
@@ -2101,7 +2101,7 @@ mod subprocess_tests {
         }
         let start = Instant::now();
         assert_eq!(
-            stdout_with_timeout("true", &[], SUBPROCESS_TIMEOUT).as_deref(),
+            stdout_with_timeout("true", &[], GENEROUS).as_deref(),
             Some("")
         );
         eprintln!("`true` ran in {:?}", start.elapsed());
@@ -2118,7 +2118,8 @@ mod subprocess_tests {
     }
 
     /// A command that outlives the timeout is killed and reaped, and the
-    /// call ends about the timeout after it began.
+    /// call ends at the timeout, not when the command would have: its sleep
+    /// is 30 s, and the 5 s bound leaves a loaded machine room to stall.
     #[test]
     fn run_with_timeout_kills_a_command_that_outlives_the_timeout() {
         if !on_path("sleep") {
@@ -2126,14 +2127,14 @@ mod subprocess_tests {
             return;
         }
         let timeout = Duration::from_millis(100);
-        let seconds = format!("5.{}", std::process::id());
+        let seconds = format!("30.{}", std::process::id());
         let start = Instant::now();
         let error = run_with_timeout("sleep", &[&seconds], timeout).unwrap_err();
         let elapsed = start.elapsed();
         assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
         assert_eq!(error.to_string(), "timed out after 100ms");
         assert!(
-            elapsed >= timeout && elapsed < Duration::from_secs(1),
+            elapsed >= timeout && elapsed < Duration::from_secs(5),
             "took {elapsed:?}"
         );
         let still_running = running(&format!("sleep\0{seconds}\0"));
@@ -2148,29 +2149,27 @@ mod subprocess_tests {
             eprintln!("skipped: sh or head is not installed");
             return;
         }
-        let out = stdout_with_timeout(
-            "sh",
-            &["-c", "head -c 102400 /dev/zero"],
-            SUBPROCESS_TIMEOUT,
-        );
+        let out = stdout_with_timeout("sh", &["-c", "head -c 102400 /dev/zero"], GENEROUS);
         assert_eq!(out.map(|out| out.len()), Some(102_400));
     }
 
     /// A process the command leaves running with its stdout keeps the pipe
-    /// open after the command exits; the call still ends at the deadline.
+    /// open after the command exits; the call still ends at the deadline,
+    /// not when that process exits: it sleeps 10 s, and the 5 s bound leaves
+    /// a loaded machine room to stall.
     #[test]
     fn run_with_timeout_ends_at_the_deadline_when_a_grandchild_holds_stdout() {
         if !on_path("sh") || !on_path("sleep") {
             eprintln!("skipped: sh or sleep is not installed");
             return;
         }
-        let script = format!("sleep 3.{} & echo hi", std::process::id());
+        let script = format!("sleep 10.{} & echo hi", std::process::id());
         let start = Instant::now();
         let error =
             run_with_timeout("sh", &["-c", &script], Duration::from_millis(100)).unwrap_err();
         let elapsed = start.elapsed();
         assert_eq!(error.kind(), std::io::ErrorKind::TimedOut);
-        assert!(elapsed < Duration::from_secs(1), "took {elapsed:?}");
+        assert!(elapsed < Duration::from_secs(5), "took {elapsed:?}");
     }
 }
 
