@@ -92,7 +92,7 @@ this connector's tests, clippy, docs and the widget-coverage script against. The
 script writes the line; a hand-edited one fails a test:
 
 <!-- compat:begin -->
-Verified against gpui-base 0.8.0, gpui-component 0.8.0, gpui-fast 0.1.10, gpui-fast-apple 0.1.10, gpui-fast-linux 0.1.10, gpui-fast-macos 0.1.10, gpui-fast-macros 0.1.10, gpui-fast-platform 0.1.10, gpui-fast-web 0.1.10, gpui-fast-wgpu 0.1.10, gpui-fast-windows 0.1.10, gpui-kit 0.8.0, gpui-kit-assets 0.8.0 and gpui-pre 0.3.9 on 2026-10-22.
+Verified against gpui-base 0.8.1, gpui-component 0.8.1, gpui-fast 0.1.12, gpui-fast-apple 0.1.12, gpui-fast-linux 0.1.12, gpui-fast-macos 0.1.12, gpui-fast-macros 0.1.12, gpui-fast-platform 0.1.12, gpui-fast-web 0.1.12, gpui-fast-wgpu 0.1.12, gpui-fast-windows 0.1.12, gpui-kit 0.8.1, gpui-kit-assets 0.8.1 and gpui-pre 0.3.10 on 2026-10-27.
 <!-- compat:end -->
 
 **After that** — newer releases are tested nightly by the dependency canary

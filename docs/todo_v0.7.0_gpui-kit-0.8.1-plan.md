@@ -634,3 +634,19 @@ the inventory finds. **Depends on:** Task 3 (after the unit).
   version. The flat-button group's reason in `docs/showcase-exceptions.toml` named material-3
   beside catppuccin-mocha after the group lost its material-3 keys; it names catppuccin-mocha
   alone now. The text occurs in that group only, so no merge group splits.
+- **Task 8, the documents.** The README's icon audit sentence names 0.8.1's list beside
+  0.8.0's on Task 3b's measurement (`default-icons.txt` 106 lines, identical to 0.8.0's); its
+  `h_resizable` row names 0.8.1 on Task 6's (`resizable.rs` unchanged). The CHANGELOG's
+  other `[Unreleased]` lines that name gpui-component or GPUI Kit 0.8.0 (the Slider's
+  `accessibility_label`, the Folder tab bar, the two charts, the nested scroll areas, the
+  base-palette tokens, `geometry::list`) say what 0.8.0 added or did and are left as they
+  are: spec §9 rewrites only the floors' entry. The screenshot entry's dated line notes that
+  every capture path passes `--tab basic`, so neither the Layout page's Separator nor the
+  Inputs page's ColorPicker is in a screenshot.
+- **Task 8, the stamps and the full run.** `scripts/update_compatibility.sh run` locked no
+  newer release for any family: gpui at GPUI Kit 0.8.1, gpui-pre 0.3.10 and the gpui-fast
+  crates 0.1.12, iced and egui at their previous sets, all dated 2026-10-27. The full
+  `./scripts/check_release.sh` after them: 170 checks, 161 passed, 8 warnings (the `v0.6.1`
+  tag; the six crates' semver-checks, the approved 0.7.0 breaks, the gpui crate's none from
+  G4; `cargo outdated` failing on zbus, as recorded since M8), 1 failure (the visual assets,
+  regenerated at the release). The packaging check with `--features gpui-fast` passed.

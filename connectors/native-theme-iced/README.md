@@ -58,7 +58,7 @@ the widget-coverage script against. The script writes the line; a hand-edited
 one fails a test:
 
 <!-- compat:begin -->
-Verified against iced 0.14.0, iced_aw 0.14.1, iced_core 0.14.0, iced_futures 0.14.0, iced_test 0.14.0 and iced_widget 0.14.2 on 2026-10-22.
+Verified against iced 0.14.0, iced_aw 0.14.1, iced_core 0.14.0, iced_futures 0.14.0, iced_test 0.14.0 and iced_widget 0.14.2 on 2026-10-27.
 <!-- compat:end -->
 
 **After that** — newer releases are tested nightly by the dependency canary
