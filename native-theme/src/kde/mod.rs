@@ -1,4 +1,4 @@
-//! KDE theme reader: reads the kdeglobals INI files and maps them to a Theme.
+//! KDE theme reader (the `kde` feature, Linux): maps the kdeglobals INI files to a Theme.
 //!
 //! # Sources
 //!

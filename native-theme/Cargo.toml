@@ -20,19 +20,39 @@ targets = [
 ]
 
 [features]
+# No feature is needed to load, merge and resolve presets and TOML files.
+# Each OS-specific dependency is compiled only on its own target.
+
+# The KDE Plasma reader: kdeglobals and kcmfonts (Linux).
 kde = ["dep:configparser"]
+# The GNOME and Budgie reader: the XDG Desktop Portal settings and gsettings;
+# with `kde`, the portal's accent colour on KDE too (Linux).
 portal = ["dep:ashpd", "ashpd/async-io", "dep:async-io", "dep:zbus"]
+# The Windows reader: UISettings, the system metrics and fonts.
 windows = ["dep:windows", "dep:windows-version"]
+# The macOS reader: NSColor under both appearances, NSFont, accessibility.
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2", "dep:objc2-core-foundation"]
+# Aliases of `kde` and `portal`.
 linux-kde = ["kde"]
 linux-portal = ["portal"]
+# Both Linux readers.
 linux = ["linux-kde", "linux-portal"]
+# Every platform reader.
 native = ["linux", "macos", "windows"]
+# `watch::on_theme_change`: OS theme-change notifications, on the platforms
+# whose reader feature is on.
 watch = ["dep:notify", "zbus?/blocking-api"]
+# The bundled Material Symbols icon set.
 material-icons = []
+# The bundled Lucide icon set.
 lucide-icons = []
+# `rasterize::rasterize_svg`: SVG icons to RGBA through resvg.
 svg-rasterize = ["dep:resvg"]
+# `fonts::system_face`: the platform's own typeface for a family, from the
+# system font database; on macOS the system UI font's file through Core Text.
 system-fonts = ["dep:fontdb", "dep:objc2-core-text", "dep:objc2-core-foundation"]
+# The platform icon sets: freedesktop icon themes (Linux), SF Symbols (macOS),
+# Segoe Fluent Icons and stock icons (Windows); also enables `material-icons`.
 system-icons = [
     "dep:freedesktop-icons",
     "dep:objc2",

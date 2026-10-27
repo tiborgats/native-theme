@@ -63,15 +63,15 @@ pub enum Error {
     /// The platform has a theme reader, but the Cargo feature that compiles it
     /// is not enabled (`macos` on macOS, `windows` on Windows).
     FeatureDisabled {
-        /// Feature name (e.g. `"kde"`, `"portal"`).
+        /// Feature name (`"macos"` or `"windows"`).
         name: &'static str,
-        /// What the feature is needed for (e.g. `"KDE theme detection"`).
+        /// What the feature is needed for (e.g. `"macOS theme detection"`).
         needed_for: &'static str,
     },
 
     /// The current platform is not supported.
     PlatformUnsupported {
-        /// Platform identifier (e.g. `"wasm"`, `"freebsd"`).
+        /// Platform identifier, `std::env::consts::OS` (e.g. `"freebsd"`).
         platform: &'static str,
     },
 

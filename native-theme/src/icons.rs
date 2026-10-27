@@ -1,4 +1,4 @@
-//! Icon loading and dispatch.
+// Icon loading and dispatch; the module docs are on its declaration in lib.rs.
 
 use std::fmt;
 

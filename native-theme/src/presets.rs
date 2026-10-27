@@ -1,10 +1,10 @@
-//! Bundled theme presets and TOML serialization API.
+//! Bundled theme presets: [`PresetInfo`], the description of one.
 //!
-//! Provides 17 user-facing built-in presets embedded at compile time:
-//! 7 platform (kde-breeze, adwaita, windows-11, macos-monterey, macos-tahoe,
-//! material-3, ios-13) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
-//! Solarized, Tokyo Night, One Dark), and functions for
-//! loading themes from TOML strings and files.
+//! 17 presets are embedded at compile time: 7 platform (kde-breeze, adwaita,
+//! windows-11, macos-monterey, macos-tahoe, material-3, ios-13) and 10
+//! community (Catppuccin's 4 flavours, Nord, Dracula, Gruvbox, Solarized, Tokyo
+//! Night, One Dark). [`Theme::preset`] loads one, [`Theme::list_presets`] lists
+//! them, and [`Theme::from_toml`] and [`Theme::from_file`] load your own theme.
 
 use std::borrow::Cow;
 use std::path::Path;

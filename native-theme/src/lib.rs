@@ -75,11 +75,83 @@
 //! # Ok::<(), native_theme::Error>(())
 //! ```
 //!
+//! # Presets
+//!
+//! 17 presets are bundled, each a TOML file with a light and a dark variant,
+//! loaded by key with [`Theme::preset`] and listed by
+//! [`Theme::list_presets`] (or [`Theme::list_presets_for_platform`], the ones
+//! offered on the running platform):
+//!
+//! - Platform: `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`
+//!   (macOS 12 Monterey to 15 Sequoia), `macos-tahoe` (macOS 26 Tahoe),
+//!   `material-3` and `ios-13` (the flat look of iOS 13 to 18).
+//! - Community: `catppuccin-latte`, `catppuccin-frappe`,
+//!   `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`,
+//!   `gruvbox`, `solarized`, `tokyo-night` and `one-dark`.
+//!
+//! `material-3` and `ios-13` have no OS reader; an application chooses them
+//! as a look. `ios-13`'s SF Symbols icons load only on macOS (with
+//! `system-icons`); elsewhere its icons are `None`, never another set's.
+//!
+//! # Platform readers
+//!
+//! [`SystemTheme::from_system`] reads the OS theme with the running
+//! platform's reader and merges what it reads over that platform's preset; a
+//! field the reader does not supply keeps the preset's value. Both variants
+//! are resolved, so [`SystemTheme::pick`] serves either mode.
+//!
+//! | Platform | Feature | Reads | Preset |
+//! |---|---|---|---|
+//! | KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
+//! | GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
+//! | macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
+//! | Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
+//!
+//! The KDE, GNOME and Windows readers read the active variant only, and the
+//! other variant is the preset's; the macOS reader reads both. On another
+//! Linux desktop, or without the desktop's reader feature, `from_system`
+//! returns the desktop's preset (`kde-breeze` on KDE, `adwaita` elsewhere)
+//! with no live reading, in the mode [`detect::detect_is_dark`] reads. On macOS and Windows without the reader feature it returns
+//! [`Error::FeatureDisabled`], and on other platforms
+//! [`Error::PlatformUnsupported`].
+//!
+//! On macOS and Windows the preset is the one of the running OS version's
+//! visual generation. [`SystemTheme::version_match`] tells how the running
+//! version relates to it ([`VersionMatch`]): macOS 27, which has no preset of
+//! its own yet, gets `macos-tahoe` as [`VersionMatch::PresetOlder`], and
+//! Windows 10 gets `windows-11` as [`VersionMatch::PresetNewer`].
+//! [`SystemTheme::from_system_with_preset`] merges over another generation of
+//! the running platform instead. [`pipeline::platform_preset_name`] names the
+//! preset without reading the theme, and
+//! [`pipeline::diagnose_platform_support`] reports what detection can see.
+//!
+//! # Feature flags
+//!
+//! No feature is needed to load, merge and resolve presets and TOML files.
+//! Each OS-specific dependency is compiled only on its own target, so
+//! `native` on macOS pulls in only the macOS dependencies.
+//!
+//! | Feature | Enables |
+//! |---|---|
+//! | `kde`, `portal`, `macos`, `windows` | The platform readers above |
+//! | `linux-kde`, `linux-portal` | Aliases of `kde` and `portal` |
+//! | `linux` | `linux-kde` and `linux-portal` |
+//! | `native` | `linux`, `macos` and `windows`: every reader |
+//! | `watch` | `watch::on_theme_change`, for the platforms whose reader feature is on |
+//! | `material-icons`, `lucide-icons` | The bundled Material Symbols and Lucide icon sets |
+//! | `system-icons` | The platform icon sets: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent Icons and stock icons (Windows); also enables `material-icons` |
+//! | `svg-rasterize` | `rasterize::rasterize_svg`, SVG icons to RGBA through resvg |
+//! | `system-fonts` | `fonts::system_face`, the platform's own typeface for a family; on macOS the system UI font's file through Core Text |
+//!
+//! The minimum supported Rust version is 1.88.0.
+//!
 //! # Modules
 //!
 //! - The crate root: [`Theme`], [`ColorMode`], [`SystemTheme`],
 //!   [`ResolvedTheme`], [`Resolved`], [`ResolutionContext`],
-//!   [`AccessibilityPreferences`], [`Rgba`] and [`Error`].
+//!   [`AccessibilityPreferences`], [`Rgba`], [`Error`] and [`Result`], and
+//!   from [`pipeline`] [`VersionMatch`], [`PlatformPreset`] and
+//!   [`DiagnosticEntry`].
 //! - [`prelude`]: the ten most-used items, for a glob import.
 //! - [`theme`]: the data model, the sparse types and their resolved
 //!   counterparts, widget by widget.
@@ -172,8 +244,6 @@ macro_rules! impl_merge {
 
 /// Color types and sRGB utilities.
 pub mod color;
-/// OS detection: dark mode, reduced motion, accessibility preferences, icon
-/// theme and set, desktop environment.
 pub mod detect;
 /// Error types for theme operations.
 pub mod error;
@@ -183,11 +253,20 @@ pub mod fonts;
 /// Requires the `portal` feature, and Linux.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub(crate) mod gnome;
-/// Icon loading and dispatch.
-pub mod icons;
-/// KDE theme reader.
+/// Icon loading.
 ///
-/// Requires the `kde` feature, and Linux.
+/// - The semantic roles, [`IconRole`], and the icon data, [`IconData`] and
+///   [`AnimatedIcon`].
+/// - A typed loader per icon set ([`IconSet`]): [`MaterialLoader`] and
+///   [`LucideLoader`] for the bundled sets, [`FreedesktopLoader`] (Linux),
+///   [`SfSymbolsLoader`] (macOS) and [`SegoeFluentLoader`] (Windows) for the
+///   platform sets. Each needs its set's feature, `material-icons`,
+///   `lucide-icons` or `system-icons`, and gives `None` without it.
+/// - [`load_icon`] and [`load_icon_indicator`], which load from whichever set
+///   they are given.
+/// - The icon-set choice of a settings UI,
+///   [`IconSetChoice`](icons::IconSetChoice).
+pub mod icons;
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
 /// Breeze widget sizing constants. Compiled on every target and feature set,
@@ -196,9 +275,7 @@ pub mod kde;
 pub(crate) mod kde_metrics;
 /// Theme data model types, public through [`theme`].
 mod model;
-/// Theme pipeline: reader -> preset merge -> resolve -> validate.
 pub mod pipeline;
-/// Bundled theme presets.
 pub mod presets;
 /// Internal `ThemeReader` trait (see module docs for Option A rationale).
 ///
@@ -222,12 +299,6 @@ mod spinners;
 #[cfg(feature = "watch")]
 pub mod watch;
 
-/// Convenience re-exports for common usage.
-///
-/// `use native_theme::prelude::*` imports:
-/// [`Theme`], [`ColorMode`], [`Resolved`], [`ResolvedTheme`], [`SystemTheme`],
-/// [`AccessibilityPreferences`], [`ResolutionContext`], [`Rgba`], [`Error`],
-/// and [`Result`].
 pub mod prelude;
 
 /// Theme data model: types, defaults, fonts, borders, widgets.
@@ -564,31 +635,33 @@ pub(crate) struct OverlaySource {
 /// comes from the preset + resolve.
 #[derive(Clone, Debug)]
 pub struct SystemTheme {
-    /// Theme name (from reader or preset).
-    ///
-    /// # Ownership type
-    ///
-    /// This field uses `Cow<'static, str>`, not `Arc<str>`. The v0.5.7 API
-    /// review recommended uniform `Arc<str>` across `name`, `icon_theme`,
-    /// `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
-    /// `docs/archive/v0.5.7_gaps.md` §G9 concluded that the
-    /// uniform recommendation should be adopted ONLY for
-    /// [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
-    /// (where 26 widgets × connectors genuinely share font families), and
-    /// should be REVERSED for `name` / `icon_theme` because:
-    ///
-    /// - Each resolved theme carries exactly ONE `name` — no dedup benefit.
-    /// - Bundled preset names are `&'static str` literals; `Cow::Borrowed(static_lit)`
-    ///   is zero allocation, zero refcount. `Arc<str>` would require at least one
-    ///   allocation per unique string at construction time, paying allocation cost
-    ///   for a dedup benefit that is structurally absent.
-    ///
-    /// The same reasoning applies symmetrically to
-    /// [`SystemTheme::icon_theme`](Self::icon_theme),
-    /// [`Theme::name`](crate::theme::Theme), and
-    /// [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
-    ///
-    /// See `docs/archive/v0.5.7_gaps.md` §G9 for the full audit.
+    /// Theme name: the reader's (the KDE colour scheme's, such as
+    /// `"BreezeDark"`, or `"GNOME"`, `"macOS"`, `"Windows"`), or the preset's
+    /// where no reader ran.
+    //
+    // # Ownership type
+    //
+    // This field uses `Cow<'static, str>`, not `Arc<str>`. The v0.5.7 API
+    // review recommended uniform `Arc<str>` across `name`, `icon_theme`,
+    // `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
+    // `docs/archive/v0.5.7_gaps.md` §G9 concluded that the
+    // uniform recommendation should be adopted ONLY for
+    // [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
+    // (where 26 widgets × connectors genuinely share font families), and
+    // should be REVERSED for `name` / `icon_theme` because:
+    //
+    // - Each resolved theme carries exactly ONE `name` — no dedup benefit.
+    // - Bundled preset names are `&'static str` literals; `Cow::Borrowed(static_lit)`
+    //   is zero allocation, zero refcount. `Arc<str>` would require at least one
+    //   allocation per unique string at construction time, paying allocation cost
+    //   for a dedup benefit that is structurally absent.
+    //
+    // The same reasoning applies symmetrically to
+    // [`SystemTheme::icon_theme`](Self::icon_theme),
+    // [`Theme::name`](crate::theme::Theme), and
+    // [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
+    //
+    // See `docs/archive/v0.5.7_gaps.md` §G9 for the full audit.
     pub name: Cow<'static, str>,
     /// The OS color mode preference (light or dark).
     pub mode: ColorMode,
@@ -618,14 +691,14 @@ pub struct SystemTheme {
     /// icon theme. `None` where the theme states none and detection fails;
     /// [`system_icon_theme()`](crate::detect::system_icon_theme) gives the
     /// reason.
-    ///
-    /// # Ownership type
-    ///
-    /// `Cow<'static, str>` is used here per the same principled deviation
-    /// documented on [`SystemTheme::name`](Self::name) — see `docs/archive/v0.5.7_gaps.md`
-    /// §G9. Each resolved theme carries a single icon-theme name (KDE has
-    /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
-    /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
+    //
+    // # Ownership type
+    //
+    // `Cow<'static, str>` is used here per the same principled deviation
+    // documented on `SystemTheme::name` — see `docs/archive/v0.5.7_gaps.md`
+    // §G9. Each resolved theme carries a single icon-theme name (KDE has
+    // exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
+    // other platforms have one), so the `Arc<str>` dedup benefit does not apply.
     pub icon_theme: Option<Cow<'static, str>>,
     /// Each variant's icon theme, resolved by the same three tiers as
     /// [`icon_theme`](Self::icon_theme), kept by variant rather than relative

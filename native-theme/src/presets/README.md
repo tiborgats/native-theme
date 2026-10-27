@@ -9,8 +9,9 @@ Each preset is a standalone theme specification: colors, fonts, geometry and
 platform-specific values like `button_order`. Any app can load one and get a
 resolved theme without needing a platform reader. `SystemTheme::from_system()`
 selects a platform reader, one of the crate-internal `ThemeReader`
-implementations `KdeReader`, `GnomeReader` (and `GnomePortalKdeReader`),
-`MacosReader` and `WindowsReader`, and merges the values it reads from the
+implementations `KdeReader` (and `GnomePortalKdeReader`, the KDE reader with
+the portal's accent colour), `GnomeReader`, `MacosReader` and
+`WindowsReader`, and merges the values it reads from the
 operating system over its platform preset (`kde-breeze`, `adwaita`,
 `windows-11`, and on macOS the preset of the running version's generation,
 `macos-monterey` on 12 to 15 and `macos-tahoe` on 26 and later, by the

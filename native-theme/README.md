@@ -15,7 +15,8 @@ Most apps don't depend on this crate directly — they use a framework connector
 [`native-theme-gpui`](../connectors/native-theme-gpui/),
 [`native-theme-iced`](../connectors/native-theme-iced/) or
 [`native-theme-egui`](../connectors/native-theme-egui/), which pull `native-theme` in
-transitively. Depend on `native-theme` directly only if you are writing a new connector.
+transitively and re-export it. Depend on `native-theme` directly to write a new connector,
+or to use the theme data without one.
 
 ## Quick start
 
@@ -44,7 +45,12 @@ are needed to use bundled presets.
 ## Core concepts
 
 - **`Theme`** — sparse, TOML-shaped definition (fields are `Option<T>`). Load via `Theme::preset(…)`, `Theme::from_toml(…)`, or `Theme::from_file(…)`.
-- **`ResolvedTheme`** — resolved variant: every font has a value, and so does every colour but 34 optional ones, most of them state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`. Every size the model requires has a value too; the sizes it treats as optional (padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter) are `None` where the theme states none, and the toolkit's own value then applies; so are `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`; and `tab.active_outward_corner_radius`, where unstated the selected tab's feet are square. The switch's track and thumb outlines, their colours (five of the 34) and widths (`switch.track_border_line_width`, `switch.thumb_border_line_width`), are `None` where the theme states none, and no outline is drawn; a disabled track outline's colour (`switch.disabled_unchecked_track_border_color`, `switch.disabled_checked_track_border_color`) left `None` takes the enabled one. Safe to hand to UI code.
+- **`ResolvedTheme`** — one resolved variant, safe to hand to UI code. Every font and every size the model requires has a value, and so does every colour but 34 optional ones. A field the model treats as optional is `None` where the theme states none:
+  - *Colours:* most of the 34 are state shades such as `checkbox.hover_background`, which a theme, a bundled preset included, may leave `None`.
+  - *Sizes:* padding sides, menu and list row heights, the list header height, toolbar height and item gap, tab item gap and active-indicator width, combobox arrow width, expander arrow gap and content indent, the checkbox's radio indicator width, radio dot diameter and check-mark stroke width, the switch's unchecked thumb diameter. Where one is `None` the toolkit's own value applies.
+  - *Behaviour:* `tooltip.show_delay`, `dialog.entrance`, `expander.arrow_side`, `expander.frame_enabled` and `tab.active_indicator_side`, where the toolkit's own value applies too; and `tab.active_outward_corner_radius`, where unstated the selected tab's feet are square.
+  - *Switch outlines:* the track and thumb outlines' colours (five of the 34) and widths (`switch.track_border_line_width`, `switch.thumb_border_line_width`); where they are `None` no outline is drawn. A disabled track outline's colour (`switch.disabled_unchecked_track_border_color`, `switch.disabled_checked_track_border_color`) left `None` takes the enabled one.
+- **`SystemTheme`** — the OS theme, from `SystemTheme::from_system()`: both resolved variants (`light`, `dark`), the OS's active `mode`, the `preset` the reader's values were merged over and its `version_match`, the icon set and theme, and the accessibility preferences. `pick(mode)` gives one variant; `with_overlay(…)` applies an application's changes.
 - **`ColorMode`** — the `Light` / `Dark` choice passed when resolving.
 - **Preset** — a named bundled theme. 17 ship today:
   - *Platform:* `kde-breeze`, `adwaita`, `windows-11`, `macos-monterey`, `macos-tahoe`, `material-3`, `ios-13`
@@ -53,6 +59,34 @@ are needed to use bundled presets.
   `material-3` and `ios-13` have no OS reader; an application chooses them as a look. `material-3` suits any platform, and its Material Symbols icons load with the `material-icons` feature. `ios-13` is a look for desktop apps on macOS: its SF Symbols load only on macOS, so on every other platform, iOS included, its icons are `None` and are never replaced by another set.
 
   Enumerate with `Theme::list_presets()` or `Theme::list_presets_for_platform()`.
+
+## Platform readers
+
+`SystemTheme::from_system()` reads the OS theme with the running platform's
+reader and merges what it reads over that platform's preset; a field the reader
+does not supply keeps the preset's value. Both variants are resolved.
+
+| Platform | Feature | Reads | Preset |
+|---|---|---|---|
+| KDE Plasma | `kde` | `kdeglobals`, `kcmfonts`; with `portal`, the portal's accent colour | `kde-breeze` |
+| GNOME, Budgie | `portal` | the XDG Desktop Portal settings and gsettings | `adwaita` |
+| macOS 11 and later | `macos` | `NSColor` under both appearances, `NSFont`, the scroller style and the accessibility options | `macos-monterey` before 26 (it covers 12 to 15), `macos-tahoe` from 26 |
+| Windows | `windows` | `UISettings`, the system metrics and fonts | `windows-11` |
+
+The KDE, GNOME and Windows readers read the active variant only, and the other
+variant is the preset's; the macOS reader reads both. On another Linux desktop,
+or without the desktop's reader feature, `from_system()` returns the desktop's
+preset (`kde-breeze` on KDE, `adwaita` elsewhere) with no live reading. On macOS
+and Windows without the reader feature it returns `Error::FeatureDisabled`.
+
+On macOS and Windows the preset is the one of the running OS version's visual
+generation. `SystemTheme::version_match` tells how the running version relates
+to it: macOS 27, which has no preset of its own yet, gets `macos-tahoe` as
+`VersionMatch::PresetOlder`, and Windows 10 gets `windows-11` as
+`VersionMatch::PresetNewer`. `SystemTheme::from_system_with_preset()` merges
+over another generation of the running platform instead, under the OS's live
+colours, fonts and accessibility settings. `pipeline::diagnose_platform_support()`
+lists what detection can see, for debugging.
 
 ## Common recipes
 
@@ -149,11 +183,8 @@ Keep the subscription alive: dropping it stops watching.
 
 ## Icon sets
 
-<p align="center">
-  <img src="docs/assets/spinner-material.gif" alt="Material spinner">
-  &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner">
-</p>
+![Material spinner](docs/assets/spinner-material.gif "Material spinner")
+![Lucide spinner](docs/assets/spinner-lucide.gif "Lucide spinner")
 
 Semantic icon roles map to platform-appropriate glyphs via typed per-set
 loaders. Each loader needs its set's feature and gives `None` without it:
@@ -213,8 +244,8 @@ native-theme = { version = "0.7", features = ["native"] }
 | `linux-kde` / `linux-portal` | Aliases: `kde` and `portal` |
 | `linux` | Meta-feature: `linux-kde` + `linux-portal` |
 | `native` | Meta-feature: `linux` + `macos` + `windows` |
-| `watch` | Runtime theme-change notifications |
-| `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
+| `watch` | Runtime theme-change notifications (`watch::on_theme_change`), on the platforms whose reader feature is on |
+| `system-icons` | Platform icon lookups: freedesktop icon themes (Linux), SF Symbols (macOS), Segoe Fluent Icons and stock icons (Windows), each platform's dependencies on that platform only; also enables `material-icons` |
 | `material-icons` / `lucide-icons` | Bundle those icon sets |
 | `svg-rasterize` | Rasterise SVG icons to RGBA via resvg |
 | `system-fonts` | The platform's own typeface for a family: `fonts::system_face` over the system font database (fontdb), and on macOS the system UI font's file through Core Text |
@@ -228,6 +259,8 @@ reader reads each appearance's colours through
 and the icons load through
 [`NSImage(systemSymbolName:accessibilityDescription:)`](https://developer.apple.com/documentation/appkit/nsimage/init(systemsymbolname:accessibilitydescription:)),
 both introduced in macOS 11.0.
+
+The minimum supported Rust version is 1.88.0.
 
 ## Links
 
